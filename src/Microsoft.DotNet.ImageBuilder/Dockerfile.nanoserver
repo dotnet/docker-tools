@@ -1,0 +1,8 @@
+FROM microsoft/dotnet:1.1-sdk-nanoserver
+
+# Build image-builder
+WORKDIR Microsoft.DotNet.ImageBuilder
+COPY *.csproj ./
+RUN dotnet restore -r win7-x64
+COPY . ./
+RUN dotnet publish -c Release -o /out -r win7-x64

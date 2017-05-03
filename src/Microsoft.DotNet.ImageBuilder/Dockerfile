@@ -51,11 +51,11 @@ RUN cd $GOPATH/src \
     && make binary \
     && make install
 
-# Build image-builder
-WORKDIR image-builder
+# Build Microsoft.DotNet.ImageBuilder
+WORKDIR Microsoft.DotNet.ImageBuilder
 COPY *.csproj .
 RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /out
 
-ENTRYPOINT ["dotnet", "/out/image-builder.dll"]
+ENTRYPOINT ["dotnet", "/out/Microsoft.DotNet.ImageBuilder.dll"]

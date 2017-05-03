@@ -1,6 +1,10 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System;
 
-namespace ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder
 {
     public class Options
     {
@@ -11,7 +15,7 @@ Summary:  Builds all Dockerfiles detected in the current folder and sub-folders 
 Usage:  image-builder [options]
 
 Options:
-      --command                         Build command to execeute (build/manifest)
+      --command                         Build command to execute (build/manifest)
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
       --password                        Password for the Docker registry the images are pushed to
@@ -93,7 +97,7 @@ Options:
         {
             if (!IsNextArgValue(args, i))
             {
-                throw new ArgumentException($"A '{argName}' value was not specified.{Environment.NewLine}{Usage}");
+                throw new ArgumentException($"No value specified for option '{argName}'.{Environment.NewLine}{Usage}");
             }
 
             i++;

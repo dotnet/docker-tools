@@ -1,11 +1,15 @@
-using ImageBuilder.Model;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Microsoft.DotNet.ImageBuilder.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 
-namespace ImageBuilder.ViewModel
+namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class PlatformInfo
     {
@@ -15,6 +19,10 @@ namespace ImageBuilder.ViewModel
         public bool IsExternalFromImage { get; private set; }
         public Platform Model { get; private set; }
         public IEnumerable<string> Tags { get; private set; }
+
+        private PlatformInfo()
+        {
+        }
 
         public static PlatformInfo Create(Platform model, Repo repo)
         {

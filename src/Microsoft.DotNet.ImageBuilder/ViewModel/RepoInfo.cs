@@ -1,4 +1,8 @@
-using ImageBuilder.Model;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Microsoft.DotNet.ImageBuilder.Model;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
@@ -6,13 +10,13 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace ImageBuilder.ViewModel
+namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
         private string DockerOS { get; set; }
-        public IEnumerable<ImageInfo> Images { get; set; }
-        public Repo Model { get; set; }
+        public IEnumerable<ImageInfo> Images { get; private set; }
+        public Repo Model { get; private set; }
 
         public string[] TestCommands
         {

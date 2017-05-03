@@ -1,12 +1,17 @@
-using ImageBuilder.Model;
-using ImageBuilder.ViewModel;
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Text;
 
-namespace ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageBuilder
     {
@@ -36,7 +41,7 @@ namespace ImageBuilder
                         case CommandType.Manifest:
                             ExecuteManifest();
                             break;
-                    };
+                    }
                 }
             }
             catch (Exception e)
@@ -83,23 +88,21 @@ namespace ImageBuilder
             {
                 foreach (string tag in imageInfo.Model.SharedTags)
                 {
-                    string manifestYml =
-$@"image: {RepoInfo.Model.DockerRepo}:{tag}
-manifests:
-";
+                    StringBuilder manifestYml = new StringBuilder();
+                    manifestYml.AppendLine($"image: {RepoInfo.Model.DockerRepo}:{tag}");
+                    manifestYml.AppendLine("manifests:");
+
                     foreach (KeyValuePair<string, Platform> kvp in imageInfo.Model.Platforms)
                     {
-                        manifestYml +=
-$@"  -
-    image: {RepoInfo.Model.DockerRepo}:{kvp.Value.Tags.First()}
-    platform:
-      architecture: amd64
-      os: {kvp.Key}
-";
+                        manifestYml.AppendLine($"  -");
+                        manifestYml.AppendLine($"    image: {RepoInfo.Model.DockerRepo}:{kvp.Value.Tags.First()}");
+                        manifestYml.AppendLine($"    platform:");
+                        manifestYml.AppendLine($"      architecture: amd64");
+                        manifestYml.AppendLine($"      os: {kvp.Key}");
                     }
 
                     Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
-                    File.WriteAllText("manifest.yml", manifestYml);
+                    File.WriteAllText("manifest.yml", manifestYml.ToString());
                     ExecuteHelper.Execute(
                         "manifest-tool",
                         $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
@@ -122,10 +125,10 @@ $@"  -
                 WriteHeading("TESTING IMAGES");
                 foreach (string command in RepoInfo.TestCommands)
                 {
-                    string[] parts = command.Split(' ');
+                    int firstSpaceIndex = command.IndexOf(' ');
                     ExecuteHelper.Execute(
-                        parts[0],
-                        command.Substring(parts[0].Length + 1),
+                        command.Substring(0, firstSpaceIndex),
+                        command.Substring(firstSpaceIndex + 1),
                         Options.IsDryRun);
                 }
             }

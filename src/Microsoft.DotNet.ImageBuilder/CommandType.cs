@@ -7,6 +7,6 @@ namespace Microsoft.DotNet.ImageBuilder
     public enum CommandType
     {
         Build,
-        Manifest
+        PublishManifest
     }
 }

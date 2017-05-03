@@ -6,13 +6,13 @@ using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
 {
-    public class Repo
+    public class Manifest
     {
         public string DockerRepo { get; set; }
         public Image[] Images { get; set; }
         public IDictionary<string, string[]> TestCommands { get; set; }
 
-        public Repo()
+        public Manifest()
         {
         }
     }

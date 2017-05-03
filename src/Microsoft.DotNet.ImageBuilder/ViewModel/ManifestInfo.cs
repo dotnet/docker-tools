@@ -12,11 +12,11 @@ using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
-    public class RepoInfo
+    public class ManifestInfo
     {
         private string DockerOS { get; set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
-        public Repo Model { get; private set; }
+        public Manifest Model { get; private set; }
 
         public string[] TestCommands
         {
@@ -27,21 +27,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
         }
 
-        private RepoInfo()
+        private ManifestInfo()
         {
         }
 
-        public static RepoInfo Create(string repoJsonPath)
+        public static ManifestInfo Create(string repoJsonPath)
         {
-            RepoInfo repoInfo = new RepoInfo();
-            repoInfo.InitializeDockerOS();
+            ManifestInfo manifestInfo = new ManifestInfo();
+            manifestInfo.InitializeDockerOS();
             string json = File.ReadAllText(repoJsonPath);
-            repoInfo.Model = JsonConvert.DeserializeObject<Repo>(json);
-            repoInfo.Images = repoInfo.Model.Images
-                .Select(image => ImageInfo.Create(image, repoInfo.DockerOS, repoInfo.Model))
+            manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
+            manifestInfo.Images = manifestInfo.Model.Images
+                .Select(image => ImageInfo.Create(image, manifestInfo.DockerOS, manifestInfo.Model))
                 .ToArray();
 
-            return repoInfo;
+            return manifestInfo;
         }
 
         public IEnumerable<string> GetPlatformTags()

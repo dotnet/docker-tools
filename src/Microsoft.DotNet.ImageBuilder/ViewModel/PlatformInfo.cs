@@ -24,14 +24,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static PlatformInfo Create(Platform model, Repo repo)
+        public static PlatformInfo Create(Platform model, Manifest manifest)
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
             platformInfo.InitializeFromImage();
-            platformInfo.IsExternalFromImage = !platformInfo.FromImage.StartsWith($"{repo.DockerRepo}:");
+            platformInfo.IsExternalFromImage = !platformInfo.FromImage.StartsWith($"{manifest.DockerRepo}:");
             platformInfo.Tags = model.Tags
-                .Select(tag => $"{repo.DockerRepo}:{tag}")
+                .Select(tag => $"{manifest.DockerRepo}:{tag}")
                 .ToArray();
 
             return platformInfo;

@@ -15,12 +15,12 @@ Summary:  Builds all Dockerfiles detected in the current folder and sub-folders 
 Usage:  image-builder [options]
 
 Options:
-      --command                         Build command to execute (build/manifest)
+      --command                         Build command to execute (build/publishManifest)
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
+      --manifest                        path to json file which describes the repo
       --password                        Password for the Docker registry the images are pushed to
       --push                            Push built images to Docker registry
-      --repo-info                       path to json file which describes the repo
       --skip-pulling                    Skip explicitly pulling the base images of the Dockerfiles
       --skip-test                       Skip running the tests
       --username                        Username for the Docker registry the images are pushed to
@@ -32,8 +32,8 @@ Options:
         public bool IsPushEnabled { get; private set; }
         public bool IsSkipPullingEnabled { get; private set; }
         public bool IsTestRunDisabled { get; private set; }
+        public string Manifest { get; private set; } = "manifest.json";
         public string Password { get; private set; }
-        public string RepoInfo { get; private set; } = "repo-info.json";
         public string Username { get; private set; }
 
         private Options()
@@ -60,6 +60,10 @@ Options:
                 {
                     options.IsHelpRequest = true;
                 }
+                else if (string.Equals(arg, "--manifest", StringComparison.Ordinal))
+                {
+                    options.Manifest = GetArgValue(args, ref i, "manifest");
+                }
                 else if (string.Equals(arg, "--push", StringComparison.Ordinal))
                 {
                     options.IsPushEnabled = true;
@@ -67,10 +71,6 @@ Options:
                 else if (string.Equals(arg, "--password", StringComparison.Ordinal))
                 {
                     options.Password = GetArgValue(args, ref i, "password");
-                }
-                else if (string.Equals(arg, "--repo-info", StringComparison.Ordinal))
-                {
-                    options.RepoInfo = GetArgValue(args, ref i, "repo-info");
                 }
                 else if (string.Equals(arg, "--username", StringComparison.Ordinal))
                 {

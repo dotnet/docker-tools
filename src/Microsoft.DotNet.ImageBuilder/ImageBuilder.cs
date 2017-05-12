@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder
                             PublishManifest();
                             break;
                         case CommandType.UpdateReadme:
-                            UpdateReadme().Wait();
+                            UpdateReadmeAsync().Wait();
                             break;
                     }
                 }
@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static async Task UpdateReadme()
+        private static async Task UpdateReadmeAsync()
         {
             WriteHeading("UPDATING README");
 
@@ -173,7 +173,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string credentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes($"{Options.Username}:{Options.Password}"));
             request.Headers.Add("Authorization", $"Basic {credentials}");
 
-            JObject jsonContent = new JObject(new JProperty("full_description", new JValue(Manifest.GetReadme())));
+            JObject jsonContent = new JObject(new JProperty("full_description", new JValue(Manifest.GetReadmeContent())));
             request.Content = new StringContent(jsonContent.ToString(), Encoding.UTF8, "application/json");
 
             if (!Options.IsDryRun)

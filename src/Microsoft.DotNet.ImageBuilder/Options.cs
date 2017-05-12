@@ -15,7 +15,7 @@ Summary:  Builds all Dockerfiles detected in the current folder and sub-folders 
 Usage:  image-builder [options]
 
 Options:
-      --command                         Build command to execute (build/publishManifest/UpdateReadme)
+      --command                         Build command to execute (Build/PublishManifest/UpdateReadme)
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
       --manifest                        path to json file which describes the repo

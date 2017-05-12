@@ -51,9 +51,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .SelectMany(image => image.Platform.Tags);
         }
 
-        public string GetReadme()
+        public string GetReadmeContent()
         {
-            return File.ReadAllText(Model.Readme);
+            return File.ReadAllText(Model.ReadmePath);
         }
 
         private void InitializeDockerOS()
@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return
 $@"DockerOS:  {DockerOS}
 DockerRepo:  {Model.DockerRepo}
-ReadmePath:  {Model.Readme}
+ReadmePath:  {Model.ReadmePath}
 TestCommands:
 {string.Join(Environment.NewLine, TestCommands)}
 Images [

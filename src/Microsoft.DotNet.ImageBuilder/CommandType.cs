@@ -7,6 +7,7 @@ namespace Microsoft.DotNet.ImageBuilder
     public enum CommandType
     {
         Build,
-        PublishManifest
+        PublishManifest,
+        UpdateReadme
     }
 }

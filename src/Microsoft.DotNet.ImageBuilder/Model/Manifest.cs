@@ -10,6 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
     {
         public string DockerRepo { get; set; }
         public Image[] Images { get; set; }
+        public string Readme { get; set; }
         public IDictionary<string, string[]> TestCommands { get; set; }
 
         public Manifest()

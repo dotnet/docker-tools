@@ -4,12 +4,14 @@
 
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -40,6 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder
                             break;
                         case CommandType.PublishManifest:
                             PublishManifest();
+                            break;
+                        case CommandType.UpdateReadme:
+                            UpdateReadme().Wait();
                             break;
                     }
                 }
@@ -155,9 +160,33 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
+        private static async Task UpdateReadme()
+        {
+            WriteHeading("UPDATING README");
+
+            // Docker Hub/Cloud API is not documented thus it is subject to change.  This is the only option
+            // until a supported API exists.
+            HttpRequestMessage request = new HttpRequestMessage(
+                new HttpMethod("PATCH"),
+                new Uri($"https://cloud.docker.com/v2/repositories/{Manifest.Model.DockerRepo}/"));
+
+            string credentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes($"{Options.Username}:{Options.Password}"));
+            request.Headers.Add("Authorization", $"Basic {credentials}");
+
+            JObject jsonContent = new JObject(new JProperty("full_description", new JValue(Manifest.GetReadme())));
+            request.Content = new StringContent(jsonContent.ToString(), Encoding.UTF8, "application/json");
+
+            if (!Options.IsDryRun)
+            {
+                HttpResponseMessage response = await new HttpClient().SendAsync(request);
+                Console.WriteLine($"-- RESPONSE:{Environment.NewLine}{response}");
+                response.EnsureSuccessStatusCode();
+            }
+        }
+
         private static void ReadManifest()
         {
-            WriteHeading("READING Manifest");
+            WriteHeading("READING MANIFEST");
             Manifest = ManifestInfo.Create(Options.Manifest);
             Console.WriteLine(Manifest);
         }

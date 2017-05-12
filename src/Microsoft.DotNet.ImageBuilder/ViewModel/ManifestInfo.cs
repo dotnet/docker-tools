@@ -51,6 +51,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .SelectMany(image => image.Platform.Tags);
         }
 
+        public string GetReadme()
+        {
+            return File.ReadAllText(Model.Readme);
+        }
+
         private void InitializeDockerOS()
         {
             ProcessStartInfo startInfo = new ProcessStartInfo("docker", "version -f \"{{ .Server.Os }}\"");
@@ -68,6 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return
 $@"DockerOS:  {DockerOS}
 DockerRepo:  {Model.DockerRepo}
+ReadmePath:  {Model.Readme}
 TestCommands:
 {string.Join(Environment.NewLine, TestCommands)}
 Images [

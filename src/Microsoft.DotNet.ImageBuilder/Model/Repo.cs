@@ -6,15 +6,17 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
 {
-    public class Platform
+    public class Repo
     {
         [JsonProperty(Required = Required.Always)]
-        public string Dockerfile { get; set; }
+        public Image[] Images { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string[] Tags { get; set; }
+        public string Name { get; set; }
 
-        public Platform()
+        public string ReadmePath { get; set; }
+
+        public Repo()
         {
         }
     }

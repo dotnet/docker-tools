@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Newtonsoft.Json;
 using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
 {
     public class Manifest
     {
-        public string DockerRepo { get; set; }
-        public Image[] Images { get; set; }
-        public string ReadmePath { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public Repo[] Repos { get; set; }
+
         public IDictionary<string, string[]> TestCommands { get; set; }
 
         public Manifest()

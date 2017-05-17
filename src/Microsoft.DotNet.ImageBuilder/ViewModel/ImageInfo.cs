@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -19,31 +18,29 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ImageInfo Create(Image model, string dockerOS, Manifest manifest)
+        public static ImageInfo Create(Image model, string repoName, string dockerOS)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
-            imageInfo.Tags = model.SharedTags.Select(tag => $"{manifest.DockerRepo}:{tag}");
+
+            if (model.SharedTags == null)
+            {
+                imageInfo.Tags = Enumerable.Empty<string>();
+            }
+            else
+            {
+                imageInfo.Tags = model.SharedTags.Select(tag => $"{repoName}:{tag}");
+            }
 
             if (model.Platforms.TryGetValue(dockerOS, out Platform platform))
             {
-                imageInfo.Platform = PlatformInfo.Create(platform, manifest);
+                imageInfo.Platform = PlatformInfo.Create(platform, repoName);
                 imageInfo.Tags = imageInfo.Tags.Concat(imageInfo.Platform.Tags);
             }
 
             imageInfo.Tags = imageInfo.Tags.ToArray();
 
             return imageInfo;
-        }
-
-        public override string ToString()
-        {
-            return
-$@"Tags:
-  {string.Join($"{Environment.NewLine}  ", Tags)}
-Platform (
-{Platform?.ToString()}
-)";
         }
     }
 }

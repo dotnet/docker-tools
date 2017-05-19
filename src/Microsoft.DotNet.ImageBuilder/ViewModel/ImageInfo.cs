@@ -10,9 +10,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
     {
+        public Image Model { get; private set; }
         public PlatformInfo Platform { get; private set; }
         public IEnumerable<string> Tags { get; private set; }
-        public Image Model { get; private set; }
 
         private ImageInfo()
         {

@@ -14,8 +14,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class ManifestInfo
     {
         private string DockerOS { get; set; }
-        public IEnumerable<RepoInfo> Repos { get; private set; }
+        public IEnumerable<ImageInfo> Images { get; private set; }
         public Manifest Model { get; private set; }
+        public IEnumerable<string> PlatformTags { get; private set; }
+        public IEnumerable<RepoInfo> Repos { get; private set; }
 
         public IEnumerable<string> TestCommands
         {
@@ -40,20 +42,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.Repos = manifestInfo.Model.Repos
                 .Select(image => RepoInfo.Create(image, manifestInfo.DockerOS))
                 .ToArray();
+            manifestInfo.Images = manifestInfo.Repos
+                .SelectMany(repo => repo.Images)
+                .ToArray();
+            manifestInfo.PlatformTags = manifestInfo.Images
+                .Where(image => image.Platform != null)
+                .SelectMany(image => image.Platform.Tags)
+                .ToArray();
 
             return manifestInfo;
-        }
-
-        public IEnumerable<ImageInfo> GetAllImages()
-        {
-            return Repos.SelectMany(repo => repo.Images);
-        }
-
-        public IEnumerable<string> GetPlatformTags()
-        {
-            return GetAllImages()
-                .Where(image => image.Platform != null)
-                .SelectMany(image => image.Platform.Tags);
         }
 
         private void InitializeDockerOS()

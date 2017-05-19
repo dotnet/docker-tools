@@ -71,9 +71,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void BuildImages()
         {
             WriteHeading("BUILDING IMAGES");
-            IEnumerable<ImageInfo> images = Manifest.GetAllImages()
-                .Where(image => image.Platform != null);
-            foreach (ImageInfo image in images)
+            foreach (ImageInfo image in Manifest.Images.Where(image => image.Platform != null))
             {
                 Console.WriteLine($"-- BUILDING: {image.Platform.Model.Dockerfile}");
                 if (!Options.IsSkipPullingEnabled && image.Platform.IsExternalFromImage)
@@ -165,7 +163,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         executeMessageOverride: $"{loginArgsWithoutPassword} ********");
                 }
 
-                foreach (string tag in Manifest.GetPlatformTags())
+                foreach (string tag in Manifest.PlatformTags)
                 {
                     ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                 }
@@ -213,7 +211,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void WriteBuildSummary()
         {
             WriteHeading("IMAGES BUILT");
-            foreach (string tag in Manifest.GetPlatformTags())
+            foreach (string tag in Manifest.PlatformTags)
             {
                 Console.WriteLine(tag);
             }

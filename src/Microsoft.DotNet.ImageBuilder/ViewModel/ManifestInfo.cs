@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             string json = File.ReadAllText(repoJsonPath);
             manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
             manifestInfo.Repos = manifestInfo.Model.Repos
-                .Select(image => RepoInfo.Create(image, manifestInfo.DockerOS))
+                .Select(image => RepoInfo.Create(image, manifestInfo.Model, manifestInfo.DockerOS))
                 .ToArray();
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)

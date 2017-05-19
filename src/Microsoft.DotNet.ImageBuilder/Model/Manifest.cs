@@ -12,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public Repo[] Repos { get; set; }
 
+        public IDictionary<string, string> TagVariables { get; set; }
+
         public IDictionary<string, string[]> TestCommands { get; set; }
 
         public Manifest()

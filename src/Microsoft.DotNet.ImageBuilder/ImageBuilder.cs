@@ -4,6 +4,7 @@
 
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder
                             PublishManifest();
                             break;
                         case CommandType.UpdateReadme:
-                            UpdateReadmeAsync().Wait();
+                            UpdateReadmesAsync().Wait();
                             break;
                     }
                 }
@@ -93,11 +94,22 @@ namespace Microsoft.DotNet.ImageBuilder
                 WriteHeading("TESTING IMAGES");
                 foreach (string command in Manifest.TestCommands)
                 {
+                    string filename;
+                    string args;
+
                     int firstSpaceIndex = command.IndexOf(' ');
-                    ExecuteHelper.Execute(
-                        command.Substring(0, firstSpaceIndex),
-                        command.Substring(firstSpaceIndex + 1),
-                        Options.IsDryRun);
+                    if (firstSpaceIndex == -1)
+                    {
+                        filename = command;
+                        args = null;
+                    }
+                    else
+                    {
+                        filename = command.Substring(0, firstSpaceIndex);
+                        args = command.Substring(firstSpaceIndex + 1);
+                    }
+
+                    ExecuteHelper.Execute(filename, args, Options.IsDryRun);
                 }
             }
         }
@@ -105,29 +117,32 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void PublishManifest()
         {
             WriteHeading("GENERATING MANIFESTS");
-            foreach (ImageInfo image in Manifest.Images)
+            foreach (RepoInfo repo in Manifest.Repos)
             {
-                foreach (string tag in image.Model.SharedTags)
+                foreach (ImageInfo image in repo.Images)
                 {
-                    StringBuilder manifestYml = new StringBuilder();
-                    manifestYml.AppendLine($"image: {Manifest.Model.DockerRepo}:{tag}");
-                    manifestYml.AppendLine("manifests:");
-
-                    foreach (KeyValuePair<string, Platform> kvp in image.Model.Platforms)
+                    foreach (string tag in image.Model.SharedTags)
                     {
-                        manifestYml.AppendLine($"  -");
-                        manifestYml.AppendLine($"    image: {Manifest.Model.DockerRepo}:{kvp.Value.Tags.First()}");
-                        manifestYml.AppendLine($"    platform:");
-                        manifestYml.AppendLine($"      architecture: amd64");
-                        manifestYml.AppendLine($"      os: {kvp.Key}");
-                    }
+                        StringBuilder manifestYml = new StringBuilder();
+                        manifestYml.AppendLine($"image: {repo.Model.Name}:{tag}");
+                        manifestYml.AppendLine("manifests:");
 
-                    Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
-                    File.WriteAllText("manifest.yml", manifestYml.ToString());
-                    ExecuteHelper.Execute(
-                        "manifest-tool",
-                        $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
-                        Options.IsDryRun);
+                        foreach (KeyValuePair<string, Platform> kvp in image.Model.Platforms)
+                        {
+                            manifestYml.AppendLine($"  -");
+                            manifestYml.AppendLine($"    image: {repo.Model.Name}:{kvp.Value.Tags.First()}");
+                            manifestYml.AppendLine($"    platform:");
+                            manifestYml.AppendLine($"      architecture: amd64");
+                            manifestYml.AppendLine($"      os: {kvp.Key}");
+                        }
+
+                        Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
+                        File.WriteAllText("manifest.yml", manifestYml.ToString());
+                        ExecuteHelper.Execute(
+                            "manifest-tool",
+                            $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
+                            Options.IsDryRun);
+                    }
                 }
             }
         }
@@ -148,7 +163,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         executeMessageOverride: $"{loginArgsWithoutPassword} ********");
                 }
 
-                foreach (string tag in Manifest.GetPlatformTags())
+                foreach (string tag in Manifest.PlatformTags)
                 {
                     ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                 }
@@ -160,27 +175,29 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static async Task UpdateReadmeAsync()
+        private static async Task UpdateReadmesAsync()
         {
-            WriteHeading("UPDATING README");
-
-            // Docker Hub/Cloud API is not documented thus it is subject to change.  This is the only option
-            // until a supported API exists.
-            HttpRequestMessage request = new HttpRequestMessage(
-                new HttpMethod("PATCH"),
-                new Uri($"https://cloud.docker.com/v2/repositories/{Manifest.Model.DockerRepo}/"));
-
-            string credentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes($"{Options.Username}:{Options.Password}"));
-            request.Headers.Add("Authorization", $"Basic {credentials}");
-
-            JObject jsonContent = new JObject(new JProperty("full_description", new JValue(Manifest.GetReadmeContent())));
-            request.Content = new StringContent(jsonContent.ToString(), Encoding.UTF8, "application/json");
-
-            if (!Options.IsDryRun)
+            WriteHeading("UPDATING READMES");
+            foreach (RepoInfo repo in Manifest.Repos)
             {
-                HttpResponseMessage response = await new HttpClient().SendAsync(request);
-                Console.WriteLine($"-- RESPONSE:{Environment.NewLine}{response}");
-                response.EnsureSuccessStatusCode();
+                // Docker Hub/Cloud API is not documented thus it is subject to change.  This is the only option
+                // until a supported API exists.
+                HttpRequestMessage request = new HttpRequestMessage(
+                    new HttpMethod("PATCH"),
+                    new Uri($"https://cloud.docker.com/v2/repositories/{repo.Model.Name}/"));
+
+                string credentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes($"{Options.Username}:{Options.Password}"));
+                request.Headers.Add("Authorization", $"Basic {credentials}");
+
+                JObject jsonContent = new JObject(new JProperty("full_description", new JValue(repo.GetReadmeContent())));
+                request.Content = new StringContent(jsonContent.ToString(), Encoding.UTF8, "application/json");
+
+                if (!Options.IsDryRun)
+                {
+                    HttpResponseMessage response = await new HttpClient().SendAsync(request);
+                    Console.WriteLine($"-- RESPONSE:{Environment.NewLine}{response}");
+                    response.EnsureSuccessStatusCode();
+                }
             }
         }
 
@@ -188,13 +205,13 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             WriteHeading("READING MANIFEST");
             Manifest = ManifestInfo.Create(Options.Manifest);
-            Console.WriteLine(Manifest);
+            Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
         }
 
         private static void WriteBuildSummary()
         {
             WriteHeading("IMAGES BUILT");
-            foreach (string tag in Manifest.GetPlatformTags())
+            foreach (string tag in Manifest.PlatformTags)
             {
                 Console.WriteLine(tag);
             }

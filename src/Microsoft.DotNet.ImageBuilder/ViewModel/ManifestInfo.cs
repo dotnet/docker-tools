@@ -4,7 +4,6 @@
 
 using Microsoft.DotNet.ImageBuilder.Model;
 using Newtonsoft.Json;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -17,13 +16,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private string DockerOS { get; set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Manifest Model { get; private set; }
+        public IEnumerable<string> PlatformTags { get; private set; }
+        public IEnumerable<RepoInfo> Repos { get; private set; }
 
-        public string[] TestCommands
+        public IEnumerable<string> TestCommands
         {
             get
             {
-                Model.TestCommands.TryGetValue(DockerOS, out string[] commands);
-                return commands;
+                string[] commands = null;
+                Model.TestCommands?.TryGetValue(DockerOS, out commands);
+                return commands ?? Enumerable.Empty<string>();
             }
         }
 
@@ -37,23 +39,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.InitializeDockerOS();
             string json = File.ReadAllText(repoJsonPath);
             manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
-            manifestInfo.Images = manifestInfo.Model.Images
-                .Select(image => ImageInfo.Create(image, manifestInfo.DockerOS, manifestInfo.Model))
+            manifestInfo.Repos = manifestInfo.Model.Repos
+                .Select(image => RepoInfo.Create(image, manifestInfo.DockerOS))
+                .ToArray();
+            manifestInfo.Images = manifestInfo.Repos
+                .SelectMany(repo => repo.Images)
+                .ToArray();
+            manifestInfo.PlatformTags = manifestInfo.Images
+                .Where(image => image.Platform != null)
+                .SelectMany(image => image.Platform.Tags)
                 .ToArray();
 
             return manifestInfo;
-        }
-
-        public IEnumerable<string> GetPlatformTags()
-        {
-            return Images
-                .Where(image => image.Platform != null)
-                .SelectMany(image => image.Platform.Tags);
-        }
-
-        public string GetReadmeContent()
-        {
-            return File.ReadAllText(Model.ReadmePath);
         }
 
         private void InitializeDockerOS()
@@ -62,23 +59,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             startInfo.RedirectStandardOutput = true;
             Process process = ExecuteHelper.Execute(startInfo, false, $"Failed to detect Docker Mode");
             DockerOS = process.StandardOutput.ReadToEnd().Trim();
-        }
-
-        public override string ToString()
-        {
-            string images = Images
-                .Select(image => image.ToString())
-                .Aggregate((working, next) => $"{working}{Environment.NewLine}----------{Environment.NewLine}{next}");
-
-            return
-$@"DockerOS:  {DockerOS}
-DockerRepo:  {Model.DockerRepo}
-ReadmePath:  {Model.ReadmePath}
-TestCommands:
-{string.Join(Environment.NewLine, TestCommands)}
-Images [
-{images}
-]";
         }
     }
 }

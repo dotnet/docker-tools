@@ -24,14 +24,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static PlatformInfo Create(Platform model, Manifest manifest)
+        public static PlatformInfo Create(Platform model, string repoName)
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
             platformInfo.InitializeFromImage();
-            platformInfo.IsExternalFromImage = !platformInfo.FromImage.StartsWith($"{manifest.DockerRepo}:");
+            platformInfo.IsExternalFromImage = !platformInfo.FromImage.StartsWith($"{repoName}:");
             platformInfo.Tags = model.Tags
-                .Select(tag => $"{manifest.DockerRepo}:{tag}")
+                .Select(tag => $"{repoName}:{tag}")
                 .ToArray();
 
             return platformInfo;
@@ -46,16 +46,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             FromImage = fromMatch.Groups["fromImage"].Value;
-        }
-
-        public override string ToString()
-        {
-            return
-$@"Dockerfile Path:  {Model.Dockerfile}
-FromImage:  {FromImage}
-IsExternalFromImage:  {IsExternalFromImage}
-Tags:
-  {string.Join($"{Environment.NewLine}  ", Tags)}";
         }
     }
 }

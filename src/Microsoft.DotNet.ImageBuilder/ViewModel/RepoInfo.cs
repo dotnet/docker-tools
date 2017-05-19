@@ -19,12 +19,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static RepoInfo Create(Repo model, string dockerOS)
+        public static RepoInfo Create(Repo model, Manifest manifest, string dockerOS)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
             repoInfo.Images = model.Images
-                .Select(image => ImageInfo.Create(image, model.Name, dockerOS))
+                .Select(image => ImageInfo.Create(image, manifest, model.Name, dockerOS))
                 .ToArray();
 
             return repoInfo;

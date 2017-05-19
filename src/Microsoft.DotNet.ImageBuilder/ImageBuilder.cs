@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 ExecuteHelper.Execute(
                     "docker",
-                    $"build -t {string.Join(" -t ", image.Tags)} {image.Platform.Model.Dockerfile}",
+                    $"build -t {string.Join(" -t ", image.AllTags)} {image.Platform.Model.Dockerfile}",
                     Options.IsDryRun);
             }
         }
@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (ImageInfo image in repo.Images)
                 {
-                    foreach (string tag in image.Model.SharedTags)
+                    foreach (string tag in image.SharedTags)
                     {
                         StringBuilder manifestYml = new StringBuilder();
                         manifestYml.AppendLine($"image: {repo.Model.Name}:{tag}");

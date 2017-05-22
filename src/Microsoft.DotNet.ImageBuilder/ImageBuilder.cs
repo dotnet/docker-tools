@@ -124,13 +124,14 @@ namespace Microsoft.DotNet.ImageBuilder
                     foreach (string tag in image.SharedTags)
                     {
                         StringBuilder manifestYml = new StringBuilder();
-                        manifestYml.AppendLine($"image: {repo.Model.Name}:{tag}");
+                        manifestYml.AppendLine($"image: {tag}");
                         manifestYml.AppendLine("manifests:");
 
                         foreach (KeyValuePair<string, Platform> kvp in image.Model.Platforms)
                         {
+                            string platformTag = Manifest.Model.SubstituteTagVariables(kvp.Value.Tags.First());
                             manifestYml.AppendLine($"  -");
-                            manifestYml.AppendLine($"    image: {repo.Model.Name}:{kvp.Value.Tags.First()}");
+                            manifestYml.AppendLine($"    image: {repo.Model.Name}:{platformTag}");
                             manifestYml.AppendLine($"    platform:");
                             manifestYml.AppendLine($"      architecture: amd64");
                             manifestYml.AppendLine($"      os: {kvp.Key}");

@@ -139,7 +139,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
                         Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
                         File.WriteAllText("manifest.yml", manifestYml.ToString());
-                        ExecuteHelper.Execute(
+
+                        // ExecuteWithRetry because the manifest-tool fails periodically with communicating 
+                        // with the Docker Registry.
+                        ExecuteHelper.ExecuteWithRetry(
                             "manifest-tool",
                             $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
                             Options.IsDryRun);

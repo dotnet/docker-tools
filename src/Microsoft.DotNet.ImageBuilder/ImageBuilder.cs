@@ -74,10 +74,13 @@ namespace Microsoft.DotNet.ImageBuilder
             foreach (ImageInfo image in Manifest.Images.Where(image => image.Platform != null))
             {
                 Console.WriteLine($"-- BUILDING: {image.Platform.Model.Dockerfile}");
-                if (!Options.IsSkipPullingEnabled && image.Platform.IsExternalFromImage)
+                if (!Options.IsSkipPullingEnabled)
                 {
-                    // Ensure latest base image exists locally before building
-                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {image.Platform.FromImage}", Options.IsDryRun);
+                    // Ensure latest base images exist locally before building
+                    foreach (string fromImage in image.Platform.FromImages.Where(from => Manifest.IsExternalImage(from)))
+                    {
+                        ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
+                    }
                 }
 
                 ExecuteHelper.Execute(
@@ -205,7 +208,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void ReadManifest()
         {
             WriteHeading("READING MANIFEST");
-            Manifest = ManifestInfo.Create(Options.Manifest);
+            Manifest = ManifestInfo.Create(Options.Manifest, Options.Repo, Options.Path);
             Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
         }
 

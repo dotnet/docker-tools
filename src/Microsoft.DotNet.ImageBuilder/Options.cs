@@ -18,8 +18,10 @@ Options:
       --command                         Build command to execute (Build/PublishManifest/UpdateReadme)
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
-      --manifest                        path to json file which describes the repo
+      --manifest                        Path to json file which describes the repo
+      --repo                            Repo to build (Default is to build all)
       --password                        Password for the Docker registry the images are pushed to
+      --path                            Path of the directory to build (Default is to build all)
       --push                            Push built images to Docker registry
       --skip-pulling                    Skip explicitly pulling the base images of the Dockerfiles
       --skip-test                       Skip running the tests
@@ -33,7 +35,9 @@ Options:
         public bool IsSkipPullingEnabled { get; private set; }
         public bool IsTestRunDisabled { get; private set; }
         public string Manifest { get; private set; } = "manifest.json";
+        public string Repo { get; private set; }
         public string Password { get; private set; }
+        public string Path { get; private set; }
         public string Username { get; private set; }
 
         private Options()
@@ -64,6 +68,10 @@ Options:
                 {
                     options.Manifest = GetArgValue(args, ref i, "manifest");
                 }
+                else if (string.Equals(arg, "--repo", StringComparison.Ordinal))
+                {
+                    options.Repo = GetArgValue(args, ref i, "repo");
+                }
                 else if (string.Equals(arg, "--push", StringComparison.Ordinal))
                 {
                     options.IsPushEnabled = true;
@@ -71,6 +79,10 @@ Options:
                 else if (string.Equals(arg, "--password", StringComparison.Ordinal))
                 {
                     options.Password = GetArgValue(args, ref i, "password");
+                }
+                else if (string.Equals(arg, "--path", StringComparison.Ordinal))
+                {
+                    options.Path = GetArgValue(args, ref i, "path");
                 }
                 else if (string.Equals(arg, "--username", StringComparison.Ordinal))
                 {

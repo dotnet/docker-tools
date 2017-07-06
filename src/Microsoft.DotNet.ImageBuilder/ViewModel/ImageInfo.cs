@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ImageInfo Create(Image model, Manifest manifest, string repoName, string dockerOS)
+        public static ImageInfo Create(Image model, Manifest manifest, string repoName, string dockerOS, string includePath)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -37,7 +37,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             imageInfo.AllTags = imageInfo.SharedTags;
 
-            if (model.Platforms.TryGetValue(dockerOS, out Platform platform))
+            if (model.Platforms.TryGetValue(dockerOS, out Platform platform)
+                && (string.IsNullOrWhiteSpace(includePath) || platform.Dockerfile.StartsWith(includePath)))
             {
                 imageInfo.Platform = PlatformInfo.Create(platform, manifest, repoName);
                 imageInfo.AllTags = imageInfo.AllTags

@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -25,6 +27,7 @@ Options:
       --push                            Push built images to Docker registry
       --skip-pulling                    Skip explicitly pulling the base images of the Dockerfiles
       --skip-test                       Skip running the tests
+      --test-var list                   Named variables to substitute into the test commands (name=value)
       --username                        Username for the Docker registry the images are pushed to
 ";
 
@@ -38,6 +41,7 @@ Options:
         public string Repo { get; private set; }
         public string Password { get; private set; }
         public string Path { get; private set; }
+        public IDictionary<string,string> TestVariables { get; private set; } = new Dictionary<string, string>();
         public string Username { get; private set; }
 
         private Options()
@@ -60,7 +64,8 @@ Options:
                 {
                     options.IsDryRun = true;
                 }
-                else if (string.Equals(arg, "-h", StringComparison.Ordinal) || string.Equals(arg, "--help", StringComparison.Ordinal))
+                else if (string.Equals(arg, "-h", StringComparison.Ordinal)
+                    || string.Equals(arg, "--help", StringComparison.Ordinal))
                 {
                     options.IsHelpRequest = true;
                 }
@@ -96,6 +101,11 @@ Options:
                 {
                     options.IsTestRunDisabled = true;
                 }
+                else if (string.Equals(arg, "--test-var", StringComparison.Ordinal))
+                {
+                    IEnumerable<string> values = GetArgValues(args, ref i, "test-var");
+                    options.TestVariables = ParseNameValuePairs(values);
+                }
                 else
                 {
                     throw new ArgumentException($"Unknown argument: '{arg}'{Environment.NewLine}{Usage}");
@@ -109,16 +119,50 @@ Options:
         {
             if (!IsNextArgValue(args, i))
             {
-                throw new ArgumentException($"No value specified for option '{argName}'.{Environment.NewLine}{Usage}");
+                throw GetArgValueNotFoundException(argName);
             }
 
             i++;
             return args[i];
         }
 
+        private static IEnumerable<string> GetArgValues(string[] args, ref int i, string argName)
+        {
+            List<string> values = new List<string>();
+
+            while (IsNextArgValue(args, i))
+            {
+                i++;
+                values.Add(args[i]);
+            }
+
+            if (!values.Any())
+            {
+                throw GetArgValueNotFoundException(argName);
+            }
+
+            return values;
+        }
+
+        private static Exception GetArgValueNotFoundException(string argName)
+        {
+            return new ArgumentException($"No value specified for option '{argName}'.{Environment.NewLine}{Usage}");
+        }
+
         private static bool IsNextArgValue(string[] args, int i)
         {
             return i + 1 < args.Length && !args[i + 1].StartsWith("-");
+        }
+
+        private static IDictionary<string, string> ParseNameValuePairs(IEnumerable<string> nameValuePairs)
+        {
+            Dictionary<string, string> result = new Dictionary<string, string>();
+            foreach (string nameValuePair in nameValuePairs) {
+                string[] splitResults = nameValuePair.Split(new char[] { '=' }, 2);
+                result.Add(splitResults[0], splitResults[1]);
+            }
+
+            return result;
         }
     }
 }

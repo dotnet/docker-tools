@@ -95,7 +95,9 @@ namespace Microsoft.DotNet.ImageBuilder
             if (!Options.IsTestRunDisabled)
             {
                 WriteHeading("TESTING IMAGES");
-                foreach (string command in Manifest.TestCommands)
+                IEnumerable<string> testCommands = Manifest.TestCommands
+                    .Select(command => Utilities.SubstituteVariables(Options.TestVariables, command));
+                foreach (string command in testCommands)
                 {
                     string filename;
                     string args;

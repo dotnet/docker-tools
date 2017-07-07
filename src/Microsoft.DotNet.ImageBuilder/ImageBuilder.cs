@@ -77,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 if (!Options.IsSkipPullingEnabled)
                 {
                     // Ensure latest base images exist locally before building
-                    foreach (string fromImage in image.Platform.FromImages.Where(from => Manifest.IsExternalImage(from)))
+                    foreach (string fromImage in image.Platform.FromImages.Where(Manifest.IsExternalImage))
                     {
                         ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
                     }

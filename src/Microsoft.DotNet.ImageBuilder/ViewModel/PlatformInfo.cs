@@ -38,8 +38,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private void InitializeFromImage()
         {
-            IEnumerable<Match> fromMatches = FromRegex.Matches(File.ReadAllText(Path.Combine(Model.Dockerfile, "Dockerfile")))
-                .Cast<Match>();
+            string dockerfile = File.ReadAllText(Path.Combine(Model.Dockerfile, "Dockerfile"));
+            IEnumerable<Match> fromMatches = FromRegex.Matches(dockerfile).Cast<Match>();
             if (!fromMatches.Any())
             {
                 throw new InvalidOperationException($"Unable to find a FROM image in {Model.Dockerfile}.");

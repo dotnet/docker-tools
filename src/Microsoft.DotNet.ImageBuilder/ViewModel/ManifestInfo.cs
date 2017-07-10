@@ -33,14 +33,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ManifestInfo Create(string repoJsonPath)
+        public static ManifestInfo Create(string repoJsonPath, string includeRepo, string includePath)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.InitializeDockerOS();
             string json = File.ReadAllText(repoJsonPath);
             manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
             manifestInfo.Repos = manifestInfo.Model.Repos
-                .Select(image => RepoInfo.Create(image, manifestInfo.Model, manifestInfo.DockerOS))
+                .Where(repo => string.IsNullOrWhiteSpace(includeRepo) || repo.Name == includeRepo)
+                .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, manifestInfo.DockerOS, includePath))
                 .ToArray();
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
@@ -59,6 +60,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             startInfo.RedirectStandardOutput = true;
             Process process = ExecuteHelper.Execute(startInfo, false, $"Failed to detect Docker Mode");
             DockerOS = process.StandardOutput.ReadToEnd().Trim();
+        }
+
+        public bool IsExternalImage(string image)
+        {
+            return Repos.All(repo => repo.IsExternalImage(image));
         }
     }
 }

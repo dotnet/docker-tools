@@ -19,12 +19,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static RepoInfo Create(Repo model, Manifest manifest, string dockerOS)
+        public static RepoInfo Create(Repo model, Manifest manifest, string dockerOS, string includePath)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
             repoInfo.Images = model.Images
-                .Select(image => ImageInfo.Create(image, manifest, model.Name, dockerOS))
+                .Select(image => ImageInfo.Create(image, manifest, model.Name, dockerOS, includePath))
                 .ToArray();
 
             return repoInfo;
@@ -38,6 +38,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             return File.ReadAllText(Model.ReadmePath);
+        }
+
+        public bool IsExternalImage(string image)
+        {
+            return !image.StartsWith($"{Model.Name}:");
         }
     }
 }

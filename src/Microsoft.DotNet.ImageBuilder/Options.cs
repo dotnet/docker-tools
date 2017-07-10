@@ -41,7 +41,7 @@ Options:
         public string Repo { get; private set; }
         public string Password { get; private set; }
         public string Path { get; private set; }
-        public IDictionary<string,string> TestVariables { get; private set; } = new Dictionary<string, string>();
+        public IDictionary<string, string> TestVariables { get; private set; } = new Dictionary<string, string>();
         public string Username { get; private set; }
 
         private Options()
@@ -156,13 +156,9 @@ Options:
 
         private static IDictionary<string, string> ParseNameValuePairs(IEnumerable<string> nameValuePairs)
         {
-            Dictionary<string, string> result = new Dictionary<string, string>();
-            foreach (string nameValuePair in nameValuePairs) {
-                string[] splitResults = nameValuePair.Split(new char[] { '=' }, 2);
-                result.Add(splitResults[0], splitResults[1]);
-            }
-
-            return result;
+            return nameValuePairs
+                .Select(pair => pair.Split(new char[] { '=' }, 2))
+                .ToDictionary(split => split[0], split => split[1]);
         }
     }
 }

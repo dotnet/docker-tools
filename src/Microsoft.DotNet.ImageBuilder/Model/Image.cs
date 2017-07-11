@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         public string[] SharedTags { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public IDictionary<string, Platform> Platforms { get; set; }
+        public Platform[] Platforms { get; set; }
 
         public Image()
         {

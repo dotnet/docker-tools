@@ -5,7 +5,6 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
@@ -16,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private string DockerOS { get; set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Manifest Model { get; private set; }
-        public IEnumerable<string> PlatformTags { get; private set; }
+        public IEnumerable<string> ActivePlatformTags { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
 
         public IEnumerable<string> TestCommands
@@ -33,33 +32,25 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ManifestInfo Create(string repoJsonPath, string includeRepo, string includePath)
+        public static ManifestInfo Create(Options options)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
-            manifestInfo.InitializeDockerOS();
-            string json = File.ReadAllText(repoJsonPath);
+            manifestInfo.DockerOS = DockerHelper.GetOS();
+            string json = File.ReadAllText(options.Manifest);
             manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
             manifestInfo.Repos = manifestInfo.Model.Repos
-                .Where(repo => string.IsNullOrWhiteSpace(includeRepo) || repo.Name == includeRepo)
-                .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, manifestInfo.DockerOS, includePath))
+                .Where(repo => string.IsNullOrWhiteSpace(options.Repo) || repo.Name == options.Repo)
+                .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, options, manifestInfo.DockerOS))
                 .ToArray();
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
                 .ToArray();
-            manifestInfo.PlatformTags = manifestInfo.Images
-                .Where(image => image.Platform != null)
-                .SelectMany(image => image.Platform.Tags)
+            manifestInfo.ActivePlatformTags = manifestInfo.Images
+                .Where(image => image.ActivePlatform != null)
+                .SelectMany(image => image.ActivePlatform.Tags)
                 .ToArray();
 
             return manifestInfo;
-        }
-
-        private void InitializeDockerOS()
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo("docker", "version -f \"{{ .Server.Os }}\"");
-            startInfo.RedirectStandardOutput = true;
-            Process process = ExecuteHelper.Execute(startInfo, false, $"Failed to detect Docker Mode");
-            DockerOS = process.StandardOutput.ReadToEnd().Trim();
         }
 
         public bool IsExternalImage(string image)

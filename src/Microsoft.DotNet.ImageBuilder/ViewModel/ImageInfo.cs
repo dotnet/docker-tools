@@ -10,16 +10,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
     {
-        public IEnumerable<string> AllTags { get; private set; }
+        public IEnumerable<string> ActiveTags { get; private set; }
         public Image Model { get; private set; }
-        public PlatformInfo Platform { get; private set; }
+        public PlatformInfo ActivePlatform { get; private set; }
         public IEnumerable<string> SharedTags { get; private set; }
 
         private ImageInfo()
         {
         }
 
-        public static ImageInfo Create(Image model, Manifest manifest, string repoName, string dockerOS, string includePath)
+        public static ImageInfo Create(
+            Image model, Manifest manifest, string repoName, Options options, string dockerOS)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -35,15 +36,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .ToArray();
             }
 
-            imageInfo.AllTags = imageInfo.SharedTags;
+            imageInfo.ActivePlatform = model.Platforms
+                .Where(platform => platform.OS == dockerOS && platform.Architecture == options.Architecture)
+                .Where(platform => string.IsNullOrWhiteSpace(options.Path) || platform.Dockerfile.StartsWith(options.Path))
+                .Select(platform => PlatformInfo.Create(platform, manifest, repoName))
+                .SingleOrDefault();
 
-            if (model.Platforms.TryGetValue(dockerOS, out Platform platform)
-                && (string.IsNullOrWhiteSpace(includePath) || platform.Dockerfile.StartsWith(includePath)))
+            if (imageInfo.ActivePlatform != null)
             {
-                imageInfo.Platform = PlatformInfo.Create(platform, manifest, repoName);
-                imageInfo.AllTags = imageInfo.AllTags
-                    .Concat(imageInfo.Platform.Tags)
-                    .ToArray();
+                imageInfo.ActiveTags = imageInfo.SharedTags.Concat(imageInfo.ActivePlatform.Tags);
             }
 
             return imageInfo;

@@ -32,15 +32,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ManifestInfo Create(Options options)
+        public static ManifestInfo Create(
+            string repoJsonPath, Architecture dockerArchitecture, string includeRepo, string includePath)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.DockerOS = DockerHelper.GetOS();
-            string json = File.ReadAllText(options.Manifest);
+            string json = File.ReadAllText(repoJsonPath);
             manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
             manifestInfo.Repos = manifestInfo.Model.Repos
-                .Where(repo => string.IsNullOrWhiteSpace(options.Repo) || repo.Name == options.Repo)
-                .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, options, manifestInfo.DockerOS))
+                .Where(repo => string.IsNullOrWhiteSpace(includeRepo) || repo.Name == includeRepo)
+                .Select(repo => RepoInfo.Create(
+                    repo, manifestInfo.Model, dockerArchitecture, manifestInfo.DockerOS, includePath))
                 .ToArray();
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)

@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     architecture = Architecture.ARM;
                     break;
                 default:
-                    throw new NotSupportedException("Unknown Docker Architecture");
+                    throw new PlatformNotSupportedException("Unknown Docker Architecture");
             }
 
             return architecture;

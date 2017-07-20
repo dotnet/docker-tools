@@ -217,7 +217,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void ReadManifest()
         {
             WriteHeading("READING MANIFEST");
-            Manifest = ManifestInfo.Create(Options);
+            Manifest = ManifestInfo.Create(Options.Manifest, Options.Architecture, Options.Repo, Options.Path);
             Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
         }
 

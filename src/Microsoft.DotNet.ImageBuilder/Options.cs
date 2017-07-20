@@ -62,7 +62,6 @@ Options:
                 {
                     string architecture = GetArgValue(args, ref i, "architecture");
                     options.Architecture = (Architecture)Enum.Parse(typeof(Architecture), architecture, true);
-
                 }
                 else if (string.Equals(arg, "--command", StringComparison.Ordinal))
                 {

@@ -20,7 +20,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static ImageInfo Create(
-            Image model, Manifest manifest, string repoName, Options options, string dockerOS)
+            Image model,
+            Manifest manifest,
+            string repoName,
+            Architecture dockerArchitecture,
+            string dockerOS,
+            string includePath)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -37,8 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             imageInfo.ActivePlatform = model.Platforms
-                .Where(platform => platform.OS == dockerOS && platform.Architecture == options.Architecture)
-                .Where(platform => string.IsNullOrWhiteSpace(options.Path) || platform.Dockerfile.StartsWith(options.Path))
+                .Where(platform => platform.OS == dockerOS && platform.Architecture == dockerArchitecture)
+                .Where(platform => string.IsNullOrWhiteSpace(includePath) || platform.Dockerfile.StartsWith(includePath))
                 .Select(platform => PlatformInfo.Create(platform, manifest, repoName))
                 .SingleOrDefault();
 

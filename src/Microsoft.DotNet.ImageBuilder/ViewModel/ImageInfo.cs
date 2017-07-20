@@ -10,10 +10,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
     {
-        public IEnumerable<string> ActiveTags { get; private set; }
-        public Image Model { get; private set; }
         public PlatformInfo ActivePlatform { get; private set; }
-        public IEnumerable<string> SharedTags { get; private set; }
+        public IEnumerable<string> ActiveFullyQualifiedTags { get; private set; }
+        public Image Model { get; private set; }
+        public IEnumerable<string> SharedFullyQualifiedTags { get; private set; }
 
         private ImageInfo()
         {
@@ -32,11 +32,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (model.SharedTags == null)
             {
-                imageInfo.SharedTags = Enumerable.Empty<string>();
+                imageInfo.SharedFullyQualifiedTags = Enumerable.Empty<string>();
             }
             else
             {
-                imageInfo.SharedTags = model.SharedTags
+                imageInfo.SharedFullyQualifiedTags = model.SharedTags
                     .Select(tag => $"{repoName}:{manifest.SubstituteTagVariables(tag)}")
                     .ToArray();
             }
@@ -49,7 +49,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (imageInfo.ActivePlatform != null)
             {
-                imageInfo.ActiveTags = imageInfo.SharedTags.Concat(imageInfo.ActivePlatform.Tags);
+                imageInfo.ActiveFullyQualifiedTags = imageInfo.SharedFullyQualifiedTags
+                    .Concat(imageInfo.ActivePlatform.FullyQualifiedTags);
             }
 
             return imageInfo;

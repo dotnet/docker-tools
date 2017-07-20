@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public IEnumerable<string> FromImages { get; private set; }
         public Platform Model { get; private set; }
-        public IEnumerable<string> Tags { get; private set; }
+        public IEnumerable<string> FullyQualifiedTags { get; private set; }
 
         private PlatformInfo()
         {
@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
             platformInfo.InitializeFromImage();
-            platformInfo.Tags = model.Tags
+            platformInfo.FullyQualifiedTags = model.Tags
                 .Select(tag => $"{repoName}:{manifest.SubstituteTagVariables(tag)}")
                 .ToArray();
 

@@ -70,22 +70,25 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void BuildImages()
         {
-            WriteHeading("BUILDING IMAGES");
-            foreach (ImageInfo image in Manifest.Images.Where(image => image.ActivePlatform != null))
+            if (!Options.IsSkipPullingEnabled)
             {
-                Console.WriteLine($"-- BUILDING: {image.ActivePlatform.Model.Dockerfile}");
-                if (!Options.IsSkipPullingEnabled)
+                WriteHeading("PULLING LATEST BASE IMAGES");
+                IEnumerable<string> fromImages = Manifest.ActiveImages
+                    .SelectMany(image => image.ActivePlatform.FromImages)
+                    .Where(Manifest.IsExternalImage)
+                    .Distinct();
+                foreach (string fromImage in fromImages)
                 {
-                    // Ensure latest base images exist locally before building
-                    foreach (string fromImage in image.ActivePlatform.FromImages.Where(Manifest.IsExternalImage))
-                    {
-                        ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
-                    }
+                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
                 }
+            }
 
+            WriteHeading("BUILDING IMAGES");
+            foreach (ImageInfo image in Manifest.ActiveImages)
+            {
                 ExecuteHelper.Execute(
                     "docker",
-                    $"build -t {string.Join(" -t ", image.ActiveTags)} {image.ActivePlatform.Model.Dockerfile}",
+                    $"build -t {string.Join(" -t ", image.ActiveFullyQualifiedTags)} {image.ActivePlatform.Model.Dockerfile}",
                     Options.IsDryRun);
             }
         }
@@ -126,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (ImageInfo image in repo.Images)
                 {
-                    foreach (string tag in image.SharedTags)
+                    foreach (string tag in image.SharedFullyQualifiedTags)
                     {
                         StringBuilder manifestYml = new StringBuilder();
                         manifestYml.AppendLine($"image: {tag}");
@@ -176,7 +179,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         executeMessageOverride: $"{loginArgsWithoutPassword} ********");
                 }
 
-                foreach (string tag in Manifest.ActivePlatformTags)
+                foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
                 {
                     ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                 }
@@ -224,7 +227,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void WriteBuildSummary()
         {
             WriteHeading("IMAGES BUILT");
-            foreach (string tag in Manifest.ActivePlatformTags)
+            foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
             {
                 Console.WriteLine(tag);
             }

@@ -12,10 +12,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestInfo
     {
+        public IEnumerable<ImageInfo> ActiveImages { get; private set; }
+        public IEnumerable<string> ActivePlatformFullyQualifiedTags { get; private set; }
         private string DockerOS { get; set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Manifest Model { get; private set; }
-        public IEnumerable<string> ActivePlatformTags { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
 
         public IEnumerable<string> TestCommands
@@ -47,9 +48,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
                 .ToArray();
-            manifestInfo.ActivePlatformTags = manifestInfo.Images
+            manifestInfo.ActiveImages = manifestInfo.Images
                 .Where(image => image.ActivePlatform != null)
-                .SelectMany(image => image.ActivePlatform.Tags)
+                .ToArray();
+            manifestInfo.ActivePlatformFullyQualifiedTags = manifestInfo.ActiveImages
+                .SelectMany(image => image.ActivePlatform.FullyQualifiedTags)
                 .ToArray();
 
             return manifestInfo;

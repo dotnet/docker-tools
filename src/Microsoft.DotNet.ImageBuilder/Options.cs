@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -17,6 +18,7 @@ Summary:  Builds all Dockerfiles detected in the current folder and sub-folders 
 Usage:  image-builder [options]
 
 Options:
+      --architecture                    The architecture of the Docker images to build (default is the current OS architecture)
       --command                         Build command to execute (Build/PublishManifest/UpdateReadme)
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
@@ -31,6 +33,7 @@ Options:
       --username                        Username for the Docker registry the images are pushed to
 ";
 
+        public Architecture Architecture { get; private set; } = DockerHelper.GetArchitecture();
         public CommandType Command { get; private set; }
         public bool IsDryRun { get; private set; }
         public bool IsHelpRequest { get; private set; }
@@ -55,7 +58,12 @@ Options:
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
-                if (string.Equals(arg, "--command", StringComparison.Ordinal))
+                if (string.Equals(arg, "--architecture", StringComparison.Ordinal))
+                {
+                    string architecture = GetArgValue(args, ref i, "architecture");
+                    options.Architecture = (Architecture)Enum.Parse(typeof(Architecture), architecture, true);
+                }
+                else if (string.Equals(arg, "--command", StringComparison.Ordinal))
                 {
                     string commandType = GetArgValue(args, ref i, "command");
                     options.Command = (CommandType)Enum.Parse(typeof(CommandType), commandType, true);

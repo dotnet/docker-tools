@@ -71,13 +71,13 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void BuildImages()
         {
             WriteHeading("BUILDING IMAGES");
-            foreach (ImageInfo image in Manifest.Images.Where(image => image.Platform != null))
+            foreach (ImageInfo image in Manifest.Images.Where(image => image.ActivePlatform != null))
             {
-                Console.WriteLine($"-- BUILDING: {image.Platform.Model.Dockerfile}");
+                Console.WriteLine($"-- BUILDING: {image.ActivePlatform.Model.Dockerfile}");
                 if (!Options.IsSkipPullingEnabled)
                 {
                     // Ensure latest base images exist locally before building
-                    foreach (string fromImage in image.Platform.FromImages.Where(Manifest.IsExternalImage))
+                    foreach (string fromImage in image.ActivePlatform.FromImages.Where(Manifest.IsExternalImage))
                     {
                         ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
                     }
@@ -85,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 ExecuteHelper.Execute(
                     "docker",
-                    $"build -t {string.Join(" -t ", image.AllTags)} {image.Platform.Model.Dockerfile}",
+                    $"build -t {string.Join(" -t ", image.ActiveTags)} {image.ActivePlatform.Model.Dockerfile}",
                     Options.IsDryRun);
             }
         }
@@ -132,14 +132,18 @@ namespace Microsoft.DotNet.ImageBuilder
                         manifestYml.AppendLine($"image: {tag}");
                         manifestYml.AppendLine("manifests:");
 
-                        foreach (KeyValuePair<string, Platform> kvp in image.Model.Platforms)
+                        foreach (Platform platform in image.Model.Platforms)
                         {
-                            string platformTag = Manifest.Model.SubstituteTagVariables(kvp.Value.Tags.First());
+                            string platformTag = Manifest.Model.SubstituteTagVariables(platform.Tags.First());
                             manifestYml.AppendLine($"  -");
                             manifestYml.AppendLine($"    image: {repo.Model.Name}:{platformTag}");
                             manifestYml.AppendLine($"    platform:");
-                            manifestYml.AppendLine($"      architecture: amd64");
-                            manifestYml.AppendLine($"      os: {kvp.Key}");
+                            manifestYml.AppendLine($"      architecture: {platform.Architecture}");
+                            manifestYml.AppendLine($"      os: {platform.OS}");
+                            if (platform.Variant != null)
+                            {
+                                manifestYml.AppendLine($"      variant: {platform.Variant}");
+                            }
                         }
 
                         Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
@@ -172,7 +176,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         executeMessageOverride: $"{loginArgsWithoutPassword} ********");
                 }
 
-                foreach (string tag in Manifest.PlatformTags)
+                foreach (string tag in Manifest.ActivePlatformTags)
                 {
                     ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                 }
@@ -213,14 +217,14 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void ReadManifest()
         {
             WriteHeading("READING MANIFEST");
-            Manifest = ManifestInfo.Create(Options.Manifest, Options.Repo, Options.Path);
+            Manifest = ManifestInfo.Create(Options.Manifest, Options.Architecture, Options.Repo, Options.Path);
             Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
         }
 
         private static void WriteBuildSummary()
         {
             WriteHeading("IMAGES BUILT");
-            foreach (string tag in Manifest.PlatformTags)
+            foreach (string tag in Manifest.ActivePlatformTags)
             {
                 Console.WriteLine(tag);
             }

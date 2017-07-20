@@ -88,7 +88,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 ExecuteHelper.Execute(
                     "docker",
-                    $"build -t {string.Join(" -t ", image.ActiveTags)} {image.ActivePlatform.Model.Dockerfile}",
+                    $"build -t {string.Join(" -t ", image.ActiveFullyQualifiedTags)} {image.ActivePlatform.Model.Dockerfile}",
                     Options.IsDryRun);
             }
         }
@@ -129,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (ImageInfo image in repo.Images)
                 {
-                    foreach (string tag in image.SharedTags)
+                    foreach (string tag in image.SharedFullyQualifiedTags)
                     {
                         StringBuilder manifestYml = new StringBuilder();
                         manifestYml.AppendLine($"image: {tag}");
@@ -179,7 +179,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         executeMessageOverride: $"{loginArgsWithoutPassword} ********");
                 }
 
-                foreach (string tag in Manifest.ActivePlatformTags)
+                foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
                 {
                     ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                 }
@@ -227,7 +227,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void WriteBuildSummary()
         {
             WriteHeading("IMAGES BUILT");
-            foreach (string tag in Manifest.ActivePlatformTags)
+            foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
             {
                 Console.WriteLine(tag);
             }

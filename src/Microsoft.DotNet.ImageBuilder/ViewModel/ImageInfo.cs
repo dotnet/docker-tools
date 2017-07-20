@@ -10,9 +10,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
     {
+        public PlatformInfo ActivePlatform { get; private set; }
         public IEnumerable<string> ActiveTags { get; private set; }
         public Image Model { get; private set; }
-        public PlatformInfo ActivePlatform { get; private set; }
         public IEnumerable<string> SharedTags { get; private set; }
 
         private ImageInfo()

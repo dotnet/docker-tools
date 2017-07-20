@@ -51,8 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.ActiveImages = manifestInfo.Images
                 .Where(image => image.ActivePlatform != null)
                 .ToArray();
-            manifestInfo.ActivePlatformFullyQualifiedTags = manifestInfo.Images
-                .Where(image => image.ActivePlatform != null)
+            manifestInfo.ActivePlatformFullyQualifiedTags = manifestInfo.ActiveImages
                 .SelectMany(image => image.ActivePlatform.FullyQualifiedTags)
                 .ToArray();
 

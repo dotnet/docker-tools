@@ -12,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -62,6 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void Build()
         {
+            PullBaseImages();
             BuildImages();
             RunTests();
             PushImages();
@@ -70,54 +72,26 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void BuildImages()
         {
-            if (!Options.IsSkipPullingEnabled)
-            {
-                WriteHeading("PULLING LATEST BASE IMAGES");
-                IEnumerable<string> fromImages = Manifest.ActiveImages
-                    .SelectMany(image => image.ActivePlatform.FromImages)
-                    .Where(Manifest.IsExternalImage)
-                    .Distinct();
-                foreach (string fromImage in fromImages)
-                {
-                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
-                }
-            }
-
             WriteHeading("BUILDING IMAGES");
             foreach (ImageInfo image in Manifest.ActiveImages)
             {
-                ExecuteHelper.Execute(
-                    "docker",
-                    $"build -t {string.Join(" -t ", image.ActiveFullyQualifiedTags)} {image.ActivePlatform.Model.Dockerfile}",
-                    Options.IsDryRun);
-            }
-        }
+                string dockerfilePath;
+                bool createdPrivateDockerfile = UpdateDockerfileFromCommands(image, out dockerfilePath);
 
-        private static void RunTests()
-        {
-            if (!Options.IsTestRunDisabled)
-            {
-                WriteHeading("TESTING IMAGES");
-                IEnumerable<string> testCommands = Manifest.TestCommands
-                    .Select(command => Utilities.SubstituteVariables(Options.TestVariables, command));
-                foreach (string command in testCommands)
+                try
                 {
-                    string filename;
-                    string args;
-
-                    int firstSpaceIndex = command.IndexOf(' ');
-                    if (firstSpaceIndex == -1)
+                    string tagArgs = $"-t {string.Join(" -t ", image.ActiveFullyQualifiedTags)}";
+                    ExecuteHelper.Execute(
+                        "docker",
+                        $"build {tagArgs} -f {dockerfilePath} {image.ActivePlatform.Model.Dockerfile}",
+                        Options.IsDryRun);
+                }
+                finally
+                {
+                    if (createdPrivateDockerfile)
                     {
-                        filename = command;
-                        args = null;
+                        File.Delete(dockerfilePath);
                     }
-                    else
-                    {
-                        filename = command.Substring(0, firstSpaceIndex);
-                        args = command.Substring(firstSpaceIndex + 1);
-                    }
-
-                    ExecuteHelper.Execute(filename, args, Options.IsDryRun);
                 }
             }
         }
@@ -139,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         {
                             string platformTag = Manifest.Model.SubstituteTagVariables(platform.Tags.First());
                             manifestYml.AppendLine($"  -");
-                            manifestYml.AppendLine($"    image: {repo.Model.Name}:{platformTag}");
+                            manifestYml.AppendLine($"    image: {repo.Name}:{platformTag}");
                             manifestYml.AppendLine($"    platform:");
                             manifestYml.AppendLine($"      architecture: {platform.Architecture}");
                             manifestYml.AppendLine($"      os: {platform.OS}");
@@ -159,6 +133,22 @@ namespace Microsoft.DotNet.ImageBuilder
                             $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
                             Options.IsDryRun);
                     }
+                }
+            }
+        }
+
+        private static void PullBaseImages()
+        {
+            if (!Options.IsSkipPullingEnabled)
+            {
+                WriteHeading("PULLING LATEST BASE IMAGES");
+                IEnumerable<string> fromImages = Manifest.ActiveImages
+                    .SelectMany(image => image.ActivePlatform.FromImages)
+                    .Where(Manifest.IsExternalImage)
+                    .Distinct();
+                foreach (string fromImage in fromImages)
+                {
+                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
                 }
             }
         }
@@ -191,6 +181,72 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
+        private static void ReadManifest()
+        {
+            WriteHeading("READING MANIFEST");
+            Manifest = ManifestInfo.Create(
+                Options.Manifest, Options.Architecture, Options.Repo, Options.Path, Options.RepoOwner);
+            Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
+        }
+
+        private static void RunTests()
+        {
+            if (!Options.IsTestRunDisabled)
+            {
+                WriteHeading("TESTING IMAGES");
+                IEnumerable<string> testCommands = Manifest.TestCommands
+                    .Select(command => Utilities.SubstituteVariables(Options.TestVariables, command));
+                foreach (string command in testCommands)
+                {
+                    string filename;
+                    string args;
+
+                    int firstSpaceIndex = command.IndexOf(' ');
+                    if (firstSpaceIndex == -1)
+                    {
+                        filename = command;
+                        args = null;
+                    }
+                    else
+                    {
+                        filename = command.Substring(0, firstSpaceIndex);
+                        args = command.Substring(firstSpaceIndex + 1);
+                    }
+
+                    ExecuteHelper.Execute(filename, args, Options.IsDryRun);
+                }
+            }
+        }
+
+        private static bool UpdateDockerfileFromCommands(ImageInfo image, out string dockerfilePath)
+        {
+            dockerfilePath = Path.Combine(image.ActivePlatform.Model.Dockerfile, "Dockerfile");
+
+            // If an alternative repo owner was specified, update the intra-repo FROM commands.
+            bool updateDockerfile = !string.IsNullOrWhiteSpace(Options.RepoOwner)
+                && !image.ActivePlatform.FromImages.All(Manifest.IsExternalImage);
+            if (updateDockerfile)
+            {
+                string dockerfileContents = File.ReadAllText(dockerfilePath);
+
+                foreach (string fromImage in image.ActivePlatform.FromImages.SkipWhile(Manifest.IsExternalImage))
+                {
+                    Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
+                    string newFromImage = DockerHelper.ReplaceImageOwner(fromImage, Options.RepoOwner);
+                    Console.WriteLine($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
+                }
+
+                // Don't overwrite the original dockerfile - write it to a new path.
+                dockerfilePath = Path.Combine(image.ActivePlatform.Model.Dockerfile, ".Dockerfile");
+                Console.WriteLine($"Writing updated Dockerfile: {dockerfilePath}");
+                Console.WriteLine(dockerfileContents);
+                File.WriteAllText(dockerfilePath, dockerfileContents);
+            }
+
+            return updateDockerfile;
+        }
+
         private static async Task UpdateReadmesAsync()
         {
             WriteHeading("UPDATING READMES");
@@ -200,7 +256,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 // until a supported API exists.
                 HttpRequestMessage request = new HttpRequestMessage(
                     new HttpMethod("PATCH"),
-                    new Uri($"https://cloud.docker.com/v2/repositories/{repo.Model.Name}/"));
+                    new Uri($"https://cloud.docker.com/v2/repositories/{repo.Name}/"));
 
                 string credentials = Convert.ToBase64String(ASCIIEncoding.ASCII.GetBytes($"{Options.Username}:{Options.Password}"));
                 request.Headers.Add("Authorization", $"Basic {credentials}");
@@ -215,13 +271,6 @@ namespace Microsoft.DotNet.ImageBuilder
                     response.EnsureSuccessStatusCode();
                 }
             }
-        }
-
-        private static void ReadManifest()
-        {
-            WriteHeading("READING MANIFEST");
-            Manifest = ManifestInfo.Create(Options.Manifest, Options.Architecture, Options.Repo, Options.Path);
-            Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
         }
 
         private static void WriteBuildSummary()

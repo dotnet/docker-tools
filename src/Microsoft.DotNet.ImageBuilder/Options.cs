@@ -18,6 +18,7 @@ Summary:  Builds all Dockerfiles detected in the current folder and sub-folders 
 Usage:  image-builder [options]
 
 Options:
+      --repo-owner                      An alternative repo owner which overrides what is specified in the manifest
       --architecture                    The architecture of the Docker images to build (default is the current OS architecture)
       --command                         Build command to execute (Build/PublishManifest/UpdateReadme)
       --dry-run                         Dry run of what images get built and order they would get built in
@@ -33,6 +34,7 @@ Options:
       --username                        Username for the Docker registry the images are pushed to
 ";
 
+        public string RepoOwner { get; private set; }
         public Architecture Architecture { get; private set; } = DockerHelper.GetArchitecture();
         public CommandType Command { get; private set; }
         public bool IsDryRun { get; private set; }
@@ -58,7 +60,11 @@ Options:
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
-                if (string.Equals(arg, "--architecture", StringComparison.Ordinal))
+                if (string.Equals(arg, "--repo-owner", StringComparison.Ordinal))
+                {
+                    options.RepoOwner = GetArgValue(args, ref i, "repo-owner");
+                }
+                else if (string.Equals(arg, "--architecture", StringComparison.Ordinal))
                 {
                     string architecture = GetArgValue(args, ref i, "architecture");
                     options.Architecture = (Architecture)Enum.Parse(typeof(Architecture), architecture, true);

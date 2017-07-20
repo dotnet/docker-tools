@@ -34,7 +34,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static ManifestInfo Create(
-            string repoJsonPath, Architecture dockerArchitecture, string includeRepo, string includePath)
+            string repoJsonPath,
+            Architecture dockerArchitecture,
+            string includeRepo,
+            string includePath,
+            string repoOwner)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.DockerOS = DockerHelper.GetOS();
@@ -43,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.Repos = manifestInfo.Model.Repos
                 .Where(repo => string.IsNullOrWhiteSpace(includeRepo) || repo.Name == includeRepo)
                 .Select(repo => RepoInfo.Create(
-                    repo, manifestInfo.Model, dockerArchitecture, manifestInfo.DockerOS, includePath))
+                    repo, manifestInfo.Model, dockerArchitecture, manifestInfo.DockerOS, includePath, repoOwner))
                 .ToArray();
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)

@@ -23,16 +23,18 @@ Options:
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
       --manifest                        Path to json file which describes the repo
-      --repo                            Repo to build (Default is to build all)
       --password                        Password for the Docker registry the images are pushed to
       --path                            Path of the directory to build (Default is to build all)
       --push                            Push built images to Docker registry
+      --repo                            Repo to build (Default is to build all)
+      --repo-owner                      An alternative repo owner which overrides what is specified in the manifest
       --skip-pulling                    Skip explicitly pulling the base images of the Dockerfiles
       --skip-test                       Skip running the tests
       --test-var list                   Named variables to substitute into the test commands (name=value)
       --username                        Username for the Docker registry the images are pushed to
 ";
 
+        public string RepoOwner { get; private set; }
         public Architecture Architecture { get; private set; } = DockerHelper.GetArchitecture();
         public CommandType Command { get; private set; }
         public bool IsDryRun { get; private set; }
@@ -84,6 +86,10 @@ Options:
                 else if (string.Equals(arg, "--repo", StringComparison.Ordinal))
                 {
                     options.Repo = GetArgValue(args, ref i, "repo");
+                }
+                else if (string.Equals(arg, "--repo-owner", StringComparison.Ordinal))
+                {
+                    options.RepoOwner = GetArgValue(args, ref i, "repo-owner");
                 }
                 else if (string.Equals(arg, "--push", StringComparison.Ordinal))
                 {

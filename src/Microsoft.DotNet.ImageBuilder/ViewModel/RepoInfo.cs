@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
+        public string Name { get; private set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Repo Model { get; private set; }
 
@@ -20,13 +21,20 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static RepoInfo Create(
-            Repo model, Manifest manifest, Architecture dockerArchitecture, string dockerOS, string includePath)
+            Repo model,
+            Manifest manifest,
+            Architecture dockerArchitecture,
+            string dockerOS,
+            string includePath,
+            string repoOwner)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
+            repoInfo.Name = string.IsNullOrWhiteSpace(repoOwner) ?
+                model.Name : DockerHelper.ReplaceImageOwner(model.Name, repoOwner);
             repoInfo.Images = model.Images
                 .Select(image => ImageInfo.Create(
-                    image, manifest, model.Name, dockerArchitecture, dockerOS, includePath))
+                    image, manifest, repoInfo.Name, dockerArchitecture, dockerOS, includePath))
                 .ToArray();
 
             return repoInfo;

@@ -42,5 +42,10 @@ namespace Microsoft.DotNet.ImageBuilder
             Process process = ExecuteHelper.Execute(startInfo, false, errorMessage);
             return process.StandardOutput.ReadToEnd().Trim();
         }
+
+        public static string ReplaceImageOwner(string image, string newOwner)
+        {
+            return newOwner + image.Substring(image.IndexOf('/'));
+        }
     }
 }

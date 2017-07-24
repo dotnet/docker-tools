@@ -229,7 +229,9 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 string dockerfileContents = File.ReadAllText(dockerfilePath);
 
-                foreach (string fromImage in image.ActivePlatform.FromImages.SkipWhile(Manifest.IsExternalImage))
+                IEnumerable<string> fromImages = image.ActivePlatform.FromImages
+                    .Where(fromImage => !Manifest.IsExternalImage(fromImage));
+                foreach (string fromImage in fromImages)
                 {
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
                     string newFromImage = DockerHelper.ReplaceImageOwner(fromImage, Options.RepoOwner);

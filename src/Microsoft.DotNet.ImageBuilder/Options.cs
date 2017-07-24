@@ -18,16 +18,16 @@ Summary:  Builds all Dockerfiles detected in the current folder and sub-folders 
 Usage:  image-builder [options]
 
 Options:
-      --repo-owner                      An alternative repo owner which overrides what is specified in the manifest
       --architecture                    The architecture of the Docker images to build (default is the current OS architecture)
       --command                         Build command to execute (Build/PublishManifest/UpdateReadme)
       --dry-run                         Dry run of what images get built and order they would get built in
   -h, --help                            Show help information
       --manifest                        Path to json file which describes the repo
-      --repo                            Repo to build (Default is to build all)
       --password                        Password for the Docker registry the images are pushed to
       --path                            Path of the directory to build (Default is to build all)
       --push                            Push built images to Docker registry
+      --repo                            Repo to build (Default is to build all)
+      --repo-owner                      An alternative repo owner which overrides what is specified in the manifest
       --skip-pulling                    Skip explicitly pulling the base images of the Dockerfiles
       --skip-test                       Skip running the tests
       --test-var list                   Named variables to substitute into the test commands (name=value)
@@ -60,11 +60,7 @@ Options:
             for (int i = 0; i < args.Length; i++)
             {
                 string arg = args[i];
-                if (string.Equals(arg, "--repo-owner", StringComparison.Ordinal))
-                {
-                    options.RepoOwner = GetArgValue(args, ref i, "repo-owner");
-                }
-                else if (string.Equals(arg, "--architecture", StringComparison.Ordinal))
+                if (string.Equals(arg, "--architecture", StringComparison.Ordinal))
                 {
                     string architecture = GetArgValue(args, ref i, "architecture");
                     options.Architecture = (Architecture)Enum.Parse(typeof(Architecture), architecture, true);
@@ -90,6 +86,10 @@ Options:
                 else if (string.Equals(arg, "--repo", StringComparison.Ordinal))
                 {
                     options.Repo = GetArgValue(args, ref i, "repo");
+                }
+                else if (string.Equals(arg, "--repo-owner", StringComparison.Ordinal))
+                {
+                    options.RepoOwner = GetArgValue(args, ref i, "repo-owner");
                 }
                 else if (string.Equals(arg, "--push", StringComparison.Ordinal))
                 {

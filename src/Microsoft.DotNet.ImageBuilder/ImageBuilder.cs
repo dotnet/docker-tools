@@ -115,7 +115,7 @@ namespace Microsoft.DotNet.ImageBuilder
                             manifestYml.AppendLine($"  -");
                             manifestYml.AppendLine($"    image: {repo.Name}:{platformTag}");
                             manifestYml.AppendLine($"    platform:");
-                            manifestYml.AppendLine($"      architecture: {platform.Architecture}");
+                            manifestYml.AppendLine($"      architecture: {platform.Architecture.ToString().ToLower()}");
                             manifestYml.AppendLine($"      os: {platform.OS}");
                             if (platform.Variant != null)
                             {

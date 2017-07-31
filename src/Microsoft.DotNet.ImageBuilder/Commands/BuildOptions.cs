@@ -14,8 +14,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class BuildOptions : Options
     {
-        protected override string CommandHelp { get; } = "Builds and Tests Dockerfiles";
-        protected override string CommandName { get; } = "build";
+        protected override string CommandHelp => "Builds and Tests Dockerfiles";
+        protected override string CommandName => "build";
 
         public Architecture Architecture { get; set; }
         public bool IsPushEnabled { get; set; }

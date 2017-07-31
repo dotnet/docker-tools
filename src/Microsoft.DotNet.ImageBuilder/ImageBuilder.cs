@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             try
             {
-                ICommand[] commands = new ICommand[] {
+                ICommand[] commands = {
                     new BuildCommand(),
                     new PublishManifestCommand(),
                     new UpdateReadmeCommand(),

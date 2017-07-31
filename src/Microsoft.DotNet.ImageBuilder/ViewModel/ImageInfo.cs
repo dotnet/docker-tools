@@ -35,9 +35,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .ToArray();
             }
 
-            imageInfo.ActivePlatform =  PlatformInfo.Create(manifestFilter.GetPlatform(model), manifest, repoName);
-            if (imageInfo.ActivePlatform != null)
+            Platform activePlatformModel = manifestFilter.GetPlatform(model);
+            if (activePlatformModel != null)
             {
+                imageInfo.ActivePlatform = PlatformInfo.Create(activePlatformModel, manifest, repoName);
                 imageInfo.ActiveFullyQualifiedTags = imageInfo.SharedFullyQualifiedTags
                     .Concat(imageInfo.ActivePlatform.FullyQualifiedTags);
             }

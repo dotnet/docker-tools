@@ -26,6 +26,7 @@ RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.5.0
 # Build Microsoft.DotNet.ImageBuilder
 WORKDIR Microsoft.DotNet.ImageBuilder
 COPY *.csproj .
+COPY NuGet.config .
 RUN dotnet restore
 COPY . .
 RUN dotnet publish -c Release -o /out

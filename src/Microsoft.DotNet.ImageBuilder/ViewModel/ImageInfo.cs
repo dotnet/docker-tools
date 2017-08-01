@@ -19,13 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ImageInfo Create(
-            Image model,
-            Manifest manifest,
-            string repoName,
-            Architecture dockerArchitecture,
-            string dockerOS,
-            string includePath)
+        public static ImageInfo Create(Image model, Manifest manifest, string repoName, ManifestFilter manifestFilter)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -41,14 +35,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .ToArray();
             }
 
-            imageInfo.ActivePlatform = model.Platforms
-                .Where(platform => platform.OS == dockerOS && platform.Architecture == dockerArchitecture)
-                .Where(platform => string.IsNullOrWhiteSpace(includePath) || platform.Dockerfile.StartsWith(includePath))
-                .Select(platform => PlatformInfo.Create(platform, manifest, repoName))
-                .SingleOrDefault();
-
-            if (imageInfo.ActivePlatform != null)
+            Platform activePlatformModel = manifestFilter.GetPlatform(model);
+            if (activePlatformModel != null)
             {
+                imageInfo.ActivePlatform = PlatformInfo.Create(activePlatformModel, manifest, repoName);
                 imageInfo.ActiveFullyQualifiedTags = imageInfo.SharedFullyQualifiedTags
                     .Concat(imageInfo.ActivePlatform.FullyQualifiedTags);
             }

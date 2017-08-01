@@ -1,0 +1,169 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using System;
+using System.Collections.Generic;
+using System.CommandLine;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+
+namespace Microsoft.DotNet.ImageBuilder.Commands
+{
+    public class BuildCommand : Command<BuildOptions>
+    {
+        public BuildCommand() : base()
+        {
+        }
+
+        public override void Execute()
+        {
+            PullBaseImages();
+            BuildImages();
+            RunTests();
+            PushImages();
+            WriteBuildSummary();
+        }
+
+        private void BuildImages()
+        {
+            WriteHeading("BUILDING IMAGES");
+            foreach (ImageInfo image in Manifest.ActiveImages)
+            {
+                string dockerfilePath;
+                bool createdPrivateDockerfile = UpdateDockerfileFromCommands(image, out dockerfilePath);
+
+                try
+                {
+                    string tagArgs = $"-t {string.Join(" -t ", image.ActiveFullyQualifiedTags)}";
+                    ExecuteHelper.Execute(
+                        "docker",
+                        $"build {tagArgs} -f {dockerfilePath} {image.ActivePlatform.Model.Dockerfile}",
+                        Options.IsDryRun);
+                }
+                finally
+                {
+                    if (createdPrivateDockerfile)
+                    {
+                        File.Delete(dockerfilePath);
+                    }
+                }
+            }
+        }
+
+        private void PullBaseImages()
+        {
+            if (!Options.IsSkipPullingEnabled)
+            {
+                WriteHeading("PULLING LATEST BASE IMAGES");
+                IEnumerable<string> fromImages = Manifest.ActiveImages
+                    .SelectMany(image => image.ActivePlatform.FromImages)
+                    .Where(Manifest.IsExternalImage)
+                    .Distinct();
+                foreach (string fromImage in fromImages)
+                {
+                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
+                }
+            }
+        }
+
+        private void PushImages()
+        {
+            if (Options.IsPushEnabled)
+            {
+                WriteHeading("PUSHING IMAGES");
+
+                if (Options.Username != null)
+                {
+                    string loginArgsWithoutPassword = $"login -u {Options.Username} -p";
+                    ExecuteHelper.Execute(
+                        "docker",
+                        $"{loginArgsWithoutPassword} {Options.Password}",
+                        Options.IsDryRun,
+                        executeMessageOverride: $"{loginArgsWithoutPassword} ********");
+                }
+
+                foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
+                {
+                    ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
+                }
+
+                if (Options.Username != null)
+                {
+                    ExecuteHelper.Execute("docker", $"logout", Options.IsDryRun);
+                }
+            }
+        }
+
+        private void RunTests()
+        {
+            if (!Options.IsTestRunDisabled)
+            {
+                WriteHeading("TESTING IMAGES");
+                IEnumerable<string> testCommands = Manifest.TestCommands
+                    .Select(command => Utilities.SubstituteVariables(Options.TestVariables, command));
+                foreach (string command in testCommands)
+                {
+                    string filename;
+                    string args;
+
+                    int firstSpaceIndex = command.IndexOf(' ');
+                    if (firstSpaceIndex == -1)
+                    {
+                        filename = command;
+                        args = null;
+                    }
+                    else
+                    {
+                        filename = command.Substring(0, firstSpaceIndex);
+                        args = command.Substring(firstSpaceIndex + 1);
+                    }
+
+                    ExecuteHelper.Execute(filename, args, Options.IsDryRun);
+                }
+            }
+        }
+
+        private bool UpdateDockerfileFromCommands(ImageInfo image, out string dockerfilePath)
+        {
+            dockerfilePath = Path.Combine(image.ActivePlatform.Model.Dockerfile, "Dockerfile");
+
+            // If an alternative repo owner was specified, update the intra-repo FROM commands.
+            bool updateDockerfile = !string.IsNullOrWhiteSpace(Options.RepoOwner)
+                && !image.ActivePlatform.FromImages.All(Manifest.IsExternalImage);
+            if (updateDockerfile)
+            {
+                string dockerfileContents = File.ReadAllText(dockerfilePath);
+
+                IEnumerable<string> fromImages = image.ActivePlatform.FromImages
+                    .Where(fromImage => !Manifest.IsExternalImage(fromImage));
+                foreach (string fromImage in fromImages)
+                {
+                    Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
+                    string newFromImage = DockerHelper.ReplaceImageOwner(fromImage, Options.RepoOwner);
+                    Console.WriteLine($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
+                }
+
+                // Don't overwrite the original dockerfile - write it to a new path.
+                dockerfilePath = Path.Combine(image.ActivePlatform.Model.Dockerfile, ".Dockerfile");
+                Console.WriteLine($"Writing updated Dockerfile: {dockerfilePath}");
+                Console.WriteLine(dockerfileContents);
+                File.WriteAllText(dockerfilePath, dockerfileContents);
+            }
+
+            return updateDockerfile;
+        }
+
+        private void WriteBuildSummary()
+        {
+            WriteHeading("IMAGES BUILT");
+            foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
+            {
+                Console.WriteLine(tag);
+            }
+        }
+    }
+}

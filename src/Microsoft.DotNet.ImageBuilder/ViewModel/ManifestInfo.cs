@@ -3,9 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
-using Newtonsoft.Json;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
@@ -14,40 +12,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         public IEnumerable<ImageInfo> ActiveImages { get; private set; }
         public IEnumerable<string> ActivePlatformFullyQualifiedTags { get; private set; }
-        private string DockerOS { get; set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Manifest Model { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
-
-        public IEnumerable<string> TestCommands
-        {
-            get
-            {
-                string[] commands = null;
-                Model.TestCommands?.TryGetValue(DockerOS, out commands);
-                return commands ?? Enumerable.Empty<string>();
-            }
-        }
+        public IEnumerable<string> TestCommands { get; private set; }
 
         private ManifestInfo()
         {
         }
 
-        public static ManifestInfo Create(
-            string repoJsonPath,
-            Architecture dockerArchitecture,
-            string includeRepo,
-            string includePath,
-            string repoOwner)
+        public static ManifestInfo Create(Manifest model, ManifestFilter manifestFilter, string repoOwner)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
-            manifestInfo.DockerOS = DockerHelper.GetOS();
-            string json = File.ReadAllText(repoJsonPath);
-            manifestInfo.Model = JsonConvert.DeserializeObject<Manifest>(json);
-            manifestInfo.Repos = manifestInfo.Model.Repos
-                .Where(repo => string.IsNullOrWhiteSpace(includeRepo) || repo.Name == includeRepo)
-                .Select(repo => RepoInfo.Create(
-                    repo, manifestInfo.Model, dockerArchitecture, manifestInfo.DockerOS, includePath, repoOwner))
+            manifestInfo.Model = model;
+            manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
+                .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, manifestFilter, repoOwner))
                 .ToArray();
             manifestInfo.Images = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
@@ -58,6 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.ActivePlatformFullyQualifiedTags = manifestInfo.ActiveImages
                 .SelectMany(image => image.ActivePlatform.FullyQualifiedTags)
                 .ToArray();
+            manifestInfo.TestCommands = manifestFilter.GetTestCommands(manifestInfo.Model);
 
             return manifestInfo;
         }

@@ -13,7 +13,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public PlatformInfo ActivePlatform { get; private set; }
         public IEnumerable<string> ActiveFullyQualifiedTags { get; private set; }
         public Image Model { get; private set; }
-        public IEnumerable<string> SharedFullyQualifiedTags { get; private set; }
+        public IEnumerable<PlatformInfo> Platforms { get; set; }
+        public IEnumerable<TagInfo> SharedTags { get; private set; }
 
         private ImageInfo()
         {
@@ -26,21 +27,27 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (model.SharedTags == null)
             {
-                imageInfo.SharedFullyQualifiedTags = Enumerable.Empty<string>();
+                imageInfo.SharedTags = Enumerable.Empty<TagInfo>();
             }
             else
             {
-                imageInfo.SharedFullyQualifiedTags = model.SharedTags
-                    .Select(tag => $"{repoName}:{manifest.SubstituteTagVariables(tag)}")
+                imageInfo.SharedTags = model.SharedTags
+                    .Select(tag => TagInfo.Create(tag, manifest, repoName))
                     .ToArray();
             }
 
-            Platform activePlatformModel = manifestFilter.GetPlatform(model);
+            imageInfo.Platforms = manifestFilter.GetPlatforms(model)
+                .Select(platform => PlatformInfo.Create(platform, manifest, repoName))
+                .ToArray();
+
+            Platform activePlatformModel = manifestFilter.GetActivePlatform(model);
             if (activePlatformModel != null)
             {
-                imageInfo.ActivePlatform = PlatformInfo.Create(activePlatformModel, manifest, repoName);
-                imageInfo.ActiveFullyQualifiedTags = imageInfo.SharedFullyQualifiedTags
-                    .Concat(imageInfo.ActivePlatform.FullyQualifiedTags);
+                imageInfo.ActivePlatform = imageInfo.Platforms
+                    .First(platform => platform.Model == activePlatformModel);
+                imageInfo.ActiveFullyQualifiedTags = imageInfo.SharedTags
+                    .Select(tag => tag.FullyQualifiedName)
+                    .Concat(imageInfo.ActivePlatform.Tags.Select(tag => tag.FullyQualifiedName));
             }
 
             return imageInfo;

@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         public string OS { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string[] Tags { get; set; }
+        public Tag[] Tags { get; set; }
 
         public string Variant { get; set; }
 

@@ -6,16 +6,14 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
 {
-    public class Image
+    public class Tag
     {
+        public bool IsUndocumented { get; set; }
+
         [JsonProperty(Required = Required.Always)]
-        public Platform[] Platforms { get; set; }
+        public string Name { get; set; }
 
-        public int ReadmeOrder { get; set; }
-
-        public Tag[] SharedTags { get; set; }
-
-        public Image()
+        public Tag()
         {
         }
     }

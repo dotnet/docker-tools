@@ -15,10 +15,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private static Regex FromRegex { get; } = new Regex(@"FROM\s+(?<fromImage>\S+)");
 
-
         public IEnumerable<string> FromImages { get; private set; }
         public Platform Model { get; private set; }
-        public IEnumerable<string> FullyQualifiedTags { get; private set; }
+        public IEnumerable<TagInfo> Tags { get; private set; }
 
         private PlatformInfo()
         {
@@ -29,8 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
             platformInfo.InitializeFromImage();
-            platformInfo.FullyQualifiedTags = model.Tags
-                .Select(tag => $"{repoName}:{manifest.SubstituteTagVariables(tag)}")
+            platformInfo.Tags = model.Tags
+                .Select(tag => TagInfo.Create(tag, manifest, repoName))
                 .ToArray();
 
             return platformInfo;

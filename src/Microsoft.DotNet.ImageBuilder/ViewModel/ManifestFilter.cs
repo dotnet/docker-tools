@@ -19,12 +19,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public Platform GetPlatform(Image image)
+        public Platform GetActivePlatform(Image image)
+        {
+            return GetPlatforms(image)
+                .Where(platform => platform.OS == DockerOS && platform.Architecture == DockerArchitecture)
+                .SingleOrDefault();
+        }
+
+        public IEnumerable<Platform> GetPlatforms(Image image)
         {
             return image.Platforms
-                .Where(platform => platform.OS == DockerOS && platform.Architecture == DockerArchitecture)
-                .Where(platform => string.IsNullOrWhiteSpace(IncludePath) || platform.Dockerfile.StartsWith(IncludePath))
-                .SingleOrDefault();
+                .Where(platform => string.IsNullOrWhiteSpace(IncludePath) || platform.Dockerfile.StartsWith(IncludePath));
         }
 
         public IEnumerable<Repo> GetRepos(Manifest manifest)

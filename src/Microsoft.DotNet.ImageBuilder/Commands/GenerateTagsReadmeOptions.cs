@@ -23,13 +23,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.ParseCommandLine(syntax);
 
             string sourceUrl = null;
-            string sourceUrlName = "source-url";
-            Argument sourceUrlArg = syntax.DefineOption(sourceUrlName, ref sourceUrl, true, "Base URL of the Dockerfile sources");
+            Argument sourceUrlArg = syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
             SourceUrl = sourceUrl;
 
             if (!sourceUrlArg.IsSpecified)
             {
-                syntax.ReportError($"`{sourceUrlName}` must be specified.");
+                syntax.ReportError($"`{sourceUrlArg.Name}` must be specified.");
             }
         }
     }

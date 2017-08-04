@@ -24,30 +24,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 foreach (ImageInfo image in repo.Images)
                 {
-                    foreach (string tag in image.SharedFullyQualifiedTags)
+                    foreach (TagInfo tag in image.SharedTags)
                     {
                         StringBuilder manifestYml = new StringBuilder();
-                        manifestYml.AppendLine($"image: {tag}");
+                        manifestYml.AppendLine($"image: {tag.Name}");
                         manifestYml.AppendLine("manifests:");
 
-                        foreach (Platform platform in image.Model.Platforms)
+                        foreach (PlatformInfo platform in image.Platforms)
                         {
-                            string platformTag = Manifest.Model.SubstituteTagVariables(platform.Tags.First());
                             manifestYml.AppendLine($"  -");
-                            manifestYml.AppendLine($"    image: {repo.Name}:{platformTag}");
+                            manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");
                             manifestYml.AppendLine($"    platform:");
-                            manifestYml.AppendLine($"      architecture: {platform.Architecture.ToString().ToLowerInvariant()}");
-                            manifestYml.AppendLine($"      os: {platform.OS}");
-                            if (platform.Variant != null)
+                            manifestYml.AppendLine($"      architecture: {platform.Model.Architecture.ToString().ToLowerInvariant()}");
+                            manifestYml.AppendLine($"      os: {platform.Model.OS}");
+                            if (platform.Model.Variant != null)
                             {
-                                manifestYml.AppendLine($"      variant: {platform.Variant}");
+                                manifestYml.AppendLine($"      variant: {platform.Model.Variant}");
                             }
                         }
 
                         Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
                         File.WriteAllText("manifest.yml", manifestYml.ToString());
 
-                        // ExecuteWithRetry because the manifest-tool fails periodically with communicating 
+                        // ExecuteWithRetry because the manifest-tool fails periodically with communicating
                         // with the Docker Registry.
                         ExecuteHelper.ExecuteWithRetry(
                             "manifest-tool",

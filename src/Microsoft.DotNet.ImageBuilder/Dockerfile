@@ -2,7 +2,7 @@
 #     docker build -t image-builder .
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
-FROM microsoft/dotnet:1.1-sdk
+FROM microsoft/dotnet:2.0-sdk
 
 # Install Docker
 RUN apt-get update \

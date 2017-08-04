@@ -3,20 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using Newtonsoft.Json;
-using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
 {
-    public class Image
+    public class Tag
     {
-        [JsonProperty(Required = Required.Always)]
-        public Platform[] Platforms { get; set; }
+        public bool IsUndocumented { get; set; }
 
-        public int ReadmeOrder { get; set; }
-
-        public IDictionary<string, Tag> SharedTags { get; set; }
-
-        public Image()
+        public Tag()
         {
         }
     }

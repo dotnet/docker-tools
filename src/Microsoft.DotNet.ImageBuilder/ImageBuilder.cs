@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 ICommand[] commands = {
                     new BuildCommand(),
+                    new GenerateTagsReadmeCommand(),
                     new PublishManifestCommand(),
                     new UpdateReadmeCommand(),
                 };
@@ -31,6 +32,16 @@ namespace Microsoft.DotNet.ImageBuilder
                         command.Options.ParseCommandLine(syntax);
                     }
                 });
+
+                // Workaround for https://github.com/dotnet/corefxlab/issues/1689
+                foreach (Argument arg in argSyntax.GetActiveArguments())
+                {
+                    if (arg.IsParameter && !arg.IsSpecified)
+                    {
+                        Console.Error.WriteLine($"error: `{arg.Name}` must be specified.");
+                        Environment.Exit(1);
+                    }
+                }
 
                 if (argSyntax.ActiveCommand != null)
                 {

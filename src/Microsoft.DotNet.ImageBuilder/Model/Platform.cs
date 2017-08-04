@@ -4,6 +4,7 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using System.Collections.Generic;
 using System.ComponentModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
@@ -22,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         public string OS { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string[] Tags { get; set; }
+        public IDictionary<string, Tag> Tags { get; set; }
 
         public string Variant { get; set; }
 

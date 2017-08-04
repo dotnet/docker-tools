@@ -16,11 +16,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static TagInfo Create(Tag model, Manifest manifest, string repoName)
+        public static TagInfo Create(string name, Tag model, Manifest manifest, string repoName)
         {
             TagInfo tagInfo = new TagInfo();
             tagInfo.Model = model;
-            tagInfo.Name = manifest.SubstituteTagVariables(model.Name);
+            tagInfo.Name = manifest.SubstituteTagVariables(name);
             tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
 
             return tagInfo;

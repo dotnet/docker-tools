@@ -53,13 +53,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
+        private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
         {
             return tagInfos.Where(tag => !tag.Model.IsUndocumented)
                 .Select(tag => tag.Name);
         }
 
-        private string GetArchitectureDisplayName(Architecture architecture)
+        private static string GetArchitectureDisplayName(Architecture architecture)
         {
             string displayName;
 

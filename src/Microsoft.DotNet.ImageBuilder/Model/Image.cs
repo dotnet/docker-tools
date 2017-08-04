@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder.Model
 {
@@ -13,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 
         public int ReadmeOrder { get; set; }
 
-        public Tag[] SharedTags { get; set; }
+        public IDictionary<string, Tag> SharedTags { get; set; }
 
         public Image()
         {

@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             platformInfo.Model = model;
             platformInfo.InitializeFromImage();
             platformInfo.Tags = model.Tags
-                .Select(tag => TagInfo.Create(tag, manifest, repoName))
+                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName))
                 .ToArray();
 
             return platformInfo;

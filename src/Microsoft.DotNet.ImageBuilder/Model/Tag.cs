@@ -10,9 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder.Model
     {
         public bool IsUndocumented { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public string Name { get; set; }
-
         public Tag()
         {
         }

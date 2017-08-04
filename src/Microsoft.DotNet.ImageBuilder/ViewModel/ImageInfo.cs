@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             else
             {
                 imageInfo.SharedTags = model.SharedTags
-                    .Select(tag => TagInfo.Create(tag, manifest, repoName))
+                    .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName))
                     .ToArray();
             }
 

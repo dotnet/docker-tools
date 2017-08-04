@@ -33,6 +33,16 @@ namespace Microsoft.DotNet.ImageBuilder
                     }
                 });
 
+                // Workaround for https://github.com/dotnet/corefxlab/issues/1689
+                foreach (Argument arg in argSyntax.GetActiveArguments())
+                {
+                    if (arg.IsParameter && !arg.IsSpecified)
+                    {
+                        Console.Error.WriteLine($"error: `{arg.Name}` must be specified.");
+                        Environment.Exit(1);
+                    }
+                }
+
                 if (argSyntax.ActiveCommand != null)
                 {
                     ICommand command = commands.Single(c => c.Options == argSyntax.ActiveCommand.Value);

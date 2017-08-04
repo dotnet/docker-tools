@@ -25,11 +25,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string sourceUrl = null;
             Argument sourceUrlArg = syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
             SourceUrl = sourceUrl;
-
-            if (!sourceUrlArg.IsSpecified)
-            {
-                syntax.ReportError($"`{sourceUrlArg.Name}` must be specified.");
-            }
         }
     }
 }

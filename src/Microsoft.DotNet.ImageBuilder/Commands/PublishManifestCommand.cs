@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (TagInfo tag in image.SharedTags)
                     {
                         StringBuilder manifestYml = new StringBuilder();
-                        manifestYml.AppendLine($"image: {tag.Name}");
+                        manifestYml.AppendLine($"image: {tag.FullyQualifiedName}");
                         manifestYml.AppendLine("manifests:");
 
                         foreach (PlatformInfo platform in image.Platforms)

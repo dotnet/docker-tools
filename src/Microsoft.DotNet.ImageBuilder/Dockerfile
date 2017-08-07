@@ -19,7 +19,7 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && rm -rf /var/lib/apt/lists/*
 
 # Install manifest-tool
-RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.5.0/manifest-tool-linux-amd64" \
+RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.6.0/manifest-tool-linux-amd64" \
         -o /usr/local/bin/manifest-tool \
     && chmod +x /usr/local/bin/manifest-tool
 

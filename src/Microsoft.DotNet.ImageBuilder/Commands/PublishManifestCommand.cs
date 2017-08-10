@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -18,9 +19,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void Execute()
+        public override Task ExecuteAsync()
         {
-            WriteHeading("GENERATING MANIFESTS");
+            Utilities.WriteHeading("GENERATING MANIFESTS");
             IEnumerable<ImageInfo> multiArchImages = Manifest.Repos
                 .SelectMany(repo => repo.Images)
                 .Where(image => image.SharedTags.Any());
@@ -61,6 +62,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
                     Options.IsDryRun);
             }
+
+            return Task.FromResult<object>(null);
         }
     }
 }

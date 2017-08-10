@@ -5,9 +5,10 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -17,9 +18,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void Execute()
+        public override Task ExecuteAsync()
         {
-            WriteHeading("GENERATING TAGS README");
+            Utilities.WriteHeading("GENERATING TAGS README");
             foreach (RepoInfo repo in Manifest.Repos)
             {
                 StringBuilder tagsReadme = new StringBuilder();
@@ -51,6 +52,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Console.WriteLine($"-- {repo.Name} Tags Readme:");
                 Console.WriteLine(tagsReadme);
             }
+
+            return Task.FromResult<object>(null);
         }
 
         private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)

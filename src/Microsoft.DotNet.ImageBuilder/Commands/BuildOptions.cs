@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class BuildOptions : Options
+    public class BuildOptions : DockerRegistryOptions
     {
         protected override string CommandHelp => "Builds and Tests Dockerfiles";
         protected override string CommandName => "build";
@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            Architecture architecture = DockerHelper.GetArchitecture();
+            Architecture architecture = DockerHelper.Architecture;
             syntax.DefineOption(
                 "architecture",
                 ref architecture,

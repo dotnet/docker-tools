@@ -43,6 +43,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return manifestInfo;
         }
 
+        public IEnumerable<string> GetExternalFromImages()
+        {
+            return ActiveImages
+                .SelectMany(image => image.ActivePlatform.FromImages)
+                .Where(IsExternalImage)
+                .Distinct();
+        }
+
         public bool IsExternalImage(string image)
         {
             return Repos.All(repo => repo.IsExternalImage(image));

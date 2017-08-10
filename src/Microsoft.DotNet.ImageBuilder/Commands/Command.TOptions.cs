@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using System;
 using System.CommandLine;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -27,26 +28,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Options = new TOptions();
         }
 
-        public abstract void Execute();
+        public abstract Task ExecuteAsync();
 
         public void LoadManifest()
         {
-            WriteHeading("READING MANIFEST");
+            Utilities.WriteHeading("READING MANIFEST");
 
             string manifestJson = File.ReadAllText(Options.Manifest);
             Manifest = ManifestInfo.Create(
                 JsonConvert.DeserializeObject<Manifest>(manifestJson),
                 Options.GetManifestFilter(),
-                Options.RepoOwner);
+                (Options as DockerRegistryOptions)?.RepoOwner);
 
             Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
-        }
-
-        protected static void WriteHeading(string heading)
-        {
-            Console.WriteLine();
-            Console.WriteLine(heading);
-            Console.WriteLine(new string('-', heading.Length));
         }
     }
 }

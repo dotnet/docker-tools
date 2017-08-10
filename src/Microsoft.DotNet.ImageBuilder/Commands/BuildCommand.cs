@@ -9,6 +9,7 @@ using System.CommandLine;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -18,18 +19,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void Execute()
+        public override Task ExecuteAsync()
         {
             PullBaseImages();
             BuildImages();
             RunTests();
             PushImages();
             WriteBuildSummary();
+
+            return Task.FromResult<object>(null);
         }
 
         private void BuildImages()
         {
-            WriteHeading("BUILDING IMAGES");
+            Utilities.WriteHeading("BUILDING IMAGES");
             foreach (ImageInfo image in Manifest.ActiveImages)
             {
                 string dockerfilePath;
@@ -57,15 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsSkipPullingEnabled)
             {
-                WriteHeading("PULLING LATEST BASE IMAGES");
-                IEnumerable<string> fromImages = Manifest.ActiveImages
-                    .SelectMany(image => image.ActivePlatform.FromImages)
-                    .Where(Manifest.IsExternalImage)
-                    .Distinct();
-                foreach (string fromImage in fromImages)
-                {
-                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", Options.IsDryRun);
-                }
+                DockerHelper.PullBaseImages(Manifest, Options);
             }
         }
 
@@ -73,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (Options.IsPushEnabled)
             {
-                WriteHeading("PUSHING IMAGES");
+                Utilities.WriteHeading("PUSHING IMAGES");
 
                 if (Options.Username != null)
                 {
@@ -101,7 +96,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsTestRunDisabled)
             {
-                WriteHeading("TESTING IMAGES");
+                Utilities.WriteHeading("TESTING IMAGES");
                 IEnumerable<string> testCommands = Manifest.TestCommands
                     .Select(command => Utilities.SubstituteVariables(Options.TestVariables, command));
                 foreach (string command in testCommands)
@@ -159,7 +154,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteBuildSummary()
         {
-            WriteHeading("IMAGES BUILT");
+            Utilities.WriteHeading("IMAGES BUILT");
             foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
             {
                 Console.WriteLine(tag);

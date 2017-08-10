@@ -7,6 +7,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Net.Http;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -16,9 +17,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void Execute()
+        public override async Task ExecuteAsync()
         {
-            WriteHeading("UPDATING READMES");
+            Utilities.WriteHeading("UPDATING READMES");
             foreach (RepoInfo repo in Manifest.Repos)
             {
                 // Docker Hub/Cloud API is not documented thus it is subject to change.  This is the only option
@@ -35,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (!Options.IsDryRun)
                 {
-                    HttpResponseMessage response = new HttpClient().SendAsync(request).Result;
+                    HttpResponseMessage response = await new HttpClient().SendAsync(request);
                     Console.WriteLine($"-- RESPONSE:{Environment.NewLine}{response}");
                     response.EnsureSuccessStatusCode();
                 }

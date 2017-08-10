@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Diagnostics;
 
@@ -10,37 +12,61 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class DockerHelper
     {
-        public static Architecture GetArchitecture()
+        private static Architecture? architecture;
+
+        public static Architecture Architecture
         {
-            Architecture architecture;
-
-            string infoArchitecture = ExecuteCommand("info", ".Architecture", "Failed to detect Docker architecture");
-            switch (infoArchitecture)
+            get
             {
-                case "x86_64":
-                    architecture = Architecture.AMD64;
-                    break;
-                case "arm_32":
-                    architecture = Architecture.ARM;
-                    break;
-                default:
-                    throw new PlatformNotSupportedException("Unknown Docker Architecture");
-            }
+                if (architecture == null)
+                {
+                    string infoArchitecture = ExecuteCommandWithFormat(
+                        "info", ".Architecture", "Failed to detect Docker architecture");
+                    switch (infoArchitecture)
+                    {
+                        case "x86_64":
+                            architecture = Architecture.AMD64;
+                            break;
+                        case "arm_32":
+                            architecture = Architecture.ARM;
+                            break;
+                        default:
+                            throw new PlatformNotSupportedException("Unknown Docker Architecture");
+                    }
+                }
 
-            return architecture;
+                return architecture.Value;
+            }
+        }
+
+        public static string GetImageDigest(string image, bool isDryRun)
+        {
+            return ExecuteCommandWithFormat(
+                "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
         }
 
         public static string GetOS()
         {
-            return ExecuteCommand("version", ".Server.Os", "Failed to detect Docker OS");
+            return ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
         }
 
-        private static string ExecuteCommand(string command, string outputFormat, string errorMessage)
+        public static void PullBaseImages(ManifestInfo manifest, Options options)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo("docker", $"{command} -f \"{{{{ {outputFormat} }}}}\"");
+            Utilities.WriteHeading("PULLING LATEST BASE IMAGES");
+            foreach (string fromImage in manifest.GetExternalFromImages())
+            {
+                ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", options.IsDryRun);
+            }
+        }
+
+        private static string ExecuteCommandWithFormat(
+            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                "docker", $"{command} -f \"{{{{ {outputFormat} }}}}\" {additionalArgs}");
             startInfo.RedirectStandardOutput = true;
-            Process process = ExecuteHelper.Execute(startInfo, false, errorMessage);
-            return process.StandardOutput.ReadToEnd().Trim();
+            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
+            return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }
 
         public static string ReplaceImageOwner(string image, string newOwner)

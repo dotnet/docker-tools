@@ -35,8 +35,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Utilities.WriteHeading("READING MANIFEST");
 
             string manifestJson = File.ReadAllText(Options.Manifest);
+            Manifest manifestModel = JsonConvert.DeserializeObject<Manifest>(manifestJson);
+            manifestModel.Validate();
+
             Manifest = ManifestInfo.Create(
-                JsonConvert.DeserializeObject<Manifest>(manifestJson),
+                manifestModel,
                 Options.GetManifestFilter(),
                 (Options as DockerRegistryOptions)?.RepoOwner);
 

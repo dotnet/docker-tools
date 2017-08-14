@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -11,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         ManifestInfo Manifest { get; }
         Options Options { get; }
 
-        void Execute();
+        Task ExecuteAsync();
 
         void LoadManifest();
     }

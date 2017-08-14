@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestFilter
     {
-        public Architecture DockerArchitecture { get; set; }
+        public Architecture DockerArchitecture { get; set; } = DockerHelper.Architecture;
         public string DockerOS { get; } = DockerHelper.GetOS();
         public string IncludeRepo { get; set; }
         public string IncludePath { get; set; }

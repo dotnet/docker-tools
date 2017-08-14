@@ -16,11 +16,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsDryRun { get; set; }
         public string Manifest { get; set; }
         public string Repo { get; set; }
-        public string RepoOwner { get; set; }
-        public string Password { get; set; }
-        public string Username { get; set; }
 
-        public Options()
+        protected Options()
         {
         }
 
@@ -45,21 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption("manifest", ref manifest, "Path to json file which describes the repo");
             Manifest = manifest;
 
-            string password = null;
-            syntax.DefineOption("password", ref password, "Password for the Docker Registry the images are pushed to");
-            Password = password;
-
             string repo = null;
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is to all)");
             Repo = repo;
-
-            string repoOwner = null;
-            syntax.DefineOption("repo-owner", ref repoOwner, "An alternative repo owner which overrides what is specified in the manifest");
-            RepoOwner = repoOwner;
-
-            string username = null;
-            syntax.DefineOption("username", ref username, "Username for the Docker Registry the images are pushed to");
-            Username = username;
         }
     }
 }

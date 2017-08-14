@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     new GenerateTagsReadmeCommand(),
                     new PublishManifestCommand(),
                     new UpdateReadmeCommand(),
+                    new UpdateVersionsCommand(),
                 };
 
                 ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
@@ -47,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     ICommand command = commands.Single(c => c.Options == argSyntax.ActiveCommand.Value);
                     command.LoadManifest();
-                    command.Execute();
+                    command.ExecuteAsync().Wait();
                 }
             }
             catch (Exception e)

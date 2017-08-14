@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.IsDryRun);
             }
 
-            return Task.FromResult<object>(null);
+            return Task.CompletedTask;
         }
     }
 }

@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PushImages();
             WriteBuildSummary();
 
-            return Task.FromResult<object>(null);
+            return Task.CompletedTask;
         }
 
         private void BuildImages()

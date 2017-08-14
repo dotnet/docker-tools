@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Console.WriteLine(tagsReadme);
             }
 
-            return Task.FromResult<object>(null);
+            return Task.CompletedTask;
         }
 
         private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)

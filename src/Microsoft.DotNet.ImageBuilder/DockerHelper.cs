@@ -12,31 +12,29 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class DockerHelper
     {
-        private static Architecture? architecture;
+        private static Lazy<Architecture> _architecture = new Lazy<Architecture>(GetArchitecture);
 
-        public static Architecture Architecture
+        public static Architecture Architecture => _architecture.Value;
+
+        private static Architecture GetArchitecture()
         {
-            get
-            {
-                if (architecture == null)
-                {
-                    string infoArchitecture = ExecuteCommandWithFormat(
-                        "info", ".Architecture", "Failed to detect Docker architecture");
-                    switch (infoArchitecture)
-                    {
-                        case "x86_64":
-                            architecture = Architecture.AMD64;
-                            break;
-                        case "arm_32":
-                            architecture = Architecture.ARM;
-                            break;
-                        default:
-                            throw new PlatformNotSupportedException("Unknown Docker Architecture");
-                    }
-                }
+            Architecture architecture;
 
-                return architecture.Value;
+            string infoArchitecture = ExecuteCommandWithFormat(
+                "info", ".Architecture", "Failed to detect Docker architecture");
+            switch (infoArchitecture)
+            {
+                case "x86_64":
+                    architecture = Architecture.AMD64;
+                    break;
+                case "arm_32":
+                    architecture = Architecture.ARM;
+                    break;
+                default:
+                    throw new PlatformNotSupportedException("Unknown Docker Architecture");
             }
+
+            return architecture;
         }
 
         public static string GetImageDigest(string image, bool isDryRun)

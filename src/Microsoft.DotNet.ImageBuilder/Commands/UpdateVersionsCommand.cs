@@ -6,6 +6,7 @@ using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -25,6 +26,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             Utilities.WriteHeading("UPDATING VERSIONS");
+
+            // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
+            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
             DockerHelper.PullBaseImages(Manifest, Options);
 

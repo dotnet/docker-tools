@@ -28,26 +28,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            string gitAuthToken = null;
-            syntax.DefineOption(
-                "git-auth-token",
-                ref gitAuthToken,
-                "GitHub authentication token");
-            GitAuthToken = gitAuthToken;
-
             string gitBranch = "master";
             syntax.DefineOption(
                 "git-branch",
                 ref gitBranch,
                 "GitHub branch to write version info to");
             GitBranch = gitBranch;
-
-            string gitEmail = "dotnet-bot@microsoft.com";
-            syntax.DefineOption(
-                "git-email",
-                ref gitEmail,
-                "GitHub email");
-            GitEmail = gitEmail;
 
             string gitOwner = "dotnet";
             syntax.DefineOption(
@@ -70,12 +56,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "GitHub repo to write version info to");
             GitRepo = gitRepo;
 
-            string gitUsername = "dotnet-bot";
-            syntax.DefineOption(
+            string gitUsername = null;
+            syntax.DefineParameter(
                 "git-username",
                 ref gitUsername,
                 "GitHub username");
             GitUsername = gitUsername;
+
+            string gitEmail = null;
+            syntax.DefineParameter(
+                "git-email",
+                ref gitEmail,
+                "GitHub email");
+            GitEmail = gitEmail;
+
+            string gitAuthToken = null;
+            syntax.DefineParameter(
+                "git-auth-token",
+                ref gitAuthToken,
+                "GitHub authentication token");
+            GitAuthToken = gitAuthToken;
         }
     }
 }

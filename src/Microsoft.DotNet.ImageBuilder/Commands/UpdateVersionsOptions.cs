@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Owner of the GitHub repo to write version info to");
             GitOwner = gitOwner;
 
-            string gitPath = "build-info/external/docker";
+            string gitPath = "build-info/docker";
             syntax.DefineOption(
                 "git-path",
                 ref gitPath,

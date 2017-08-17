@@ -41,13 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            Architecture architecture = DockerHelper.Architecture;
-            syntax.DefineOption(
-                "architecture",
-                ref architecture,
-                value => (Architecture)Enum.Parse(typeof(Architecture), value, true),
-                "The architecture of the Docker images to build (default is the current OS architecture)");
-            Architecture = architecture;
+            Architecture = DefineArchitectureOption(syntax);
 
             string path = null;
             syntax.DefineOption("path", ref path, "Path of the directory to build (Default is to build all)");

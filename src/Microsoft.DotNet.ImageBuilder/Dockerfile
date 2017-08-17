@@ -7,7 +7,7 @@ FROM microsoft/dotnet:2.0-sdk AS build-env
 # build Microsoft.DotNet.ImageBuilder
 WORKDIR image-builder
 
-# copy csproj and restore as distinct layers
+# restore packages before copying entire source - provides optimizations when rebuilding
 COPY *.csproj ./
 COPY NuGet.config ./
 RUN dotnet restore

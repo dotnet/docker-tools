@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System.CommandLine;
 using System.IO;
 
@@ -12,6 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Updates the version information for the dependent images";
         protected override string CommandName => "updateVersions";
 
+        public Architecture Architecture { get; set; }
         public string GitAuthToken { get; set; }
         public string GitBranch { get; set; }
         public string GitEmail { get; set; }
@@ -24,9 +27,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
+        public override ManifestFilter GetManifestFilter()
+        {
+            ManifestFilter filterInfo = base.GetManifestFilter();
+            filterInfo.DockerArchitecture = Architecture;
+
+            return filterInfo;
+        }
+
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
+
+            Architecture = DefineArchitectureOption(syntax);
 
             string gitBranch = "master";
             syntax.DefineOption(

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.CommandLine;
@@ -43,8 +44,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Manifest = manifest;
 
             string repo = null;
-            syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is to all)");
+            syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
+        }
+
+        protected static Architecture DefineArchitectureOption(ArgumentSyntax syntax)
+        {
+            Architecture architecture = DockerHelper.Architecture;
+            syntax.DefineOption(
+                "architecture",
+                ref architecture,
+                value => (Architecture)Enum.Parse(typeof(Architecture), value, true),
+                "Architecture of Dockerfiles to operate on (default is current OS architecture)");
+
+            return architecture;
         }
     }
 }

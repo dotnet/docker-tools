@@ -15,6 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private static Regex FromRegex { get; } = new Regex(@"FROM\s+(?<fromImage>\S+)");
 
+        public string BuildContextPath { get; private set; }
+        public string DockerfilePath { get; private set; }
         public IEnumerable<string> FromImages { get; private set; }
         public Platform Model { get; private set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
@@ -27,21 +29,34 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
-            platformInfo.InitializeFromImage();
             platformInfo.Tags = model.Tags
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName))
                 .ToArray();
 
+            if (File.Exists(model.Dockerfile))
+            {
+                platformInfo.DockerfilePath = model.Dockerfile;
+                platformInfo.BuildContextPath = Path.GetDirectoryName(model.Dockerfile);
+            }
+            else
+            {
+                // Modeled Dockefile is just the directory containing the "Dockerfile"
+                platformInfo.DockerfilePath = Path.Combine(model.Dockerfile, "Dockerfile");
+                platformInfo.BuildContextPath = model.Dockerfile;
+            }
+
+            platformInfo.InitializeFromImages();
+
             return platformInfo;
         }
 
-        private void InitializeFromImage()
+        private void InitializeFromImages()
         {
-            string dockerfile = File.ReadAllText(Path.Combine(Model.Dockerfile, "Dockerfile"));
+            string dockerfile = File.ReadAllText(this.DockerfilePath);
             IEnumerable<Match> fromMatches = FromRegex.Matches(dockerfile).Cast<Match>();
             if (!fromMatches.Any())
             {
-                throw new InvalidOperationException($"Unable to find a FROM image in {Model.Dockerfile}.");
+                throw new InvalidOperationException($"Unable to find a FROM image in {this.DockerfilePath}.");
             }
 
             FromImages = fromMatches.Select(match => match.Groups["fromImage"].Value).ToArray();

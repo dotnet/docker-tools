@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Concat(GetDocumentedTags(tuple.Image.SharedTags))
                             .Select(tag => $"`{tag}`")
                             .Aggregate((working, next) => $"{working}, {next}");
-                        string dockerfile = $"{tuple.Platform.Model.Dockerfile}/Dockerfile";
+                        string dockerfile = tuple.Platform.DockerfilePath.Replace('\\', '/');
                         tagsReadme.AppendLine($"- [{tags} (*{dockerfile}*)]({Options.SourceUrl}/{dockerfile})");
                     }
 

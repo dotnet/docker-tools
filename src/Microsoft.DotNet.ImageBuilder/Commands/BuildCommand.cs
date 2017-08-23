@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string tagArgs = $"-t {string.Join(" -t ", image.ActiveFullyQualifiedTags)}";
                     ExecuteHelper.Execute(
                         "docker",
-                        $"build {tagArgs} -f {dockerfilePath} {image.ActivePlatform.Model.Dockerfile}",
+                        $"build {tagArgs} -f {dockerfilePath} {image.ActivePlatform.BuildContextPath}",
                         Options.IsDryRun);
                 }
                 finally
@@ -123,7 +123,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool UpdateDockerfileFromCommands(ImageInfo image, out string dockerfilePath)
         {
-            dockerfilePath = Path.Combine(image.ActivePlatform.Model.Dockerfile, "Dockerfile");
+            dockerfilePath = image.ActivePlatform.DockerfilePath;
 
             // If an alternative repo owner was specified, update the intra-repo FROM commands.
             bool updateDockerfile = !string.IsNullOrWhiteSpace(Options.RepoOwner)
@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 // Don't overwrite the original dockerfile - write it to a new path.
-                dockerfilePath = Path.Combine(image.ActivePlatform.Model.Dockerfile, ".Dockerfile");
+                dockerfilePath = dockerfilePath + ".temp";
                 Console.WriteLine($"Writing updated Dockerfile: {dockerfilePath}");
                 Console.WriteLine(dockerfileContents);
                 File.WriteAllText(dockerfilePath, dockerfileContents);

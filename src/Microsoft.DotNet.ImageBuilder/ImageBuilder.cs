@@ -46,6 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 if (argSyntax.ActiveCommand != null)
                 {
+                    ExecuteHelper.ExecuteWithRetry("docker", "version", false);
                     ICommand command = commands.Single(c => c.Options == argSyntax.ActiveCommand.Value);
                     command.LoadManifest();
                     command.ExecuteAsync().Wait();

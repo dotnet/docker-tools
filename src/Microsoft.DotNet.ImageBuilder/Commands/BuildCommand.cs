@@ -15,6 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class BuildCommand : Command<BuildOptions>
     {
+        private IEnumerable<string> BuiltTags { get; set; } = Enumerable.Empty<string>();
+
         public BuildCommand() : base()
         {
         }
@@ -35,22 +37,34 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Utilities.WriteHeading("BUILDING IMAGES");
             foreach (ImageInfo image in Manifest.ActiveImages)
             {
-                string dockerfilePath;
-                bool createdPrivateDockerfile = UpdateDockerfileFromCommands(image, out dockerfilePath);
+                foreach (PlatformInfo platform in image.ActivePlatforms)
+                {
+                    string dockerfilePath;
+                    bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out dockerfilePath);
 
-                try
-                {
-                    string tagArgs = $"-t {string.Join(" -t ", image.ActiveFullyQualifiedTags)}";
-                    ExecuteHelper.Execute(
-                        "docker",
-                        $"build {tagArgs} -f {dockerfilePath} {image.ActivePlatform.BuildContextPath}",
-                        Options.IsDryRun);
-                }
-                finally
-                {
-                    if (createdPrivateDockerfile)
+                    try
                     {
-                        File.Delete(dockerfilePath);
+                        // Tag the built images with the shared tags as well as the platform tags.
+                        // Some tests and image FROM instructions depend on these tags.
+                        IEnumerable<string> platformTags = platform.Tags
+                            .Select(tag => tag.FullyQualifiedName)
+                            .ToArray();
+                        IEnumerable<string> allTags = image.SharedTags
+                            .Select(tag => tag.FullyQualifiedName)
+                            .Concat(platformTags);
+                        string tagArgs = $"-t {string.Join(" -t ", allTags)}";
+                        ExecuteHelper.Execute(
+                            "docker",
+                            $"build {tagArgs} -f {dockerfilePath} {platform.BuildContextPath}",
+                            Options.IsDryRun);
+                        BuiltTags = BuiltTags.Concat(platformTags);
+                    }
+                    finally
+                    {
+                        if (createdPrivateDockerfile)
+                        {
+                            File.Delete(dockerfilePath);
+                        }
                     }
                 }
             }
@@ -80,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         executeMessageOverride: $"{loginArgsWithoutPassword} ********");
                 }
 
-                foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
+                foreach (string tag in BuiltTags)
                 {
                     ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                 }
@@ -121,18 +135,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private bool UpdateDockerfileFromCommands(ImageInfo image, out string dockerfilePath)
+        private bool UpdateDockerfileFromCommands(PlatformInfo platform, out string dockerfilePath)
         {
-            dockerfilePath = image.ActivePlatform.DockerfilePath;
+            dockerfilePath = platform.DockerfilePath;
 
             // If an alternative repo owner was specified, update the intra-repo FROM commands.
             bool updateDockerfile = !string.IsNullOrWhiteSpace(Options.RepoOwner)
-                && !image.ActivePlatform.FromImages.All(Manifest.IsExternalImage);
+                && !platform.FromImages.All(Manifest.IsExternalImage);
             if (updateDockerfile)
             {
                 string dockerfileContents = File.ReadAllText(dockerfilePath);
 
-                IEnumerable<string> fromImages = image.ActivePlatform.FromImages
+                IEnumerable<string> fromImages = platform.FromImages
                     .Where(fromImage => !Manifest.IsExternalImage(fromImage));
                 foreach (string fromImage in fromImages)
                 {
@@ -155,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void WriteBuildSummary()
         {
             Utilities.WriteHeading("IMAGES BUILT");
-            foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)
+            foreach (string tag in BuiltTags)
             {
                 Console.WriteLine(tag);
             }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -20,11 +21,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public Platform GetActivePlatform(Image image)
+        public IEnumerable<Platform> GetActivePlatforms(Image image)
         {
             return GetPlatforms(image)
-                .Where(platform => platform.OS == DockerOS && platform.Architecture == DockerArchitecture)
-                .SingleOrDefault();
+                .Where(platform => string.Equals(platform.OS, DockerOS, StringComparison.OrdinalIgnoreCase)
+                    && platform.Architecture == DockerArchitecture);
         }
 
         public IEnumerable<Platform> GetPlatforms(Image image)

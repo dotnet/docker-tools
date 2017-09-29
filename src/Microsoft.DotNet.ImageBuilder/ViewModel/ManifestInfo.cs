@@ -11,8 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class ManifestInfo
     {
         public IEnumerable<ImageInfo> ActiveImages { get; private set; }
-        public IEnumerable<string> ActivePlatformFullyQualifiedTags { get; private set; }
-        public IEnumerable<ImageInfo> Images { get; private set; }
         public Manifest Model { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
         public IEnumerable<string> TestCommands { get; private set; }
@@ -28,15 +26,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
                 .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, manifestFilter, repoOwner))
                 .ToArray();
-            manifestInfo.Images = manifestInfo.Repos
+            manifestInfo.ActiveImages = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
-                .ToArray();
-            manifestInfo.ActiveImages = manifestInfo.Images
-                .Where(image => image.ActivePlatform != null)
-                .ToArray();
-            manifestInfo.ActivePlatformFullyQualifiedTags = manifestInfo.ActiveImages
-                .SelectMany(image => image.ActivePlatform.Tags)
-                .Select(tag => tag.FullyQualifiedName)
+                .Where(image => image.ActivePlatforms.Any())
                 .ToArray();
             manifestInfo.TestCommands = manifestFilter.GetTestCommands(manifestInfo.Model);
 
@@ -46,7 +38,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<string> GetExternalFromImages()
         {
             return ActiveImages
-                .SelectMany(image => image.ActivePlatform.FromImages)
+                .SelectMany(image => image.ActivePlatforms)
+                .SelectMany(platform => platform.FromImages)
                 .Where(IsExternalImage)
                 .Distinct();
         }

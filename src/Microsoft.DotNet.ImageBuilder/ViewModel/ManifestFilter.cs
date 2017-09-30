@@ -5,6 +5,7 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -29,7 +30,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<Platform> GetPlatforms(Image image)
         {
             return image.Platforms
-                .Where(platform => string.IsNullOrWhiteSpace(IncludePath) || platform.Dockerfile.StartsWith(IncludePath));
+                .Where(platform => string.IsNullOrWhiteSpace(IncludePath)
+                    || Regex.IsMatch(
+                        platform.Dockerfile,
+                        "^" + Regex.Escape(IncludePath).Replace(@"\*", ".*").Replace(@"\?", "."),
+                        RegexOptions.IgnoreCase));
         }
 
         public IEnumerable<Repo> GetRepos(Manifest manifest)

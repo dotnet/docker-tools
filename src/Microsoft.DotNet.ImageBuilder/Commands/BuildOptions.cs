@@ -4,10 +4,9 @@
 
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Collections.ObjectModel;
-using System;
 using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -44,7 +43,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Architecture = DefineArchitectureOption(syntax);
 
             string path = null;
-            syntax.DefineOption("path", ref path, "Path of the directory to build (Default is to build all)");
+            syntax.DefineOption(
+                "path", 
+                ref path,
+                "Directory path containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
             Path = path;
 
             bool isPushEnabled = false;

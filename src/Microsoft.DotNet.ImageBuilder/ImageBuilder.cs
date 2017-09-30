@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Newtonsoft.Json.Linq;
 using System;
 using System.CommandLine;
 using System.Linq;

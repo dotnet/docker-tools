@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             bool isPathBlank = string.IsNullOrWhiteSpace(IncludePath);
             string pattern = isPathBlank ? 
-                string.Empty : "^" + Regex.Escape(IncludePath).Replace(@"\*", ".*").Replace(@"\?", ".");
+                null : "^" + Regex.Escape(IncludePath).Replace(@"\*", ".*").Replace(@"\?", ".");
 
             return image.Platforms
                 .Where(platform => isPathBlank || Regex.IsMatch(platform.Dockerfile, pattern, RegexOptions.IgnoreCase));

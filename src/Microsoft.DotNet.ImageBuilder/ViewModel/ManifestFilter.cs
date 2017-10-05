@@ -30,11 +30,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<Platform> GetPlatforms(Image image)
         {
             bool isPathBlank = string.IsNullOrWhiteSpace(IncludePath);
-            string pattern = isPathBlank ? 
-                null : "^" + Regex.Escape(IncludePath).Replace(@"\*", ".*").Replace(@"\?", ".");
+            string includePathPattern = isPathBlank ? 
+                null : "^" + Regex.Escape(IncludePath).Replace(@"\*", ".*").Replace(@"\?", ".") + "$";
 
             return image.Platforms
-                .Where(platform => isPathBlank || Regex.IsMatch(platform.Dockerfile, pattern, RegexOptions.IgnoreCase));
+                .Where(platform => isPathBlank
+                || Regex.IsMatch(platform.Dockerfile, includePathPattern, RegexOptions.IgnoreCase));
         }
 
         public IEnumerable<Repo> GetRepos(Manifest manifest)

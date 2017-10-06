@@ -39,8 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 foreach (PlatformInfo platform in image.ActivePlatforms)
                 {
-                    string dockerfilePath;
-                    bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out dockerfilePath);
+                    bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
                     try
                     {

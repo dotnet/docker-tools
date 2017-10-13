@@ -42,7 +42,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.GetManifestFilter(),
                 (Options as DockerRegistryOptions)?.RepoOwner);
 
-            Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
+            if (Options.IsVerbose)
+            {
+                Console.WriteLine(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
+            }
         }
     }
 }

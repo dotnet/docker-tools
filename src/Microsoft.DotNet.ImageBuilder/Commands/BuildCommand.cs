@@ -72,12 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (Options.Username != null)
                 {
-                    string loginArgsWithoutPassword = $"login -u {Options.Username} -p";
-                    ExecuteHelper.Execute(
-                        "docker",
-                        $"{loginArgsWithoutPassword} {Options.Password}",
-                        Options.IsDryRun,
-                        executeMessageOverride: $"{loginArgsWithoutPassword} ********");
+                    DockerHelper.Login(Options.Username, Options.Password, Options.IsDryRun);
                 }
 
                 foreach (string tag in Manifest.ActivePlatformFullyQualifiedTags)

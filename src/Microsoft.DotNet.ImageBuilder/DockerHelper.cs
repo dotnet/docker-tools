@@ -16,6 +16,23 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static Architecture Architecture => _architecture.Value;
 
+        public static void Login(string username, string password, bool isDryRun)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo(
+                "docker", $"login -u {username} --password-stdin");
+            startInfo.RedirectStandardInput = true;
+            ExecuteHelper.Execute(
+                startInfo,
+                info => {
+                    Process process = Process.Start(info);
+                    process.StandardInput.WriteLine(password);
+                    process.StandardInput.Close();
+                    process.WaitForExit();
+                    return process;
+                },
+                isDryRun);
+        }
+
         private static Architecture GetArchitecture()
         {
             Architecture architecture;

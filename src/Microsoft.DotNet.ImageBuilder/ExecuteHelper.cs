@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
-        private static Process Execute(
+        public static Process Execute(
             ProcessStartInfo info,
             Func<ProcessStartInfo, Process> executor,
             bool isDryRun,

@@ -15,6 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected abstract string CommandName { get; }
 
         public bool IsDryRun { get; set; }
+        public bool IsVerbose { get; set; }
         public string Manifest { get; set; }
         public string Repo { get; set; }
 
@@ -46,6 +47,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string repo = null;
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
+
+            bool isVerbose = false;
+            syntax.DefineOption("verbose", ref isVerbose, "Show details about the tasks run");
+            IsVerbose = isVerbose;
         }
 
         protected static Architecture DefineArchitectureOption(ArgumentSyntax syntax)

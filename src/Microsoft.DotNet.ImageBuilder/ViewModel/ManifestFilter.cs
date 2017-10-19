@@ -15,6 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public Architecture DockerArchitecture { get; set; } = DockerHelper.Architecture;
         public string DockerOS { get; } = DockerHelper.GetOS();
         public string IncludeRepo { get; set; }
+        public string IncludeOsVersion { get; set; }
         public string IncludePath { get; set; }
 
         public ManifestFilter()
@@ -28,15 +29,22 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     && platform.Architecture == DockerArchitecture);
         }
 
+        private string GetFilterRegexPattern(string pattern)
+        {
+            return pattern == null ? null : $"^{Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", ".")}$";
+        }
+
         public IEnumerable<Platform> GetPlatforms(Image image)
         {
-            bool isPathBlank = string.IsNullOrWhiteSpace(IncludePath);
-            string includePathPattern = isPathBlank ? 
-                null : "^" + Regex.Escape(IncludePath).Replace(@"\*", ".*").Replace(@"\?", ".") + "$";
+            string includePathPattern = GetFilterRegexPattern(IncludePath);
+            string includeOsVersionPattern = GetFilterRegexPattern(IncludeOsVersion);
 
             return image.Platforms
-                .Where(platform => isPathBlank
-                || Regex.IsMatch(platform.Dockerfile, includePathPattern, RegexOptions.IgnoreCase));
+                .Where(platform => IncludePath == null
+                    || Regex.IsMatch(platform.Dockerfile, includePathPattern, RegexOptions.IgnoreCase))
+                .Where(platform => IncludeOsVersion == null
+                    || (platform.OsVersion != null
+                        && Regex.IsMatch(platform.OsVersion, includeOsVersionPattern, RegexOptions.IgnoreCase)));
         }
 
         public IEnumerable<Repo> GetRepos(Manifest manifest)

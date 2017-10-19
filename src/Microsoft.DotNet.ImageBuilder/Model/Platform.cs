@@ -22,6 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public string OS { get; set; }
 
+        public string OsVersion { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public IDictionary<string, Tag> Tags { get; set; }
 

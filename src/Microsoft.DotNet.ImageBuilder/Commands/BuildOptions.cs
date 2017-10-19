@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsPushEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
         public bool IsTestRunDisabled { get; set; }
+        public string OsVersion { get; set; }
         public string Path { get; set; }
         public IDictionary<string, string> TestVariables { get; set; }
 
@@ -31,6 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ManifestFilter filterInfo = base.GetManifestFilter();
             filterInfo.DockerArchitecture = Architecture;
+            filterInfo.IncludeOsVersion = OsVersion;
             filterInfo.IncludePath = Path;
 
             return filterInfo;
@@ -42,9 +44,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             Architecture = DefineArchitectureOption(syntax);
 
+            string osVersion = null;
+            syntax.DefineOption(
+                "os-version",
+                ref osVersion,
+                "OS version of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
+            OsVersion = osVersion;
+
             string path = null;
             syntax.DefineOption(
-                "path", 
+                "path",
                 ref path,
                 "Directory path containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
             Path = path;

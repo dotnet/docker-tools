@@ -16,21 +16,14 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static Architecture Architecture => _architecture.Value;
 
-        public static void Login(string username, string password, bool isDryRun)
+        private static string ExecuteCommandWithFormat(
+            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(
-                "docker", $"login -u {username} --password-stdin");
-            startInfo.RedirectStandardInput = true;
-            ExecuteHelper.Execute(
-                startInfo,
-                info => {
-                    Process process = Process.Start(info);
-                    process.StandardInput.WriteLine(password);
-                    process.StandardInput.Close();
-                    process.WaitForExit();
-                    return process;
-                },
-                isDryRun);
+                "docker", $"{command} -f \"{{{{ {outputFormat} }}}}\" {additionalArgs}");
+            startInfo.RedirectStandardOutput = true;
+            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
+            return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }
 
         private static Architecture GetArchitecture()
@@ -65,6 +58,47 @@ namespace Microsoft.DotNet.ImageBuilder
             return ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
         }
 
+        private static Version GetClientVersion()
+        {
+            // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
+            string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
+
+            // Trim off the '-ce' or '-ee' suffix
+            versionString = versionString.Substring(0, versionString.IndexOf('-'));
+            return Version.Parse(versionString);
+        }
+
+        public static void Login(string username, string password, bool isDryRun)
+        {
+            Version clientVersion = GetClientVersion();
+            if (clientVersion >= new Version(17, 7))
+            {
+                ProcessStartInfo startInfo = new ProcessStartInfo(
+                    "docker", $"login -u {username} --password-stdin");
+                startInfo.RedirectStandardInput = true;
+                ExecuteHelper.Execute(
+                    startInfo,
+                    info =>
+                    {
+                        Process process = Process.Start(info);
+                        process.StandardInput.WriteLine(password);
+                        process.StandardInput.Close();
+                        process.WaitForExit();
+                        return process;
+                    },
+                    isDryRun);
+            }
+            else
+            {
+                string loginArgsWithoutPassword = $"login -u {username} -p";
+                ExecuteHelper.Execute(
+                    "docker",
+                    $"{loginArgsWithoutPassword} {password}",
+                    isDryRun,
+                    executeMessageOverride: $"{loginArgsWithoutPassword} ********");
+            }
+        }
+
         public static void PullBaseImages(ManifestInfo manifest, Options options)
         {
             Utilities.WriteHeading("PULLING LATEST BASE IMAGES");
@@ -72,16 +106,6 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", options.IsDryRun);
             }
-        }
-
-        private static string ExecuteCommandWithFormat(
-            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo(
-                "docker", $"{command} -f \"{{{{ {outputFormat} }}}}\" {additionalArgs}");
-            startInfo.RedirectStandardOutput = true;
-            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
-            return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }
 
         public static string ReplaceImageOwner(string image, string newOwner)

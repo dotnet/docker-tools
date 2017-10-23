@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             // Trim off the '-ce' or '-ee' suffix
             versionString = versionString.Substring(0, versionString.IndexOf('-'));
-            return Version.Parse(versionString);
+            return Version.TryParse(versionString, out Version version) ? version : null;
         }
 
         public static void Login(string username, string password, bool isDryRun)

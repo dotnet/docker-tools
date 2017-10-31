@@ -19,8 +19,9 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public string Dockerfile { get; set; }
 
+        [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(Required = Required.Always)]
-        public string OS { get; set; }
+        public OS OS { get; set; }
 
         public string OsVersion { get; set; }
 

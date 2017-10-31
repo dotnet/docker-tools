@@ -28,11 +28,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 var platformGroups = repo.Images
                     .OrderBy(image => image.Model.ReadmeOrder)
                     .SelectMany(image => image.Platforms.Select(platform => new { Image = image, Platform = platform }))
-                    .GroupBy(tuple => new { tuple.Platform.Model.OS, tuple.Platform.Model.Architecture });
+                    .GroupBy(tuple => new { tuple.Platform.Model.OS, tuple.Platform.Model.OsVersion, tuple.Platform.Model.Architecture })
+                    .OrderByDescending(platformGroup => platformGroup.Key.Architecture)
+                    .ThenBy(platformGroup => platformGroup.Key.OS)
+                    .ThenByDescending(platformGroup => platformGroup.Key.OsVersion);
 
                 foreach (var platformGroup in platformGroups)
                 {
-                    string os = platformGroup.Key.OS.Substring(0, 1).ToUpper() + platformGroup.Key.OS.Substring(1);
+                    string os = GetOsDisplayName(platformGroup.Key.OS, platformGroup.Key.OsVersion);
                     string arch = GetArchitectureDisplayName(platformGroup.Key.Architecture);
                     tagsReadme.AppendLine($"# Supported {os} {arch} tags");
                     tagsReadme.AppendLine();
@@ -56,12 +59,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
-        {
-            return tagInfos.Where(tag => !tag.Model.IsUndocumented)
-                .Select(tag => tag.Name);
-        }
-
         private static string GetArchitectureDisplayName(Architecture architecture)
         {
             string displayName;
@@ -73,6 +70,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     break;
                 default:
                     displayName = architecture.ToString().ToLowerInvariant();
+                    break;
+            }
+
+            return displayName;
+        }
+
+        private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
+        {
+            return tagInfos.Where(tag => !tag.Model.IsUndocumented)
+                .Select(tag => tag.Name);
+        }
+
+        private static string GetOsDisplayName(OS os, string osVersion)
+        {
+            string displayName;
+
+            switch (os)
+            {
+                case OS.Windows:
+                    displayName = "Windows Server 2016";
+
+                    if (osVersion != null && (osVersion.Contains("1709") || osVersion.Contains("16299")))
+                    {
+                        displayName += " Version 1709 (Fall Creators Update)";
+                    }
+
+                    break;
+                default:
+                    displayName = os.ToString();
                     break;
             }
 

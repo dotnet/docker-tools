@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");
                     manifestYml.AppendLine($"    platform:");
                     manifestYml.AppendLine($"      architecture: {platform.Model.Architecture.ToString().ToLowerInvariant()}");
-                    manifestYml.AppendLine($"      os: {platform.Model.OS}");
+                    manifestYml.AppendLine($"      os: {platform.Model.OS.ToString().ToLowerInvariant()}");
                     if (platform.Model.Variant != null)
                     {
                         manifestYml.AppendLine($"      variant: {platform.Model.Variant}");

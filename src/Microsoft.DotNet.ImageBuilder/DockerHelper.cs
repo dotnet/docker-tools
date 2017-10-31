@@ -53,9 +53,15 @@ namespace Microsoft.DotNet.ImageBuilder
                 "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
         }
 
-        public static string GetOS()
+        public static OS GetOS()
         {
-            return ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
+            string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
+            if (!Enum.TryParse(osString, true, out OS os))
+            {
+                throw new PlatformNotSupportedException("Unknown Docker OS");
+            }
+
+            return os;
         }
 
         private static Version GetClientVersion()

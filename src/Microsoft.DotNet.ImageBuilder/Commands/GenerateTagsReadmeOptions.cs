@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandName => "generateTagsReadme";
 
         public string SourceUrl { get; set; }
+        public bool UpdateReadme { get; set; }
 
         public GenerateTagsReadmeOptions() : base()
         {
@@ -21,8 +22,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
+            bool updateReadme = false;
+            syntax.DefineOption("update-readme", ref updateReadme, "Update the readme file");
+            UpdateReadme = updateReadme;
+
             string sourceUrl = null;
-            Argument sourceUrlArg = syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
+            syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
             SourceUrl = sourceUrl;
         }
     }

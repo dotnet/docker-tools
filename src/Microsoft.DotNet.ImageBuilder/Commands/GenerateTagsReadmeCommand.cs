@@ -120,11 +120,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return displayName;
         }
 
-        private void UpdateReadme(string tagsDocumentation, RepoInfo repo)
+        private static string NormalizeLineEndings(string value, string targetFormat)
+        {
+            string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
+            if (targetLineEnding != Environment.NewLine)
+            {
+                value = value.Replace(Environment.NewLine, targetLineEnding);
+            }
+
+            return value;
+        }
+
+        private static void UpdateReadme(string tagsDocumentation, RepoInfo repo)
         {
             Utilities.WriteHeading("UPDATING README");
 
             string readme = File.ReadAllText(repo.Model.ReadmePath);
+
+            // tagsDocumentation is formatted with Environment.NewLine which may not match the readme format. This can
+            // happen when image-builder is invoked within a Linux container on a Windows host while using a host volume.
+            // Normalize the line endings to match the readme.
+            tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
+
             string updatedReadme = Regex.Replace(readme, "(# .*\\s*(- \\[.*\\s*)+)+", tagsDocumentation);
             File.WriteAllText(repo.Model.ReadmePath, updatedReadme);
 

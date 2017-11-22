@@ -2,19 +2,22 @@
 #     docker build -t image-builder .
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
-FROM microsoft/dotnet:2.0-sdk AS build-env
-
 # build Microsoft.DotNet.ImageBuilder
+FROM microsoft/dotnet:2.0-sdk AS build-env
 WORKDIR image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
-COPY *.csproj ./
+COPY Microsoft.DotNet.ImageBuilder.sln ./
 COPY NuGet.config ./
-RUN dotnet restore
+COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
+COPY tests/Microsoft.DotNet.ImageBuilder.Tests.csproj ./tests/
+RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln
 
 # copy everything else and build
 COPY . ./
-RUN dotnet publish -c Release -o out
+RUN dotnet build Microsoft.DotNet.ImageBuilder.sln
+RUN dotnet test tests/Microsoft.DotNet.ImageBuilder.Tests.csproj
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out
 
 
 # build runtime image
@@ -42,6 +45,6 @@ RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.6.0
 
 # install image-builder
 WORKDIR image-builder
-COPY --from=build-env /image-builder/out ./
+COPY --from=build-env /image-builder/src/out ./
 
 ENTRYPOINT ["dotnet", "/image-builder/Microsoft.DotNet.ImageBuilder.dll"]

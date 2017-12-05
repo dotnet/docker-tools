@@ -6,3 +6,4 @@
 # Visual Studio Code cache/options directory
 .vscode/
 .vs
+/Microsoft.DotNet.ImageBuilder/src/Properties/launchSettings.json

@@ -18,27 +18,26 @@ namespace Microsoft.DotNet.ImageBuilder
         public static string SubstituteVariables(
             IDictionary<string, string> variables,
             string expression,
-            Func<string, string> getVariableValue = null)
+            Func<string, string> getVariableSubstitute = null)
         {
             foreach (Match match in Regex.Matches(expression, TagVariablePattern))
             {
-                string variableName = match.Groups[1].Value;
+                string variableName = match.Groups["variable"].Value;
                 string variableValue = null;
                 if (variables == null || !variables.TryGetValue(variableName, out variableValue))
                 {
-                    if (getVariableValue != null)
+                    if (getVariableSubstitute != null)
                     {
-                        variableValue = getVariableValue(variableName);
+                        variableValue = getVariableSubstitute(variableName);
                     }
-                    if (variableValue == null && match.Value == "$(timeStamp)")
+                    if (variableValue == null && match.Value == "$(TimeStamp)")
                     {
                         variableValue = TimeStamp;
                     }
-                }
-                if (variableValue == null)
-                {
-                    throw new InvalidDataException(
-                            $"Unable to determine the value for the given variable. Variable: {match.Value}");
+                    if (variableValue == null)
+                    {
+                        throw new InvalidDataException($"A value was not found for the variable '{match.Value}'");
+                    }
                 }
                 expression = expression.Replace(match.Value, variableValue);
             }
@@ -46,25 +45,13 @@ namespace Microsoft.DotNet.ImageBuilder
             return expression;
         }
 
-        public static Func<string, string> GetSha(string filePath, bool isDryRun = false)
+        public static string GetAbbreviatedCommitSha(string filePath)
         {
-            return delegate (string variableName)
-            {
-                if (!File.Exists(filePath))
-                {
-                    throw new FileNotFoundException($"Unable to find the file.", filePath);
-                }
-                if (!string.Equals("dockerfileSha", variableName))
-                {
-                    return null;
-                }
-
-                ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%h {filePath}");
-                startInfo.RedirectStandardOutput = true;
-                Process gitLogProcess = ExecuteHelper.Execute(
-                    startInfo, isDryRun, $"Unable to retrieve the commit timestamp for {filePath}");
-                return isDryRun ? "" : gitLogProcess.StandardOutput.ReadToEnd().Trim();
-            };
+            ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%h {filePath}");
+            startInfo.RedirectStandardOutput = true;
+            Process gitLogProcess = ExecuteHelper.Execute(
+                startInfo, false, $"Unable to retrieve the commit for {filePath}");
+            return gitLogProcess.StandardOutput.ReadToEnd().Trim();
         }
 
         public static void WriteHeading(string heading)

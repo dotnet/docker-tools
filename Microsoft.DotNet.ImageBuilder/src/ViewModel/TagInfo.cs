@@ -3,36 +3,50 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
+using System.IO;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class TagInfo
     {
-        public string DockerfilePath { get; set; }
+        private string BuildContextPath { get; set; }
+        private string DockerfilePath { get; set; }
         public string FullyQualifiedName { get; private set; }
         public Tag Model { get; private set; }
         public string Name { get; private set; }
+
         private TagInfo()
         {
         }
 
-        public static TagInfo Create(string name, Tag model, Manifest manifest, string repoName, string dockerfilePath = "")
+        public static TagInfo Create(
+            string name,
+            Tag model,
+            Manifest manifest,
+            string repoName,
+            string buildContextPath = null,
+            string dockerfilePath = null)
         {
             TagInfo tagInfo = new TagInfo();
             tagInfo.Model = model;
+            tagInfo.BuildContextPath = buildContextPath;
             tagInfo.DockerfilePath = dockerfilePath;
-            tagInfo.Name = Utilities.SubstituteVariables(manifest.TagVariables, name, tagInfo.GetDockerfileGitCommitSha);
+            tagInfo.Name = Utilities.SubstituteVariables(manifest.TagVariables, name, tagInfo.GetSubstituteValue);
             tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
 
             return tagInfo;
         }
 
-        public string GetDockerfileGitCommitSha(string variableName)
+        public string GetSubstituteValue(string variableName)
         {
             string commitSha = null;
             if (variableName == "DockerfileGitCommitSha")
             {
-                commitSha = Utilities.GetAbbreviatedCommitSha(DockerfilePath);
+                if (!File.Exists(this.DockerfilePath))
+                {
+                    throw new FileNotFoundException("Unable to locate the file.", this.DockerfilePath);
+                }
+                commitSha = GitHelper.GetCommitSha(this.BuildContextPath);
             }
             return commitSha;
         }

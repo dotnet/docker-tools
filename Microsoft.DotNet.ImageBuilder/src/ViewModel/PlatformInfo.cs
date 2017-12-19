@@ -43,7 +43,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             platformInfo.Tags = model.Tags
-                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName, platformInfo.DockerfilePath))
+                .Select(kvp => TagInfo.Create(
+                    kvp.Key, kvp.Value, manifest, repoName, platformInfo.BuildContextPath, platformInfo.DockerfilePath))
                 .ToArray();
 
             platformInfo.InitializeFromImages();

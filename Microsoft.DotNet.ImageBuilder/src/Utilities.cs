@@ -4,8 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -13,45 +11,37 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class Utilities
     {
         private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyymmddhhmmss");
-        private const string TagVariablePattern = "\\$\\((?<variable>[\\w]+)\\)";
+        private const string VariableGroupName = "variable";
+        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w]+)\\)";
 
         public static string SubstituteVariables(
-            IDictionary<string, string> variables,
+            IDictionary<string, string> userVariables,
             string expression,
-            Func<string, string> getVariableSubstitute = null)
+            Func<string, string> getSystemValue = null)
         {
             foreach (Match match in Regex.Matches(expression, TagVariablePattern))
             {
-                string variableName = match.Groups["variable"].Value;
+                string variableName = match.Groups[VariableGroupName].Value;
                 string variableValue = null;
-                if (variables == null || !variables.TryGetValue(variableName, out variableValue))
+                if (userVariables == null || !userVariables.TryGetValue(variableName, out variableValue))
                 {
-                    if (getVariableSubstitute != null)
+                    if (getSystemValue != null)
                     {
-                        variableValue = getVariableSubstitute(variableName);
+                        variableValue = getSystemValue(variableName);
                     }
-                    if (variableValue == null && match.Value == "$(TimeStamp)")
+                    if (variableValue == null && variableName == "TimeStamp")
                     {
                         variableValue = TimeStamp;
                     }
                     if (variableValue == null)
                     {
-                        throw new InvalidDataException($"A value was not found for the variable '{match.Value}'");
+                        throw new InvalidOperationException($"A value was not found for the variable '{match.Value}'");
                     }
                 }
                 expression = expression.Replace(match.Value, variableValue);
             }
 
             return expression;
-        }
-
-        public static string GetAbbreviatedCommitSha(string filePath)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%h {filePath}");
-            startInfo.RedirectStandardOutput = true;
-            Process gitLogProcess = ExecuteHelper.Execute(
-                startInfo, false, $"Unable to retrieve the commit for {filePath}");
-            return gitLogProcess.StandardOutput.ReadToEnd().Trim();
         }
 
         public static void WriteHeading(string heading)

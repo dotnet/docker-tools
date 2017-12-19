@@ -8,4 +8,4 @@
 .vs
 
 # Visual Studio debug profile
-/Microsoft.DotNet.ImageBuilder/src/Properties/launchSettings.json
+**/launchSettings.json

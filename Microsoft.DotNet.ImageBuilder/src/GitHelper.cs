@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%h {filePath}");
             startInfo.RedirectStandardOutput = true;
             Process gitLogProcess = ExecuteHelper.Execute(
-                startInfo, false, $"Unable to retrieve the commit for {filePath}");
+                startInfo, false, $"Unable to retrieve the latest commit SHA for {filePath}");
             return gitLogProcess.StandardOutput.ReadToEnd().Trim();
         }
     }

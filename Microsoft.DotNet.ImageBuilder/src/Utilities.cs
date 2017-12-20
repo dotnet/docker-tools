@@ -10,14 +10,14 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class Utilities
     {
+        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w]+)\\)";
         private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyymmddhhmmss");
         private const string VariableGroupName = "variable";
-        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w]+)\\)";
 
         public static string SubstituteVariables(
             IDictionary<string, string> userVariables,
             string expression,
-            Func<string, string> getSystemValue = null)
+            Func<string, string> getContextBasedSystemValue = null)
         {
             foreach (Match match in Regex.Matches(expression, TagVariablePattern))
             {
@@ -25,9 +25,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 string variableValue = null;
                 if (userVariables == null || !userVariables.TryGetValue(variableName, out variableValue))
                 {
-                    if (getSystemValue != null)
+                    if (getContextBasedSystemValue != null)
                     {
-                        variableValue = getSystemValue(variableName);
+                        variableValue = getContextBasedSystemValue(variableName);
                     }
                     if (variableValue == null && variableName == "TimeStamp")
                     {

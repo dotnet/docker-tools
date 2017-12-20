@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
-using System.IO;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -39,16 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string GetSubstituteValue(string variableName)
         {
-            string commitSha = null;
-            if (variableName == "DockerfileGitCommitSha")
+            string variableValue = null;
+            if (variableName == "DockerfileGitCommitSha" && this.BuildContextPath != null)
             {
-                if (!File.Exists(this.DockerfilePath))
-                {
-                    throw new FileNotFoundException("Unable to locate the file.", this.DockerfilePath);
-                }
-                commitSha = GitHelper.GetCommitSha(this.BuildContextPath);
+                variableValue = GitHelper.GetCommitSha(this.BuildContextPath);
             }
-            return commitSha;
+            return variableValue;
         }
     }
 }

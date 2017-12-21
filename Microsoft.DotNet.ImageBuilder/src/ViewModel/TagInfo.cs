@@ -9,7 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class TagInfo
     {
         private string BuildContextPath { get; set; }
-        private string DockerfilePath { get; set; }
         public string FullyQualifiedName { get; private set; }
         public Tag Model { get; private set; }
         public string Name { get; private set; }
@@ -23,13 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             Tag model,
             Manifest manifest,
             string repoName,
-            string buildContextPath = null,
-            string dockerfilePath = null)
+            string buildContextPath = null)
         {
             TagInfo tagInfo = new TagInfo();
             tagInfo.Model = model;
             tagInfo.BuildContextPath = buildContextPath;
-            tagInfo.DockerfilePath = dockerfilePath;
             tagInfo.Name = Utilities.SubstituteVariables(manifest.TagVariables, name, tagInfo.GetSubstituteValue);
             tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
 

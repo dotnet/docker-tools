@@ -53,12 +53,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(tag => tag.FullyQualifiedName)
                             .Concat(platformTags);
                         string tagArgs = $"-t {string.Join(" -t ", allTags)}";
-                        InvokeBuildHook("pre-build", platform.BuildContextPath, Options.IsDryRun);
+                        InvokeBuildHook("pre-build", platform.BuildContextPath);
                         ExecuteHelper.Execute(
                             "docker",
                             $"build {tagArgs} -f {dockerfilePath} {platform.BuildContextPath}",
                             Options.IsDryRun);
-                        InvokeBuildHook("post-build", platform.BuildContextPath, Options.IsDryRun);
+                        InvokeBuildHook("post-build", platform.BuildContextPath);
                         BuiltTags = BuiltTags.Concat(platformTags);
                     }
                     finally
@@ -72,32 +72,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private static void InvokeBuildHook(string hookName, string buildContextPath, bool isDryRun = false)
+        private void InvokeBuildHook(string hookName, string buildContextPath)
         {
-            string hookFolder = Path.Combine(buildContextPath, "hooks");
-            if (!Directory.Exists(hookFolder))
+            string buildHookFolder = Path.Combine(buildContextPath, "hooks");
+            if (!Directory.Exists(buildHookFolder))
             {
                 return;
             }
 
-            string hookPath = Path.Combine(hookFolder, hookName);
-            string PSScriptExtension = ".ps1";
-            hookPath = File.Exists(hookPath) ? hookPath
-                : File.Exists($"{hookPath}{PSScriptExtension}") ? $"{hookPath}{PSScriptExtension}" : "";
-            if (hookPath != "")
+            string scriptPath = Path.Combine(buildHookFolder, hookName);
+            string psScript = $"{hookName}.ps1";
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            if (File.Exists(scriptPath))
             {
-                ProcessStartInfo startInfo = new ProcessStartInfo(hookPath);
-                startInfo.WorkingDirectory = buildContextPath;
-                if (Path.GetExtension(hookPath) == PSScriptExtension)
-                {
-                    startInfo.FileName = "PowerShell";
-                    startInfo.Arguments = $"-NoProfile -File hooks\\{hookName}{PSScriptExtension}";
-                }
-                ExecuteHelper.Execute(
-                    startInfo,
-                    isDryRun,
-                    $"Failure in {hookPath} hook");
+                startInfo.FileName = scriptPath;
             }
+            else if (File.Exists(Path.Combine(buildHookFolder, psScript)))
+            {
+                startInfo.FileName = "PowerShell";
+                startInfo.Arguments = $"-NoProfile -File {psScript}";
+            }
+            else
+            {
+                return;
+            }
+            startInfo.WorkingDirectory = buildHookFolder;
+            ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute '{hookName}' hook in '{buildHookFolder}'");
         }
 
         private void PullBaseImages()

@@ -4,19 +4,41 @@
 
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class Utilities
     {
-        public static string SubstituteVariables(IDictionary<string, string> variables, string expression)
+        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w]+)\\)";
+        private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyymmddhhmmss");
+        private const string VariableGroupName = "variable";
+
+        public static string SubstituteVariables(
+            IDictionary<string, string> userVariables,
+            string expression,
+            Func<string, string> getContextBasedSystemValue = null)
         {
-            if (variables != null)
+            foreach (Match match in Regex.Matches(expression, TagVariablePattern))
             {
-                foreach (KeyValuePair<string, string> kvp in variables)
+                string variableName = match.Groups[VariableGroupName].Value;
+                string variableValue = null;
+                if (userVariables == null || !userVariables.TryGetValue(variableName, out variableValue))
                 {
-                    expression = expression.Replace($"$({kvp.Key})", kvp.Value);
+                    if (getContextBasedSystemValue != null)
+                    {
+                        variableValue = getContextBasedSystemValue(variableName);
+                    }
+                    if (variableValue == null && variableName == "TimeStamp")
+                    {
+                        variableValue = TimeStamp;
+                    }
+                    if (variableValue == null)
+                    {
+                        throw new InvalidOperationException($"A value was not found for the variable '{match.Value}'");
+                    }
                 }
+                expression = expression.Replace(match.Value, variableValue);
             }
 
             return expression;

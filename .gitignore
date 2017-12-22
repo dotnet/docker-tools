@@ -6,3 +6,6 @@
 # Visual Studio Code cache/options directory
 .vscode/
 .vs
+
+# Visual Studio debug profile
+**/launchSettings.json

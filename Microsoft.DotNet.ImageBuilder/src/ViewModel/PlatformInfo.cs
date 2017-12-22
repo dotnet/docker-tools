@@ -29,9 +29,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
-            platformInfo.Tags = model.Tags
-                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName))
-                .ToArray();
 
             if (File.Exists(model.Dockerfile))
             {
@@ -44,6 +41,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 platformInfo.DockerfilePath = Path.Combine(model.Dockerfile, "Dockerfile");
                 platformInfo.BuildContextPath = model.Dockerfile;
             }
+
+            platformInfo.Tags = model.Tags
+                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName, platformInfo.BuildContextPath))
+                .ToArray();
 
             platformInfo.InitializeFromImages();
 

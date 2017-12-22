@@ -11,11 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public static class ModelExtensions
     {
-        public static string SubstituteTagVariables(this Manifest manifest, string tag)
-        {
-            return Utilities.SubstituteVariables(manifest.TagVariables, tag);
-        }
-
         public static void Validate(this Manifest manifest)
         {
             foreach (Repo repo in manifest.Repos)

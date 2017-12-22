@@ -8,6 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class TagInfo
     {
+        private string BuildContextPath { get; set; }
         public string FullyQualifiedName { get; private set; }
         public Tag Model { get; private set; }
         public string Name { get; private set; }
@@ -16,14 +17,30 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static TagInfo Create(string name, Tag model, Manifest manifest, string repoName)
+        public static TagInfo Create(
+            string name,
+            Tag model,
+            Manifest manifest,
+            string repoName,
+            string buildContextPath = null)
         {
             TagInfo tagInfo = new TagInfo();
             tagInfo.Model = model;
-            tagInfo.Name = manifest.SubstituteTagVariables(name);
+            tagInfo.BuildContextPath = buildContextPath;
+            tagInfo.Name = Utilities.SubstituteVariables(manifest.TagVariables, name, tagInfo.GetSubstituteValue);
             tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
 
             return tagInfo;
+        }
+
+        public string GetSubstituteValue(string variableName)
+        {
+            string variableValue = null;
+            if (variableName == "DockerfileGitCommitSha" && this.BuildContextPath != null)
+            {
+                variableValue = GitHelper.GetCommitSha(this.BuildContextPath);
+            }
+            return variableValue;
         }
     }
 }

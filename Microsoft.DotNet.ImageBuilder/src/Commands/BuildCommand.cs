@@ -92,13 +92,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 scriptPath = Path.ChangeExtension(scriptPath, ".ps1");
                 if (!File.Exists(scriptPath))
                 {
-                    Console.WriteLine($"Failed to locate build hook {scriptPath}'");
                     return;
                 }
+
                 startInfo = new ProcessStartInfo(
                     RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh", 
                     $"-NoProfile -File \"{scriptPath}\"");
             }
+
             ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 

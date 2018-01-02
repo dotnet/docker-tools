@@ -9,6 +9,7 @@ using System.CommandLine;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -74,30 +75,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void InvokeBuildHook(string hookName, string buildContextPath)
         {
-            string buildHookFolder = Path.Combine(buildContextPath, "hooks");
+            string buildHookFolder = Path.GetFullPath(Path.Combine(buildContextPath, "hooks"));
             if (!Directory.Exists(buildHookFolder))
             {
                 return;
             }
 
             string scriptPath = Path.Combine(buildHookFolder, hookName);
-            string psScript = $"{hookName}.ps1";
-            ProcessStartInfo startInfo = new ProcessStartInfo();
+            ProcessStartInfo startInfo;
             if (File.Exists(scriptPath))
             {
-                startInfo.FileName = scriptPath;
-            }
-            else if (File.Exists(Path.Combine(buildHookFolder, psScript)))
-            {
-                startInfo.FileName = "PowerShell";
-                startInfo.Arguments = $"-NoProfile -File {psScript}";
+                startInfo = new ProcessStartInfo(scriptPath);
             }
             else
             {
-                return;
+                scriptPath = Path.ChangeExtension(scriptPath, ".ps1");
+                if (!File.Exists(scriptPath))
+                {
+                    Console.WriteLine($"Failed to locate build hook {scriptPath}'");
+                    return;
+                }
+                startInfo = new ProcessStartInfo(
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh", 
+                    $"-NoProfile -File \"{scriptPath}\"");
             }
-            startInfo.WorkingDirectory = buildHookFolder;
-            ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute '{hookName}' hook in '{buildHookFolder}'");
+            ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 
         private void PullBaseImages()

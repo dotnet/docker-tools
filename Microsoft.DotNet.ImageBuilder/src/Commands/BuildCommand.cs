@@ -6,8 +6,10 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
@@ -52,10 +54,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(tag => tag.FullyQualifiedName)
                             .Concat(platformTags);
                         string tagArgs = $"-t {string.Join(" -t ", allTags)}";
+                        InvokeBuildHook("pre-build", platform.BuildContextPath);
                         ExecuteHelper.Execute(
                             "docker",
                             $"build {tagArgs} -f {dockerfilePath} {platform.BuildContextPath}",
                             Options.IsDryRun);
+                        InvokeBuildHook("post-build", platform.BuildContextPath);
                         BuiltTags = BuiltTags.Concat(platformTags);
                     }
                     finally
@@ -67,6 +71,36 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
+        }
+
+        private void InvokeBuildHook(string hookName, string buildContextPath)
+        {
+            string buildHookFolder = Path.GetFullPath(Path.Combine(buildContextPath, "hooks"));
+            if (!Directory.Exists(buildHookFolder))
+            {
+                return;
+            }
+
+            string scriptPath = Path.Combine(buildHookFolder, hookName);
+            ProcessStartInfo startInfo;
+            if (File.Exists(scriptPath))
+            {
+                startInfo = new ProcessStartInfo(scriptPath);
+            }
+            else
+            {
+                scriptPath = Path.ChangeExtension(scriptPath, ".ps1");
+                if (!File.Exists(scriptPath))
+                {
+                    return;
+                }
+
+                startInfo = new ProcessStartInfo(
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh", 
+                    $"-NoProfile -File \"{scriptPath}\"");
+            }
+
+            ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 
         private void PullBaseImages()

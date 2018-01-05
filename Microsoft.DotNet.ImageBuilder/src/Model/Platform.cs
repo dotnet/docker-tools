@@ -16,6 +16,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
         public Architecture Architecture { get; set; }
 
+        public IDictionary<string, string> BuildArgs { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public string Dockerfile { get; set; }
 

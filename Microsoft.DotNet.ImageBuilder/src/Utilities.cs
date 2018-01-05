@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class Utilities
     {
-        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w]+)\\)";
+        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.]+)\\)";
         private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyymmddhhmmss");
         private const string VariableGroupName = "variable";
 

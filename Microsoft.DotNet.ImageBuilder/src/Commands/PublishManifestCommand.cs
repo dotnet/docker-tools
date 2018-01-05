@@ -21,48 +21,61 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override Task ExecuteAsync()
         {
             Utilities.WriteHeading("GENERATING MANIFESTS");
-            IEnumerable<ImageInfo> multiArchImages = Manifest.Repos
-                .SelectMany(repo => repo.Images)
-                .Where(image => image.SharedTags.Any());
-            foreach (ImageInfo image in multiArchImages)
+
+            DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
+            try
             {
-                StringBuilder manifestYml = new StringBuilder();
-                manifestYml.AppendLine($"image: {image.SharedTags.First().FullyQualifiedName}");
-
-                IEnumerable<string> additionalTags = image.SharedTags
-                    .Select(tag => tag.Name)
-                    .Skip(1);
-                if (additionalTags.Any())
+                IEnumerable<ImageInfo> multiArchImages = Manifest.Repos
+                    .SelectMany(repo => repo.Images)
+                    .Where(image => image.SharedTags.Any());
+                foreach (ImageInfo image in multiArchImages)
                 {
-                    manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags)}]");
+                    string manifest = GenerateManifest(image);
+
+                    Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifest}");
+                    File.WriteAllText("manifest.yml", manifest);
+
+                    // ExecuteWithRetry because the manifest-tool fails periodically while communicating
+                    // with the Docker Registry.
+                    ExecuteHelper.ExecuteWithRetry("manifest-tool", "push from-spec manifest.yml", Options.IsDryRun);
                 }
-
-                manifestYml.AppendLine("manifests:");
-                foreach (PlatformInfo platform in image.Platforms)
-                {
-                    manifestYml.AppendLine($"  -");
-                    manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");
-                    manifestYml.AppendLine($"    platform:");
-                    manifestYml.AppendLine($"      architecture: {platform.Model.Architecture.ToString().ToLowerInvariant()}");
-                    manifestYml.AppendLine($"      os: {platform.Model.OS.ToString().ToLowerInvariant()}");
-                    if (platform.Model.Variant != null)
-                    {
-                        manifestYml.AppendLine($"      variant: {platform.Model.Variant}");
-                    }
-                }
-
-                Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifestYml}");
-                File.WriteAllText("manifest.yml", manifestYml.ToString());
-
-                // ExecuteWithRetry because the manifest-tool fails periodically with communicating
-                // with the Docker Registry.
-                ExecuteHelper.ExecuteWithRetry(
-                    "manifest-tool",
-                    $"--username {Options.Username} --password {Options.Password} push from-spec manifest.yml",
-                    Options.IsDryRun);
+            }
+            finally
+            {
+                DockerHelper.Logout(Options.Server, Options.IsDryRun);
             }
 
             return Task.CompletedTask;
+        }
+
+        private string GenerateManifest(ImageInfo image)
+        {
+            StringBuilder manifestYml = new StringBuilder();
+            manifestYml.AppendLine($"image: {image.SharedTags.First().FullyQualifiedName}");
+
+            IEnumerable<string> additionalTags = image.SharedTags
+                .Select(tag => tag.Name)
+                .Skip(1);
+            if (additionalTags.Any())
+            {
+                manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags)}]");
+            }
+
+            manifestYml.AppendLine("manifests:");
+            foreach (PlatformInfo platform in image.Platforms)
+            {
+                manifestYml.AppendLine($"  -");
+                manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");
+                manifestYml.AppendLine($"    platform:");
+                manifestYml.AppendLine($"      architecture: {platform.Model.Architecture.ToString().ToLowerInvariant()}");
+                manifestYml.AppendLine($"      os: {platform.Model.OS.ToString().ToLowerInvariant()}");
+                if (platform.Model.Variant != null)
+                {
+                    manifestYml.AppendLine($"      variant: {platform.Model.Variant}");
+                }
+            }
+
+            return manifestYml.ToString();
         }
     }
 }

@@ -74,13 +74,13 @@ namespace Microsoft.DotNet.ImageBuilder
             return Version.TryParse(versionString, out Version version) ? version : null;
         }
 
-        public static void Login(string username, string password, bool isDryRun)
+        public static void Login(string username, string password, string server, bool isDryRun)
         {
             Version clientVersion = GetClientVersion();
             if (clientVersion >= new Version(17, 7))
             {
                 ProcessStartInfo startInfo = new ProcessStartInfo(
-                    "docker", $"login -u {username} --password-stdin");
+                    "docker", $"login -u {username} --password-stdin {server}");
                 startInfo.RedirectStandardInput = true;
                 ExecuteHelper.Execute(
                     startInfo,
@@ -96,13 +96,17 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             else
             {
-                string loginArgsWithoutPassword = $"login -u {username} -p";
                 ExecuteHelper.Execute(
                     "docker",
-                    $"{loginArgsWithoutPassword} {password}",
+                    $"login -u {username} -p {password} {server}",
                     isDryRun,
-                    executeMessageOverride: $"{loginArgsWithoutPassword} ********");
+                    executeMessageOverride: $"login -u {username} -p ******** {server}");
             }
+        }
+
+        public static void Logout(string server, bool isDryRun)
+        {
+            ExecuteHelper.Execute("docker", $"logout {server}", isDryRun);
         }
 
         public static void PullBaseImages(ManifestInfo manifest, Options options)

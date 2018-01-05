@@ -117,19 +117,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 Utilities.WriteHeading("PUSHING IMAGES");
 
-                if (Options.Username != null)
+                DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
+                try
                 {
-                    DockerHelper.Login(Options.Username, Options.Password, Options.IsDryRun);
+                    foreach (string tag in BuiltTags)
+                    {
+                        ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
+                    }
                 }
-
-                foreach (string tag in BuiltTags)
+                finally
                 {
-                    ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
-                }
-
-                if (Options.Username != null)
-                {
-                    ExecuteHelper.Execute("docker", $"logout", Options.IsDryRun);
+                    DockerHelper.Logout(Options.Server, Options.IsDryRun);
                 }
             }
         }

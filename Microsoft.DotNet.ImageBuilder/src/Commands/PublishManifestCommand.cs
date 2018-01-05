@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifest}");
                     File.WriteAllText("manifest.yml", manifest);
 
-                    // ExecuteWithRetry because the manifest-tool fails periodically with communicating
+                    // ExecuteWithRetry because the manifest-tool fails periodically while communicating
                     // with the Docker Registry.
                     ExecuteHelper.ExecuteWithRetry("manifest-tool", "push from-spec manifest.yml", Options.IsDryRun);
                 }

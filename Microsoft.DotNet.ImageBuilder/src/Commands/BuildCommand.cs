@@ -117,11 +117,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 Utilities.WriteHeading("PUSHING IMAGES");
 
-                if (Options.Username != null)
-                {
-                    DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
-                }
-
+                DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
                 try
                 {
                     foreach (string tag in BuiltTags)
@@ -131,10 +127,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 finally
                 {
-                    if (Options.Username != null)
-                    {
-                        DockerHelper.Logout(Options.Server, Options.IsDryRun);
-                    }
+                    DockerHelper.Logout(Options.Server, Options.IsDryRun);
                 }
             }
         }

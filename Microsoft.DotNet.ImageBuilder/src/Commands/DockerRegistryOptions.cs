@@ -10,6 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public string Password { get; set; }
         public string RepoOwner { get; set; }
+        public string Server { get; set; }
         public string Username { get; set; }
 
         protected DockerRegistryOptions()
@@ -33,6 +34,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref repoOwner,
                 "An alternative repo owner which overrides what is specified in the manifest");
             RepoOwner = repoOwner;
+
+            string server = null;
+            syntax.DefineOption(
+                "server",
+                ref server,
+                "Docker Registry server the images are pushed to (default is Docker Hub)");
+            Server = server;
 
             string username = null;
             syntax.DefineOption(

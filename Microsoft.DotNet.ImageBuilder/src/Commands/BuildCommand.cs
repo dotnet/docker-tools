@@ -119,17 +119,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (Options.Username != null)
                 {
-                    DockerHelper.Login(Options.Username, Options.Password, Options.IsDryRun);
+                    DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
                 }
 
-                foreach (string tag in BuiltTags)
+                try
                 {
-                    ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
+                    foreach (string tag in BuiltTags)
+                    {
+                        ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
+                    }
                 }
-
-                if (Options.Username != null)
+                finally
                 {
-                    ExecuteHelper.Execute("docker", $"logout", Options.IsDryRun);
+                    if (Options.Username != null)
+                    {
+                        DockerHelper.Logout(Options.Server, Options.IsDryRun);
+                    }
                 }
             }
         }

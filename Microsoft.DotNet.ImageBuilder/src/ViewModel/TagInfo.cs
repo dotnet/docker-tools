@@ -20,14 +20,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public static TagInfo Create(
             string name,
             Tag model,
-            Manifest manifest,
             string repoName,
+            VariableHelper variableHelper,
             string buildContextPath = null)
         {
             TagInfo tagInfo = new TagInfo();
             tagInfo.Model = model;
             tagInfo.BuildContextPath = buildContextPath;
-            tagInfo.Name = Utilities.SubstituteVariables(manifest.TagVariables, name, tagInfo.GetSubstituteValue);
+            tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetSubstituteValue);
             tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
 
             return tagInfo;

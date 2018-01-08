@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public Repo[] Repos { get; set; }
 
-        public IDictionary<string, string> TagVariables { get; set; }
+        public IDictionary<string, string> Variables { get; set; }
 
         [JsonConverter(typeof(EnumKeyDictionaryConverter<OS>))]
         public IDictionary<OS, string[]> TestCommands { get; set; }

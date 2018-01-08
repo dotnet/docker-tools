@@ -16,21 +16,22 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private static Regex FromRegex { get; } = new Regex(@"FROM\s+(?<fromImage>\S+)");
 
-        public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
         public IEnumerable<string> FromImages { get; private set; }
         public Platform Model { get; private set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
+        private VariableHelper VariableHelper { get; set; }
 
         private PlatformInfo()
         {
         }
 
-        public static PlatformInfo Create(Platform model, Manifest manifest, string repoName)
+        public static PlatformInfo Create(Platform model, string repoName, VariableHelper variableHelper)
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
+            platformInfo.VariableHelper = variableHelper;
 
             if (File.Exists(model.Dockerfile))
             {
@@ -45,21 +46,29 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             platformInfo.Tags = model.Tags
-                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName, platformInfo.BuildContextPath))
+                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, platformInfo.BuildContextPath))
                 .ToArray();
-
-            if (model.BuildArgs == null)
-            {
-                platformInfo.BuildArgs = ImmutableDictionary<string, string>.Empty;
-            }
-            else
-            {
-                platformInfo.BuildArgs = model.BuildArgs;
-            }
 
             platformInfo.InitializeFromImages();
 
             return platformInfo;
+        }
+
+        public IDictionary<string, string> GetBuildArgs()
+        {
+            IDictionary<string, string> buildArgs;
+
+            if (Model.BuildArgs == null)
+            {
+                buildArgs = ImmutableDictionary<string, string>.Empty;
+            }
+            else
+            {
+                buildArgs = Model.BuildArgs
+                    .ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value));
+            }
+
+            return buildArgs;
         }
 
         private void InitializeFromImages()

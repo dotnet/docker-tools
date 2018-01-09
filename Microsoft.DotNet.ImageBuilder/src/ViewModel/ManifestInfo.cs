@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string GetReferenceVariableValue(string variableName)
         {
-            const string tagRef = "tagRef:";
+            const string tagRef = "TagRef:";
 
             string variableValue = null;
             if (variableName.StartsWith(tagRef))

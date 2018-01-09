@@ -5,6 +5,7 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -15,6 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private static Regex FromRegex { get; } = new Regex(@"FROM\s+(?<fromImage>\S+)");
 
+        public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
         public IEnumerable<string> FromImages { get; private set; }
@@ -45,6 +47,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             platformInfo.Tags = model.Tags
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName, platformInfo.BuildContextPath))
                 .ToArray();
+
+            if (model.BuildArgs == null)
+            {
+                platformInfo.BuildArgs = ImmutableDictionary<string, string>.Empty;
+            }
+            else
+            {
+                platformInfo.BuildArgs = model.BuildArgs;
+            }
 
             platformInfo.InitializeFromImages();
 

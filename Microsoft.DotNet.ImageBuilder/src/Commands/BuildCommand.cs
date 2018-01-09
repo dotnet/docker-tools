@@ -54,10 +54,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(tag => tag.FullyQualifiedName)
                             .Concat(platformTags);
                         string tagArgs = $"-t {string.Join(" -t ", allTags)}";
+                        string buildArgs = GetDockerBuildArgs(platform);
+
                         InvokeBuildHook("pre-build", platform.BuildContextPath);
                         ExecuteHelper.Execute(
                             "docker",
-                            $"build {tagArgs} -f {dockerfilePath} {platform.BuildContextPath}",
+                            $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}",
                             Options.IsDryRun);
                         InvokeBuildHook("post-build", platform.BuildContextPath);
                         BuiltTags = BuiltTags.Concat(platformTags);
@@ -71,6 +73,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
+        }
+
+        private string GetDockerBuildArgs(PlatformInfo platform)
+        {
+            IEnumerable<string> buildArgs = platform.BuildArgs
+                .Select(buildArg => 
+                    {
+                        string buildArgValue = Utilities.SubstituteVariables(null, buildArg.Value, Manifest.GetReferenceVariableValue);
+                        return $" --build-arg {buildArg.Key}={buildArgValue}";
+                    });
+            return string.Join(string.Empty, buildArgs);
         }
 
         private void InvokeBuildHook(string hookName, string buildContextPath)
@@ -96,7 +109,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 startInfo = new ProcessStartInfo(
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh", 
+                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh",
                     $"-NoProfile -File \"{scriptPath}\"");
             }
 

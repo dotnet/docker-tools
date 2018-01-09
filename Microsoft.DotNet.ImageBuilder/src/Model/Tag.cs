@@ -6,6 +6,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 {
     public class Tag
     {
+        public string Id { get; set; }
+
         public bool IsUndocumented { get; set; }
 
         public Tag()

@@ -35,6 +35,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return manifestInfo;
         }
 
+        private IEnumerable<TagInfo> GetAllTags()
+        {
+            IEnumerable<ImageInfo> images = Repos
+                .SelectMany(repo => repo.Images)
+                .ToArray();
+            IEnumerable<TagInfo> sharedTags = images
+                .SelectMany(image => image.SharedTags);
+            IEnumerable<TagInfo> platformTags = images
+                .SelectMany(image => image.Platforms)
+                .SelectMany(platform => platform.Tags);
+            return sharedTags
+                .Concat(platformTags)
+                .ToArray();
+        }
+
         public IEnumerable<string> GetExternalFromImages()
         {
             return ActiveImages
@@ -42,6 +57,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .SelectMany(platform => platform.FromImages)
                 .Where(IsExternalImage)
                 .Distinct();
+        }
+
+        public string GetReferenceVariableValue(string variableName)
+        {
+            const string tagRef = "TagRef:";
+
+            string variableValue = null;
+            if (variableName.StartsWith(tagRef))
+            {
+                string tagId = variableName.Substring(tagRef.Length);
+                variableValue = GetAllTags()
+                    .Single(kvp => kvp.Model.Id == tagId).Name;
+            }
+
+            return variableValue;
         }
 
         public bool IsExternalImage(string image)

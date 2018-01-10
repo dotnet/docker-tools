@@ -5,9 +5,7 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
-using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -22,7 +20,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsTestRunDisabled { get; set; }
         public string OsVersion { get; set; }
         public string Path { get; set; }
-        public IDictionary<string, string> TestVariables { get; set; }
 
         public BuildOptions() : base()
         {
@@ -69,12 +66,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isTestRunDisabled = false;
             syntax.DefineOption("skip-test", ref isTestRunDisabled, "Skip running the tests");
             IsTestRunDisabled = isTestRunDisabled;
-
-            IReadOnlyList<string> nameValuePairs = Array.Empty<string>();
-            syntax.DefineOptionList("test-var", ref nameValuePairs, "Named variables to substitute into the test commands (name=value)");
-            TestVariables = nameValuePairs
-                .Select(pair => pair.Split(new char[] { '=' }, 2))
-                .ToDictionary(split => split[0], split => split[1]);
         }
     }
 }

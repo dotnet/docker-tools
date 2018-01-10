@@ -5,7 +5,9 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -18,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsVerbose { get; set; }
         public string Manifest { get; set; }
         public string Repo { get; set; }
+        public IDictionary<string, string> Variables { get; set; }
 
         protected Options()
         {
@@ -47,6 +50,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string repo = null;
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
+
+            IReadOnlyList<string> nameValuePairs = Array.Empty<string>();
+            syntax.DefineOptionList("var", ref nameValuePairs, "Named variables to substitute into the manifest (name=value)");
+            Variables = nameValuePairs
+                .Select(pair => pair.Split(new char[] { '=' }, 2))
+                .ToDictionary(split => split[0], split => split[1]);
 
             bool isVerbose = false;
             syntax.DefineOption("verbose", ref isVerbose, "Show details about the tasks run");

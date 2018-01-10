@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ImageInfo Create(Image model, Manifest manifest, string repoName, ManifestFilter manifestFilter)
+        public static ImageInfo Create(Image model, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -31,12 +31,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             else
             {
                 imageInfo.SharedTags = model.SharedTags
-                    .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, manifest, repoName))
+                    .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper))
                     .ToArray();
             }
 
             imageInfo.Platforms = manifestFilter.GetPlatforms(model)
-                .Select(platform => PlatformInfo.Create(platform, manifest, repoName))
+                .Select(platform => PlatformInfo.Create(platform, repoName, variableHelper))
                 .ToArray();
 
             IEnumerable<Platform> activePlatformModels = manifestFilter.GetActivePlatforms(model);

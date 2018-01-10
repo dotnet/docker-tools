@@ -11,26 +11,29 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class ManifestInfo
     {
         public IEnumerable<ImageInfo> ActiveImages { get; private set; }
+        private ManifestFilter ManifestFilter { get; set; }
         public Manifest Model { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
-        public IEnumerable<string> TestCommands { get; private set; }
+        private VariableHelper VariableHelper { get; set; }
 
         private ManifestInfo()
         {
         }
 
-        public static ManifestInfo Create(Manifest model, ManifestFilter manifestFilter, string repoOwner)
+        public static ManifestInfo Create(
+            Manifest model, ManifestFilter manifestFilter, string repoOwner, IDictionary<string, string> optionVariables)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
+            manifestInfo.ManifestFilter = manifestFilter;
+            manifestInfo.VariableHelper = new VariableHelper(model, optionVariables, manifestInfo.GetTagById);
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
-                .Select(repo => RepoInfo.Create(repo, manifestInfo.Model, manifestFilter, repoOwner))
+                .Select(repo => RepoInfo.Create(repo, manifestFilter, repoOwner, manifestInfo.VariableHelper))
                 .ToArray();
             manifestInfo.ActiveImages = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
                 .Where(image => image.ActivePlatforms.Any())
                 .ToArray();
-            manifestInfo.TestCommands = manifestFilter.GetTestCommands(manifestInfo.Model);
 
             return manifestInfo;
         }
@@ -59,19 +62,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Distinct();
         }
 
-        public string GetReferenceVariableValue(string variableName)
+        public TagInfo GetTagById(string id)
         {
-            const string tagRef = "TagRef:";
+            return GetAllTags()
+                .Single(kvp => kvp.Model.Id == id);
+        }
 
-            string variableValue = null;
-            if (variableName.StartsWith(tagRef))
-            {
-                string tagId = variableName.Substring(tagRef.Length);
-                variableValue = GetAllTags()
-                    .Single(kvp => kvp.Model.Id == tagId).Name;
-            }
-
-            return variableValue;
+        public IEnumerable<string> GetTestCommands()
+        {
+            return ManifestFilter.GetTestCommands(Model)
+                .Select(command => VariableHelper.SubstituteValues(command));
         }
 
         public bool IsExternalImage(string image)

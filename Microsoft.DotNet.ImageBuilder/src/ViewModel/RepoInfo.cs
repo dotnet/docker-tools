@@ -20,14 +20,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static RepoInfo Create(Repo model, Manifest manifest, ManifestFilter manifestFilter, string repoOwner)
+        public static RepoInfo Create(Repo model, ManifestFilter manifestFilter, string repoOwner, VariableHelper variableHelper)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
             repoInfo.Name = string.IsNullOrWhiteSpace(repoOwner) ?
                 model.Name : DockerHelper.ReplaceImageOwner(model.Name, repoOwner);
             repoInfo.Images = model.Images
-                .Select(image => ImageInfo.Create(image, manifest, repoInfo.Name, manifestFilter))
+                .Select(image => ImageInfo.Create(image, repoInfo.Name, manifestFilter, variableHelper))
                 .ToArray();
 
             return repoInfo;

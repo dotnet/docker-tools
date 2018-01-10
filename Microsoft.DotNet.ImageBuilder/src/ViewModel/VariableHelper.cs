@@ -88,10 +88,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private string GetUserValue(string variableName)
         {
-            if (!OptionVariables.TryGetValue(variableName, out string variableValue)
-                && Manifest.Variables != null)
+            if (!OptionVariables.TryGetValue(variableName, out string variableValue))
             {
-                Manifest.Variables.TryGetValue(variableName, out variableValue);
+                Manifest.Variables?.TryGetValue(variableName, out variableValue);
             }
 
             return variableValue;

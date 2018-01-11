@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             ValidateUniqueElements(tagIds, "tag IDs");
         }
 
-        private static void ValidateUniqueElements(IEnumerable<string> source, string element)
+        private static void ValidateUniqueElements(IEnumerable<string> source, string elementsDescription)
         {
             if (source.Count() != source.Distinct().Count())
             {
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .Where(x => x.Count() > 1)
                     .Select(x => x.Key);
                 throw new ValidationException(
-                    $"Duplicate {element} found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicates)}");
+                    $"Duplicate {elementsDescription} found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicates)}");
             }
         }
     }

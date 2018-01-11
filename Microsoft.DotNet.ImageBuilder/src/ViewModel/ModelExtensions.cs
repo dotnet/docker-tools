@@ -37,21 +37,26 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             IEnumerable<string> sharedTags = repo.Images
                 .SelectMany(images => images.SharedTags?.Keys ?? Enumerable.Empty<string>());
-            IEnumerable<string> platformTags = repo.Images
+            IDictionary<string, Tag> platformTags = repo.Images
                 .SelectMany(image => image.Platforms)
-                .SelectMany(platform => platform.Tags.Keys);
-            IEnumerable<string> allTags = sharedTags
-                .Concat(platformTags)
-                .ToArray();
+                .SelectMany(platform => platform.Tags)
+                .ToDictionary(d=>d.Key, d=>d.Value);
 
-            if (allTags.Count() != allTags.Distinct().Count())
+            CheckDuplicates(sharedTags.Concat(platformTags.Keys).ToArray(), "tags");
+            CheckDuplicates(platformTags.Where(v => v.Value.Id != null).Select(id => id.Value.Id).ToArray(), "tagIDs");
+        }
+
+        private static void CheckDuplicates(IEnumerable<string> source, string type)
+        {
+            if (source.Count() != source.Distinct().Count())
             {
-                IEnumerable<string> duplicateTags = allTags
+                IEnumerable<string> duplicates = source
                     .GroupBy(x => x)
                     .Where(x => x.Count() > 1)
                     .Select(x => x.Key);
+
                 throw new ValidationException(
-                    $"Duplicate tags found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicateTags)}");
+                    $"Duplicate '{type}' found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicates)}");
             }
         }
     }

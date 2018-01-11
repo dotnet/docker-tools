@@ -9,7 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public abstract class DockerRegistryOptions : Options
     {
         public string Password { get; set; }
-        public string RepoOwner { get; set; }
         public string Server { get; set; }
         public string Username { get; set; }
 
@@ -28,12 +27,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Password for the Docker Registry the images are pushed to");
             Password = password;
 
-            string repoOwner = null;
-            syntax.DefineOption(
-                "repo-owner",
-                ref repoOwner,
-                "An alternative repo owner which overrides what is specified in the manifest");
-            RepoOwner = repoOwner;
 
             string server = null;
             syntax.DefineOption(

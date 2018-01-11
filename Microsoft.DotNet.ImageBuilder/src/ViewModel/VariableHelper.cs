@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class VariableHelper
     {
         private const char BuiltInDelimiter = ':';
+        private const string RepoOwnerVariableName = "RepoOwner";
         private const string SystemVariableTypeId = "System";
         private const string TagVariableTypeId = "TagRef";
         private const string TimeStampVariableName = "TimeStamp";
@@ -23,13 +24,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private Func<string, TagInfo> GetTagById { get; set; }
         private Manifest Manifest { get; set; }
-        private IDictionary<string, string> OptionVariables { get; set; }
+        private string RepoOwnerOverride { get; set; }
+        private IDictionary<string, string> VariablesOverride { get; set; }
 
-        public VariableHelper(Manifest manifest, IDictionary<string, string> optionVariables, Func<string, TagInfo> getTagById)
+        public VariableHelper(
+            Manifest manifest,
+            IDictionary<string, string> variablesOverride,
+            string repoOwnerOverride,
+            Func<string, TagInfo> getTagById)
         {
             GetTagById = getTagById;
             Manifest = manifest;
-            OptionVariables = optionVariables;
+            RepoOwnerOverride = repoOwnerOverride;
+            VariablesOverride = variablesOverride;
         }
 
         public string SubstituteValues(string expression, Func<string, string> getContextBasedSystemValue = null)
@@ -73,6 +80,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     variableValue = TimeStamp;
                 }
+                else if (string.Equals(variableName, RepoOwnerVariableName, StringComparison.Ordinal))
+                {
+                    variableValue = variableValue = RepoOwnerOverride ?? DockerHelper.GetImageOwner(Manifest.Repos.First().Name);
+                }
                 else if (getContextBasedSystemValue != null)
                 {
                     variableValue = getContextBasedSystemValue(variableName);
@@ -88,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private string GetUserValue(string variableName)
         {
-            if (!OptionVariables.TryGetValue(variableName, out string variableValue))
+            if (!VariablesOverride.TryGetValue(variableName, out string variableValue))
             {
                 Manifest.Variables?.TryGetValue(variableName, out variableValue);
             }

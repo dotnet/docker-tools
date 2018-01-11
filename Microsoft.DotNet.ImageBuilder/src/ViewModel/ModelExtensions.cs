@@ -23,20 +23,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             IEnumerable<string> sharedTags = repo.Images
                 .SelectMany(images => images.SharedTags?.Keys ?? Enumerable.Empty<string>());
-            IEnumerable<string> platformTags = repo.Images
-                .SelectMany(image => image.Platforms)
-                .SelectMany(platform => platform.Tags.Keys);
-            IEnumerable<string> allTags = sharedTags
-                .Concat(platformTags)
-                .ToArray();
-            CheckDuplicates(allTags, "tags");
-
-            IEnumerable<string> tagIds = repo.Images
+            IDictionary<string, Tag> platformTags = repo.Images
                 .SelectMany(image => image.Platforms)
                 .SelectMany(platform => platform.Tags)
-                .Where(v => v.Value.Id != null)
-                .Select(id => id.Value.Id).ToArray();
-            CheckDuplicates(tagIds, "IDs");
+                .ToDictionary(d=>d.Key, d=>d.Value);
+
+            CheckDuplicates(sharedTags.Concat(platformTags.Keys).ToArray(), "tags");
+            CheckDuplicates(platformTags.Where(v => v.Value.Id != null).Select(id => id.Value.Id).ToArray(), "tagIDs");
         }
 
         private static void CheckDuplicates(IEnumerable<string> source, string type)

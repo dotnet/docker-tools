@@ -74,13 +74,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private void InitializeFromImages()
         {
             string dockerfile = File.ReadAllText(this.DockerfilePath);
-            IEnumerable<Match> fromMatches = FromRegex.Matches(dockerfile).Cast<Match>();
+            IEnumerable<Match> fromMatches = FromRegex.Matches(dockerfile);
+
             if (!fromMatches.Any())
             {
                 throw new InvalidOperationException($"Unable to find a FROM image in {this.DockerfilePath}.");
             }
 
-            FromImages = fromMatches.Select(match => match.Groups["fromImage"].Value).ToArray();
+            FromImages = fromMatches
+                .Select(match => match.Groups["fromImage"].Value)
+                .Where(from => !from.Contains("$"))
+                .ToArray();
         }
     }
 }

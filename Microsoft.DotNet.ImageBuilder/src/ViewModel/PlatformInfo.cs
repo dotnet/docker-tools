@@ -83,7 +83,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             FromImages = fromMatches
                 .Select(match => match.Groups["fromImage"].Value)
-                .Where(match => !match.Contains("$")).ToArray();
+                .Where(from => !from.Contains("$"))
+                .ToArray();
         }
     }
 }

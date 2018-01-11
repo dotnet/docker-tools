@@ -35,25 +35,28 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static void ValidateUniqueTags(Repo repo)
         {
-            IEnumerable<string> sharedTags = repo.Images
-                .SelectMany(images => images.SharedTags?.Keys ?? Enumerable.Empty<string>());
-            IDictionary<string, Tag> platformTags = repo.Images
+            IEnumerable<KeyValuePair<string, Tag>> sharedTags = repo.Images
+                .SelectMany(images => images.SharedTags ?? Enumerable.Empty<KeyValuePair<string, Tag>>());
+            IEnumerable<KeyValuePair<string, Tag>> platformTags = repo.Images
                 .SelectMany(image => image.Platforms)
-                .SelectMany(platform => platform.Tags)
-                .ToDictionary(t => t.Key, t => t.Value);
-            IEnumerable<string> allTags = sharedTags
-                .Concat(platformTags.Keys)
+                .SelectMany(platform => platform.Tags);
+            IEnumerable<KeyValuePair<string, Tag>> allTags = sharedTags
+                .Concat(platformTags)
                 .ToArray();
-            CheckDuplicates(allTags, "tags");
+
+            IEnumerable<string> tagNames = allTags
+                .Select(kvp => kvp.Key)
+                .ToArray();
+            ValidateUniqueElements(tagNames, "tags");
 
             IEnumerable<string> tagIds = platformTags
-                .Where(t => t.Value.Id != null)
-                .Select(t => t.Value.Id)
+                .Select(kvp => kvp.Value.Id)
+                .Where(id => id != null)
                 .ToArray();
-            CheckDuplicates(tagIds, "tagIDs");
+            ValidateUniqueElements(tagIds, "tag IDs");
         }
 
-        private static void CheckDuplicates(IEnumerable<string> source, string type)
+        private static void ValidateUniqueElements(IEnumerable<string> source, string element)
         {
             if (source.Count() != source.Distinct().Count())
             {
@@ -61,9 +64,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .GroupBy(x => x)
                     .Where(x => x.Count() > 1)
                     .Select(x => x.Key);
-
                 throw new ValidationException(
-                    $"Duplicate '{type}' found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicates)}");
+                    $"Duplicate {element} found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicates)}");
             }
         }
     }

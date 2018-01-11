@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
             else if (string.Equals(variableType, TagVariableTypeId, StringComparison.Ordinal))
             {
-                variableValue = GetTagById(variableName).Name;
+                variableValue = GetTagById(variableName)?.Name;
             }
 
             return variableValue;

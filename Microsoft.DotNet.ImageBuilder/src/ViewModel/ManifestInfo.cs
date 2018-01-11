@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -65,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public TagInfo GetTagById(string id)
         {
             return GetAllTags()
-                .Single(kvp => kvp.Model.Id == id);
+                .FirstOrDefault(kvp => kvp.Model.Id == id);
         }
 
         public IEnumerable<string> GetTestCommands()

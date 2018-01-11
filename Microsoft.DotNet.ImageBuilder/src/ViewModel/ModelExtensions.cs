@@ -13,9 +13,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         public static void Validate(this Manifest manifest)
         {
+            ValidateCommonRepoOwner(manifest);
+
             foreach (Repo repo in manifest.Repos)
             {
                 ValidateUniqueTags(repo);
+            }
+        }
+
+        private static void ValidateCommonRepoOwner(Manifest manifest)
+        {
+            IEnumerable<string> distinctRepos = manifest.Repos
+                .Select(repo => DockerHelper.GetImageOwner(repo.Name))
+                .Distinct();
+            if (distinctRepos.Count() != 1)
+            {
+                throw new ValidationException(
+                    $"All repos must have a common owner: {Environment.NewLine}{string.Join(Environment.NewLine, distinctRepos)}");
             }
         }
 
@@ -36,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .GroupBy(x => x)
                     .Where(x => x.Count() > 1)
                     .Select(x => x.Key);
-                throw new Exception(
+                throw new ValidationException(
                     $"Duplicate tags found: {Environment.NewLine}{string.Join(Environment.NewLine, duplicateTags)}");
             }
         }

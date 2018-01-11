@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsVerbose { get; set; }
         public string Manifest { get; set; }
         public string Repo { get; set; }
+        public string RepoOwner { get; set; }
+
         public IDictionary<string, string> Variables { get; set; }
 
         protected Options()
@@ -50,6 +52,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string repo = null;
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
+
+            string repoOwner = null;
+            syntax.DefineOption(
+                "repo-owner",
+                ref repoOwner,
+                "An alternative repo owner which overrides what is specified in the manifest");
+            RepoOwner = repoOwner;
 
             IReadOnlyList<string> nameValuePairs = Array.Empty<string>();
             syntax.DefineOptionList("var", ref nameValuePairs, "Named variables to substitute into the manifest (name=value)");

@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Manifest = ManifestInfo.Create(
                 manifestModel,
                 Options.GetManifestFilter(),
-                (Options as DockerRegistryOptions)?.RepoOwner,
+                Options.RepoOwner,
                 Options.Variables);
 
             if (Options.IsVerbose)

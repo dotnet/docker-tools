@@ -43,6 +43,12 @@ RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.6.0
         -o /usr/local/bin/manifest-tool \
     && chmod +x /usr/local/bin/manifest-tool
 
+# install git
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        git \
+    && rm -rf /var/lib/apt/lists/*
+
 # install image-builder
 WORKDIR image-builder
 COPY --from=build-env /image-builder/src/out ./

@@ -8,6 +8,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
     {
         public string Id { get; set; }
 
+        public bool IsLocal { get; set; }
+
         public bool IsUndocumented { get; set; }
 
         public Tag()

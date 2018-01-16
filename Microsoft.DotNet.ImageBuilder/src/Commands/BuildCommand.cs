@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class BuildCommand : Command<BuildOptions>
     {
-        private IEnumerable<string> BuiltTags { get; set; } = Enumerable.Empty<string>();
+        private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
 
         public BuildCommand() : base()
         {
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}",
                             Options.IsDryRun);
                         InvokeBuildHook("post-build", platform.BuildContextPath);
-                        BuiltTags = BuiltTags.Concat(platformTags);
+                        BuiltTags = BuiltTags.Concat(platform.Tags);
                     }
                     finally
                     {
@@ -70,6 +70,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
+
+            BuiltTags = BuiltTags.ToArray();
         }
 
         private string GetDockerBuildArgs(PlatformInfo platform)
@@ -114,6 +116,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"-NoProfile -File \"{scriptPath}\"");
             }
 
+            startInfo.WorkingDirectory = buildContextPath;
             ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 
@@ -134,7 +137,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
                 try
                 {
-                    foreach (string tag in BuiltTags)
+                    IEnumerable<string> pushTags = BuiltTags
+                        .Where(tag => !tag.Model.IsLocal)
+                        .Select(tag => tag.FullyQualifiedName);
+                    foreach (string tag in pushTags)
                     {
                         ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                     }
@@ -207,7 +213,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void WriteBuildSummary()
         {
             Utilities.WriteHeading("IMAGES BUILT");
-            foreach (string tag in BuiltTags)
+            foreach (string tag in BuiltTags.Select(tag => tag.FullyQualifiedName))
             {
                 Console.WriteLine(tag);
             }

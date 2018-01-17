@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
             else
             {
-                // Modeled Dockefile is just the directory containing the "Dockerfile"
+                // Modeled Dockerfile is just the directory containing the "Dockerfile"
                 platformInfo.DockerfilePath = Path.Combine(model.Dockerfile, "Dockerfile");
                 platformInfo.BuildContextPath = model.Dockerfile;
             }

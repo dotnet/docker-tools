@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     if (arg.IsParameter && !arg.IsSpecified)
                     {
-                        Console.Error.WriteLine($"error: `{arg.Name}` must be specified.");
+                        Logger.WriteError($"error: `{arg.Name}` must be specified.");
                         Environment.Exit(1);
                     }
                 }
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                Logger.WriteError(e.ToString());
 
                 result = 1;
             }

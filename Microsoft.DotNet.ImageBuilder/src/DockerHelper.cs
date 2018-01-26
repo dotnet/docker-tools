@@ -6,7 +6,9 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -116,10 +118,18 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void PullBaseImages(ManifestInfo manifest, Options options)
         {
-            Utilities.WriteHeading("PULLING LATEST BASE IMAGES");
-            foreach (string fromImage in manifest.GetExternalFromImages())
+            Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+            IEnumerable<string> baseImages = manifest.GetExternalFromImages().ToArray();
+            if (baseImages.Any())
             {
-                ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", options.IsDryRun);
+                foreach (string fromImage in baseImages)
+                {
+                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", options.IsDryRun);
+                }
+            }
+            else
+            {
+                Logger.WriteMessage("No external base images to pull");
             }
         }
 

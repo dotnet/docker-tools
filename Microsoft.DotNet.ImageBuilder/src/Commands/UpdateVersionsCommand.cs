@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Utilities.WriteHeading("UPDATING VERSIONS");
+            Logger.WriteHeading("UPDATING VERSIONS");
 
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
@@ -60,8 +60,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     catch (HttpRequestException ex) when (i < (MaxTries - 1))
                     {
-                        Console.WriteLine($"Encountered exception committing build-info update: {ex.Message}");
-                        Console.WriteLine($"Trying again in {RetryMillisecondsDelay}ms. {MaxTries - i - 1} tries left.");
+                        Logger.WriteMessage($"Encountered exception committing build-info update: {ex.Message}");
+                        Logger.WriteMessage($"Trying again in {RetryMillisecondsDelay}ms. {MaxTries - i - 1} tries left.");
                         await Task.Delay(RetryMillisecondsDelay);
                     }
                 }
@@ -80,12 +80,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (lastDigest == currentDigest)
                 {
-                    Console.WriteLine($"Image has not changed:  {fromImage}");
+                    Logger.WriteMessage($"Image has not changed:  {fromImage}");
                     continue;
                 }
 
-                Console.WriteLine($"Image has changed:  {fromImage}");
-                Console.WriteLine($"Updating `{versionFile}` with `{currentDigest}`");
+                Logger.WriteMessage($"Image has changed:  {fromImage}");
+                Logger.WriteMessage($"Updating `{versionFile}` with `{currentDigest}`");
 
                 versionInfo.Add(new GitObject
                 {

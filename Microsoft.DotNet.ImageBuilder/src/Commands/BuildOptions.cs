@@ -4,7 +4,6 @@
 
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using System;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands

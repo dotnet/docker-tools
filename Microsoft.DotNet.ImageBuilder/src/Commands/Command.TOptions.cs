@@ -5,7 +5,6 @@
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
-using System;
 using System.IO;
 using System.Threading.Tasks;
 

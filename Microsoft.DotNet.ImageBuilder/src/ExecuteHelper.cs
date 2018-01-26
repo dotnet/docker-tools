@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 executeMessageOverride = $"{info.FileName} {info.Arguments}";
             }
 
-            Console.WriteLine($"-- EXECUTING: {executeMessageOverride}");
+            Logger.WriteSubheading($"EXECUTING: {executeMessageOverride}");
             if (!isDryRun)
             {
                 process = executor(info);
@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
 
                 int waitTime = Convert.ToInt32(Math.Pow(waitFactor, retryCount - 1));
-                Console.WriteLine($"Retry {retryCount}/{maxRetries}, retrying in {waitTime} seconds...");
+                Logger.WriteMessage($"Retry {retryCount}/{maxRetries}, retrying in {waitTime} seconds...");
                 Thread.Sleep(waitTime * 1000);
                 process = executor(info);
             }

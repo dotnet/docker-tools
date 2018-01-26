@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
-            Utilities.WriteHeading("GENERATING MANIFESTS");
+            Logger.WriteHeading("GENERATING MANIFESTS");
 
             DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
             try
@@ -32,13 +32,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string manifest = GenerateManifest(image);
 
-                    Console.WriteLine($"-- PUBLISHING MANIFEST:{Environment.NewLine}{manifest}");
+                    Logger.WriteSubheading($"PUBLISHING MANIFEST:{Environment.NewLine}{manifest}");
                     File.WriteAllText("manifest.yml", manifest);
 
                     // ExecuteWithRetry because the manifest-tool fails periodically while communicating
                     // with the Docker Registry.
                     ExecuteHelper.ExecuteWithRetry("manifest-tool", "push from-spec manifest.yml", Options.IsDryRun);
                 }
+
+                WriteManifestSummary(multiArchImages);
             }
             finally
             {
@@ -76,6 +78,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return manifestYml.ToString();
+        }
+
+        private void WriteManifestSummary(IEnumerable<ImageInfo> multiArchImages)
+        {
+            Logger.WriteHeading("MANIFEST TAGS PUBLISHED");
+
+            IEnumerable<string> multiArchTags = multiArchImages.SelectMany(image => image.SharedTags)
+                .Select(tag => tag.FullyQualifiedName)
+                .ToArray();
+            if (multiArchTags.Any())
+            {
+                foreach (string tag in multiArchTags)
+                {
+                    Logger.WriteMessage(tag);
+                }
+            }
+            else
+            {
+                Logger.WriteMessage("No manifests published");
+            }
+
+            Logger.WriteMessage();
         }
     }
 }

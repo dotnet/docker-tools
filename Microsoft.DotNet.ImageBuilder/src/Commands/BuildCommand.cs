@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Diagnostics;
@@ -27,8 +26,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             PullBaseImages();
             BuildImages();
-            RunTests();
-            PushImages();
+
+            if (BuiltTags.Any())
+            {
+                RunTests();
+                PushImages();
+            }
+
             WriteBuildSummary();
 
             return Task.CompletedTask;
@@ -36,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void BuildImages()
         {
-            Utilities.WriteHeading("BUILDING IMAGES");
+            Logger.WriteHeading("BUILDING IMAGES");
             foreach (ImageInfo image in Manifest.ActiveImages)
             {
                 foreach (PlatformInfo platform in image.ActivePlatforms)
@@ -132,7 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (Options.IsPushEnabled)
             {
-                Utilities.WriteHeading("PUSHING IMAGES");
+                Logger.WriteHeading("PUSHING IMAGES");
 
                 DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
                 try
@@ -156,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsTestRunDisabled)
             {
-                Utilities.WriteHeading("TESTING IMAGES");
+                Logger.WriteHeading("TESTING IMAGES");
                 foreach (string command in Manifest.GetTestCommands())
                 {
                     string filename;
@@ -196,14 +200,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
                     string newFromImage = DockerHelper.ReplaceImageOwner(fromImage, Options.RepoOwner);
-                    Console.WriteLine($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
                 }
 
                 // Don't overwrite the original dockerfile - write it to a new path.
                 dockerfilePath = dockerfilePath + ".temp";
-                Console.WriteLine($"Writing updated Dockerfile: {dockerfilePath}");
-                Console.WriteLine(dockerfileContents);
+                Logger.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
+                Logger.WriteMessage(dockerfileContents);
                 File.WriteAllText(dockerfilePath, dockerfileContents);
             }
 
@@ -212,11 +216,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteBuildSummary()
         {
-            Utilities.WriteHeading("IMAGES BUILT");
-            foreach (string tag in BuiltTags.Select(tag => tag.FullyQualifiedName))
+            Logger.WriteHeading("IMAGES BUILT");
+
+            if (BuiltTags.Any())
             {
-                Console.WriteLine(tag);
+                foreach (string tag in BuiltTags.Select(tag => tag.FullyQualifiedName))
+                {
+                    Logger.WriteMessage(tag);
+                }
             }
+            else
+            {
+                Logger.WriteMessage("No images built");
+            }
+
+            Logger.WriteMessage();
         }
     }
 }

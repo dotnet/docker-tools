@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Utilities.WriteHeading("UPDATING READMES");
+            Logger.WriteHeading("UPDATING READMES");
             foreach (RepoInfo repo in Manifest.Repos)
             {
                 // Docker Hub/Cloud API is not documented thus it is subject to change.  This is the only option
@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (!Options.IsDryRun)
                 {
                     HttpResponseMessage response = await new HttpClient().SendAsync(request);
-                    Console.WriteLine($"-- RESPONSE:{Environment.NewLine}{response}");
+                    Logger.WriteSubheading($"RESPONSE:{Environment.NewLine}{response}");
                     response.EnsureSuccessStatusCode();
                 }
             }

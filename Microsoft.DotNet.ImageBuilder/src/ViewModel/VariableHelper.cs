@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private const string VariableGroupName = "variable";
 
         private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.]+)\\)";
-        private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyymmddhhmmss");
+        private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
         private Func<string, TagInfo> GetTagById { get; set; }
         private Manifest Manifest { get; set; }

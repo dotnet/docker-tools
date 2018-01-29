@@ -43,7 +43,7 @@ try {
     $stableTag = "$($DockerRepo):image-builder-$osFlavor-$((Get-Date -Format yyyyMMddHHmmss).ToLower())"
     $floatingTag = "image-builder"
 
-    & docker build -t $stableTag -t $floatingTag -f Dockerfile.$osFlavor .
+    & docker build -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$osFlavor" $PSScriptRoot
     if ($LastExitCode -ne 0) {
         throw "Failed building ImageBuilder"
     }

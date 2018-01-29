@@ -161,24 +161,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (!Options.IsTestRunDisabled)
             {
                 Logger.WriteHeading("TESTING IMAGES");
-                foreach (string command in Manifest.GetTestCommands())
+
+                IEnumerable<string> testCommands = Manifest.GetTestCommands();
+                if (testCommands.Any())
                 {
-                    string filename;
-                    string args;
-
-                    int firstSpaceIndex = command.IndexOf(' ');
-                    if (firstSpaceIndex == -1)
+                    foreach (string command in Manifest.GetTestCommands())
                     {
-                        filename = command;
-                        args = null;
-                    }
-                    else
-                    {
-                        filename = command.Substring(0, firstSpaceIndex);
-                        args = command.Substring(firstSpaceIndex + 1);
-                    }
+                        string filename;
+                        string args;
 
-                    ExecuteHelper.Execute(filename, args, Options.IsDryRun);
+                        int firstSpaceIndex = command.IndexOf(' ');
+                        if (firstSpaceIndex == -1)
+                        {
+                            filename = command;
+                            args = null;
+                        }
+                        else
+                        {
+                            filename = command.Substring(0, firstSpaceIndex);
+                            args = command.Substring(firstSpaceIndex + 1);
+                        }
+
+                        ExecuteHelper.Execute(filename, args, Options.IsDryRun);
+                    }
+                }
+                else
+                {
+                    Logger.WriteMessage("No tests found");
                 }
             }
         }

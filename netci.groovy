@@ -14,7 +14,7 @@ platformList.each { platform ->
                 batchFile("powershell -NoProfile -File .\\Microsoft.DotNet.ImageBuilder\\build.ps1 -CleanupDocker")
             }
             else {
-                shell("docker build -t runner -f ./Microsoft.DotNet.ImageBuilder/Dockerfile.linux.runner .")
+                shell("docker build -t runner -f ./Microsoft.DotNet.ImageBuilder/Dockerfile.linux.runner --pull .")
                 shell("docker run -v /var/run/docker.sock:/var/run/docker.sock runner pwsh -File ./Microsoft.DotNet.ImageBuilder/build.ps1 -CleanupDocker")
             }
         }

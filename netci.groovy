@@ -11,10 +11,10 @@ platformList.each { platform ->
     def newJob = job(newJobName) {
         steps {
             if (platform == 'NanoServer') {
-                batchFile("powershell -NoProfile -Command .\\Microsoft.DotNet.ImageBuilder\\build.ps1 -CleanupDocker")
+                batchFile("powershell -NoProfile -File .\\Microsoft.DotNet.ImageBuilder\\build.ps1 -CleanupDocker")
             }
             else {
-                shell("docker build --rm -t runner -f ./Microsoft.DotNet.ImageBuilder/Dockerfile.linux.runner .")
+                shell("docker build -t runner -f ./Microsoft.DotNet.ImageBuilder/Dockerfile.linux.runner .")
                 shell("docker run -v /var/run/docker.sock:/var/run/docker.sock runner pwsh -File ./Microsoft.DotNet.ImageBuilder/build.ps1 -CleanupDocker")
             }
         }

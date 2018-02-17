@@ -83,8 +83,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 tagsDoc.AppendLine();
                 foreach (var tuple in platformGroup)
                 {
-                    string tags = GetDocumentedTags(tuple.Platform.Tags)
-                        .Concat(GetDocumentedTags(tuple.Image.SharedTags))
+                    IEnumerable<string> documentedTags = GetDocumentedTags(tuple.Platform.Tags)
+                        .Concat(GetDocumentedTags(tuple.Image.SharedTags));
+
+                    if (!documentedTags.Any())
+                    {
+                        continue;
+                    }
+
+                    string tags = documentedTags
                         .Select(tag => $"`{tag}`")
                         .Aggregate((working, next) => $"{working}, {next}");
                     string dockerfile = tuple.Platform.DockerfilePath.Replace('\\', '/');

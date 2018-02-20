@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Username for the Docker Registry the images are pushed to");
             Username = username;
 
-            if (password != null ^ username != null)
+            if (passwordArg.IsSpecified ^ usernameArg.IsSpecified)
             {
                 Logger.WriteError($"error: `{usernameArg.Name}` and `{passwordArg.Name}` must both be specified.");
                 Environment.Exit(1);

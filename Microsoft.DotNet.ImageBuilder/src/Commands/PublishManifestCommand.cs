@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishManifestCommand : Command<PublishManifestOptions>
+    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
     {
         public PublishManifestCommand() : base()
         {
@@ -22,8 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteHeading("GENERATING MANIFESTS");
 
-            DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
-            try
+            ExecuteWithUser(() =>
             {
                 IEnumerable<ImageInfo> multiArchImages = Manifest.Repos
                     .SelectMany(repo => repo.Images)
@@ -41,11 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 WriteManifestSummary(multiArchImages);
-            }
-            finally
-            {
-                DockerHelper.Logout(Options.Server, Options.IsDryRun);
-            }
+            });
 
             return Task.CompletedTask;
         }

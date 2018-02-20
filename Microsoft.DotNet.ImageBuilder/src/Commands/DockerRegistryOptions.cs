@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -21,12 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.ParseCommandLine(syntax);
 
             string password = null;
-            syntax.DefineOption(
+            Argument<string> passwordArg = syntax.DefineOption(
                 "password",
                 ref password,
                 "Password for the Docker Registry the images are pushed to");
             Password = password;
-
 
             string server = null;
             syntax.DefineOption(
@@ -36,11 +36,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Server = server;
 
             string username = null;
-            syntax.DefineOption(
+            Argument<string> usernameArg = syntax.DefineOption(
                 "username",
                 ref username,
                 "Username for the Docker Registry the images are pushed to");
             Username = username;
+
+            if (password != null ^ username != null)
+            {
+                Logger.WriteError($"error: `{usernameArg.Name}` and `{passwordArg.Name}` must both be specified.");
+                Environment.Exit(1);
+            }
         }
     }
 }

@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class BuildCommand : Command<BuildOptions>
+    public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
         private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
 
@@ -138,8 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 Logger.WriteHeading("PUSHING IMAGES");
 
-                DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
-                try
+                ExecuteWithUser(() =>
                 {
                     IEnumerable<string> pushTags = BuiltTags
                         .Where(tag => !tag.Model.IsLocal)
@@ -148,11 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
                     }
-                }
-                finally
-                {
-                    DockerHelper.Logout(Options.Server, Options.IsDryRun);
-                }
+                });
             }
         }
 

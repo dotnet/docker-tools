@@ -98,9 +98,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             bool isStageReference = false;
 
-            for (int i = 0; i < fromMatches.Count; i++)
+            foreach (Match fromMatch in fromMatches)
             {
-                Match fromMatch = fromMatches[i];
                 if (string.Equals(fromImage, fromMatch.Groups[FromImageMatchName].Value, StringComparison.Ordinal))
                 {
                     // Stage references can only be to previous stages so once the fromImage is reached, stop searching.

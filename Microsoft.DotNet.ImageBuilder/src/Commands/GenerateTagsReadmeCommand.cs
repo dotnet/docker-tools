@@ -111,13 +111,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             switch (os)
             {
                 case OS.Windows:
-                    displayName = "Windows Server 2016";
-
                     if (osVersion != null && (osVersion.Contains("1709") || osVersion.Contains("16299")))
                     {
-                        displayName += " Version 1709 (Fall Creators Update)";
+                        displayName = "Windows Server, version 1709";
                     }
-
+                    else
+                    {
+                        displayName = "Windows Server 2016";
+                    }
                     break;
                 default:
                     displayName = os.ToString();

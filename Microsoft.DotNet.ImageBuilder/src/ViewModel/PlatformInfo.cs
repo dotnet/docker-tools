@@ -14,11 +14,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class PlatformInfo
     {
-        private static Regex FromRegex { get; } = new Regex(@"FROM\s+(?<fromImage>\S+)");
+        private const string FromImageMatchName = "fromImage";
+        private const string StageIdMatchName = "stageId";
+        private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
+
+        /// <summary>
+        /// Excludes FROM images that reference ARG values as well as stages in multi-stage Dockerfiles.
+        /// </summary>
         public IEnumerable<string> FromImages { get; private set; }
+
         public Platform Model { get; private set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         private VariableHelper VariableHelper { get; set; }
@@ -73,18 +80,41 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private void InitializeFromImages()
         {
-            string dockerfile = File.ReadAllText(this.DockerfilePath);
-            IEnumerable<Match> fromMatches = FromRegex.Matches(dockerfile);
+            string dockerfile = File.ReadAllText(DockerfilePath);
+            IList<Match> fromMatches = FromRegex.Matches(dockerfile);
 
             if (!fromMatches.Any())
             {
-                throw new InvalidOperationException($"Unable to find a FROM image in {this.DockerfilePath}.");
+                throw new InvalidOperationException($"Unable to find a FROM image in {DockerfilePath}.");
             }
 
             FromImages = fromMatches
-                .Select(match => match.Groups["fromImage"].Value)
-                .Where(from => !from.Contains("$"))
+                .Select(match => match.Groups[FromImageMatchName].Value)
+                .Where(from => !IsStageReference(from, fromMatches) && !from.Contains("$"))
                 .ToArray();
+        }
+
+        private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
+        {
+            bool isStageReference = false;
+
+            foreach (Match fromMatch in fromMatches)
+            {
+                if (string.Equals(fromImage, fromMatch.Groups[FromImageMatchName].Value, StringComparison.Ordinal))
+                {
+                    // Stage references can only be to previous stages so once the fromImage is reached, stop searching.
+                    break;
+                }
+
+                Group stageIdGroup = fromMatch.Groups[StageIdMatchName];
+                if (stageIdGroup.Success && string.Equals(fromImage, stageIdGroup.Value, StringComparison.Ordinal))
+                {
+                    isStageReference = true;
+                    break;
+                }
+            }
+
+            return isStageReference;
         }
     }
 }

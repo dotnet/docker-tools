@@ -36,9 +36,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string GetSubstituteValue(string variableName)
         {
             string variableValue = null;
-            if (variableName == "DockerfileGitCommitSha" && this.BuildContextPath != null)
+            if (variableName == "DockerfileGitCommitSha" && BuildContextPath != null)
             {
-                variableValue = GitHelper.GetCommitSha(this.BuildContextPath);
+                variableValue = GitHelper.GetCommitSha(BuildContextPath);
             }
             return variableValue;
         }

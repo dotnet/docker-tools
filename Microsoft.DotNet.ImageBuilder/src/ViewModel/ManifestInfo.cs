@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private ManifestFilter ManifestFilter { get; set; }
         public Manifest Model { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
-        private VariableHelper VariableHelper { get; set; }
+        public VariableHelper VariableHelper { get; set; }
 
         private ManifestInfo()
         {

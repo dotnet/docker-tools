@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private const char BuiltInDelimiter = ':';
         private const string RepoOwnerVariableName = "RepoOwner";
-        private const string SystemVariableTypeId = "System";
+        public const string SystemVariableTypeId = "System";
         private const string TagVariableTypeId = "TagRef";
         private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";
@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             VariablesOverride = variablesOverride;
         }
 
-        public string SubstituteValues(string expression, Func<string, string> getContextBasedSystemValue = null)
+        public string SubstituteValues(string expression, Func<string, string, string> getContextBasedSystemValue = null)
         {
             foreach (Match match in Regex.Matches(expression, TagVariablePattern))
             {
@@ -66,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return expression;
         }
 
-        private string GetBuiltInValue(string variableName, Func<string, string> getContextBasedSystemValue)
+        private string GetBuiltInValue(string variableName, Func<string, string, string> getContextBasedSystemValue)
         {
             string variableValue = null;
 
@@ -86,12 +86,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else if (getContextBasedSystemValue != null)
                 {
-                    variableValue = getContextBasedSystemValue(variableName);
+                    variableValue = getContextBasedSystemValue(variableType, variableName);
                 }
             }
             else if (string.Equals(variableType, TagVariableTypeId, StringComparison.Ordinal))
             {
                 variableValue = GetTagById(variableName)?.Name;
+            }
+            else if (getContextBasedSystemValue != null)
+            {
+                variableValue = getContextBasedSystemValue(variableType, variableName);
             }
 
             return variableValue;

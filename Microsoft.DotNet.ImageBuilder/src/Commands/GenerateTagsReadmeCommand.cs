@@ -16,6 +16,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateTagsReadmeCommand : Command<GenerateTagsReadmeOptions>
     {
+        private List<ImageDocumentationInfo> ImageDocInfos { get; set; }
+
         public GenerateTagsReadmeCommand() : base()
         {
         }
@@ -25,7 +27,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Logger.WriteHeading("GENERATING TAGS README");
             foreach (RepoInfo repo in Manifest.Repos)
             {
-                string tagsDoc = GetTagsDocumentation(repo);
+                ImageDocInfos = repo.Images
+                    .SelectMany(image => image.Platforms.Select(platform => new ImageDocumentationInfo(image, platform)))
+                    .Where(info => info.DocumentedTags.Any())
+                    .ToList();
+
+                string tagsDoc = repo.Model.ReadmeTemplate == null ?
+                    GetDefaultDocumentation() : GetTemplateBasedDocumentation(repo.Model.ReadmeTemplate);
 
                 Logger.WriteSubheading($"{repo.Name} Tags Documentation:");
                 Logger.WriteMessage();
@@ -57,20 +65,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return displayName;
         }
 
-        private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
-        {
-            return tagInfos.Where(tag => !tag.Model.IsUndocumented)
-                .Select(tag => tag.Name);
-        }
-
-        private string GetTagsDocumentation(RepoInfo repo)
+        private string GetDefaultDocumentation()
         {
             StringBuilder tagsDoc = new StringBuilder();
 
-            var platformGroups = repo.Images
-                .OrderBy(image => image.Model.ReadmeOrder)
-                .SelectMany(image => image.Platforms.Select(platform => new { Image = image, Platform = platform }))
-                .GroupBy(tuple => new { tuple.Platform.Model.OS, tuple.Platform.Model.OsVersion, tuple.Platform.Model.Architecture })
+            var platformGroups = ImageDocInfos
+                .GroupBy(info => new {info.Platform.Model.OS, info.Platform.Model.OsVersion, info.Platform.Model.Architecture })
                 .OrderByDescending(platformGroup => platformGroup.Key.Architecture)
                 .ThenBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion);
@@ -81,23 +81,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string arch = GetArchitectureDisplayName(platformGroup.Key.Architecture);
                 tagsDoc.AppendLine($"# Supported {os} {arch} tags");
                 tagsDoc.AppendLine();
-                foreach (var tuple in platformGroup)
-                {
-                    IEnumerable<string> documentedTags = GetDocumentedTags(tuple.Platform.Tags)
-                        .Concat(GetDocumentedTags(tuple.Image.SharedTags));
 
-                    if (!documentedTags.Any())
-                    {
-                        continue;
-                    }
-
-                    string tags = documentedTags
-                        .Select(tag => $"`{tag}`")
-                        .Aggregate((working, next) => $"{working}, {next}");
-                    string dockerfile = tuple.Platform.DockerfilePath.Replace('\\', '/');
-                    tagsDoc.AppendLine($"- [{tags} (*{dockerfile}*)]({Options.SourceUrl}/{dockerfile})");
-                }
-
+                IEnumerable<string> tagLines = platformGroup
+                    .Select(info => GetImageDocumentation(info))
+                    .Where(doc => doc != null);
+                tagsDoc.AppendLine(string.Join(Environment.NewLine, tagLines));
                 tagsDoc.AppendLine();
             }
 
@@ -128,6 +116,53 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return displayName;
         }
 
+        private string GetImageDocumentation(ImageDocumentationInfo info)
+        {
+            string tags = info.DocumentedTags
+                .Select(tag => $"`{tag}`")
+                .Aggregate((working, next) => $"{working}, {next}");
+            string dockerfile = info.Platform.DockerfilePath.Replace('\\', '/');
+            return $"- [{tags} (*{dockerfile}*)]({Options.SourceUrl}/{dockerfile})";
+        }
+
+        private string GetTemplateBasedDocumentation(string[] template)
+        {
+            StringBuilder tagsDoc = new StringBuilder();
+
+            foreach (string line in template)
+            {
+                string formattedLine = Manifest.VariableHelper.SubstituteValues(line, GetVariableValue);
+                tagsDoc.AppendLine(formattedLine);
+            }
+
+            if (ImageDocInfos.Any())
+            {
+                string missingTags = string.Join(Environment.NewLine, ImageDocInfos.Select(info => GetImageDocumentation(info)));
+                throw new InvalidOperationException(
+                    $"The following tags are not documented in the readme: {Environment.NewLine}{missingTags}");
+            }
+
+            return tagsDoc.ToString();
+        }
+
+        private string GetVariableValue(string variableType, string variableName)
+        {
+            string variableValue = null;
+
+            if (string.Equals(variableType, "TagDoc", StringComparison.Ordinal))
+            {
+                ImageDocumentationInfo info = ImageDocInfos
+                    .FirstOrDefault(tli => tli.Platform.Tags.Any(tag => tag.Name == variableName));
+                if (info != null)
+                {
+                    variableValue = GetImageDocumentation(info);
+                    ImageDocInfos.Remove(info);
+                }
+            }
+
+            return variableValue;
+        }
+
         private static string NormalizeLineEndings(string value, string targetFormat)
         {
             string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
@@ -150,11 +185,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Normalize the line endings to match the readme.
             tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
 
-            string updatedReadme = Regex.Replace(readme, "(# .*\\s*(- \\[.*\\s*)+)+", tagsDocumentation);
+            string updatedReadme = Regex.Replace(readme, "(([#*]+ .*\\s*)+(- \\[.*\\s*)+)+", tagsDocumentation);
             File.WriteAllText(repo.Model.ReadmePath, updatedReadme);
 
             Logger.WriteSubheading($"Updated '{repo.Model.ReadmePath}'");
             Logger.WriteMessage();
+        }
+
+        private class ImageDocumentationInfo
+        {
+            public PlatformInfo Platform { get; }
+            public IEnumerable<string> DocumentedTags { get; }
+
+            public ImageDocumentationInfo(ImageInfo image, PlatformInfo platform)
+            {
+                Platform = platform;
+                DocumentedTags = GetDocumentedTags(Platform.Tags)
+                    .Concat(GetDocumentedTags(image.SharedTags))
+                    .ToArray();
+            }
+
+            private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
+            {
+                return tagInfos.Where(tag => !tag.Model.IsUndocumented)
+                    .Select(tag => tag.Name);
+            }
         }
     }
 }

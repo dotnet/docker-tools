@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
@@ -27,19 +28,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             TagInfo tagInfo = new TagInfo();
             tagInfo.Model = model;
             tagInfo.BuildContextPath = buildContextPath;
-            tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetSubstituteValue);
+            tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetVariableValue);
             tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
 
             return tagInfo;
         }
 
-        public string GetSubstituteValue(string variableName)
+        private string GetVariableValue(string variableType, string variableName)
         {
             string variableValue = null;
-            if (variableName == "DockerfileGitCommitSha" && BuildContextPath != null)
+
+            if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
+                && string.Equals(variableName, "DockerfileGitCommitSha", StringComparison.Ordinal)
+                && BuildContextPath != null)
             {
                 variableValue = GitHelper.GetCommitSha(BuildContextPath);
             }
+
             return variableValue;
         }
     }

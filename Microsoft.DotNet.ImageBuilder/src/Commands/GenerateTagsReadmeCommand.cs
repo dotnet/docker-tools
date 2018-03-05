@@ -161,9 +161,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static string NormalizeLineEndings(string value, string targetFormat)
         {
             string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
-            if (targetLineEnding != Environment.NewLine)
+            string valueLineEnding = value.Contains("\r\n") ? "\r\n" : "\n";
+            if (valueLineEnding != targetLineEnding)
             {
-                value = value.Replace(Environment.NewLine, targetLineEnding);
+                value = value.Replace(valueLineEnding, targetLineEnding);
             }
 
             return value;

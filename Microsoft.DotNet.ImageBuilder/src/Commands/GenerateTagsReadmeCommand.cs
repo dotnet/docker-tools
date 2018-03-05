@@ -144,7 +144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string variableValue = null;
 
-            if (string.Equals(variableType, "TagDoc", StringComparison.Ordinal))
+            if (string.Equals(variableType, VariableHelper.TagDocTypeId, StringComparison.Ordinal))
             {
                 ImageDocumentationInfo info = ImageDocInfos
                     .FirstOrDefault(tli => tli.Platform.Tags.Any(tag => tag.Name == variableName));

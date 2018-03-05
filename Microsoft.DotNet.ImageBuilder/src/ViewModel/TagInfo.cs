@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             string variableValue = null;
 
             if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
-                && string.Equals(variableName, "DockerfileGitCommitSha", StringComparison.Ordinal)
+                && string.Equals(variableName, VariableHelper.DockerfileGitCommitShaVariableName, StringComparison.Ordinal)
                 && BuildContextPath != null)
             {
                 variableValue = GitHelper.GetCommitSha(BuildContextPath);

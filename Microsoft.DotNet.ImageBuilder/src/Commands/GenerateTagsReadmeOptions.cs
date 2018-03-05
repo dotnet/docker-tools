@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandName => "generateTagsReadme";
 
         public string SourceUrl { get; set; }
+        public string Template { get; set; }
         public bool UpdateReadme { get; set; }
 
         public GenerateTagsReadmeOptions() : base()
@@ -25,6 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool updateReadme = false;
             syntax.DefineOption("update-readme", ref updateReadme, "Update the readme file");
             UpdateReadme = updateReadme;
+
+            string template = null;
+            syntax.DefineOption("template", ref template, "Path to a custom template file");
+            Template = template;
 
             string sourceUrl = null;
             syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");

@@ -16,8 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 
         public string ReadmePath { get; set; }
 
-        public string[] ReadmeTemplate { get; set; }
-
         public Repo()
         {
         }

@@ -32,8 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Where(info => info.DocumentedTags.Any())
                     .ToList();
 
-                string tagsDoc = repo.Model.ReadmeTemplate == null ?
-                    GetDefaultDocumentation() : GetTemplateBasedDocumentation(repo.Model.ReadmeTemplate);
+                string tagsDoc = Options.Template == null ?
+                    GetManifestBasedDocumentation() : GetTemplateBasedDocumentation(Options.Template);
 
                 Logger.WriteSubheading($"{repo.Name} Tags Documentation:");
                 Logger.WriteMessage();
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return displayName;
         }
 
-        private string GetDefaultDocumentation()
+        private string GetManifestBasedDocumentation()
         {
             StringBuilder tagsDoc = new StringBuilder();
 
@@ -83,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 tagsDoc.AppendLine();
 
                 IEnumerable<string> tagLines = platformGroup
-                    .Select(info => GetImageDocumentation(info))
+                    .Select(info => GetTagDocumentation(info))
                     .Where(doc => doc != null);
                 tagsDoc.AppendLine(string.Join(Environment.NewLine, tagLines));
                 tagsDoc.AppendLine();
@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return displayName;
         }
 
-        private string GetImageDocumentation(ImageDocumentationInfo info)
+        private string GetTagDocumentation(ImageDocumentationInfo info)
         {
             string tags = info.DocumentedTags
                 .Select(tag => $"`{tag}`")
@@ -125,24 +125,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return $"- [{tags} (*{dockerfile}*)]({Options.SourceUrl}/{dockerfile})";
         }
 
-        private string GetTemplateBasedDocumentation(string[] template)
+        private string GetTemplateBasedDocumentation(string templatePath)
         {
-            StringBuilder tagsDoc = new StringBuilder();
-
-            foreach (string line in template)
-            {
-                string formattedLine = Manifest.VariableHelper.SubstituteValues(line, GetVariableValue);
-                tagsDoc.AppendLine(formattedLine);
-            }
+            string template = File.ReadAllText(templatePath);
+            string tagsDoc = Manifest.VariableHelper.SubstituteValues(template, GetVariableValue);
 
             if (ImageDocInfos.Any())
             {
-                string missingTags = string.Join(Environment.NewLine, ImageDocInfos.Select(info => GetImageDocumentation(info)));
+                string missingTags = string.Join(Environment.NewLine, ImageDocInfos.Select(info => GetTagDocumentation(info)));
                 throw new InvalidOperationException(
                     $"The following tags are not documented in the readme: {Environment.NewLine}{missingTags}");
             }
 
-            return tagsDoc.ToString();
+            return tagsDoc;
         }
 
         private string GetVariableValue(string variableType, string variableName)
@@ -155,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .FirstOrDefault(tli => tli.Platform.Tags.Any(tag => tag.Name == variableName));
                 if (info != null)
                 {
-                    variableValue = GetImageDocumentation(info);
+                    variableValue = GetTagDocumentation(info);
                     ImageDocInfos.Remove(info);
                 }
             }

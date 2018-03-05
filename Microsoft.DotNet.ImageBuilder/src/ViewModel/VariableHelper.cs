@@ -13,8 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class VariableHelper
     {
         private const char BuiltInDelimiter = ':';
+        public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
         private const string RepoOwnerVariableName = "RepoOwner";
         public const string SystemVariableTypeId = "System";
+        public const string TagDocTypeId = "TagDoc";
         private const string TagVariableTypeId = "TagRef";
         private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";

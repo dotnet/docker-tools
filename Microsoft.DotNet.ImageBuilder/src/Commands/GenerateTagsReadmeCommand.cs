@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string os = GetOsDisplayName(platformGroup.Key.OS, platformGroup.Key.OsVersion);
                 string arch = GetArchitectureDisplayName(platformGroup.Key.Architecture);
-                tagsDoc.AppendLine($"# Supported {os} {arch} tags");
+                tagsDoc.AppendLine($"# {os} {arch} tags");
                 tagsDoc.AppendLine();
 
                 IEnumerable<string> tagLines = platformGroup

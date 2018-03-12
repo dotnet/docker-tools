@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Normalize the line endings to match the readme.
             tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
 
-            string updatedReadme = Regex.Replace(readme, "(([#*]+ .*\\s*)+(- \\[.*\\s*)+)+", tagsDocumentation);
+            string updatedReadme = Regex.Replace(readme, "(([#*]+.*\\s*)(- \\[.*\\s*)+)+", tagsDocumentation);
             File.WriteAllText(repo.Model.ReadmePath, updatedReadme);
 
             Logger.WriteSubheading($"Updated '{repo.Model.ReadmePath}'");

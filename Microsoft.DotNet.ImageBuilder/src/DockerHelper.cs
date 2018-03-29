@@ -40,6 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     architecture = Architecture.AMD64;
                     break;
                 case "arm_32":
+                case "arm32v7":
                     architecture = Architecture.ARM;
                     break;
                 default:

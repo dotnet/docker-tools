@@ -40,11 +40,11 @@ namespace Microsoft.DotNet.ImageBuilder
                     architecture = Architecture.AMD64;
                     break;
                 case "arm_32":
-                case "arm32v7":
+                case "armv7l":
                     architecture = Architecture.ARM;
                     break;
                 default:
-                    throw new PlatformNotSupportedException("Unknown Docker Architecture");
+                    throw new PlatformNotSupportedException("Unknown Docker Architecture '$(infoArchitecture)'");
             }
 
             return architecture;

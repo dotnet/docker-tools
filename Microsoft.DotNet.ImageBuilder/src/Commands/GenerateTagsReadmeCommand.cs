@@ -99,13 +99,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             switch (os)
             {
                 case OS.Windows:
-                    if (osVersion != null && (osVersion.Contains("1709") || osVersion.Contains("16299")))
+                    if (osVersion == null || osVersion.Contains("2016"))
                     {
-                        displayName = "Windows Server, version 1709";
+                        displayName = "Windows Server 2016";
                     }
                     else
                     {
-                        displayName = "Windows Server 2016";
+                        displayName = $"Windows Server, version {osVersion}";
                     }
                     break;
                 default:

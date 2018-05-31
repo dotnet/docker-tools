@@ -1,5 +1,5 @@
 # build Microsoft.DotNet.ImageBuilder
-FROM microsoft/dotnet:2.0-sdk AS build-env
+FROM microsoft/dotnet:2.1-sdk AS build-env
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
@@ -13,6 +13,8 @@ RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln -r win7-x64
 COPY . ./
 RUN dotnet build Microsoft.DotNet.ImageBuilder.sln -r win7-x64
 RUN dotnet test tests/Microsoft.DotNet.ImageBuilder.Tests.csproj -r win7-x64
+
+RUN dotnet add ./src/Microsoft.DotNet.ImageBuilder.csproj package ILLink.Tasks -v 0.1.4-preview-981901 -s https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
 RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64
 
 

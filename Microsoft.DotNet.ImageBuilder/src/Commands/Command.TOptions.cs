@@ -39,8 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Manifest = ManifestInfo.Create(
                 manifestModel,
                 Options.GetManifestFilter(),
-                Options.RepoOwner,
-                Options.Variables);
+                Options);
 
             if (Options.IsVerbose)
             {

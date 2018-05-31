@@ -8,10 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using System.Reflection;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class Options
+    public abstract class Options: IOptionsInfo
     {
         protected abstract string CommandHelp { get; }
         protected abstract string CommandName { get; }
@@ -81,6 +82,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Architecture of Dockerfiles to operate on (default is current OS architecture)");
 
             return architecture;
+        }
+
+        public string GetOption(string name)
+        {
+            string result;
+
+            PropertyInfo propInfo = this.GetType().GetProperties()
+                .FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.Ordinal));
+            if (propInfo != null)
+            {
+                result = propInfo.GetValue(this)?.ToString() ?? "";
+            }
+            else
+            {
+                result = null;
+            }
+
+            return result;
         }
     }
 }

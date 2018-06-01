@@ -3,7 +3,7 @@
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
 # build Microsoft.DotNet.ImageBuilder
-FROM microsoft/dotnet:2.0-sdk AS build-env
+FROM microsoft/dotnet:2.1-sdk AS build-env
 WORKDIR image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
@@ -17,16 +17,17 @@ RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln
 COPY . ./
 RUN dotnet build Microsoft.DotNet.ImageBuilder.sln
 RUN dotnet test tests/Microsoft.DotNet.ImageBuilder.Tests.csproj
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-x64 /p:ShowLinkerSizeComparison=true
 
 
 # build runtime image
-FROM microsoft/dotnet:2.0-runtime
+FROM microsoft/dotnet:2.1-runtime-deps
 
 # install Docker
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         apt-transport-https \
+        curl \
         gnupg \
         software-properties-common \
     && rm -rf /var/lib/apt/lists/*
@@ -53,4 +54,4 @@ RUN apt-get update \
 WORKDIR image-builder
 COPY --from=build-env /image-builder/src/out ./
 
-ENTRYPOINT ["dotnet", "/image-builder/Microsoft.DotNet.ImageBuilder.dll"]
+ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else if (string.Equals(variableName, RepoOwnerVariableName, StringComparison.Ordinal))
                 {
-                    variableValue = variableValue = Options.RepoOwner ?? DockerHelper.GetImageOwner(Manifest.Repos.First().Name);
+                    variableValue = Options.RepoOwner ?? DockerHelper.GetImageOwner(Manifest.Repos.First().Name);
                 }
                 else if (getContextBasedSystemValue != null)
                 {

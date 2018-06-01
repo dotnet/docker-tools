@@ -17,8 +17,6 @@ RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln
 COPY . ./
 RUN dotnet build Microsoft.DotNet.ImageBuilder.sln
 RUN dotnet test tests/Microsoft.DotNet.ImageBuilder.Tests.csproj
-
-RUN dotnet add ./src/Microsoft.DotNet.ImageBuilder.csproj package ILLink.Tasks -v 0.1.4-preview-981901 -s https://dotnet.myget.org/F/dotnet-core/api/v3/index.json
 RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-x64 /p:ShowLinkerSizeComparison=true
 
 

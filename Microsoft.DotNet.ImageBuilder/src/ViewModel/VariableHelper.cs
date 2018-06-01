@@ -26,19 +26,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private Func<string, TagInfo> GetTagById { get; set; }
         private Manifest Manifest { get; set; }
-        private string RepoOwnerOverride { get; set; }
-        private IDictionary<string, string> VariablesOverride { get; set; }
+        private IOptionsInfo Options { get; set; }
 
         public VariableHelper(
             Manifest manifest,
-            IDictionary<string, string> variablesOverride,
-            string repoOwnerOverride,
+            IOptionsInfo options,
             Func<string, TagInfo> getTagById)
         {
             GetTagById = getTagById;
             Manifest = manifest;
-            RepoOwnerOverride = repoOwnerOverride;
-            VariablesOverride = variablesOverride;
+            Options = options;
         }
 
         public string SubstituteValues(string expression, Func<string, string, string> getContextBasedSystemValue = null)
@@ -84,11 +81,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else if (string.Equals(variableName, RepoOwnerVariableName, StringComparison.Ordinal))
                 {
-                    variableValue = variableValue = RepoOwnerOverride ?? DockerHelper.GetImageOwner(Manifest.Repos.First().Name);
+                    variableValue = Options.RepoOwner ?? DockerHelper.GetImageOwner(Manifest.Repos.First().Name);
                 }
                 else if (getContextBasedSystemValue != null)
                 {
                     variableValue = getContextBasedSystemValue(variableType, variableName);
+                }
+                else
+                {
+                    variableValue = Options.GetOption(variableName);
                 }
             }
             else if (string.Equals(variableType, TagVariableTypeId, StringComparison.Ordinal))
@@ -105,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private string GetUserValue(string variableName)
         {
-            if (!VariablesOverride.TryGetValue(variableName, out string variableValue))
+            if (!Options.Variables.TryGetValue(variableName, out string variableValue))
             {
                 Manifest.Variables?.TryGetValue(variableName, out variableValue);
             }

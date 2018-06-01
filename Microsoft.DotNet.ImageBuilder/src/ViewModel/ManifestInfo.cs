@@ -21,15 +21,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ManifestInfo Create(
-            Manifest model, ManifestFilter manifestFilter, string repoOwner, IDictionary<string, string> optionVariables)
+        public static ManifestInfo Create(Manifest model, ManifestFilter manifestFilter, IOptionsInfo options)
         {
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
             manifestInfo.ManifestFilter = manifestFilter;
-            manifestInfo.VariableHelper = new VariableHelper(model, optionVariables, repoOwner, manifestInfo.GetTagById);
+            manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById);
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
-                .Select(repo => RepoInfo.Create(repo, manifestFilter, repoOwner, manifestInfo.VariableHelper))
+                .Select(repo => RepoInfo.Create(repo, manifestFilter, options.RepoOwner, manifestInfo.VariableHelper))
                 .ToArray();
             manifestInfo.ActiveImages = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)

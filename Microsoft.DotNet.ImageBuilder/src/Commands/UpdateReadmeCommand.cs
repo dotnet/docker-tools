@@ -36,9 +36,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (!Options.IsDryRun)
                 {
-                    HttpResponseMessage response = await new HttpClient().SendAsync(request);
-                    Logger.WriteSubheading($"RESPONSE:{Environment.NewLine}{response}");
-                    response.EnsureSuccessStatusCode();
+                    using (HttpClient client = new HttpClient())
+                    using (HttpResponseMessage response = await client.SendAsync(request))
+                    {
+                        Logger.WriteSubheading($"RESPONSE:{Environment.NewLine}{response}");
+                        response.EnsureSuccessStatusCode();
+                    }
                 }
             }
         }

@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="ILLink.Tasks" Version="0.1.4-preview-981901" />
+    <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1461378" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="1.0.27-prerelease-01903-01" />
     <PackageReference Include="Newtonsoft.Json" Version="10.0.1"/>
     <PackageReference Include="System.CommandLine" Version="0.1.0-e170603-2"/>

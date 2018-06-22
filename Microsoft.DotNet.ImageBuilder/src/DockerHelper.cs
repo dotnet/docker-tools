@@ -28,6 +28,27 @@ namespace Microsoft.DotNet.ImageBuilder
             return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }
 
+        public static void ExecuteWithUser(Action action, string username, string password, string server, bool isDryRun)
+        {
+            bool userSpecified = username != null;
+            if (userSpecified)
+            {
+                DockerHelper.Login(username, password, server, isDryRun);
+            }
+
+            try
+            {
+                action();
+            }
+            finally
+            {
+                if (userSpecified)
+                {
+                    DockerHelper.Logout(server, isDryRun);
+                }
+            }
+        }
+
         private static Architecture GetArchitecture()
         {
             Architecture architecture;
@@ -82,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return image.Substring(0, image.IndexOf('/'));
         }
 
-        public static void Login(string username, string password, string server, bool isDryRun)
+        private static void Login(string username, string password, string server, bool isDryRun)
         {
             Version clientVersion = GetClientVersion();
             if (clientVersion >= new Version(17, 7))
@@ -112,7 +133,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static void Logout(string server, bool isDryRun)
+        private static void Logout(string server, bool isDryRun)
         {
             ExecuteHelper.Execute("docker", $"logout {server}", isDryRun);
         }

@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.ManifestFilter = manifestFilter;
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById);
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
-                .Select(repo => RepoInfo.Create(repo, manifestFilter, options.RepoOwner, manifestInfo.VariableHelper))
+                .Select(repo => RepoInfo.Create(repo, manifestFilter, options, manifestInfo.VariableHelper))
                 .ToArray();
             manifestInfo.ActiveImages = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)

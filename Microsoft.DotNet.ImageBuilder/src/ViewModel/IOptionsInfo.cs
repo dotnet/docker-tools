@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public interface IOptionsInfo
     {
-        string RepoOwner { get; }
+        IDictionary<string, string> RepoOverrides { get; }
         IDictionary<string, string> Variables { get; }
 
         string GetOption(string name);

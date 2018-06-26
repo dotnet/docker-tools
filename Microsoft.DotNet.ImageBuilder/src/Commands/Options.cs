@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsVerbose { get; set; }
         public string Manifest { get; set; }
         public string Repo { get; set; }
-        public string RepoOwner { get; set; }
+        public IDictionary<string, string> RepoOverrides { get; set; }
 
         public IDictionary<string, string> Variables { get; set; }
 
@@ -54,16 +54,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
 
-            string repoOwner = null;
-            syntax.DefineOption(
-                "repo-owner",
-                ref repoOwner,
-                "An alternative repo owner which overrides what is specified in the manifest");
-            RepoOwner = repoOwner;
+            IReadOnlyList<string> repoOverrides = Array.Empty<string>();
+            syntax.DefineOptionList("repo-override", ref repoOverrides, "Alternative repos which override the manifest (<target repo>=<override>)");
+            RepoOverrides = repoOverrides
+                .Select(pair => pair.Split(new char[] { '=' }, 2))
+                .ToDictionary(split => split[0], split => split[1]);
 
-            IReadOnlyList<string> nameValuePairs = Array.Empty<string>();
-            syntax.DefineOptionList("var", ref nameValuePairs, "Named variables to substitute into the manifest (name=value)");
-            Variables = nameValuePairs
+            IReadOnlyList<string> variables = Array.Empty<string>();
+            syntax.DefineOptionList("var", ref variables, "Named variables to substitute into the manifest (<name>=<value>)");
+            Variables = variables
                 .Select(pair => pair.Split(new char[] { '=' }, 2))
                 .ToDictionary(split => split[0], split => split[1]);
 

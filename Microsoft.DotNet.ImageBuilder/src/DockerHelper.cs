@@ -141,7 +141,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string ReplaceRepo(string image, string newRepo)
         {
-            return newRepo + GetRepo(image);
+            return newRepo + image.Substring(image.IndexOf(':'));
         }
     }
 }

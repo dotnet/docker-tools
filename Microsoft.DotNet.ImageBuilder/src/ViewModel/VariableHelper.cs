@@ -14,7 +14,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private const char BuiltInDelimiter = ':';
         public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
-        private const string RepoOwnerVariableName = "RepoOwner";
         public const string SystemVariableTypeId = "System";
         public const string TagDocTypeId = "TagDoc";
         private const string TagVariableTypeId = "TagRef";
@@ -78,10 +77,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 if (string.Equals(variableName, TimeStampVariableName, StringComparison.Ordinal))
                 {
                     variableValue = TimeStamp;
-                }
-                else if (string.Equals(variableName, RepoOwnerVariableName, StringComparison.Ordinal))
-                {
-                    variableValue = Options.RepoOwner ?? DockerHelper.GetImageOwner(Manifest.Repos.First().Name);
                 }
                 else if (getContextBasedSystemValue != null)
                 {

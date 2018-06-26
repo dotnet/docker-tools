@@ -189,30 +189,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool UpdateDockerfileFromCommands(PlatformInfo platform, out string dockerfilePath)
         {
+            bool updateDockerfile = false;
             dockerfilePath = platform.DockerfilePath;
 
-            // If an alternative repo owner was specified, update the intra-repo FROM commands.
-            bool updateDockerfile = !string.IsNullOrWhiteSpace(Options.RepoOwner)
-                && !platform.FromImages.All(Manifest.IsExternalImage);
-            if (updateDockerfile)
+            // If a repo override has been specified, update the FROM commands.
+            IEnumerable<string> intraRepoFromReferences = platform.FromImages
+                .Where(fromImage => !Manifest.IsExternalImage(fromImage));
+            if (intraRepoFromReferences.Any())
             {
                 string dockerfileContents = File.ReadAllText(dockerfilePath);
 
-                IEnumerable<string> fromImages = platform.FromImages
-                    .Where(fromImage => !Manifest.IsExternalImage(fromImage));
-                foreach (string fromImage in fromImages)
+                foreach (string fromImage in intraRepoFromReferences)
                 {
-                    Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
-                    string newFromImage = DockerHelper.ReplaceImageOwner(fromImage, Options.RepoOwner);
-                    Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
-                    dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
+                    string fromRepo = DockerHelper.GetRepo(fromImage);
+                    RepoInfo repo = Manifest.Repos.First(r => r.Model.Name == fromRepo);
+                    if (repo.HasOverriddenName)
+                    {
+                        string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
+                        Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                        Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
+                        dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
+                        updateDockerfile = true;
+                    }
                 }
 
-                // Don't overwrite the original dockerfile - write it to a new path.
-                dockerfilePath = dockerfilePath + ".temp";
-                Logger.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
-                Logger.WriteMessage(dockerfileContents);
-                File.WriteAllText(dockerfilePath, dockerfileContents);
+                if (updateDockerfile)
+                {
+                    // Don't overwrite the original dockerfile - write it to a new path.
+                    dockerfilePath = dockerfilePath + ".temp";
+                    Logger.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
+                    Logger.WriteMessage(dockerfileContents);
+                    File.WriteAllText(dockerfilePath, dockerfileContents);
+                }
             }
 
             return updateDockerfile;

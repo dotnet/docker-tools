@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
+        public bool HasOverriddenName { get; set; }
         public string Name { get; private set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Repo Model { get; private set; }
@@ -20,12 +21,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static RepoInfo Create(Repo model, ManifestFilter manifestFilter, string repoOwner, VariableHelper variableHelper)
+        public static RepoInfo Create(Repo model, ManifestFilter manifestFilter, IOptionsInfo options, VariableHelper variableHelper)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
-            repoInfo.Name = string.IsNullOrWhiteSpace(repoOwner) ?
-                model.Name : DockerHelper.ReplaceImageOwner(model.Name, repoOwner);
+            repoInfo.HasOverriddenName = options.RepoOverrides.TryGetValue(model.Name, out string nameOverride);
+            repoInfo.Name = repoInfo.HasOverriddenName ? nameOverride : model.Name;
             repoInfo.Images = model.Images
                 .Select(image => ImageInfo.Create(image, repoInfo.Name, manifestFilter, variableHelper))
                 .ToArray();

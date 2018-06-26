@@ -103,7 +103,12 @@ namespace Microsoft.DotNet.ImageBuilder
             return image.Substring(0, image.IndexOf('/'));
         }
 
-        private static void Login(string username, string password, string server, bool isDryRun)
+        public static string GetRepo(string image)
+        {
+            return image.Substring(0, image.IndexOf(':'));
+        }
+
+        public static void Login(string username, string password, string server, bool isDryRun)
         {
             Version clientVersion = GetClientVersion();
             if (clientVersion >= new Version(17, 7))
@@ -155,9 +160,9 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static string ReplaceImageOwner(string image, string newOwner)
+        public static string ReplaceRepo(string image, string newRepo)
         {
-            return newOwner + image.Substring(image.IndexOf('/'));
+            return newRepo + image.Substring(image.IndexOf(':'));
         }
     }
 }

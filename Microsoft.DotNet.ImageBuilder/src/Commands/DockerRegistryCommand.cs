@@ -11,23 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected void ExecuteWithUser(Action action)
         {
-            bool userSpecified = Options.Username != null;
-            if (userSpecified)
-            {
-                DockerHelper.Login(Options.Username, Options.Password, Options.Server, Options.IsDryRun);
-            }
-
-            try
-            {
-                action();
-            }
-            finally
-            {
-                if (userSpecified)
-                {
-                    DockerHelper.Logout(Options.Server, Options.IsDryRun);
-                }
-            }
+            DockerHelper.ExecuteWithUser(action, Options.Username, Options.Password, Options.Server, Options.IsDryRun);
         }
     }
 }

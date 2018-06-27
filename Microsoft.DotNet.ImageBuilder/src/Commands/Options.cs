@@ -12,7 +12,7 @@ using System.Reflection;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class Options: IOptionsInfo
+    public abstract class Options : IOptionsInfo
     {
         protected abstract string CommandHelp { get; }
         protected abstract string CommandName { get; }
@@ -29,12 +29,71 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
+        protected static Architecture DefineArchitectureOption(ArgumentSyntax syntax)
+        {
+            Architecture architecture = DockerHelper.Architecture;
+            syntax.DefineOption(
+                "architecture",
+                ref architecture,
+                value => (Architecture)Enum.Parse(typeof(Architecture), value, true),
+                "Architecture of Dockerfiles to operate on (default is current OS architecture)");
+
+            return architecture;
+        }
+
+        protected static void DefineManifestFilterOptions(ArgumentSyntax syntax, IManifestFilterOptions filterOptions)
+        {
+            filterOptions.Architecture = DefineArchitectureOption(syntax);
+
+            string osVersion = null;
+            syntax.DefineOption(
+                "os-version",
+                ref osVersion,
+                "OS version of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
+            filterOptions.OsVersion = osVersion;
+
+            string path = null;
+            syntax.DefineOption(
+                "path",
+                ref path,
+                "Directory path containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
+            filterOptions.Path = path;
+        }
+
         public virtual ManifestFilter GetManifestFilter()
         {
-            return new ManifestFilter()
+            ManifestFilter filter = new ManifestFilter()
             {
                 IncludeRepo = Repo,
             };
+
+            if (this is IManifestFilterOptions)
+            {
+                IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
+                filter.DockerArchitecture = filterOptions.Architecture;
+                filter.IncludeOsVersion = filterOptions.OsVersion;
+                filter.IncludePath = filterOptions.Path;
+            }
+
+            return filter;
+        }
+
+        public string GetOption(string name)
+        {
+            string result;
+
+            PropertyInfo propInfo = this.GetType().GetProperties()
+                .FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.Ordinal));
+            if (propInfo != null)
+            {
+                result = propInfo.GetValue(this)?.ToString() ?? "";
+            }
+            else
+            {
+                result = null;
+            }
+
+            return result;
         }
 
         public virtual void ParseCommandLine(ArgumentSyntax syntax)
@@ -69,36 +128,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isVerbose = false;
             syntax.DefineOption("verbose", ref isVerbose, "Show details about the tasks run");
             IsVerbose = isVerbose;
-        }
-
-        protected static Architecture DefineArchitectureOption(ArgumentSyntax syntax)
-        {
-            Architecture architecture = DockerHelper.Architecture;
-            syntax.DefineOption(
-                "architecture",
-                ref architecture,
-                value => (Architecture)Enum.Parse(typeof(Architecture), value, true),
-                "Architecture of Dockerfiles to operate on (default is current OS architecture)");
-
-            return architecture;
-        }
-
-        public string GetOption(string name)
-        {
-            string result;
-
-            PropertyInfo propInfo = this.GetType().GetProperties()
-                .FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.Ordinal));
-            if (propInfo != null)
-            {
-                result = propInfo.GetValue(this)?.ToString() ?? "";
-            }
-            else
-            {
-                result = null;
-            }
-
-            return result;
         }
     }
 }

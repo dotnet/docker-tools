@@ -46,8 +46,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 if (argSyntax.ActiveCommand != null)
                 {
-                    // Capture the Docker version used in the output.
+                    // Capture the Docker version and info in the output.
                     ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
+                    ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
 
                     ICommand command = commands.Single(c => c.Options == argSyntax.ActiveCommand.Value);
                     command.LoadManifest();

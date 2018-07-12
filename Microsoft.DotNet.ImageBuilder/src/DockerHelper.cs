@@ -140,7 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void Logout(string server, bool isDryRun)
         {
-            ExecuteHelper.Execute("docker", $"logout {server}", isDryRun);
+            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
         }
 
         public static void PullBaseImages(ManifestInfo manifest, Options options)

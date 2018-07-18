@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Model;
+using System.Collections.Generic;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -17,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsSkipPullingEnabled { get; set; }
         public bool IsTestRunDisabled { get; set; }
         public string OsVersion { get; set; }
-        public string Path { get; set; }
+        public IEnumerable<string> Paths { get; set; }
 
         public BuildOptions() : base()
         {

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -18,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string DestinationPassword { get; set; }
         public string DestinationServer { get; set; }
         public string DestinationUsername { get; set; }
-        public string Path { get; set; }
+        public IEnumerable<string> Paths { get; set; }
         public string OsVersion { get; set; }
         public string SourcePassword { get; set; }
         public string SourceRepo { get; set; }

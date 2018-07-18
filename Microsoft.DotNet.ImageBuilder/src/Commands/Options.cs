@@ -52,12 +52,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "OS version of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
             filterOptions.OsVersion = osVersion;
 
-            string path = null;
-            syntax.DefineOption(
+            IReadOnlyList<string> paths = Array.Empty<string>();
+            syntax.DefineOptionList(
                 "path",
-                ref path,
-                "Directory path containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
-            filterOptions.Path = path;
+                ref paths,
+                "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
+            filterOptions.Paths = paths;
         }
 
         public virtual ManifestFilter GetManifestFilter()
@@ -72,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
                 filter.DockerArchitecture = filterOptions.Architecture;
                 filter.IncludeOsVersion = filterOptions.OsVersion;
-                filter.IncludePath = filterOptions.Path;
+                filter.IncludePaths = filterOptions.Paths;
             }
 
             return filter;

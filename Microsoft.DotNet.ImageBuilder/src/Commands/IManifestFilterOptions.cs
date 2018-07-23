@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -10,6 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         Architecture Architecture { get; set; }
         string OsVersion { get; set; }
-        string Path { get; set; }
+        IEnumerable<string> Paths { get; set; }
     }
 }

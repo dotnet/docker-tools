@@ -98,11 +98,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return Version.TryParse(versionString, out Version version) ? version : null;
         }
 
-        public static string GetImageOwner(string image)
-        {
-            return image.Substring(0, image.IndexOf('/'));
-        }
-
         public static string GetRepo(string image)
         {
             return image.Substring(0, image.IndexOf(':'));

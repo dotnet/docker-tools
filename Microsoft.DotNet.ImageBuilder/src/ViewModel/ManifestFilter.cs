@@ -42,7 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             if (IncludePaths?.Any() ?? false)
             {
                 string pathsRegexPattern = GetFilterRegexPattern(IncludePaths.ToArray());
-                platforms = platforms.Where(platform => Regex.IsMatch(platform.Dockerfile, pathsRegexPattern, RegexOptions.IgnoreCase));
+                platforms = platforms
+                    .Where(platform => Regex.IsMatch(platform.Dockerfile, pathsRegexPattern, RegexOptions.IgnoreCase));
             }
 
             if (IncludeOsVersion != null)

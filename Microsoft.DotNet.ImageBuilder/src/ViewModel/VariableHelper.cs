@@ -16,11 +16,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
         public const string SystemVariableTypeId = "System";
         public const string TagDocTypeId = "TagDoc";
+        public const string TagDocListTypeId = "TagDocList";
         private const string TagVariableTypeId = "TagRef";
         private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";
 
-        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.]+)\\)";
+        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.|]+)\\)";
         private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
         private Func<string, TagInfo> GetTagById { get; set; }

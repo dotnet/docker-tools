@@ -147,11 +147,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (string.Equals(variableType, VariableHelper.TagDocTypeId, StringComparison.Ordinal))
             {
                 ImageDocumentationInfo info = ImageDocInfos
-                    .FirstOrDefault(tli => tli.Platform.Tags.Any(tag => tag.Name == variableName));
+                    .FirstOrDefault(idi => idi.Platform.Tags.Any(tag => tag.Name == variableName));
                 if (info != null)
                 {
                     variableValue = GetTagDocumentation(info);
                     ImageDocInfos.Remove(info);
+                }
+            }
+            else if (string.Equals(variableType, VariableHelper.TagDocListTypeId, StringComparison.Ordinal))
+            {
+                IEnumerable<string> tags = variableName.Split('|');
+                if (tags.Any())
+                {
+                    ImageDocumentationInfo info = ImageDocInfos
+                        .FirstOrDefault(idi => idi.DocumentedTags.Intersect(tags).Count() == tags.Count());
+                    if (info != null)
+                    {
+                        variableValue = GetTagDocumentation(new ImageDocumentationInfo(info.Platform, tags));
+
+                        // Remove the tags referenced by the TagDocList.  This will ensure an exception if there are any tags
+                        // excluded from the readme.
+                        info.DocumentedTags = info.DocumentedTags.Except(tags);
+                        if (!info.DocumentedTags.Any())
+                        {
+                            ImageDocInfos.Remove(info);
+                        }
+                    }
                 }
             }
 
@@ -191,7 +212,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private class ImageDocumentationInfo
         {
             public PlatformInfo Platform { get; }
-            public IEnumerable<string> DocumentedTags { get; }
+            public IEnumerable<string> DocumentedTags { get; set; }
 
             public ImageDocumentationInfo(ImageInfo image, PlatformInfo platform)
             {
@@ -199,6 +220,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 DocumentedTags = GetDocumentedTags(Platform.Tags)
                     .Concat(GetDocumentedTags(image.SharedTags))
                     .ToArray();
+            }
+
+            public ImageDocumentationInfo(PlatformInfo platform, IEnumerable<string> documentedTags)
+            {
+                Platform = platform;
+                DocumentedTags = documentedTags;
             }
 
             private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)

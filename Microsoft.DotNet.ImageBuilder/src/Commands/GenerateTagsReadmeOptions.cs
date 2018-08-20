@@ -11,6 +11,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Generate the tags section of the readme";
         protected override string CommandName => "generateTagsReadme";
 
+        public string ReadmePath { get; set; }
+        public bool SkipValidation { get; set; }
         public string SourceUrl { get; set; }
         public string Template { get; set; }
         public bool UpdateReadme { get; set; }
@@ -22,6 +24,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
+
+            string readmePath = null;
+            syntax.DefineOption("readme-path", ref readmePath, "Path of the readme to update (defaults to manifest setting)");
+            ReadmePath = readmePath;
+
+            bool skipValidation = false;
+            syntax.DefineOption(
+                "skip-validation", ref skipValidation, "Skip validating all documented tags are included in the readme");
+            SkipValidation = skipValidation;
 
             bool updateReadme = false;
             syntax.DefineOption("update-readme", ref updateReadme, "Update the readme file");

@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetManifestBasedDocumentation()
         {
-            StringBuilder tagsDoc = new StringBuilder();
+            StringBuilder tagsDoc = new StringBuilder($"## Complete set of Tags{Environment.NewLine}{Environment.NewLine}");
 
             var platformGroups = ImageDocInfos
                 .GroupBy(info => new {info.Platform.Model.OS, info.Platform.Model.OsVersion, info.Platform.Model.Architecture })
@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string template = File.ReadAllText(templatePath);
             string tagsDoc = Manifest.VariableHelper.SubstituteValues(template, GetVariableValue);
 
-            if (ImageDocInfos.Any())
+            if (!Options.SkipValidation && ImageDocInfos.Any())
             {
                 string missingTags = string.Join(Environment.NewLine, ImageDocInfos.Select(info => GetTagDocumentation(info)));
                 throw new InvalidOperationException(
@@ -191,21 +191,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return value;
         }
 
-        private static void UpdateReadme(string tagsDocumentation, RepoInfo repo)
+        private void UpdateReadme(string tagsDocumentation, RepoInfo repo)
         {
             Logger.WriteHeading("UPDATING README");
 
-            string readme = File.ReadAllText(repo.Model.ReadmePath);
+            string readmePath = Options.ReadmePath ?? repo.Model.ReadmePath;
+            string readme = File.ReadAllText(readmePath);
 
             // tagsDocumentation is formatted with Environment.NewLine which may not match the readme format. This can
             // happen when image-builder is invoked within a Linux container on a Windows host while using a host volume.
             // Normalize the line endings to match the readme.
             tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
 
-            string updatedReadme = Regex.Replace(readme, "(([#*]+.*\\s*)(- \\[.*\\s*)+)+", tagsDocumentation);
-            File.WriteAllText(repo.Model.ReadmePath, updatedReadme);
+            Regex regex = new Regex("^## Complete set of Tags\\s*(^(?!##).*\\s)*", RegexOptions.Multiline);
+            string updatedReadme = regex.Replace(readme, tagsDocumentation);
+            File.WriteAllText(readmePath, updatedReadme);
 
-            Logger.WriteSubheading($"Updated '{repo.Model.ReadmePath}'");
+            Logger.WriteSubheading($"Updated '{readmePath}'");
             Logger.WriteMessage();
         }
 

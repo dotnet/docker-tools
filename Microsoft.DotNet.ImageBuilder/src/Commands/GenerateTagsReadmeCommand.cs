@@ -174,6 +174,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
                     }
                 }
+            } 
+            else if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
+                && string.Equals(variableName, VariableHelper.SourceUrlVariableName, StringComparison.Ordinal))
+            {
+                variableValue = Options.SourceUrl;
             }
 
             return variableValue;
@@ -203,7 +208,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Normalize the line endings to match the readme.
             tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
 
-            Regex regex = new Regex("^## Complete set of Tags\\s*(^(?!##).*\\s)*", RegexOptions.Multiline);
+            string headerLine = tagsDocumentation
+                .Split(new [] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault();
+            Regex regex = new Regex($"^{headerLine}\\s*(^(?!##).*\\s)*", RegexOptions.Multiline);
             string updatedReadme = regex.Replace(readme, tagsDocumentation);
             File.WriteAllText(readmePath, updatedReadme);
 

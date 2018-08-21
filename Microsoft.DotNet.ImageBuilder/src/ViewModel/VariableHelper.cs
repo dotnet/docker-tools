@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private const char BuiltInDelimiter = ':';
         public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
+        public const string SourceUrlVariableName = "SourceUrl";
         public const string SystemVariableTypeId = "System";
         public const string TagDocTypeId = "TagDoc";
         public const string TagDocListTypeId = "TagDocList";

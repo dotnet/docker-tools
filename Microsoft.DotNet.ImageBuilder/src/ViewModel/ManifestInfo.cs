@@ -62,6 +62,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Distinct();
         }
 
+        public PlatformInfo GetPlatformByTag(string fullTagName)
+        {
+            return this.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(image => image.Platforms)
+                .First(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName));
+        }
+
         public TagInfo GetTagById(string id)
         {
             return GetAllTags()

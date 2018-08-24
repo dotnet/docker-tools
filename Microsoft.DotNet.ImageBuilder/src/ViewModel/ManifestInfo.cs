@@ -64,10 +64,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public PlatformInfo GetPlatformByTag(string fullTagName)
         {
-            return this.Repos
+            PlatformInfo result = this.Repos
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
-                .First(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName));
+                .FirstOrDefault(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName));
+
+            if (result == null)
+            {
+                throw new InvalidOperationException($"Unable to find platform for the tag '{fullTagName}'");
+            }
+
+            return result;
         }
 
         public TagInfo GetTagById(string id)

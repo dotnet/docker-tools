@@ -11,6 +11,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public static class ModelExtensions
     {
+        public static string GetDisplayName(this Architecture architecture, bool useLongNames = false)
+        {
+            string displayName;
+
+            switch (architecture)
+            {
+                case Architecture.ARM:
+                    displayName = useLongNames ? "arm32v7" : "arm32";
+                    break;
+                default:
+                    displayName = architecture.ToString().ToLowerInvariant();
+                    break;
+            }
+
+            return displayName;
+        }
+
         public static void Validate(this Manifest manifest)
         {
             foreach (Repo repo in manifest.Repos)

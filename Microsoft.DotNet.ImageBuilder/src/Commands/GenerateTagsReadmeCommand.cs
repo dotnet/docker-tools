@@ -48,23 +48,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private static string GetArchitectureDisplayName(Architecture architecture)
-        {
-            string displayName;
-
-            switch (architecture)
-            {
-                case Architecture.ARM:
-                    displayName = "arm32";
-                    break;
-                default:
-                    displayName = architecture.ToString().ToLowerInvariant();
-                    break;
-            }
-
-            return displayName;
-        }
-
         private string GetManifestBasedDocumentation()
         {
             StringBuilder tagsDoc = new StringBuilder($"## Complete set of Tags{Environment.NewLine}{Environment.NewLine}");
@@ -78,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (var platformGroup in platformGroups)
             {
                 string os = GetOsDisplayName(platformGroup.Key.OS, platformGroup.Key.OsVersion);
-                string arch = GetArchitectureDisplayName(platformGroup.Key.Architecture);
+                string arch = platformGroup.Key.Architecture.GetDisplayName();
                 tagsDoc.AppendLine($"# {os} {arch} tags");
                 tagsDoc.AppendLine();
 

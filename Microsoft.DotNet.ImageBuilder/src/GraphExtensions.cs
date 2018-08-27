@@ -10,11 +10,11 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class GraphExtensions
     {
-        public static IEnumerable<IEnumerable<T>> GetCompleteSubgraphs<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies)
+        public static IEnumerable<IEnumerable<T>> GetCompleteSubgraphs<T>(this IEnumerable<T> source, Func<T, IEnumerable<T>> getParents)
         {
             List<T[]> subgraphs = new List<T[]>();
 
-            List<Node<T>> nodes = CreateNodeList(source, getDependencies);
+            List<Node<T>> nodes = CreateNodeList(source, getParents);
             while (nodes.Any())
             {
                 HashSet<Node<T>> subgraph = new HashSet<Node<T>>();
@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return subgraphs;
         }
 
-        private static List<Node<T>> CreateNodeList<T>(IEnumerable<T> source, Func<T, IEnumerable<T>> getDependencies)
+        private static List<Node<T>> CreateNodeList<T>(IEnumerable<T> source, Func<T, IEnumerable<T>> getParents)
         {
             Dictionary<T, Node<T>> nodes = new Dictionary<T, Node<T>>();
 
@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     nodes.Add(item, itemNode);
                 }
 
-                foreach (T parent in getDependencies(item))
+                foreach (T parent in getParents(item))
                 {
                     if (!nodes.TryGetValue(parent, out Node<T> parentNode))
                     {

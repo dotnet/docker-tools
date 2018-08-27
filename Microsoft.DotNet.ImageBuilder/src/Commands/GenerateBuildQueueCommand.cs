@@ -59,6 +59,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// Formats a build leg name from the specified Dockerfile path. Any parts of the Dockerfile path that are in common with the
+        /// containing queue name are trimmed. The resulting leg name uses '-' characters as word separators.
+        /// </summary>
         private static string FormatLegName(string[] dockerfilePath, string[] queueNameParts)
         {
             string legName = dockerfilePath.First().Split('/')
@@ -73,25 +77,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return legName;
         }
 
+        /// <summary>
+        /// Formats a queue name by joining the specified parts. The resulting queue name is camelCased.
+        /// Any '-' occurrences within the specified parts will be treated as word boundaries.
+        /// </summary>
         private static string FormatQueueName(string[] parts)
         {
-            StringBuilder queueName = new StringBuilder();
-            bool isFirstWord = true;
-
-            foreach (string part in parts)
-            {
-                string[] subparts = part.Split('-');
-                for (int i = 0; i < subparts.Length; i++)
-                {
-                    string subpart = subparts[i];
-                    subparts[i] = isFirstWord ? subpart : char.ToUpper(subpart[0]) + subpart.Substring(1);
-                    isFirstWord = false;
-                }
-
-                queueName.Append(string.Join(string.Empty, subparts));
-            }
-
-            return queueName.ToString();
+            string[] allParts = parts.SelectMany(part => part.Split('-')).ToArray();
+            return allParts.First() +
+                string.Join(string.Empty, allParts.Skip(1).Select(part => char.ToUpper(part[0]) + part.Substring(1)));
         }
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform)

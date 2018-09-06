@@ -14,6 +14,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixCommand : Command<GenerateBuildMatrixOptions>
     {
+        private readonly static char[] PathSeparators = { '/', '\\' };
+
         public GenerateBuildMatrixCommand() : base()
         {
         }
@@ -53,8 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
-                    DotNetVersion = platform.DockerfilePath.Split('/')[0],
-                    OsVersion = platform.DockerfilePath.Split('/')[2].TrimEnd("-slim")
+                    DotNetVersion = platform.DockerfilePath.Split(PathSeparators)[0],
+                    OsVersion = platform.DockerfilePath.Split(PathSeparators)[2].TrimEnd("-slim")
                 })
                 .OrderByDescending(grouping => grouping.Key.DotNetVersion)
                 .ThenBy(grouping => grouping.Key.OsVersion);
@@ -92,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </summary>
         private static string FormatLegName(string[] dockerfilePath, string[] matrixNameParts)
         {
-            string legName = dockerfilePath.First().Split('/')
+            string legName = dockerfilePath.First().Split(PathSeparators)
                 .Where(subPart => !matrixNameParts.Any(matrixPart => string.Equals(matrixPart, subPart, StringComparison.OrdinalIgnoreCase)))
                 .Aggregate((working, next) => $"{working}-{next}");
 

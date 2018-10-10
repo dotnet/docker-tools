@@ -11,18 +11,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public static class ModelExtensions
     {
-        public static string GetDisplayName(this Architecture architecture, bool useLongNames = false)
+        public static string GetDisplayName(this Architecture architecture, string variant = null)
         {
             string displayName;
 
             switch (architecture)
             {
                 case Architecture.ARM:
-                    displayName = useLongNames ? "arm32v7" : "arm32";
+                    displayName = "arm32";
                     break;
                 default:
                     displayName = architecture.ToString().ToLowerInvariant();
                     break;
+            }
+
+            if (variant != null)
+            {
+                displayName += variant.ToLowerInvariant();
             }
 
             return displayName;

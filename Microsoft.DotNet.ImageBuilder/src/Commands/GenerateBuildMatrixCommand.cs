@@ -124,10 +124,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             var platformGroups = Manifest.Repos
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
-                .GroupBy(platform => new { platform.Model.OS, platform.Model.OsVersion, platform.Model.Architecture })
+                .GroupBy(platform =>
+                    new { platform.Model.OS, platform.Model.OsVersion, platform.Model.Architecture, platform.Model.Variant })
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
-                .ThenBy(platformGroup => platformGroup.Key.Architecture);
+                .ThenBy(platformGroup => platformGroup.Key.Architecture)
+                .ThenByDescending(platformGroup => platformGroup.Key.Variant);
 
             foreach (var platformGrouping in platformGroups)
             {
@@ -135,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     $"{Options.MatrixType.ToString().ToLowerInvariant()}Matrix",
                     platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : platformGrouping.Key.OS.ToString(),
-                    platformGrouping.Key.Architecture.GetDisplayName(useLongNames: true)
+                    platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
                 };
                 MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                 matrices.Add(matrix);

@@ -8,6 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
     public enum Architecture
     {
         ARM,
+        ARM64,
         AMD64,
     }
 }

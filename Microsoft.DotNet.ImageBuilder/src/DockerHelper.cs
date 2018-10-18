@@ -60,12 +60,16 @@ namespace Microsoft.DotNet.ImageBuilder
                 case "x86_64":
                     architecture = Architecture.AMD64;
                     break;
+                case "arm":
                 case "arm_32":
                 case "armv7l":
                     architecture = Architecture.ARM;
                     break;
+                case "arm64":
+                    architecture = Architecture.ARM64;
+                    break;
                 default:
-                    throw new PlatformNotSupportedException("Unknown Docker Architecture '$(infoArchitecture)'");
+                    throw new PlatformNotSupportedException($"Unknown Docker Architecture '{infoArchitecture}'");
             }
 
             return architecture;

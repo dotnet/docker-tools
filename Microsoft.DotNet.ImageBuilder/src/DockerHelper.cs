@@ -65,6 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 case "armv7l":
                     architecture = Architecture.ARM;
                     break;
+                case "aarch64":
                 case "arm64":
                     architecture = Architecture.ARM64;
                     break;

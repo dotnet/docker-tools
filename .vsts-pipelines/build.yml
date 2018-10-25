@@ -1,0 +1,60 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+jobs:
+
+################################################################################
+# Build Linux ImageBuilder
+################################################################################
+- job: LinuxImageBuilder
+  pool:
+    name: DotNet-Build
+    demands:
+    - agent.os -equals linux
+  workspace:
+    clean: all
+  variables:
+    runnerImageName: runner
+    runnerContainerName: runner-$(Build.BuildId)-$(System.JobId)
+  steps:
+  - script: docker build -t $(runnerImageName) -f Dockerfile.linux.runner --pull .
+    displayName: Build PowerShell Runner Image
+    workingDirectory: ./Microsoft.DotNet.ImageBuilder
+  - script: docker run -t -d -v /var/run/docker.sock:/var/run/docker.sock --name $(runnerContainerName) $(runnerImageName)
+    displayName: Start PowerShell Runner Container
+  - script: >
+      docker exec $(runnerContainerName)
+      docker login -u $(dockerRegistry.userName) -p $(BotAccount-dotnet-dockerhub-bot-password)
+    displayName: Docker Login
+  - script: docker exec $(runnerContainerName) pwsh -File build.ps1 -PushImages -CleanupDocker
+    displayName: Build and Publish ImageBuilder
+  - script: docker exec $(runnerContainerName) docker logout
+    displayName: Docker logout
+    condition: always()
+    continueOnError: true
+  - script: docker stop $(runnerContainerName)
+    displayName: Stop PowerShell Runner Container
+    condition: always()
+    continueOnError: true
+
+################################################################################
+# Build Windows ImageBuilder
+################################################################################
+- job: WindowsImageBuilder
+  pool:
+    name: DotNetCore-Infra
+    demands:
+    - VSTS_OS -equals Windows_Server_2016_Data_Center_with_Containers
+  workspace:
+    clean: all
+  steps:
+    - script: docker login -u $(dockerRegistry.userName) -p $(BotAccount-dotnet-dockerhub-bot-password)
+      displayName: Docker Login
+    - powershell: Microsoft.DotNet.ImageBuilder/build.ps1 -PushImages -CleanupDocker
+      displayName: Build and Publish ImageBuilder
+    - script: docker logout
+      displayName: Docker Logout
+      condition: always()
+      continueOnError: true

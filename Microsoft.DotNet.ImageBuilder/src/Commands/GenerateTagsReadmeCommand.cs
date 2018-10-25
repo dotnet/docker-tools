@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(tag => $"`{tag}`")
                 .Aggregate((working, next) => $"{working}, {next}");
             string dockerfile = info.Platform.DockerfilePath.Replace('\\', '/');
-            return $"- [{tags} (*{dockerfile}*)]({Options.SourceUrl}/{dockerfile})";
+            return $"- [{tags} (*Dockerfile*)]({Options.SourceUrl}/{dockerfile})";
         }
 
         private string GetTemplateBasedDocumentation(string templatePath)

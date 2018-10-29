@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (RepoInfo repo in Manifest.Repos)
             {
                 ImageDocInfos = repo.Images
-                    .SelectMany(image => image.Platforms.Select(platform => new ImageDocumentationInfo(image, platform)))
+                    .SelectMany(image => image.Platforms.SelectMany(platform => ImageDocumentationInfo.Create(image, platform)))
                     .Where(info => info.DocumentedTags.Any())
                     .ToList();
 
@@ -207,12 +207,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public PlatformInfo Platform { get; }
             public IEnumerable<string> DocumentedTags { get; set; }
 
-            public ImageDocumentationInfo(ImageInfo image, PlatformInfo platform)
+            private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
             {
                 Platform = platform;
-                DocumentedTags = GetDocumentedTags(Platform.Tags)
-                    .Concat(GetDocumentedTags(image.SharedTags))
+                DocumentedTags = GetDocumentedTags(Platform.Tags, documentationGroup)
+                    .Concat(GetDocumentedTags(image.SharedTags, documentationGroup))
                     .ToArray();
+            }
+
+            public static IEnumerable<ImageDocumentationInfo> Create (ImageInfo image, PlatformInfo platform)
+            {
+                IEnumerable<string> documentationGroups = image.SharedTags
+                    .Concat(platform.Tags)
+                    .Select(tag => tag.Model.DocumentationGroup)
+                    .Distinct();
+                foreach (string documentationGroup in documentationGroups)
+                {
+                    yield return new ImageDocumentationInfo(image, platform, documentationGroup);
+                }
             }
 
             public ImageDocumentationInfo(PlatformInfo platform, IEnumerable<string> documentedTags)
@@ -221,9 +233,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 DocumentedTags = documentedTags;
             }
 
-            private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos)
+            private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos, string documentationGroup)
             {
-                return tagInfos.Where(tag => !tag.Model.IsUndocumented)
+                return tagInfos
+                    .Where(tag => !tag.Model.IsUndocumented && tag.Model.DocumentationGroup == documentationGroup)
                     .Select(tag => tag.Name);
             }
         }

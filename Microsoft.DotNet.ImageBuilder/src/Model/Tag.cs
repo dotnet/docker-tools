@@ -6,6 +6,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 {
     public class Tag
     {
+        public string DocumentationGroup { get; set; }
+
         public string Id { get; set; }
 
         public bool IsLocal { get; set; }

@@ -16,7 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public Architecture Architecture { get; set; }
         public bool IsPushEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
-        public bool IsTestRunDisabled { get; set; }
         public string OsVersion { get; set; }
         public IEnumerable<string> Paths { get; set; }
 
@@ -37,10 +36,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isSkipPullingEnabled = false;
             syntax.DefineOption("skip-pulling", ref isSkipPullingEnabled, "Skip explicitly pulling the base images of the Dockerfiles");
             IsSkipPullingEnabled = isSkipPullingEnabled;
-
-            bool isTestRunDisabled = false;
-            syntax.DefineOption("skip-test", ref isTestRunDisabled, "Skip running the tests");
-            IsTestRunDisabled = isTestRunDisabled;
         }
     }
 }

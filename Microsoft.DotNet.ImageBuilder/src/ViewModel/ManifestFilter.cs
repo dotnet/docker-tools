@@ -60,12 +60,5 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             return manifest.Repos.Where(repo => string.IsNullOrWhiteSpace(IncludeRepo) || repo.Name == IncludeRepo);
         }
-
-        public IEnumerable<string> GetTestCommands(Manifest manifest)
-        {
-            string[] commands = null;
-            manifest.TestCommands?.TryGetValue(DockerOS, out commands);
-            return commands ?? Enumerable.Empty<string>();
-        }
     }
 }

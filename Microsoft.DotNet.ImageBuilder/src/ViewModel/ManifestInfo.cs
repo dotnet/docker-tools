@@ -83,12 +83,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .FirstOrDefault(kvp => kvp.Model.Id == id);
         }
 
-        public IEnumerable<string> GetTestCommands()
-        {
-            return ManifestFilter.GetTestCommands(Model)
-                .Select(command => VariableHelper.SubstituteValues(command));
-        }
-
         public bool IsExternalImage(string image)
         {
             return Repos.All(repo => repo.IsExternalImage(image));

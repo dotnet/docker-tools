@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private string GetTagDocumentation(ImageDocumentationInfo info)
         {
             string tags = info.DocumentedTags
-                .Select(tag => $"`{tag}`")
+                .Select(tag => $"`{tag.Name}`")
                 .Aggregate((working, next) => $"{working}, {next}");
             string dockerfile = info.Platform.DockerfilePath.Replace('\\', '/');
             return $"- [{tags} (*Dockerfile*)]({Options.SourceUrl}/{dockerfile})";
@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (string.Equals(variableType, VariableHelper.TagDocTypeId, StringComparison.Ordinal))
             {
                 ImageDocumentationInfo info = ImageDocInfos
-                    .FirstOrDefault(idi => idi.Platform.Tags.Any(tag => tag.Name == variableName));
+                    .FirstOrDefault(idi => idi.DocumentedTags.Any(tag => tag.Name == variableName));
                 if (info != null)
                 {
                     variableValue = GetTagDocumentation(info);
@@ -139,18 +139,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else if (string.Equals(variableType, VariableHelper.TagDocListTypeId, StringComparison.Ordinal))
             {
-                IEnumerable<string> tags = variableName.Split('|');
-                if (tags.Any())
+                IEnumerable<string> variableTags = variableName.Split('|');
+                if (variableTags.Any())
                 {
                     ImageDocumentationInfo info = ImageDocInfos
-                        .FirstOrDefault(idi => idi.DocumentedTags.Intersect(tags).Count() == tags.Count());
+                        .FirstOrDefault(idi => idi.DocumentedTags.Select(tag => tag.Name).Intersect(variableTags).Count() == variableTags.Count());
                     if (info != null)
                     {
-                        variableValue = GetTagDocumentation(new ImageDocumentationInfo(info.Platform, tags));
+                        IEnumerable<TagInfo> variableTagInfos = info.DocumentedTags
+                            .Where(tag => variableTags.Any(docTag => docTag == tag.Name));
+                        variableValue = GetTagDocumentation(new ImageDocumentationInfo(info.Platform, variableTagInfos));
 
                         // Remove the tags referenced by the TagDocList.  This will ensure an exception if there are any tags
                         // excluded from the readme.
-                        info.DocumentedTags = info.DocumentedTags.Except(tags);
+                        info.DocumentedTags = info.DocumentedTags.Except(variableTagInfos);
                         if (!info.DocumentedTags.Any())
                         {
                             ImageDocInfos.Remove(info);
@@ -205,7 +207,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private class ImageDocumentationInfo
         {
             public PlatformInfo Platform { get; }
-            public IEnumerable<string> DocumentedTags { get; set; }
+            public IEnumerable<TagInfo> DocumentedTags { get; set; }
 
             private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
             {
@@ -213,6 +215,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 DocumentedTags = GetDocumentedTags(Platform.Tags, documentationGroup)
                     .Concat(GetDocumentedTags(image.SharedTags, documentationGroup))
                     .ToArray();
+            }
+
+            public ImageDocumentationInfo(PlatformInfo platform, IEnumerable<TagInfo> documentedTags)
+            {
+                Platform = platform;
+                DocumentedTags = documentedTags;
             }
 
             public static IEnumerable<ImageDocumentationInfo> Create (ImageInfo image, PlatformInfo platform)
@@ -227,17 +235,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
-            public ImageDocumentationInfo(PlatformInfo platform, IEnumerable<string> documentedTags)
-            {
-                Platform = platform;
-                DocumentedTags = documentedTags;
-            }
-
-            private static IEnumerable<string> GetDocumentedTags(IEnumerable<TagInfo> tagInfos, string documentationGroup)
+            private static IEnumerable<TagInfo> GetDocumentedTags(
+                IEnumerable<TagInfo> tagInfos, string documentationGroup)
             {
                 return tagInfos
-                    .Where(tag => !tag.Model.IsUndocumented && tag.Model.DocumentationGroup == documentationGroup)
-                    .Select(tag => tag.Name);
+                    .Where(tag => !tag.Model.IsUndocumented && tag.Model.DocumentationGroup == documentationGroup);
             }
         }
     }

@@ -166,19 +166,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void LogDiagnostics(IEnumerable<MatrixInfo> matrices)
         {
-            if (Options.IsVerbose)
+            // Write out the matrices in a human friendly format
+            foreach (MatrixInfo matrix in matrices)
             {
-                // Write out the matrices in a human friendly format
-                foreach (MatrixInfo matrix in matrices)
+                Logger.WriteMessage($"  {matrix.Name}:");
+                foreach (LegInfo leg in matrix.Legs)
                 {
-                    Logger.WriteMessage($"  {matrix.Name}:");
-                    foreach (LegInfo leg in matrix.Legs)
+                    Logger.WriteMessage($"    {leg.Name}:");
+                    foreach (var variable in leg.Variables)
                     {
-                        Logger.WriteMessage($"    {leg.Name}:");
-                        foreach (var variable in leg.Variables)
-                        {
-                            Logger.WriteMessage($"      {variable.Name}: {variable.Value}");
-                        }
+                        Logger.WriteMessage($"      {variable.Name}: {variable.Value}");
                     }
                 }
             }

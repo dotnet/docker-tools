@@ -98,8 +98,12 @@ namespace Microsoft.DotNet.ImageBuilder
             // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
             string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
 
-            // Trim off the '-ce' or '-ee' suffix
-            versionString = versionString.Substring(0, versionString.IndexOf('-'));
+            if (versionString.Contains('-'))
+            {
+                // Trim off the '-ce' or '-ee' suffix
+                versionString = versionString.Substring(0, versionString.IndexOf('-'));
+            }
+
             return Version.TryParse(versionString, out Version version) ? version : null;
         }
 

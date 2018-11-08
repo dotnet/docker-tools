@@ -49,6 +49,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     try
                     {
+                        InvokeBuildHook("pre-build", platform.BuildContextPath);
+
                         // Tag the built images with the shared tags as well as the platform tags.
                         // Some tests and image FROM instructions depend on these tags.
                         IEnumerable<string> platformTags = platform.Tags
@@ -56,12 +58,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .ToArray();
                         string tagArgs = GetDockerTagArgs(image, platformTags);
                         string buildArgs = GetDockerBuildArgs(platform);
+                        string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}";
 
-                        InvokeBuildHook("pre-build", platform.BuildContextPath);
-                        ExecuteHelper.Execute(
-                            "docker",
-                            $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}",
-                            Options.IsDryRun);
+                        if (Options.IsRetryEnabled)
+                        {
+                            ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, Options.IsDryRun);
+                        }
+                        else
+                        {
+                            ExecuteHelper.Execute("docker", dockerArgs, Options.IsDryRun);
+                        }
+
                         InvokeBuildHook("post-build", platform.BuildContextPath);
                         BuiltTags = BuiltTags.Concat(platform.Tags);
                     }

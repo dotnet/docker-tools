@@ -15,6 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public Architecture Architecture { get; set; }
         public bool IsPushEnabled { get; set; }
+        public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
         public bool IsTestRunDisabled { get; set; }
         public string OsVersion { get; set; }
@@ -33,6 +34,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isPushEnabled = false;
             syntax.DefineOption("push", ref isPushEnabled, "Push built images to Docker registry");
             IsPushEnabled = isPushEnabled;
+
+            bool isRetryEnabled = false;
+            syntax.DefineOption("retry", ref isRetryEnabled, "Retry building images upon failure");
+            IsRetryEnabled = isRetryEnabled;
 
             bool isSkipPullingEnabled = false;
             syntax.DefineOption("skip-pulling", ref isSkipPullingEnabled, "Skip explicitly pulling the base images of the Dockerfiles");

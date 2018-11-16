@@ -40,9 +40,12 @@ RUN curl -fsSL https://download.docker.com/linux/debian/gpg | apt-key add - \
     && rm -rf /var/lib/apt/lists/*
 
 # install manifest-tool
-RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.6.0/manifest-tool-linux-amd64" \
-        -o /usr/local/bin/manifest-tool \
-    && chmod +x /usr/local/bin/manifest-tool
+# TODO: Workaround until manifest-tool v0.9.0 is released w/support for windows/arm images.
+# See https://github.com/estesp/manifest-tool/pull/60
+COPY manifest-tool /usr/local/bin/manifest-tool
+# RUN curl -fsSL "https://github.com/estesp/manifest-tool/releases/download/v0.6.0/manifest-tool-linux-amd64" \
+#         -o /usr/local/bin/manifest-tool \
+#     && chmod +x /usr/local/bin/manifest-tool
 
 # install git
 RUN apt-get update \

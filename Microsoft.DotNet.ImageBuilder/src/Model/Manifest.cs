@@ -14,9 +14,6 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 
         public IDictionary<string, string> Variables { get; set; }
 
-        [JsonConverter(typeof(EnumKeyDictionaryConverter<OS>))]
-        public IDictionary<OS, string[]> TestCommands { get; set; }
-
         public Manifest()
         {
         }

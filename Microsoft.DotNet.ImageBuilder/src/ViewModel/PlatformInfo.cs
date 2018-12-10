@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<string> FromImages { get; private set; }
 
         public Platform Model { get; private set; }
+        private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         private VariableHelper VariableHelper { get; set; }
 
@@ -38,6 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
+            platformInfo.RepoName = repoName;
             platformInfo.VariableHelper = variableHelper;
 
             if (File.Exists(model.Dockerfile))
@@ -72,10 +74,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             else
             {
                 buildArgs = Model.BuildArgs
-                    .ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value));
+                    .ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value, GetVariableValue));
             }
 
             return buildArgs;
+        }
+
+        private string GetVariableValue(string variableType, string variableName)
+        {
+            string variableValue = null;
+
+            if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
+                && string.Equals(variableName, VariableHelper.RepoVariableName, StringComparison.Ordinal))
+            {
+                variableValue = RepoName;
+            }
+
+            return variableValue;
         }
 
         private void InitializeFromImages()

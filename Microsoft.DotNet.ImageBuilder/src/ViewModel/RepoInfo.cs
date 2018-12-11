@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             repoInfo.HasOverriddenName = options.RepoOverrides.TryGetValue(model.Name, out string nameOverride);
             repoInfo.Name = repoInfo.HasOverriddenName ? nameOverride : model.Name;
             repoInfo.Images = model.Images
-                .Select(image => ImageInfo.Create(image, repoInfo.Name, manifestFilter, variableHelper))
+                .Select(image => ImageInfo.Create(image, model, repoInfo.Name, manifestFilter, variableHelper))
                 .ToArray();
 
             return repoInfo;
@@ -42,11 +42,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             return File.ReadAllText(Model.ReadmePath);
-        }
-
-        public bool IsExternalImage(string image)
-        {
-            return !image.StartsWith($"{Model.Name}:");
         }
     }
 }

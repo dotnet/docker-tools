@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetDockerBuildArgs(PlatformInfo platform)
         {
-            IEnumerable<string> buildArgs = platform.GetBuildArgs()
+            IEnumerable<string> buildArgs = platform.BuildArgs
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             return string.Join(string.Empty, buildArgs);
         }
@@ -163,24 +163,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             dockerfilePath = platform.DockerfilePath;
 
             // If a repo override has been specified, update the FROM commands.
-            IEnumerable<string> intraRepoFromReferences = platform.FromImages
-                .Where(fromImage => !Manifest.IsExternalImage(fromImage));
-            if (intraRepoFromReferences.Any())
+            if (platform.OverriddenFromImages.Any())
             {
                 string dockerfileContents = File.ReadAllText(dockerfilePath);
 
-                foreach (string fromImage in intraRepoFromReferences)
+                foreach (string fromImage in platform.OverriddenFromImages)
                 {
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.Repos.First(r => r.Model.Name == fromRepo);
-                    if (repo.HasOverriddenName)
-                    {
-                        string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
-                        Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
-                        Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
-                        dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
-                        updateDockerfile = true;
-                    }
+                    string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
+                    Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
+                    dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
+                    updateDockerfile = true;
                 }
 
                 if (updateDockerfile)

@@ -196,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string headerLine = tagsDocumentation
                 .Split(new [] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .FirstOrDefault();
-            Regex regex = new Regex($"^{headerLine}\\s*(^(?!##).*\\s)*", RegexOptions.Multiline);
+            Regex regex = new Regex($"^{headerLine}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);
             string updatedReadme = regex.Replace(readme, tagsDocumentation);
             File.WriteAllText(readmePath, updatedReadme);
 

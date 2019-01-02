@@ -159,8 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform)
         {
-            return platform.FromImages
-                .Where(fromImage => !Manifest.IsExternalImage(fromImage))
+            return platform.IntraRepoFromImages
                 .Select(fromImage => Manifest.GetPlatformByTag(fromImage));
         }
 

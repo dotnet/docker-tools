@@ -57,8 +57,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             return ActiveImages
                 .SelectMany(image => image.ActivePlatforms)
-                .SelectMany(platform => platform.FromImages)
-                .Where(IsExternalImage)
+                .SelectMany(platform => platform.ExternalFromImages)
                 .Distinct();
         }
 
@@ -81,11 +80,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             return GetAllTags()
                 .FirstOrDefault(kvp => kvp.Model.Id == id);
-        }
-
-        public bool IsExternalImage(string image)
-        {
-            return Repos.All(repo => repo.IsExternalImage(image));
         }
     }
 }

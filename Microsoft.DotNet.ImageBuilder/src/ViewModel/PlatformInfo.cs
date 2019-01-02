@@ -14,19 +14,22 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class PlatformInfo
     {
+        private const string ArgGroupName = "arg";
+        private static readonly string ArgPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
         private const string FromImageMatchName = "fromImage";
         private const string StageIdMatchName = "stageId";
         private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
+        private List<string> _overriddenFromImages = new List<string>();
+
+        public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
-
-        /// <summary>
-        /// Excludes FROM images that reference ARG values as well as stages in multi-stage Dockerfiles.
-        /// </summary>
-        public IEnumerable<string> FromImages { get; private set; }
-
+        public IEnumerable<string> ExternalFromImages { get; private set; }
+        public IEnumerable<string> IntraRepoFromImages { get; private set; }
+        public IEnumerable<string> OverriddenFromImages => _overriddenFromImages;
         public Platform Model { get; private set; }
+        private Repo RepoModel { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         private VariableHelper VariableHelper { get; set; }
@@ -35,11 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static PlatformInfo Create(Platform model, string repoName, VariableHelper variableHelper)
+        public static PlatformInfo Create(Platform model, Repo repoModel, string repoName, VariableHelper variableHelper)
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
             platformInfo.RepoName = repoName;
+            platformInfo.RepoModel = repoModel;
             platformInfo.VariableHelper = variableHelper;
 
             if (File.Exists(model.Dockerfile))
@@ -58,26 +62,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, platformInfo.BuildContextPath))
                 .ToArray();
 
+            platformInfo.InitializeBuildArgs();
             platformInfo.InitializeFromImages();
 
             return platformInfo;
-        }
-
-        public IDictionary<string, string> GetBuildArgs()
-        {
-            IDictionary<string, string> buildArgs;
-
-            if (Model.BuildArgs == null)
-            {
-                buildArgs = ImmutableDictionary<string, string>.Empty;
-            }
-            else
-            {
-                buildArgs = Model.BuildArgs
-                    .ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value, GetVariableValue));
-            }
-
-            return buildArgs;
         }
 
         private string GetVariableValue(string variableType, string variableName)
@@ -93,6 +81,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return variableValue;
         }
 
+        private void InitializeBuildArgs()
+        {
+            if (Model.BuildArgs == null)
+            {
+                BuildArgs = ImmutableDictionary<string, string>.Empty;
+            }
+            else
+            {
+                BuildArgs = Model.BuildArgs
+                    .ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value, GetVariableValue));
+            }
+        }
+
         private void InitializeFromImages()
         {
             string dockerfile = File.ReadAllText(DockerfilePath);
@@ -103,9 +104,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 throw new InvalidOperationException($"Unable to find a FROM image in {DockerfilePath}.");
             }
 
-            FromImages = fromMatches
+            IEnumerable<string> fromImages = fromMatches
                 .Select(match => match.Groups[FromImageMatchName].Value)
-                .Where(from => !IsStageReference(from, fromMatches) && !from.Contains("$"))
+                .Select(from => SubstituteOverriddenRepo(from))
+                .Select(from => SubstituteBuildArgs(from))
+                .Where(from => !IsStageReference(from, fromMatches))
+                .ToArray();
+
+            IntraRepoFromImages = fromImages
+                .Where(from => from.StartsWith($"{RepoName}:"))
+                .ToArray();
+            ExternalFromImages = fromImages
+                .Except(IntraRepoFromImages)
                 .ToArray();
         }
 
@@ -130,6 +140,32 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             return isStageReference;
+        }
+
+        private string SubstituteBuildArgs(string instruction)
+        {
+            foreach (Match match in Regex.Matches(instruction, ArgPattern))
+            {
+                if (!BuildArgs.TryGetValue(match.Groups[ArgGroupName].Value, out string argValue))
+                {
+                    throw new InvalidOperationException($"A value was not found for the ARG '{match.Value}'");
+                }
+
+                instruction = instruction.Replace(match.Value, argValue);
+            }
+
+            return instruction;
+        }
+
+        private string SubstituteOverriddenRepo(string from)
+        {
+            if (RepoName != RepoModel.Name && from.StartsWith($"{RepoModel.Name}:"))
+            {
+                _overriddenFromImages.Add(from);
+                from = DockerHelper.ReplaceRepo(from, RepoName);
+            }
+
+            return from;
         }
     }
 }

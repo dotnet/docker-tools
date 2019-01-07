@@ -3,16 +3,21 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateBuildMatrixOptions : Options
+    public class GenerateBuildMatrixOptions : Options, IManifestFilterOptions
     {
         protected override string CommandHelp => "Generate the VSTS build matrix for building the images";
         protected override string CommandName => "generateBuildMatrix";
 
+        public Architecture Architecture { get; set; }
+        public string OsVersion { get; set; }
         public MatrixType MatrixType { get; set; }
+        public IEnumerable<string> Paths { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -21,6 +26,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
+
+            DefineManifestFilterOptions(syntax, this);
 
             MatrixType matrixType = MatrixType.Build;
             syntax.DefineOption(

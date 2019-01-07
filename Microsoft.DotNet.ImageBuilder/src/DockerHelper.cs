@@ -155,13 +155,18 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (string fromImage in baseImages)
                 {
-                    ExecuteHelper.ExecuteWithRetry("docker", $"pull {fromImage}", options.IsDryRun);
+                    PullImage(fromImage, options.IsDryRun);
                 }
             }
             else
             {
                 Logger.WriteMessage("No external base images to pull");
             }
+        }
+
+        public static void PullImage(string image, bool isDryRun)
+        {
+            ExecuteHelper.ExecuteWithRetry("docker", $"pull {image}", isDryRun);
         }
 
         public static string ReplaceRepo(string image, string newRepo)

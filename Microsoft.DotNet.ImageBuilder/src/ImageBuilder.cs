@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 ICommand[] commands = {
                     new BuildCommand(),
                     new CopyImagesCommand(),
+                    new CopyAcrImagesCommand(),
                     new GenerateBuildMatrixCommand(),
                     new GenerateTagsReadmeCommand(),
                     new PublishManifestCommand(),

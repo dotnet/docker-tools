@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private const char BuiltInDelimiter = ':';
         public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
-        public const string RepoVariableName = "Repo";
+        public const string RepoVariableTypeId = "Repo";
         public const string SourceUrlVariableName = "SourceUrl";
         public const string SystemVariableTypeId = "System";
         public const string TagDocTypeId = "TagDoc";
@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.|]+)\\)";
         private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
+        private Func<string, RepoInfo> GetRepoById { get; set; }
         private Func<string, TagInfo> GetTagById { get; set; }
         private Manifest Manifest { get; set; }
         private IOptionsInfo Options { get; set; }
@@ -33,8 +34,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public VariableHelper(
             Manifest manifest,
             IOptionsInfo options,
-            Func<string, TagInfo> getTagById)
+            Func<string, TagInfo> getTagById,
+            Func<string, RepoInfo> getRepoById)
         {
+            GetRepoById = getRepoById;
             GetTagById = getTagById;
             Manifest = manifest;
             Options = options;
@@ -93,6 +96,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             else if (string.Equals(variableType, TagVariableTypeId, StringComparison.Ordinal))
             {
                 variableValue = GetTagById(variableName)?.Name;
+            }
+            else if (string.Equals(variableType, RepoVariableTypeId, StringComparison.Ordinal))
+            {
+                variableValue = GetRepoById(variableName)?.Name;
             }
             else if (getContextBasedSystemValue != null)
             {

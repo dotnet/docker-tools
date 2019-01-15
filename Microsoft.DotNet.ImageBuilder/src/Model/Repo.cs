@@ -8,6 +8,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 {
     public class Repo
     {
+        public string Id { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public Image[] Images { get; set; }
 

@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
             manifestInfo.ManifestFilter = manifestFilter;
-            manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById);
+            manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById, manifestInfo.GetRepoById);
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
                 .Select(repo => RepoInfo.Create(repo, manifestFilter, options, manifestInfo.VariableHelper))
                 .ToArray();
@@ -74,6 +74,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             return result;
+        }
+
+        public RepoInfo GetRepoById(string id)
+        {
+            return Repos.FirstOrDefault(repo => repo.Id == id);
         }
 
         public TagInfo GetTagById(string id)

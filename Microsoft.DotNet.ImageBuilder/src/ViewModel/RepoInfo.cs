@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class RepoInfo
     {
         public bool HasOverriddenName { get; set; }
+        public string Id { get; private set; }
         public string Name { get; private set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
         public Repo Model { get; private set; }
@@ -25,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
+            repoInfo.Id = model.Id ?? model.Name;
             repoInfo.HasOverriddenName = options.RepoOverrides.TryGetValue(model.Name, out string nameOverride);
             repoInfo.Name = repoInfo.HasOverriddenName ? nameOverride : model.Name;
             repoInfo.Images = model.Images

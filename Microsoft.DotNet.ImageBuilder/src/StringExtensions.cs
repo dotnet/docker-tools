@@ -6,9 +6,24 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class StringExtensions
     {
-        public static string TrimEnd(this string source, string value)
+        public static string TrimEnd(this string source, string trimString)
         {
-            return source.EndsWith(value) ? source.Remove(source.LastIndexOf(value)) : source;
+            while (source.EndsWith(trimString))
+            {
+                source = source.Substring(0, source.Length - trimString.Length);
+            }
+
+            return source;
+        }
+
+        public static string TrimStart(this string source, string trimString)
+        {
+            while (source.StartsWith(trimString))
+            {
+                source = source.Substring(trimString.Length);
+            }
+
+            return source;
         }
     }
 }

@@ -20,19 +20,70 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private const string StageIdMatchName = "stageId";
         private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
-        private List<string> _overriddenFromImages = new List<string>();
+        private IDictionary<string, string> _buildArgs;
+        private IEnumerable<string> _externalFromImages;
+        private IEnumerable<string> _intraRepoFromImages;
+        private List<string> _overriddenFromImages;
 
-        public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
-        public IEnumerable<string> ExternalFromImages { get; private set; }
-        public IEnumerable<string> IntraRepoFromImages { get; private set; }
-        public IEnumerable<string> OverriddenFromImages => _overriddenFromImages;
         public Platform Model { get; private set; }
         private Repo RepoModel { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         private VariableHelper VariableHelper { get; set; }
+
+        public IDictionary<string, string> BuildArgs
+        {
+            get
+            {
+                if (_buildArgs == null)
+                {
+                    InitializeBuildArgs();
+                }
+
+                return _buildArgs;
+            }
+        }
+
+        public IEnumerable<string> ExternalFromImages
+        {
+            get
+            {
+                if (_externalFromImages == null)
+                {
+                    InitializeFromImages();
+                }
+
+                return _externalFromImages;
+            }
+        }
+
+        public IEnumerable<string> IntraRepoFromImages
+        {
+            get
+            {
+                if (_intraRepoFromImages == null)
+                {
+                    InitializeFromImages();
+                }
+
+                return _intraRepoFromImages;
+            }
+        }
+
+        public IEnumerable<string> OverriddenFromImages
+        {
+            get
+            {
+                if (_overriddenFromImages == null)
+                {
+                    InitializeFromImages();
+                }
+
+                return _overriddenFromImages;
+            }
+        }
 
         private PlatformInfo()
         {
@@ -62,40 +113,25 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, platformInfo.BuildContextPath))
                 .ToArray();
 
-            platformInfo.InitializeBuildArgs();
-            platformInfo.InitializeFromImages();
-
             return platformInfo;
-        }
-
-        private string GetVariableValue(string variableType, string variableName)
-        {
-            string variableValue = null;
-
-            if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
-                && string.Equals(variableName, VariableHelper.RepoVariableName, StringComparison.Ordinal))
-            {
-                variableValue = RepoName;
-            }
-
-            return variableValue;
         }
 
         private void InitializeBuildArgs()
         {
             if (Model.BuildArgs == null)
             {
-                BuildArgs = ImmutableDictionary<string, string>.Empty;
+                _buildArgs = ImmutableDictionary<string, string>.Empty;
             }
             else
             {
-                BuildArgs = Model.BuildArgs
-                    .ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value, GetVariableValue));
+                _buildArgs = Model.BuildArgs.ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value));
             }
         }
 
         private void InitializeFromImages()
         {
+            _overriddenFromImages = new List<string>();
+
             string dockerfile = File.ReadAllText(DockerfilePath);
             IList<Match> fromMatches = FromRegex.Matches(dockerfile);
 
@@ -111,10 +147,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Where(from => !IsStageReference(from, fromMatches))
                 .ToArray();
 
-            IntraRepoFromImages = fromImages
+            _intraRepoFromImages = fromImages
                 .Where(from => from.StartsWith($"{RepoName}:"))
                 .ToArray();
-            ExternalFromImages = fromImages
+            _externalFromImages = fromImages
                 .Except(IntraRepoFromImages)
                 .ToArray();
         }

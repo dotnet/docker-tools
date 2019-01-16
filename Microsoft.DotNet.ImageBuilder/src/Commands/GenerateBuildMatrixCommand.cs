@@ -49,21 +49,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void AddPublishLegs(MatrixInfo matrix, IOrderedEnumerable<IGrouping<dynamic, PlatformInfo>> platformGroups)
+        private static void AddPublishLegs(MatrixInfo matrix, IOrderedEnumerable<IGrouping<dynamic, PlatformInfo>> platformGroups)
         {
             foreach (var platformGrouping in platformGroups)
             {
-                LegInfo leg = new LegInfo() { Name = $"{platformGrouping.Key.OS}-{platformGrouping.Key.Architecture}" };
+                LegInfo leg = new LegInfo()
+                    { Name = $"{GetOSDisplayName(platformGrouping)}-{GetArchitectureDisplayName(platformGrouping)}" };
                 string pathArgs = platformGrouping
                     .Select(platform => $"--path {platform.DockerfilePath}")
                     .Aggregate((working, next) => $"{working} {next}");
                 leg.Variables.Add(("imageBuilderPaths", pathArgs));
+                leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
+                leg.Variables.Add(("architecture", platformGrouping.Key.Architecture));
 
                 matrix.Legs.Add(leg);
             }
         }
 
-        private void AddTestLegs(MatrixInfo matrix, string[] matrixNameParts, IGrouping<dynamic, PlatformInfo> platformGrouping)
+        private static void AddTestLegs(MatrixInfo matrix, string[] matrixNameParts, IGrouping<dynamic, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
                 .GroupBy(platform => new
@@ -139,13 +142,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             var platformGroups = Manifest.Repos
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
-                .GroupBy(platform => new 
-                    { 
-                        OS = platform.Model.OS == OS.Windows ? platform.Model.OsVersion : platform.Model.OS.ToString(),
-                        Architecture = platform.Model.Architecture.GetDisplayName(platform.Model.Variant)
-                    })
+                .GroupBy(platform =>
+                    new { platform.Model.OS, platform.Model.OsVersion, platform.Model.Architecture, platform.Model.Variant })
                 .OrderBy(platformGroup => platformGroup.Key.OS)
-                .ThenBy(platformGroup => platformGroup.Key.Architecture);
+                .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
+                .ThenBy(platformGroup => platformGroup.Key.Architecture)
+                .ThenByDescending(platformGroup => platformGroup.Key.Variant);
 
             string baseMatrixName = $"{Options.MatrixType.ToString().ToLowerInvariant()}Matrix";
 
@@ -162,8 +164,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string[] matrixNameParts =
                     {
                         baseMatrixName,
-                        platformGrouping.Key.OS,
-                        platformGrouping.Key.Architecture
+                        GetOSDisplayName(platformGrouping),
+                        GetArchitectureDisplayName(platformGrouping)
                     };
                     MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                     matrices.Add(matrix);
@@ -183,13 +185,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return matrices;
         }
 
-        private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform)
-        {
-            return platform.IntraRepoFromImages
-                .Select(fromImage => Manifest.GetPlatformByTag(fromImage));
-        }
+        private static string GetArchitectureDisplayName(dynamic platformGrouping) =>
+            ModelExtensions.GetDisplayName(platformGrouping.Key.Architecture, platformGrouping.Key.Variant);
 
-        private void LogDiagnostics(IEnumerable<MatrixInfo> matrices)
+        private static string GetOSDisplayName(dynamic platformGrouping) =>
+            platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : platformGrouping.Key.OS.ToString();
+
+        private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform) =>
+            platform.IntraRepoFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
+
+        private static void LogDiagnostics(IEnumerable<MatrixInfo> matrices)
         {
             // Write out the matrices in a human friendly format
             foreach (MatrixInfo matrix in matrices)

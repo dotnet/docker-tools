@@ -9,6 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public enum MatrixType
     {
         Build,
-        Test
+        Test,
+        Publish,
     }
 }

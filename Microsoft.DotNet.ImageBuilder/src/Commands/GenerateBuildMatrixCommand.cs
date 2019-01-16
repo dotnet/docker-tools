@@ -49,6 +49,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
+        private void AddPublishLegs(MatrixInfo matrix, IOrderedEnumerable<IGrouping<dynamic, PlatformInfo>> platformGroups)
+        {
+            foreach (var platformGrouping in platformGroups)
+            {
+                LegInfo leg = new LegInfo() { Name = $"{platformGrouping.Key.OS}-{platformGrouping.Key.Architecture}" };
+                string pathArgs = platformGrouping
+                    .Select(platform => $"--path {platform.DockerfilePath}")
+                    .Aggregate((working, next) => $"{working} {next}");
+                leg.Variables.Add(("imageBuilderPaths", pathArgs));
+
+                matrix.Legs.Add(leg);
+            }
+        }
+
         private void AddTestLegs(MatrixInfo matrix, string[] matrixNameParts, IGrouping<dynamic, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
@@ -125,32 +139,44 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             var platformGroups = Manifest.Repos
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
-                .GroupBy(platform =>
-                    new { platform.Model.OS, platform.Model.OsVersion, platform.Model.Architecture, platform.Model.Variant })
+                .GroupBy(platform => new 
+                    { 
+                        OS = platform.Model.OS == OS.Windows ? platform.Model.OsVersion : platform.Model.OS.ToString(),
+                        Architecture = platform.Model.Architecture.GetDisplayName(platform.Model.Variant)
+                    })
                 .OrderBy(platformGroup => platformGroup.Key.OS)
-                .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
-                .ThenBy(platformGroup => platformGroup.Key.Architecture)
-                .ThenByDescending(platformGroup => platformGroup.Key.Variant);
+                .ThenBy(platformGroup => platformGroup.Key.Architecture);
 
-            foreach (var platformGrouping in platformGroups)
+            string baseMatrixName = $"{Options.MatrixType.ToString().ToLowerInvariant()}Matrix";
+
+            if (Options.MatrixType == MatrixType.Publish)
             {
-                string[] matrixNameParts =
-                {
-                    $"{Options.MatrixType.ToString().ToLowerInvariant()}Matrix",
-                    platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : platformGrouping.Key.OS.ToString(),
-                    platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
-                };
-                MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
+                MatrixInfo matrix = new MatrixInfo() { Name = baseMatrixName };
                 matrices.Add(matrix);
-
-                switch (Options.MatrixType)
+                AddPublishLegs(matrix, platformGroups);
+            }
+            else
+            {
+                foreach (var platformGrouping in platformGroups)
                 {
-                    case MatrixType.Build:
-                        AddBuildLegs(matrix, matrixNameParts, platformGrouping);
-                        break;
-                    case MatrixType.Test:
-                        AddTestLegs(matrix, matrixNameParts, platformGrouping);
-                        break;
+                    string[] matrixNameParts =
+                    {
+                        baseMatrixName,
+                        platformGrouping.Key.OS,
+                        platformGrouping.Key.Architecture
+                    };
+                    MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
+                    matrices.Add(matrix);
+
+                    switch (Options.MatrixType)
+                    {
+                        case MatrixType.Build:
+                            AddBuildLegs(matrix, matrixNameParts, platformGrouping);
+                            break;
+                        case MatrixType.Test:
+                            AddTestLegs(matrix, matrixNameParts, platformGrouping);
+                            break;
+                    }
                 }
             }
 

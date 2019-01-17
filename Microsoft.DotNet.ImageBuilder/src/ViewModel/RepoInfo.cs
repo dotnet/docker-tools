@@ -12,7 +12,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
-        public bool HasOverriddenName { get; set; }
         public string Id { get; private set; }
         public string Name { get; private set; }
         public IEnumerable<ImageInfo> Images { get; private set; }
@@ -22,13 +21,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static RepoInfo Create(Repo model, ManifestFilter manifestFilter, IOptionsInfo options, VariableHelper variableHelper)
+        public static RepoInfo Create(
+            Repo model, string registry, ManifestFilter manifestFilter, IOptionsInfo options, VariableHelper variableHelper)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
             repoInfo.Id = model.Id ?? model.Name;
-            repoInfo.HasOverriddenName = options.RepoOverrides.TryGetValue(model.Name, out string nameOverride);
-            repoInfo.Name = repoInfo.HasOverriddenName ? nameOverride : model.Name;
+
+            if (options.RepoOverrides.TryGetValue(model.Name, out string nameOverride))
+            {
+                repoInfo.Name = nameOverride;
+            }
+            else
+            {
+                registry = String.IsNullOrEmpty(registry) ? "" : $"{registry}/";
+                repoInfo.Name = registry + options.RepoPrefix + model.Name;
+            }
+
             repoInfo.Images = model.Images
                 .Select(image => ImageInfo.Create(image, model, repoInfo.Name, manifestFilter, variableHelper))
                 .ToArray();

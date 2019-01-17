@@ -19,7 +19,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Password { get; set; }
         public IEnumerable<string> Paths { get; set; }
         public string OsVersion { get; set; }
-        public string Registry { get; set; }
         public string SourceRepository { get; set; }
         public string Subscription { get; set; }
         public string Tenant { get; set; }
@@ -34,10 +33,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.ParseCommandLine(syntax);
 
             DefineManifestFilterOptions(syntax, this);
-
-            string registry = null;
-            syntax.DefineParameter("registry", ref registry, "ACR to operate on");
-            Registry = registry;
 
             string sourceRepository = null;
             syntax.DefineParameter("source-repo", ref sourceRepository, "ACR repository to copy images from");

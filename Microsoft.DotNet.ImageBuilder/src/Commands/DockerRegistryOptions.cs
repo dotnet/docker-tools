@@ -10,7 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public abstract class DockerRegistryOptions : Options
     {
         public string Password { get; set; }
-        public string Server { get; set; }
         public string Username { get; set; }
 
         protected DockerRegistryOptions()
@@ -27,13 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref password,
                 "Password for the Docker Registry the images are pushed to");
             Password = password;
-
-            string server = null;
-            syntax.DefineOption(
-                "server",
-                ref server,
-                "Docker Registry server the images are pushed to (default is Docker Hub)");
-            Server = server;
 
             string username = null;
             Argument<string> usernameArg = syntax.DefineOption(

@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected void ExecuteWithUser(Action action)
         {
-            DockerHelper.ExecuteWithUser(action, Options.Username, Options.Password, Options.Server, Options.IsDryRun);
+            DockerHelper.ExecuteWithUser(action, Options.Username, Options.Password, Manifest.Registry, Options.IsDryRun);
         }
     }
 }

@@ -24,14 +24,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<TagInfo> platformTags = Manifest.ActiveImages
                     .SelectMany(image => image.ActivePlatforms)
                     .SelectMany(platform => platform.Tags);
-                string fullRegistryName = $"{Options.Registry}.azurecr.io/";
+                string registryName = $"{Manifest.Registry}/";
 
                 foreach (TagInfo platformTag in platformTags)
                 {
                     string sourceImage = $"{Options.SourceRepository}:{platformTag.Name}";
-                    string destImage = platformTag.FullyQualifiedName.TrimStart(fullRegistryName);
+                    string destImage = platformTag.FullyQualifiedName.TrimStart(registryName);
                     helper.ExecuteAzCommand(
-                        $"acr import -n {Options.Registry} --source {sourceImage} -t {destImage} --force",
+                        $"acr import -n {Manifest.Registry.TrimEnd(".azurecr.io")} --source {sourceImage} -t {destImage} --force",
                         Options.IsDryRun);
                 }
             };

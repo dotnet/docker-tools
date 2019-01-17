@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Aggregate((working, next) => $"{working} {next}");
                 leg.Variables.Add(("imageBuilderPaths", pathArgs));
                 leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
-                leg.Variables.Add(("architecture", platformGrouping.Key.Architecture));
+                leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.ToString().ToLowerInvariant()));
 
                 matrix.Legs.Add(leg);
             }
@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // ##vso[task.setvariable variable=x;isoutput=true]{ \"a\": { \"v1\": \"1\" }, \"b\": { \"v1\": \"2\" } }
             foreach (MatrixInfo matrix in matrices)
             {
-                string legs = matrix.Legs
+                string legs = matrix.OrderedLegs
                     .Select(leg =>
                     {
                         string variables = leg.Variables
@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : platformGrouping.Key.OS.ToString();
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform) =>
-            platform.IntraRepoFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
+            platform.InternalFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
 
         private static void LogDiagnostics(IEnumerable<MatrixInfo> matrices)
         {
@@ -200,7 +200,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (MatrixInfo matrix in matrices)
             {
                 Logger.WriteMessage($"  {matrix.Name}:");
-                foreach (LegInfo leg in matrix.Legs)
+                foreach (LegInfo leg in matrix.OrderedLegs)
                 {
                     Logger.WriteMessage($"    {leg.Name}:");
                     foreach (var variable in leg.Variables)
@@ -215,6 +215,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             public string Name { get; set; }
             public List<LegInfo> Legs { get; } = new List<LegInfo>();
+
+            public IEnumerable<LegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
         }
 
         private class LegInfo

@@ -32,6 +32,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
                 .Select(repo => RepoInfo.Create(repo, manifestInfo.Registry, manifestFilter, options, manifestInfo.VariableHelper))
                 .ToArray();
+
+            IEnumerable<string> repoNames = manifestInfo.Repos.Select(repo => repo.Name);
+            foreach (PlatformInfo platform in manifestInfo.Repos.SelectMany(repo => repo.Images).SelectMany(image => image.Platforms))
+            {
+                platform.Initialize(repoNames);
+            }
+
             manifestInfo.ActiveImages = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
                 .Where(image => image.ActivePlatforms.Any())

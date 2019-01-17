@@ -20,70 +20,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private const string StageIdMatchName = "stageId";
         private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
-        private IDictionary<string, string> _buildArgs;
-        private IEnumerable<string> _externalFromImages;
-        private IEnumerable<string> _intraRepoFromImages;
         private List<string> _overriddenFromImages;
 
+        public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
+        public IEnumerable<string> ExternalFromImages { get; private set; }
+        public IEnumerable<string> InternalFromImages { get; private set; }
         public Platform Model { get; private set; }
+        public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
         private Repo RepoModel { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         private VariableHelper VariableHelper { get; set; }
-
-        public IDictionary<string, string> BuildArgs
-        {
-            get
-            {
-                if (_buildArgs == null)
-                {
-                    InitializeBuildArgs();
-                }
-
-                return _buildArgs;
-            }
-        }
-
-        public IEnumerable<string> ExternalFromImages
-        {
-            get
-            {
-                if (_externalFromImages == null)
-                {
-                    InitializeFromImages();
-                }
-
-                return _externalFromImages;
-            }
-        }
-
-        public IEnumerable<string> IntraRepoFromImages
-        {
-            get
-            {
-                if (_intraRepoFromImages == null)
-                {
-                    InitializeFromImages();
-                }
-
-                return _intraRepoFromImages;
-            }
-        }
-
-        public IEnumerable<string> OverriddenFromImages
-        {
-            get
-            {
-                if (_overriddenFromImages == null)
-                {
-                    InitializeFromImages();
-                }
-
-                return _overriddenFromImages;
-            }
-        }
 
         private PlatformInfo()
         {
@@ -116,19 +65,25 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return platformInfo;
         }
 
+        public void Initialize(IEnumerable<string> internalRepos)
+        {
+            InitializeBuildArgs();
+            InitializeFromImages(internalRepos);
+        }
+
         private void InitializeBuildArgs()
         {
             if (Model.BuildArgs == null)
             {
-                _buildArgs = ImmutableDictionary<string, string>.Empty;
+                BuildArgs = ImmutableDictionary<string, string>.Empty;
             }
             else
             {
-                _buildArgs = Model.BuildArgs.ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value));
+                BuildArgs = Model.BuildArgs.ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value));
             }
         }
 
-        private void InitializeFromImages()
+        private void InitializeFromImages(IEnumerable<string> internalRepos)
         {
             _overriddenFromImages = new List<string>();
 
@@ -147,11 +102,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Where(from => !IsStageReference(from, fromMatches))
                 .ToArray();
 
-            _intraRepoFromImages = fromImages
-                .Where(from => from.StartsWith($"{RepoName}:"))
+            InternalFromImages = fromImages
+                .Where(from => internalRepos.Any(repo => from.StartsWith($"{repo}:")))
                 .ToArray();
-            _externalFromImages = fromImages
-                .Except(IntraRepoFromImages)
+            ExternalFromImages = fromImages
+                .Except(InternalFromImages)
                 .ToArray();
         }
 

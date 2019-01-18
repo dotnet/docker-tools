@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (TagInfo platformTag in platformTags)
                 {
-                    string sourceImage = $"{Options.SourceRepository}:{platformTag.Name}";
+                    string sourceImage = platformTag.FullyQualifiedName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
                     string destImage = platformTag.FullyQualifiedName.TrimStart(registryName);
                     helper.ExecuteAzCommand(
                         $"acr import -n {Manifest.Registry.TrimEnd(".azurecr.io")} --source {sourceImage} -t {destImage} --force",

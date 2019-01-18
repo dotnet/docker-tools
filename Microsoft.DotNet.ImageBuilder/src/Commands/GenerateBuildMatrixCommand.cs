@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 LegInfo leg = new LegInfo()
                     { Name = $"{GetOSDisplayName(platformGrouping)}-{GetArchitectureDisplayName(platformGrouping)}" };
                 string pathArgs = platformGrouping
-                    .Select(platform => $"--path {platform.DockerfilePath}")
+                    .Select(platform => $"--path {platform.Model.Dockerfile}")
                     .Aggregate((working, next) => $"{working} {next}");
                 leg.Variables.Add(("imageBuilderPaths", pathArgs));
                 leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));

@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Password { get; set; }
         public IEnumerable<string> Paths { get; set; }
         public string OsVersion { get; set; }
-        public string SourceRepository { get; set; }
+        public string SourceRepoPrefix { get; set; }
         public string Subscription { get; set; }
         public string Tenant { get; set; }
         public string Username { get; set; }
@@ -34,9 +34,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             DefineManifestFilterOptions(syntax, this);
 
-            string sourceRepository = null;
-            syntax.DefineParameter("source-repo", ref sourceRepository, "ACR repository to copy images from");
-            SourceRepository = sourceRepository;
+            string sourceRepoPrefix = null;
+            syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");
+            SourceRepoPrefix = sourceRepoPrefix;
 
             string username = null;
             syntax.DefineParameter("username", ref username, "The URL or name associated with the service principal to use");

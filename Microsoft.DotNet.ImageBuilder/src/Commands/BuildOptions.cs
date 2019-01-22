@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
+        public OS OsType { get; set; }
         public string OsVersion { get; set; }
         public IEnumerable<string> Paths { get; set; }
 

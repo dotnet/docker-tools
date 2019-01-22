@@ -20,7 +20,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsDryRun { get; set; }
         public bool IsVerbose { get; set; }
         public string Manifest { get; set; }
+        public string RegistryOverride { get; set; }
         public string Repo { get; set; }
+        public string RepoPrefix { get; set; }
         public IDictionary<string, string> RepoOverrides { get; set; }
 
         public IDictionary<string, string> Variables { get; set; }
@@ -44,6 +46,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected static void DefineManifestFilterOptions(ArgumentSyntax syntax, IManifestFilterOptions filterOptions)
         {
             filterOptions.Architecture = DefineArchitectureOption(syntax);
+
+            OS osType = DockerHelper.GetOS();
+            syntax.DefineOption(
+                "os-type",
+                ref osType,
+                value => (OS)Enum.Parse(typeof(OS), value, true),
+                "OS type of the Dockerfiles to build (linux/windows) (default is the Docker OS)");
+            filterOptions.OsType = osType;
 
             string osVersion = null;
             syntax.DefineOption(
@@ -71,6 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
                 filter.DockerArchitecture = filterOptions.Architecture;
+                filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersion = filterOptions.OsVersion;
                 filter.IncludePaths = filterOptions.Paths;
             }
@@ -109,15 +120,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption("manifest", ref manifest, "Path to json file which describes the repo");
             Manifest = manifest;
 
+            string registryOverride = null;
+            syntax.DefineOption("registry-override", ref registryOverride, "Alternative registry which overrides the manifest");
+            RegistryOverride = registryOverride;
+
             string repo = null;
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
 
             IReadOnlyList<string> repoOverrides = Array.Empty<string>();
-            syntax.DefineOptionList("repo-override", ref repoOverrides, "Alternative repos which override the manifest (<target repo>=<override>)");
+            syntax.DefineOptionList("repo-override", ref repoOverrides, "Alternative repos which overrides the manifest (<target repo>=<override>)");
             RepoOverrides = repoOverrides
                 .Select(pair => pair.Split(new char[] { '=' }, 2))
                 .ToDictionary(split => split[0], split => split[1]);
+
+            string repoPrefix = null;
+            syntax.DefineOption("repo-prefix", ref repoPrefix, "Prefix to add to the repo names specified in the manifest");
+            RepoPrefix = repoPrefix;
 
             IReadOnlyList<string> variables = Array.Empty<string>();
             syntax.DefineOptionList("var", ref variables, "Named variables to substitute into the manifest (<name>=<value>)");

@@ -49,40 +49,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private static void AddPublishLegs(MatrixInfo matrix, IOrderedEnumerable<IGrouping<dynamic, PlatformInfo>> platformGroups)
-        {
-            foreach (var platformGrouping in platformGroups)
-            {
-                LegInfo leg = new LegInfo()
-                    { Name = $"{GetOSDisplayName(platformGrouping)}-{GetArchitectureDisplayName(platformGrouping)}" };
-                string pathArgs = platformGrouping
-                    .Select(platform => $"--path {platform.DockerfilePath}")
-                    .Aggregate((working, next) => $"{working} {next}");
-                leg.Variables.Add(("imageBuilderPaths", pathArgs));
-                leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
-                leg.Variables.Add(("architecture", platformGrouping.Key.Architecture));
-
-                matrix.Legs.Add(leg);
-            }
-        }
-
-        private static void AddTestLegs(MatrixInfo matrix, string[] matrixNameParts, IGrouping<dynamic, PlatformInfo> platformGrouping)
+        private static void AddVersionedOsLegs(
+            MatrixInfo matrix, IGrouping<dynamic, PlatformInfo> platformGrouping, bool includeArchitectureName)
         {
             var versionGroups = platformGrouping
                 .GroupBy(platform => new
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
                     DotNetVersion = platform.DockerfilePath.Split(PathSeparators)[0],
-                    OsVersion = platform.DockerfilePath.Split(PathSeparators)[2].TrimEnd("-slim")
-                })
-                .OrderByDescending(grouping => grouping.Key.DotNetVersion)
-                .ThenBy(grouping => grouping.Key.OsVersion);
+                    OsVariant = platform.DockerfilePath.Split(PathSeparators)[2].TrimEnd("-slim")
+                });
             foreach (var versionGrouping in versionGroups)
             {
-                LegInfo leg = new LegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVersion}" };
-                leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
-                leg.Variables.Add(("osVersion", versionGrouping.Key.OsVersion));
+                string legName = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}";
+                if (includeArchitectureName)
+                {
+                    legName += $"-{GetArchitectureDisplayName(platformGrouping)}";
+                }
+
+                LegInfo leg = new LegInfo() { Name = legName };
                 matrix.Legs.Add(leg);
+
+                leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
+                leg.Variables.Add(("osType", platformGrouping.Key.OS.ToString().ToLowerInvariant()));
+                leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
+                leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
+                leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.ToString().ToLowerInvariant()));
             }
         }
 
@@ -92,7 +84,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // ##vso[task.setvariable variable=x;isoutput=true]{ \"a\": { \"v1\": \"1\" }, \"b\": { \"v1\": \"2\" } }
             foreach (MatrixInfo matrix in matrices)
             {
-                string legs = matrix.Legs
+                string legs = matrix.OrderedLegs
                     .Select(leg =>
                     {
                         string variables = leg.Variables
@@ -155,7 +147,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 MatrixInfo matrix = new MatrixInfo() { Name = baseMatrixName };
                 matrices.Add(matrix);
-                AddPublishLegs(matrix, platformGroups);
+                foreach (var platformGrouping in platformGroups)
+                {
+                    AddVersionedOsLegs(matrix, platformGrouping, true);
+                }
             }
             else
             {
@@ -176,7 +171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             AddBuildLegs(matrix, matrixNameParts, platformGrouping);
                             break;
                         case MatrixType.Test:
-                            AddTestLegs(matrix, matrixNameParts, platformGrouping);
+                            AddVersionedOsLegs(matrix, platformGrouping, false);
                             break;
                     }
                 }
@@ -192,7 +187,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : platformGrouping.Key.OS.ToString();
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform) =>
-            platform.IntraRepoFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
+            platform.InternalFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
 
         private static void LogDiagnostics(IEnumerable<MatrixInfo> matrices)
         {
@@ -200,7 +195,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (MatrixInfo matrix in matrices)
             {
                 Logger.WriteMessage($"  {matrix.Name}:");
-                foreach (LegInfo leg in matrix.Legs)
+                foreach (LegInfo leg in matrix.OrderedLegs)
                 {
                     Logger.WriteMessage($"    {leg.Name}:");
                     foreach (var variable in leg.Variables)
@@ -215,6 +210,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             public string Name { get; set; }
             public List<LegInfo> Legs { get; } = new List<LegInfo>();
+
+            public IEnumerable<LegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
         }
 
         private class LegInfo

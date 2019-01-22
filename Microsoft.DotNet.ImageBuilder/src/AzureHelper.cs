@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             ExecuteHelper.Execute(
                 "docker",
-                $"run -it --rm -v {_sessionId}:/root {AzureCliImage} az {command}",
+                $"run --rm -v {_sessionId}:/root {AzureCliImage} az {command}",
                 isDryRun,
                 executeMessageOverride: $"docker run -it --rm -v {_sessionId}:/root {AzureCliImage} az {commandMessageOverride}");
         }

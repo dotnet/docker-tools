@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class ManifestFilter
     {
         public Architecture DockerArchitecture { get; set; } = DockerHelper.Architecture;
-        public OS DockerOS { get; } = DockerHelper.GetOS();
+        public OS IncludeOsType { get; set; } = DockerHelper.GetOS();
         public string IncludeRepo { get; set; }
         public string IncludeOsVersion { get; set; }
         public IEnumerable<string> IncludePaths { get; set; }
@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<Platform> GetActivePlatforms(Image image)
         {
             return GetPlatforms(image)
-                .Where(platform => platform.OS == DockerOS && platform.Architecture == DockerArchitecture);
+                .Where(platform => platform.OS == IncludeOsType && platform.Architecture == DockerArchitecture);
         }
 
         private string GetFilterRegexPattern(params string[] patterns)

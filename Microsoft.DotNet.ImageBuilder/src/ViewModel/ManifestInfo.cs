@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<ImageInfo> ActiveImages { get; private set; }
         private ManifestFilter ManifestFilter { get; set; }
         public Manifest Model { get; private set; }
+        public string Registry { get; private set; }
         public IEnumerable<RepoInfo> Repos { get; private set; }
         public VariableHelper VariableHelper { get; set; }
 
@@ -26,10 +27,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
             manifestInfo.ManifestFilter = manifestFilter;
+            manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById, manifestInfo.GetRepoById);
             manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
-                .Select(repo => RepoInfo.Create(repo, manifestFilter, options, manifestInfo.VariableHelper))
+                .Select(repo => RepoInfo.Create(repo, manifestInfo.Registry, manifestFilter, options, manifestInfo.VariableHelper))
                 .ToArray();
+
+            IEnumerable<string> repoNames = manifestInfo.Repos.Select(repo => repo.Name);
+            foreach (PlatformInfo platform in manifestInfo.Repos.SelectMany(repo => repo.Images).SelectMany(image => image.Platforms))
+            {
+                platform.Initialize(repoNames);
+            }
+
             manifestInfo.ActiveImages = manifestInfo.Repos
                 .SelectMany(repo => repo.Images)
                 .Where(image => image.ActivePlatforms.Any())

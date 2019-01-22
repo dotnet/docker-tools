@@ -9,6 +9,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 {
     public class Manifest
     {
+        public string Registry { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public Repo[] Repos { get; set; }
 

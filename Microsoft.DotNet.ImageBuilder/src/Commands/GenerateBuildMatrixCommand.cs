@@ -59,6 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Select(platform => $"--path {platform.Model.Dockerfile}")
                     .Aggregate((working, next) => $"{working} {next}");
                 leg.Variables.Add(("imageBuilderPaths", pathArgs));
+                leg.Variables.Add(("osType", platformGrouping.Key.OS.ToString.ToLowerInvariant()));
                 leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
                 leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.ToString().ToLowerInvariant()));
 

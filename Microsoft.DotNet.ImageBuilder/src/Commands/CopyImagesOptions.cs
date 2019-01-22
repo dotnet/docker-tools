@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string DestinationServer { get; set; }
         public string DestinationUsername { get; set; }
         public IEnumerable<string> Paths { get; set; }
+        public OS OsType { get; set; }
         public string OsVersion { get; set; }
         public string SourcePassword { get; set; }
         public string SourceRepo { get; set; }

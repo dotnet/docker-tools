@@ -10,6 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public interface IManifestFilterOptions
     {
         Architecture Architecture { get; set; }
+        OS OsType { get; set; }
         string OsVersion { get; set; }
         IEnumerable<string> Paths { get; set; }
     }

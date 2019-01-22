@@ -47,6 +47,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             filterOptions.Architecture = DefineArchitectureOption(syntax);
 
+            OS osType = DockerHelper.GetOS();
+            syntax.DefineOption(
+                "os-type",
+                ref osType,
+                value => (OS)Enum.Parse(typeof(OS), value, true),
+                "OS type of the Dockerfiles to build (linux/windows) (default is the Docker OS)");
+            filterOptions.OsType = osType;
+
             string osVersion = null;
             syntax.DefineOption(
                 "os-version",
@@ -73,6 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
                 filter.DockerArchitecture = filterOptions.Architecture;
+                filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersion = filterOptions.OsVersion;
                 filter.IncludePaths = filterOptions.Paths;
             }

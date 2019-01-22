@@ -15,6 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandName => "generateBuildMatrix";
 
         public Architecture Architecture { get; set; }
+        public OS OsType { get; set; }
         public string OsVersion { get; set; }
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> Paths { get; set; }

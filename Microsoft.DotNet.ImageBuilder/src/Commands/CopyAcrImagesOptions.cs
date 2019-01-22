@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public Architecture Architecture { get; set; }
         public string Password { get; set; }
         public IEnumerable<string> Paths { get; set; }
+        public OS OsType { get; set; }
         public string OsVersion { get; set; }
         public string SourceRepoPrefix { get; set; }
         public string Subscription { get; set; }

@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("UPDATING READMES");
-            foreach (RepoInfo repo in Manifest.Repos)
+            foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
                 // Docker Hub/Cloud API is not documented thus it is subject to change.  This is the only option
                 // until a supported API exists.

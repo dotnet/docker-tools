@@ -31,14 +31,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        protected static Architecture DefineArchitectureOption(ArgumentSyntax syntax)
+        protected static string DefineArchitectureOption(ArgumentSyntax syntax)
         {
-            Architecture architecture = DockerHelper.Architecture;
+            string architecture = DockerHelper.Architecture.ToString().ToLowerInvariant();
             syntax.DefineOption(
                 "architecture",
                 ref architecture,
-                value => (Architecture)Enum.Parse(typeof(Architecture), value, true),
-                "Architecture of Dockerfiles to operate on (default is current OS architecture)");
+                "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)");
 
             return architecture;
         }
@@ -47,12 +46,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             filterOptions.Architecture = DefineArchitectureOption(syntax);
 
-            OS osType = DockerHelper.GetOS();
+            string osType = DockerHelper.OS.ToString().ToLowerInvariant();
             syntax.DefineOption(
                 "os-type",
                 ref osType,
-                value => (OS)Enum.Parse(typeof(OS), value, true),
-                "OS type of the Dockerfiles to build (linux/windows) (default is the Docker OS)");
+                "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)");
             filterOptions.OsType = osType;
 
             string osVersion = null;
@@ -80,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (this is IManifestFilterOptions)
             {
                 IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
-                filter.DockerArchitecture = filterOptions.Architecture;
+                filter.IncludeArchitecture = filterOptions.Architecture;
                 filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersion = filterOptions.OsVersion;
                 filter.IncludePaths = filterOptions.Paths;

@@ -19,10 +19,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteHeading("COPING IMAGES");
 
-            IEnumerable<TagInfo> platformTags = Manifest.ActiveImages
-                    .SelectMany(image => image.ActivePlatforms)
-                    .SelectMany(platform => platform.Tags)
-                    .ToArray();
+            IEnumerable<TagInfo> platformTags = Manifest.GetFilteredPlatformTags()
+                .ToArray();
 
             Logger.WriteHeading("PULLING SOURCE IMAGES");
             DockerHelper.ExecuteWithUser(

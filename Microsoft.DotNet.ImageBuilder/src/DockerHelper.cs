@@ -15,8 +15,10 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class DockerHelper
     {
         private static Lazy<Architecture> _architecture = new Lazy<Architecture>(GetArchitecture);
+        private static Lazy<OS> _os = new Lazy<OS>(GetOS);
 
         public static Architecture Architecture => _architecture.Value;
+        public static OS OS => _os.Value;
 
         private static string ExecuteCommandWithFormat(
             string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false)
@@ -82,7 +84,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
         }
 
-        public static OS GetOS()
+        private static OS GetOS()
         {
             string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
             if (!Enum.TryParse(osString, true, out OS os))

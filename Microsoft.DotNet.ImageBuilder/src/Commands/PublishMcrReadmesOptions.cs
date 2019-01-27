@@ -2,19 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using System.Collections.Generic;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateVersionsOptions : Options, IManifestFilterOptions
+    public class PublishMcrReadmesOptions : Options
     {
-        protected override string CommandHelp => "Updates the version information for the dependent images";
-        protected override string CommandName => "updateVersions";
+        protected override string CommandHelp => "Publishes the readmes to MCR";
+        protected override string CommandName => "publishMcrReadmes";
 
-        public string Architecture { get; set; }
         public string GitAuthToken { get; set; }
         public string GitBranch { get; set; }
         public string GitEmail { get; set; }
@@ -22,12 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string GitPath { get; set; }
         public string GitRepo { get; set; }
         public string GitUsername { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
-        public IEnumerable<string> Paths { get; set; }
 
-
-        public UpdateVersionsOptions() : base()
+        public PublishMcrReadmesOptions() : base()
         {
         }
 
@@ -35,34 +27,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
-
             string gitBranch = "master";
             syntax.DefineOption(
                 "git-branch",
                 ref gitBranch,
-                "GitHub branch to write version info to (defaults to master)");
+                "GitHub branch to write readmes to (defaults to master)");
             GitBranch = gitBranch;
 
-            string gitOwner = "dotnet";
+            string gitOwner = "Microsoft";
             syntax.DefineOption(
                 "git-owner",
                 ref gitOwner,
-                "Owner of the GitHub repo to write version info to (defaults to dotnet)");
+                "Owner of the GitHub repo to write readmes to (defaults to Microsoft)");
             GitOwner = gitOwner;
 
-            string gitPath = "build-info/docker";
+            string gitPath = "teams";
             syntax.DefineOption(
                 "git-path",
                 ref gitPath,
-                "Path within the GitHub repo to write version info to (defaults to build-info/docker)");
+                "Path within the GitHub repo to write readmes to (defaults to teams)");
             GitPath = gitPath;
 
-            string gitRepo = "versions";
+            string gitRepo = "mcrdocs";
             syntax.DefineOption(
                 "git-repo",
                 ref gitRepo,
-                "GitHub repo to write version info to (defaults to versions)");
+                "GitHub repo to readmes to (defaults to mcrdocs)");
             GitRepo = gitRepo;
 
             string gitUsername = null;

@@ -12,8 +12,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
+        /// <summary>
+        /// All of the images that are defined in the manifest for this repo.
+        /// </summary>
         public IEnumerable<ImageInfo> AllImages { get; private set; }
+
+        /// <summary>
+        /// The subet of image platforms after applying the command line filter options.
+        /// </summary>
         public IEnumerable<ImageInfo> FilteredImages { get; private set; }
+
         public string Id { get; private set; }
         public string Name { get; private set; }
         public Repo Model { get; private set; }

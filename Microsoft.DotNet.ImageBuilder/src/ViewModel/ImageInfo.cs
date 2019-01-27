@@ -10,8 +10,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
     {
+        /// <summary>
+        /// All of the platforms that are defined in the manifest for this image.
+        /// </summary>
         public IEnumerable<PlatformInfo> AllPlatforms { get; set; }
+
+        /// <summary>
+        /// The subet of image platforms after applying the command line filter options.
+        /// </summary>
         public IEnumerable<PlatformInfo> FilteredPlatforms { get; private set; }
+
         public Image Model { get; private set; }
         public IEnumerable<TagInfo> SharedTags { get; private set; }
 

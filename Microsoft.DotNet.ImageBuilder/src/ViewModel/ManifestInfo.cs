@@ -11,8 +11,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestInfo
     {
+        /// <summary>
+        /// All of the repos that are defined in the manifest.
+        /// </summary>
         public IEnumerable<RepoInfo> AllRepos { get; private set; }
+
+        /// <summary>
+        /// The subet of manifest repos after applying the command line filter options.
+        /// </summary>
         public IEnumerable<RepoInfo> FilteredRepos { get; private set; }
+
         private ManifestFilter ManifestFilter { get; set; }
         public Manifest Model { get; private set; }
         public string Registry { get; private set; }

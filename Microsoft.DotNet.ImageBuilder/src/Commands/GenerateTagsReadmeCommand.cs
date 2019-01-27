@@ -25,10 +25,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override Task ExecuteAsync()
         {
             Logger.WriteHeading("GENERATING TAGS README");
-            foreach (RepoInfo repo in Manifest.Repos)
+            foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                ImageDocInfos = repo.Images
-                    .SelectMany(image => image.Platforms.SelectMany(platform => ImageDocumentationInfo.Create(image, platform)))
+                ImageDocInfos = repo.AllImages
+                    .SelectMany(image => image.AllPlatforms.SelectMany(platform => ImageDocumentationInfo.Create(image, platform)))
                     .Where(info => info.DocumentedTags.Any())
                     .ToList();
 

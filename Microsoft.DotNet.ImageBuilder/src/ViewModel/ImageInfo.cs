@@ -10,9 +10,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
     {
-        public IEnumerable<PlatformInfo> ActivePlatforms { get; private set; }
+        /// <summary>
+        /// All of the platforms that are defined in the manifest for this image.
+        /// </summary>
+        public IEnumerable<PlatformInfo> AllPlatforms { get; set; }
+
+        /// <summary>
+        /// The subet of image platforms after applying the command line filter options.
+        /// </summary>
+        public IEnumerable<PlatformInfo> FilteredPlatforms { get; private set; }
+
         public Image Model { get; private set; }
-        public IEnumerable<PlatformInfo> Platforms { get; set; }
         public IEnumerable<TagInfo> SharedTags { get; private set; }
 
         private ImageInfo()
@@ -36,13 +44,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .ToArray();
             }
 
-            imageInfo.Platforms = manifestFilter.GetPlatforms(model)
+            imageInfo.AllPlatforms = manifestFilter.GetPlatforms(model)
                 .Select(platform => PlatformInfo.Create(platform, repoModel, repoName, variableHelper))
                 .ToArray();
 
-            IEnumerable<Platform> activePlatformModels = manifestFilter.GetActivePlatforms(model);
-            imageInfo.ActivePlatforms = imageInfo.Platforms
-                    .Where(platform => activePlatformModels.Contains(platform.Model));
+            IEnumerable<Platform> filteredPlatformModels = manifestFilter.GetPlatforms(model);
+            imageInfo.FilteredPlatforms = imageInfo.AllPlatforms
+                .Where(platform => filteredPlatformModels.Contains(platform.Model));
 
             return imageInfo;
         }

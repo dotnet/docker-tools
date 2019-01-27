@@ -11,20 +11,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestFilter
     {
-        public Architecture DockerArchitecture { get; set; } = DockerHelper.Architecture;
-        public OS IncludeOsType { get; set; } = DockerHelper.GetOS();
+        public string IncludeArchitecture { get; set; }
+        public string IncludeOsType { get; set; }
         public string IncludeRepo { get; set; }
         public string IncludeOsVersion { get; set; }
         public IEnumerable<string> IncludePaths { get; set; }
 
         public ManifestFilter()
         {
-        }
-
-        public IEnumerable<Platform> GetActivePlatforms(Image image)
-        {
-            return GetPlatforms(image)
-                .Where(platform => platform.OS == IncludeOsType && platform.Architecture == DockerArchitecture);
         }
 
         private string GetFilterRegexPattern(params string[] patterns)
@@ -39,11 +33,25 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             IEnumerable<Platform> platforms = image.Platforms;
 
+            if (IncludeArchitecture != null)
+            {
+                string archRegexPattern = GetFilterRegexPattern(IncludeArchitecture);
+                platforms = platforms.Where(platform =>
+                    Regex.IsMatch(platform.Architecture.ToString().ToLowerInvariant(), archRegexPattern, RegexOptions.IgnoreCase));
+            }
+
+            if (IncludeOsType != null)
+            {
+                string osTypeRegexPattern = GetFilterRegexPattern(IncludeOsType);
+                platforms = platforms.Where(platform =>
+                    Regex.IsMatch(platform.OS.ToString().ToLowerInvariant(), osTypeRegexPattern, RegexOptions.IgnoreCase));
+            }
+
             if (IncludePaths?.Any() ?? false)
             {
                 string pathsRegexPattern = GetFilterRegexPattern(IncludePaths.ToArray());
-                platforms = platforms
-                    .Where(platform => Regex.IsMatch(platform.Dockerfile, pathsRegexPattern, RegexOptions.IgnoreCase));
+                platforms = platforms.Where(platform =>
+                    Regex.IsMatch(platform.Dockerfile, pathsRegexPattern, RegexOptions.IgnoreCase));
             }
 
             if (IncludeOsVersion != null)
@@ -53,12 +61,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     Regex.IsMatch(platform.OsVersion ?? string.Empty, includeOsVersionPattern, RegexOptions.IgnoreCase));
             }
 
-            return platforms;
+            return platforms.ToArray();
         }
 
         public IEnumerable<Repo> GetRepos(Manifest manifest)
         {
-            return manifest.Repos.Where(repo => string.IsNullOrWhiteSpace(IncludeRepo) || repo.Name == IncludeRepo);
+            return manifest.Repos
+                .Where(repo => string.IsNullOrWhiteSpace(IncludeRepo) || repo.Name == IncludeRepo)
+                .ToArray();
         }
     }
 }

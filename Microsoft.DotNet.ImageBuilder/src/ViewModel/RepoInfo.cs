@@ -12,9 +12,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
+        /// <summary>
+        /// All of the images that are defined in the manifest for this repo.
+        /// </summary>
+        public IEnumerable<ImageInfo> AllImages { get; private set; }
+
+        /// <summary>
+        /// The subet of image platforms after applying the command line filter options.
+        /// </summary>
+        public IEnumerable<ImageInfo> FilteredImages { get; private set; }
+
         public string Id { get; private set; }
         public string Name { get; private set; }
-        public IEnumerable<ImageInfo> Images { get; private set; }
         public Repo Model { get; private set; }
 
         private RepoInfo()
@@ -38,8 +47,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 repoInfo.Name = registry + options.RepoPrefix + model.Name;
             }
 
-            repoInfo.Images = model.Images
+            repoInfo.AllImages = model.Images
                 .Select(image => ImageInfo.Create(image, model, repoInfo.Name, manifestFilter, variableHelper))
+                .ToArray();
+
+            repoInfo.FilteredImages = repoInfo.AllImages
+                .Where(image => image.FilteredPlatforms.Any())
                 .ToArray();
 
             return repoInfo;

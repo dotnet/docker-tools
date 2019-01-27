@@ -15,12 +15,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between Docker registries";
         protected override string CommandName => "copyImages";
 
-        public Architecture Architecture { get; set; }
+        public string Architecture { get; set; }
         public string DestinationPassword { get; set; }
         public string DestinationServer { get; set; }
         public string DestinationUsername { get; set; }
         public IEnumerable<string> Paths { get; set; }
-        public OS OsType { get; set; }
+        public string OsType { get; set; }
         public string OsVersion { get; set; }
         public string SourcePassword { get; set; }
         public string SourceRepo { get; set; }

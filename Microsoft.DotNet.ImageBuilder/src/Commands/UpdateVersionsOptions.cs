@@ -4,11 +4,12 @@
 
 using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using System.Collections.Generic;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateVersionsOptions : Options
+    public class UpdateVersionsOptions : Options, IManifestFilterOptions
     {
         protected override string CommandHelp => "Updates the version information for the dependent images";
         protected override string CommandName => "updateVersions";
@@ -21,24 +22,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string GitPath { get; set; }
         public string GitRepo { get; set; }
         public string GitUsername { get; set; }
+        public string OsType { get; set; }
+        public string OsVersion { get; set; }
+        public IEnumerable<string> Paths { get; set; }
+
 
         public UpdateVersionsOptions() : base()
         {
-        }
-
-        public override ManifestFilter GetManifestFilter()
-        {
-            ManifestFilter filterInfo = base.GetManifestFilter();
-            filterInfo.IncludeArchitecture = Architecture;
-
-            return filterInfo;
         }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
 
-            Architecture = DefineArchitectureOption(syntax);
+            DefineManifestFilterOptions(syntax, this);
 
             string gitBranch = "master";
             syntax.DefineOption(

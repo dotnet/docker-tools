@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     new GenerateBuildMatrixCommand(),
                     new GenerateTagsReadmeCommand(),
                     new PublishManifestCommand(),
+                    new PublishMcrReadmesCommand(),
                     new UpdateReadmeCommand(),
                     new UpdateVersionsCommand(),
                 };

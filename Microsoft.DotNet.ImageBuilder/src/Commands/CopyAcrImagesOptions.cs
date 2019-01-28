@@ -15,10 +15,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
         protected override string CommandName => "copyAcrImages";
 
-        public Architecture Architecture { get; set; }
+        public string Architecture { get; set; }
         public string Password { get; set; }
         public IEnumerable<string> Paths { get; set; }
-        public OS OsType { get; set; }
+        public string OsType { get; set; }
         public string OsVersion { get; set; }
         public string SourceRepoPrefix { get; set; }
         public string Subscription { get; set; }

@@ -24,8 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ExecuteWithUser(() =>
             {
-                IEnumerable<ImageInfo> multiArchImages = Manifest.Repos
-                    .SelectMany(repo => repo.Images)
+                IEnumerable<ImageInfo> multiArchImages = Manifest.FilteredRepos
+                    .SelectMany(repo => repo.AllImages)
                     .Where(image => image.SharedTags.Any());
                 foreach (ImageInfo image in multiArchImages)
                 {
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             manifestYml.AppendLine("manifests:");
-            foreach (PlatformInfo platform in image.Platforms)
+            foreach (PlatformInfo platform in image.AllPlatforms)
             {
                 manifestYml.AppendLine($"  -");
                 manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");

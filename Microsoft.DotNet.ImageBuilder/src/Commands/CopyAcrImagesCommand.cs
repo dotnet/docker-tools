@@ -21,12 +21,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             using (AzureHelper helper = AzureHelper.Create(Options.Username, Options.Password, Options.Tenant, Options.IsDryRun))
             {
-                IEnumerable<TagInfo> platformTags = Manifest.ActiveImages
-                    .SelectMany(image => image.ActivePlatforms)
-                    .SelectMany(platform => platform.Tags);
                 string registryName = $"{Manifest.Registry}/";
 
-                foreach (TagInfo platformTag in platformTags)
+                foreach (TagInfo platformTag in Manifest.GetFilteredPlatformTags())
                 {
                     string sourceImage = platformTag.FullyQualifiedName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
                     string destImage = platformTag.FullyQualifiedName.TrimStart(registryName);

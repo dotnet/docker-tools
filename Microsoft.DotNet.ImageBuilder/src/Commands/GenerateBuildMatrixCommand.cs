@@ -131,9 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<MatrixInfo> matrices = new List<MatrixInfo>();
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
-            var platformGroups = Manifest.Repos
-                .SelectMany(repo => repo.Images)
-                .SelectMany(image => image.Platforms)
+            var platformGroups = Manifest.GetFilteredPlatforms()
                 .GroupBy(platform =>
                     new { platform.Model.OS, platform.Model.OsVersion, platform.Model.Architecture, platform.Model.Variant })
                 .OrderBy(platformGroup => platformGroup.Key.OS)

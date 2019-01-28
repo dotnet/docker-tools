@@ -40,9 +40,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void BuildImages()
         {
             Logger.WriteHeading("BUILDING IMAGES");
-            foreach (ImageInfo image in Manifest.ActiveImages)
+            foreach (ImageInfo image in Manifest.GetFilteredImages())
             {
-                foreach (PlatformInfo platform in image.ActivePlatforms)
+                foreach (PlatformInfo platform in image.FilteredPlatforms)
                 {
                     bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -170,7 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (string fromImage in platform.OverriddenFromImages)
                 {
                     string fromRepo = DockerHelper.GetRepo(fromImage);
-                    RepoInfo repo = Manifest.Repos.First(r => r.Model.Name == fromRepo);
+                    RepoInfo repo = Manifest.FilteredRepos.First(r => r.Model.Name == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
                     Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");

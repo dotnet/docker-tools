@@ -13,11 +13,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Builds and Tests Dockerfiles";
         protected override string CommandName => "build";
 
-        public Architecture Architecture { get; set; }
+        public string Architecture { get; set; }
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
-        public OS OsType { get; set; }
+        public string OsType { get; set; }
         public string OsVersion { get; set; }
         public IEnumerable<string> Paths { get; set; }
 

@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Updates the version information for the dependent images";
         protected override string CommandName => "updateVersions";
 
-        public Architecture Architecture { get; set; }
+        public string Architecture { get; set; }
         public string GitAuthToken { get; set; }
         public string GitBranch { get; set; }
         public string GitEmail { get; set; }

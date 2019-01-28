@@ -14,8 +14,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Generate the VSTS build matrix for building the images";
         protected override string CommandName => "generateBuildMatrix";
 
-        public Architecture Architecture { get; set; }
-        public OS OsType { get; set; }
+        public string Architecture { get; set; }
+        public string OsType { get; set; }
         public string OsVersion { get; set; }
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> Paths { get; set; }

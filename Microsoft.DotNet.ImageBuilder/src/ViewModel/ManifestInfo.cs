@@ -11,11 +11,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestInfo
     {
-        public IEnumerable<ImageInfo> ActiveImages { get; private set; }
+        /// <summary>
+        /// All of the repos that are defined in the manifest.
+        /// </summary>
+        public IEnumerable<RepoInfo> AllRepos { get; private set; }
+
+        /// <summary>
+        /// The subet of manifest repos after applying the command line filter options.
+        /// </summary>
+        public IEnumerable<RepoInfo> FilteredRepos { get; private set; }
+
         private ManifestFilter ManifestFilter { get; set; }
         public Manifest Model { get; private set; }
         public string Registry { get; private set; }
-        public IEnumerable<RepoInfo> Repos { get; private set; }
         public VariableHelper VariableHelper { get; set; }
 
         private ManifestInfo()
@@ -29,19 +37,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.ManifestFilter = manifestFilter;
             manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById, manifestInfo.GetRepoById);
-            manifestInfo.Repos = manifestFilter.GetRepos(manifestInfo.Model)
+            manifestInfo.AllRepos = manifestInfo.Model.Repos
                 .Select(repo => RepoInfo.Create(repo, manifestInfo.Registry, manifestFilter, options, manifestInfo.VariableHelper))
                 .ToArray();
 
-            IEnumerable<string> repoNames = manifestInfo.Repos.Select(repo => repo.Name);
-            foreach (PlatformInfo platform in manifestInfo.Repos.SelectMany(repo => repo.Images).SelectMany(image => image.Platforms))
+            IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();
+            foreach (PlatformInfo platform in manifestInfo.AllRepos.SelectMany(repo => repo.AllImages).SelectMany(image => image.AllPlatforms))
             {
                 platform.Initialize(repoNames);
             }
 
-            manifestInfo.ActiveImages = manifestInfo.Repos
-                .SelectMany(repo => repo.Images)
-                .Where(image => image.ActivePlatforms.Any())
+            IEnumerable<Repo> filteredRepoModels = manifestFilter.GetRepos(manifestInfo.Model);
+            manifestInfo.FilteredRepos = manifestInfo.AllRepos
+                .Where(repo => filteredRepoModels.Contains(repo.Model))
                 .ToArray();
 
             return manifestInfo;
@@ -49,32 +57,49 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private IEnumerable<TagInfo> GetAllTags()
         {
-            IEnumerable<ImageInfo> images = Repos
-                .SelectMany(repo => repo.Images)
+            IEnumerable<ImageInfo> images = AllRepos
+                .SelectMany(repo => repo.AllImages)
                 .ToArray();
             IEnumerable<TagInfo> sharedTags = images
                 .SelectMany(image => image.SharedTags);
             IEnumerable<TagInfo> platformTags = images
-                .SelectMany(image => image.Platforms)
+                .SelectMany(image => image.AllPlatforms)
                 .SelectMany(platform => platform.Tags);
             return sharedTags
-                .Concat(platformTags)
-                .ToArray();
+                .Concat(platformTags);
         }
 
         public IEnumerable<string> GetExternalFromImages()
         {
-            return ActiveImages
-                .SelectMany(image => image.ActivePlatforms)
+            return GetFilteredImages()
+                .SelectMany(image => image.FilteredPlatforms)
                 .SelectMany(platform => platform.ExternalFromImages)
                 .Distinct();
         }
 
+        public IEnumerable<ImageInfo> GetFilteredImages()
+        {
+            return FilteredRepos
+                .SelectMany(repo => repo.FilteredImages);
+        }
+
+        public IEnumerable<PlatformInfo> GetFilteredPlatforms()
+        {
+            return GetFilteredImages()
+                .SelectMany(image => image.FilteredPlatforms);
+        }
+
+        public IEnumerable<TagInfo> GetFilteredPlatformTags()
+        {
+            return GetFilteredPlatforms()
+                .SelectMany(platform => platform.Tags);
+        }
+
         public PlatformInfo GetPlatformByTag(string fullTagName)
         {
-            PlatformInfo result = this.Repos
-                .SelectMany(repo => repo.Images)
-                .SelectMany(image => image.Platforms)
+            PlatformInfo result = this.AllRepos
+                .SelectMany(repo => repo.AllImages)
+                .SelectMany(image => image.AllPlatforms)
                 .FirstOrDefault(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName));
 
             if (result == null)
@@ -87,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public RepoInfo GetRepoById(string id)
         {
-            return Repos.FirstOrDefault(repo => repo.Id == id);
+            return AllRepos.FirstOrDefault(repo => repo.Id == id);
         }
 
         public TagInfo GetTagById(string id)

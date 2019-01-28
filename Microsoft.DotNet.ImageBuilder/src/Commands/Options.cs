@@ -33,19 +33,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected static void DefineManifestFilterOptions(ArgumentSyntax syntax, IManifestFilterOptions filterOptions)
         {
-            Architecture architecture = DockerHelper.Architecture;
+            string architecture = DockerHelper.Architecture.ToString().ToLowerInvariant();
             syntax.DefineOption(
                 "architecture",
                 ref architecture,
                 "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)");
             filterOptions.Architecture = architecture;
 
-            OS osType = DockerHelper.GetOS();
+            string osType = DockerHelper.OS.ToString().ToLowerInvariant();
             syntax.DefineOption(
                 "os-type",
                 ref osType,
-                value => (OS)Enum.Parse(typeof(OS), value, true),
-                "OS type of the Dockerfiles to build (linux/windows) (default is the Docker OS)");
+                "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)");
             filterOptions.OsType = osType;
 
             string osVersion = null;
@@ -73,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (this is IManifestFilterOptions)
             {
                 IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
-                filter.DockerArchitecture = filterOptions.Architecture;
+                filter.IncludeArchitecture = filterOptions.Architecture;
                 filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersion = filterOptions.OsVersion;
                 filter.IncludePaths = filterOptions.Paths;

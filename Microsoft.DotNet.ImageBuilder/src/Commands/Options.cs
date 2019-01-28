@@ -31,21 +31,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        protected static Architecture DefineArchitectureOption(ArgumentSyntax syntax)
+        protected static void DefineManifestFilterOptions(ArgumentSyntax syntax, IManifestFilterOptions filterOptions)
         {
             Architecture architecture = DockerHelper.Architecture;
             syntax.DefineOption(
                 "architecture",
                 ref architecture,
-                value => (Architecture)Enum.Parse(typeof(Architecture), value, true),
-                "Architecture of Dockerfiles to operate on (default is current OS architecture)");
-
-            return architecture;
-        }
-
-        protected static void DefineManifestFilterOptions(ArgumentSyntax syntax, IManifestFilterOptions filterOptions)
-        {
-            filterOptions.Architecture = DefineArchitectureOption(syntax);
+                "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)");
+            filterOptions.Architecture = architecture;
 
             OS osType = DockerHelper.GetOS();
             syntax.DefineOption(

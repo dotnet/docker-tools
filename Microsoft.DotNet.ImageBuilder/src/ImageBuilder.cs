@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     new PublishMcrReadmesCommand(),
                     new UpdateReadmeCommand(),
                     new UpdateVersionsCommand(),
+                    new ValidateImageSizeCommand(),
                 };
 
                 ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>

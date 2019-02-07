@@ -94,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteHeading("VALIDATING IMAGE SIZES");
 
-            double allowedVariance = Options.AllowedVariance / 100;
+            double allowedVariance = (double)Options.AllowedVariance / 100;
             List<string> missingImages = new List<string>();
             List<string> invalidImages = new List<string>();
             string jsonContent = File.ReadAllText(Options.BaselinePath);
@@ -112,8 +112,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     long baseline = (long)sizeJson;
                     double allowedMin = baseline * (1 - allowedVariance);
                     double allowedMax = baseline * (1 + allowedVariance);
-                    string msg = $"{imageId} => "
-                        + $"Expected: {baseline} Variation Allowed: {allowedMin} - {allowedMax} Actual: {imageSize}";
+                    string msg = $"{imageId} => Expected: {baseline} Variation Allowed: {allowedMin} - {allowedMax}"
+                        + $" Actual: {imageSize} Difference {imageSize - baseline}";
                     Logger.WriteMessage(msg);
                     if (imageSize < allowedMin || imageSize > allowedMax)
                     {

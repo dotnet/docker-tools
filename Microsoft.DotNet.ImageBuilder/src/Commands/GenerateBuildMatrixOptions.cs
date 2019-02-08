@@ -9,16 +9,12 @@ using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateBuildMatrixOptions : Options, IManifestFilterOptions
+    public class GenerateBuildMatrixOptions : Options, IFilterableOptions
     {
         protected override string CommandHelp => "Generate the VSTS build matrix for building the images";
-        protected override string CommandName => "generateBuildMatrix";
 
-        public string Architecture { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
-        public IEnumerable<string> Paths { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -28,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
+            FilterOptions.ParseCommandLine(syntax);
 
             MatrixType matrixType = MatrixType.Build;
             syntax.DefineOption(

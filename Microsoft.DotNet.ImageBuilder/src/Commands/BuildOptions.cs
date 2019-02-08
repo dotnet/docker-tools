@@ -8,18 +8,14 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class BuildOptions : DockerRegistryOptions, IManifestFilterOptions
+    public class BuildOptions : DockerRegistryOptions, IFilterableOptions
     {
         protected override string CommandHelp => "Builds and Tests Dockerfiles";
-        protected override string CommandName => "build";
 
-        public string Architecture { get; set; }
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
-        public IEnumerable<string> Paths { get; set; }
 
         public BuildOptions() : base()
         {
@@ -29,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
+            FilterOptions.ParseCommandLine(syntax);
 
             bool isPushEnabled = false;
             syntax.DefineOption("push", ref isPushEnabled, "Push built images to Docker registry");

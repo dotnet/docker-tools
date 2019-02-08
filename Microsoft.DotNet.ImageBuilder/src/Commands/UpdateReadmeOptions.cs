@@ -7,7 +7,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class UpdateReadmeOptions : DockerRegistryOptions
     {
         protected override string CommandHelp => "Updates the readme on the Docker Registries";
-        protected override string CommandName => "updateReadme";
 
         public UpdateReadmeOptions() : base()
         {

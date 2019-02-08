@@ -9,12 +9,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateVersionsOptions : Options, IManifestFilterOptions
+    public class UpdateVersionsOptions : Options, IFilterableOptions
     {
         protected override string CommandHelp => "Updates the version information for the dependent images";
-        protected override string CommandName => "updateVersions";
 
-        public string Architecture { get; set; }
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public string GitAuthToken { get; set; }
         public string GitBranch { get; set; }
         public string GitEmail { get; set; }
@@ -22,10 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string GitPath { get; set; }
         public string GitRepo { get; set; }
         public string GitUsername { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
-        public IEnumerable<string> Paths { get; set; }
-
 
         public UpdateVersionsOptions() : base()
         {
@@ -35,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
+            FilterOptions.ParseCommandLine(syntax);
 
             string gitBranch = "master";
             syntax.DefineOption(

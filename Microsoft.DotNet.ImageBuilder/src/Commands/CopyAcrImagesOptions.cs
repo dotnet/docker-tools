@@ -10,16 +10,12 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyAcrImagesOptions : Options, IManifestFilterOptions
+    public class CopyAcrImagesOptions : Options, IFilterableOptions
     {
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
-        protected override string CommandName => "copyAcrImages";
 
-        public string Architecture { get; set; }
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public string Password { get; set; }
-        public IEnumerable<string> Paths { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
         public string SourceRepoPrefix { get; set; }
         public string Subscription { get; set; }
         public string Tenant { get; set; }
@@ -33,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
+            FilterOptions.ParseCommandLine(syntax);
 
             string sourceRepoPrefix = null;
             syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");

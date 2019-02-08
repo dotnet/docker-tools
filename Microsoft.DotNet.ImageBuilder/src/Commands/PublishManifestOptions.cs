@@ -7,7 +7,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishManifestOptions : DockerRegistryOptions
     {
         protected override string CommandHelp => "Creates and publishes the manifest to the Docker Registry";
-        protected override string CommandName => "publishManifest";
 
         public PublishManifestOptions() : base()
         {

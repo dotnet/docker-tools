@@ -9,7 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GenerateTagsReadmeOptions : Options
     {
         protected override string CommandHelp => "Generate the tags section of the readme";
-        protected override string CommandName => "generateTagsReadme";
 
         public string ReadmePath { get; set; }
         public bool SkipValidation { get; set; }

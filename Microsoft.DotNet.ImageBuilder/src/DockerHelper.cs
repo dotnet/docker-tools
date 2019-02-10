@@ -20,15 +20,19 @@ namespace Microsoft.DotNet.ImageBuilder
         public static Architecture Architecture => _architecture.Value;
         public static OS OS => _os.Value;
 
-        private static string ExecuteCommandWithFormat(
-            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false)
+        private static string ExecuteCommand(
+            string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo(
-                "docker", $"{command} -f \"{{{{ {outputFormat} }}}}\" {additionalArgs}");
+                "docker", $"{command} {additionalArgs}");
             startInfo.RedirectStandardOutput = true;
             Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
             return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }
+
+        private static string ExecuteCommandWithFormat(
+            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false) =>
+            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
 
         public static void ExecuteWithUser(Action action, string username, string password, string server, bool isDryRun)
         {
@@ -109,10 +113,19 @@ namespace Microsoft.DotNet.ImageBuilder
             return Version.TryParse(versionString, out Version version) ? version : null;
         }
 
+        public static long GetImageSize(string image, bool isDryRun)
+        {
+            string size = ExecuteCommandWithFormat(
+                "inspect", ".Size", "Failed to retrieve image size", additionalArgs: image, isDryRun: isDryRun);
+            return isDryRun ? 0 : long.Parse(size);
+        }
+
         public static string GetRepo(string image)
         {
             return image.Substring(0, image.IndexOf(':'));
         }
+
+        public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists(ManagementType.Image, tag, isDryRun);
 
         public static void Login(string username, string password, string server, bool isDryRun)
         {
@@ -175,5 +188,20 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             return newRepo + image.Substring(image.IndexOf(':'));
         }
+
+        private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)
+        {
+            string output = ExecuteCommand(
+                $"{Enum.GetName(typeof(ManagementType), type).ToLowerInvariant()} ls -a -q {filterArg}",
+                "Failed to find resource",
+                isDryRun: isDryRun);
+            return output != "";
+        }
+
+        private enum ManagementType 
+        {
+            Image,
+            Container,
+        }  
     }
 }

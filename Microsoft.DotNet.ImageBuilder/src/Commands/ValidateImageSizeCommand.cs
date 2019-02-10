@@ -112,8 +112,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     long baseline = (long)sizeJson;
                     double allowedMin = baseline * (1 - allowedVariance);
                     double allowedMax = baseline * (1 + allowedVariance);
-                    string msg = $"{imageId} => Expected: {baseline} Variation Allowed: {allowedMin} - {allowedMax}"
-                        + $" Actual: {imageSize} Difference {imageSize - baseline}";
+                    string msg = $"{imageId}{Environment.NewLine}"
+                        + $"    Expected:   {baseline,15:N0}{Environment.NewLine}"
+                        + $"    Actual:     {imageSize,15:N0}{Environment.NewLine}"
+                        + $"    Difference: {(imageSize - baseline),15:N0}{Environment.NewLine}"
+                        + $"    Variation Allowed: {allowedMin:N0} - {allowedMax:N0}";
+                    Logger.WriteSubheading("Image Data:");
                     Logger.WriteMessage(msg);
                     if (imageSize < allowedMin || imageSize > allowedMax)
                     {

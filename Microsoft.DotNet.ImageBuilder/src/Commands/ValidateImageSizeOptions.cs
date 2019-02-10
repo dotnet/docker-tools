@@ -2,23 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ValidateImageSizeOptions : Options, IManifestFilterOptions
+    public class ValidateImageSizeOptions : Options, IFilterableOptions
     {
         protected override string CommandHelp => "Validates the size of the images against a baseline";
-        protected override string CommandName => "validateImageSize";
 
         public int AllowedVariance { get; set; }
-        public string Architecture { get; set; }
         public string BaselinePath { get; set; }
         public bool IsPullEnabled { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
-        public IEnumerable<string> Paths { get; set; }
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public bool UpdateBaseline { get; set; }
 
         public ValidateImageSizeOptions() : base()
@@ -29,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
+            FilterOptions.ParseCommandLine(syntax);
 
             int allowedVariance = 5;
             syntax.DefineOption("variance", ref allowedVariance, $"Allowed percent variance in size (default is `{allowedVariance}`");

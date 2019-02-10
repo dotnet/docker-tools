@@ -15,7 +15,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public abstract class Options : IOptionsInfo
     {
         protected abstract string CommandHelp { get; }
-        protected abstract string CommandName { get; }
 
         public bool IsDryRun { get; set; }
         public bool IsVerbose { get; set; }
@@ -24,42 +23,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Repo { get; set; }
         public string RepoPrefix { get; set; }
         public IDictionary<string, string> RepoOverrides { get; set; }
-
         public IDictionary<string, string> Variables { get; set; }
 
         protected Options()
         {
         }
 
-        protected static void DefineManifestFilterOptions(ArgumentSyntax syntax, IManifestFilterOptions filterOptions)
+        private string GetCommandName()
         {
-            string architecture = DockerHelper.Architecture.ToString().ToLowerInvariant();
-            syntax.DefineOption(
-                "architecture",
-                ref architecture,
-                "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)");
-            filterOptions.Architecture = architecture;
-
-            string osType = DockerHelper.OS.ToString().ToLowerInvariant();
-            syntax.DefineOption(
-                "os-type",
-                ref osType,
-                "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)");
-            filterOptions.OsType = osType;
-
-            string osVersion = null;
-            syntax.DefineOption(
-                "os-version",
-                ref osVersion,
-                "OS version of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
-            filterOptions.OsVersion = osVersion;
-
-            IReadOnlyList<string> paths = Array.Empty<string>();
-            syntax.DefineOptionList(
-                "path",
-                ref paths,
-                "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
-            filterOptions.Paths = paths;
+            string commandName = GetType().Name.TrimEnd("Options");
+            return Char.ToLowerInvariant(commandName[0]) + commandName.Substring(1);
         }
 
         public virtual ManifestFilter GetManifestFilter()
@@ -69,9 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IncludeRepo = Repo,
             };
 
-            if (this is IManifestFilterOptions)
+            if (this is IFilterableOptions)
             {
-                IManifestFilterOptions filterOptions = (IManifestFilterOptions)this;
+                ManifestFilterOptions filterOptions = ((IFilterableOptions)this).FilterOptions;
                 filter.IncludeArchitecture = filterOptions.Architecture;
                 filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersion = filterOptions.OsVersion;
@@ -101,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public virtual void ParseCommandLine(ArgumentSyntax syntax)
         {
-            ArgumentCommand command = syntax.DefineCommand(CommandName, this);
+            ArgumentCommand command = syntax.DefineCommand(GetCommandName(), this);
             command.Help = CommandHelp;
 
             bool isDryRun = false;

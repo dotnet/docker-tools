@@ -9,7 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishMcrReadmesOptions : Options
     {
         protected override string CommandHelp => "Publishes the readmes to MCR";
-        protected override string CommandName => "publishMcrReadmes";
 
         public string GitAuthToken { get; set; }
         public string GitBranch { get; set; }

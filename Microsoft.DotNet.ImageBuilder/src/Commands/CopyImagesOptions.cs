@@ -10,18 +10,14 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyImagesOptions : Options, IManifestFilterOptions
+    public class CopyImagesOptions : Options, IFilterableOptions
     {
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between Docker registries";
-        protected override string CommandName => "copyImages";
 
-        public string Architecture { get; set; }
         public string DestinationPassword { get; set; }
         public string DestinationServer { get; set; }
         public string DestinationUsername { get; set; }
-        public IEnumerable<string> Paths { get; set; }
-        public string OsType { get; set; }
-        public string OsVersion { get; set; }
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public string SourcePassword { get; set; }
         public string SourceRepo { get; set; }
         public string SourceServer { get; set; }
@@ -35,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            DefineManifestFilterOptions(syntax, this);
+            FilterOptions.ParseCommandLine(syntax);
 
             string destinationPassword = null;
             Argument<string> destinationPasswordArg = syntax.DefineOption(

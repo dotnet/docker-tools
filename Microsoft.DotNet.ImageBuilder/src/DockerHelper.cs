@@ -125,7 +125,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return image.Substring(0, image.IndexOf(':'));
         }
 
-        public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists("image", tag, isDryRun);
+        public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists(ManagementType.Image, tag, isDryRun);
 
         public static void Login(string username, string password, string server, bool isDryRun)
         {
@@ -189,10 +189,19 @@ namespace Microsoft.DotNet.ImageBuilder
             return newRepo + image.Substring(image.IndexOf(':'));
         }
 
-        private static bool ResourceExists(string type, string filterArg, bool isDryRun)
+        private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)
         {
-            string output = ExecuteCommand($"{type} ls -a -q {filterArg}", "Failed to find resource", isDryRun: isDryRun);
+            string output = ExecuteCommand(
+                $"{Enum.GetName(typeof(ManagementType), type).ToLowerInvariant()} ls -a -q {filterArg}",
+                "Failed to find resource",
+                isDryRun: isDryRun);
             return output != "";
         }
+
+        private enum ManagementType 
+        {
+            Image,
+            Container,
+        }  
     }
 }

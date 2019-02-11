@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -23,8 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";
 
-        private static string TagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.|]+)\\)";
-        private static string TimeStamp { get; } = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        private static readonly string s_tagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.|]+)\\)";
+        private static readonly string s_timeStamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
         private Func<string, RepoInfo> GetRepoById { get; set; }
         private Func<string, TagInfo> GetTagById { get; set; }
@@ -45,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string SubstituteValues(string expression, Func<string, string, string> getContextBasedSystemValue = null)
         {
-            foreach (Match match in Regex.Matches(expression, TagVariablePattern))
+            foreach (Match match in Regex.Matches(expression, s_tagVariablePattern))
             {
                 string variableValue;
                 string variableName = match.Groups[VariableGroupName].Value;
@@ -82,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             {
                 if (string.Equals(variableName, TimeStampVariableName, StringComparison.Ordinal))
                 {
-                    variableValue = TimeStamp;
+                    variableValue = s_timeStamp;
                 }
                 else if (getContextBasedSystemValue != null)
                 {

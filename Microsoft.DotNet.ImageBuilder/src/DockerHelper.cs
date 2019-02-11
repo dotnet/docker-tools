@@ -2,23 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Model;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class DockerHelper
     {
-        private static Lazy<Architecture> _architecture = new Lazy<Architecture>(GetArchitecture);
-        private static Lazy<OS> _os = new Lazy<OS>(GetOS);
+        private static readonly Lazy<Architecture> s_architecture = new Lazy<Architecture>(GetArchitecture);
+        private static readonly Lazy<OS> s_os = new Lazy<OS>(GetOS);
 
-        public static Architecture Architecture => _architecture.Value;
-        public static OS OS => _os.Value;
+        public static Architecture Architecture => s_architecture.Value;
+        public static OS OS => s_os.Value;
 
         private static string ExecuteCommand(
             string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
@@ -198,10 +198,10 @@ namespace Microsoft.DotNet.ImageBuilder
             return output != "";
         }
 
-        private enum ManagementType 
+        private enum ManagementType
         {
             Image,
             Container,
-        }  
+        }
     }
 }

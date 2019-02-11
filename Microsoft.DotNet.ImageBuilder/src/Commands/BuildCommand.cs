@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Diagnostics;
@@ -11,6 +10,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (updateDockerfile)
                 {
                     // Don't overwrite the original dockerfile - write it to a new path.
-                    dockerfilePath = dockerfilePath + ".temp";
+                    dockerfilePath += ".temp";
                     Logger.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
                     Logger.WriteMessage(dockerfileContents);
                     File.WriteAllText(dockerfilePath, dockerfileContents);

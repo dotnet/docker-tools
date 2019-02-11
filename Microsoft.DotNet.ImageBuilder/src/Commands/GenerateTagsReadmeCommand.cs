@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +9,8 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             StringBuilder tagsDoc = new StringBuilder($"## Complete set of Tags{Environment.NewLine}{Environment.NewLine}");
 
             var platformGroups = ImageDocInfos
-                .GroupBy(info => new {info.Platform.Model.OS, info.Platform.Model.OsVersion, info.Platform.Model.Architecture })
+                .GroupBy(info => new { info.Platform.Model.OS, info.Platform.Model.OsVersion, info.Platform.Model.Architecture })
                 .OrderByDescending(platformGroup => platformGroup.Key.Architecture)
                 .ThenBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion);
@@ -159,7 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
                     }
                 }
-            } 
+            }
             else if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
                 && string.Equals(variableName, VariableHelper.SourceUrlVariableName, StringComparison.Ordinal))
             {
@@ -194,7 +194,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
 
             string headerLine = tagsDocumentation
-                .Split(new [] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .FirstOrDefault();
             Regex regex = new Regex($"^{headerLine}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);
             string updatedReadme = regex.Replace(readme, tagsDocumentation);
@@ -223,7 +223,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 DocumentedTags = documentedTags;
             }
 
-            public static IEnumerable<ImageDocumentationInfo> Create (ImageInfo image, PlatformInfo platform)
+            public static IEnumerable<ImageDocumentationInfo> Create(ImageInfo image, PlatformInfo platform)
             {
                 IEnumerable<string> documentationGroups = image.SharedTags
                     .Concat(platform.Tags)

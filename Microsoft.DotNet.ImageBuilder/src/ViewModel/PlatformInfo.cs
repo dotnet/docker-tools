@@ -2,23 +2,24 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class PlatformInfo
     {
         private const string ArgGroupName = "arg";
-        private static readonly string ArgPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
         private const string FromImageMatchName = "fromImage";
         private const string StageIdMatchName = "stageId";
         private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
+
+        private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
 
         private List<string> _overriddenFromImages;
 
@@ -135,7 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private string SubstituteBuildArgs(string instruction)
         {
-            foreach (Match match in Regex.Matches(instruction, ArgPattern))
+            foreach (Match match in Regex.Matches(instruction, s_argPattern))
             {
                 if (!BuildArgs.TryGetValue(match.Groups[ArgGroupName].Value, out string argValue))
                 {

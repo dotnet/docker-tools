@@ -2,13 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 UpdateBaseline();
             }
-            else 
+            else
             {
                 ValidateImages();
             }
@@ -73,14 +73,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Logger.WriteHeading("UPDATING IMAGE SIZE BASELINE");
 
             JObject json = new JObject();
-            
-            Func<string, JObject> getRepoJson = (repoName) =>
+
+            JObject getRepoJson(string repoName)
             {
                 JObject repoJson = new JObject();
                 json[repoName] = repoJson;
                 return repoJson;
-            };
-            Action<string, long, JObject> processImage = (imageId, imageSize, repoJson) =>
+            }
+            void processImage(string imageId, long imageSize, JObject repoJson) =>
                 repoJson.Add(imageId, new JValue(imageSize));
             ProcessImages(getRepoJson, processImage);
 
@@ -100,8 +100,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string jsonContent = File.ReadAllText(Options.BaselinePath);
             JObject json = JObject.Parse(jsonContent);
 
-            Func<string, JObject> getRepoJson = (repoName) => (JObject)json[repoName];
-            Action<string, long, JObject> processImage = (imageId, imageSize, repoJson) => 
+            JObject getRepoJson(string repoName) => (JObject)json[repoName];
+            void processImage(string imageId, long imageSize, JObject repoJson)
             {
                 if (!repoJson.TryGetValue(imageId, out JToken sizeJson))
                 {
@@ -124,7 +124,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         invalidImages.Add(msg);
                     }
                 }
-            };
+            }
             ProcessImages(getRepoJson, processImage);
 
             Logger.WriteSubheading($"Validation Results:");

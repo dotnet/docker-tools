@@ -2,13 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 using System.Reflection;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -32,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private string GetCommandName()
         {
             string commandName = GetType().Name.TrimEnd("Options");
-            return Char.ToLowerInvariant(commandName[0]) + commandName.Substring(1);
+            return char.ToLowerInvariant(commandName[0]) + commandName.Substring(1);
         }
 
         public virtual ManifestFilter GetManifestFilter()
@@ -58,7 +57,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string result;
 
-            PropertyInfo propInfo = this.GetType().GetProperties()
+            PropertyInfo propInfo = GetType().GetProperties()
                 .FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.Ordinal));
             if (propInfo != null)
             {

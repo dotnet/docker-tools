@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixCommand : Command<GenerateBuildMatrixOptions>
     {
-        private readonly static char[] PathSeparators = { '/', '\\' };
+        private readonly static char[] s_pathSeparators = { '/', '\\' };
 
         public GenerateBuildMatrixCommand() : base()
         {
@@ -56,8 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
-                    DotNetVersion = platform.DockerfilePath.Split(PathSeparators)[0],
-                    OsVariant = platform.DockerfilePath.Split(PathSeparators)[2].TrimEnd("-slim")
+                    DotNetVersion = platform.DockerfilePath.Split(s_pathSeparators)[0],
+                    OsVariant = platform.DockerfilePath.Split(s_pathSeparators)[2].TrimEnd("-slim")
                 });
             foreach (var versionGrouping in versionGroups)
             {
@@ -103,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </summary>
         private static string FormatLegName(string[] dockerfilePath, string[] matrixNameParts)
         {
-            string legName = dockerfilePath.First().Split(PathSeparators)
+            string legName = dockerfilePath.First().Split(s_pathSeparators)
                 .Where(subPart => !matrixNameParts.Any(matrixPart => string.Equals(matrixPart, subPart, StringComparison.OrdinalIgnoreCase)))
                 .Aggregate((working, next) => $"{working}-{next}");
 
@@ -196,9 +195,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (LegInfo leg in matrix.OrderedLegs)
                 {
                     Logger.WriteMessage($"    {leg.Name}:");
-                    foreach (var variable in leg.Variables)
+                    foreach ((string Name, string Value) in leg.Variables)
                     {
-                        Logger.WriteMessage($"      {variable.Name}: {variable.Value}");
+                        Logger.WriteMessage($"      {Name}: {Value}");
                     }
                 }
             }

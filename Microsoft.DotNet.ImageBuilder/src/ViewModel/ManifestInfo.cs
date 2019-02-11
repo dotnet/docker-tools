@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -21,7 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         /// </summary>
         public IEnumerable<RepoInfo> FilteredRepos { get; private set; }
 
-        private ManifestFilter ManifestFilter { get; set; }
         public Manifest Model { get; private set; }
         public string Registry { get; private set; }
         public VariableHelper VariableHelper { get; set; }
@@ -34,7 +33,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
-            manifestInfo.ManifestFilter = manifestFilter;
             manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById, manifestInfo.GetRepoById);
             manifestInfo.AllRepos = manifestInfo.Model.Repos
@@ -97,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public PlatformInfo GetPlatformByTag(string fullTagName)
         {
-            PlatformInfo result = this.AllRepos
+            PlatformInfo result = AllRepos
                 .SelectMany(repo => repo.AllImages)
                 .SelectMany(image => image.AllPlatforms)
                 .FirstOrDefault(platform => platform.Tags.Any(tag => tag.FullyQualifiedName == fullTagName));

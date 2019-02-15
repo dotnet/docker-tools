@@ -1,0 +1,22 @@
+parameters:
+  name: null
+  pool: {}
+
+jobs:
+- job: ${{ parameters.name }}
+  pool: ${{ parameters.pool }}
+  workspace:
+    clean: all
+  steps:
+    - script: docker login -u $(acr.userName) -p $(BotAccount-dotnet-docker-acr-bot-password) $(acr.server)
+      displayName: Docker Login
+    - powershell: >
+        Microsoft.DotNet.ImageBuilder/build.ps1
+        -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder
+        -PushImages
+        -CleanupDocker
+      displayName: Build and Publish ImageBuilder
+    - script: docker logout
+      displayName: Docker Logout
+      condition: always()
+      continueOnError: true

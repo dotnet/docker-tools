@@ -168,7 +168,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public double? MaxVariance => BaselineSize + AllowedVariance;
             public double? MinVariance => BaselineSize - AllowedVariance;
             public long? SizeDifference => CurrentSize - BaselineSize;
-            public bool WithinAllowedVariance => AllowedVariance > Math.Abs(SizeDifference.Value);
+            public bool WithinAllowedVariance => BaselineSize.HasValue && AllowedVariance > Math.Abs(SizeDifference.Value);
         }
     }
 }

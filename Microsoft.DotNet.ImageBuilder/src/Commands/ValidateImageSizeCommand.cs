@@ -42,12 +42,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Logger.WriteMessage,
                 "Images with no size change:");
             LogResults(
-                baselinedImageData.Where(info =>
-                    info.SizeDifference != 0 && info.AllowedVariance > Math.Abs(info.SizeDifference.Value)),
+                baselinedImageData.Where(info => info.SizeDifference != 0 && info.WithinAllowedVariance),
                 Logger.WriteMessage,
                 "Images with allowed size change:");
             LogResults(
-                baselinedImageData.Where(info => info.AllowedVariance < Math.Abs(info.SizeDifference.Value)),
+                baselinedImageData.Where(info => !info.WithinAllowedVariance),
                 Logger.WriteError,
                 "Images exceeding size variance:");
             LogResults(
@@ -65,15 +64,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (ImageInfo info in imageData)
                 {
                     string msg = $"{info.Id}{Environment.NewLine}"
-                        + $"    Actual:     {info.CurrentSize,15:N0}{Environment.NewLine}";
+                        + $"    Actual:     {info.CurrentSize,15:N0}";
                     if (info.BaselineSize.HasValue)
                     {
-                        double? minVariance = info.BaselineSize - info.AllowedVariance;
-                        double? maxVariance = info.BaselineSize + info.AllowedVariance;
-
-                        msg += $"    Expected:   {info.BaselineSize,15:N0}{Environment.NewLine}"
+                        msg += $"{Environment.NewLine}    Expected:   {info.BaselineSize,15:N0}{Environment.NewLine}"
                         + $"    Difference: {info.SizeDifference,15:N0}{Environment.NewLine}"
-                        + $"    Variation Allowed: {minVariance:N0} - {maxVariance:N0}";
+                        + $"    Variation Allowed: {info.MinVariance:N0} - {info.MaxVariance:N0}";
                     }
 
                     logAction(msg);
@@ -156,7 +152,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     CurrentSize = imageSize,
                     BaselineSize = baseline,
                     AllowedVariance = baseline * (double)Options.AllowedVariance / 100,
-                    SizeDifference = imageSize - baseline
                 });
             }
             ProcessImages(getRepoJson, processImage);
@@ -170,7 +165,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public long? BaselineSize { get; set; }
             public long CurrentSize { get; set; }
             public string Id { get; set; }
-            public long? SizeDifference { get; set; }
+            public double? MaxVariance => BaselineSize + AllowedVariance;
+            public double? MinVariance => BaselineSize - AllowedVariance;
+            public long? SizeDifference => CurrentSize - BaselineSize;
+            public bool WithinAllowedVariance => AllowedVariance > Math.Abs(SizeDifference.Value);
         }
     }
 }

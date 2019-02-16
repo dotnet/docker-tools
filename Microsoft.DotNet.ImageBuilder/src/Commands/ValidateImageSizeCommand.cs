@@ -32,12 +32,50 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private void LogErrors(List<string> messages, string header)
+        private void DisplayResults(IEnumerable<ImageInfo> imageData)
         {
-            if (messages.Any())
+            IEnumerable<ImageInfo> baselinedImageData = imageData.Where(info => info.BaselineSize.HasValue).ToArray();
+
+            Logger.WriteHeading("VALIDATION RESULTS");
+            LogResults(
+                baselinedImageData.Where(info => info.SizeDifference == 0),
+                Logger.WriteMessage,
+                "Images with no size change:");
+            LogResults(
+                baselinedImageData.Where(info => info.SizeDifference != 0 && info.WithinAllowedVariance),
+                Logger.WriteMessage,
+                "Images with allowed size change:");
+            LogResults(
+                baselinedImageData.Where(info => !info.WithinAllowedVariance),
+                Logger.WriteError,
+                "Images exceeding size variance:");
+            LogResults(
+                imageData.Except(baselinedImageData),
+                Logger.WriteError,
+                "Images missing from baseline:");
+        }
+
+        private void LogResults(IEnumerable<ImageInfo> imageData, Action<string> logAction, string header)
+        {
+            if (imageData.Any())
             {
                 Logger.WriteSubheading(header);
-                messages.ForEach(msg => Logger.WriteError(msg));
+
+                foreach (ImageInfo info in imageData)
+                {
+                    string msg = $"{info.Id}{Environment.NewLine}"
+                        + $"    Actual:     {info.CurrentSize,15:N0}";
+                    if (info.BaselineSize.HasValue)
+                    {
+                        msg += $"{Environment.NewLine}    Expected:   {info.BaselineSize,15:N0}{Environment.NewLine}"
+                        + $"    Difference: {info.SizeDifference,15:N0}{Environment.NewLine}"
+                        + $"    Variation Allowed: {info.MinVariance:N0} - {info.MaxVariance:N0}";
+                    }
+
+                    logAction(msg);
+                }
+
+                Logger.WriteMessage("----------------------------------------------------");
             }
         }
 
@@ -94,50 +132,43 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteHeading("VALIDATING IMAGE SIZES");
 
-            double allowedVariance = (double)Options.AllowedVariance / 100;
-            List<string> missingImages = new List<string>();
-            List<string> invalidImages = new List<string>();
+            List<ImageInfo> imageData = new List<ImageInfo>();
             string jsonContent = File.ReadAllText(Options.BaselinePath);
             JObject json = JObject.Parse(jsonContent);
 
             JObject getRepoJson(string repoName) => (JObject)json[repoName];
             void processImage(string imageId, long imageSize, JObject repoJson)
             {
-                if (!repoJson.TryGetValue(imageId, out JToken sizeJson))
+                long? baseline = null;
+
+                if (repoJson.TryGetValue(imageId, out JToken sizeJson))
                 {
-                    missingImages.Add(imageId);
+                    baseline = (long)sizeJson;
                 }
-                else
+
+                imageData.Add(new ImageInfo()
                 {
-                    long baseline = (long)sizeJson;
-                    double allowedMin = baseline * (1 - allowedVariance);
-                    double allowedMax = baseline * (1 + allowedVariance);
-                    string msg = $"{imageId}{Environment.NewLine}"
-                        + $"    Expected:   {baseline,15:N0}{Environment.NewLine}"
-                        + $"    Actual:     {imageSize,15:N0}{Environment.NewLine}"
-                        + $"    Difference: {(imageSize - baseline),15:N0}{Environment.NewLine}"
-                        + $"    Variation Allowed: {allowedMin:N0} - {allowedMax:N0}";
-                    Logger.WriteSubheading("Image Data:");
-                    Logger.WriteMessage(msg);
-                    if (imageSize < allowedMin || imageSize > allowedMax)
-                    {
-                        invalidImages.Add(msg);
-                    }
-                }
+                    Id = imageId,
+                    CurrentSize = imageSize,
+                    BaselineSize = baseline,
+                    AllowedVariance = baseline * (double)Options.AllowedVariance / 100,
+                });
             }
             ProcessImages(getRepoJson, processImage);
 
-            Logger.WriteSubheading($"Validation Results:");
-            if (missingImages.Any() || invalidImages.Any())
-            {
-                LogErrors(missingImages, "Images missing from baseline:");
-                LogErrors(invalidImages, "Images failing size validation:");
-                Environment.Exit(1);
-            }
-            else
-            {
-                Logger.WriteMessage("SUCCESS");
-            }
+            DisplayResults(imageData);
+        }
+
+        private class ImageInfo
+        {
+            public double? AllowedVariance { get; set; }
+            public long? BaselineSize { get; set; }
+            public long CurrentSize { get; set; }
+            public string Id { get; set; }
+            public double? MaxVariance => BaselineSize + AllowedVariance;
+            public double? MinVariance => BaselineSize - AllowedVariance;
+            public long? SizeDifference => CurrentSize - BaselineSize;
+            public bool WithinAllowedVariance => BaselineSize.HasValue && AllowedVariance > Math.Abs(SizeDifference.Value);
         }
     }
 }

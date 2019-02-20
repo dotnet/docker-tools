@@ -1,6 +1,6 @@
 [cmdletbinding()]
 param(
-    [string]$DockerRepo = "microsoft/dotnet-buildtools-prereqs",
+    [string]$DockerRepo = "mcr.microsoft.com/dotnet-buildtools/image-builder",
     [switch]$PushImages,
     [switch]$CleanupDocker
 )
@@ -15,9 +15,8 @@ function Invoke-CleanupDocker($ActiveOS)
             # Windows base images are large, preserve them to avoid the overhead of pulling each time.
             docker images |
                 Where-Object {
-                    -Not ($_.StartsWith("microsoft/nanoserver ")`
-                    -Or $_.StartsWith("microsoft/windowsservercore ")`
-                    -Or $_.StartsWith("REPOSITORY ")) } |
+                    -Not ($_.StartsWith("mcr.microsoft.com/windows")`
+                        -Or $_.StartsWith("REPOSITORY ")) } |
                 ForEach-Object { $_.Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)[2] } |
                 Select-Object -Unique |
                 ForEach-Object { docker rmi -f $_ }
@@ -40,7 +39,7 @@ try {
         $osFlavor = "debian"
     }
 
-    $stableTag = "$($DockerRepo):image-builder-$osFlavor-$((Get-Date -Format yyyyMMddHHmmss).ToLower())"
+    $stableTag = "$($DockerRepo):$osFlavor-$((Get-Date -Format yyyyMMddHHmmss).ToLower())"
     $floatingTag = "image-builder"
 
     & docker build -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$osFlavor" $PSScriptRoot

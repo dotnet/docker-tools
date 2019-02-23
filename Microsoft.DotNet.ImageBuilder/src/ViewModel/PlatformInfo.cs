@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<string> InternalFromImages { get; private set; }
         public Platform Model { get; private set; }
         public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
-        private Repo RepoModel { get; set; }
+        private string FullRepoModelName { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         private VariableHelper VariableHelper { get; set; }
@@ -39,12 +39,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static PlatformInfo Create(Platform model, Repo repoModel, string repoName, VariableHelper variableHelper)
+        public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper)
         {
             PlatformInfo platformInfo = new PlatformInfo();
             platformInfo.Model = model;
             platformInfo.RepoName = repoName;
-            platformInfo.RepoModel = repoModel;
+            platformInfo.FullRepoModelName = fullRepoModelName;
             platformInfo.VariableHelper = variableHelper;
 
             if (File.Exists(model.Dockerfile))
@@ -151,7 +151,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private string SubstituteOverriddenRepo(string from)
         {
-            if (RepoName != RepoModel.Name && from.StartsWith($"{RepoModel.Name}:"))
+            if (RepoName != FullRepoModelName && from.StartsWith($"{FullRepoModelName}:"))
             {
                 _overriddenFromImages.Add(from);
                 from = DockerHelper.ReplaceRepo(from, RepoName);

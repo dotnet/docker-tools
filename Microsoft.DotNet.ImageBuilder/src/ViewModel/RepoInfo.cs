@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         /// </summary>
         public IEnumerable<ImageInfo> FilteredImages { get; private set; }
 
+        public string FullModelName { get; private set; }    
         public string Id { get; private set; }
         public string Name { get; private set; }
         public Repo Model { get; private set; }
@@ -31,10 +32,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static RepoInfo Create(
-            Repo model, string registry, ManifestFilter manifestFilter, IOptionsInfo options, VariableHelper variableHelper)
+            Repo model,
+            string registry,
+            string modelRegistryName,
+            ManifestFilter manifestFilter,
+            IOptionsInfo options,
+            VariableHelper variableHelper)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
+            repoInfo.FullModelName = (string.IsNullOrEmpty(modelRegistryName) ? string.Empty : $"{modelRegistryName}/") + model.Name;
             repoInfo.Id = model.Id ?? model.Name;
 
             if (options.RepoOverrides.TryGetValue(model.Name, out string nameOverride))
@@ -43,12 +50,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
             else
             {
-                registry = string.IsNullOrEmpty(registry) ? "" : $"{registry}/";
+                registry = string.IsNullOrEmpty(registry) ? string.Empty : $"{registry}/";
                 repoInfo.Name = registry + options.RepoPrefix + model.Name;
             }
 
             repoInfo.AllImages = model.Images
-                .Select(image => ImageInfo.Create(image, model, repoInfo.Name, manifestFilter, variableHelper))
+                .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.Name, manifestFilter, variableHelper))
                 .ToArray();
 
             repoInfo.FilteredImages = repoInfo.AllImages

@@ -170,7 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (string fromImage in platform.OverriddenFromImages)
                 {
                     string fromRepo = DockerHelper.GetRepo(fromImage);
-                    RepoInfo repo = Manifest.FilteredRepos.First(r => r.Model.Name == fromRepo);
+                    RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
                     Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");

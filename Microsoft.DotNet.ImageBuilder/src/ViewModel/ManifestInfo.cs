@@ -36,7 +36,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById, manifestInfo.GetRepoById);
             manifestInfo.AllRepos = manifestInfo.Model.Repos
-                .Select(repo => RepoInfo.Create(repo, manifestInfo.Registry, manifestFilter, options, manifestInfo.VariableHelper))
+                .Select(repo => RepoInfo.Create(
+                    repo,
+                    manifestInfo.Registry,
+                    model.Registry,
+                    manifestFilter,
+                    options,
+                    manifestInfo.VariableHelper))
                 .ToArray();
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();

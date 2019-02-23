@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static ImageInfo Create(
-            Image model, Repo repoModel, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper)
+            Image model, string fullRepoModelName, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             imageInfo.AllPlatforms = manifestFilter.GetPlatforms(model)
-                .Select(platform => PlatformInfo.Create(platform, repoModel, repoName, variableHelper))
+                .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper))
                 .ToArray();
 
             IEnumerable<Platform> filteredPlatformModels = manifestFilter.GetPlatforms(model);

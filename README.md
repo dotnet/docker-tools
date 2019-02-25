@@ -1,5 +1,5 @@
 # docker-tools
-This is a repo to house some common tools for use in the various .NET docker repos. 
+This is a repo to house some common tools for use in the various .NET Docker repos. 
 
 # Image Builder
 A tool used to build and publish Docker images.

@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Text;
 using System.Threading;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -18,6 +19,44 @@ namespace Microsoft.DotNet.ImageBuilder
             string executeMessageOverride = null)
         {
             Execute(new ProcessStartInfo(fileName, args), isDryRun, errorMessage, executeMessageOverride);
+        }
+
+        public static string ExecuteAndGetOutput(
+            string fileName,
+            string args,
+            bool isDryRun,
+            string errorMessage = null,
+            string executeMessageOverride = null)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = args,
+                RedirectStandardOutput = true
+            };
+
+            StringBuilder stdOutput = new StringBuilder();
+
+            Execute(startInfo,
+                info =>
+                {
+                    Process process = new Process
+                    {
+                        EnableRaisingEvents = true,
+                        StartInfo = info
+                    };
+
+                    process.OutputDataReceived += new DataReceivedEventHandler((sender, e) => stdOutput.AppendLine(e.Data));
+                    process.Start();
+                    process.BeginOutputReadLine();
+                    process.WaitForExit();
+                    return process;
+                },
+                isDryRun,
+                errorMessage,
+                executeMessageOverride);
+
+            return stdOutput.ToString();
         }
 
         public static Process Execute(

@@ -33,6 +33,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return displayName;
         }
 
+        public static string GetMetadataName(this Architecture architecture)
+        {
+            switch (architecture)
+            {
+                case Architecture.ARM:
+                    return "arm";
+                case Architecture.ARM64:
+                    return "arm64";
+                case Architecture.AMD64:
+                    return "amd64";
+                default:
+                    throw new InvalidOperationException($"Unexpected architecture value: {architecture}.");
+            }
+        }
+
         public static void Validate(this Manifest manifest)
         {
             foreach (Repo repo in manifest.Repos)

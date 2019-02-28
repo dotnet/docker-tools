@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Diagnostics;
@@ -11,6 +12,8 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -68,6 +71,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             ExecuteHelper.Execute("docker", dockerArgs, Options.IsDryRun);
                         }
 
+                        if (!Options.IsDryRun)
+                        {
+                            EnsureArchitectureMatches(platform);
+                        }
+
                         InvokeBuildHook("post-build", platform.BuildContextPath);
                         BuiltTags = BuiltTags.Concat(platform.Tags);
                     }
@@ -82,6 +90,75 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             BuiltTags = BuiltTags.ToArray();
+        }
+
+        private void EnsureArchitectureMatches(PlatformInfo platform)
+        {
+            foreach (TagInfo tag in platform.Tags)
+            {
+                // Get the architecture from the built image's metadata
+                string dockerInspectArgs = $"inspect --format {{{{.Architecture}}}} {tag.FullyQualifiedName}";
+                string actualArchitecture = ExecuteHelper.ExecuteAndGetOutput(
+                    "docker", dockerInspectArgs, Options.IsDryRun).Trim();
+
+                string expectedArchitecture = platform.Model.Architecture.GetMetadataName();
+
+                // If the architecture of the built image is what we expect, then exit the method; otherwise, continue
+                // with updating the architecture metadata.
+                if (String.Equals(actualArchitecture, expectedArchitecture))
+                {
+                    return;
+                }
+
+                // Save the Docker image to a tar file
+                string tempImageTar = "image.tar.gz";
+                ExecuteHelper.Execute("docker", $"save -o {tempImageTar} {tag.FullyQualifiedName}", Options.IsDryRun);
+                try
+                {
+                    string tarContentsDirectory = "tar_contents";
+                    Directory.CreateDirectory(tarContentsDirectory);
+
+                    try
+                    {
+                        // Extract the tar file to a separate directory
+                        ExecuteHelper.Execute("tar", $"-xf {tempImageTar} -C {tarContentsDirectory}", Options.IsDryRun);
+
+                        // Open the manifest to find the name of the Config json file
+                        string manifestContents = File.ReadAllText(Path.Combine(tarContentsDirectory, "manifest.json"));
+                        JArray manifestDoc = JArray.Parse(manifestContents);
+
+                        if (manifestDoc.Count != 1)
+                        {
+                            throw new InvalidOperationException(
+                                $"Only expected one element in tar archive's manifest:{Environment.NewLine}{manifestContents}");
+                        }
+
+                        // Open the Config json file and set the architecture value
+                        string configPath = Path.Combine(tarContentsDirectory, manifestDoc[0]["Config"].Value<string>());
+                        string configContents = File.ReadAllText(configPath);
+                        JObject config = JObject.Parse(configContents);
+                        config["architecture"] = expectedArchitecture;
+
+                        // Overwrite the Config json file with the update architecture value
+                        configContents = JsonConvert.SerializeObject(config);
+                        File.WriteAllText(configPath, configContents);
+
+                        // Repackage the directory into an updated tar file
+                        ExecuteHelper.Execute("tar", $"-cf {tempImageTar} -C {tarContentsDirectory} .", Options.IsDryRun);
+                    }
+                    finally
+                    {
+                        Directory.Delete(tarContentsDirectory, recursive: true);
+                    }
+
+                    // Load the updated tar file back into Docker
+                    ExecuteHelper.Execute("docker", $"load -i {tempImageTar}", Options.IsDryRun);
+                }
+                finally
+                {
+                    File.Delete(tempImageTar);
+                }
+            }
         }
 
         private string GetDockerBuildArgs(PlatformInfo platform)

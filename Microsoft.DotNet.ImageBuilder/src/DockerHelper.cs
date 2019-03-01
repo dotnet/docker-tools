@@ -20,20 +20,6 @@ namespace Microsoft.DotNet.ImageBuilder
         public static Architecture Architecture => s_architecture.Value;
         public static OS OS => s_os.Value;
 
-        private static string ExecuteCommand(
-            string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo(
-                "docker", $"{command} {additionalArgs}");
-            startInfo.RedirectStandardOutput = true;
-            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
-            return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
-        }
-
-        private static string ExecuteCommandWithFormat(
-            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false) =>
-            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
-
         public static void ExecuteWithUser(Action action, string username, string password, string server, bool isDryRun)
         {
             bool userSpecified = username != null;
@@ -55,62 +41,10 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static Architecture GetArchitecture()
-        {
-            Architecture architecture;
-
-            string infoArchitecture = ExecuteCommandWithFormat(
-                "info", ".Architecture", "Failed to detect Docker architecture");
-            switch (infoArchitecture)
-            {
-                case "x86_64":
-                    architecture = Architecture.AMD64;
-                    break;
-                case "arm":
-                case "arm_32":
-                case "armv7l":
-                    architecture = Architecture.ARM;
-                    break;
-                case "aarch64":
-                case "arm64":
-                    architecture = Architecture.ARM64;
-                    break;
-                default:
-                    throw new PlatformNotSupportedException($"Unknown Docker Architecture '{infoArchitecture}'");
-            }
-
-            return architecture;
-        }
-
         public static string GetImageDigest(string image, bool isDryRun)
         {
             return ExecuteCommandWithFormat(
                 "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
-        }
-
-        private static OS GetOS()
-        {
-            string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
-            if (!Enum.TryParse(osString, true, out OS os))
-            {
-                throw new PlatformNotSupportedException("Unknown Docker OS");
-            }
-
-            return os;
-        }
-
-        private static Version GetClientVersion()
-        {
-            // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
-            string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
-
-            if (versionString.Contains('-'))
-            {
-                // Trim off the '-ce' or '-ee' suffix
-                versionString = versionString.Substring(0, versionString.IndexOf('-'));
-            }
-
-            return Version.TryParse(versionString, out Version version) ? version : null;
         }
 
         public static long GetImageSize(string image, bool isDryRun)
@@ -157,11 +91,6 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static void Logout(string server, bool isDryRun)
-        {
-            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
-        }
-
         public static void PullBaseImages(ManifestInfo manifest, Options options)
         {
             Logger.WriteHeading("PULLING LATEST BASE IMAGES");
@@ -189,6 +118,57 @@ namespace Microsoft.DotNet.ImageBuilder
             return newRepo + image.Substring(image.IndexOf(':'));
         }
 
+        public static string GetImageArch(string image, bool isDryRun)
+        {
+            return ExecuteCommandWithFormat(
+                "inspect", ".Architecture", "Failed to retrieve image architecture", additionalArgs: image, isDryRun: isDryRun);
+        }
+
+        public static void SaveImage(string image, string tarFilePath, bool isDryRun)
+        {
+            DockerHelper.ExecuteCommand("save", "Failed to save image", $"-o {tarFilePath} {image}", isDryRun);
+        }
+
+        public static void LoadImage(string tarFilePath, bool isDryRun)
+        {
+            DockerHelper.ExecuteCommand("load", "Failed to load image", $"-i {tarFilePath}", isDryRun);
+        }
+
+        public static void CreateTag(string image, string tag, bool isDryRun)
+        {
+            DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
+        }
+
+        private static OS GetOS()
+        {
+            string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
+            if (!Enum.TryParse(osString, true, out OS os))
+            {
+                throw new PlatformNotSupportedException("Unknown Docker OS");
+            }
+
+            return os;
+        }
+
+        private static Version GetClientVersion()
+        {
+            // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
+            string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
+
+            if (versionString.Contains('-'))
+            {
+                // Trim off the '-ce' or '-ee' suffix
+                versionString = versionString.Substring(0, versionString.IndexOf('-'));
+            }
+
+            return Version.TryParse(versionString, out Version version) ? version : null;
+        }
+
+        private static void Logout(string server, bool isDryRun)
+        {
+            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
+        }
+
         private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)
         {
             string output = ExecuteCommand(
@@ -197,6 +177,46 @@ namespace Microsoft.DotNet.ImageBuilder
                 isDryRun: isDryRun);
             return output != "";
         }
+
+        private static Architecture GetArchitecture()
+        {
+            Architecture architecture;
+
+            string infoArchitecture = ExecuteCommandWithFormat(
+                "info", ".Architecture", "Failed to detect Docker architecture");
+            switch (infoArchitecture)
+            {
+                case "x86_64":
+                    architecture = Architecture.AMD64;
+                    break;
+                case "arm":
+                case "arm_32":
+                case "armv7l":
+                    architecture = Architecture.ARM;
+                    break;
+                case "aarch64":
+                case "arm64":
+                    architecture = Architecture.ARM64;
+                    break;
+                default:
+                    throw new PlatformNotSupportedException($"Unknown Docker Architecture '{infoArchitecture}'");
+            }
+
+            return architecture;
+        }
+
+        private static string ExecuteCommand(
+            string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo("docker", $"{command} {additionalArgs}");
+            startInfo.RedirectStandardOutput = true;
+            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
+            return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
+        }
+
+        private static string ExecuteCommandWithFormat(
+            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false) =>
+            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
 
         private enum ManagementType
         {

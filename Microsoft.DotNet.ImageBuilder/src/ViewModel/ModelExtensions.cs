@@ -33,6 +33,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return displayName;
         }
 
+        public static string GetDockerName(this Architecture architecture)
+        {
+            return architecture.ToString().ToLowerInvariant();
+        }
+
         public static void Validate(this Manifest manifest)
         {
             foreach (Repo repo in manifest.Repos)

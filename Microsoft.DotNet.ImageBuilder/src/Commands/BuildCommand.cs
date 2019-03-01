@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Diagnostics;
@@ -11,6 +12,8 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -52,10 +55,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                         // Tag the built images with the shared tags as well as the platform tags.
                         // Some tests and image FROM instructions depend on these tags.
-                        IEnumerable<string> platformTags = platform.Tags
-                            .Select(tag => tag.FullyQualifiedName)
-                            .ToArray();
-                        string tagArgs = GetDockerTagArgs(image, platformTags);
+                        IEnumerable<string> allTags = platform.Tags
+                            .Concat(image.SharedTags)
+                            .Select(tag => tag.FullyQualifiedName);
+                        string tagArgs = $"-t {string.Join(" -t ", allTags)}";
+
                         string buildArgs = GetDockerBuildArgs(platform);
                         string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}";
 
@@ -66,6 +70,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         else
                         {
                             ExecuteHelper.Execute("docker", dockerArgs, Options.IsDryRun);
+                        }
+
+                        if (!Options.IsDryRun)
+                        {
+                            EnsureArchitectureMatches(platform, allTags);
                         }
 
                         InvokeBuildHook("post-build", platform.BuildContextPath);
@@ -84,19 +93,88 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             BuiltTags = BuiltTags.ToArray();
         }
 
+        private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
+        {
+            if (platform.Model.Architecture == DockerHelper.Architecture)
+            {
+                return;
+            }
+
+            string primaryTag = allTags.First();
+            IEnumerable<string> secondaryTags = allTags.Except(new[] { primaryTag });
+
+            // Get the architecture from the built image's metadata
+            string actualArchitecture = DockerHelper.GetImageArch(primaryTag, Options.IsDryRun);
+            string expectedArchitecture = platform.Model.Architecture.GetDockerName();
+
+            // If the architecture of the built image is what we expect, then exit the method; otherwise, continue
+            // with updating the architecture metadata.
+            if (String.Equals(actualArchitecture, expectedArchitecture))
+            {
+                return;
+            }
+
+            // Save the Docker image to a tar file
+            string tempImageTar = "image.tar.gz";
+            DockerHelper.SaveImage(primaryTag, tempImageTar, Options.IsDryRun);
+            try
+            {
+                string tarContentsDirectory = "tar_contents";
+                Directory.CreateDirectory(tarContentsDirectory);
+
+                try
+                {
+                    // Extract the tar file to a separate directory
+                    ExecuteHelper.Execute("tar", $"-xf {tempImageTar} -C {tarContentsDirectory}", Options.IsDryRun);
+
+                    // Open the manifest to find the name of the Config json file
+                    string manifestContents = File.ReadAllText(Path.Combine(tarContentsDirectory, "manifest.json"));
+                    JArray manifestDoc = JArray.Parse(manifestContents);
+
+                    if (manifestDoc.Count != 1)
+                    {
+                        throw new InvalidOperationException(
+                            $"Only expected one element in tar archive's manifest:{Environment.NewLine}{manifestContents}");
+                    }
+
+                    // Open the Config json file and set the architecture value
+                    string configPath = Path.Combine(tarContentsDirectory, manifestDoc[0]["Config"].Value<string>());
+                    string configContents = File.ReadAllText(configPath);
+                    JObject config = JObject.Parse(configContents);
+                    config["architecture"] = expectedArchitecture;
+
+                    // Overwrite the Config json file with the updated architecture value
+                    configContents = JsonConvert.SerializeObject(config);
+                    File.WriteAllText(configPath, configContents);
+
+                    // Repackage the directory into an updated tar file
+                    ExecuteHelper.Execute("tar", $"-cf {tempImageTar} -C {tarContentsDirectory} .", Options.IsDryRun);
+                }
+                finally
+                {
+                    Directory.Delete(tarContentsDirectory, recursive: true);
+                }
+
+                // Load the updated tar file back into Docker
+                DockerHelper.LoadImage(tempImageTar, Options.IsDryRun);
+            }
+            finally
+            {
+                File.Delete(tempImageTar);
+            }
+
+            // Recreate the other tags so that they get the updated architecture value.
+            Parallel.ForEach(secondaryTags, tag =>
+            {
+                DockerHelper.CreateTag(primaryTag, tag, Options.IsDryRun);
+            });
+        }
+
         private string GetDockerBuildArgs(PlatformInfo platform)
         {
             IEnumerable<string> buildArgs = platform.BuildArgs
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             return string.Join(string.Empty, buildArgs);
-        }
-
-        private string GetDockerTagArgs(ImageInfo image, IEnumerable<string> platformTags)
-        {
-            IEnumerable<string> allTags = image.SharedTags
-                .Select(tag => tag.FullyQualifiedName)
-                .Concat(platformTags);
-            return $"-t {string.Join(" -t ", allTags)}";
         }
 
         private void InvokeBuildHook(string hookName, string buildContextPath)

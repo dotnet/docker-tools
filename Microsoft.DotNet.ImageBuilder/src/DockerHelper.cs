@@ -208,8 +208,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static string ExecuteCommand(
             string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo(
-                "docker", $"{command} {additionalArgs}");
+            ProcessStartInfo startInfo = new ProcessStartInfo("docker", $"{command} {additionalArgs}");
             startInfo.RedirectStandardOutput = true;
             Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
             return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();

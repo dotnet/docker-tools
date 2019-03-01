@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)");
             Architecture = architecture;
 
-            string osType = DockerHelper.OS.ToString().ToLowerInvariant();
+            string osType = DockerHelper.OS.GetDockerName();
             syntax.DefineOption(
                 "os-type",
                 ref osType,

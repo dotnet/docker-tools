@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 leg.Variables.Add(("osType", platformGrouping.Key.OS.ToString().ToLowerInvariant()));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
                 leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
-                leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.ToString().ToLowerInvariant()));
+                leg.Variables.Add(("architecture", ModelExtensions.GetDockerName(platformGrouping.Key.Architecture)));
             }
         }
 

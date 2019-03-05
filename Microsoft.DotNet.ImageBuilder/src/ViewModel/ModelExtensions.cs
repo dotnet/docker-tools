@@ -33,10 +33,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return displayName;
         }
 
-        public static string GetDockerName(this Architecture architecture)
-        {
-            return architecture.ToString().ToLowerInvariant();
-        }
+        public static string GetDockerName(this Architecture architecture) => architecture.ToString().ToLowerInvariant();
+
+        public static string GetDockerName(this OS os) => os.ToString().ToLowerInvariant();
 
         public static void Validate(this Manifest manifest)
         {

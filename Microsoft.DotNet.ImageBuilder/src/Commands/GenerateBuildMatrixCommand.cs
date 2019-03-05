@@ -30,26 +30,42 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private void AddBuildLegs(MatrixInfo matrix, string[] matrixNameParts, IGrouping<dynamic, PlatformInfo> platformGrouping)
+        private void AddDockerfilePathLegs(
+            MatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
+            IEnumerable<string> platformNameParts = new string[] {
+                platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
+                platformGrouping.Key.Architecture.GetDockerName(),
+            };
+
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
                 string[] dockerfilePaths = subgraph
                     .Select(platform => platform.Model.Dockerfile)
                     .ToArray();
-                LegInfo leg = new LegInfo() { Name = FormatLegName(dockerfilePaths, matrixNameParts) };
+                LegInfo leg = new LegInfo()
+                { 
+                    Name = GetDockerfilePathLegName(dockerfilePaths, platformNameParts, matrixNameParts)
+                };
                 matrix.Legs.Add(leg);
 
                 string pathArgs = dockerfilePaths
                     .Select(path => $"--path {path}")
                     .Aggregate((working, next) => $"{working} {next}");
                 leg.Variables.Add(("imageBuilderPaths", pathArgs));
+                AddPlatformVariables(platformGrouping, leg);
             }
         }
 
-        private static void AddVersionedOsLegs(
-            MatrixInfo matrix, IGrouping<dynamic, PlatformInfo> platformGrouping, bool includeArchitectureName)
+        private static void AddPlatformVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, LegInfo leg)
+        {
+            leg.Variables.Add(("osType", platformGrouping.Key.OS.GetDockerName()));
+            leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
+            leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
+        }
+
+        private static void AddVersionedOsLegs(MatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
                 .GroupBy(platform => new
@@ -60,20 +76,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
             foreach (var versionGrouping in versionGroups)
             {
-                string legName = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}";
-                if (includeArchitectureName)
-                {
-                    legName += $"-{GetArchitectureDisplayName(platformGrouping)}";
-                }
-
-                LegInfo leg = new LegInfo() { Name = legName };
+                LegInfo leg = new LegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
                 matrix.Legs.Add(leg);
 
+                AddPlatformVariables(platformGrouping, leg);
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
-                leg.Variables.Add(("osType", platformGrouping.Key.OS.ToString().ToLowerInvariant()));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
-                leg.Variables.Add(("osVersion", platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : "*"));
-                leg.Variables.Add(("architecture", ModelExtensions.GetDockerName(platformGrouping.Key.Architecture)));
             }
         }
 
@@ -97,16 +105,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         /// <summary>
-        /// Formats a build leg name from the specified Dockerfile path. Any parts of the Dockerfile path that are in common with the
-        /// containing matrix name are trimmed. The resulting leg name uses '-' characters as word separators.
+        /// Builds the leg name from the specified Dockerfile path and platform grouping. Any parts of the Dockerfile path that
+        /// are in common with the containing matrix name are trimmed. The resulting leg name uses '-' characters as word
+        /// separators.
         /// </summary>
-        private static string FormatLegName(string[] dockerfilePath, string[] matrixNameParts)
+        private static string GetDockerfilePathLegName(
+            IEnumerable<string> dockerfilePath, IEnumerable<string> platformGroupingParts, IEnumerable<string> matrixNameParts)
         {
             string legName = dockerfilePath.First().Split(s_pathSeparators)
-                .Where(subPart => !matrixNameParts.Any(matrixPart => string.Equals(matrixPart, subPart, StringComparison.OrdinalIgnoreCase)))
+                .Concat(platformGroupingParts)
+                .Where(subPart => 
+                    !matrixNameParts.Any(matrixPart => matrixPart.StartsWith(subPart, StringComparison.OrdinalIgnoreCase)))
                 .Aggregate((working, next) => $"{working}-{next}");
 
-            if (dockerfilePath.Length > 1)
+            if (dockerfilePath.Count() > 1)
             {
                 legName += "-graph";
             }
@@ -118,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// Formats a matrix name by joining the specified parts. The resulting matrix name is camelCased.
         /// Any '-' occurrences within the specified parts will be treated as word boundaries.
         /// </summary>
-        private static string FormatMatrixName(string[] parts)
+        private static string FormatMatrixName(IEnumerable<string> parts)
         {
             string[] allParts = parts.SelectMany(part => part.Split('-')).ToArray();
             return allParts.First() +
@@ -131,8 +143,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
             var platformGroups = Manifest.GetFilteredPlatforms()
-                .GroupBy(platform =>
-                    new { platform.Model.OS, platform.Model.OsVersion, platform.Model.Architecture, platform.Model.Variant })
+                .GroupBy(platform => new PlatformId()
+                {
+                    OS = platform.Model.OS,
+                    OsVersion = platform.Model.OsVersion,
+                    Architecture = platform.Model.Architecture,
+                    Variant = platform.Model.Variant
+                })
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
                 .ThenBy(platformGroup => platformGroup.Key.Architecture)
@@ -146,7 +163,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 matrices.Add(matrix);
                 foreach (var platformGrouping in platformGroups)
                 {
-                    AddVersionedOsLegs(matrix, platformGrouping, true);
+                    AddDockerfilePathLegs(matrix, Enumerable.Empty<string>(), platformGrouping);
                 }
             }
             else
@@ -156,8 +173,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string[] matrixNameParts =
                     {
                         baseMatrixName,
-                        GetOSDisplayName(platformGrouping),
-                        GetArchitectureDisplayName(platformGrouping)
+                        platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
+                        platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
                     };
                     MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                     matrices.Add(matrix);
@@ -165,10 +182,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     switch (Options.MatrixType)
                     {
                         case MatrixType.Build:
-                            AddBuildLegs(matrix, matrixNameParts, platformGrouping);
+                            AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
                             break;
                         case MatrixType.Test:
-                            AddVersionedOsLegs(matrix, platformGrouping, false);
+                            AddVersionedOsLegs(matrix, platformGrouping);
                             break;
                     }
                 }
@@ -176,12 +193,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return matrices;
         }
-
-        private static string GetArchitectureDisplayName(dynamic platformGrouping) =>
-            ModelExtensions.GetDisplayName(platformGrouping.Key.Architecture, platformGrouping.Key.Variant);
-
-        private static string GetOSDisplayName(dynamic platformGrouping) =>
-            platformGrouping.Key.OS == OS.Windows ? platformGrouping.Key.OsVersion : platformGrouping.Key.OS.ToString();
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform) =>
             platform.InternalFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
@@ -215,6 +226,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             public string Name { get; set; }
             public List<(string Name, string Value)> Variables { get; } = new List<(string, string)>();
+        }
+
+        private class PlatformId : IEquatable<PlatformId>
+        {
+            public Architecture Architecture { get; set; }
+            public OS OS { get; set; }
+            public string OsVersion { get; set; }
+            public string Variant { get; set; }
+
+            public bool Equals(PlatformId other)
+            {
+                return Architecture == other.Architecture
+                    && OS == other.OS
+                    && OsVersion == other.OsVersion
+                    && Variant == other.Variant;
+            }
+
+            public override int GetHashCode()
+            {
+                return $"{Architecture}-{OS}-{OsVersion}-{Variant}".GetHashCode();
+            }
         }
     }
 }

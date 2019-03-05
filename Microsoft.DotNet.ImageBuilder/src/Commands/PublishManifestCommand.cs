@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");
                 manifestYml.AppendLine($"    platform:");
                 manifestYml.AppendLine($"      architecture: {platform.Model.Architecture.GetDockerName()}");
-                manifestYml.AppendLine($"      os: {platform.Model.OS.ToString().ToLowerInvariant()}");
+                manifestYml.AppendLine($"      os: {platform.Model.OS.GetDockerName()}");
                 if (platform.Model.Variant != null)
                 {
                     manifestYml.AppendLine($"      variant: {platform.Model.Variant}");

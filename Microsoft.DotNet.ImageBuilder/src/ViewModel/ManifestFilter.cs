@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             {
                 string osTypeRegexPattern = GetFilterRegexPattern(IncludeOsType);
                 platforms = platforms.Where(platform =>
-                    Regex.IsMatch(platform.OS.ToString().ToLowerInvariant(), osTypeRegexPattern, RegexOptions.IgnoreCase));
+                    Regex.IsMatch(platform.OS.GetDockerName(), osTypeRegexPattern, RegexOptions.IgnoreCase));
             }
 
             if (IncludePaths?.Any() ?? false)

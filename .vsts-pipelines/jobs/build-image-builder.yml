@@ -6,25 +6,19 @@ parameters:
 jobs:
 - job: ${{ parameters.name }}
   pool: ${{ parameters.pool }}
+  variables:
+    ${{ if eq(parameters.pushImages, 'true') }}:
+      buildParameters: -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder -PushImages -CleanupDocker
+    ${{ if eq(parameters.pushImages, 'false') }}:
+      buildParameters: -CleanupDocker
   workspace:
     clean: all
   steps:
     - ${{ if eq(parameters.pushImages, 'true') }}:
       - script: docker login -u $(acr.userName) -p $(BotAccount-dotnet-docker-acr-bot-password) $(acr.server)
         displayName: Docker Login
-      - script: >
-        echo "##vso[task.setvariable variable=buildParameters]
-        -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder
-        -PushImages
-        -CleanupDocker"
-        displayName: Set Build Parameters
-    - ${{ if eq(parameters.pushImages, 'false') }}:
-      - script: >
-        echo "##vso[task.setvariable variable=buildParameters]
-        -CleanupDocker"
-        displayName: Set Build Parameters
     - powershell: >
-        Microsoft.DotNet.ImageBuilder/build.ps1 ${{ buildParameters }}
+        Microsoft.DotNet.ImageBuilder/build.ps1 $(buildParameters)
       displayName: Build and Publish ImageBuilder
     - ${{ if eq(parameters.pushImages, 'true') }}:
       - script: docker logout

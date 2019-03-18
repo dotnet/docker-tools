@@ -1,0 +1,16 @@
+pr:
+- master
+
+trigger: none
+
+jobs:
+- template: jobs/build-image-builder.yml
+  parameters:
+    name: Linux
+    pool: Hosted Ubuntu 1604
+    pushImages: false
+- template: jobs/build-image-builder.yml
+  parameters:
+    name: Windows
+    pool: Hosted Windows Container
+    pushImages: false

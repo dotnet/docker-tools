@@ -1,8 +1,5 @@
-trigger:
-  batch: true
-  branches:
-    include:
-    - master
+pr:
+- migratetodnceng
 
 jobs:
 - template: jobs/build-image-builder.yml

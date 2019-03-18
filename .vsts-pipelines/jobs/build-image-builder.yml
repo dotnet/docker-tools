@@ -23,4 +23,3 @@ jobs:
         displayName: Docker Logout
         condition: always()
         continueOnError: true
-

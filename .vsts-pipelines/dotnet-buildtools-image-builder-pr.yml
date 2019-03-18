@@ -1,6 +1,8 @@
 pr:
 - migratetodnceng
 
+trigger: none
+
 jobs:
 - template: jobs/build-image-builder.yml
   parameters:

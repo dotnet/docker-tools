@@ -15,7 +15,7 @@ jobs:
     - powershell: >
         Microsoft.DotNet.ImageBuilder/build.ps1
         -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder
-        -PushImages:([boolean]::Parse(${{ parameters.pushImages }}))
+        -PushImages:$${{ parameters.pushImages }}
         -CleanupDocker
       displayName: Build and Publish ImageBuilder
     - ${{ if eq(parameters.pushImages, 'true') }}:

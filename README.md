@@ -1,7 +1,7 @@
 # docker-tools
 This is a repo to house some common tools for use in the various .NET Docker repos. 
 
-# Image Builder
+# ImageBuilder
 A tool used to build and publish Docker images.
 
 The Image Builder tool can be acquired via a Docker image available at [mcr.microsoft.com/dotnet-buildtools/image-builder](https://mcr.microsoft.com/v2/dotnet-buildtools/image-builder/tags/list) or built from source via the [build script](./Microsoft.DotNet.ImageBuilder/build.ps1).

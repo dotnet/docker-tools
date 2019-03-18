@@ -8,9 +8,9 @@ jobs:
   pool: ${{ parameters.pool }}
   variables:
     ${{ if eq(parameters.pushImages, 'true') }}:
-      buildParameters: -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder -PushImages -CleanupDocker
+      buildParameters: -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder -PushImages
     ${{ if eq(parameters.pushImages, 'false') }}:
-      buildParameters: -CleanupDocker
+      buildParameters: ""
   workspace:
     clean: all
   steps:

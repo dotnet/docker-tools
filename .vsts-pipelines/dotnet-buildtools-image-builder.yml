@@ -3,6 +3,8 @@ trigger:
   branches:
     include:
     - master
+pr: none
+
 variables:
 - group: DotNet-Docker-Common
 - group: DotNet-Docker-Secrets

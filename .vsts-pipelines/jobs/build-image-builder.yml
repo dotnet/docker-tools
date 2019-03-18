@@ -24,7 +24,7 @@ jobs:
         -CleanupDocker"
         displayName: Set Build Parameters
     - powershell: >
-        Microsoft.DotNet.ImageBuilder/build.ps1 ${{ parameters.buildParameters }}
+        Microsoft.DotNet.ImageBuilder/build.ps1 ${{ buildParameters }}
       displayName: Build and Publish ImageBuilder
     - ${{ if eq(parameters.pushImages, 'true') }}:
       - script: docker logout

@@ -3,18 +3,15 @@ trigger:
   branches:
     include:
     - master
-variables:
-- group: DotNet-Docker-Common
-- group: DotNet-Docker-Secrets
 
 jobs:
 - template: jobs/build-image-builder.yml
   parameters:
     name: Linux
     pool: Hosted Ubuntu 1604
-    pushImages: true
+    pushImages: false
 - template: jobs/build-image-builder.yml
   parameters:
     name: Windows
     pool: Hosted Windows Container
-    pushImages: true
+    pushImages: false

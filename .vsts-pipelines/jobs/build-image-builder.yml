@@ -1,6 +1,7 @@
 parameters:
   name: null
   pool: {}
+  pushImages: false
 
 jobs:
 - job: ${{ parameters.name }}
@@ -8,15 +9,17 @@ jobs:
   workspace:
     clean: all
   steps:
-    - script: docker login -u $(acr.userName) -p $(BotAccount-dotnet-docker-acr-bot-password) $(acr.server)
-      displayName: Docker Login
+    - ${{ if eq(parameters.pushImages, 'true') }}:
+      - script: docker login -u $(acr.userName) -p $(BotAccount-dotnet-docker-acr-bot-password) $(acr.server)
+        displayName: Docker Login
     - powershell: >
         Microsoft.DotNet.ImageBuilder/build.ps1
         -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder
-        -PushImages
+        -PushImages:${{ parameters.pushImages }}
         -CleanupDocker
       displayName: Build and Publish ImageBuilder
-    - script: docker logout
-      displayName: Docker Logout
-      condition: always()
-      continueOnError: true
+    - ${{ if eq(parameters.pushImages, 'true') }}:
+      - script: docker logout
+        displayName: Docker Logout
+        condition: always()
+        continueOnError: true

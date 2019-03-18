@@ -16,5 +16,4 @@ jobs:
   parameters:
     name: Windows
     pool:
-      name: DotNetCore-Docker
-      demands: VSTS_OS -equals Windows_Server_2016_Data_Center_with_Containers
+      name: Hosted Windows Container

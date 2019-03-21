@@ -32,30 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private void DisplayResults(IEnumerable<ImageInfo> imageData)
-        {
-            IEnumerable<ImageInfo> baselinedImageData = imageData.Where(info => info.BaselineSize.HasValue).ToArray();
-
-            Logger.WriteHeading("VALIDATION RESULTS");
-            LogResults(
-                baselinedImageData.Where(info => info.SizeDifference == 0),
-                Logger.WriteMessage,
-                "Images with no size change:");
-            LogResults(
-                baselinedImageData.Where(info => info.SizeDifference != 0 && info.WithinAllowedVariance),
-                Logger.WriteMessage,
-                "Images with allowed size change:");
-            LogResults(
-                baselinedImageData.Where(info => !info.WithinAllowedVariance),
-                Logger.WriteError,
-                "Images exceeding size variance:");
-            LogResults(
-                imageData.Except(baselinedImageData),
-                Logger.WriteError,
-                "Images missing from baseline:");
-        }
-
-        private void LogResults(IEnumerable<ImageInfo> imageData, Action<string> logAction, string header)
+        private void LogResults(IEnumerable<ImageInfo> imageData, string header)
         {
             if (imageData.Any())
             {
@@ -72,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         + $"    Variation Allowed: {info.MinVariance:N0} - {info.MaxVariance:N0}";
                     }
 
-                    logAction(msg);
+                    Logger.WriteMessage(msg);
                 }
 
                 Logger.WriteMessage("----------------------------------------------------");
@@ -156,7 +133,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             ProcessImages(getRepoJson, processImage);
 
-            DisplayResults(imageData);
+            ValidateImages(imageData);
+        }
+
+        private void ValidateImages(IEnumerable<ImageInfo> imageData)
+        {
+            IEnumerable<ImageInfo> baselinedImageData = imageData.Where(info => info.BaselineSize.HasValue).ToArray();
+
+            Logger.WriteHeading("VALIDATION RESULTS");
+            LogResults(
+                baselinedImageData.Where(info => info.SizeDifference == 0),
+                "Images with no size change:");
+            LogResults(
+                baselinedImageData.Where(info => info.SizeDifference != 0 && info.WithinAllowedVariance),
+                "Images with allowed size change:");
+
+            IEnumerable<ImageInfo> exceedingImages = baselinedImageData.Where(info => !info.WithinAllowedVariance).ToArray();
+            LogResults(exceedingImages, "Images exceeding size variance:");
+
+            IEnumerable<ImageInfo> missingImages = imageData.Except(baselinedImageData).ToArray();
+            LogResults(missingImages, "Images missing from baseline:");
+
+            if (exceedingImages.Any() || missingImages.Any())
+            {
+                Logger.WriteError("Image size validation failed");
+                Environment.Exit(1);
+            }
         }
 
         private class ImageInfo

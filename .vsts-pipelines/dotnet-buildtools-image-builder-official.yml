@@ -14,9 +14,9 @@ jobs:
   parameters:
     name: Linux
     pool: Hosted Ubuntu 1604
-    pushImages: true
+    publishImages: true
 - template: jobs/build-image-builder.yml
   parameters:
     name: Windows
     pool: Hosted Windows Container
-    pushImages: true
+    publishImages: true

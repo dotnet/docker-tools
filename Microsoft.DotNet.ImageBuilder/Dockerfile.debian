@@ -21,7 +21,7 @@ RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out 
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/core/untime-deps:2.1
+FROM mcr.microsoft.com/dotnet/core/runtime-deps:2.1
 
 # install Docker
 RUN apt-get update \

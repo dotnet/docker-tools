@@ -25,5 +25,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
             return source;
         }
+
+        public static string ToCamelCase(this string source)
+        {
+            return source.Substring(0, 1).ToLowerInvariant() + source.Substring(1);
+        }
     }
 }

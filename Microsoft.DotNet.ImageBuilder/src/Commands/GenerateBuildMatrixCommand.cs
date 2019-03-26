@@ -169,9 +169,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ThenBy(platformGroup => platformGroup.Key.Architecture)
                 .ThenByDescending(platformGroup => platformGroup.Key.Variant);
 
-            string baseMatrixName = $"{Options.MatrixType.ToString().ToLowerInvariant()}Matrix";
+            string baseMatrixName = $"{Options.MatrixType.ToString().ToCamelCase()}Matrix";
 
-            if (Options.MatrixType == MatrixType.Publish)
+            if (Options.MatrixType == MatrixType.DependencyGraph)
             {
                 MatrixInfo matrix = new MatrixInfo() { Name = baseMatrixName };
                 matrices.Add(matrix);
@@ -193,23 +193,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                     matrices.Add(matrix);
 
-                    if (Options.MatrixType == MatrixType.Build)
+                    if (Options.MatrixType == MatrixType.PlatformDependencyGraph)
                     {
-                        // If we're generating the build matrix for a PR build, we want the matrix to be structured
-                        // in the same way as the test matrix where te grouping is based on the combination of .NET
-                        // version and OS/arch instead of just the OS/arch.  That's because PR builds wil run tests
-                        // in the same job as the images are built so the tests will need access to the full set of 
-                        // images (runtime/sdk, etc.).
-                        if (Options.IsPullRequestBuild)
-                        {
-                            AddVersionedOsLegs(matrix, platformGrouping);
-                        }
-                        else
-                        {
-                            AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
-                        }
+                        AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
                     }
-                    else if (Options.MatrixType == MatrixType.Test)
+                    else if (Options.MatrixType == MatrixType.PlatformVersionedOs)
                     {
                         AddVersionedOsLegs(matrix, platformGrouping);
                     }

@@ -13,7 +13,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
-        public bool IsPullRequestBuild { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -25,20 +24,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             FilterOptions.ParseCommandLine(syntax);
 
-            MatrixType matrixType = MatrixType.Build;
+            MatrixType matrixType = MatrixType.PlatformDependencyGraph;
             syntax.DefineOption(
                 "type",
                 ref matrixType,
                 value => (MatrixType)Enum.Parse(typeof(MatrixType), value, true),
                 "Type of matrix to generate - build (default), test");
             MatrixType = matrixType;
-
-            bool isPullRequestBuild = false;
-            syntax.DefineOption(
-                "is-pr-build",
-                ref isPullRequestBuild,
-                "Indicates whether the build is for a pull request.");
-            IsPullRequestBuild = isPullRequestBuild;
         }
     }
 }

@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             FilterOptions.ParseCommandLine(syntax);
 
-            MatrixType matrixType = MatrixType.Build;
+            MatrixType matrixType = MatrixType.PlatformDependencyGraph;
             syntax.DefineOption(
                 "type",
                 ref matrixType,

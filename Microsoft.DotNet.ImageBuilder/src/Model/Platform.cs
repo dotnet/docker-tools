@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public OS OS { get; set; }
 
+        [JsonProperty(Required = Required.Always)]
         public string OsVersion { get; set; }
 
         [JsonProperty(Required = Required.Always)]

@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        private string GetCommandName()
+        public string GetCommandName()
         {
             string commandName = GetType().Name.TrimEnd("Options");
             return char.ToLowerInvariant(commandName[0]) + commandName.Substring(1);

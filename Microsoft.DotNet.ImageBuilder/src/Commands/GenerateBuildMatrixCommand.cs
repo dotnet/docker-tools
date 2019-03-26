@@ -170,8 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static string FormatMatrixName(IEnumerable<string> parts)
         {
             string[] allParts = parts.SelectMany(part => part.Split('-')).ToArray();
-            return allParts.First() +
-                string.Join(string.Empty, allParts.Skip(1).Select(part => char.ToUpper(part[0]) + part.Substring(1)));
+            return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
         private IEnumerable<MatrixInfo> GenerateMatrixInfo()

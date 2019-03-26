@@ -13,6 +13,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public Image[] Images { get; set; }
 
+        public string McrTagsMetadataTemplatePath { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public string Name { get; set; }
 

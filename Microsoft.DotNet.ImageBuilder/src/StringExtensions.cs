@@ -6,6 +6,8 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class StringExtensions
     {
+        public static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source.Substring(1);
+
         public static string TrimEnd(this string source, string trimString)
         {
             while (source.EndsWith(trimString))

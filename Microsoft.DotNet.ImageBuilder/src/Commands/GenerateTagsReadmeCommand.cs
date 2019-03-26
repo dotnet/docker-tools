@@ -3,20 +3,16 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Model;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateTagsReadmeCommand : Command<GenerateTagsReadmeOptions>
     {
-        private List<ImageDocumentationInfo> ImageDocInfos { get; set; }
+        private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";
 
         public GenerateTagsReadmeCommand() : base()
         {
@@ -24,223 +20,90 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING TAGS README");
-            foreach (RepoInfo repo in Manifest.FilteredRepos)
+            if (Manifest.FilteredRepos.Count() != 1)
             {
-                ImageDocInfos = repo.AllImages
-                    .SelectMany(image => image.AllPlatforms.SelectMany(platform => ImageDocumentationInfo.Create(image, platform)))
-                    .Where(info => info.DocumentedTags.Any())
-                    .ToList();
-
-                string tagsDoc = Options.Template == null ?
-                    GetManifestBasedDocumentation() : GetTemplateBasedDocumentation(Options.Template);
-
-                Logger.WriteSubheading($"{repo.Name} Tags Documentation:");
-                Logger.WriteMessage();
-                Logger.WriteMessage(tagsDoc);
-
-                if (Options.UpdateReadme)
-                {
-                    UpdateReadme(tagsDoc, repo);
-                }
+                throw new InvalidOperationException(
+                    $"{Options.GetCommandName()} only supports generating the tags readme for one repo per invocation.");
             }
+
+            RepoInfo repo = Manifest.FilteredRepos.First();
+            string tagsMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, Options.SourceUrl);
+            string tagsListing = GenerateTagsListing(repo, tagsMetadata);
+            UpdateReadme(repo, tagsListing);
 
             return Task.CompletedTask;
         }
 
-        private string GetManifestBasedDocumentation()
+        private string GenerateTagsListing(RepoInfo repo, string tagsMetadata)
         {
-            StringBuilder tagsDoc = new StringBuilder($"## Complete set of Tags{Environment.NewLine}{Environment.NewLine}");
+            Logger.WriteHeading("GENERATING TAGS LISTING");
 
-            var platformGroups = ImageDocInfos
-                .GroupBy(info => new { info.Platform.Model.OS, info.Platform.Model.OsVersion, info.Platform.Model.Architecture })
-                .OrderByDescending(platformGroup => platformGroup.Key.Architecture)
-                .ThenBy(platformGroup => platformGroup.Key.OS)
-                .ThenByDescending(platformGroup => platformGroup.Key.OsVersion);
+            string tagsDoc;
 
-            foreach (var platformGroup in platformGroups)
+            string tempDir = $"{Options.GetCommandName()}-{DateTime.Now.ToFileTime()}";
+            Directory.CreateDirectory(tempDir);
+
+            try
             {
-                string os = GetOsDisplayName(platformGroup.Key.OS, platformGroup.Key.OsVersion);
-                string arch = platformGroup.Key.Architecture.GetDisplayName();
-                tagsDoc.AppendLine($"# {os} {arch} tags");
-                tagsDoc.AppendLine();
+                string tagsMetadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplatePath);
+                File.WriteAllText(
+                    Path.Combine(tempDir, tagsMetadataFileName),
+                    tagsMetadata);
 
-                IEnumerable<string> tagLines = platformGroup
-                    .Select(info => GetTagDocumentation(info))
-                    .Where(doc => doc != null);
-                tagsDoc.AppendLine(string.Join(Environment.NewLine, tagLines));
-                tagsDoc.AppendLine();
+                string dockerfilePath = Path.Combine(tempDir, "Dockerfile");
+                File.WriteAllText(
+                    dockerfilePath,
+                    $"FROM {McrTagsRenderingToolTag}{Environment.NewLine}COPY {tagsMetadataFileName} /tableapp/files/ ");
+
+                string renderingToolId = $"renderingtool-{DateTime.Now.ToFileTime()}";
+                DockerHelper.PullImage(McrTagsRenderingToolTag, Options.IsDryRun);
+                ExecuteHelper.Execute(
+                    "docker",
+                    $"build -t {renderingToolId} -f {dockerfilePath} {tempDir}",
+                    Options.IsDryRun);
+
+                try
+                {
+                    ExecuteHelper.Execute(
+                        "docker",
+                        $"run --name {renderingToolId} {renderingToolId} {tagsMetadataFileName}",
+                        Options.IsDryRun);
+
+                    string outputPath = Path.Combine(tempDir, "output.md");
+                    ExecuteHelper.Execute(
+                        "docker",
+                        $"cp {renderingToolId}:/tableapp/files/{repo.Model.Name.Replace('/', '-')}.md {outputPath}",
+                        Options.IsDryRun
+                    );
+
+                    tagsDoc = File.ReadAllText(outputPath);
+                }
+                finally
+                {
+                    ExecuteHelper.Execute("docker", $"image rm -f {renderingToolId}", Options.IsDryRun);
+                }
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
             }
 
-            return tagsDoc.ToString();
-        }
-
-        private static string GetOsDisplayName(OS os, string osVersion)
-        {
-            string displayName;
-
-            switch (os)
-            {
-                case OS.Windows:
-                    if (osVersion == null || osVersion.Contains("2016"))
-                    {
-                        displayName = "Windows Server 2016";
-                    }
-                    else
-                    {
-                        displayName = $"Windows Server, version {osVersion}";
-                    }
-                    break;
-                default:
-                    displayName = os.ToString();
-                    break;
-            }
-
-            return displayName;
-        }
-
-        private string GetTagDocumentation(ImageDocumentationInfo info)
-        {
-            string tags = info.DocumentedTags
-                .Select(tag => $"`{tag.Name}`")
-                .Aggregate((working, next) => $"{working}, {next}");
-            string dockerfile = info.Platform.DockerfilePath.Replace('\\', '/');
-            return $"- [{tags} (*Dockerfile*)]({Options.SourceUrl}/{dockerfile})";
-        }
-
-        private string GetTemplateBasedDocumentation(string templatePath)
-        {
-            string template = File.ReadAllText(templatePath);
-            string tagsDoc = Manifest.VariableHelper.SubstituteValues(template, GetVariableValue);
-
-            if (!Options.SkipValidation && ImageDocInfos.Any())
-            {
-                string missingTags = string.Join(Environment.NewLine, ImageDocInfos.Select(info => GetTagDocumentation(info)));
-                throw new InvalidOperationException(
-                    $"The following tags are not documented in the readme: {Environment.NewLine}{missingTags}");
-            }
+            Logger.WriteSubheading($"Tags Documentation:");
+            Logger.WriteMessage(tagsDoc);
 
             return tagsDoc;
         }
 
-        private string GetVariableValue(string variableType, string variableName)
-        {
-            string variableValue = null;
-
-            if (string.Equals(variableType, VariableHelper.TagDocTypeId, StringComparison.Ordinal))
-            {
-                ImageDocumentationInfo info = ImageDocInfos
-                    .FirstOrDefault(idi => idi.DocumentedTags.Any(tag => tag.Name == variableName));
-                if (info != null)
-                {
-                    variableValue = GetTagDocumentation(info);
-                    ImageDocInfos.Remove(info);
-                }
-            }
-            else if (string.Equals(variableType, VariableHelper.TagDocListTypeId, StringComparison.Ordinal))
-            {
-                IEnumerable<string> variableTags = variableName.Split('|');
-                if (variableTags.Any())
-                {
-                    ImageDocumentationInfo info = ImageDocInfos
-                        .FirstOrDefault(idi => idi.DocumentedTags.Select(tag => tag.Name).Intersect(variableTags).Count() == variableTags.Count());
-                    if (info != null)
-                    {
-                        IEnumerable<TagInfo> variableTagInfos = info.DocumentedTags
-                            .Where(tag => variableTags.Any(docTag => docTag == tag.Name));
-                        variableValue = GetTagDocumentation(new ImageDocumentationInfo(info.Platform, variableTagInfos));
-
-                        // Remove the tags referenced by the TagDocList.  This will ensure an exception if there are any tags
-                        // excluded from the readme.
-                        info.DocumentedTags = info.DocumentedTags.Except(variableTagInfos);
-                        if (!info.DocumentedTags.Any())
-                        {
-                            ImageDocInfos.Remove(info);
-                        }
-                    }
-                }
-            }
-            else if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
-                && string.Equals(variableName, VariableHelper.SourceUrlVariableName, StringComparison.Ordinal))
-            {
-                variableValue = Options.SourceUrl;
-            }
-
-            return variableValue;
-        }
-
-        private static string NormalizeLineEndings(string value, string targetFormat)
-        {
-            string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
-            string valueLineEnding = value.Contains("\r\n") ? "\r\n" : "\n";
-            if (valueLineEnding != targetLineEnding)
-            {
-                value = value.Replace(valueLineEnding, targetLineEnding);
-            }
-
-            return value;
-        }
-
-        private void UpdateReadme(string tagsDocumentation, RepoInfo repo)
+        public static void UpdateReadme(RepoInfo repo, string tagsListing)
         {
             Logger.WriteHeading("UPDATING README");
 
-            string readmePath = Options.ReadmePath ?? repo.Model.ReadmePath;
-            string readme = File.ReadAllText(readmePath);
+            string readme = File.ReadAllText(repo.Model.ReadmePath);
+            readme = ReadmeHelper.UpdateTagsListing(readme, tagsListing);
+            File.WriteAllText(repo.Model.ReadmePath, readme);
 
-            // tagsDocumentation is formatted with Environment.NewLine which may not match the readme format. This can
-            // happen when image-builder is invoked within a Linux container on a Windows host while using a host volume.
-            // Normalize the line endings to match the readme.
-            tagsDocumentation = NormalizeLineEndings(tagsDocumentation, readme);
-
-            string headerLine = tagsDocumentation
-                .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .FirstOrDefault();
-            Regex regex = new Regex($"^{headerLine}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);
-            string updatedReadme = regex.Replace(readme, tagsDocumentation);
-            File.WriteAllText(readmePath, updatedReadme);
-
-            Logger.WriteSubheading($"Updated '{readmePath}'");
+            Logger.WriteSubheading($"Updated '{repo.Model.ReadmePath}'");
             Logger.WriteMessage();
-        }
-
-        private class ImageDocumentationInfo
-        {
-            public PlatformInfo Platform { get; }
-            public IEnumerable<TagInfo> DocumentedTags { get; set; }
-
-            private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
-            {
-                Platform = platform;
-                DocumentedTags = GetDocumentedTags(Platform.Tags, documentationGroup)
-                    .Concat(GetDocumentedTags(image.SharedTags, documentationGroup))
-                    .ToArray();
-            }
-
-            public ImageDocumentationInfo(PlatformInfo platform, IEnumerable<TagInfo> documentedTags)
-            {
-                Platform = platform;
-                DocumentedTags = documentedTags;
-            }
-
-            public static IEnumerable<ImageDocumentationInfo> Create(ImageInfo image, PlatformInfo platform)
-            {
-                IEnumerable<string> documentationGroups = image.SharedTags
-                    .Concat(platform.Tags)
-                    .Select(tag => tag.Model.DocumentationGroup)
-                    .Distinct();
-                foreach (string documentationGroup in documentationGroups)
-                {
-                    yield return new ImageDocumentationInfo(image, platform, documentationGroup);
-                }
-            }
-
-            private static IEnumerable<TagInfo> GetDocumentedTags(
-                IEnumerable<TagInfo> tagInfos, string documentationGroup)
-            {
-                return tagInfos
-                    .Where(tag => !tag.Model.IsUndocumented && tag.Model.DocumentationGroup == documentationGroup);
-            }
         }
     }
 }

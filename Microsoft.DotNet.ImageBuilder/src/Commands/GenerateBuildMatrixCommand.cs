@@ -41,21 +41,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
-                string[] dockerfilePaths = subgraph
-                    .Select(platform => platform.Model.Dockerfile)
-                    .ToArray();
+                string[] dockerfilePaths = GetDockerfilePaths(subgraph);
+
                 LegInfo leg = new LegInfo()
-                { 
+                {
                     Name = GetDockerfilePathLegName(dockerfilePaths, platformNameParts, matrixNameParts)
                 };
                 matrix.Legs.Add(leg);
 
-                string pathArgs = dockerfilePaths
-                    .Select(path => $"--path {path}")
-                    .Aggregate((working, next) => $"{working} {next}");
-                leg.Variables.Add(("imageBuilderPaths", pathArgs));
+                AddImageBuilderPathsVariable(dockerfilePaths, leg);
                 AddPlatformVariables(platformGrouping, leg);
             }
+        }
+
+        private static string[] GetDockerfilePaths(IEnumerable<PlatformInfo> platforms)
+        {
+            return platforms
+                .Select(platform => platform.Model.Dockerfile)
+                .ToArray();
+        }
+
+        private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)
+        {
+            string pathArgs = dockerfilePaths
+                .Select(path => $"--path {path}")
+                .Aggregate((working, next) => $"{working} {next}");
+            leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
 
         private static void AddPlatformVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, LegInfo leg)
@@ -82,6 +93,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 AddPlatformVariables(platformGrouping, leg);
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
+
+                string[] dockerfilePaths = GetDockerfilePaths(versionGrouping);
+                AddImageBuilderPathsVariable(dockerfilePaths, leg);
             }
         }
 
@@ -179,14 +193,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                     matrices.Add(matrix);
 
-                    switch (Options.MatrixType)
+                    if (Options.MatrixType == MatrixType.Build)
                     {
-                        case MatrixType.Build:
-                            AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
-                            break;
-                        case MatrixType.Test:
+                        // If we're generating the build matrix for a PR build, we want the matrix to be structured
+                        // in the same way as the test matrix where te grouping is based on the combination of .NET
+                        // version and OS/arch instead of just the OS/arch.  That's because PR builds wil run tests
+                        // in the same job as the images are built so the tests will need access to the full set of 
+                        // images (runtime/sdk, etc.).
+                        if (Options.IsPullRequestBuild)
+                        {
                             AddVersionedOsLegs(matrix, platformGrouping);
-                            break;
+                        }
+                        else
+                        {
+                            AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
+                        }
+                    }
+                    else if (Options.MatrixType == MatrixType.Test)
+                    {
+                        AddVersionedOsLegs(matrix, platformGrouping);
                     }
                 }
             }

@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();
             foreach (PlatformInfo platform in manifestInfo.AllRepos.SelectMany(repo => repo.AllImages).SelectMany(image => image.AllPlatforms))
             {
-                platform.Initialize(repoNames);
+                platform.Initialize(repoNames, manifestInfo.Registry);
             }
 
             IEnumerable<Repo> filteredRepoModels = manifestFilter.GetRepos(manifestInfo.Model);

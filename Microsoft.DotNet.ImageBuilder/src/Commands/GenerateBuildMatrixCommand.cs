@@ -61,6 +61,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ToArray();
         }
 
+        private string[] GetTestDependencyDockerfilePaths(IEnumerable<PlatformInfo> platforms)
+        {
+            return GetDockerfilePaths(platforms
+                .GetCompleteSubgraphs(platform => platform.TestDependencyImages.Select(image => Manifest.GetPlatformByTag(image)))
+                .SelectMany(image => image));
+        }
+
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)
         {
             string pathArgs = dockerfilePaths
@@ -76,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
         }
 
-        private static void AddVersionedOsLegs(MatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
+        private void AddVersionedOsLegs(MatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
                 .GroupBy(platform => new
@@ -94,8 +101,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
 
-                string[] dockerfilePaths = GetDockerfilePaths(versionGrouping);
-                AddImageBuilderPathsVariable(dockerfilePaths, leg);
+                IEnumerable<string> dockerfilePaths = GetDockerfilePaths(versionGrouping);
+                if (Options.MatrixType == MatrixType.TestDependencyGraph)
+                {
+                    dockerfilePaths = dockerfilePaths.Union(GetTestDependencyDockerfilePaths(versionGrouping));
+                }
+
+                AddImageBuilderPathsVariable(dockerfilePaths.ToArray(), leg);
             }
         }
 
@@ -197,7 +209,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
                     }
-                    else if (Options.MatrixType == MatrixType.PlatformVersionedOs)
+                    else if (Options.MatrixType == MatrixType.PlatformVersionedOs || Options.MatrixType == MatrixType.TestDependencyGraph)
                     {
                         AddVersionedOsLegs(matrix, platformGrouping);
                     }

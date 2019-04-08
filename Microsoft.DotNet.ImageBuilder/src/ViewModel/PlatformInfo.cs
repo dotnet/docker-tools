@@ -28,6 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string DockerfilePath { get; private set; }
         public IEnumerable<string> ExternalFromImages { get; private set; }
         public IEnumerable<string> InternalFromImages { get; private set; }
+        public IEnumerable<string> TestDependencyImages { get; private set; }
         public Platform Model { get; private set; }
         public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
         private string FullRepoModelName { get; set; }
@@ -66,10 +67,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return platformInfo;
         }
 
-        public void Initialize(IEnumerable<string> internalRepos)
+        public void Initialize(IEnumerable<string> internalRepos, string registry)
         {
             InitializeBuildArgs();
             InitializeFromImages(internalRepos);
+
+            TestDependencyImages = this.Model.TestDependencies.Select(td => $"{registry}/{td}");
         }
 
         private void InitializeBuildArgs()

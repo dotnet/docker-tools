@@ -9,5 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         PlatformDependencyGraph,
         PlatformVersionedOs,
         DependencyGraph,
+        TestDependencyGraph
     }
 }

@@ -1,0 +1,29 @@
+parameters:
+  name: null
+  pool: {}
+  publishImages: false
+
+jobs:
+- job: ${{ parameters.name }}
+  pool: ${{ parameters.pool }}
+  dependsOn: Initialize
+  variables:
+    ${{ if eq(parameters.publishImages, 'true') }}:
+      buildParameters: $(commonBuildParameters) -DockerRepo $(acr.server)/public/dotnet-buildtools/image-builder -PushImages
+    ${{ if eq(parameters.publishImages, 'false') }}:
+      buildParameters: $(commonBuildParameters)
+    commonBuildParameters: -TagTimestamp $(timestamp)
+    timestamp: $[ dependencies.Initialize.outputs['GenerateTimestamp.timestamp'] ]
+  workspace:
+    clean: all
+  steps:
+    - ${{ if eq(parameters.publishImages, 'true') }}:
+      - script: docker login -u $(acr.userName) -p $(BotAccount-dotnet-docker-acr-bot-password) $(acr.server)
+        displayName: Docker Login
+    - powershell: Microsoft.DotNet.ImageBuilder/build.ps1 $(buildParameters)
+      displayName: Build and Publish ImageBuilder
+    - ${{ if eq(parameters.publishImages, 'true') }}:
+      - script: docker logout
+        displayName: Docker Logout
+        condition: always()
+        continueOnError: true

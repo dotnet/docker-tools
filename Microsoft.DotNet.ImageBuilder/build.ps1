@@ -2,7 +2,8 @@
 param(
     [string]$DockerRepo = "mcr.microsoft.com/dotnet-buildtools/image-builder",
     [switch]$PushImages,
-    [switch]$CleanupDocker
+    [switch]$CleanupDocker,
+    [string]$TagTimestamp = (Get-Date -Format yyyyMMddHHmmss)
 )
 
 Set-StrictMode -Version Latest
@@ -39,7 +40,7 @@ try {
         $osFlavor = "debian"
     }
 
-    $stableTag = "$($DockerRepo):$osFlavor-$((Get-Date -Format yyyyMMddHHmmss).ToLower())"
+    $stableTag = "$($DockerRepo):$osFlavor-$TagTimestamp"
     $floatingTag = "image-builder"
 
     & docker build -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$osFlavor" $PSScriptRoot

@@ -28,12 +28,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string DockerfilePath { get; private set; }
         public IEnumerable<string> ExternalFromImages { get; private set; }
         public IEnumerable<string> InternalFromImages { get; private set; }
-        public IEnumerable<string> TestDependencyImages { get; private set; }
         public Platform Model { get; private set; }
         public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
         private string FullRepoModelName { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
+        public IDictionary<string, CustomBuildLegGroupingInfo> CustomLegGroupings { get; private set; }
         private VariableHelper VariableHelper { get; set; }
 
         private PlatformInfo()
@@ -72,7 +72,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             InitializeBuildArgs();
             InitializeFromImages(internalRepos);
 
-            TestDependencyImages = this.Model.TestDependencies.Select(td => $"{registry}/{td}");
+            CustomLegGroupings = this.Model.CustomBuildLegGrouping
+                .Select(grouping =>
+                    new CustomBuildLegGroupingInfo(
+                        grouping.Name,
+                        grouping.Dependencies
+                            .Select(d => VariableHelper.SubstituteValues(d))
+                            .ToArray()))
+                .ToDictionary(info => info.Name)
+            ;
         }
 
         private void InitializeBuildArgs()

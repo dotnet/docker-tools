@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Model
         [JsonProperty(Required = Required.Always)]
         public IDictionary<string, Tag> Tags { get; set; }
 
-        public string[] TestDependencies { get; set; } = Array.Empty<string>();
+        public CustomBuildLegGrouping[] CustomBuildLegGrouping { get; set; } = Array.Empty<CustomBuildLegGrouping>();
 
         public string Variant { get; set; }
 

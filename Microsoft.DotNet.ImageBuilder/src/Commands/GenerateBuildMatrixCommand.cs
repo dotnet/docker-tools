@@ -41,7 +41,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
-                string[] dockerfilePaths = GetDockerfilePaths(subgraph);
+                string[] dockerfilePaths = GetDockerfilePaths(subgraph)
+                    .Union(GetCustomLegGroupingDockerfilePaths(subgraph))
+                    .ToArray();
 
                 LegInfo leg = new LegInfo()
                 {
@@ -61,6 +63,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ToArray();
         }
 
+        private string[] GetCustomLegGroupingDockerfilePaths(IEnumerable<PlatformInfo> platforms)
+        {
+            IEnumerable<PlatformInfo> subgraphs = platforms.GetCompleteSubgraphs(platform =>
+                {
+                    if (Options.CustomBuildLegGrouping != null &&
+                        platform.CustomLegGroupings.TryGetValue(
+                            Options.CustomBuildLegGrouping,
+                            out CustomBuildLegGroupingInfo customBuildLegGroupingInfo))
+                    {
+                        return customBuildLegGroupingInfo.DependencyImages
+                            .Select(image => Manifest.GetPlatformByTag(image));
+                    }
+
+                    return Enumerable.Empty<PlatformInfo>();
+                })
+                .SelectMany(image => image);
+            return GetDockerfilePaths(subgraphs);
+        }
+
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)
         {
             string pathArgs = dockerfilePaths
@@ -76,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
         }
 
-        private static void AddVersionedOsLegs(MatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
+        private void AddVersionedOsLegs(MatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
                 .GroupBy(platform => new
@@ -94,8 +115,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
 
-                string[] dockerfilePaths = GetDockerfilePaths(versionGrouping);
-                AddImageBuilderPathsVariable(dockerfilePaths, leg);
+                IEnumerable<string> dockerfilePaths = GetDockerfilePaths(versionGrouping)
+                    .Union(GetCustomLegGroupingDockerfilePaths(versionGrouping));
+
+                AddImageBuilderPathsVariable(dockerfilePaths.ToArray(), leg);
             }
         }
 

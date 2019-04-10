@@ -33,6 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private string FullRepoModelName { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
+        public IDictionary<string, CustomBuildLegGroupingInfo> CustomLegGroupings { get; private set; }
         private VariableHelper VariableHelper { get; set; }
 
         private PlatformInfo()
@@ -66,10 +67,20 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return platformInfo;
         }
 
-        public void Initialize(IEnumerable<string> internalRepos)
+        public void Initialize(IEnumerable<string> internalRepos, string registry)
         {
             InitializeBuildArgs();
             InitializeFromImages(internalRepos);
+
+            CustomLegGroupings = this.Model.CustomBuildLegGrouping
+                .Select(grouping =>
+                    new CustomBuildLegGroupingInfo(
+                        grouping.Name,
+                        grouping.Dependencies
+                            .Select(d => VariableHelper.SubstituteValues(d))
+                            .ToArray()))
+                .ToDictionary(info => info.Name)
+            ;
         }
 
         private void InitializeBuildArgs()

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using Newtonsoft.Json;
@@ -29,6 +30,8 @@ namespace Microsoft.DotNet.ImageBuilder.Model
 
         [JsonProperty(Required = Required.Always)]
         public IDictionary<string, Tag> Tags { get; set; }
+
+        public CustomBuildLegGrouping[] CustomBuildLegGrouping { get; set; } = Array.Empty<CustomBuildLegGrouping>();
 
         public string Variant { get; set; }
 

@@ -4,6 +4,7 @@
 
 using System;
 using System.CommandLine;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -13,6 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
+        public string CustomBuildLegGrouping { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -29,8 +31,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "type",
                 ref matrixType,
                 value => (MatrixType)Enum.Parse(typeof(MatrixType), value, true),
-                "Type of matrix to generate - build (default), test");
+                $"Type of matrix to generate - {Enum.GetNames(typeof(MatrixType)).Aggregate((s1, s2) => $"{s1}, {s2}")}");
             MatrixType = matrixType;
+
+            string customBuildLegGrouping = null;
+            syntax.DefineOption(
+                "customBuildLegGrouping",
+                ref customBuildLegGrouping,
+                "Name of custom build leg grouping to use.");
+            CustomBuildLegGrouping = customBuildLegGrouping;
         }
     }
 }

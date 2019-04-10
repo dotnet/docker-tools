@@ -8,6 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         PlatformDependencyGraph,
         PlatformVersionedOs,
-        DependencyGraph,
+        DependencyGraph
     }
 }

@@ -65,8 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string[] GetCustomLegGroupingDockerfilePaths(IEnumerable<PlatformInfo> platforms)
         {
-            return GetDockerfilePaths(platforms
-                .GetCompleteSubgraphs(platform =>
+            IEnumerable<PlatformInfo> subgraphs = platforms.GetCompleteSubgraphs(platform =>
                 {
                     if (Options.CustomBuildLegGrouping != null &&
                         platform.CustomLegGroupings.TryGetValue(
@@ -76,12 +75,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         return customBuildLegGroupingInfo.DependencyImages
                             .Select(image => Manifest.GetPlatformByTag(image));
                     }
-                    else
-                    {
-                        return Enumerable.Empty<PlatformInfo>();
-                    }
+
+                    return Enumerable.Empty<PlatformInfo>();
                 })
-                .SelectMany(image => image));
+                .SelectMany(image => image);
+            return GetDockerfilePaths(subgraphs);
         }
 
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)

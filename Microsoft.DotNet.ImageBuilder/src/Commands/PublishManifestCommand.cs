@@ -31,12 +31,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string manifest = GenerateManifest(image);
 
-                    Logger.WriteSubheading($"PUBLISHING MANIFEST:{Environment.NewLine}{manifest}");
-                    File.WriteAllText("manifest.yml", manifest);
+                    string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
+                    Logger.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
+                    File.WriteAllText(manifestFilename, manifest);
 
-                    // ExecuteWithRetry because the manifest-tool fails periodically while communicating
-                    // with the Docker Registry.
-                    ExecuteHelper.ExecuteWithRetry("manifest-tool", "push from-spec manifest.yml", Options.IsDryRun);
+                    try
+                    {
+                        // ExecuteWithRetry because the manifest-tool fails periodically while communicating
+                        // with the Docker Registry.
+                        ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFilename}", Options.IsDryRun);
+                    }
+                    finally
+                    {
+                        File.Delete(manifestFilename);
+                    }
                 });
 
                 WriteManifestSummary(multiArchImages);

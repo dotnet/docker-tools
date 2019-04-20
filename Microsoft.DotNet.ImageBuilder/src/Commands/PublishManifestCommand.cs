@@ -27,17 +27,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<ImageInfo> multiArchImages = Manifest.FilteredRepos
                     .SelectMany(repo => repo.AllImages)
                     .Where(image => image.SharedTags.Any());
-                foreach (ImageInfo image in multiArchImages)
+                Parallel.ForEach(multiArchImages, image =>
                 {
                     string manifest = GenerateManifest(image);
 
-                    Logger.WriteSubheading($"PUBLISHING MANIFEST:{Environment.NewLine}{manifest}");
-                    File.WriteAllText("manifest.yml", manifest);
+                    string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
+                    Logger.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
+                    File.WriteAllText(manifestFilename, manifest);
 
-                    // ExecuteWithRetry because the manifest-tool fails periodically while communicating
-                    // with the Docker Registry.
-                    ExecuteHelper.ExecuteWithRetry("manifest-tool", "push from-spec manifest.yml", Options.IsDryRun);
-                }
+                    try
+                    {
+                        // ExecuteWithRetry because the manifest-tool fails periodically while communicating
+                        // with the Docker Registry.
+                        ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFilename}", Options.IsDryRun);
+                    }
+                    finally
+                    {
+                        File.Delete(manifestFilename);
+                    }
+                });
 
                 WriteManifestSummary(multiArchImages);
             });
@@ -61,14 +69,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             manifestYml.AppendLine("manifests:");
             foreach (PlatformInfo platform in image.AllPlatforms)
             {
-                manifestYml.AppendLine($"  -");
-                manifestYml.AppendLine($"    image: {platform.Tags.First().FullyQualifiedName}");
-                manifestYml.AppendLine($"    platform:");
-                manifestYml.AppendLine($"      architecture: {platform.Model.Architecture.GetDockerName()}");
-                manifestYml.AppendLine($"      os: {platform.Model.OS.GetDockerName()}");
+                manifestYml.AppendLine($"- image: {platform.Tags.First().FullyQualifiedName}");
+                manifestYml.AppendLine($"  platform:");
+                manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
+                manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");
                 if (platform.Model.Variant != null)
                 {
-                    manifestYml.AppendLine($"      variant: {platform.Model.Variant}");
+                    manifestYml.AppendLine($"    variant: {platform.Model.Variant}");
                 }
             }
 

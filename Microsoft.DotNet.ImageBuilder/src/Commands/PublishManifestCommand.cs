@@ -24,8 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ExecuteWithUser(() =>
             {
-                IEnumerable<ImageInfo> multiArchImages = Manifest.FilteredRepos
-                    .SelectMany(repo => repo.AllImages)
+                IEnumerable<ImageInfo> multiArchImages = Manifest.GetFilteredImages()
                     .Where(image => image.SharedTags.Any());
                 Parallel.ForEach(multiArchImages, image =>
                 {

@@ -1,0 +1,4 @@
+variables:
+  imageNames.testRunner: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-stretch-docker-testrunner-63f2145-20184325094343
+  imageNames.pinger.linux: mcr.microsoft.com/windows/nanoserver:1809-arm32v7
+  imageNames.pinger.windows: arm32v7/debian:stretch

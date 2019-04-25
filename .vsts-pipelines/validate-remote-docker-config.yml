@@ -14,7 +14,9 @@ jobs:
   workspace:
     clean: all
   variables:
-    remoteDockerRunCmd:
+  - template: variables/docker-images.yml
+  - name: remoteDockerRunCmd
+    value:
       docker run
       --rm
       --entrypoint docker
@@ -23,23 +25,22 @@ jobs:
       -e DOCKER_CERT_PATH=/docker-certs
       -e DOCKER_TLS_VERIFY=1
       -e DOCKER_HOST=tcp://$(DOCKER_HOST_IP):2376
-      $(imageNames.imageBuilder.linux)
-    imageNames.imageBuilder.linux: mcr.microsoft.com/dotnet-buildtools/prereqs:debian-stretch-docker-testrunner-63f2145-20184325094343
+      $(imageNames.testRunner)
   steps:
-  - script: docker pull $(imageNames.imageBuilder.linux)
+  - script: docker pull $(imageNames.testRunner)
     displayName: Pull ImageBuilder
   - script: $(remoteDockerRunCmd) info
     displayName: Validate Remote Docker Daemon Reachability
   - script: |
       if [[ "$(DOCKER_CERT_PATH)" == *"humw"* ]]; then
-        echo "##vso[task.setvariable variable=imageNames.ping]mcr.microsoft.com/windows/nanoserver:1809-arm32v7"
+        echo "##vso[task.setvariable variable=imageNames.pinger]$(imageNames.pinger.linux)"
         echo "##vso[task.setvariable variable=customPingArgs]"
       else
-        echo "##vso[task.setvariable variable=imageNames.ping]arm32v7/debian:stretch"
+        echo "##vso[task.setvariable variable=imageNames.pinger]$(imageNames.pinger.windows)"
         echo "##vso[task.setvariable variable=customPingArgs]-c 3"
       fi
     displayName: Define OS Variables
-  - script: $(remoteDockerRunCmd) pull $(imageNames.ping)
+  - script: $(remoteDockerRunCmd) pull $(imageNames.pinger)
     displayName: Pull Ping Image
-  - script: $(remoteDockerRunCmd) run --rm $(imageNames.ping) ping $(customPingArgs) www.github.com
+  - script: $(remoteDockerRunCmd) run --rm $(imageNames.pinger) ping $(customPingArgs) www.github.com
     displayName: Validate Remote Docker Daemon Container Network Access

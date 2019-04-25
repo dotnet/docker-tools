@@ -32,7 +32,7 @@ jobs:
   - script: $(remoteDockerRunCmd) info
     displayName: Validate Remote Docker Daemon Reachability
   - script: |
-      if [[ "$(DOCKER_CERT_PATH)" == *"humw"* ]]; then
+      if [[ "$(DOCKER_CERT_PATH)" == *"humw"* ]] || [[ "$(DOCKER_CERT_PATH)" == *"rpiw"* ]]; then
         echo "##vso[task.setvariable variable=imageNames.pinger]$(imageNames.pinger.linux)"
         echo "##vso[task.setvariable variable=customPingArgs]"
       else

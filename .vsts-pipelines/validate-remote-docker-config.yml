@@ -11,6 +11,7 @@ jobs:
     demands:
     - agent.os -equals linux
     - agent.name -equals $(agentName)
+  timeoutInMinutes: 15
   workspace:
     clean: all
   variables:

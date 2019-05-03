@@ -192,38 +192,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ThenBy(platformGroup => platformGroup.Key.Architecture)
                 .ThenByDescending(platformGroup => platformGroup.Key.Variant);
 
-            string baseMatrixName = $"{Options.MatrixType.ToString().ToCamelCase()}Matrix";
-
-            if (Options.MatrixType == MatrixType.DependencyGraph)
+            foreach (var platformGrouping in platformGroups)
             {
-                MatrixInfo matrix = new MatrixInfo() { Name = baseMatrixName };
+                string[] matrixNameParts =
+                {
+                    $"{Options.MatrixType.ToString().ToCamelCase()}Matrix",
+                    platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
+                    platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
+                };
+                MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                 matrices.Add(matrix);
-                foreach (var platformGrouping in platformGroups)
-                {
-                    AddDockerfilePathLegs(matrix, Enumerable.Empty<string>(), platformGrouping);
-                }
-            }
-            else
-            {
-                foreach (var platformGrouping in platformGroups)
-                {
-                    string[] matrixNameParts =
-                    {
-                        baseMatrixName,
-                        platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
-                        platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
-                    };
-                    MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
-                    matrices.Add(matrix);
 
-                    if (Options.MatrixType == MatrixType.PlatformDependencyGraph)
-                    {
-                        AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
-                    }
-                    else if (Options.MatrixType == MatrixType.PlatformVersionedOs)
-                    {
-                        AddVersionedOsLegs(matrix, platformGrouping);
-                    }
+                if (Options.MatrixType == MatrixType.PlatformDependencyGraph)
+                {
+                    AddDockerfilePathLegs(matrix, matrixNameParts, platformGrouping);
+                }
+                else if (Options.MatrixType == MatrixType.PlatformVersionedOs)
+                {
+                    AddVersionedOsLegs(matrix, platformGrouping);
                 }
             }
 

@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public string Password { get; set; }
+        public string ResourceGroup { get; set; }
         public string SourceRepoPrefix { get; set; }
         public string Subscription { get; set; }
         public string Tenant { get; set; }
@@ -46,6 +47,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string subscription = null;
             syntax.DefineParameter("subscription", ref subscription, "Azure subscription to operate on");
             Subscription = subscription;
+
+            string resourceGroup = null;
+            syntax.DefineParameter("resourceGroup", ref resourceGroup, "Azure resource group to operate on");
+            ResourceGroup = resourceGroup;
         }
     }
 }

@@ -2,7 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.Management.ContainerRegistry.Fluent;
+using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
+using Microsoft.Azure.Management.Fluent;
+using Microsoft.Azure.Management.ResourceManager.Fluent;
+using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -13,25 +20,46 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("COPING IMAGES");
 
-            using (AzureHelper helper = AzureHelper.Create(Options.Username, Options.Password, Options.Tenant, Options.IsDryRun))
-            {
-                string registryName = $"{Manifest.Registry}/";
+            string registryName = Manifest.Registry.TrimEnd(".azurecr.io");
 
-                foreach (TagInfo platformTag in Manifest.GetFilteredPlatformTags())
-                {
-                    string sourceImage = platformTag.FullyQualifiedName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
-                    string destImage = platformTag.FullyQualifiedName.TrimStart(registryName);
-                    helper.ExecuteAzCommand(
-                        $"acr import -n {Manifest.Registry.TrimEnd(".azurecr.io")} --source {sourceImage} -t {destImage} --force",
-                        Options.IsDryRun);
-                }
+            await Task.WhenAll(Manifest.GetFilteredPlatformTags().Select(platformTag => ImportImage(platformTag, registryName)));
+        }
+
+        private async Task ImportImage(TagInfo platformTag, string registryName)
+        {
+            AzureCredentials credentials = SdkContext.AzureCredentialsFactory
+                .FromServicePrincipal(Options.Username, Options.Password, Options.Tenant, AzureEnvironment.AzureGlobalCloud);
+            IAzure azure = Microsoft.Azure.Management.Fluent.Azure
+                .Configure()
+                .Authenticate(credentials)
+                .WithSubscription(Options.Subscription);
+
+            string tagName = platformTag.FullyQualifiedName.TrimStart($"{Manifest.Registry}/");
+            ImportImageParametersInner importParams = new ImportImageParametersInner()
+            {
+                Mode = "Force",
+                Source = new ImportSource(
+                    tagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix),
+                    $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
+                        $"/Microsoft.ContainerRegistry/registries/{registryName}"),
+                TargetTags = new string[] { tagName }
             };
 
-            return Task.CompletedTask;
+            Logger.WriteMessage($"Importing: {tagName}");
+
+            try
+            {
+                await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+            }
+            catch (Exception e)
+            {
+                Logger.WriteMessage($"Importing Failure:  {tagName}{Environment.NewLine}{e}");
+                throw;
+            }
         }
     }
 }

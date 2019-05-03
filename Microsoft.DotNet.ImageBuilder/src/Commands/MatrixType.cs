@@ -7,7 +7,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public enum MatrixType
     {
         PlatformDependencyGraph,
-        PlatformVersionedOs,
-        DependencyGraph
+        PlatformVersionedOs
     }
 }

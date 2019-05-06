@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Subscription = subscription;
 
             string resourceGroup = null;
-            syntax.DefineParameter("resourceGroup", ref resourceGroup, "Azure resource group to operate on");
+            syntax.DefineParameter("resource-group", ref resourceGroup, "Azure resource group to operate on");
             ResourceGroup = resourceGroup;
         }
     }

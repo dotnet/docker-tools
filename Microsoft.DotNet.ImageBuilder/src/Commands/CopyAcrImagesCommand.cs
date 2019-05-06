@@ -38,27 +38,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Authenticate(credentials)
                 .WithSubscription(Options.Subscription);
 
-            string tagName = platformTag.FullyQualifiedName.TrimStart($"{Manifest.Registry}/");
+            string destTagName = platformTag.FullyQualifiedName.TrimStart($"{Manifest.Registry}/");
+            string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
             ImportImageParametersInner importParams = new ImportImageParametersInner()
             {
                 Mode = "Force",
                 Source = new ImportSource(
-                    tagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix),
+                    sourceTagName,
                     $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
                         $"/Microsoft.ContainerRegistry/registries/{registryName}"),
-                TargetTags = new string[] { tagName }
+                TargetTags = new string[] { destTagName }
             };
 
-            Logger.WriteMessage($"Importing: {tagName}");
+            Logger.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
 
-            try
+            if (!Options.IsDryRun)
             {
-                await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
-            }
-            catch (Exception e)
-            {
-                Logger.WriteMessage($"Importing Failure:  {tagName}{Environment.NewLine}{e}");
-                throw;
+                try
+                {
+                    await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+                }
+                catch (Exception e)
+                {
+                    Logger.WriteMessage($"Importing Failure:  {destTagName}{Environment.NewLine}{e}");
+                    throw;
+                }
             }
         }
     }

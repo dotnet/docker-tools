@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     .ToArray();
             }
 
-            imageInfo.AllPlatforms = manifestFilter.GetPlatforms(model)
+            imageInfo.AllPlatforms = model.Platforms
                 .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper))
                 .ToArray();
 

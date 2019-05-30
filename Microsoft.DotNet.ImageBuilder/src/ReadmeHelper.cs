@@ -14,7 +14,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class ReadmeHelper
+    public static class ReadmeHelper
     {
         private const string TagsSectionHeader = "# Full Tag Listing";
 
@@ -37,6 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Normalize the line endings to match the readme.
             tagsListing = NormalizeLineEndings(tagsListing, readme);
 
+            // Regex to find the entire tags listing section including the header.
             Regex regex = new Regex($"^{TagsSectionHeader}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);
             return regex.Replace(readme, tagsListing);
         }

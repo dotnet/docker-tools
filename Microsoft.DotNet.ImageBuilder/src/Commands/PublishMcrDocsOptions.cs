@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishMcrReadmesOptions : Options
+    public class PublishMcrDocsOptions : Options
     {
         protected override string CommandHelp => "Publishes the readmes to MCR";
 
@@ -17,8 +17,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string GitPath { get; set; }
         public string GitRepo { get; set; }
         public string GitUsername { get; set; }
+        public string SourceUrl { get; set; }
 
-        public PublishMcrReadmesOptions() : base()
+        public PublishMcrDocsOptions() : base()
         {
         }
 
@@ -74,6 +75,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref gitAuthToken,
                 "GitHub authentication token");
             GitAuthToken = gitAuthToken;
+
+            string sourceUrl = null;
+            syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
+            SourceUrl = sourceUrl;
         }
     }
 }

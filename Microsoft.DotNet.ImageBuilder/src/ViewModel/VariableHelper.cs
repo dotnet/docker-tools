@@ -12,11 +12,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         private const char BuiltInDelimiter = ':';
         public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
+        public const string McrTagsYmlRepoTypeId = "McrTagsYmlRepo";
+        public const string McrTagsYmlTagGroupTypeId = "McrTagsYmlTagGroup";
         public const string RepoVariableTypeId = "Repo";
-        public const string SourceUrlVariableName = "SourceUrl";
         public const string SystemVariableTypeId = "System";
-        public const string TagDocTypeId = "TagDoc";
-        public const string TagDocListTypeId = "TagDocList";
         private const string TagVariableTypeId = "TagRef";
         private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";

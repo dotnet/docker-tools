@@ -99,6 +99,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .SelectMany(platform => platform.Tags);
         }
 
+        public RepoInfo GetFilteredRepoById(string id)
+        {
+            return FilteredRepos.FirstOrDefault(repo => repo.Id == id);
+        }
+
         public PlatformInfo GetPlatformByTag(string fullTagName)
         {
             PlatformInfo result = AllRepos

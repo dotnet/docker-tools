@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.ManifestModel;
 using System;
 using System.Text.RegularExpressions;
-using Microsoft.DotNet.ImageBuilder.Model;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -26,11 +26,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private Func<string, RepoInfo> GetRepoById { get; set; }
         private Func<string, TagInfo> GetTagById { get; set; }
         private Manifest Manifest { get; set; }
-        private IOptionsInfo Options { get; set; }
+        private IManifestOptionsInfo Options { get; set; }
 
         public VariableHelper(
             Manifest manifest,
-            IOptionsInfo options,
+            IManifestOptionsInfo options,
             Func<string, TagInfo> getTagById,
             Func<string, RepoInfo> getRepoById)
         {

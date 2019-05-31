@@ -7,7 +7,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class DockerRegistryOptions : Options
+    public abstract class DockerRegistryOptions : ManifestOptions
     {
         public string Password { get; set; }
         public string Username { get; set; }

@@ -15,7 +15,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishMcrDocsCommand : Command<PublishMcrDocsOptions>
+    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
     {
         private const int MaxTries = 10;
         private const string McrTagsPlaceholder = "Tags go here.";

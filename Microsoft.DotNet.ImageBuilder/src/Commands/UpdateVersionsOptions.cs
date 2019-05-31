@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateVersionsOptions : Options, IFilterableOptions
+    public class UpdateVersionsOptions : ManifestOptions, IFilterableOptions
     {
         protected override string CommandHelp => "Updates the version information for the dependent images";
 

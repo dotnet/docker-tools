@@ -1,0 +1,17 @@
+trigger: none
+pr: none
+
+jobs:
+- job: Build
+  pool: Hosted Ubuntu 1604
+  variables:
+    imageBuilderCommandArgs: >
+      rebuildStaleImages
+      --image-data-path image-data.json
+      --subscriptions-path subscriptions.json
+      --build-pat $(System.AccessToken)
+      --build-organization dnceng
+      --build-project internal
+  steps:
+  - powershell: ./scripts/Invoke-ImageBuilder.ps1 "$(imageBuilderCommandArgs)"
+    displayName: Rebuild Stale Images

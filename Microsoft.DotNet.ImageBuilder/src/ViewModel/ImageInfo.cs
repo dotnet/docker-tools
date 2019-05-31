@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ManifestModel;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static ImageInfo Create(
-            Image model, string fullRepoModelName, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper)
+            Image model, string fullRepoModelName, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper, string baseDirectory)
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             imageInfo.AllPlatforms = model.Platforms
-                .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper))
+                .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))
                 .ToArray();
 
             IEnumerable<Platform> filteredPlatformModels = manifestFilter.GetPlatforms(model);

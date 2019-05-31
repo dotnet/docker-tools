@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
+        public string ImageDataOutputPath { get; set; }
 
         public BuildOptions() : base()
         {
@@ -36,6 +37,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isSkipPullingEnabled = false;
             syntax.DefineOption("skip-pulling", ref isSkipPullingEnabled, "Skip explicitly pulling the base images of the Dockerfiles");
             IsSkipPullingEnabled = isSkipPullingEnabled;
+
+            string imageDataOutputPath = null;
+            syntax.DefineOption("image-data-output-path", ref imageDataOutputPath, "Path to write the base image digests information to.");
+            ImageDataOutputPath = imageDataOutputPath;
         }
     }
 }

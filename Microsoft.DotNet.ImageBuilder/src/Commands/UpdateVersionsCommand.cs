@@ -13,7 +13,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateVersionsCommand : Command<UpdateVersionsOptions>
+    public class UpdateVersionsCommand : ManifestCommand<UpdateVersionsOptions>
     {
         private const int MaxTries = 10;
         private const int RetryMillisecondsDelay = 5000;

@@ -3,14 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Text.RegularExpressions;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Model;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder
 {

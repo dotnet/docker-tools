@@ -10,7 +10,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateTagsReadmeCommand : Command<GenerateTagsReadmeOptions>
+    public class GenerateTagsReadmeCommand : ManifestCommand<GenerateTagsReadmeOptions>
     {
         private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";
 

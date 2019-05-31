@@ -2,6 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.ImageModel;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
@@ -11,9 +16,6 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -43,54 +45,104 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void BuildImages()
         {
             Logger.WriteHeading("BUILDING IMAGES");
-            foreach (ImageInfo image in Manifest.GetFilteredImages())
+
+            List<RepoData> reposList = new List<RepoData>();
+
+            foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
-                foreach (PlatformInfo platform in image.FilteredPlatforms)
+                RepoData repoData = new RepoData
                 {
-                    bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
+                    Repo = repoInfo.Model.Name
+                };
+                reposList.Add(repoData);
 
-                    try
+                Dictionary<string, ImageData> images = new Dictionary<string, ImageData>();
+
+                foreach (ImageInfo image in repoInfo.FilteredImages)
+                {
+                    foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
-                        InvokeBuildHook("pre-build", platform.BuildContextPath);
+                        ImageData imageData = new ImageData();
+                        images.Add(platform.BuildContextPath, imageData);
 
-                        // Tag the built images with the shared tags as well as the platform tags.
-                        // Some tests and image FROM instructions depend on these tags.
-                        IEnumerable<string> allTags = platform.Tags
-                            .Concat(image.SharedTags)
-                            .Select(tag => tag.FullyQualifiedName);
-                        string tagArgs = $"-t {string.Join(" -t ", allTags)}";
+                        bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
-                        string buildArgs = GetDockerBuildArgs(platform);
-                        string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}";
-
-                        if (Options.IsRetryEnabled)
+                        try
                         {
-                            ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, Options.IsDryRun);
+                            InvokeBuildHook("pre-build", platform.BuildContextPath);
+
+                            // Tag the built images with the shared tags as well as the platform tags.
+                            // Some tests and image FROM instructions depend on these tags.
+                            IEnumerable<string> allTags = platform.Tags
+                                .Concat(image.SharedTags)
+                                .Select(tag => tag.FullyQualifiedName);
+                            string tagArgs = $"-t {string.Join(" -t ", allTags)}";
+
+                            string buildArgs = GetDockerBuildArgs(platform);
+                            string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}";
+
+                            if (Options.IsRetryEnabled)
+                            {
+                                ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, Options.IsDryRun);
+                            }
+                            else
+                            {
+                                ExecuteHelper.Execute("docker", dockerArgs, Options.IsDryRun);
+                            }
+
+                            if (!Options.IsDryRun)
+                            {
+                                EnsureArchitectureMatches(platform, allTags);
+                            }
+
+                            InvokeBuildHook("post-build", platform.BuildContextPath);
+                            BuiltTags = BuiltTags.Concat(platform.Tags);
                         }
-                        else
+                        finally
                         {
-                            ExecuteHelper.Execute("docker", dockerArgs, Options.IsDryRun);
+                            if (createdPrivateDockerfile)
+                            {
+                                File.Delete(dockerfilePath);
+                            }
                         }
 
-                        if (!Options.IsDryRun)
+                        Dictionary<string, string> baseImageDigests = GetBaseImageDigests(platform);
+                        if (baseImageDigests.Any())
                         {
-                            EnsureArchitectureMatches(platform, allTags);
+                            imageData.BaseImageDigests = baseImageDigests;
                         }
-
-                        InvokeBuildHook("post-build", platform.BuildContextPath);
-                        BuiltTags = BuiltTags.Concat(platform.Tags);
                     }
-                    finally
-                    {
-                        if (createdPrivateDockerfile)
-                        {
-                            File.Delete(dockerfilePath);
-                        }
-                    }
+                }
+
+                if (images.Any())
+                {
+                    repoData.Images = images;
                 }
             }
 
             BuiltTags = BuiltTags.ToArray();
+
+            reposList = RepoData.SortRepoData(reposList);
+            string digestsString = JsonHelper.SerializeObject(reposList.ToArray());
+            File.WriteAllText(Options.ImageDataOutputPath, digestsString);
+        }        
+
+        private Dictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
+        {
+            Dictionary<string, string> baseImageDigestMappings = new Dictionary<string, string>();
+            foreach (string fromImage in platform.ExternalFromImages)
+            {
+                string digest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
+                baseImageDigestMappings[fromImage] = digest;
+            }
+
+            Dictionary<string, string> digests = new Dictionary<string, string>();
+            foreach (KeyValuePair<string, string> baseImageDigestMapping in baseImageDigestMappings)
+            {
+                digests.Add(baseImageDigestMapping.Key, baseImageDigestMapping.Value);
+            }
+
+            return baseImageDigestMappings;
         }
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)

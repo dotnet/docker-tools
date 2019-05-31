@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.ManifestModel;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -29,8 +31,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ManifestInfo Create(Manifest model, ManifestFilter manifestFilter, IOptionsInfo options)
+        public static ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
         {
+            string baseDirectory = Path.GetDirectoryName(manifestPath);
+            string manifestJson = File.ReadAllText(manifestPath);
+            Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson);
+            model.Validate();
+
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
             manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
@@ -42,7 +49,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     model.Registry,
                     manifestFilter,
                     options,
-                    manifestInfo.VariableHelper))
+                    manifestInfo.VariableHelper,
+                    baseDirectory))
                 .ToArray();
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();

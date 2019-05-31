@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishMcrDocsOptions : Options
+    public class PublishMcrDocsOptions : ManifestOptions
     {
         protected override string CommandHelp => "Publishes the readmes to MCR";
 

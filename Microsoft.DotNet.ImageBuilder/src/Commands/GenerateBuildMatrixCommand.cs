@@ -33,11 +33,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddDockerfilePathLegs(
             MatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
-            IEnumerable<string> platformNameParts = new string[] {
-                platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
-                platformGrouping.Key.Architecture.GetDockerName(),
-            };
-
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
@@ -47,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 LegInfo leg = new LegInfo()
                 {
-                    Name = GetDockerfilePathLegName(dockerfilePaths, platformNameParts, matrixNameParts)
+                    Name = GetDockerfilePathLegName(dockerfilePaths, matrixNameParts)
                 };
                 matrix.Legs.Add(leg);
 
@@ -104,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
                     DotNetVersion = platform.DockerfilePath.Split(s_pathSeparators)[0],
-                    OsVariant = platform.DockerfilePath.Split(s_pathSeparators)[2].TrimEnd("-slim")
+                    OsVariant = platform.Model.OsVersion
                 });
             foreach (var versionGrouping in versionGroups)
             {
@@ -142,15 +137,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         /// <summary>
-        /// Builds the leg name from the specified Dockerfile path and platform grouping. Any parts of the Dockerfile path that
+        /// Builds the leg name from the specified Dockerfile path. Any parts of the Dockerfile path that
         /// are in common with the containing matrix name are trimmed. The resulting leg name uses '-' characters as word
         /// separators.
         /// </summary>
-        private static string GetDockerfilePathLegName(
-            IEnumerable<string> dockerfilePath, IEnumerable<string> platformGroupingParts, IEnumerable<string> matrixNameParts)
+        private static string GetDockerfilePathLegName(IEnumerable<string> dockerfilePath, IEnumerable<string> matrixNameParts)
         {
             string legName = dockerfilePath.First().Split(s_pathSeparators)
-                .Concat(platformGroupingParts)
                 .Where(subPart => 
                     !matrixNameParts.Any(matrixPart => matrixPart.StartsWith(subPart, StringComparison.OrdinalIgnoreCase)))
                 .Aggregate((working, next) => $"{working}-{next}");
@@ -182,7 +175,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new PlatformId()
                 {
                     OS = platform.Model.OS,
-                    OsVersion = platform.Model.OsVersion,
+                    OsVersion = platform.Model.OS == OS.Linux ? null : platform.Model.OsVersion,
                     Architecture = platform.Model.Architecture,
                     Variant = platform.Model.Variant
                 })

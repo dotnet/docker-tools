@@ -49,16 +49,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task ExecuteBuildForStaleImages(Subscription subscription, RepoData[] repos)
         {
-            IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
+            while (true)
+            {
+                IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
 
-            string pathsStr = String.Join(", ", pathsToRebuild.ToArray());
-            Logger.WriteMessage(
-                $"The following images in subscription '{subscription.ToString()}' were determined to be using out-of-date base images: {pathsStr}");
+                string pathsStr = String.Join(", ", pathsToRebuild.ToArray());
+                Logger.WriteMessage(
+                    $"The following images in subscription '{subscription.ToString()}' were determined to be using out-of-date base images: {pathsStr}");
 
-            await ExecuteBuild(subscription, pathsToRebuild);
+                bool wasBuildQueued = await ExecuteBuild(subscription, pathsToRebuild);
+
+                // The build may not have been queued if it needed to wait for an already running build. In that case, that other build may
+                // have updated the image data file so we should re-check that file to get the latest digest values to determine what still
+                // needs to get rebuilt.
+                if (wasBuildQueued)
+                {
+                    return;
+                }
+
+                Logger.WriteMessage("Rechecking digests to determine which images need to be rebuilt.");
+            }
         }
 
-        private async Task ExecuteBuild(Subscription subscription, IEnumerable<string> pathsToRebuild)
+        private async Task<bool> ExecuteBuild(Subscription subscription, IEnumerable<string> pathsToRebuild)
         {
             string formattedParameters = String.Join(" ", pathsToRebuild
                 .Select(path => $"--path '{path}'")
@@ -84,14 +97,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     using (BuildHttpClient client = connection.GetClient<BuildHttpClient>())
                     {
+                        bool waitedForBuild = false;
                         while (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
                         {
                             Logger.WriteMessage(
-                                $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Waiting until it is finished before queueing a new build.");
+                                $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Waiting until it is finished.");
                             await Task.Delay(TimeSpan.FromMinutes(1));
+                            waitedForBuild = true;
+                        }
+
+                        if (waitedForBuild)
+                        {
+                            return false;
                         }
 
                         await client.QueueBuildAsync(build);
+                        return true;
                     }
                 }
             }

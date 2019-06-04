@@ -2,15 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.ImageModel;
-using Microsoft.DotNet.VersionTools.Automation;
-using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.ImageModel;
+using Microsoft.DotNet.VersionTools.Automation;
+using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {

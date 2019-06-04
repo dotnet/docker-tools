@@ -2,14 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.ImageModel;
-using Microsoft.DotNet.ImageBuilder.SubscriptionsModel;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.TeamFoundation.Build.WebApi;
-using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.VisualStudio.Services.Common;
-using Microsoft.VisualStudio.Services.WebApi;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +10,14 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.ImageModel;
+using Microsoft.DotNet.ImageBuilder.SubscriptionsModel;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.TeamFoundation.Build.WebApi;
+using Microsoft.TeamFoundation.Core.WebApi;
+using Microsoft.VisualStudio.Services.Common;
+using Microsoft.VisualStudio.Services.WebApi;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -49,29 +49,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task ExecuteBuildForStaleImages(Subscription subscription, RepoData[] repos)
         {
-            while (true)
-            {
-                IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
+            IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
 
-                string pathsStr = String.Join(", ", pathsToRebuild.ToArray());
-                Logger.WriteMessage(
-                    $"The following images in subscription '{subscription.ToString()}' were determined to be using out-of-date base images: {pathsStr}");
+            string pathsStr = String.Join(", ", pathsToRebuild.ToArray());
+            Logger.WriteMessage(
+                $"The following images in subscription '{subscription.ToString()}' were determined to be using out-of-date base images: {pathsStr}");
 
-                bool wasBuildQueued = await ExecuteBuild(subscription, pathsToRebuild);
-
-                // The build may not have been queued if it needed to wait for an already running build. In that case, that other build may
-                // have updated the image data file so we should re-check that file to get the latest digest values to determine what still
-                // needs to get rebuilt.
-                if (wasBuildQueued)
-                {
-                    return;
-                }
-
-                Logger.WriteMessage("Rechecking digests to determine which images need to be rebuilt.");
-            }
+            await ExecuteBuild(subscription, pathsToRebuild);
         }
 
-        private async Task<bool> ExecuteBuild(Subscription subscription, IEnumerable<string> pathsToRebuild)
+        private async Task ExecuteBuild(Subscription subscription, IEnumerable<string> pathsToRebuild)
         {
             string formattedParameters = String.Join(" ", pathsToRebuild
                 .Select(path => $"--path '{path}'")
@@ -97,22 +84,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     using (BuildHttpClient client = connection.GetClient<BuildHttpClient>())
                     {
-                        bool waitedForBuild = false;
-                        while (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
+                        if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
                         {
                             Logger.WriteMessage(
-                                $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Waiting until it is finished.");
-                            await Task.Delay(TimeSpan.FromMinutes(1));
-                            waitedForBuild = true;
-                        }
-
-                        if (waitedForBuild)
-                        {
-                            return false;
+                                $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
+                            return;
                         }
 
                         await client.QueueBuildAsync(build);
-                        return true;
                     }
                 }
             }

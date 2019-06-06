@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IsSkipPullingEnabled = isSkipPullingEnabled;
 
             string imageInfoOutputPath = null;
-            syntax.DefineOption("image-info-output-path", ref imageInfoOutputPath, "Path to write the image info information to.");
+            syntax.DefineOption("image-info-output-path", ref imageInfoOutputPath, "Path to output image info");
             ImageInfoOutputPath = imageInfoOutputPath;
         }
     }

@@ -34,25 +34,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
-                GitHubProject project = new GitHubProject(Options.GitOptions.Repo, Options.GitOptions.Owner);
-                GitHubBranch branch = new GitHubBranch(Options.GitOptions.Branch, project);
-                GitObject[] gitObjects = (await GetUpdatedReadmes(productRepo, client, branch))
-                    .Concat(await GetUpdatedTagsMetadata(productRepo, client, branch))
-                    .ToArray();
-
-                if (gitObjects.Any())
+                await GitHelper.PushChangesAsync(client, Options.GitOptions, $"Mirroring {productRepo} readmes", async branch =>
                 {
-                    string masterRef = $"heads/{Options.GitOptions.Branch}";
-                    GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
-                    string masterSha = currentMaster.Object.Sha;
-                    GitTree tree = await client.PostTreeAsync(project, masterSha, gitObjects);
-                    string commitMessage = $"Mirroring {productRepo} readmes";
-                    GitCommit commit = await client.PostCommitAsync(
-                        project, commitMessage, tree.Sha, new[] { masterSha });
-
-                    // Only fast-forward. Don't overwrite other changes: throw exception instead.
-                    await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
-                }
+                    return (await GetUpdatedReadmes(productRepo, client, branch))
+                        .Concat(await GetUpdatedTagsMetadata(productRepo, client, branch));
+                });
             });
         }
 

@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class RebuildStaleImagesOptions : Options
     {
-        protected override string CommandHelp => "Uses a subscriptions file to determine which images are using out-of-date base images and queues a build to update them.";
+        protected override string CommandHelp => "Queues builds to update any images with out-of-date base images";
 
         public string SubscriptionsPath { get; set; }
         public string ImageInfoPath { get; set; }
@@ -40,21 +40,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter(
                 "build-pat",
                 ref buildPersonalAccessToken,
-                "The personal access token used to connect to Azure DevOps for queuing builds.");
+                "Azure DevOps PAT for queuing builds");
             BuildPersonalAccessToken = buildPersonalAccessToken;
 
             string buildOrganization = null;
             syntax.DefineParameter(
                 "build-organization",
                 ref buildOrganization,
-                "The name of the Azure DevOps organization where builds are queued.");
+                "Azure DevOps organization for queuing builds");
             BuildOrganization = buildOrganization;
 
             string buildProject = null;
             syntax.DefineParameter(
                 "build-project",
                 ref buildProject,
-                "The name of the Azure DevOps project where builds are queued.");
+                "Azure DevOps project for queuing builds");
             BuildProject = buildProject;
         }
     }

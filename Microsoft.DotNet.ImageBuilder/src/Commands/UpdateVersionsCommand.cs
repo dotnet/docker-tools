@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
@@ -30,23 +29,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
-                GitHubProject project = new GitHubProject(Options.GitOptions.Repo, Options.GitOptions.Owner);
-                GitHubBranch branch = new GitHubBranch(Options.GitOptions.Branch, project);
-                GitObject[] gitObjects = await GetUpdatedVerionInfo(client, branch);
-
-                if (gitObjects.Any())
+                await GitHelper.PushChangesAsync(client, Options.GitOptions, "Update Docker image digests", async branch =>
                 {
-                    string masterRef = $"heads/{Options.GitOptions.Branch}";
-                    GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
-                    string masterSha = currentMaster.Object.Sha;
-                    GitTree tree = await client.PostTreeAsync(project, masterSha, gitObjects);
-                    string commitMessage = "Update Docker image digests";
-                    GitCommit commit = await client.PostCommitAsync(
-                        project, commitMessage, tree.Sha, new[] { masterSha });
-
-                    // Only fast-forward. Don't overwrite other changes: throw exception instead.
-                    await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
-                }
+                    return await GetUpdatedVerionInfo(client, branch);
+                });
             });
         }
 

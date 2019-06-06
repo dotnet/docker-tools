@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter(
                 "source-image-info-folder-path",
                 ref sourceImageInfoFolderPath,
-                "Path to the folder where one or more local image info files are stored and are to be merged into GitHub.");
+                "Folder path containing image info files");
             SourceImageInfoFolderPath = sourceImageInfoFolderPath;
         }
     }

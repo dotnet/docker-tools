@@ -9,10 +9,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GitOptions
     {
-        private readonly string defaultOwner;
-        private readonly string defaultRepo;
-        private readonly string defaultBranch;
-        private readonly string defaultPath;
+        private string owner;
+        private string repo;
+        private string branch;
+        private string path;
 
         public string AuthToken { get; set; }
         public string Branch { get; set; }
@@ -24,40 +24,36 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptions(string defaultOwner, string defaultRepo, string defaultBranch, string defaultPath)
         {
-            this.defaultOwner = defaultOwner ?? throw new ArgumentNullException(nameof(defaultOwner));
-            this.defaultRepo = defaultRepo ?? throw new ArgumentNullException(nameof(defaultRepo));
-            this.defaultBranch = defaultBranch ?? throw new ArgumentNullException(nameof(defaultBranch));
-            this.defaultPath = defaultPath ?? throw new ArgumentNullException(nameof(defaultPath));
+            this.owner = defaultOwner ?? throw new ArgumentNullException(nameof(defaultOwner));
+            this.repo = defaultRepo ?? throw new ArgumentNullException(nameof(defaultRepo));
+            this.branch = defaultBranch ?? throw new ArgumentNullException(nameof(defaultBranch));
+            this.path = defaultPath ?? throw new ArgumentNullException(nameof(defaultPath));
         }
 
         public void ParseCommandLine(ArgumentSyntax syntax)
         {
-            string branch = this.defaultBranch;
             syntax.DefineOption(
                 "git-branch",
                 ref branch,
-                $"GitHub branch to write to (defaults to {this.defaultBranch})");
+                $"GitHub branch to write to (defaults to {this.branch})");
             Branch = branch;
 
-            string owner = this.defaultOwner;
             syntax.DefineOption(
                 "git-owner",
                 ref owner,
-                $"Owner of the GitHub repo to write to (defaults to {this.defaultOwner})");
+                $"Owner of the GitHub repo to write to (defaults to {this.owner})");
             Owner = owner;
 
-            string path = this.defaultPath;
             syntax.DefineOption(
                 "git-path",
                 ref path,
-                $"Path within the GitHub repo to write to (defaults to {this.defaultPath})");
+                $"Path within the GitHub repo to write to (defaults to {this.path})");
             Path = path;
 
-            string repo = this.defaultRepo;
             syntax.DefineOption(
                 "git-repo",
                 ref repo,
-                $"GitHub repo to write to (defaults to {this.defaultRepo})");
+                $"GitHub repo to write to (defaults to {this.repo})");
             Repo = repo;
 
             string username = null;

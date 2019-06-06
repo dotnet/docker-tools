@@ -10,7 +10,8 @@
     <PackageReference Include="ILLink.Tasks" Version="0.1.5-preview-1461378" />
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.22.0" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="3.0.0-preview1-03623-01" />
-    <PackageReference Include="Newtonsoft.Json" Version="10.0.3"/>
-    <PackageReference Include="System.CommandLine" Version="0.1.0-e170603-2"/>
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.143.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
+    <PackageReference Include="System.CommandLine" Version="0.1.0-e170603-2" />
   </ItemGroup>
 </Project>

@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ValidateImageSizeOptions : Options, IFilterableOptions
+    public class ValidateImageSizeOptions : ManifestOptions, IFilterableOptions
     {
         protected override string CommandHelp => "Validates the size of the images against a baseline";
 

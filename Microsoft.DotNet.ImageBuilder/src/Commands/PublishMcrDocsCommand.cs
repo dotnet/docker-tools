@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
@@ -15,11 +14,10 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishMcrDocsCommand : Command<PublishMcrDocsOptions>
+    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
     {
-        private const int MaxTries = 10;
         private const string McrTagsPlaceholder = "Tags go here.";
-        private const int RetryMillisecondsDelay = 5000;
+        
 
         public PublishMcrDocsCommand() : base()
         {
@@ -34,43 +32,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string productRepo = GetProductRepo();
 
-            GitHubAuth githubAuth = new GitHubAuth(Options.GitAuthToken, Options.GitUsername, Options.GitEmail);
-            using (GitHubClient client = new GitHubClient(githubAuth))
+            await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
-                for (int i = 0; i < MaxTries; i++)
+                await GitHelper.PushChangesAsync(client, Options.GitOptions, $"Mirroring {productRepo} readmes", async branch =>
                 {
-                    try
-                    {
-                        GitHubProject project = new GitHubProject(Options.GitRepo, Options.GitOwner);
-                        GitHubBranch branch = new GitHubBranch(Options.GitBranch, project);
-                        GitObject[] gitObjects = (await GetUpdatedReadmes(productRepo, client, branch))
-                            .Concat(await GetUpdatedTagsMetadata(productRepo, client, branch))
-                            .ToArray();
-
-                        if (gitObjects.Any())
-                        {
-                            string masterRef = $"heads/{Options.GitBranch}";
-                            GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
-                            string masterSha = currentMaster.Object.Sha;
-                            GitTree tree = await client.PostTreeAsync(project, masterSha, gitObjects);
-                            string commitMessage = $"Mirroring {productRepo} readmes";
-                            GitCommit commit = await client.PostCommitAsync(
-                                project, commitMessage, tree.Sha, new[] { masterSha });
-
-                            // Only fast-forward. Don't overwrite other changes: throw exception instead.
-                            await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
-                        }
-
-                        break;
-                    }
-                    catch (HttpRequestException ex) when (i < (MaxTries - 1))
-                    {
-                        Logger.WriteMessage($"Encountered exception publishing readmes: {ex.Message}");
-                        Logger.WriteMessage($"Trying again in {RetryMillisecondsDelay}ms. {MaxTries - i - 1} tries left.");
-                        await Task.Delay(RetryMillisecondsDelay);
-                    }
-                }
-            }
+                    return (await GetUpdatedReadmes(productRepo, client, branch))
+                        .Concat(await GetUpdatedTagsMetadata(productRepo, client, branch));
+                });
+            });
         }
 
         private async Task AddUpdatedFile(
@@ -81,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string filePath,
             string updatedContent)
         {
-            string gitPath = string.Join('/', Options.GitPath, repo, filePath);
+            string gitPath = string.Join('/', Options.GitOptions.Path, repo, filePath);
             string currentContent = await client.GetGitHubFileContentsAsync(gitPath, branch);
 
             if (currentContent == updatedContent)

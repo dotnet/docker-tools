@@ -4,7 +4,7 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Model
+namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {
     public class Repo
     {

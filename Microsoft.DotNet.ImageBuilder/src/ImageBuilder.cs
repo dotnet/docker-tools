@@ -22,8 +22,10 @@ namespace Microsoft.DotNet.ImageBuilder
                     new CopyAcrImagesCommand(),
                     new GenerateBuildMatrixCommand(),
                     new GenerateTagsReadmeCommand(),
+                    new PublishImageInfoCommand(),
                     new PublishManifestCommand(),
                     new PublishMcrDocsCommand(),
+                    new RebuildStaleImagesCommand(),
                     new UpdateVersionsCommand(),
                     new ValidateImageSizeCommand(),
                 };
@@ -53,7 +55,11 @@ namespace Microsoft.DotNet.ImageBuilder
                     ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
 
                     ICommand command = commands.Single(c => c.Options == argSyntax.ActiveCommand.Value);
-                    command.LoadManifest();
+                    if (command is IManifestCommand manifestCommand)
+                    {
+                        manifestCommand.LoadManifest();
+                    }
+                    
                     command.ExecuteAsync().Wait();
                 }
             }

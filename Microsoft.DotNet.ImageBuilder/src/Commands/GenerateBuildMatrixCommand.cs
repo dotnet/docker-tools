@@ -6,12 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateBuildMatrixCommand : Command<GenerateBuildMatrixOptions>
+    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
     {
         private readonly static char[] s_pathSeparators = { '/', '\\' };
 
@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 matrix.Legs.Add(leg);
 
                 AddImageBuilderPathsVariable(dockerfilePaths, leg);
-                AddPlatformVariables(platformGrouping, leg);
+                AddCommonVariables(platformGrouping, leg);
             }
         }
 
@@ -80,13 +80,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)
         {
             string pathArgs = dockerfilePaths
-                .Select(path => $"--path {path}")
+                .Select(path => $"{ManifestFilterOptions.FormattedPathOption} {path}")
                 .Aggregate((working, next) => $"{working} {next}");
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
 
-        private static void AddPlatformVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, LegInfo leg)
+        private static void AddCommonVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, LegInfo leg)
         {
+            string fullyQualifiedLegName =
+                (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) +
+                platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant) +
+                leg.Name;
+
+            leg.Variables.Add(("legName", fullyQualifiedLegName));
             leg.Variables.Add(("osType", platformGrouping.Key.OS.GetDockerName()));
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
             leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
@@ -106,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 LegInfo leg = new LegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
                 matrix.Legs.Add(leg);
 
-                AddPlatformVariables(platformGrouping, leg);
+                AddCommonVariables(platformGrouping, leg);
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
 

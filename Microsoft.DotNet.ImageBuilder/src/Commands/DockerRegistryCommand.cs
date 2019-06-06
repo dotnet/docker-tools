@@ -6,7 +6,7 @@ using System;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class DockerRegistryCommand<TOptions> : Command<TOptions>
+    public abstract class DockerRegistryCommand<TOptions> : ManifestCommand<TOptions>
         where TOptions : DockerRegistryOptions, new()
     {
         protected void ExecuteWithUser(Action action)

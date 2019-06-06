@@ -5,19 +5,16 @@
 using System.Collections.Generic;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Model
+namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {
-    public class Manifest
+    public class Image
     {
-        public string ReadmePath { get; set; }
-        public string Registry { get; set; }
-
         [JsonProperty(Required = Required.Always)]
-        public Repo[] Repos { get; set; }
+        public Platform[] Platforms { get; set; }
 
-        public IDictionary<string, string> Variables { get; set; }
+        public IDictionary<string, Tag> SharedTags { get; set; }
 
-        public Manifest()
+        public Image()
         {
         }
     }

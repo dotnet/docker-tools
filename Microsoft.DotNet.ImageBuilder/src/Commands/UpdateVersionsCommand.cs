@@ -5,19 +5,15 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateVersionsCommand : Command<UpdateVersionsOptions>
+    public class UpdateVersionsCommand : ManifestCommand<UpdateVersionsOptions>
     {
-        private const int MaxTries = 10;
-        private const int RetryMillisecondsDelay = 5000;
-
         public UpdateVersionsCommand() : base()
         {
         }
@@ -31,41 +27,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             DockerHelper.PullBaseImages(Manifest, Options);
 
-            GitHubAuth githubAuth = new GitHubAuth(Options.GitAuthToken, Options.GitUsername, Options.GitEmail);
-            using (GitHubClient client = new GitHubClient(githubAuth))
+            await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
-                for (int i = 0; i < MaxTries; i++)
+                await GitHelper.PushChangesAsync(client, Options.GitOptions, "Update Docker image digests", async branch =>
                 {
-                    try
-                    {
-                        GitHubProject project = new GitHubProject(Options.GitRepo, Options.GitOwner);
-                        GitHubBranch branch = new GitHubBranch(Options.GitBranch, project);
-                        GitObject[] gitObjects = await GetUpdatedVerionInfo(client, branch);
-
-                        if (gitObjects.Any())
-                        {
-                            string masterRef = $"heads/{Options.GitBranch}";
-                            GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
-                            string masterSha = currentMaster.Object.Sha;
-                            GitTree tree = await client.PostTreeAsync(project, masterSha, gitObjects);
-                            string commitMessage = "Update Docker image digests";
-                            GitCommit commit = await client.PostCommitAsync(
-                                project, commitMessage, tree.Sha, new[] { masterSha });
-
-                            // Only fast-forward. Don't overwrite other changes: throw exception instead.
-                            await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
-                        }
-
-                        break;
-                    }
-                    catch (HttpRequestException ex) when (i < (MaxTries - 1))
-                    {
-                        Logger.WriteMessage($"Encountered exception committing build-info update: {ex.Message}");
-                        Logger.WriteMessage($"Trying again in {RetryMillisecondsDelay}ms. {MaxTries - i - 1} tries left.");
-                        await Task.Delay(RetryMillisecondsDelay);
-                    }
-                }
-            }
+                    return await GetUpdatedVerionInfo(client, branch);
+                });
+            });
         }
 
         private async Task<GitObject[]> GetUpdatedVerionInfo(GitHubClient client, GitHubBranch branch)
@@ -75,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (string fromImage in Manifest.GetExternalFromImages())
             {
                 string currentDigest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
-                string versionFile = $"{Options.GitPath}/{fromImage.Replace(':', '/')}.txt";
+                string versionFile = $"{Options.GitOptions.Path}/{fromImage.Replace(':', '/')}.txt";
                 string lastDigest = await client.GetGitHubFileContentsAsync(versionFile, branch);
 
                 if (lastDigest == currentDigest)

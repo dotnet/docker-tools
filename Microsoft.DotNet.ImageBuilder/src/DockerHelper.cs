@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static void PullBaseImages(ManifestInfo manifest, Options options)
+        public static void PullBaseImages(ManifestInfo manifest, ManifestOptions options)
         {
             Logger.WriteHeading("PULLING LATEST BASE IMAGES");
             IEnumerable<string> baseImages = manifest.GetExternalFromImages().ToArray();

@@ -8,7 +8,7 @@ using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateBuildMatrixOptions : Options, IFilterableOptions
+    public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     {
         protected override string CommandHelp => "Generate the VSTS build matrix for building the images";
 

@@ -2,15 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ManifestFilterOptions
     {
+        public const string PathOptionName = "path";
+        public const string FormattedPathOption = "--" + PathOptionName;
+
         public string Architecture { get; set; }
         public string OsType { get; set; }
         public string OsVersion { get; set; }
@@ -41,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IReadOnlyList<string> paths = Array.Empty<string>();
             syntax.DefineOptionList(
-                "path",
+                PathOptionName,
                 ref paths,
                 "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
             Paths = paths;

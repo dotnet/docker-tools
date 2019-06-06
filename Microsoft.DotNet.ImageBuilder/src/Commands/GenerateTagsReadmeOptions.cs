@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateTagsReadmeOptions : Options
+    public class GenerateTagsReadmeOptions : ManifestOptions
     {
         protected override string CommandHelp => "Generates and updates the readme tag listing section";
 

@@ -1,9 +1,6 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
-namespace Microsoft.DotNet.ImageBuilder.Model
+namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {
     public class CustomBuildLegGrouping
     {

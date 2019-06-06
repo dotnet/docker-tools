@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Model;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -36,8 +36,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             string registry,
             string modelRegistryName,
             ManifestFilter manifestFilter,
-            IOptionsInfo options,
-            VariableHelper variableHelper)
+            IManifestOptionsInfo options,
+            VariableHelper variableHelper,
+            string baseDirectory)
         {
             RepoInfo repoInfo = new RepoInfo();
             repoInfo.Model = model;
@@ -55,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             repoInfo.AllImages = model.Images
-                .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.Name, manifestFilter, variableHelper))
+                .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.Name, manifestFilter, variableHelper, baseDirectory))
                 .ToArray();
 
             repoInfo.FilteredImages = repoInfo.AllImages

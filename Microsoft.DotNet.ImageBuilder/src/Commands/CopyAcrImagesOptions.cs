@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyAcrImagesOptions : Options, IFilterableOptions
+    public class CopyAcrImagesOptions : ManifestOptions, IFilterableOptions
     {
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
 

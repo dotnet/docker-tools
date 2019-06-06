@@ -6,6 +6,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public interface IOptionsInfo
     {
+        bool IsVerbose { get; }
         string GetOption(string name);
     }
 }

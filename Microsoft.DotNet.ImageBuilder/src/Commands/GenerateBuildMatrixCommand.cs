@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.ManifestModel;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)
         {
             string pathArgs = dockerfilePaths
-                .Select(path => $"--path {path}")
+                .Select(path => $"{ManifestFilterOptions.FormattedPathOption} {path}")
                 .Aggregate((working, next) => $"{working} {next}");
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }

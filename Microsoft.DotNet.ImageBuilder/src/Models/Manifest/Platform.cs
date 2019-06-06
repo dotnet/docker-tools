@@ -8,7 +8,7 @@ using System.ComponentModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-namespace Microsoft.DotNet.ImageBuilder.ManifestModel
+namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {
     public class Platform
     {

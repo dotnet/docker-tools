@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -14,17 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public void LoadManifest()
         {
-            Logger.WriteHeading("READING MANIFEST");
-
-            Manifest = ManifestInfo.Create(
-                Options.Manifest,
-                Options.GetManifestFilter(),
-                Options);
-
-            if (Options.IsVerbose)
-            {
-                Logger.WriteMessage(JsonConvert.SerializeObject(Manifest, Formatting.Indented));
-            }
+            Manifest = ManifestInfo.Load(Options);
         }
     }
 }

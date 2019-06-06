@@ -7,69 +7,62 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.ImageModel;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateImageDataCommand : Command<UpdateImageDataOptions>
+    public class PublishImageInfoCommand : Command<PublishImageInfoOptions>
     {
         public override async Task ExecuteAsync()
         {
-            List<RepoData[]> srcReposList = new List<RepoData[]>();
-            
-            foreach (string sourceImageDataPath in Directory.EnumerateFiles(Options.SourceImageDataFolderPath, "*.json", SearchOption.AllDirectories))
-            {
-                string srcImageDataContents = File.ReadAllText(sourceImageDataPath);
-                RepoData[] srcRepos = JsonConvert.DeserializeObject<RepoData[]>(srcImageDataContents);
-                srcReposList.Add(srcRepos);
-            }
+            List<RepoData[]> srcReposList = Directory.EnumerateFiles(Options.SourceImageInfoFolderPath, "*.json", SearchOption.AllDirectories)
+                .Select(imageDataPath => JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(imageDataPath)))
+                .ToList();
 
-            GitHubAuth githubAuth = new GitHubAuth(Options.GitAuthToken, Options.GitUsername, Options.GitEmail);
-            using (GitHubClient client = new GitHubClient(githubAuth))
+            await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
-                GitHubProject project = new GitHubProject(Options.GitRepo, Options.GitOwner);
-                GitHubBranch branch = new GitHubBranch(Options.GitBranch, project);
+                GitHubProject project = new GitHubProject(Options.GitOptions.Repo, Options.GitOptions.Owner);
+                GitHubBranch branch = new GitHubBranch(Options.GitOptions.Branch, project);
 
-                string originalTargetImageDataContents = await client.GetGitHubFileContentsAsync(Options.GitImageDataPath, branch);
-                List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageDataContents).ToList();
+                string originalTargetImageInfoContents = await client.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
+                List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
 
                 foreach (RepoData[] srcRepos in srcReposList)
                 {
                     MergeRepos(srcRepos, targetRepos);
                 }
 
-                targetRepos = RepoData.SortRepoData(targetRepos);
+                string newTargetImageInfoContents = JsonHelper.SerializeObject(targetRepos.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
 
-                string newTargetImageDataContents = JsonHelper.SerializeObject(targetRepos.ToArray()) + Environment.NewLine;
-
-                if (originalTargetImageDataContents != newTargetImageDataContents)
+                if (originalTargetImageInfoContents != newTargetImageInfoContents)
                 {
-                    GitObject imageDataGitObject = new GitObject
+                    GitObject imageInfoGitObject = new GitObject
                     {
-                        Path = Options.GitImageDataPath,
+                        Path = Options.GitOptions.Path,
                         Type = GitObject.TypeBlob,
                         Mode = GitObject.ModeFile,
-                        Content = newTargetImageDataContents
+                        Content = newTargetImageInfoContents
                     };
 
-                    string masterRef = $"heads/{Options.GitBranch}";
+                    string masterRef = $"heads/{Options.GitOptions.Branch}";
                     GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
                     string masterSha = currentMaster.Object.Sha;
-                    GitTree tree = await client.PostTreeAsync(project, masterSha, new GitObject[] { imageDataGitObject });
+                    GitTree tree = await client.PostTreeAsync(project, masterSha, new GitObject[] { imageInfoGitObject });
 
-                    GitCommit commit = await client.PostCommitAsync(project, "Merging image data updates from build.", tree.Sha, new[] { masterSha });
+                    GitCommit commit = await client.PostCommitAsync(project, "Merging image info updates from build.", tree.Sha, new[] { masterSha });
 
                     // Only fast-forward. Don't overwrite other changes: throw exception instead.
                     await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
                 }
                 else
                 {
-                    Logger.WriteMessage("No image data differences were found.");
+                    Logger.WriteMessage("No image info differences were found.");
                 }
-            }
+            });
         }
 
         private void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos)
@@ -97,7 +90,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (srcRepo.Images.Any() && targetRepo.Images == null)
             {
-                targetRepo.Images = new Dictionary<string, ImageData>();
+                targetRepo.Images = srcRepo.Images;
+                return;
             }
 
             foreach (KeyValuePair<string, ImageData> srcKvp in srcRepo.Images)
@@ -115,19 +109,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void MergeDigests(ImageData srcImage, ImageData targetImage)
         {
-            if (srcImage.BaseImageDigests == null)
+            if (srcImage.BaseImages == null)
             {
                 return;
             }
 
-            if (srcImage.BaseImageDigests.Any() && targetImage == null)
+            if (srcImage.BaseImages.Any() && targetImage.BaseImages == null)
             {
-                targetImage.BaseImageDigests = new Dictionary<string, string>();
+                targetImage.BaseImages = srcImage.BaseImages;
+                return;
             }
 
-            foreach (KeyValuePair<string, string> srcKvp in srcImage.BaseImageDigests)
+            foreach (KeyValuePair<string, string> srcKvp in srcImage.BaseImages)
             {
-                targetImage.BaseImageDigests[srcKvp.Key] = srcKvp.Value;
+                targetImage.BaseImages[srcKvp.Key] = srcKvp.Value;
             }
         }
     }

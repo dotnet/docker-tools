@@ -11,7 +11,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.ImageModel;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 };
                 reposList.Add(repoData);
 
-                Dictionary<string, ImageData> images = new Dictionary<string, ImageData>();
+                SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
@@ -105,10 +105,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             }
                         }
 
-                        Dictionary<string, string> baseImageDigests = GetBaseImageDigests(platform);
+                        SortedDictionary<string, string> baseImageDigests = GetBaseImageDigests(platform);
                         if (baseImageDigests.Any())
                         {
-                            imageData.BaseImageDigests = baseImageDigests;
+                            imageData.BaseImages = baseImageDigests;
                         }
                     }
                 }
@@ -121,24 +121,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             BuiltTags = BuiltTags.ToArray();
 
-            reposList = RepoData.SortRepoData(reposList);
-            string digestsString = JsonHelper.SerializeObject(reposList.ToArray());
-            File.WriteAllText(Options.ImageDataOutputPath, digestsString);
+            string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
+            File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
         }
 
-        private Dictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
+        private SortedDictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
         {
-            Dictionary<string, string> baseImageDigestMappings = new Dictionary<string, string>();
+            SortedDictionary<string, string> baseImageDigestMappings = new SortedDictionary<string, string>();
             foreach (string fromImage in platform.ExternalFromImages)
             {
                 string digest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
                 baseImageDigestMappings[fromImage] = digest;
-            }
-
-            Dictionary<string, string> digests = new Dictionary<string, string>();
-            foreach (KeyValuePair<string, string> baseImageDigestMapping in baseImageDigestMappings)
-            {
-                digests.Add(baseImageDigestMapping.Key, baseImageDigestMapping.Value);
             }
 
             return baseImageDigestMappings;

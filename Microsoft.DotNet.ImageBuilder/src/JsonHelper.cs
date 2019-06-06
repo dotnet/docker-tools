@@ -7,7 +7,7 @@ using Newtonsoft.Json.Serialization;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    internal static class JsonHelper
+    public static class JsonHelper
     {
         public static string SerializeObject(object value)
         {

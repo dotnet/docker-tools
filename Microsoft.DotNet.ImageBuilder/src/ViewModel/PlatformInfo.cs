@@ -8,7 +8,7 @@ using System.Collections.Immutable;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Microsoft.DotNet.ImageBuilder.ManifestModel;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {

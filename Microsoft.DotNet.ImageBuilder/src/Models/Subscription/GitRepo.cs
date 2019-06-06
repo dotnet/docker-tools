@@ -4,9 +4,9 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.SubscriptionsModel
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 {
-    public class GitRepoInfo
+    public class GitRepo
     {
         [JsonProperty(Required = Required.Always)]
         public string Owner { get; set; }

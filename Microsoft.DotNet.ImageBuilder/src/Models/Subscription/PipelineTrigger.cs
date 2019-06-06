@@ -4,7 +4,7 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.SubscriptionsModel
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 {
     public class PipelineTrigger
     {
@@ -12,6 +12,6 @@ namespace Microsoft.DotNet.ImageBuilder.SubscriptionsModel
         public int Id { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string PathArgsName { get; set; }
+        public string PathVariable { get; set; }
     }
 }

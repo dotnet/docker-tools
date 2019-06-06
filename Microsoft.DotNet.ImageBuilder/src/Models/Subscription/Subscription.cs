@@ -4,12 +4,12 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.SubscriptionsModel
+namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 {
     public class Subscription
     {
         [JsonProperty(Required = Required.Always)]
-        public GitRepoInfo RepoInfo { get; set; }
+        public GitRepo RepoInfo { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public string ManifestPath { get; set; }

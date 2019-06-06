@@ -10,8 +10,8 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.ImageModel;
-using Microsoft.DotNet.ImageBuilder.SubscriptionsModel;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -31,12 +31,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
 
-            string imageDataJson = File.ReadAllText(Options.ImageDataPath);
+            string imageDataJson = File.ReadAllText(Options.ImageInfoPath);
             RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(imageDataJson);
 
             try
             {
-                await Task.WhenAll(subscriptions.Select(s => ExecuteBuildForStaleImages(s, repos)));
+                await Task.WhenAll(subscriptions.Select(s => QueueBuildForStaleImages(s, repos)));
             }
             finally
             {
@@ -47,53 +47,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task ExecuteBuildForStaleImages(Subscription subscription, RepoData[] repos)
+        private async Task QueueBuildForStaleImages(Subscription subscription, RepoData[] repos)
         {
             IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
 
-            string pathsStr = String.Join(", ", pathsToRebuild.ToArray());
-            Logger.WriteMessage(
-                $"The following images in subscription '{subscription.ToString()}' were determined to be using out-of-date base images: {pathsStr}");
+            string formattedParameters = pathsToRebuild
+                .Select(path => $"{ManifestFilterOptions.FormattedPathOption} '{path}'")
+                .Aggregate((p1, p2) => $"{p1} {p2}");
 
-            await ExecuteBuild(subscription, pathsToRebuild);
-        }
+            string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedParameters + "\"}";
 
-        private async Task ExecuteBuild(Subscription subscription, IEnumerable<string> pathsToRebuild)
-        {
-            string formattedParameters = String.Join(" ", pathsToRebuild
-                .Select(path => $"--path '{path}'")
-                .ToArray());
+            Logger.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
 
-            string parameters = "{\"" + subscription.PipelineTrigger.PathArgsName + "\": \"" + formattedParameters + "\"}";
+            if (Options.IsDryRun)
+            {
+                return;
+            }
 
             using (VssConnection connection = new VssConnection(
                 new Uri($"https://dev.azure.com/{Options.BuildOrganization}"),
                 new VssBasicCredential(String.Empty, Options.BuildPersonalAccessToken)))
+            using (ProjectHttpClient projectHttpClient = connection.GetClient<ProjectHttpClient>())
+            using (BuildHttpClient client = connection.GetClient<BuildHttpClient>())
             {
-                using (ProjectHttpClient projectHttpClient = connection.GetClient<ProjectHttpClient>())
+                TeamProject project = await projectHttpClient.GetProject(Options.BuildProject);
+
+                Build build = new Build
                 {
-                    TeamProject project = await projectHttpClient.GetProject(Options.BuildProject);
+                    Project = new TeamProjectReference { Id = project.Id },
+                    Definition = new BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
+                    SourceBranch = subscription.RepoInfo.Branch,
+                    Parameters = parameters
+                };
 
-                    Build build = new Build
-                    {
-                        Project = new TeamProjectReference { Id = project.Id },
-                        Definition = new BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
-                        SourceBranch = subscription.RepoInfo.Branch,
-                        Parameters = parameters
-                    };
-
-                    using (BuildHttpClient client = connection.GetClient<BuildHttpClient>())
-                    {
-                        if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
-                        {
-                            Logger.WriteMessage(
-                                $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
-                            return;
-                        }
-
-                        await client.QueueBuildAsync(build);
-                    }
+                if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
+                {
+                    Logger.WriteMessage(
+                        $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
+                    return;
                 }
+
+                await client.QueueBuildAsync(build);
             }
         }
 
@@ -108,10 +102,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string repoPath = await GetGitRepoPath(subscription);
 
-            ManifestInfo manifest = ManifestInfo.Create(
-                Path.Combine(repoPath, subscription.ManifestPath),
-                new ManifestFilter(),
-                new NullManifestOptions());
+            TempManifestOptions manifestOptions = new TempManifestOptions
+            {
+                Manifest = Path.Combine(repoPath, subscription.ManifestPath)
+            };
+
+            ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
 
             List<string> pathsToRebuild = new List<string>();
 
@@ -134,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             DockerHelper.PullImage(fromImage, Options.IsDryRun);
                             string currentDigest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
-                            string lastDigest = imageData.BaseImageDigests?[fromImage];
+                            string lastDigest = imageData.BaseImages?[fromImage];
 
                             if (lastDigest != currentDigest)
                             {
@@ -150,6 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
+                        Logger.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
                         pathsToRebuild.Add(platform.BuildContextPath);
                     }
                 }
@@ -190,7 +187,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return repoPath;
         }
 
-        private class NullManifestOptions : ManifestOptions
+        private class TempManifestOptions : ManifestOptions
         {
             protected override string CommandHelp => throw new NotImplementedException();
         }

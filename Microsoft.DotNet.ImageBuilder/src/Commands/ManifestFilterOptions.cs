@@ -11,6 +11,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ManifestFilterOptions
     {
+        public const string PathOptionName = "path";
+        public const string FormattedPathOption = "--" + PathOptionName;
+
         public string Architecture { get; set; }
         public string OsType { get; set; }
         public string OsVersion { get; set; }
@@ -41,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IReadOnlyList<string> paths = Array.Empty<string>();
             syntax.DefineOptionList(
-                "path",
+                PathOptionName,
                 ref paths,
                 "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
             Paths = paths;

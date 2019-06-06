@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Uses a subscriptions file to determine which images are using out-of-date base images and queues a build to update them.";
 
         public string SubscriptionsPath { get; set; }
-        public string ImageDataPath { get; set; }
+        public string ImageInfoPath { get; set; }
         public string BuildPersonalAccessToken { get; set; }
         public string BuildOrganization { get; set; }
         public string BuildProject { get; set; }
@@ -28,30 +28,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').");
             SubscriptionsPath = subscriptionsPath;
 
-            const string DefaultImageDataPath = "image-data.json";
-            string imageDataPath = DefaultImageDataPath;
+            const string DefaultImageInfoPath = "image-info.json";
+            string imageDataPath = DefaultImageInfoPath;
             syntax.DefineOption(
-                "image-data-path",
+                "image-info-path",
                 ref imageDataPath,
-                $"Path to the file containing image metadata (defaults to '{DefaultImageDataPath}').");
-            ImageDataPath = imageDataPath;
+                $"Path to the file containing image info (defaults to '{DefaultImageInfoPath}').");
+            ImageInfoPath = imageDataPath;
 
             string buildPersonalAccessToken = null;
-            syntax.DefineOption(
+            syntax.DefineParameter(
                 "build-pat",
                 ref buildPersonalAccessToken,
                 "The personal access token used to connect to Azure DevOps for queuing builds.");
             BuildPersonalAccessToken = buildPersonalAccessToken;
 
             string buildOrganization = null;
-            syntax.DefineOption(
+            syntax.DefineParameter(
                 "build-organization",
                 ref buildOrganization,
                 "The name of the Azure DevOps organization where builds are queued.");
             BuildOrganization = buildOrganization;
 
             string buildProject = null;
-            syntax.DefineOption(
+            syntax.DefineParameter(
                 "build-project",
                 ref buildProject,
                 "The name of the Azure DevOps project where builds are queued.");

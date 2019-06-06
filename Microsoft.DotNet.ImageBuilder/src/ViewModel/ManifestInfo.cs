@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.ManifestModel;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
@@ -31,7 +31,24 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        public static ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
+        public static ManifestInfo Load(IManifestOptionsInfo options)
+        {
+            Logger.WriteHeading("READING MANIFEST");
+
+            ManifestInfo manifest = ManifestInfo.Create(
+                options.Manifest,
+                options.GetManifestFilter(),
+                options);
+
+            if (options.IsVerbose)
+            {
+                Logger.WriteMessage(JsonConvert.SerializeObject(manifest, Formatting.Indented));
+            }
+
+            return manifest;
+        }
+
+        private static ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
         {
             string baseDirectory = Path.GetDirectoryName(manifestPath);
             string manifestJson = File.ReadAllText(manifestPath);

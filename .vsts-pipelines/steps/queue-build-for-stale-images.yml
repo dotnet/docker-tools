@@ -1,0 +1,21 @@
+parameters:
+  osType: null
+  imageInfoRepoPath: 'build-info/docker/image-info.json'
+steps:
+  - script: |
+      git clone -n https://github.com/dotnet/versions.git --depth 1
+      cd versions
+      git checkout HEAD ${{parameters.imageInfoRepoPath}}
+    displayName: Download Image Info File
+  - template: ${{ format('init-docker-{0}.yml', parameters.osType) }}
+  - powershell: >
+      $(runImageBuilderCmd)
+      rebuildStaleImages
+      $(System.AccessToken)
+      dnceng
+      internal
+      --image-info-path versions/${{parameters.imageInfoRepoPath}}
+      --subscriptions-path subscriptions.json
+      --os-type ${{parameters.osType}}
+    displayName: Queue Build for Stale Images
+  - template: ${{ format('cleanup-docker-{0}.yml', parameters.osType) }}

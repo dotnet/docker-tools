@@ -6,9 +6,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class RebuildStaleImagesOptions : Options
+    public class RebuildStaleImagesOptions : Options, IFilterableOptions
     {
         protected override string CommandHelp => "Queues builds to update any images with out-of-date base images";
+
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
         public string SubscriptionsPath { get; set; }
         public string ImageInfoPath { get; set; }
@@ -19,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
+
+            FilterOptions.ParseCommandLine(syntax);
 
             const string DefaultSubscriptionsPath = "subscriptions.json";
             string subscriptionsPath = DefaultSubscriptionsPath;

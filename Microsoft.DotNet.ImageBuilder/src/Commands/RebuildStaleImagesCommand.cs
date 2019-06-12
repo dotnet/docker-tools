@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!pathsToRebuild.Any())
             {
-                Logger.WriteMessage($"All images for subscription {subscription} are using up-to-date base images. No rebuild necessary.");
+                Logger.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
                 return;
             }
 

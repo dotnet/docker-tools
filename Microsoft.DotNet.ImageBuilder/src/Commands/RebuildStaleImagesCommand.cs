@@ -51,6 +51,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
 
+            if (!pathsToRebuild.Any())
+            {
+                Logger.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
+                return;
+            }
+
             string formattedParameters = pathsToRebuild
                 .Select(path => $"{ManifestFilterOptions.FormattedPathOption} '{path}'")
                 .Aggregate((p1, p2) => $"{p1} {p2}");
@@ -102,7 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string repoPath = await GetGitRepoPath(subscription);
 
-            TempManifestOptions manifestOptions = new TempManifestOptions
+            TempManifestOptions manifestOptions = new TempManifestOptions(Options.FilterOptions)
             {
                 Manifest = Path.Combine(repoPath, subscription.ManifestPath)
             };
@@ -111,10 +117,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<string> pathsToRebuild = new List<string>();
 
-            foreach (RepoInfo repo in manifest.AllRepos)
+            foreach (RepoInfo repo in manifest.FilteredRepos)
             {
-                IEnumerable<PlatformInfo> platforms = repo.AllImages
-                    .SelectMany(image => image.AllPlatforms);
+                IEnumerable<PlatformInfo> platforms = repo.FilteredImages
+                    .SelectMany(image => image.FilteredPlatforms);
 
                 RepoData repoData = repos
                     .FirstOrDefault(s => s.Repo == repo.Model.Name);
@@ -187,8 +193,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return repoPath;
         }
 
-        private class TempManifestOptions : ManifestOptions
+        private class TempManifestOptions : ManifestOptions, IFilterableOptions
         {
+            public TempManifestOptions(ManifestFilterOptions filterOptions)
+            {
+                FilterOptions = filterOptions;
+            }
+
+            public ManifestFilterOptions FilterOptions { get; }
+
             protected override string CommandHelp => throw new NotImplementedException();
         }
     }

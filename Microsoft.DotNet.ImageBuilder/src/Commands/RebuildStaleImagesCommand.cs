@@ -42,7 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 foreach (string repoPath in gitRepoIdToPathMapping.Values)
                 {
-                    Directory.Delete(repoPath, true);
+                    // The path to the repo is stored inside a zip extraction folder so be sure to delete that
+                    // zip extraction folder, not just the inner repo folder.
+                    Directory.Delete(new DirectoryInfo(repoPath).Parent.FullName, true);
                 }
             }
         }
@@ -172,16 +174,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     using (HttpClient client = new HttpClient())
                     {
+                        string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
                         string repoContentsUrl =
                             $"https://www.github.com/{sub.RepoInfo.Owner}/{sub.RepoInfo.Name}/archive/{sub.RepoInfo.Branch}.zip";
                         string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
                         File.WriteAllBytes(zipPath, await client.GetByteArrayAsync(repoContentsUrl));
 
-                        string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-                        ZipFile.ExtractToDirectory(zipPath, extractPath);
-                        File.Delete(zipPath);
+                        try
+                        {
+                            ZipFile.ExtractToDirectory(zipPath, extractPath);
+                        }
+                        finally
+                        {
+                            File.Delete(zipPath);
+                        }
 
                         repoPath = Path.Combine(extractPath, $"{sub.RepoInfo.Name}-{sub.RepoInfo.Branch}");
+                        this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
                     }
                 }
             }

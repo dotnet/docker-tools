@@ -1,0 +1,14 @@
+[
+  {
+    "repoInfo": {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "nightly"
+    },
+    "manifestPath": "manifest.json",
+    "pipelineTrigger": {
+      "id": 359,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
+  }
+]

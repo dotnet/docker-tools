@@ -1,0 +1,19 @@
+parameters:
+  osType: null
+steps:
+  - script: >
+      curl -SLo image-info.json
+      https://raw.githubusercontent.com/dotnet/versions/master/build-info/docker/image-info.json
+    displayName: Download Image Info File
+  - template: ${{ format('init-docker-{0}.yml', parameters.osType) }}
+  - powershell: >
+      $(runImageBuilderCmd)
+      rebuildStaleImages
+      $(System.AccessToken)
+      dnceng
+      internal
+      --image-info-path image-info.json
+      --subscriptions-path subscriptions.json
+      --os-type ${{parameters.osType}}
+    displayName: Queue Build for Stale Images
+  - template: ${{ format('cleanup-docker-{0}.yml', parameters.osType) }}

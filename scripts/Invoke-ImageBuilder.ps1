@@ -23,14 +23,9 @@ The ScriptBlock is passed the following argument values:
 #>
 [cmdletbinding()]
 param(
-    [string]
-    $ImageBuilderArgs,
-
-    [switch]
-    $ReuseImageBuilderImage,
-
-    [scriptblock]
-    $OnCommandExecuted
+    [string]$ImageBuilderArgs,
+    [switch]$ReuseImageBuilderImage,
+    [scriptblock]$OnCommandExecuted
 )
 
 Set-StrictMode -Version Latest

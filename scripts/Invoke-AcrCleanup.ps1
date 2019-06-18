@@ -61,3 +61,4 @@ foreach ($deletedRepo in $deletedRepos) {
 
 Write-Host ""
 Write-Host "Total repositories deleted: $($deletedRepos.Count)"
+Write-Host "Total repositories remaining: $($repos.Count - $deletedRepos.Count)"

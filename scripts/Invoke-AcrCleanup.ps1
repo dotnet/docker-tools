@@ -42,7 +42,7 @@ foreach ($repoName in $filteredRepos) {
     if ($lastUpdateTime.AddDays(30) -lt (Get-Date)) {
         Write-Host "Deleting repository '$repoName'"
         if (-not $WhatIf) {
-            az acr repository delete --name $RegistryName --repository $repoName    
+            az acr repository delete --name $RegistryName --repository $repoName -y
         }
 
         $deletedRepos += $repoName

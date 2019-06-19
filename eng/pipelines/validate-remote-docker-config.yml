@@ -15,7 +15,7 @@ jobs:
   workspace:
     clean: all
   variables:
-  - template: variables/docker-images.yml
+  - template: templates/variables/common.yml
   - name: remoteDockerRunCmd
     value:
       docker run

@@ -10,7 +10,7 @@ jobs:
   pool: Hosted Ubuntu 1604
   steps:
   - powershell: >
-      $(Build.Repository.LocalPath)/scripts/Invoke-AcrCleanup.ps1 `
+      $(Build.Repository.LocalPath)/eng/Invoke-AcrCleanup.ps1 `
       -RegistryName $(acr.server) `
       -SubscriptionId $(acr.subscription) `
       -ServicePrincipalName $(acr.servicePrincipalName) `

@@ -4,6 +4,6 @@ pr:
 trigger: none
 
 jobs:
-- template: jobs/build-image-builder.yml
+- template: templates/jobs/build-image-builder.yml
   parameters:
     publishImages: false

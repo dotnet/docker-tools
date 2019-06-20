@@ -1,2 +1,2 @@
 variables:
-- template: ../../common/templates/variables/docker-images.yml
+- template: ../../common/templates/variables/common.yml

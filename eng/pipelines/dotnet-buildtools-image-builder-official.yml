@@ -10,6 +10,6 @@ variables:
 - group: DotNet-Docker-Secrets
 
 jobs:
-- template: jobs/build-image-builder.yml
+- template: templates/jobs/build-image-builder.yml
   parameters:
     publishImages: true

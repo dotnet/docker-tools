@@ -1,0 +1,2 @@
+variables:
+- template: ../../common/templates/variables/common.yml

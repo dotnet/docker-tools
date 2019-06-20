@@ -2,13 +2,13 @@ trigger: none
 pr: none
 
 variables:
-- template: variables/docker-images.yml
+- template: templates/variables/common.yml
 
 jobs:
 - job: Build_Linux
   pool: Hosted Ubuntu 1604
   steps:
-  - template: steps/queue-build-for-stale-images.yml
+  - template: templates/steps/queue-build-for-stale-images.yml
     parameters:
       osType: linux
 - job: Build_Windows
@@ -19,6 +19,6 @@ jobs:
   # Sequentially execute the jobs to avoid race condition and having multiple builds getting queued
   dependsOn: Build_Linux
   steps:
-  - template: steps/queue-build-for-stale-images.yml
+  - template: templates/steps/queue-build-for-stale-images.yml
     parameters:
       osType: windows

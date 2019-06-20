@@ -13,7 +13,7 @@ steps:
       dnceng
       internal
       --image-info-path image-info.json
-      --subscriptions-path subscriptions.json
+      --subscriptions-path $(engPath)/check-base-image-subscriptions.json
       --os-type ${{parameters.osType}}
     displayName: Queue Build for Stale Images
   - template: ${{ format('cleanup-docker-{0}.yml', parameters.osType) }}

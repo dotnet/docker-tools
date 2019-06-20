@@ -103,6 +103,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     displayName = "Debian 10";
                 }
+                else if (os.Contains("debian"))
+                {
+                    displayName = "Debian";
+                }
+                else if (os.Contains("trusty"))
+                {
+                    displayName = "Ubuntu 14.04";
+                }
+                else if (os.Contains("xenial"))
+                {
+                    displayName = "Ubuntu 16.04";
+                }
                 else if (os.Contains("bionic"))
                 {
                     displayName = "Ubuntu 18.04";
@@ -113,13 +125,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 else if (os.Contains("alpine"))
                 {
-                    int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
-                    if (versionIndex != -1)
-                    {
-                        os = os.Insert(versionIndex, " ");
-                    }
-
-                    displayName = os.FirstCharToUpper();
+                    displayName = "Alpine " + GetVersionNumber(os);
+                }
+                else if (os.Contains("centos"))
+                {
+                    displayName = "CentOS " + GetVersionNumber(os);
+                }
+                else if (os.Contains("fedora"))
+                {
+                    displayName = "Fedora " + GetVersionNumber(os);
+                }
+                else if (os.Contains("opensuse"))
+                {
+                    displayName = "openSUSE " + GetVersionNumber(os);
                 }
                 else
                 {
@@ -128,6 +146,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return displayName;
+        }
+
+        private static string GetVersionNumber(string os)
+        {
+            int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
+            if (versionIndex != -1)
+            {
+                return os.Substring(versionIndex);
+            }
+
+            return os;
         }
 
         private static string GetRepoYaml(RepoInfo repo)

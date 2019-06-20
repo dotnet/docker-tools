@@ -5,7 +5,7 @@ steps:
       curl -SLo image-info.json
       https://raw.githubusercontent.com/dotnet/versions/master/build-info/docker/image-info.json
     displayName: Download Image Info File
-  - template: ${{ format('init-docker-{0}.yml', parameters.osType) }}
+  - template: ${{ format('../../../common/templates/steps/init-docker-{0}.yml', parameters.osType) }}
   - powershell: >
       $(runImageBuilderCmd)
       rebuildStaleImages
@@ -13,7 +13,7 @@ steps:
       dnceng
       internal
       --image-info-path image-info.json
-      --subscriptions-path $(engPath)/check-base-image-subscriptions.json
+      --subscriptions-path eng/check-base-image-subscriptions.json
       --os-type ${{parameters.osType}}
     displayName: Queue Build for Stale Images
-  - template: ${{ format('cleanup-docker-{0}.yml', parameters.osType) }}
+  - template: ${{ format('../../../common/templates/steps/cleanup-docker-{0}.yml', parameters.osType) }}

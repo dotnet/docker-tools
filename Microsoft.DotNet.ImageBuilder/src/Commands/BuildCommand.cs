@@ -121,8 +121,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             BuiltTags = BuiltTags.ToArray();
 
-            string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
-            File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
+            if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
+            {
+                string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
+                File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
+            }
         }
 
         private SortedDictionary<string, string> GetBaseImageDigests(PlatformInfo platform)

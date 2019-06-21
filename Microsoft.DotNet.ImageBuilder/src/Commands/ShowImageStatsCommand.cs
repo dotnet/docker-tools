@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             object dependentConcreteTags,
             object dependentSharedTags,
             object dependentTags)
-            => $"{baseImage,-50}  {dependentImages,17}  {dependentConcreteTags,24}  {dependentSharedTags,29}  {dependentTags,20}";
+            => $"{baseImage,-50}  {dependentImages,17}  {dependentConcreteTags,24}  {dependentSharedTags,21}  {dependentTags,20}";
 
         private void LogBaseImageStats(PlatformInfo[] platforms)
         {
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"External Base Images ({externalBaseImages.Count()})",
                     "Dependent Images",
                     "Dependent Concrete Tags",
-                    "Dependent Multi-Platform Tags",
+                    "Dependent Shared Tags",
                     "Total Dependent Tags"));
 
             foreach (string baseImage in externalBaseImages)
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Logger.WriteMessage($"    Total Undocumented Concrete Tags:  {undocumentedPlatformTags.Length}");
             }
 
-            Logger.WriteMessage($"Total Multi-Platform Tags:  {sharedTags.Length}");
+            Logger.WriteMessage($"Total Shared Tags:  {sharedTags.Length}");
 
             if (undocumentedSharedTags.Length > 0)
             {
@@ -104,6 +104,5 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Logger.WriteMessage($"    Total Undocumented Tags:  {undocumentedPlatformTags.Length + undocumentedSharedTags.Length}");
             }
         }
-
     }
 }

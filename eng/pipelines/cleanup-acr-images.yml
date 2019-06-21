@@ -1,6 +1,13 @@
 trigger: none
 pr: none
 
+schedules:
+- cron: "0 5 * * *"
+  displayName: Nightly build
+  branches:
+    include:
+    - master
+
 variables:
 - group: DotNet-Docker-Common
 - group: DotNet-Docker-Secrets

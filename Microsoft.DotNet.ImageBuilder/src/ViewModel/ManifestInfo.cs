@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -71,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .ToArray();
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();
-            foreach (PlatformInfo platform in manifestInfo.AllRepos.SelectMany(repo => repo.AllImages).SelectMany(image => image.AllPlatforms))
+            foreach (PlatformInfo platform in manifestInfo.GetAllPlatforms())
             {
                 platform.Initialize(repoNames, manifestInfo.Registry);
             }
@@ -84,10 +85,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return manifestInfo;
         }
 
+        public IEnumerable<ImageInfo> GetAllImages() => AllRepos.SelectMany(repo => repo.AllImages);
+
+        public IEnumerable<PlatformInfo> GetAllPlatforms() => GetAllImages().SelectMany(image => image.AllPlatforms);
+
         private IEnumerable<TagInfo> GetAllTags()
         {
-            IEnumerable<ImageInfo> images = AllRepos
-                .SelectMany(repo => repo.AllImages)
+            IEnumerable<ImageInfo> images = GetAllImages()
                 .ToArray();
             IEnumerable<TagInfo> sharedTags = images
                 .SelectMany(image => image.SharedTags);

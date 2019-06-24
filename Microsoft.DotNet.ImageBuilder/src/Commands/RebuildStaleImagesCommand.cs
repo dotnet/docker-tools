@@ -119,6 +119,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<string> pathsToRebuild = new List<string>();
 
+            IEnumerable<PlatformInfo> allPlatforms = manifest.GetAllPlatforms().ToList();
+
             foreach (RepoInfo repo in manifest.FilteredRepos)
             {
                 IEnumerable<PlatformInfo> platforms = repo.FilteredImages
@@ -127,6 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = repos
                     .FirstOrDefault(s => s.Repo == repo.Model.Name);
 
+                HashSet<string> processedImages = new HashSet<string>();
                 foreach (var platform in platforms)
                 {
                     if (repoData != null &&
@@ -134,11 +137,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
+                        
                         foreach (string fromImage in platform.ExternalFromImages)
                         {
+                            if (processedImages.Contains(fromImage))
+                            {
+                                continue;
+                            }
+
                             DockerHelper.PullImage(fromImage, Options.IsDryRun);
                             string currentDigest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
                             string lastDigest = imageData.BaseImages?[fromImage];
+
+                            processedImages.Add(fromImage);
 
                             if (lastDigest != currentDigest)
                             {
@@ -149,7 +160,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                         if (hasDigestChanged)
                         {
-                            pathsToRebuild.Add(platform.BuildContextPath);
+                            IEnumerable<PlatformInfo> dependentPlatforms = platform.GetDependencyGraph(allPlatforms);
+                            pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.BuildContextPath));
                         }
                     }
                     else

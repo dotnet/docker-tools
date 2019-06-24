@@ -172,7 +172,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
-            return pathsToRebuild;
+            return pathsToRebuild.Distinct().ToList();
         }
 
         private async Task<string> GetGitRepoPath(Subscription sub)

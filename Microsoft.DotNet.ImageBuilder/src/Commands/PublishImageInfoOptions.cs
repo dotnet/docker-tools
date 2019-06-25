@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptions GitOptions { get; } = new GitOptions("dotnet", "versions", "master", "build-info/docker/image-info.json");
 
-        public string SourceImageInfoFolderPath { get; set; }
+        public string ImageInfoPath { get; set; }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
@@ -20,12 +20,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             GitOptions.ParseCommandLine(syntax);
 
-            string sourceImageInfoFolderPath = null;
+            string imageInfoPath = null;
             syntax.DefineParameter(
-                "source-image-info-folder-path",
-                ref sourceImageInfoFolderPath,
-                "Folder path containing image info files");
-            SourceImageInfoFolderPath = sourceImageInfoFolderPath;
+                "image-info-path",
+                ref imageInfoPath,
+                "Image info file path");
+            ImageInfoPath = imageInfoPath;
         }
     }
 }

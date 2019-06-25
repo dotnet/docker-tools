@@ -18,9 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public override async Task ExecuteAsync()
         {
-            List<RepoData[]> srcReposList = Directory.EnumerateFiles(Options.SourceImageInfoFolderPath, "*.json", SearchOption.AllDirectories)
-                .Select(imageDataPath => JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(imageDataPath)))
-                .ToList();
+            RepoData[] srcRepos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
 
             await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
@@ -29,10 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string originalTargetImageInfoContents = await client.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
                     List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
 
-                    foreach (RepoData[] srcRepos in srcReposList)
-                    {
-                        MergeRepos(srcRepos, targetRepos);
-                    }
+                    ImageInfoHelper.MergeRepos(srcRepos, targetRepos);
 
                     string newTargetImageInfoContents = JsonHelper.SerializeObject(targetRepos.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
 
@@ -54,67 +49,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 });
             });
-        }
-
-        private void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos)
-        {
-            foreach (RepoData srcRepo in srcRepos)
-            {
-                RepoData targetRepo = targetRepos.FirstOrDefault(r => r.Repo == srcRepo.Repo);
-                if (targetRepo == null)
-                {
-                    targetRepos.Add(srcRepo);
-                }
-                else
-                {
-                    MergeImages(srcRepo, targetRepo);
-                }
-            }
-        }
-
-        private void MergeImages(RepoData srcRepo, RepoData targetRepo)
-        {
-            if (srcRepo.Images == null)
-            {
-                return;
-            }
-
-            if (srcRepo.Images.Any() && targetRepo.Images == null)
-            {
-                targetRepo.Images = srcRepo.Images;
-                return;
-            }
-
-            foreach (KeyValuePair<string, ImageData> srcKvp in srcRepo.Images)
-            {
-                if (targetRepo.Images.TryGetValue(srcKvp.Key, out ImageData targetImage))
-                {
-                    MergeDigests(srcKvp.Value, targetImage);
-                }
-                else
-                {
-                    targetRepo.Images.Add(srcKvp.Key, srcKvp.Value);
-                }
-            }
-        }
-
-        private void MergeDigests(ImageData srcImage, ImageData targetImage)
-        {
-            if (srcImage.BaseImages == null)
-            {
-                return;
-            }
-
-            if (srcImage.BaseImages.Any() && targetImage.BaseImages == null)
-            {
-                targetImage.BaseImages = srcImage.BaseImages;
-                return;
-            }
-
-            foreach (KeyValuePair<string, string> srcKvp in srcImage.BaseImages)
-            {
-                targetImage.BaseImages[srcKvp.Key] = srcKvp.Value;
-            }
         }
     }
 }

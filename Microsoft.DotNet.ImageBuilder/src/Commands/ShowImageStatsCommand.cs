@@ -30,10 +30,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private string FormatBaseImageStats(
             string baseImage,
             object dependentImages,
-            object dependentConcreteTags,
+            object dependentSimpleTags,
             object dependentSharedTags,
             object dependentTags)
-            => $"{baseImage,-50}  {dependentImages,17}  {dependentConcreteTags,24}  {dependentSharedTags,21}  {dependentTags,20}";
+            => $"{baseImage,-50}  {dependentImages,17}  {dependentSimpleTags,22}  {dependentSharedTags,21}  {dependentTags,20}";
 
         private void LogBaseImageStats(PlatformInfo[] platforms)
         {
@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 FormatBaseImageStats(
                     $"External Base Images ({externalBaseImages.Count()})",
                     "Dependent Images",
-                    "Dependent Concrete Tags",
+                    "Dependent Simple Tags",
                     "Dependent Shared Tags",
                     "Total Dependent Tags"));
 
@@ -83,11 +83,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             TagInfo[] undocumentedSharedTags = sharedTags.Where(tag => tag.Model.IsUndocumented).ToArray();
 
             Logger.WriteMessage($"Total Unique Images:  {platforms.Length}");
-            Logger.WriteMessage($"Total Concrete Tags:  {platformTags.Length}");
+            Logger.WriteMessage($"Total Simple Tags:  {platformTags.Length}");
 
             if (undocumentedPlatformTags.Length > 0)
             {
-                Logger.WriteMessage($"    Total Undocumented Concrete Tags:  {undocumentedPlatformTags.Length}");
+                Logger.WriteMessage($"    Total Undocumented Simple Tags:  {undocumentedPlatformTags.Length}");
             }
 
             Logger.WriteMessage($"Total Shared Tags:  {sharedTags.Length}");

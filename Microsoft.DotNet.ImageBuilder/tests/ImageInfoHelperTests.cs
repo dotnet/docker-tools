@@ -41,6 +41,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_ExistingTarget()
         {
+            ImageData repo2Image1;
+            ImageData repo2Image2;
+            ImageData repo2Image3;
+            ImageData repo3Image1;
+
             RepoData[] repoDataSet = new RepoData[]
             {
                 new RepoData
@@ -50,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         {
                             "image1",
-                            new ImageData
+                            repo2Image1 = new ImageData
                             {
                                 BaseImages = new SortedDictionary<string, string>
                                 {
@@ -61,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ,
                         {
                             "image3",
-                            new ImageData()
+                            repo2Image3 = new ImageData()
                         }
                     }
                 },
@@ -72,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         {
                             "image1",
-                            new ImageData()
+                            repo3Image1 = new ImageData()
                         }
                     }
                 },
@@ -105,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         {
                             "image2",
-                            new ImageData
+                            repo2Image2 = new ImageData
                             {
                                 BaseImages = new SortedDictionary<string, string>
                                 {
@@ -136,27 +141,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         {
                             "image1",
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest-NEW" }
-                                }
-                            }
+                            repo2Image1
                         },
                         {
                             "image2",
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base2", "base2digest" }
-                                }
-                            }
+                            repo2Image2
                         },
                         {
                             "image3",
-                            new ImageData()
+                            repo2Image3
                         }
                     }
                 },
@@ -167,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         {
                             "image1",
-                            new ImageData()
+                            repo3Image1
                         }
                     }
                 },

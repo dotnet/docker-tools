@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     File.WriteAllText(file, JsonHelper.SerializeObject(repoDataSets[i]));
                 }
 
-                MergeImageInfoFilesCommand command = new MergeImageInfoFilesCommand();
+                MergeImageInfoCommand command = new MergeImageInfoCommand();
                 command.Options.SourceImageInfoFolderPath = context.Path;
                 command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
                 await command.ExecuteAsync();
@@ -83,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task MergeInfoFilesCommand_SourceFolderPathNotFound()
         {
-            MergeImageInfoFilesCommand command = new MergeImageInfoFilesCommand();
+            MergeImageInfoCommand command = new MergeImageInfoCommand();
             command.Options.SourceImageInfoFolderPath = "foo";
             command.Options.DestinationImageInfoPath = "output.json";
 
@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText("image-info.txt",
                     JsonHelper.SerializeObject(new RepoData[] { new RepoData { Repo = "repo" } }));
 
-                MergeImageInfoFilesCommand command = new MergeImageInfoFilesCommand();
+                MergeImageInfoCommand command = new MergeImageInfoCommand();
                 command.Options.SourceImageInfoFolderPath = context.Path;
                 command.Options.DestinationImageInfoPath = "output.json";
 

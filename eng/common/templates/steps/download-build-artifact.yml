@@ -13,5 +13,3 @@ steps:
     targetPath: ${{ parameters.targetPath }}
     artifactName: ${{ parameters.artifactName }}
   displayName: Download Build Artifact(s)
-  condition: and(succeeded(), eq(variables['publishRepoPrefix'], 'test/'))
-  #TODO: Change test to public

@@ -12,11 +12,16 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class MergeImageInfoFilesCommand : Command<MergeImageInfoFilesOptions>
+    public class MergeImageInfoCommand : Command<MergeImageInfoOptions>
     {
         public override Task ExecuteAsync()
         {
-            List<RepoData[]> srcReposList = Directory.EnumerateFiles(Options.SourceImageInfoFolderPath, "*.json", SearchOption.AllDirectories)
+            var imageInfoFiles = Directory.EnumerateFiles(
+                Options.SourceImageInfoFolderPath,
+                "*.json",
+                SearchOption.AllDirectories);
+
+            List<RepoData[]> srcReposList = imageInfoFiles
                 .Select(imageDataPath => JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(imageDataPath)))
                 .ToList();
 
@@ -32,7 +37,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ImageInfoHelper.MergeRepos(repos, combinedRepos);
             }
 
-            string destinationContents = JsonHelper.SerializeObject(combinedRepos.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
+            RepoData[] reposArray = combinedRepos
+                .OrderBy(r => r.Repo)
+                .ToArray();
+
+            string destinationContents = JsonHelper.SerializeObject(reposArray) + Environment.NewLine;
             File.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
 
             return Task.CompletedTask;

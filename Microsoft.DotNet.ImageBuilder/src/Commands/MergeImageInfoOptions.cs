@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class MergeImageInfoFilesOptions : Options
+    public class MergeImageInfoOptions : Options
     {
         protected override string CommandHelp => "Merges the content of multiple image info files into one file";
 
@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string sourceImageInfoFolderPath = null;
             syntax.DefineParameter(
-                "source-image-info-folder-path",
+                "source-path",
                 ref sourceImageInfoFolderPath,
                 "Folder path containing image info files");
             SourceImageInfoFolderPath = sourceImageInfoFolderPath;

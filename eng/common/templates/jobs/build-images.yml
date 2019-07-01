@@ -50,6 +50,12 @@ jobs:
   - template: ${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
     parameters:
       setupRemoteDockerServer: ${{ parameters.useRemoteDockerServer }}
+  - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+    - script: >
+        echo "##vso[task.setvariable variable=imageBuilderBuildArgs]
+        --image-info-output-path $(artifactsPath)/$(legName)-image-info.json
+        $(imageBuilderBuildArgs)"
+      displayName: Set Image Builder Args
   - script: >
       $(runImageBuilderCmd) build
       --manifest $(manifest)
@@ -57,7 +63,6 @@ jobs:
       --os-type $(osType)
       --os-version "$(osVersion)"
       --architecture $(architecture)
-      --image-info-output-path "$(artifactsPath)/$(legName)-image-info.json"
       --retry
       $(imageBuilderBuildArgs)
     displayName: Build Images

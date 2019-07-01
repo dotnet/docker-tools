@@ -162,13 +162,16 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
 
-- stage: Post_Build
-  dependsOn: Build
-  condition: and(succeeded(), or(eq(variables['singlePhase'], ''), eq(variables['singlePhase'], 'build')))
-  jobs:
-  - template: ../jobs/post-build.yml
-
 - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+  ################################################################################
+  # Post-Build
+  ################################################################################
+  - stage: Post_Build
+    dependsOn: Build
+    condition: and(succeeded(), or(eq(variables['singlePhase'], ''), eq(variables['singlePhase'], 'build')))
+    jobs:
+    - template: ../jobs/post-build.yml
+
   ################################################################################
   # Test Images
   ################################################################################

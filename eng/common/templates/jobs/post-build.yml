@@ -1,5 +1,5 @@
 jobs:
-- job: Post_Build
+- job: Build
   pool: # linuxAmd64Pool
     name: Hosted Ubuntu 1604
   steps:
@@ -8,9 +8,10 @@ jobs:
     parameters:
       targetPath: $(Build.ArtifactStagingDirectory)
   - script: >
-      $(runImageBuilderCmd) mergeImageInfoFiles
+      $(runImageBuilderCmd) mergeImageInfo
       $(artifactsPath)
       $(artifactsPath)/image-info.json
+    displayName: Merge Image Info Files
   - publish: $(Build.ArtifactStagingDirectory)/image-info.json
     artifact: image-info
     displayName: Publish Image Info File Artifact

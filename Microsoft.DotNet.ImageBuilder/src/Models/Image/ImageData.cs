@@ -11,5 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
     {
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public SortedDictionary<string, string> BaseImages { get; set; }
+        public List<string> SimpleTags { get; set; } = new List<string>();
     }
 }

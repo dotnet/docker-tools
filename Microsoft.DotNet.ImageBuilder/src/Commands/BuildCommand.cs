@@ -110,6 +110,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             imageData.BaseImages = baseImageDigests;
                         }
+
+                        imageData.SimpleTags = platform.Tags
+                            .Select(tag => tag.Name)
+                            .OrderBy(name => name)
+                            .ToList();
                     }
                 }
 

@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {
-                await GitHelper.PushChangesAsync(client, Options.GitOptions, "Merging image info updates from build.", async branch =>
+                GitReference gitRef = await GitHelper.PushChangesAsync(client, Options.GitOptions, "Merging image info updates from build.", async branch =>
                 {
                     string originalTargetImageInfoContents = await client.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
                     List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
@@ -48,6 +48,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         return Enumerable.Empty<GitObject>();
                     }
                 });
+
+                if (gitRef != null)
+                {
+                    Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
+                    Logger.WriteMessage($"The '{Options.ImageInfoPath}' file was updated ({commitUrl}).");
+                }
+                else
+                {
+                    Logger.WriteMessage($"No changes to the '{Options.ImageInfoPath}' file were needed.");
+                }
             });
         }
     }

@@ -28,13 +28,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return gitLogProcess.StandardOutput.ReadToEnd().Trim();
         }
 
+        public static Uri GetCommitUrl(GitOptions gitOptions, string sha)
+        {
+            return new Uri($"https://github.com/{gitOptions.Owner}/{gitOptions.Repo}/commit/{sha}");
+        }
+
         public static GitHubClient GetClient(GitOptions gitOptions)
         {
             GitHubAuth githubAuth = new GitHubAuth(gitOptions.AuthToken, gitOptions.Username, gitOptions.Email);
             return new GitHubClient(githubAuth);
         }
 
-        public static async Task PushChangesAsync(GitHubClient client, GitOptions gitOptions, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
+        public static async Task<GitReference> PushChangesAsync(GitHubClient client, GitOptions gitOptions, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
         {
             GitHubProject project = new GitHubProject(gitOptions.Repo, gitOptions.Owner);
             GitHubBranch branch = new GitHubBranch(gitOptions.Branch, project);
@@ -43,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (!changes.Any())
             {
-                return;
+                return null;
             }
 
             string masterRef = $"heads/{gitOptions.Branch}";
@@ -54,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 project, commitMessage, tree.Sha, new[] { masterSha });
 
             // Only fast-forward. Don't overwrite other changes: throw exception instead.
-            await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
+            return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
         }
 
         public static async Task ExecuteGitOperationsWithRetryAsync(GitOptions gitOptions, Func<GitHubClient, Task> execute,

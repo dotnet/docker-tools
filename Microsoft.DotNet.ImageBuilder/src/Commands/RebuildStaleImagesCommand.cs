@@ -24,7 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>
     {
         private Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
+        private Dictionary<string, string> imageDigests = new Dictionary<string, string>();
         private SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
+        private SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
 
         public override async Task ExecuteAsync()
         {
@@ -129,7 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = repos
                     .FirstOrDefault(s => s.Repo == repo.Model.Name);
 
-                HashSet<string> processedImages = new HashSet<string>();
+                
                 foreach (var platform in platforms)
                 {
                     if (repoData != null &&
@@ -140,16 +142,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         
                         foreach (string fromImage in platform.ExternalFromImages)
                         {
-                            if (processedImages.Contains(fromImage))
+                            string currentDigest;
+
+                            await this.imageDigestsSemaphore.WaitAsync();
+                            try
                             {
-                                continue;
+                                if (!this.imageDigests.TryGetValue(fromImage, out currentDigest))
+                                {
+                                    DockerHelper.PullImage(fromImage, Options.IsDryRun);
+                                    currentDigest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
+                                    this.imageDigests.Add(fromImage, currentDigest);
+                                }
                             }
-
-                            DockerHelper.PullImage(fromImage, Options.IsDryRun);
-                            string currentDigest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
+                            finally
+                            {
+                                this.imageDigestsSemaphore.Release();
+                            }
+                            
                             string lastDigest = imageData.BaseImages?[fromImage];
-
-                            processedImages.Add(fromImage);
 
                             if (lastDigest != currentDigest)
                             {

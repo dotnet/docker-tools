@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             )]
         public string DocumentationGroup { get; set; }
 
-        // TODO: Is this needed anymore? Not seeing it used in manifest files.
+        // TODO: Remove this property: https://github.com/dotnet/docker-tools/issues/232
         public string Id { get; set; }
 
         [Description(
@@ -30,9 +30,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 
         [Description(
             "Indicates whether this tag should not be documented in the readme file. The " +
-            "image will still be tagged with this tag however. This is useful when " +
-            "deprecating a tag that still needs to be kept up-to-date but not wanting it " +
-            "documented."
+            "image will still be tagged with this tag however and will still be published. " +
+            "This is useful when deprecating a tag that still needs to be kept up-to-date " +
+            "but not wanting it documented."
             )]
         public bool IsUndocumented { get; set; }
 

@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
     public class Platform
     {
         [Description(
-            "The processor architecture associated with the image." +
+            "The processor architecture associated with the image."
             )]
         [DefaultValue(Architecture.AMD64)]
         [JsonConverter(typeof(StringEnumConverter))]
@@ -29,7 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public IDictionary<string, string> BuildArgs { get; set; }
 
         [Description(
-            "Relative path to the associated Dockerfile."
+            "Relative path to the associated Dockerfile. This can be a file or a " +
+            "directory. If it is a directory, the file name defaults to Dockerfile."
             )]
         [JsonProperty(Required = Required.Always)]
         public string Dockerfile { get; set; }

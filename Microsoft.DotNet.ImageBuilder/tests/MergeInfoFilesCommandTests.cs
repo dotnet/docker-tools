@@ -13,10 +13,10 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class MergeInfoFilesCommandTests
+    public class MergeImageInfoFilesCommandTests
     {
         [Fact]
-        public async Task MergeInfoFilesCommand_HappyPath()
+        public async Task MergeImageInfoFilesCommand_HappyPath()
         {
             using (TempFolderContext context = TestHelper.UseTempFolder())
             {
@@ -26,23 +26,78 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new RepoData
                         {
-                            Repo = "repo1",
+                            Repo = "repo1"
                         },
                         new RepoData
                         {
                             Repo = "repo2",
-                        }
+                            Images = new SortedDictionary<string, ImageData>
+                            {
+                                {
+                                    "image1",
+                                    new ImageData()
+                                }
+                            }
+                        },
+                        new RepoData
+                        {
+                            Repo = "repo4",
+                            Images = new SortedDictionary<string, ImageData>
+                            {
+                                {
+                                    "image2",
+                                    new ImageData {
+                                        SimpleTags =
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            }
+                        },
                     },
                     new RepoData[]
                     {
                         new RepoData
                         {
                             Repo = "repo2",
+                            Images = new SortedDictionary<string, ImageData>
+                            {
+                                {
+                                    "image1",
+                                    new ImageData {
+                                        BaseImages = new SortedDictionary<string, string>
+                                        {
+                                            { "base1", "base1hash" }
+                                        },
+                                        SimpleTags =
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            }
                         },
                         new RepoData
                         {
                             Repo = "repo3",
-                        }
+                        },
+                        new RepoData
+                        {
+                            Repo = "repo4",
+                            Images = new SortedDictionary<string, ImageData>
+                            {
+                                {
+                                    "image2",
+                                    new ImageData {
+                                        SimpleTags =
+                                        {
+                                            "tag2"
+                                        }
+                                    }
+                                }
+                            }
+                        },
                     }
                 };
 
@@ -64,16 +119,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     new RepoData
                     {
-                        Repo = "repo1",
+                        Repo = "repo1"
                     },
                     new RepoData
                     {
                         Repo = "repo2",
+                        Images = new SortedDictionary<string, ImageData>
+                        {
+                            {
+                                "image1",
+                                new ImageData {
+                                    BaseImages = new SortedDictionary<string, string>
+                                    {
+                                        { "base1", "base1hash" }
+                                    },
+                                    SimpleTags =
+                                    {
+                                        "tag1"
+                                    }
+                                }
+                            }
+                        }
                     },
                     new RepoData
                     {
                         Repo = "repo3",
-                    }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo4",
+                        Images = new SortedDictionary<string, ImageData>
+                        {
+                            {
+                                "image2",
+                                new ImageData {
+                                    SimpleTags =
+                                    {
+                                        "tag1",
+                                        "tag2"
+                                    }
+                                }
+                            }
+                        }
+                    },
                 };
 
                 ImageInfoHelperTests.CompareRepos(expected, actual);
@@ -81,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Fact]
-        public async Task MergeInfoFilesCommand_SourceFolderPathNotFound()
+        public async Task MergeImageInfoFilesCommand_SourceFolderPathNotFound()
         {
             MergeImageInfoCommand command = new MergeImageInfoCommand();
             command.Options.SourceImageInfoFolderPath = "foo";
@@ -91,7 +179,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Fact]
-        public async Task MergeInfoFilesCommand_SourceFolderEmpty()
+        public async Task MergeImageInfoFilesCommand_SourceFolderEmpty()
         {
             using (TempFolderContext context = TestHelper.UseTempFolder())
             {

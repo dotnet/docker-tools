@@ -28,6 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     new PublishMcrDocsCommand(),
                     new RebuildStaleImagesCommand(),
                     new ShowImageStatsCommand(),
+                    new ShowManifestSchemaCommand(),
                     new UpdateVersionsCommand(),
                     new ValidateImageSizeCommand(),
                 };

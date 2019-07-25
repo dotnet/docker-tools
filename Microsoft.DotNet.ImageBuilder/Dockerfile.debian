@@ -3,8 +3,8 @@
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
 # build Microsoft.DotNet.ImageBuilder
-FROM mcr.microsoft.com/dotnet/core/sdk:2.1 AS build-env
-WORKDIR image-builder
+FROM mcr.microsoft.com/dotnet/core/sdk:3.0 AS build-env
+WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY Microsoft.DotNet.ImageBuilder.sln ./
@@ -21,7 +21,7 @@ RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out 
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/core/runtime-deps:2.1
+FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.0
 
 # install Docker
 RUN apt-get update \
@@ -51,7 +51,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 # install image-builder
-WORKDIR image-builder
-COPY --from=build-env /image-builder/src/out ./
+WORKDIR /image-builder
+COPY --from=build-env /image-builder/out ./
 
 ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

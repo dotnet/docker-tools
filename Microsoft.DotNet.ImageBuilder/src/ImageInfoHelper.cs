@@ -103,7 +103,15 @@ namespace Microsoft.DotNet.ImageBuilder
                     {
                         if (targetDict.Contains(kvp.Key))
                         {
-                            MergeData(kvp.Value, targetDict[kvp.Key]);
+                            object newValue = kvp.Value;
+                            if (newValue is string)
+                            {
+                                targetDict[kvp.Key] = newValue;
+                            }
+                            else
+                            {
+                                MergeData(kvp.Value, targetDict[kvp.Key]);
+                            }
                         }
                         else
                         {

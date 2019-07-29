@@ -43,7 +43,7 @@ try {
     $stableTag = "$($DockerRepo):$osFlavor-$TagTimestamp"
     $floatingTag = "image-builder"
 
-    & docker build -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$osFlavor" $PSScriptRoot
+    & docker build --pull -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$osFlavor" $PSScriptRoot
     if ($LastExitCode -ne 0) {
         throw "Failed building ImageBuilder"
     }

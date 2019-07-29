@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else
                 {
-                    throw new NotSupportedException("Unsupported model property type:" + property.PropertyType.FullName);
+                    throw new NotSupportedException($"Unsupported model property type: '{property.PropertyType.FullName}'");
                 }
             }
         }
@@ -67,17 +67,22 @@ namespace Microsoft.DotNet.ImageBuilder
 
             IList<string> targetList = (IList<string>)property.GetValue(targetObj);
 
-            if (srcList.Any() && targetList == null)
+            if (srcList.Any())
             {
-                property.SetValue(targetObj, srcList);
-                return;
-            }
+                if (targetList != null)
+                {
+                    targetList = targetList
+                        .Union(srcList)
+                        .OrderBy(element => element)
+                        .ToList();
+                }
+                else
+                {
+                    targetList = srcList;
+                }
 
-            targetList = targetList
-                .Union(srcList)
-                .OrderBy(element => element)
-                .ToList();
-            property.SetValue(targetObj, targetList);
+                property.SetValue(targetObj, targetList);
+            }
         }
 
         private static void MergeDictionaries(PropertyInfo property, object srcObj, object targetObj)
@@ -90,21 +95,25 @@ namespace Microsoft.DotNet.ImageBuilder
 
             IDictionary targetDict = (IDictionary)property.GetValue(targetObj);
 
-            if (srcDict.Cast<object>().Any() && targetDict == null)
+            if (srcDict.Cast<object>().Any())
             {
-                property.SetValue(targetObj, srcDict);
-                return;
-            }
-
-            foreach (dynamic kvp in srcDict)
-            {
-                if (targetDict.Contains(kvp.Key))
+                if (targetDict != null)
                 {
-                    MergeData(kvp.Value, targetDict[kvp.Key]);
+                    foreach (dynamic kvp in srcDict)
+                    {
+                        if (targetDict.Contains(kvp.Key))
+                        {
+                            MergeData(kvp.Value, targetDict[kvp.Key]);
+                        }
+                        else
+                        {
+                            targetDict[kvp.Key] = kvp.Value;
+                        }
+                    }
                 }
                 else
                 {
-                    targetDict[kvp.Key] = kvp.Value;
+                    property.SetValue(targetObj, srcDict);
                 }
             }
         }

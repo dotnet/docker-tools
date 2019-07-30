@@ -4,13 +4,33 @@
 
 using System;
 using System.CommandLine;
+using System.ComponentModel.Composition.Hosting;
+using System.IO;
 using System.Linq;
+using System.Reflection;
 using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageBuilder
     {
+        private static CompositionContainer container;
+
+        public static CompositionContainer Container
+        {
+            get
+            {
+                if (container == null)
+                {
+                    string dllLocation = Assembly.GetExecutingAssembly().Location;
+                    DirectoryCatalog catalog = new DirectoryCatalog(Path.GetDirectoryName(dllLocation), Path.GetFileName(dllLocation));
+                    container = new CompositionContainer(catalog);
+                }
+
+                return container;
+            }
+        }
+
         public static int Main(string[] args)
         {
             int result = 0;
@@ -18,19 +38,19 @@ namespace Microsoft.DotNet.ImageBuilder
             try
             {
                 ICommand[] commands = {
-                    new BuildCommand(),
-                    new CopyAcrImagesCommand(),
-                    new GenerateBuildMatrixCommand(),
-                    new GenerateTagsReadmeCommand(),
-                    new MergeImageInfoCommand(),
-                    new PublishImageInfoCommand(),
-                    new PublishManifestCommand(),
-                    new PublishMcrDocsCommand(),
-                    new RebuildStaleImagesCommand(),
-                    new ShowImageStatsCommand(),
-                    new ShowManifestSchemaCommand(),
-                    new UpdateVersionsCommand(),
-                    new ValidateImageSizeCommand(),
+                    Container.GetExportedValue<BuildCommand>(),
+                    Container.GetExportedValue<CopyAcrImagesCommand>(),
+                    Container.GetExportedValue<GenerateBuildMatrixCommand>(),
+                    Container.GetExportedValue<GenerateTagsReadmeCommand>(),
+                    Container.GetExportedValue<MergeImageInfoCommand>(),
+                    Container.GetExportedValue<PublishImageInfoCommand>(),
+                    Container.GetExportedValue<PublishManifestCommand>(),
+                    Container.GetExportedValue<PublishMcrDocsCommand>(),
+                    Container.GetExportedValue<RebuildStaleImagesCommand>(),
+                    Container.GetExportedValue<ShowImageStatsCommand>(),
+                    Container.GetExportedValue<ShowManifestSchemaCommand>(),
+                    Container.GetExportedValue<UpdateVersionsCommand>(),
+                    Container.GetExportedValue<ValidateImageSizeCommand>()
                 };
 
                 ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>

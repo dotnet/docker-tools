@@ -3,11 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel.Composition;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
+    [Export(typeof(IVssConnectionFactory))]
     internal class VssConnectionFactory : IVssConnectionFactory
     {
         public IVssConnection Create(Uri baseUrl, VssCredentials credentials)

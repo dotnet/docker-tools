@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -14,6 +15,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export]
     public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
     {
         private const string McrTagsPlaceholder = "Tags go here.";

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,6 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export]
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
     {
         public PublishManifestCommand() : base()

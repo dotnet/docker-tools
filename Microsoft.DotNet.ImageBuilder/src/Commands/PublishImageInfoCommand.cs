@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,6 +15,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export]
     public class PublishImageInfoCommand : Command<PublishImageInfoOptions>
     {
         public override async Task ExecuteAsync()

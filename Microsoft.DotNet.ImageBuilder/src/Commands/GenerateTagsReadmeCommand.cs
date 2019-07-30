@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,6 +11,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export]
     public class GenerateTagsReadmeCommand : ManifestCommand<GenerateTagsReadmeOptions>
     {
         private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";

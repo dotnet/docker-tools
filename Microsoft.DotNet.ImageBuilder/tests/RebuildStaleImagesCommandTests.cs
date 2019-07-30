@@ -70,21 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = repo1,
-                        Owner = GetRepoOwner()
-                    }
-                }
+                CreateSubscription(repo1)
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -92,45 +78,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo1,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile1Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            },
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile2Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag2", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, "tag1"),
+                                CreatePlatform(dockerfile2Path, "tag2"))))
                 }
             };
 
@@ -186,21 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = repo1,
-                        Owner = GetRepoOwner()
-                    }
-                }
+                CreateSubscription(repo1)
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -208,45 +147,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo1,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile1Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            },
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile2Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag2", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, "tag1"),
+                                CreatePlatform(dockerfile2Path, "tag2"))))
                 }
             };
 
@@ -318,21 +224,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = repo1,
-                        Owner = GetRepoOwner()
-                    }
-                }
+                CreateSubscription(repo1)
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -340,35 +232,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo1,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile1Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, "tag1"))))
                 }
             };
 
@@ -448,36 +316,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = repo1,
-                        Owner = GetRepoOwner(suffix: "1")
-                    }
-                },
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 2,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch2",
-                        Name = repo2,
-                        Owner = GetRepoOwner(suffix: "2")
-                    }
-                }
+                CreateSubscription(repo1, 1),
+                CreateSubscription(repo2, 2)
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -485,67 +325,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo1,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile1Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, "tag1"))))
                 },
                 {
                     subscriptions[1],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo2,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile2Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag2", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo2,
+                            CreateImage(
+                                CreatePlatform(dockerfile2Path, "tag2"))))
                 }
             };
 
@@ -635,21 +427,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = repo1,
-                        Owner = GetRepoOwner()
-                    }
-                }
+                CreateSubscription(repo1)
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -657,45 +435,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo1,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile1Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            },
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile2Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag2", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, "tag1"),
+                                CreatePlatform(dockerfile2Path, "tag2"))))
                 }
             };
 
@@ -775,21 +520,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = repo1,
-                        Owner = GetRepoOwner()
-                    }
-                }
+                CreateSubscription(repo1)
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -797,35 +528,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = repo1,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = dockerfile1Path,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, "tag1"))))
                 }
             };
 
@@ -874,12 +581,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string runtimeRepo = "runtime-repo";
             const string sdkRepo = "sdk-repo";
             const string aspnetRepo = "aspnet-repo";
+            const string otherRepo = "other-repo";
             const string runtimeDepsDockerfilePath = "runtime-deps/dockerfile1";
             const string runtimeDockerfilePath = "runtime/dockerfile2";
             const string sdkDockerfilePath = "sdk/dockerfile3";
             const string aspnetDockerfilePath = "aspnet/dockerfile4";
+            const string otherDockerfilePath = "other/dockerfile";
             const string baseImage = "base1";
             const string baseImageDigest = "base1digest";
+            const string otherImage = "other";
+            const string otherImageDigest = "otherDigest";
 
             RepoData[] imageInfoData = new RepoData[]
             {
@@ -911,26 +622,30 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = aspnetRepo
+                },
+                // Include an image that has not been changed and should not be included in the expected paths.
+                new RepoData
+                {
+                    Repo = otherRepo,
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            otherDockerfilePath,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { otherImage, otherImageDigest }
+                                }
+                            }
+                        }
+                    }
                 }
             };
 
             Subscription[] subscriptions = new Subscription[]
             {
-                new Subscription
-                {
-                    ManifestPath = "testmanifest.json",
-                    PipelineTrigger = new PipelineTrigger
-                    {
-                        Id = 1,
-                        PathVariable = "--my-path"
-                    },
-                    RepoInfo = new GitRepo
-                    {
-                        Branch = "testBranch",
-                        Name = "repo1",
-                        Owner = GetRepoOwner()
-                    }
-                }
+                CreateSubscription("repo1")
             };
 
             Dictionary<Subscription, Manifest> subscriptionManifests =
@@ -938,116 +653,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 {
                     subscriptions[0],
-                    new Manifest
-                    {
-                        Repos = new Repo[]
-                        {
-                            new Repo
-                            {
-                                Name = runtimeDepsRepo,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                Dockerfile = runtimeDepsDockerfilePath,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            new Repo
-                            {
-                                Name = runtimeRepo,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                BuildArgs = new Dictionary<string, string>
-                                                {
-                                                    { "REPO", "runtime-deps" }
-                                                },
-                                                Dockerfile = runtimeDockerfilePath,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            new Repo
-                            {
-                                Name = sdkRepo,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                BuildArgs = new Dictionary<string, string>
-                                                {
-                                                    { "REPO", "runtime" }
-                                                },
-                                                Dockerfile = sdkDockerfilePath,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            },
-                            new Repo
-                            {
-                                Name = aspnetRepo,
-                                Images = new Image[]
-                                {
-                                    new Image
-                                    {
-                                        Platforms = new Platform[]
-                                        {
-                                            new Platform
-                                            {
-                                                BuildArgs = new Dictionary<string, string>
-                                                {
-                                                    { "REPO", "runtime" }
-                                                },
-                                                Dockerfile = aspnetDockerfilePath,
-                                                OsVersion = "",
-                                                OS = OS.Linux,
-                                                Tags = new Dictionary<string, Tag>
-                                                {
-                                                    { "tag1", new Tag() }
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    CreateManifest(
+                        CreateRepo(
+                            runtimeDepsRepo,
+                            CreateImage(
+                                CreatePlatform(runtimeDepsDockerfilePath, "tag1"))),
+                        CreateRepo(
+                            runtimeRepo,
+                            CreateImage(
+                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, "runtime-deps", "tag1"))),
+                        CreateRepo(
+                            sdkRepo,
+                            CreateImage(
+                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, "runtime", "tag1"))),
+                        CreateRepo(
+                            aspnetRepo,
+                            CreateImage(
+                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, "runtime", "tag1"))),
+                        CreateRepo(
+                            otherRepo,
+                            CreateImage(
+                                CreatePlatform(otherDockerfilePath, "tag1"))))
                 }
             };
 
@@ -1061,7 +687,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new DockerfileInfo(runtimeDepsDockerfilePath, baseImage, baseImageDigest),
                         new DockerfileInfo(runtimeDockerfilePath, null, null, hasInternalFrom: true),
                         new DockerfileInfo(sdkDockerfilePath, null, null, hasInternalFrom: true),
-                        new DockerfileInfo(aspnetDockerfilePath, null, null, hasInternalFrom: true)
+                        new DockerfileInfo(aspnetDockerfilePath, null, null, hasInternalFrom: true),
+                        new DockerfileInfo(otherDockerfilePath, otherImage, otherImageDigest)
                     }
                 }
             };
@@ -1101,6 +728,74 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return testMethodName + suffix;
         }
 
+        private static Manifest CreateManifest(params Repo[] repos)
+        {
+            return new Manifest
+            {
+                Repos = repos
+            };
+        }
+
+        private static Repo CreateRepo(string name, params Image[] images)
+        {
+            return new Repo
+            {
+                Name = name,
+                Images = images
+            };
+        }
+
+        private static Image CreateImage(params Platform[] platforms)
+        {
+            return new Image
+            {
+                Platforms = platforms
+            };
+        }
+
+        private static Platform CreatePlatform(string dockerfilePath, params string[] tags)
+        {
+            return new Platform
+            {
+                Dockerfile = dockerfilePath,
+                OsVersion = "",
+                OS = OS.Linux,
+                Tags = tags.ToDictionary(tag => tag, tag => new Tag())
+            };
+        }
+
+        private static Platform CreatePlatformWithRepoBuildArg(string dockerfilePath, string repo, params string[] tags)
+        {
+            Platform platform = CreatePlatform(dockerfilePath, tags);
+            platform.BuildArgs = new Dictionary<string, string>
+            {
+                { "REPO", repo }
+            };
+            return platform;
+        }
+
+        private static Subscription CreateSubscription(
+            string repoName,
+            int index = 0,
+            [CallerMemberName] string testMethodName = null)
+        {
+            return new Subscription
+            {
+                ManifestPath = "testmanifest.json",
+                PipelineTrigger = new PipelineTrigger
+                {
+                    Id = 1,
+                    PathVariable = "--my-path"
+                },
+                RepoInfo = new GitRepo
+                {
+                    Branch = "testBranch" + index,
+                    Name = repoName,
+                    Owner = GetRepoOwner(testMethodName, index.ToString())
+                }
+            };
+        }
+
         /// <summary>
         /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
         /// </summary>
@@ -1112,7 +807,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
             private readonly string imageInfoPath;
-            private readonly HttpClient httpClient;
+            private readonly IHttpClientFactory httpClientFactory;
             private readonly Mock<IBuildHttpClient> buildHttpClientMock;
             private readonly RebuildStaleImagesCommand command;
 
@@ -1128,8 +823,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="subscriptionManifests">A mapping of subscriptions to their associated manifests.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
             /// <param name="hasInProgressBuild">A value indicating whether to mark a build to be in progress for all pipelines.</param>
-            public TestContext(RepoData[] imageInfoData, Subscription[] subscriptions, IDictionary<Subscription, Manifest> subscriptionManifests,
-                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos, bool hasInProgressBuild = false)
+            public TestContext(
+                RepoData[] imageInfoData,
+                Subscription[] subscriptions,
+                IDictionary<Subscription, Manifest> subscriptionManifests,
+                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos,
+                bool hasInProgressBuild = false)
             {
                 this.hasInProgressBuild = hasInProgressBuild;
 
@@ -1155,7 +854,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
                     projectHttpClientMock, this.buildHttpClientMock);
 
-                this.httpClient = CreateHttpClient(subscriptions, subscriptionManifests, dockerfileInfos);
+                this.httpClientFactory = CreateHttpClientFactory(subscriptions, subscriptionManifests, dockerfileInfos);
 
                 this.DockerServiceMock = this.CreateDockerServiceMock();
                 this.command = this.CreateCommand(connectionFactoryMock);
@@ -1191,7 +890,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         if (kvp.Value.Any())
                         {
                             this.buildHttpClientMock
-                                .Verify(o => o.QueueBuildAsync(It.Is<Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
+                                .Verify(o =>
+                                    o.QueueBuildAsync(
+                                        It.Is<Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
                         }
                         else
                         {
@@ -1211,7 +912,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private RebuildStaleImagesCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
             {
-                RebuildStaleImagesCommand command = new RebuildStaleImagesCommand(this.DockerServiceMock.Object, connectionFactoryMock.Object, this.httpClient);
+                RebuildStaleImagesCommand command = new RebuildStaleImagesCommand(
+                    this.DockerServiceMock.Object, connectionFactoryMock.Object, this.httpClientFactory);
                 command.Options.BuildOrganization = BuildOrganization;
                 command.Options.BuildPersonalAccessToken = "testToken";
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
@@ -1220,13 +922,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             /// <summary>
-            /// Returns an <see cref="HttpClient"/> that will bypass the network and return back pre-built
-            /// responses for GitHub repo zip files.
+            /// Returns an <see cref="IHttpClientFactory"/> that creates an <see cref="HttpClient"/> which 
+            /// bypasses the network and return back pre-built responses for GitHub repo zip files.
             /// </summary>
             /// <param name="subscriptions">The set of subscriptions referring to GitHub repos that should have file responses.</param>
             /// <param name="subscriptionManifests">A mapping of subscriptions to their associated manifests.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
-            private HttpClient CreateHttpClient(Subscription[] subscriptions, IDictionary<Subscription, Manifest> subscriptionManifests, Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos)
+            private IHttpClientFactory CreateHttpClientFactory(
+                Subscription[] subscriptions,
+                IDictionary<Subscription, Manifest> subscriptionManifests,
+                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos)
             {
                 Dictionary<string, HttpResponseMessage> responses = new Dictionary<string, HttpResponseMessage>();
                 foreach (Subscription subscription in subscriptions)
@@ -1244,7 +949,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         });
                 }
 
-                return new HttpClient(new TestHttpMessageHandler(responses));
+                HttpClient client = new HttpClient(new TestHttpMessageHandler(responses));
+
+                Mock<IHttpClientFactory> httpClientFactoryMock = new Mock<IHttpClientFactory>();
+                httpClientFactoryMock
+                    .Setup(o => o.GetClient())
+                    .Returns(client);
+
+                return httpClientFactoryMock.Object;
             }
 
             /// <summary>
@@ -1254,14 +966,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="manifest">Manifest model associated with the subscription.</param>
             /// <param name="repoDockerfileInfos">Set of <see cref="DockerfileInfo"/> objects that describe the Dockerfiles contained in the repo.</param>
             /// <returns></returns>
-            private string GenerateRepoZipFile(Subscription subscription, Manifest manifest, List<DockerfileInfo> repoDockerfileInfos)
+            private string GenerateRepoZipFile(
+                Subscription subscription,
+                Manifest manifest,
+                List<DockerfileInfo> repoDockerfileInfos)
             {
                 // Create a temp folder to store everything in.
-                string tempDir = Directory.CreateDirectory(Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())).FullName;
+                string tempDir = Directory.CreateDirectory(
+                    Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())).FullName;
                 this.foldersToCleanup.Add(tempDir);
 
                 // Create a sub-folder inside the temp folder that represents the repo contents.
-                string repoPath = Directory.CreateDirectory(Path.Combine(tempDir, $"{subscription.RepoInfo.Name}-{subscription.RepoInfo.Branch}")).FullName;
+                string repoPath = Directory.CreateDirectory(
+                    Path.Combine(tempDir, $"{subscription.RepoInfo.Name}-{subscription.RepoInfo.Branch}")).FullName;
 
                 // Serialize the manifest model to a file in the repo folder.
                 string manifestPath = Path.Combine(repoPath, subscription.ManifestPath);
@@ -1294,7 +1011,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     dockerfileContents = $"FROM {dockerfileInfo.ImageName}";
                 }
 
-                string dockerfilePath = Directory.CreateDirectory(Path.Combine(destinationPath, dockerfileInfo.DockerfilePath)).FullName;
+                string dockerfilePath = Directory.CreateDirectory(
+                    Path.Combine(destinationPath, dockerfileInfo.DockerfilePath)).FullName;
                 File.WriteAllText(Path.Combine(dockerfilePath, "Dockerfile"), dockerfileContents);
             }
 
@@ -1307,7 +1025,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 return dockerServiceMock;
             }
 
-            private static Mock<IVssConnectionFactory> CreateVssConnectionFactoryMock(Mock<IProjectHttpClient> projectHttpClientMock,
+            private static Mock<IVssConnectionFactory> CreateVssConnectionFactoryMock(
+                Mock<IProjectHttpClient> projectHttpClientMock,
                 Mock<IBuildHttpClient> buildHttpClientMock)
             {
                 Mock<IVssConnection> connectionMock = CreateVssConnectionMock(projectHttpClientMock, buildHttpClientMock);
@@ -1429,7 +1148,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Directory.Delete(folder, true);
                 }
 
-                this.httpClient?.Dispose();
+                this.command?.Dispose();
             }
         }
 

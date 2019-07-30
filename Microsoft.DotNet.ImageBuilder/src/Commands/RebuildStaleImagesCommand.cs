@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,7 +23,8 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>
+    [Export]
+    public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>, IDisposable
     {
         private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
@@ -32,11 +34,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IVssConnectionFactory connectionFactory;
         private readonly HttpClient httpClient;
 
-        public RebuildStaleImagesCommand(IDockerService dockerService = null, IVssConnectionFactory connectionFactory = null, HttpClient httpClient = null)
+        [ImportingConstructor]
+        public RebuildStaleImagesCommand(IDockerService dockerService, IVssConnectionFactory connectionFactory, IHttpClientFactory httpClientFactory)
         {
-            this.dockerService = dockerService ?? new DockerService();
-            this.connectionFactory = connectionFactory ?? new VssConnectionFactory();
-            this.httpClient = httpClient ?? new HttpClient();
+            this.dockerService = dockerService;
+            this.connectionFactory = connectionFactory;
+            this.httpClient = httpClientFactory.GetClient();
         }
 
         public override async Task ExecuteAsync()
@@ -230,6 +233,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return repoPath;
+        }
+
+        public void Dispose()
+        {
+            this.httpClient.Dispose();
         }
 
         private class TempManifestOptions : ManifestOptions, IFilterableOptions

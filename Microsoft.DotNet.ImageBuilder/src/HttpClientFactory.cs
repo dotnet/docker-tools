@@ -4,20 +4,16 @@
 
 using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Primitives;
+using System.Net.Http;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IDockerService))]
-    internal class DockerService : IDockerService
+    [Export(typeof(IHttpClientFactory))]
+    internal class HttpClientFactory : IHttpClientFactory
     {
-        public string GetImageDigest(string image, bool isDryRun)
+        public HttpClient GetClient()
         {
-            return DockerHelper.GetImageDigest(image, isDryRun);
-        }
-
-        public void PullImage(string image, bool isDryRun)
-        {
-            DockerHelper.PullImage(image, isDryRun);
+            return new HttpClient();
         }
     }
 }

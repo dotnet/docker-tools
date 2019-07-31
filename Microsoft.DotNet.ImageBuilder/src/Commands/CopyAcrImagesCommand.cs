@@ -20,8 +20,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
+        private Lazy<RepoData[]> imageInfoRepos;
+
         public CopyAcrImagesCommand() : base()
         {
+            this.imageInfoRepos = new Lazy<RepoData[]>(() =>
+            {
+                if (!String.IsNullOrEmpty(Options.ImageInfoPath))
+                {
+                    return JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
+                }
+
+                return null;
+            });
         }
 
         public override async Task ExecuteAsync()
@@ -41,54 +52,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(repo =>
                     repo.FilteredImages
                         .SelectMany(image => image.FilteredPlatforms)
-                        .Select(platform => ImportImage(azure, repo, platform, registryName)))
+                        .Select(platform => GetDestinationTagNames(repo, platform))
+                        .Select(tags => ImportImage(azure, tags, registryName)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
         }
 
-        private async Task ImportImage(IAzure azure, RepoInfo repo, PlatformInfo platform, string registryName)
+        private async Task ImportImage(IAzure azure, IEnumerable<string> destTagNames, string registryName)
         {
-            List<string> destTagNames = null;
-
-            // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
-            // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
-            // of the tag for the image that was actually built rather than just generating new tag values when parsing
-            // the manifest.
-            if (!String.IsNullOrEmpty(Options.ImageInfoPath))
-            {
-                RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
-                RepoData repoData = repos.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
-                if (repoData != null)
-                {
-                    if (repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData image))
-                    {
-                        destTagNames = image.SimpleTags
-                        .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag))
-                        .ToList();
-                    }
-                    else
-                    {
-                        throw new InvalidOperationException($"Unable to find image info data for path '{platform.BuildContextPath}'.");
-                    }
-                }
-                else
-                {
-                    throw new InvalidOperationException($"Unable to find image info data for repo '{repo.Model.Name}'.");
-                }
-            }
-            
-            if (destTagNames == null)
-            {
-                destTagNames = platform.Tags
-                    .Select(tag => tag.FullyQualifiedName)
-                    .ToList();
-            }
-
-            destTagNames = destTagNames
-                .Select(tag => tag.TrimStart($"{Manifest.Registry}/"))
-                .ToList();
-
             foreach (string destTagName in destTagNames)
             {
                 string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
@@ -117,6 +89,49 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
+        }
+
+        private List<string> GetDestinationTagNames(RepoInfo repo, PlatformInfo platform)
+        {
+            List<string> destTagNames = null;
+
+            // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
+            // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
+            // of the tag for the image that was actually built rather than just generating new tag values when parsing
+            // the manifest.
+            if (imageInfoRepos.Value != null)
+            {
+                RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
+                if (repoData != null)
+                {
+                    if (repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData image))
+                    {
+                        destTagNames = image.SimpleTags
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag))
+                            .ToList();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Unable to find image info data for path '{platform.BuildContextPath}'.");
+                    }
+                }
+                else
+                {
+                    throw new InvalidOperationException($"Unable to find image info data for repo '{repo.Model.Name}'.");
+                }
+            }
+
+            if (destTagNames == null)
+            {
+                destTagNames = platform.Tags
+                    .Select(tag => tag.FullyQualifiedName)
+                    .ToList();
+            }
+
+            destTagNames = destTagNames
+                .Select(tag => tag.TrimStart($"{Manifest.Registry}/"))
+                .ToList();
+            return destTagNames;
         }
     }
 }

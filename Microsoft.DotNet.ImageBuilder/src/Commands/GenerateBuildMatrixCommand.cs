@@ -12,7 +12,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
     {
         private readonly static char[] s_pathSeparators = { '/', '\\' };

@@ -23,7 +23,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>, IDisposable
     {
         private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();

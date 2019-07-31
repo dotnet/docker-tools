@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export(typeof(ICommand))]
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
         private Lazy<RepoData[]> imageInfoRepos;

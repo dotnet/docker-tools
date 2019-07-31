@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition;
-using System.ComponentModel.Composition.Primitives;
 
 namespace Microsoft.DotNet.ImageBuilder
 {

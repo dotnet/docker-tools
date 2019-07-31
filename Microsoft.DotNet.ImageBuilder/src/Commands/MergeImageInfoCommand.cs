@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class MergeImageInfoCommand : Command<MergeImageInfoOptions>
     {
         public override Task ExecuteAsync()

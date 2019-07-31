@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
     {
         public PublishManifestCommand() : base()

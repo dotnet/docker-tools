@@ -19,7 +19,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
         private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();

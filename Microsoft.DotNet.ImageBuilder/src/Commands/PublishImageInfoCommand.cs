@@ -15,7 +15,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class PublishImageInfoCommand : Command<PublishImageInfoOptions>
     {
         public override async Task ExecuteAsync()

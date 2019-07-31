@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -172,7 +172,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 // Since neither of the images existed in the image info data, both should be queued.
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -255,7 +255,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos, hasInProgressBuild: true))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 // Normally this state would cause a build to be queued but since
                 // a build is marked as in progress, it doesn't.
@@ -363,7 +363,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -460,7 +460,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 // Both of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -551,7 +551,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -696,7 +696,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TestContext context =
                 new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
             {
-                await context.ExecuteAsync();
+                await context.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -860,7 +860,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.command = this.CreateCommand(connectionFactoryMock);
             }
 
-            public Task ExecuteAsync()
+            public Task ExecuteCommandAsync()
             {
                 return this.command.ExecuteAsync();
             }

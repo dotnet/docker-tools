@@ -37,21 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             try
             {
-                ICommand[] commands = {
-                    Container.GetExportedValue<BuildCommand>(),
-                    Container.GetExportedValue<CopyAcrImagesCommand>(),
-                    Container.GetExportedValue<GenerateBuildMatrixCommand>(),
-                    Container.GetExportedValue<GenerateTagsReadmeCommand>(),
-                    Container.GetExportedValue<MergeImageInfoCommand>(),
-                    Container.GetExportedValue<PublishImageInfoCommand>(),
-                    Container.GetExportedValue<PublishManifestCommand>(),
-                    Container.GetExportedValue<PublishMcrDocsCommand>(),
-                    Container.GetExportedValue<RebuildStaleImagesCommand>(),
-                    Container.GetExportedValue<ShowImageStatsCommand>(),
-                    Container.GetExportedValue<ShowManifestSchemaCommand>(),
-                    Container.GetExportedValue<UpdateVersionsCommand>(),
-                    Container.GetExportedValue<ValidateImageSizeCommand>()
-                };
+                ICommand[] commands = Container.GetExportedValues<ICommand>().ToArray();
 
                 ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
                 {

@@ -13,7 +13,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export]
+    [Export(typeof(ICommand))]
     public class ValidateImageSizeCommand : ManifestCommand<ValidateImageSizeOptions>
     {
         public ValidateImageSizeCommand() : base()

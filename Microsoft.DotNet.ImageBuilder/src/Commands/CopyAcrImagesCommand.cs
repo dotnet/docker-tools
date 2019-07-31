@@ -52,48 +52,45 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(repo =>
                     repo.FilteredImages
                         .SelectMany(image => image.FilteredPlatforms)
-                        .Select(platform => GetDestinationTagNames(repo, platform))
-                        .Select(tags => ImportImage(azure, tags, registryName)))
+                        .SelectMany(platform => GetDestinationTagNames(repo, platform))
+                        .Select(tag => ImportImage(azure, tag, registryName)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
         }
 
-        private async Task ImportImage(IAzure azure, IEnumerable<string> destTagNames, string registryName)
+        private async Task ImportImage(IAzure azure, string destTagName, string registryName)
         {
-            foreach (string destTagName in destTagNames)
+            string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
+            ImportImageParametersInner importParams = new ImportImageParametersInner()
             {
-                string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
-                ImportImageParametersInner importParams = new ImportImageParametersInner()
-                {
-                    Mode = "Force",
-                    Source = new ImportSource(
-                        sourceTagName,
-                        $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
-                            $"/Microsoft.ContainerRegistry/registries/{registryName}"),
-                    TargetTags = new string[] { destTagName }
-                };
+                Mode = "Force",
+                Source = new ImportSource(
+                    sourceTagName,
+                    $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
+                        $"/Microsoft.ContainerRegistry/registries/{registryName}"),
+                TargetTags = new string[] { destTagName }
+            };
 
-                Logger.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
+            Logger.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
 
-                if (!Options.IsDryRun)
+            if (!Options.IsDryRun)
+            {
+                try
                 {
-                    try
-                    {
-                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
-                    }
-                    catch (Exception e)
-                    {
-                        Logger.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
-                        throw;
-                    }
+                    await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+                }
+                catch (Exception e)
+                {
+                    Logger.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
+                    throw;
                 }
             }
         }
 
-        private List<string> GetDestinationTagNames(RepoInfo repo, PlatformInfo platform)
+        private IEnumerable<string> GetDestinationTagNames(RepoInfo repo, PlatformInfo platform)
         {
-            List<string> destTagNames = null;
+            IEnumerable<string> destTagNames = null;
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
@@ -107,30 +104,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData image))
                     {
                         destTagNames = image.SimpleTags
-                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag))
-                            .ToList();
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));
                     }
                     else
                     {
-                        throw new InvalidOperationException($"Unable to find image info data for path '{platform.BuildContextPath}'.");
+                        Logger.WriteError($"Unable to find image info data for path '{platform.BuildContextPath}'.");
+                        Environment.Exit(1);
                     }
                 }
                 else
                 {
-                    throw new InvalidOperationException($"Unable to find image info data for repo '{repo.Model.Name}'.");
+                    Logger.WriteError($"Unable to find image info data for repo '{repo.Model.Name}'.");
+                    Environment.Exit(1);
                 }
             }
 
             if (destTagNames == null)
             {
                 destTagNames = platform.Tags
-                    .Select(tag => tag.FullyQualifiedName)
-                    .ToList();
+                    .Select(tag => tag.FullyQualifiedName);
             }
 
             destTagNames = destTagNames
-                .Select(tag => tag.TrimStart($"{Manifest.Registry}/"))
-                .ToList();
+                .Select(tag => tag.TrimStart($"{Manifest.Registry}/"));
             return destTagNames;
         }
     }

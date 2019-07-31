@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Subscription { get; set; }
         public string Tenant { get; set; }
         public string Username { get; set; }
+        public string ImageInfoPath { get; set; }
 
         public CopyAcrImagesOptions() : base()
         {
@@ -27,6 +28,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.ParseCommandLine(syntax);
 
             FilterOptions.ParseCommandLine(syntax);
+
+            string imageInfoPath = null;
+            syntax.DefineOption("image-info", ref imageInfoPath, "Path to image info file");
+            ImageInfoPath = imageInfoPath;
 
             string sourceRepoPrefix = null;
             syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");

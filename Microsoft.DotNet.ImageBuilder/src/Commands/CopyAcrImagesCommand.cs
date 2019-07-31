@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent;
@@ -10,7 +12,9 @@ using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
 using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -22,46 +26,95 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("COPING IMAGES");
+            Logger.WriteHeading("COPYING IMAGES");
 
             string registryName = Manifest.Registry.TrimEnd(".azurecr.io");
 
-            await Task.WhenAll(Manifest.GetFilteredPlatformTags().Select(platformTag => ImportImage(platformTag, registryName)));
-        }
-
-        private async Task ImportImage(TagInfo platformTag, string registryName)
-        {
             AzureCredentials credentials = SdkContext.AzureCredentialsFactory
                 .FromServicePrincipal(Options.Username, Options.Password, Options.Tenant, AzureEnvironment.AzureGlobalCloud);
-            IAzure azure = Microsoft.Azure.Management.Fluent.Azure
+            IAzure azure = Azure.Management.Fluent.Azure
                 .Configure()
                 .Authenticate(credentials)
                 .WithSubscription(Options.Subscription);
 
-            string destTagName = platformTag.FullyQualifiedName.TrimStart($"{Manifest.Registry}/");
-            string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
-            ImportImageParametersInner importParams = new ImportImageParametersInner()
-            {
-                Mode = "Force",
-                Source = new ImportSource(
-                    sourceTagName,
-                    $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
-                        $"/Microsoft.ContainerRegistry/registries/{registryName}"),
-                TargetTags = new string[] { destTagName }
-            };
+            IEnumerable<Task> importTasks = Manifest.FilteredRepos
+                .Select(repo =>
+                    repo.FilteredImages
+                        .SelectMany(image => image.FilteredPlatforms)
+                        .Select(platform => ImportImage(azure, repo, platform, registryName)))
+                .SelectMany(tasks => tasks);
 
-            Logger.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
+            await Task.WhenAll(importTasks);
+        }
 
-            if (!Options.IsDryRun)
+        private async Task ImportImage(IAzure azure, RepoInfo repo, PlatformInfo platform, string registryName)
+        {
+            List<string> destTagNames = null;
+
+            // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
+            // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
+            // of the tag for the image that was actually built rather than just generating new tag values when parsing
+            // the manifest.
+            if (!String.IsNullOrEmpty(Options.ImageInfoPath))
             {
-                try
+                RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
+                RepoData repoData = repos.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
+                if (repoData != null)
                 {
-                    await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+                    if (repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData image))
+                    {
+                        destTagNames = image.SimpleTags
+                        .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag))
+                        .ToList();
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException($"Unable to find image info data for path '{platform.BuildContextPath}'.");
+                    }
                 }
-                catch (Exception e)
+                else
                 {
-                    Logger.WriteMessage($"Importing Failure:  {destTagName}{Environment.NewLine}{e}");
-                    throw;
+                    throw new InvalidOperationException($"Unable to find image info data for repo '{repo.Model.Name}'.");
+                }
+            }
+            
+            if (destTagNames == null)
+            {
+                destTagNames = platform.Tags
+                    .Select(tag => tag.FullyQualifiedName)
+                    .ToList();
+            }
+
+            destTagNames = destTagNames
+                .Select(tag => tag.TrimStart($"{Manifest.Registry}/"))
+                .ToList();
+
+            foreach (string destTagName in destTagNames)
+            {
+                string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
+                ImportImageParametersInner importParams = new ImportImageParametersInner()
+                {
+                    Mode = "Force",
+                    Source = new ImportSource(
+                        sourceTagName,
+                        $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
+                            $"/Microsoft.ContainerRegistry/registries/{registryName}"),
+                    TargetTags = new string[] { destTagName }
+                };
+
+                Logger.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
+
+                if (!Options.IsDryRun)
+                {
+                    try
+                    {
+                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
+                        throw;
+                    }
                 }
             }
         }

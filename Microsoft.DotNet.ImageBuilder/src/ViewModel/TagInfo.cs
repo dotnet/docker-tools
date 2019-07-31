@@ -3,7 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.IO;
+using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
@@ -25,13 +30,20 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             VariableHelper variableHelper,
             string buildContextPath = null)
         {
-            TagInfo tagInfo = new TagInfo();
-            tagInfo.Model = model;
-            tagInfo.BuildContextPath = buildContextPath;
+            TagInfo tagInfo = new TagInfo
+            {
+                Model = model,
+                BuildContextPath = buildContextPath
+            };
             tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetVariableValue);
-            tagInfo.FullyQualifiedName = $"{repoName}:{tagInfo.Name}";
+            tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
 
             return tagInfo;
+        }
+
+        public static string GetFullyQualifiedName(string repoName, string tagName)
+        {
+            return $"{repoName}:{tagName}";
         }
 
         private string GetVariableValue(string variableType, string variableName)

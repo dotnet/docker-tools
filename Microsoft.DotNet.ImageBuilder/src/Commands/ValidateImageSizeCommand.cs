@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,6 +13,7 @@ using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export(typeof(ICommand))]
     public class ValidateImageSizeCommand : ManifestCommand<ValidateImageSizeOptions>
     {
         public ValidateImageSizeCommand() : base()

@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,9 +16,11 @@ using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
+using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export(typeof(ICommand))]
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
         private Lazy<RepoData[]> imageInfoRepos;

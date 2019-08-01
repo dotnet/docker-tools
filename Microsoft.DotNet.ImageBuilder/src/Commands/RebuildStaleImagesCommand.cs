@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -12,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
+using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -21,12 +23,30 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>
+    [Export(typeof(ICommand))]
+    public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>, IDisposable
     {
-        private Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
-        private Dictionary<string, string> imageDigests = new Dictionary<string, string>();
-        private SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
-        private SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
+        private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
+        private readonly SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
+        private readonly SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
+        private readonly IDockerService dockerService;
+        private readonly IVssConnectionFactory connectionFactory;
+        private readonly ILoggerService loggerService;
+        private readonly HttpClient httpClient;
+
+        [ImportingConstructor]
+        public RebuildStaleImagesCommand(
+            IDockerService dockerService,
+            IVssConnectionFactory connectionFactory,
+            IHttpClientFactory httpClientFactory,
+            ILoggerService loggerService)
+        {
+            this.dockerService = dockerService;
+            this.connectionFactory = connectionFactory;
+            this.loggerService = loggerService;
+            this.httpClient = httpClientFactory.GetClient();
+        }
 
         public override async Task ExecuteAsync()
         {
@@ -57,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!pathsToRebuild.Any())
             {
-                Logger.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
+                this.loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
                 return;
             }
 
@@ -67,20 +87,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedParameters + "\"}";
 
-            Logger.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
+            this.loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
 
             if (Options.IsDryRun)
             {
                 return;
             }
 
-            using (VssConnection connection = new VssConnection(
+            using (IVssConnection connection = this.connectionFactory.Create(
                 new Uri($"https://dev.azure.com/{Options.BuildOrganization}"),
                 new VssBasicCredential(String.Empty, Options.BuildPersonalAccessToken)))
-            using (ProjectHttpClient projectHttpClient = connection.GetClient<ProjectHttpClient>())
-            using (BuildHttpClient client = connection.GetClient<BuildHttpClient>())
+            using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
+            using (IBuildHttpClient client = connection.GetBuildHttpClient())
             {
-                TeamProject project = await projectHttpClient.GetProject(Options.BuildProject);
+                TeamProject project = await projectHttpClient.GetProjectAsync(Options.BuildProject);
 
                 Build build = new Build
                 {
@@ -92,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
                 {
-                    Logger.WriteMessage(
+                    this.loggerService.WriteMessage(
                         $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
                     return;
                 }
@@ -101,9 +121,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task<bool> HasInProgressBuildAsync(BuildHttpClient client, int pipelineId, Guid projectId)
+        private async Task<bool> HasInProgressBuildAsync(IBuildHttpClient client, int pipelineId, Guid projectId)
         {
-            IPagedList<Build> builds = await client.GetBuildsAsync2(
+            IPagedList<Build> builds = await client.GetBuildsAsync(
                 projectId, definitions: new int[] { pipelineId }, statusFilter: BuildStatus.InProgress);
             return builds.Any();
         }
@@ -149,8 +169,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             {
                                 if (!this.imageDigests.TryGetValue(fromImage, out currentDigest))
                                 {
-                                    DockerHelper.PullImage(fromImage, Options.IsDryRun);
-                                    currentDigest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
+                                    this.dockerService.PullImage(fromImage, Options.IsDryRun);
+                                    currentDigest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
                                     this.imageDigests.Add(fromImage, currentDigest);
                                 }
                             }
@@ -176,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        Logger.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
+                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
                         pathsToRebuild.Add(platform.BuildContextPath);
                     }
                 }
@@ -194,26 +214,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string uniqueName = $"{sub.RepoInfo.Owner}-{sub.RepoInfo.Name}-{sub.RepoInfo.Branch}";
                 if (!this.gitRepoIdToPathMapping.TryGetValue(uniqueName, out repoPath))
                 {
-                    using (HttpClient client = new HttpClient())
+                    string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
+                    string repoContentsUrl =
+                        $"https://www.github.com/{sub.RepoInfo.Owner}/{sub.RepoInfo.Name}/archive/{sub.RepoInfo.Branch}.zip";
+                    string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
+                    File.WriteAllBytes(zipPath, await this.httpClient.GetByteArrayAsync(repoContentsUrl));
+
+                    try
                     {
-                        string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-                        string repoContentsUrl =
-                            $"https://www.github.com/{sub.RepoInfo.Owner}/{sub.RepoInfo.Name}/archive/{sub.RepoInfo.Branch}.zip";
-                        string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
-                        File.WriteAllBytes(zipPath, await client.GetByteArrayAsync(repoContentsUrl));
-
-                        try
-                        {
-                            ZipFile.ExtractToDirectory(zipPath, extractPath);
-                        }
-                        finally
-                        {
-                            File.Delete(zipPath);
-                        }
-
-                        repoPath = Path.Combine(extractPath, $"{sub.RepoInfo.Name}-{sub.RepoInfo.Branch}");
-                        this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
+                        ZipFile.ExtractToDirectory(zipPath, extractPath);
                     }
+                    finally
+                    {
+                        File.Delete(zipPath);
+                    }
+
+                    repoPath = Path.Combine(extractPath, $"{sub.RepoInfo.Name}-{sub.RepoInfo.Branch}");
+                    this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
                 }
             }
             finally
@@ -222,6 +239,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return repoPath;
+        }
+
+        public void Dispose()
+        {
+            this.httpClient.Dispose();
         }
 
         private class TempManifestOptions : ManifestOptions, IFilterableOptions

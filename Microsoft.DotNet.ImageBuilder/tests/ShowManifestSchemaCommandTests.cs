@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
@@ -20,19 +19,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ShowManifestSchemaCommand_Execute()
         {
-            ShowManifestSchemaCommand command = new ShowManifestSchemaCommand();
+            Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
 
-            string output;
-            using (StringWriter stringWriter = new StringWriter())
-            {
-                Console.SetOut(stringWriter);
-                await command.ExecuteAsync();
+            ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(loggerServiceMock.Object);
 
-                output = stringWriter.ToString();
-            }
+            await command.ExecuteAsync();
 
-            JObject schema = JsonConvert.DeserializeObject<JObject>(output);
-            Assert.NotNull(schema);
+            loggerServiceMock.Verify(o => o.WriteMessage(It.Is<string>(str =>
+                JsonConvert.DeserializeObject<JObject>(str) != null
+            )));
         }
     }
 }

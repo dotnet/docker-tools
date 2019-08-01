@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -12,6 +13,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export(typeof(ICommand))]
     public class UpdateVersionsCommand : ManifestCommand<UpdateVersionsOptions>
     {
         public UpdateVersionsCommand() : base()

@@ -4,12 +4,14 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    [Export(typeof(ICommand))]
     public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions>
     {
         public ShowImageStatsCommand() : base()

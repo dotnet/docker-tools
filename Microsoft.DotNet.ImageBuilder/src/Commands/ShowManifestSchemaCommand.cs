@@ -14,6 +14,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class ShowManifestSchemaCommand : Command<ShowManifestSchemaOptions>
     {
+        private readonly ILoggerService loggerService;
+
+        [ImportingConstructor]
+        public ShowManifestSchemaCommand(ILoggerService loggerService)
+        {
+            this.loggerService = loggerService;
+        }
+
         public override Task ExecuteAsync()
         {
             JSchemaGenerator generator = new JSchemaGenerator();
@@ -22,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             JSchema schema = generator.Generate(typeof(Manifest));
 
-            Logger.WriteMessage(schema.ToString());
+            this.loggerService.WriteMessage(schema.ToString());
 
             return Task.CompletedTask;
         }

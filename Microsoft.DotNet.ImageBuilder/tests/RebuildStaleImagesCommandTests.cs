@@ -912,8 +912,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private RebuildStaleImagesCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
             {
+                Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
+
                 RebuildStaleImagesCommand command = new RebuildStaleImagesCommand(
-                    this.DockerServiceMock.Object, connectionFactoryMock.Object, this.httpClientFactory);
+                    this.DockerServiceMock.Object, connectionFactoryMock.Object, this.httpClientFactory,
+                    loggerServiceMock.Object);
                 command.Options.BuildOrganization = BuildOrganization;
                 command.Options.BuildPersonalAccessToken = "testToken";
                 command.Options.SubscriptionsPath = this.subscriptionsPath;

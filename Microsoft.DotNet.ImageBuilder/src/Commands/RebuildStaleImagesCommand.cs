@@ -32,13 +32,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
         private readonly IDockerService dockerService;
         private readonly IVssConnectionFactory connectionFactory;
+        private readonly ILoggerService loggerService;
         private readonly HttpClient httpClient;
 
         [ImportingConstructor]
-        public RebuildStaleImagesCommand(IDockerService dockerService, IVssConnectionFactory connectionFactory, IHttpClientFactory httpClientFactory)
+        public RebuildStaleImagesCommand(
+            IDockerService dockerService,
+            IVssConnectionFactory connectionFactory,
+            IHttpClientFactory httpClientFactory,
+            ILoggerService loggerService)
         {
             this.dockerService = dockerService;
             this.connectionFactory = connectionFactory;
+            this.loggerService = loggerService;
             this.httpClient = httpClientFactory.GetClient();
         }
 
@@ -71,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!pathsToRebuild.Any())
             {
-                Logger.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
+                this.loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
                 return;
             }
 
@@ -81,7 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedParameters + "\"}";
 
-            Logger.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
+            this.loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
 
             if (Options.IsDryRun)
             {
@@ -106,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
                 {
-                    Logger.WriteMessage(
+                    this.loggerService.WriteMessage(
                         $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
                     return;
                 }
@@ -190,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        Logger.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
+                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
                         pathsToRebuild.Add(platform.BuildContextPath);
                     }
                 }

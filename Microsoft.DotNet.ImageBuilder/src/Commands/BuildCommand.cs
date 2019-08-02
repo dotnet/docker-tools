@@ -113,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             imageData.BaseImages = baseImageDigests;
                         }
 
-                        imageData.SimpleTags = platform.Tags
+                        imageData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
@@ -278,8 +278,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ExecuteWithUser(() =>
                 {
-                    IEnumerable<string> pushTags = BuiltTags
-                        .Where(tag => !tag.Model.IsLocal)
+                    IEnumerable<string> pushTags = GetPushTags(BuiltTags)
                         .Select(tag => tag.FullyQualifiedName);
                     foreach (string tag in pushTags)
                     {
@@ -287,6 +286,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 });
             }
+        }
+
+        private static IEnumerable<TagInfo> GetPushTags(IEnumerable<TagInfo> buildTags)
+        {
+            return buildTags.Where(tag => !tag.Model.IsLocal);
         }
 
         private bool UpdateDockerfileFromCommands(PlatformInfo platform, out string dockerfilePath)

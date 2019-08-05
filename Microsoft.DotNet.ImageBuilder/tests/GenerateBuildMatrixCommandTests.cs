@@ -55,11 +55,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<MatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
                 Assert.Single(matrixInfos);
 
-                MatrixInfo matrixInfo = matrixInfos.First();
-                LegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith("2.2"));
+                BuildMatrixInfo matrixInfo = matrixInfos.First();
+                BuildLegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith("2.2"));
                 string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
                 Assert.Equal("--path 2.2/runtime/os --path 2.1/runtime-deps/os", imageBuilderPaths);

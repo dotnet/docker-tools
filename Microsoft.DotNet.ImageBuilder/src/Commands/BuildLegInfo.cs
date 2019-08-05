@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class LegInfo
+    public class BuildLegInfo
     {
         public string Name { get; set; }
         public List<(string Name, string Value)> Variables { get; } = new List<(string, string)>();

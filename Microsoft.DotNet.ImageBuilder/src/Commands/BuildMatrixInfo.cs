@@ -7,11 +7,11 @@ using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class MatrixInfo
+    public class BuildMatrixInfo
     {
         public string Name { get; set; }
-        public List<LegInfo> Legs { get; } = new List<LegInfo>();
+        public List<BuildLegInfo> Legs { get; } = new List<BuildLegInfo>();
 
-        public IEnumerable<LegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
+        public IEnumerable<BuildLegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
     }
 }

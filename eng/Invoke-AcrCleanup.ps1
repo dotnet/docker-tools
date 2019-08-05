@@ -16,16 +16,13 @@ if ($suffixIndex -ge 0) {
     $RegistryName = $RegistryName.Substring(0, $suffixIndex)
 }
 
-if ($ServicePrincipalName) {
-    az login `
-        --subscription $SubscriptionId `
-        --service-principal `
-        --username $ServicePrincipalName `
-        --password $ServicePrincipalPassword `
-        --tenant $ServicePrincipalTenant
-} else {
-    az login --subscription $SubscriptionId
-}
+az login `
+    --service-principal `
+    --username $ServicePrincipalName `
+    --password $ServicePrincipalPassword `
+    --tenant $ServicePrincipalTenant
+
+az account set --subscription $SubscriptionId
 
 Write-Host "Querying registry '$RegistryName' for its repositories"
 Write-Host ""

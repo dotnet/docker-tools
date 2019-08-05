@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteHeading("GENERATING BUILD MATRIX");
 
-            IEnumerable<MatrixInfo> matrices = GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrices = GenerateMatrixInfo();
             LogDiagnostics(matrices);
             EmitVstsVariables(matrices);
 
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private void AddDockerfilePathLegs(
-            MatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
+            BuildMatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Union(GetCustomLegGroupingDockerfilePaths(subgraph))
                     .ToArray();
 
-                LegInfo leg = new LegInfo()
+                BuildLegInfo leg = new BuildLegInfo()
                 {
                     Name = GetDockerfilePathLegName(dockerfilePaths, matrixNameParts)
                 };
@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return GetDockerfilePaths(subgraphs);
         }
 
-        private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, LegInfo leg)
+        private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, BuildLegInfo leg)
         {
             string pathArgs = dockerfilePaths
                 .Select(path => $"{ManifestFilterOptions.FormattedPathOption} {path}")
@@ -87,7 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
 
-        private static void AddCommonVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, LegInfo leg)
+        private static void AddCommonVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, BuildLegInfo leg)
         {
             string fullyQualifiedLegName =
                 (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) +
@@ -100,7 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
         }
 
-        private void AddVersionedOsLegs(MatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
+        private void AddVersionedOsLegs(BuildMatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
                 .GroupBy(platform => new
@@ -111,25 +111,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
             foreach (var versionGrouping in versionGroups)
             {
-                LegInfo leg = new LegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
+                IEnumerable<PlatformInfo> subgraphs = versionGrouping
+                    .GetCompleteSubgraphs(GetPlatformDependencies)
+                    .SelectMany(subgraph => subgraph);
+
+                BuildLegInfo leg = new BuildLegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
                 matrix.Legs.Add(leg);
 
                 AddCommonVariables(platformGrouping, leg);
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
 
-                IEnumerable<string> dockerfilePaths = GetDockerfilePaths(versionGrouping)
-                    .Union(GetCustomLegGroupingDockerfilePaths(versionGrouping));
+                IEnumerable<string> dockerfilePaths = GetDockerfilePaths(subgraphs)
+                    .Union(GetCustomLegGroupingDockerfilePaths(subgraphs));
 
                 AddImageBuilderPathsVariable(dockerfilePaths.ToArray(), leg);
             }
         }
 
-        private static void EmitVstsVariables(IEnumerable<MatrixInfo> matrices)
+        private static void EmitVstsVariables(IEnumerable<BuildMatrixInfo> matrices)
         {
             // Emit the special syntax to set a VSTS build definition matrix variable
             // ##vso[task.setvariable variable=x;isoutput=true]{ \"a\": { \"v1\": \"1\" }, \"b\": { \"v1\": \"2\" } }
-            foreach (MatrixInfo matrix in matrices)
+            foreach (BuildMatrixInfo matrix in matrices)
             {
                 string legs = matrix.OrderedLegs
                     .Select(leg =>
@@ -174,9 +178,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
-        private IEnumerable<MatrixInfo> GenerateMatrixInfo()
+        public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
         {
-            List<MatrixInfo> matrices = new List<MatrixInfo>();
+            List<BuildMatrixInfo> matrices = new List<BuildMatrixInfo>();
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
             var platformGroups = Manifest.GetFilteredPlatforms()
@@ -200,7 +204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
                     platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
                 };
-                MatrixInfo matrix = new MatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
+                BuildMatrixInfo matrix = new BuildMatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
                 matrices.Add(matrix);
 
                 if (Options.MatrixType == MatrixType.PlatformDependencyGraph)
@@ -219,13 +223,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform) =>
             platform.InternalFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
 
-        private static void LogDiagnostics(IEnumerable<MatrixInfo> matrices)
+        private static void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
         {
             // Write out the matrices in a human friendly format
-            foreach (MatrixInfo matrix in matrices)
+            foreach (BuildMatrixInfo matrix in matrices)
             {
                 Logger.WriteMessage($"  {matrix.Name}:");
-                foreach (LegInfo leg in matrix.OrderedLegs)
+                foreach (BuildLegInfo leg in matrix.OrderedLegs)
                 {
                     Logger.WriteMessage($"    {leg.Name}:");
                     foreach ((string Name, string Value) in leg.Variables)
@@ -234,20 +238,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
-        }
-
-        private class MatrixInfo
-        {
-            public string Name { get; set; }
-            public List<LegInfo> Legs { get; } = new List<LegInfo>();
-
-            public IEnumerable<LegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
-        }
-
-        private class LegInfo
-        {
-            public string Name { get; set; }
-            public List<(string Name, string Value)> Variables { get; } = new List<(string, string)>();
         }
 
         private class PlatformId : IEquatable<PlatformId>

@@ -111,6 +111,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
             foreach (var versionGrouping in versionGroups)
             {
+                IEnumerable<PlatformInfo> subgraphs = versionGrouping
+                    .GetCompleteSubgraphs(GetPlatformDependencies)
+                    .SelectMany(subgraph => subgraph);
+
                 LegInfo leg = new LegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
                 matrix.Legs.Add(leg);
 
@@ -118,8 +122,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
 
-                IEnumerable<string> dockerfilePaths = GetDockerfilePaths(versionGrouping)
-                    .Union(GetCustomLegGroupingDockerfilePaths(versionGrouping));
+                IEnumerable<string> dockerfilePaths = GetDockerfilePaths(subgraphs)
+                    .Union(GetCustomLegGroupingDockerfilePaths(subgraphs));
 
                 AddImageBuilderPathsVariable(dockerfilePaths.ToArray(), leg);
             }
@@ -174,7 +178,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
-        private IEnumerable<MatrixInfo> GenerateMatrixInfo()
+        public IEnumerable<MatrixInfo> GenerateMatrixInfo()
         {
             List<MatrixInfo> matrices = new List<MatrixInfo>();
 
@@ -234,20 +238,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
-        }
-
-        private class MatrixInfo
-        {
-            public string Name { get; set; }
-            public List<LegInfo> Legs { get; } = new List<LegInfo>();
-
-            public IEnumerable<LegInfo> OrderedLegs { get => Legs.OrderBy(leg => leg.Name); }
-        }
-
-        private class LegInfo
-        {
-            public string Name { get; set; }
-            public List<(string Name, string Value)> Variables { get; } = new List<(string, string)>();
         }
 
         private class PlatformId : IEquatable<PlatformId>

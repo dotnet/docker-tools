@@ -13,6 +13,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             return new TempFolderContext();
         }
+
+        public static IDisposable SetWorkingDirectory(string path)
+        {
+            return new WorkingDirectoryContext(path);
+        }
+
+        private class WorkingDirectoryContext : IDisposable
+        {
+            private readonly string oldWorkingDirectory;
+
+            public WorkingDirectoryContext(string newWorkingDirectoryPath)
+            {
+                this.oldWorkingDirectory = Directory.GetCurrentDirectory();
+                Directory.SetCurrentDirectory(newWorkingDirectoryPath);
+            }
+
+            public void Dispose()
+            {
+                Directory.SetCurrentDirectory(this.oldWorkingDirectory);
+            }
+        }
     }
 
     public class TempFolderContext : IDisposable

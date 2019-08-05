@@ -288,10 +288,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private static IEnumerable<TagInfo> GetPushTags(IEnumerable<TagInfo> buildTags)
-        {
-            return buildTags.Where(tag => !tag.Model.IsLocal);
-        }
+        private static IEnumerable<TagInfo> GetPushTags(IEnumerable<TagInfo> buildTags) =>
+            buildTags.Where(tag => !tag.Model.IsLocal);
 
         private bool UpdateDockerfileFromCommands(PlatformInfo platform, out string dockerfilePath)
         {

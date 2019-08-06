@@ -39,6 +39,6 @@ steps:
     testResultsFiles: 'tests/**/*.trx'
     mergeTestResults: true
     publishRunAttachments: true
-    testRunTitle: Windows $(dotnetVersion) $(osVariant) amd64
+    testRunTitle: $(dotnetVersion) $(osVariant) amd64
 - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
   - template: cleanup-docker-windows.yml

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <PublishTrimmed>True</PublishTrimmed>
+    <PublishTrimmed>False</PublishTrimmed>
     <TargetFramework>netcoreapp3.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
   </PropertyGroup>

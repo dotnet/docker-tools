@@ -44,6 +44,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string registryName = Manifest.Registry.TrimEnd(".azurecr.io");
 
+            IEnumerable<Task> importTasks = Manifest.FilteredRepos
+                .Select(repo =>
+                    repo.FilteredImages
+                        .SelectMany(image => image.FilteredPlatforms)
+                        .SelectMany(platform => GetDestinationTagNames(repo, platform))
+                        .Select(tag => ImportImageAsync(tag, registryName)))
+                .SelectMany(tasks => tasks);
+
+            await Task.WhenAll(importTasks);
+        }
+
+        private async Task ImportImageAsync(string destTagName, string registryName)
+        {
             AzureCredentials credentials = SdkContext.AzureCredentialsFactory
                 .FromServicePrincipal(Options.Username, Options.Password, Options.Tenant, AzureEnvironment.AzureGlobalCloud);
             IAzure azure = Azure.Management.Fluent.Azure
@@ -51,19 +64,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Authenticate(credentials)
                 .WithSubscription(Options.Subscription);
 
-            IEnumerable<Task> importTasks = Manifest.FilteredRepos
-                .Select(repo =>
-                    repo.FilteredImages
-                        .SelectMany(image => image.FilteredPlatforms)
-                        .SelectMany(platform => GetDestinationTagNames(repo, platform))
-                        .Select(tag => ImportImage(azure, tag, registryName)))
-                .SelectMany(tasks => tasks);
-
-            await Task.WhenAll(importTasks);
-        }
-
-        private async Task ImportImage(IAzure azure, string destTagName, string registryName)
-        {
             string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
             ImportImageParametersInner importParams = new ImportImageParametersInner()
             {

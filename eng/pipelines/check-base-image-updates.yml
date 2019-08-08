@@ -4,21 +4,55 @@ pr: none
 variables:
 - template: templates/variables/common.yml
 
+# Sequentially execute the jobs to avoid race condition and having multiple builds getting queued
 jobs:
-- job: Build_Linux
+- job: Build_Linux_AMD
   pool: Hosted Ubuntu 1604
   steps:
   - template: templates/steps/queue-build-for-stale-images.yml
     parameters:
       osType: linux
-- job: Build_Windows
+      dockerClientOS: linux
+
+- job: Build_Linux_ARM
+  pool:
+    name: DotNetCore-Docker
+    demands:
+    - agent.os -equals linux
+    - RemoteDockerServerOS -equals linux
+    - RemoteDockerServerArch -equals aarch64
+  dependsOn: Build_Linux_AMD
+  steps:
+  - template: templates/steps/queue-build-for-stale-images.yml
+    parameters:
+      osType: linux
+      dockerClientOS: linux
+      useRemoteDockerServer: true
+
+- job: Build_Windows_AMD
   # Use the most recent Windows version so we can pull all image versions of Windows
-  pool: # windows1903Amd64
+  pool:
     name: DotNetCore-Docker
     demands: VSTS_OS -equals Windows_Server_2019_Data_Center_1903
-  # Sequentially execute the jobs to avoid race condition and having multiple builds getting queued
-  dependsOn: Build_Linux
+  dependsOn: Build_Linux_ARM
   steps:
   - template: templates/steps/queue-build-for-stale-images.yml
     parameters:
       osType: windows
+      dockerClientOS: windows
+
+- job: Build_Windows_ARM
+  # Use the most recent ARM-supported Windows version so we can pull all image versions of Windows
+  pool:
+    name: DotNetCore-Docker
+    demands:
+    - agent.os -equals linux
+    - RemoteDockerServerOS -equals nanoserver-1809
+    - RemoteDockerServerArch -equals arm32
+  dependsOn: Build_Windows_AMD
+  steps:
+  - template: templates/steps/queue-build-for-stale-images.yml
+    parameters:
+      osType: windows
+      dockerClientOS: linux
+      useRemoteDockerServer: true

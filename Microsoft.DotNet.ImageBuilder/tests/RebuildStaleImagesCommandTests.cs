@@ -908,7 +908,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     string repoZipPath = GenerateRepoZipFile(subscription, manifest, repoDockerfileInfos);
 
                     responses.Add(
-                        $"https://www.github.com/{subscription.RepoInfo.Owner}/{subscription.RepoInfo.Name}/archive/{subscription.RepoInfo.Branch}.zip",
+                        $"https://github.com/{subscription.RepoInfo.Owner}/{subscription.RepoInfo.Name}/archive/{subscription.RepoInfo.Branch}.zip",
                         new HttpResponseMessage
                         {
                             StatusCode = HttpStatusCode.OK,

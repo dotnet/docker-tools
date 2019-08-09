@@ -51,14 +51,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 });
 
+                Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
+
                 if (gitRef != null)
                 {
                     Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
-                    Logger.WriteMessage($"The '{Options.ImageInfoPath}' file was updated ({commitUrl}).");
+                    Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
                 }
                 else
                 {
-                    Logger.WriteMessage($"No changes to the '{Options.ImageInfoPath}' file were needed.");
+                    Logger.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
                 }
             });
         }

@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
@@ -26,6 +27,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             Process gitLogProcess = ExecuteHelper.Execute(
                 startInfo, false, $"Unable to retrieve the latest commit SHA for {filePath}");
             return gitLogProcess.StandardOutput.ReadToEnd().Trim();
+        }
+
+        public static Uri GetArchiveUrl(GitRepo gitRepo)
+        {
+            return new Uri($"https://github.com/{gitRepo.Owner}/{gitRepo.Name}/archive/{gitRepo.Branch}.zip");
+        }
+
+        public static Uri GetBlobUrl(GitOptions gitOptions)
+        {
+            return new Uri($"https://github.com/{gitOptions.Owner}/{gitOptions.Repo}/blob/{gitOptions.Branch}/{gitOptions.Path}");
         }
 
         public static Uri GetCommitUrl(GitOptions gitOptions, string sha)

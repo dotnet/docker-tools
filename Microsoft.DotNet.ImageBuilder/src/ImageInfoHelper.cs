@@ -73,10 +73,8 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj)
-        {
+        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj) =>
             property.SetValue(targetObj, property.GetValue(srcObj));
-        }
 
         private static void MergeLists(PropertyInfo property, object srcObj, object targetObj)
         {

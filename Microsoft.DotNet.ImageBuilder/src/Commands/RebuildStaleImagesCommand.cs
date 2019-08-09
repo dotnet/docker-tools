@@ -215,8 +215,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (!this.gitRepoIdToPathMapping.TryGetValue(uniqueName, out repoPath))
                 {
                     string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-                    string repoContentsUrl =
-                        $"https://www.github.com/{sub.RepoInfo.Owner}/{sub.RepoInfo.Name}/archive/{sub.RepoInfo.Branch}.zip";
+                    Uri repoContentsUrl = GitHelper.GetArchiveUrl(sub.RepoInfo);
                     string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
                     File.WriteAllBytes(zipPath, await this.httpClient.GetByteArrayAsync(repoContentsUrl));
 

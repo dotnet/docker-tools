@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 SearchOption.AllDirectories);
 
             List<RepoData[]> srcReposList = imageInfoFiles
+                .OrderBy(file => file) // Ensure the files are ordered for testing consistency between OS's.
                 .Select(imageDataPath => JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(imageDataPath)))
                 .ToList();
 

@@ -48,7 +48,23 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
-                    MergeLists(property, srcObj, targetObj);
+                    if (srcObj is ImageData && property.Name == nameof(ImageData.SimpleTags))
+                    {
+                        // SimpleTags are not to be merged. If an image is built, all of its tags are generated. There
+                        // would never be a case where an image gets built and only a subset of the tags specified in
+                        // the manifest are applied to the image.  So that means that the source image data indicates
+                        // the current "truth" of what the image's tags are. Any of the image's tags contained in the
+                        // target should be considered obsolete and should be replaced by the source.  This accounts
+                        // for the scenario where shared tags are moved from one image to another. If we had merged
+                        // instead of replaced, then the shared tag would not have been removed from the original image
+                        // in the image info in such a scenario.
+
+                        ReplaceValue(property, srcObj, targetObj);
+                    }
+                    else
+                    {
+                        MergeLists(property, srcObj, targetObj);
+                    }
                 }
                 else
                 {
@@ -56,6 +72,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
         }
+
+        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj) =>
+            property.SetValue(targetObj, property.GetValue(srcObj));
 
         private static void MergeLists(PropertyInfo property, object srcObj, object targetObj)
         {

@@ -155,7 +155,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 new ImageData {
                                     SimpleTags =
                                     {
-                                        "tag1",
+                                        // Since SimpleTags get replaced rather than merged
                                         "tag2"
                                     }
                                 }

@@ -173,6 +173,96 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareRepos(expected, targetRepos);
         }
 
+        /// <summary>
+        /// Verifies that tags are removed from existing images in the target
+        /// if the same tag doesn't exist in the source. This handles cases where
+        /// a shared tag has been moved from one image to another.
+        /// </summary>
+        [Fact]
+        public void ImageInfoHelper_MergeRepos_RemoveTag()
+        {
+            ImageData srcImage1;
+            ImageData targetImage2;
+
+            RepoData[] repoDataSet = new RepoData[]
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            "image1",
+                            srcImage1 = new ImageData
+                            {
+                                SimpleTags =
+                                {
+                                    "tag1",
+                                    "tag3"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            List<RepoData> targetRepos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            "image1",
+                            new ImageData
+                            {
+                                SimpleTags =
+                                {
+                                    "tag1",
+                                    "tag2",
+                                    "tag4"
+                                }
+                            }
+                        },
+                        {
+                            "image2",
+                            targetImage2 = new ImageData
+                            {
+                                SimpleTags =
+                                {
+                                    "a"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos);
+
+            List<RepoData> expected = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = "repo1",
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            "image1",
+                            srcImage1
+                        },
+                        {
+                            "image2",
+                            targetImage2
+                        }
+                    }
+                }
+            };
+
+            CompareRepos(expected, targetRepos);
+        }
+
         public static void CompareRepos(IList<RepoData> expected, IList<RepoData> actual)
         {
             Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));

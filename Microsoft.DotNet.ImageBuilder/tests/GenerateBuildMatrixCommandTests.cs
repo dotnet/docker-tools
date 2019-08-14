@@ -65,5 +65,74 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Equal("--path 2.2/runtime/os --path 2.1/runtime-deps/os", imageBuilderPaths);
             }
         }
+
+        /// <summary>
+        /// Verifies the PlatformDependencyGraph matrix type.
+        /// </summary>
+        /// <remarks>
+        /// Test uses a dependency graph of runtimedeps <- sdk <- sample
+        /// </remarks>
+        [Theory]
+        [InlineData(null, "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
+        [InlineData("--path 1.0/runtimedeps/os/amd64", "--path 1.0/runtimedeps/os/amd64")]
+        [InlineData("--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64", "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64")]
+        [InlineData("--path 1.0/sdk/os/amd64", "--path 1.0/sdk/os/amd64")]
+        [InlineData("--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64", "--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
+        public void GenerateBuildMatrixCommand_PlatformDependencyGraph(string filterPaths, string expectedPaths)
+        {
+            using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+            using (TestHelper.SetWorkingDirectory(tempFolderContext.Path))
+            {
+                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                command.Options.Manifest = "manifest.json";
+                command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+                if (filterPaths != null)
+                {
+                    command.Options.FilterOptions.Paths = filterPaths.Replace("--path ", "").Split(" ");
+                }
+
+                const string runtimeDepsRelativeDir = "1.0/runtimedeps/os/amd64";
+                DirectoryInfo runtimeDepsDir = Directory.CreateDirectory(
+                    Path.Combine(tempFolderContext.Path, runtimeDepsRelativeDir));
+                string dockerfileRuntimeDepsFullPath = Path.Combine(runtimeDepsDir.FullName, "Dockerfile");
+                File.WriteAllText(dockerfileRuntimeDepsFullPath, "FROM base");
+
+                const string sdkRelativeDir = "1.0/sdk/os/amd64";
+                DirectoryInfo sdkDir = Directory.CreateDirectory(
+                    Path.Combine(tempFolderContext.Path, sdkRelativeDir));
+                string dockerfileSdkPath = Path.Combine(sdkDir.FullName, "Dockerfile");
+                File.WriteAllText(dockerfileSdkPath, "FROM runtime-deps:tag");
+
+                const string sampleRelativeDir = "1.0/sample/os/amd64";
+                DirectoryInfo sampleDir = Directory.CreateDirectory(
+                    Path.Combine(tempFolderContext.Path, sampleRelativeDir));
+                string dockerfileSamplePath = Path.Combine(sampleDir.FullName, "Dockerfile");
+                File.WriteAllText(dockerfileSamplePath, "FROM sdk:tag");
+
+                Manifest manifest = ManifestHelper.CreateManifest(
+                    ManifestHelper.CreateRepo("runtime-deps",
+                        ManifestHelper.CreateImage(
+                            ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, "tag"))),
+                    ManifestHelper.CreateRepo("sdk",
+                        ManifestHelper.CreateImage(
+                            ManifestHelper.CreatePlatform(sdkRelativeDir, "tag"))),
+                    ManifestHelper.CreateRepo("sample",
+                        ManifestHelper.CreateImage(
+                            ManifestHelper.CreatePlatform(sampleRelativeDir, "tag")))
+                );
+
+                File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+
+                command.LoadManifest();
+                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+                Assert.Single(matrixInfos);
+
+                BuildMatrixInfo matrixInfo = matrixInfos.First();
+                BuildLegInfo leg = matrixInfo.Legs.First();
+                string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+
+                Assert.Equal(expectedPaths, imageBuilderPaths);
+            }
+        }
     }
 }

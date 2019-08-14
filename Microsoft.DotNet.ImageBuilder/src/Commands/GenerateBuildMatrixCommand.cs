@@ -35,7 +35,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddDockerfilePathLegs(
             BuildMatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
-            IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
+            IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
+                platform => GetPlatformDependencies(platform).Intersect(platformGrouping));
+
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
                 string[] dockerfilePaths = GetDockerfilePaths(subgraph)

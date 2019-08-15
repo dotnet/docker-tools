@@ -1,4 +1,8 @@
-﻿using System;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
@@ -24,14 +28,14 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class RebuildStaleImagesCommandTests
+    public class GetStaleImagesCommandTests
     {
         /// <summary>
         /// Verifies the correct path arguments are passed to the queued build for a basic
         /// scenario involving one image that has changed.
         /// </summary>
         [Fact]
-        public async Task RebuildStaleImagesCommand_SingleDigestChanged()
+        public async Task GetStaleImagesCommand_SingleDigestChanged()
         {
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1";
@@ -127,7 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// the images have no data reflected in the image info data.
         /// </summary>
         [Fact]
-        public async Task RebuildStaleImagesCommand_MissingImageInfo()
+        public async Task GetStaleImagesCommand_MissingImageInfo()
         {
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1";
@@ -193,83 +197,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies that no build is queued if a build is currently in progress.
-        /// </summary>
-        [Fact]
-        public async Task RebuildStaleImagesCommand_BuildInProgress()
-        {
-            const string repo1 = "test-repo";
-            const string dockerfile1Path = "dockerfile1";
-
-            RepoData[] imageInfoData = new RepoData[]
-            {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest-diff" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
-                            repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, "tag1"))))
-                }
-            };
-
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
-            {
-                {
-                    subscriptions[0].RepoInfo,
-                    new List<DockerfileInfo>
-                    {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest")
-                    }
-                }
-            };
-
-            using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos, hasInProgressBuild: true))
-            {
-                await context.ExecuteCommandAsync();
-
-                // Normally this state would cause a build to be queued but since
-                // a build is marked as in progress, it doesn't.
-
-                context.Verify();
-            }
-        }
-
-        /// <summary>
         /// Verifies the correct path arguments are passed to the queued builds for two
         /// subscriptions that have changed images.
         /// </summary>
         [Fact]
-        public async Task RebuildStaleImagesCommand_MultiSubscription()
+        public async Task GetStaleImagesCommand_MultiSubscription()
         {
             const string repo1 = "test-repo";
             const string repo2 = "test-repo2";
@@ -365,7 +297,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 await context.ExecuteCommandAsync();
 
-                // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
                 {
@@ -374,6 +305,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new List<string>
                         {
                             dockerfile1Path
+                        }
+                    },
+                    {
+                        subscriptions[1],
+                        new List<string>
+                        {
+                            dockerfile2Path
                         }
                     }
                 };
@@ -386,7 +324,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that a base image's digest will be cached and not pulled for a subsequent image.
         /// </summary>
         [Fact]
-        public async Task RebuildStaleImagesCommand_BaseImageCaching()
+        public async Task GetStaleImagesCommand_BaseImageCaching()
         {
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1";
@@ -490,7 +428,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that no build will be queued if the base image has not changed.
         /// </summary>
         [Fact]
-        public async Task RebuildStaleImagesCommand_NoBaseImageChange()
+        public async Task GetStaleImagesCommand_NoBaseImageChange()
         {
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1";
@@ -575,7 +513,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// images dependent upon it.
         /// </summary>
         [Fact]
-        public async Task RebuildStaleImagesCommand_DependencyGraph()
+        public async Task GetStaleImagesCommand_DependencyGraph()
         {
             const string runtimeDepsRepo = "runtimedeps-repo";
             const string runtimeRepo = "runtime-repo";
@@ -720,7 +658,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Use this method to generate a unique repo owner name for the tests. This ensures that each test
         /// uses a different name and prevents collisions when running the tests in parallel. This is because
-        /// the <see cref="RebuildStaleImagesCommand"/> generates temp folders partially based on the name of
+        /// the <see cref="GetStaleImagesCommand"/> generates temp folders partially based on the name of
         /// the repo owner.
         /// </summary>
         private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null)
@@ -765,17 +703,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// </summary>
         private class TestContext : IDisposable
         {
-            private readonly bool hasInProgressBuild;
             private readonly List<string> filesToCleanup = new List<string>();
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
             private readonly string imageInfoPath;
             private readonly IHttpClientFactory httpClientFactory;
-            private readonly Mock<IBuildHttpClient> buildHttpClientMock;
-            private readonly RebuildStaleImagesCommand command;
+            private readonly GetStaleImagesCommand command;
+            private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
 
-            private const string BuildOrganization = "testOrg";
+            private const string VariableName = "my-var";
 
             public Mock<IDockerService> DockerServiceMock { get; }
 
@@ -786,16 +723,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
             /// <param name="subscriptionManifests">A mapping of subscriptions to their associated manifests.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
-            /// <param name="hasInProgressBuild">A value indicating whether to mark a build to be in progress for all pipelines.</param>
             public TestContext(
                 RepoData[] imageInfoData,
                 Subscription[] subscriptions,
                 IDictionary<Subscription, Manifest> subscriptionManifests,
-                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos,
-                bool hasInProgressBuild = false)
+                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos)
             {
-                this.hasInProgressBuild = hasInProgressBuild;
-
                 this.imageInfoPath = this.SerializeJsonObjectToTempFile(imageInfoData);
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
 
@@ -813,15 +746,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Id = Guid.NewGuid()
                 };
 
-                Mock<IProjectHttpClient> projectHttpClientMock = CreateProjectHttpClientMock(project);
-                this.buildHttpClientMock = CreateBuildHttpClientMock(project, hasInProgressBuild);
-                Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
-                    projectHttpClientMock, this.buildHttpClientMock);
-
                 this.httpClientFactory = CreateHttpClientFactory(subscriptions, subscriptionManifests, dockerfileInfos);
 
                 this.DockerServiceMock = this.CreateDockerServiceMock();
-                this.command = this.CreateCommand(connectionFactoryMock);
+                this.command = this.CreateCommand();
             }
 
             public Task ExecuteCommandAsync()
@@ -832,37 +760,36 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <summary>
             /// Verifies the test execution to ensure the results match the expected state.
             /// </summary>
-            /// <param name="expectedPathsBySubscription">
-            /// A mapping of subscription metadata to the list of expected path args passed to the queued build, if any.
-            /// </param>
-            public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
+            public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
             {
-                if (this.hasInProgressBuild)
-                {
-                    // If a build was marked as in progress for the pipelines, then no build is expected to ever be queued.
-                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<Build>()), Times.Never);
-                }
-                else
-                {
-                    if (expectedPathsBySubscription == null)
-                    {
-                        throw new ArgumentNullException(nameof(expectedPathsBySubscription));
-                    }
+                IInvocation invocation = this.loggerServiceMock.Invocations
+                    .First(invocation => invocation.Method.Name == nameof(ILoggerService.WriteMessage) &&
+                        invocation.Arguments[0].ToString().StartsWith("##vso"));
+                
+                string message = invocation.Arguments[0].ToString();
+                int variableNameStartIndex = message.IndexOf("=") + 1;
+                string actualVariableName = message.Substring(variableNameStartIndex, message.IndexOf(";") - variableNameStartIndex);
+                Assert.Equal(VariableName, actualVariableName);
 
-                    foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
-                    {
-                        if (kvp.Value.Any())
-                        {
-                            this.buildHttpClientMock
-                                .Verify(o =>
-                                    o.QueueBuildAsync(
-                                        It.Is<Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
-                        }
-                        else
-                        {
-                            this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<Build>()), Times.Never);
-                        }
-                    }
+                string variableValue = message
+                    .Substring(message.LastIndexOf("]") + 1);
+
+                Dictionary<string, string> pathsBySubscription = 
+                    JsonConvert.DeserializeObject<Dictionary<string, string>>(variableValue.Replace("\\\"", "\""));
+
+                Assert.Equal(expectedPathsBySubscription.Count, pathsBySubscription.Count);
+
+                foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
+                {
+                    string actualPaths = pathsBySubscription[kvp.Key.Id];
+
+                    IList<string> paths = actualPaths
+                        .Split(" ", StringSplitOptions.RemoveEmptyEntries)
+                        .Where(path => path != "--path")
+                        .Select(p => p.Trim().Trim('\''))
+                        .ToList();
+
+                    Assert.Equal(kvp.Value, paths);
                 }
             }
 
@@ -874,17 +801,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 return path;
             }
 
-            private RebuildStaleImagesCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
+            private GetStaleImagesCommand CreateCommand()
             {
-                Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
-
-                RebuildStaleImagesCommand command = new RebuildStaleImagesCommand(
-                    this.DockerServiceMock.Object, connectionFactoryMock.Object, this.httpClientFactory,
-                    loggerServiceMock.Object);
-                command.Options.BuildOrganization = BuildOrganization;
-                command.Options.BuildPersonalAccessToken = "testToken";
+                GetStaleImagesCommand command = new GetStaleImagesCommand(
+                    this.DockerServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object);
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.ImageInfoPath = this.imageInfoPath;
+                command.Options.VariableName = VariableName;
                 return command;
             }
 
@@ -990,59 +913,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetImageDigest(It.IsAny<string>(), false))
                     .Returns((string image, bool isDryRun) => this.imageDigests[image]);
                 return dockerServiceMock;
-            }
-
-            private static Mock<IVssConnectionFactory> CreateVssConnectionFactoryMock(
-                Mock<IProjectHttpClient> projectHttpClientMock,
-                Mock<IBuildHttpClient> buildHttpClientMock)
-            {
-                Mock<IVssConnection> connectionMock = CreateVssConnectionMock(projectHttpClientMock, buildHttpClientMock);
-
-                Mock<IVssConnectionFactory> connectionFactoryMock = new Mock<IVssConnectionFactory>();
-                connectionFactoryMock
-                    .Setup(o => o.Create(
-                        It.Is<Uri>(uri => uri.ToString() == $"https://dev.azure.com/{BuildOrganization}"),
-                        It.IsAny<VssCredentials>()))
-                    .Returns(connectionMock.Object);
-                return connectionFactoryMock;
-            }
-
-            private static Mock<IVssConnection> CreateVssConnectionMock(Mock<IProjectHttpClient> projectHttpClientMock,
-                Mock<IBuildHttpClient> buildHttpClientMock)
-            {
-                Mock<IVssConnection> connectionMock = new Mock<IVssConnection>();
-                connectionMock
-                    .Setup(o => o.GetProjectHttpClient())
-                    .Returns(projectHttpClientMock.Object);
-                connectionMock
-                    .Setup(o => o.GetBuildHttpClient())
-                    .Returns(buildHttpClientMock.Object);
-                return connectionMock;
-            }
-
-            private static Mock<IProjectHttpClient> CreateProjectHttpClientMock(TeamProject project)
-            {
-                Mock<IProjectHttpClient> projectHttpClientMock = new Mock<IProjectHttpClient>();
-                projectHttpClientMock
-                    .Setup(o => o.GetProjectAsync(It.IsAny<string>()))
-                    .ReturnsAsync(project);
-                return projectHttpClientMock;
-            }
-
-            private static Mock<IBuildHttpClient> CreateBuildHttpClientMock(TeamProject project, bool hasInProgressBuild)
-            {
-                PagedList<Build> builds = new PagedList<Build>();
-                if (hasInProgressBuild)
-                {
-                    builds.Add(new Build());
-                }
-
-                Mock<IBuildHttpClient> buildHttpClientMock = new Mock<IBuildHttpClient>();
-                buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), It.IsAny<BuildStatus>()))
-                    .ReturnsAsync((IPagedList<Build>)builds);
-
-                return buildHttpClientMock;
             }
 
             /// <summary>

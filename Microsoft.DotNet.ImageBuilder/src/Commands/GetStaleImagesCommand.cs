@@ -13,37 +13,29 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
-using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.TeamFoundation.Build.WebApi;
-using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.VisualStudio.Services.Common;
-using Microsoft.VisualStudio.Services.WebApi;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class RebuildStaleImagesCommand : Command<RebuildStaleImagesOptions>, IDisposable
+    public class GetStaleImagesCommand : Command<GetStaleImagesOptions>, IDisposable
     {
         private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
         private readonly SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
         private readonly SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
         private readonly IDockerService dockerService;
-        private readonly IVssConnectionFactory connectionFactory;
         private readonly ILoggerService loggerService;
         private readonly HttpClient httpClient;
 
         [ImportingConstructor]
-        public RebuildStaleImagesCommand(
+        public GetStaleImagesCommand(
             IDockerService dockerService,
-            IVssConnectionFactory connectionFactory,
             IHttpClientFactory httpClientFactory,
             ILoggerService loggerService)
         {
             this.dockerService = dockerService;
-            this.connectionFactory = connectionFactory;
             this.loggerService = loggerService;
             this.httpClient = httpClientFactory.GetClient();
         }
@@ -58,7 +50,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                await Task.WhenAll(subscriptions.Select(s => QueueBuildForStaleImages(s, repos)));
+                var results = await Task.WhenAll(
+                    subscriptions.Select(async s => new
+                    {
+                        Subscription = s,
+                        Paths = await GetPathsToRebuildAsync(s, repos)
+                    }));
+
+                Dictionary<string, string> outputDictionary =
+                    results.ToDictionary(result => result.Subscription.Id, result => FormatPaths(result.Paths));
+
+                string outputString = JsonConvert.SerializeObject(outputDictionary);
+
+                this.loggerService.WriteMessage(
+                    PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
+                        .Replace("\"", "\\\"")); // Escape all quotes
             }
             finally
             {
@@ -71,61 +77,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task QueueBuildForStaleImages(Subscription subscription, RepoData[] repos)
+        private static string FormatPaths(IEnumerable<string> paths)
         {
-            IEnumerable<string> pathsToRebuild = await GetPathsToRebuildAsync(subscription, repos);
-
-            if (!pathsToRebuild.Any())
+            if (!paths.Any())
             {
-                this.loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
-                return;
+                return String.Empty;
             }
 
-            string formattedParameters = pathsToRebuild
+            return paths
                 .Select(path => $"{ManifestFilterOptions.FormattedPathOption} '{path}'")
                 .Aggregate((p1, p2) => $"{p1} {p2}");
-
-            string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedParameters + "\"}";
-
-            this.loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
-
-            if (Options.IsDryRun)
-            {
-                return;
-            }
-
-            using (IVssConnection connection = this.connectionFactory.Create(
-                new Uri($"https://dev.azure.com/{Options.BuildOrganization}"),
-                new VssBasicCredential(String.Empty, Options.BuildPersonalAccessToken)))
-            using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
-            using (IBuildHttpClient client = connection.GetBuildHttpClient())
-            {
-                TeamProject project = await projectHttpClient.GetProjectAsync(Options.BuildProject);
-
-                Build build = new Build
-                {
-                    Project = new TeamProjectReference { Id = project.Id },
-                    Definition = new BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
-                    SourceBranch = subscription.RepoInfo.Branch,
-                    Parameters = parameters
-                };
-
-                if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
-                {
-                    this.loggerService.WriteMessage(
-                        $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
-                    return;
-                }
-
-                await client.QueueBuildAsync(build);
-            }
-        }
-
-        private async Task<bool> HasInProgressBuildAsync(IBuildHttpClient client, int pipelineId, Guid projectId)
-        {
-            IPagedList<Build> builds = await client.GetBuildsAsync(
-                projectId, definitions: new int[] { pipelineId }, statusFilter: BuildStatus.InProgress);
-            return builds.Any();
         }
 
         private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription, RepoData[] repos)
@@ -243,6 +204,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public void Dispose()
         {
             this.httpClient.Dispose();
+            this.gitRepoPathSemaphore.Dispose();
+            this.imageDigestsSemaphore.Dispose();
         }
 
         private class TempManifestOptions : ManifestOptions, IFilterableOptions

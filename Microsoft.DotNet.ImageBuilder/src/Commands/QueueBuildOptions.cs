@@ -2,27 +2,25 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+using System.Collections.Generic;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class RebuildStaleImagesOptions : Options, IFilterableOptions
+    public class QueueBuildOptions : Options
     {
-        protected override string CommandHelp => "Queues builds to update any images with out-of-date base images";
-
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        protected override string CommandHelp => "Queues builds to update images";
 
         public string SubscriptionsPath { get; set; }
-        public string ImageInfoPath { get; set; }
         public string BuildPersonalAccessToken { get; set; }
         public string BuildOrganization { get; set; }
         public string BuildProject { get; set; }
+        public IEnumerable<string> Subscriptions { get; set; }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
-
-            FilterOptions.ParseCommandLine(syntax);
 
             const string DefaultSubscriptionsPath = "subscriptions.json";
             string subscriptionsPath = DefaultSubscriptionsPath;
@@ -32,13 +30,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').");
             SubscriptionsPath = subscriptionsPath;
 
-            const string DefaultImageInfoPath = "image-info.json";
-            string imageDataPath = DefaultImageInfoPath;
-            syntax.DefineOption(
-                "image-info-path",
-                ref imageDataPath,
-                $"Path to the file containing image info (defaults to '{DefaultImageInfoPath}').");
-            ImageInfoPath = imageDataPath;
+            // These values come from the output variable of GetStaleImagesCommand
+            IReadOnlyList<string> subscriptions = Array.Empty<string>();
+            syntax.DefineOptionList(
+                "subscriptions",
+                ref subscriptions,
+                "Subscriptions data describing paths to be built");
+            Subscriptions = subscriptions;
 
             string buildPersonalAccessToken = null;
             syntax.DefineParameter(

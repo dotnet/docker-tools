@@ -144,7 +144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         return $" \"{leg.Name}\": {{{variables} }}";
                     })
                     .Aggregate((working, next) => $"{working},{next}");
-                Logger.WriteMessage($"##vso[task.setvariable variable={matrix.Name};isoutput=true]{{{legs} }}");
+                Logger.WriteMessage(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
             }
         }
 

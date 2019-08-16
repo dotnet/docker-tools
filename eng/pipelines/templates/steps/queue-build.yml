@@ -1,0 +1,17 @@
+parameters:
+  subscriptions: []
+steps:
+  - template: ../../../common/templates/steps/init-docker-linux.yml
+  - script: >
+      $(runImageBuilderCmd)
+      queueBuild
+      $(System.AccessToken)
+      dnceng
+      internal
+      --subscriptions-path eng/check-base-image-subscriptions.json
+      --subscriptions "$(subscriptions1)"
+      --subscriptions "$(subscriptions2)"
+      --subscriptions "$(subscriptions3)"
+      --subscriptions "$(subscriptions4)"
+    displayName: Queue Build for Stale Images
+  - template: ../../../common/templates/steps/cleanup-docker-linux.yml

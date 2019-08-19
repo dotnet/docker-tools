@@ -205,8 +205,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string repo1 = "test-repo";
             const string repo2 = "test-repo2";
+            const string repo3 = "test-repo3";
             const string dockerfile1Path = "dockerfile1";
             const string dockerfile2Path = "dockerfile2";
+            const string dockerfile3Path = "dockerfile3";
 
             RepoData[] imageInfoData = new RepoData[]
             {
@@ -243,6 +245,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             }
                         }
                     }
+                },
+                new RepoData
+                {
+                    Repo = repo3,
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            dockerfile3Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { "base3", "base3digest" }
+                                }
+                            }
+                        }
+                    }
                 }
             };
 
@@ -269,7 +288,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateRepo(
                             repo2,
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile2Path, "tag2"))))
+                                ManifestHelper.CreatePlatform(dockerfile2Path, "tag2"))),
+                        ManifestHelper.CreateRepo(
+                            repo3,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(dockerfile3Path, "tag3"))))
                 }
             };
 
@@ -287,7 +310,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[1].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest")
+                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest"),
+                        new DockerfileInfo(dockerfile3Path, "base3", "base3digest")
                     }
                 }
             };
@@ -491,17 +515,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 await context.ExecuteCommandAsync();
 
+                // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                    new Dictionary<Subscription, IList<string>>
-                {
-                    {
-                        subscriptions[0],
-                        new List<string>
-                        {
-                            // No paths are expected
-                        }
-                    }
-                };
+                    new Dictionary<Subscription, IList<string>>();
 
                 context.Verify(expectedPathsBySubscription);
             }

@@ -57,11 +57,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         ImagePaths = (await GetPathsToRebuildAsync(s, repos)).ToArray()
                     }));
 
+                // Filter out any results that don't have any images to rebuild
+                results = results
+                    .Where(result => result.ImagePaths.Any())
+                    .ToArray();
+
                 string outputString = JsonConvert.SerializeObject(results);
 
                 this.loggerService.WriteMessage(
                     PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
                         .Replace("\"", "\\\"")); // Escape all quotes
+
+                string formattedResults = JsonConvert.SerializeObject(results, Formatting.Indented);
+                this.loggerService.WriteMessage(
+                    $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
             }
             finally
             {

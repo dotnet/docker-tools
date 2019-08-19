@@ -1,2 +1,4 @@
 variables:
 - template: ../../../common/templates/variables/common.yml
+- name: checkBaseImageSubscriptionsPath
+  value: eng/check-base-image-subscriptions.json

@@ -21,7 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class QueueBuildCommand : Command<QueueBuildOptions>
     {
-        private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly IVssConnectionFactory connectionFactory;
         private readonly ILoggerService loggerService;
 
@@ -38,71 +37,54 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
-            Dictionary<string, string> consolidatedSubscriptionsData = GetConsolidatedSubscriptions();
+            IEnumerable<SubscriptionImagePaths> imagePathsBySubscription = GetAllSubscriptionImagePaths();
 
-            try
+            if (imagePathsBySubscription.Any())
             {
-                if (consolidatedSubscriptionsData.Any())
-                {
-                    await Task.WhenAll(
-                        consolidatedSubscriptionsData.Select(
-                            kvp => QueueBuildForStaleImages(subscriptions.First(sub => sub.Id == kvp.Key), kvp.Value)));
-                }
-                else
-                {
-                    this.loggerService.WriteMessage($"None of the subscriptions have base images that are out-of-date. No rebuild necessary.");
-                }
+                await Task.WhenAll(
+                    imagePathsBySubscription.Select(
+                        kvp => QueueBuildForStaleImages(subscriptions.First(sub => sub.Id == kvp.SubscriptionId), kvp.ImagePaths)));
             }
-            finally
+            else
             {
-                foreach (string repoPath in gitRepoIdToPathMapping.Values)
-                {
-                    // The path to the repo is stored inside a zip extraction folder so be sure to delete that
-                    // zip extraction folder, not just the inner repo folder.
-                    Directory.Delete(new DirectoryInfo(repoPath).Parent.FullName, true);
-                }
+                this.loggerService.WriteMessage(
+                    $"None of the subscriptions have base images that are out-of-date. No rebuild necessary.");
             }
         }
 
-        private Dictionary<string, string> GetConsolidatedSubscriptions()
+        private IEnumerable<SubscriptionImagePaths> GetAllSubscriptionImagePaths()
         {
             // This data comes from the GetStaleImagesCommand and represents a mapping of a subscription to the Dockerfile paths
             // of the images that need to be built. A given subscription may have images that are spread across Linux/Windows, AMD64/ARM
             // which means that the paths collected for that subscription were spread across multiple jobs.  Each of the items in the 
             // Enumerable here represents the data collected by one job.  We need to consolidate the paths for a given subscription since
             // they could be spread across multiple items in the Enumerable.
-            IEnumerable<Dictionary<string, string>> allSubscriptionsData = Options.Subscriptions
-                .Select(subscriptionsData => JsonConvert.DeserializeObject<Dictionary<string, string>>(subscriptionsData))
-                .ToList();
-
-            Dictionary<string, string> consolidatedSubscriptionsData = new Dictionary<string, string>();
-            foreach (Dictionary<string, string> subscriptionData in allSubscriptionsData)
-            {
-                foreach (KeyValuePair<string, string> kvp in subscriptionData.Where(kvp => !String.IsNullOrEmpty(kvp.Value)))
+            return Options.AllSubscriptionImagePaths
+                .SelectMany(allImagePaths => JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(allImagePaths))
+                .GroupBy(imagePaths => imagePaths.SubscriptionId)
+                .Select(group => new SubscriptionImagePaths
                 {
-                    if (consolidatedSubscriptionsData.TryGetValue(kvp.Key, out string paths))
-                    {
-                        consolidatedSubscriptionsData[kvp.Key] = $"{paths} {kvp.Value}";
-                    }
-                    else
-                    {
-                        consolidatedSubscriptionsData.Add(kvp.Key, kvp.Value);
-                    }
-                }
-            }
-
-            return consolidatedSubscriptionsData;
+                    SubscriptionId = group.Key,
+                    ImagePaths = group
+                        .SelectMany(subscriptionImagePaths => subscriptionImagePaths.ImagePaths)
+                        .ToArray()
+                })
+                .ToList();
         }
 
-        private async Task QueueBuildForStaleImages(Subscription subscription, string pathsToRebuild)
+        private async Task QueueBuildForStaleImages(Subscription subscription, IEnumerable<string> pathsToRebuild)
         {
-            if (String.IsNullOrEmpty(pathsToRebuild))
+            if (!pathsToRebuild.Any())
             {
                 this.loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
                 return;
             }
 
-            string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + pathsToRebuild + "\"}";
+            string formattedPathsToRebuild = pathsToRebuild
+                .Select(path => $"{ManifestFilterOptions.FormattedPathOption} '{path}'")
+                .Aggregate((p1, p2) => $"{p1} {p2}");
+
+            string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedPathsToRebuild + "\"}";
 
             this.loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
 

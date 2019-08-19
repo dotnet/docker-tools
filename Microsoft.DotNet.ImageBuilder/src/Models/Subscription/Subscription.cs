@@ -19,9 +19,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 
         public string Id => $"{RepoInfo.Owner}/{RepoInfo.Name}/{RepoInfo.Branch}/{ManifestPath}";
 
-        public override string ToString()
-        {
-            return Id;
-        }
+        public override string ToString() => Id;
     }
 }

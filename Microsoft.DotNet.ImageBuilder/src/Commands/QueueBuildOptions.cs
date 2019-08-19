@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string BuildPersonalAccessToken { get; set; }
         public string BuildOrganization { get; set; }
         public string BuildProject { get; set; }
-        public IEnumerable<string> Subscriptions { get; set; }
+        public IEnumerable<string> AllSubscriptionImagePaths { get; set; }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
@@ -30,13 +30,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').");
             SubscriptionsPath = subscriptionsPath;
 
-            // These values come from the output variable of GetStaleImagesCommand
-            IReadOnlyList<string> subscriptions = Array.Empty<string>();
+            IReadOnlyList<string> allSubscriptionImagePaths = Array.Empty<string>();
             syntax.DefineOptionList(
-                "subscriptions",
-                ref subscriptions,
-                "Subscriptions data describing paths to be built");
-            Subscriptions = subscriptions;
+                "image-paths",
+                ref allSubscriptionImagePaths,
+                "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)");
+            AllSubscriptionImagePaths = allSubscriptionImagePaths;
 
             string buildPersonalAccessToken = null;
             syntax.DefineParameter(

@@ -772,24 +772,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Equal(VariableName, actualVariableName);
 
                 string variableValue = message
-                    .Substring(message.LastIndexOf("]") + 1);
+                    .Substring(message.IndexOf("]") + 1);
 
-                Dictionary<string, string> pathsBySubscription = 
-                    JsonConvert.DeserializeObject<Dictionary<string, string>>(variableValue.Replace("\\\"", "\""));
+                SubscriptionImagePaths[] pathsBySubscription = 
+                    JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(variableValue.Replace("\\\"", "\""));
 
-                Assert.Equal(expectedPathsBySubscription.Count, pathsBySubscription.Count);
+                Assert.Equal(expectedPathsBySubscription.Count, pathsBySubscription.Length);
 
                 foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
                 {
-                    string actualPaths = pathsBySubscription[kvp.Key.Id];
+                    string[] actualPaths = pathsBySubscription
+                        .First(imagePaths => imagePaths.SubscriptionId == kvp.Key.Id).ImagePaths;
 
-                    IList<string> paths = actualPaths
-                        .Split(" ", StringSplitOptions.RemoveEmptyEntries)
-                        .Where(path => path != "--path")
-                        .Select(p => p.Trim().Trim('\''))
-                        .ToList();
-
-                    Assert.Equal(kvp.Value, paths);
+                    Assert.Equal(kvp.Value, actualPaths);
                 }
             }
 

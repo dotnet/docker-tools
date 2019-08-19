@@ -40,9 +40,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string variableName = null;
             syntax.DefineParameter(
-                "variable",
+                "image-paths-variable",
                 ref variableName,
-                "The variable name to assign the image paths to");
+                "The Azure Pipeline variable name to assign the image paths to");
             VariableName = variableName;
         }
     }

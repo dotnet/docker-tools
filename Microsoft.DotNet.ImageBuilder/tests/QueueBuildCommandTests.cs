@@ -37,13 +37,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSubscription("repo1")
             };
 
-            List<Dictionary<string, List<string>>> pathData = new List<Dictionary<string, List<string>>>
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
             {
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[0].Id,
-                        new List<string>
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
                         {
                             path1
                         }
@@ -51,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, pathData, hasInProgressBuild: true))
+            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths, hasInProgressBuild: true))
             {
                 await context.ExecuteCommandAsync();
 
@@ -79,30 +80,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSubscription("repo2")
             };
 
-            List<Dictionary<string, List<string>>> pathData = new List<Dictionary<string, List<string>>>
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
             {
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[0].Id,
-                        new List<string>
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
                         {
                             path1
                         }
                     },
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[1].Id,
-                        new List<string>
+                        SubscriptionId = subscriptions[1].Id,
+                        ImagePaths = new string[]
                         {
                             path2
                         }
                     }
                 },
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[1].Id,
-                        new List<string>
+                        SubscriptionId = subscriptions[1].Id,
+                        ImagePaths = new string[]
                         {
                             path3
                         }
@@ -110,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, pathData))
+            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths))
             {
                 await context.ExecuteCommandAsync();
 
@@ -149,25 +153,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSubscription("repo1")
             };
 
-            List<Dictionary<string, List<string>>> pathData = new List<Dictionary<string, List<string>>>
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
             {
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[0].Id,
-                        new List<string>()
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = Array.Empty<string>()
                     }
                 },
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[0].Id,
-                        new List<string>()
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = Array.Empty<string>()
                     }
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, pathData))
+            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths))
             {
                 await context.ExecuteCommandAsync();
 
@@ -203,24 +209,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSubscription("repo1")
             };
 
-            List<Dictionary<string, List<string>>> pathData = new List<Dictionary<string, List<string>>>
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
             {
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[0].Id,
-                        new List<string>
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
                         {
                             path1,
                             path2
                         }
                     }
                 },
-                new Dictionary<string, List<string>>
+                new List<SubscriptionImagePaths>
                 {
+                    new SubscriptionImagePaths
                     {
-                        subscriptions[0].Id,
-                        new List<string>
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
                         {
                             path3
                         }
@@ -228,7 +236,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, pathData))
+            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths))
             {
                 await context.ExecuteCommandAsync();
 
@@ -294,7 +302,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly string subscriptionsPath;
             private readonly Mock<IBuildHttpClient> buildHttpClientMock;
             private readonly QueueBuildCommand command;
-            private readonly IEnumerable<Dictionary<string, List<string>>> pathData;
+            private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths;
 
             private const string BuildOrganization = "testOrg";
 
@@ -302,13 +310,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// Initializes a new instance of <see cref="TestContext"/>.
             /// </summary>
             /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
+            /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
             /// <param name="hasInProgressBuild">A value indicating whether to mark a build to be in progress for all pipelines.</param>
             public TestContext(
                 Subscription[] subscriptions,
-                IEnumerable<Dictionary<string, List<string>>> pathData,
+                IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
                 bool hasInProgressBuild = false)
             {
-                this.pathData = pathData;
+                this.allSubscriptionImagePaths = allSubscriptionImagePaths;
                 this.hasInProgressBuild = hasInProgressBuild;
 
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
@@ -384,9 +393,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.BuildOrganization = BuildOrganization;
                 command.Options.BuildPersonalAccessToken = "testToken";
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
-                IEnumerable<string> subscriptions = this.pathData
-                    .Select(data => JsonConvert.SerializeObject(data.ToDictionary(kvp => kvp.Key, kvp => String.Join(" ", kvp.Value.ToArray()))));
-                command.Options.Subscriptions = subscriptions;
+                command.Options.AllSubscriptionImagePaths = this.allSubscriptionImagePaths
+                    .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
 
                 return command;
             }
@@ -470,6 +478,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IList<string> paths = pathString
                     .Split(" ", StringSplitOptions.RemoveEmptyEntries)
                     .Select(p => p.Trim().Trim('\''))
+                    .Except(new string[] { ManifestFilterOptions.FormattedPathOption })
                     .ToList();
                 return CompareLists(expectedPaths, paths);
             }

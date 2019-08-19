@@ -51,16 +51,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             try
             {
                 var results = await Task.WhenAll(
-                    subscriptions.Select(async s => new
+                    subscriptions.Select(async s => new SubscriptionImagePaths
                     {
-                        Subscription = s,
-                        Paths = await GetPathsToRebuildAsync(s, repos)
+                        SubscriptionId = s.Id,
+                        ImagePaths = (await GetPathsToRebuildAsync(s, repos)).ToArray()
                     }));
 
-                Dictionary<string, string> outputDictionary =
-                    results.ToDictionary(result => result.Subscription.Id, result => FormatPaths(result.Paths));
-
-                string outputString = JsonConvert.SerializeObject(outputDictionary);
+                string outputString = JsonConvert.SerializeObject(results);
 
                 this.loggerService.WriteMessage(
                     PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
@@ -75,18 +72,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Directory.Delete(new DirectoryInfo(repoPath).Parent.FullName, true);
                 }
             }
-        }
-
-        private static string FormatPaths(IEnumerable<string> paths)
-        {
-            if (!paths.Any())
-            {
-                return String.Empty;
-            }
-
-            return paths
-                .Select(path => $"{ManifestFilterOptions.FormattedPathOption} '{path}'")
-                .Aggregate((p1, p2) => $"{p1} {p2}");
         }
 
         private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription, RepoData[] repos)

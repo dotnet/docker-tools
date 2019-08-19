@@ -6,9 +6,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class PipelineHelper
     {
-        public static string FormatOutputVariable(string variableName, string value)
-        {
-            return $"##vso[task.setvariable variable={variableName};isoutput=true]{value}";
-        }
+        public static string FormatOutputVariable(string variableName, string value) =>
+            $"##vso[task.setvariable variable={variableName};isoutput=true]{value}";
     }
 }

@@ -2,6 +2,7 @@ parameters:
   osType: null
   dockerClientOS: null
   useRemoteDockerServer: false
+  staleImagePathsVariableName: null
 steps:
   - script: >
       curl -SLo image-info.json
@@ -12,12 +13,11 @@ steps:
       setupRemoteDockerServer: ${{ parameters.useRemoteDockerServer}}
   - script: >
       $(runImageBuilderCmd)
-      rebuildStaleImages
-      $(System.AccessToken)
-      dnceng
-      internal
+      getStaleImages
+      ${{ parameters.staleImagePathsVariableName }}
       --image-info-path image-info.json
-      --subscriptions-path eng/check-base-image-subscriptions.json
-      --os-type ${{parameters.osType}}
-    displayName: Queue Build for Stale Images
+      --subscriptions-path $(checkBaseImageSubscriptionsPath)
+      --os-type ${{ parameters.osType }}
+    displayName: Get Stale Images
+    name: GetStaleImages
   - template: ${{ format('../../../common/templates/steps/cleanup-docker-{0}.yml', parameters.dockerClientOS) }}

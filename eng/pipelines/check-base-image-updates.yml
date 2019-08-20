@@ -4,44 +4,44 @@ pr: none
 variables:
 - template: templates/variables/common.yml
 
-# Sequentially execute the jobs to avoid race condition and having multiple builds getting queued
 jobs:
-- job: Build_Linux_AMD
+- job: Get_Stale_Images_Linux_AMD
   pool: Hosted Ubuntu 1604
   steps:
-  - template: templates/steps/queue-build-for-stale-images.yml
+  - template: templates/steps/get-stale-images.yml
     parameters:
       osType: linux
       dockerClientOS: linux
+      staleImagePathsVariableName: linux-amd-stale-image-paths
 
-- job: Build_Linux_ARM
+- job: Get_Stale_Images_Linux_ARM
   pool:
     name: DotNetCore-Docker
     demands:
     - agent.os -equals linux
     - RemoteDockerServerOS -equals linux
     - RemoteDockerServerArch -equals aarch64
-  dependsOn: Build_Linux_AMD
   steps:
-  - template: templates/steps/queue-build-for-stale-images.yml
+  - template: templates/steps/get-stale-images.yml
     parameters:
       osType: linux
       dockerClientOS: linux
       useRemoteDockerServer: true
+      staleImagePathsVariableName: linux-arm-stale-image-paths
 
-- job: Build_Windows_AMD
+- job: Get_Stale_Images_Windows_AMD
   # Use the most recent Windows version so we can pull all image versions of Windows
   pool:
     name: DotNetCore-Docker
     demands: VSTS_OS -equals Windows_Server_2019_Data_Center_1903
-  dependsOn: Build_Linux_ARM
   steps:
-  - template: templates/steps/queue-build-for-stale-images.yml
+  - template: templates/steps/get-stale-images.yml
     parameters:
       osType: windows
       dockerClientOS: windows
+      staleImagePathsVariableName: windows-amd-stale-image-paths
 
-- job: Build_Windows_ARM
+- job: Get_Stale_Images_Windows_ARM
   # Use the most recent ARM-supported Windows version so we can pull all image versions of Windows
   pool:
     name: DotNetCore-Docker
@@ -49,10 +49,38 @@ jobs:
     - agent.os -equals linux
     - RemoteDockerServerOS -equals nanoserver-1809
     - RemoteDockerServerArch -equals arm32
-  dependsOn: Build_Windows_AMD
   steps:
-  - template: templates/steps/queue-build-for-stale-images.yml
+  - template: templates/steps/get-stale-images.yml
     parameters:
       osType: windows
       dockerClientOS: linux
       useRemoteDockerServer: true
+      staleImagePathsVariableName: windows-arm-stale-image-paths
+
+- job: Queue_Stale_Image_Builds
+  dependsOn:
+  - Get_Stale_Images_Linux_AMD
+  - Get_Stale_Images_Linux_ARM
+  - Get_Stale_Images_Windows_AMD
+  - Get_Stale_Images_Windows_ARM
+  pool: Hosted Ubuntu 1604
+  variables:
+    imagePaths1: $[ dependencies.Get_Stale_Images_Linux_AMD.outputs['GetStaleImages.linux-amd-stale-image-paths'] ]
+    imagePaths2: $[ dependencies.Get_Stale_Images_Linux_ARM.outputs['GetStaleImages.linux-arm-stale-image-paths'] ]
+    imagePaths3: $[ dependencies.Get_Stale_Images_Windows_AMD.outputs['GetStaleImages.windows-amd-stale-image-paths'] ]
+    imagePaths4: $[ dependencies.Get_Stale_Images_Windows_ARM.outputs['GetStaleImages.windows-arm-stale-image-paths'] ]
+  steps:
+  - template: ../common/templates/steps/init-docker-linux.yml
+  - script: >
+      $(runImageBuilderCmd)
+      queueBuild
+      $(System.AccessToken)
+      dnceng
+      internal
+      --subscriptions-path $(checkBaseImageSubscriptionsPath)
+      --image-paths "$(imagePaths1)"
+      --image-paths "$(imagePaths2)"
+      --image-paths "$(imagePaths3)"
+      --image-paths "$(imagePaths4)"
+    displayName: Queue Build for Stale Images
+  - template: ../common/templates/steps/cleanup-docker-linux.yml

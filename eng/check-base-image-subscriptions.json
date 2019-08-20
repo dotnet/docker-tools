@@ -7,7 +7,7 @@
     },
     "manifestPath": "manifest.json",
     "pipelineTrigger": {
-      "id": 390,
+      "id": 359,
       "pathVariable": "imageBuilder.pathArgs"
     }
   }

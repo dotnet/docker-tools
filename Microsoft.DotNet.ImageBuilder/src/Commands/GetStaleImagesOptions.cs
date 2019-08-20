@@ -6,17 +6,15 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class RebuildStaleImagesOptions : Options, IFilterableOptions
+    public class GetStaleImagesOptions : Options, IFilterableOptions
     {
-        protected override string CommandHelp => "Queues builds to update any images with out-of-date base images";
+        protected override string CommandHelp => "Gets paths to images whose base images are out-of-date";
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
         public string SubscriptionsPath { get; set; }
         public string ImageInfoPath { get; set; }
-        public string BuildPersonalAccessToken { get; set; }
-        public string BuildOrganization { get; set; }
-        public string BuildProject { get; set; }
+        public string VariableName { get; set; }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
@@ -40,26 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Path to the file containing image info (defaults to '{DefaultImageInfoPath}').");
             ImageInfoPath = imageDataPath;
 
-            string buildPersonalAccessToken = null;
+            string variableName = null;
             syntax.DefineParameter(
-                "build-pat",
-                ref buildPersonalAccessToken,
-                "Azure DevOps PAT for queuing builds");
-            BuildPersonalAccessToken = buildPersonalAccessToken;
-
-            string buildOrganization = null;
-            syntax.DefineParameter(
-                "build-organization",
-                ref buildOrganization,
-                "Azure DevOps organization for queuing builds");
-            BuildOrganization = buildOrganization;
-
-            string buildProject = null;
-            syntax.DefineParameter(
-                "build-project",
-                ref buildProject,
-                "Azure DevOps project for queuing builds");
-            BuildProject = buildProject;
+                "image-paths-variable",
+                ref variableName,
+                "The Azure Pipeline variable name to assign the image paths to");
+            VariableName = variableName;
         }
     }
 }

@@ -16,13 +16,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class GenerateBuildMatrixCommandTests
     {
         /// <summary>
-        /// Verifies the platformVersionedOs matrix type will include platform dependencies.
+        /// Verifies the platformVersionedOs matrix type.
         /// </summary>
         /// <remarks>
         /// https://github.com/dotnet/docker-tools/issues/243
         /// </remarks>
-        [Fact]
-        public void GenerateBuildMatrixCommand_PlatformVersionedOs_IncludePlatformDependencies()
+        [Theory]
+        [InlineData(null, "--path 2.2/runtime/os --path 2.1/runtime-deps/os", "2.2")]
+        [InlineData("--path 2.2/runtime/os", "--path 2.2/runtime/os", "2.2")]
+        [InlineData("--path 2.1/runtime-deps/os", "--path 2.1/runtime-deps/os", "2.1")]
+        public void GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             using (TestHelper.SetWorkingDirectory(tempFolderContext.Path))
@@ -30,6 +33,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
                 command.Options.Manifest = "manifest.json";
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+                if (filterPaths != null)
+                {
+                    command.Options.FilterOptions.Paths = filterPaths.Replace("--path ", "").Split(" ");
+                }
 
                 const string runtimeDepsRelativeDir = "2.1/runtime-deps/os";
                 DirectoryInfo runtimeDepsDir = Directory.CreateDirectory(
@@ -59,10 +66,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Single(matrixInfos);
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
-                BuildLegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith("2.2"));
+                BuildLegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith(verificationLegName));
                 string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
-                Assert.Equal("--path 2.2/runtime/os --path 2.1/runtime-deps/os", imageBuilderPaths);
+                Assert.Equal(expectedPaths, imageBuilderPaths);
             }
         }
 

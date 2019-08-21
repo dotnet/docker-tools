@@ -3,6 +3,18 @@
     "repoInfo": {
       "owner": "dotnet",
       "name": "dotnet-docker",
+      "branch": "master"
+    },
+    "manifestPath": "manifest.json",
+    "pipelineTrigger": {
+      "id": 373,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
+  },
+  {
+    "repoInfo": {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
       "branch": "nightly"
     },
     "manifestPath": "manifest.json",

@@ -35,7 +35,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddDockerfilePathLegs(
             BuildMatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
-            IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(GetPlatformDependencies);
+            IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
+                platform => GetPlatformDependencies(platform, platformGrouping));
+
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
                 string[] dockerfilePaths = GetDockerfilePaths(subgraph)
@@ -112,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (var versionGrouping in versionGroups)
             {
                 IEnumerable<PlatformInfo> subgraphs = versionGrouping
-                    .GetCompleteSubgraphs(GetPlatformDependencies)
+                    .GetCompleteSubgraphs(platform => GetPlatformDependencies(platform, platformGrouping))
                     .SelectMany(subgraph => subgraph);
 
                 BuildLegInfo leg = new BuildLegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
@@ -220,8 +222,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return matrices;
         }
 
-        private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform) =>
-            platform.InternalFromImages.Select(fromImage => Manifest.GetPlatformByTag(fromImage));
+        private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
+            platform.InternalFromImages
+                .Select(fromImage => Manifest.GetPlatformByTag(fromImage))
+                .Intersect(availablePlatforms);
 
         private static void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
         {

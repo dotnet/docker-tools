@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.CommandLine;
+using Microsoft.DotNet.VersionTools.Automation;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {

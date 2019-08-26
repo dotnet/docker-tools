@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task AddUpdatedFile(
             List<GitObject> updatedFiles,
-            GitHubClient client,
+            IGitHubClient client,
             GitHubBranch branch,
             string repo,
             string filePath,
@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
         }
 
-        private async Task<GitObject[]> GetUpdatedReadmes(string productRepo, GitHubClient client, GitHubBranch branch)
+        private async Task<GitObject[]> GetUpdatedReadmes(string productRepo, IGitHubClient client, GitHubBranch branch)
         {
             List<GitObject> readmes = new List<GitObject>();
 
@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return readmes.ToArray();
         }
 
-        private async Task<GitObject[]> GetUpdatedTagsMetadata(string productRepo, GitHubClient client, GitHubBranch branch)
+        private async Task<GitObject[]> GetUpdatedTagsMetadata(string productRepo, IGitHubClient client, GitHubBranch branch)
         {
             List<GitObject> metadata = new List<GitObject>();
 

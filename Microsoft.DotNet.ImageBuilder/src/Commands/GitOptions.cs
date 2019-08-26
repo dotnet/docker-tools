@@ -4,6 +4,7 @@
 
 using System;
 using System.CommandLine;
+using Microsoft.DotNet.VersionTools.Automation;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -75,6 +76,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref authToken,
                 "GitHub authentication token");
             AuthToken = authToken;
+        }
+
+        public GitHubAuth ToGitHubAuth()
+        {
+            return new GitHubAuth(AuthToken, Username, Email);
         }
     }
 }

@@ -18,51 +18,67 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class PublishImageInfoCommand : Command<PublishImageInfoOptions>
     {
+        private readonly IGitHubClientFactory gitHubClientFactory;
+
+        [ImportingConstructor]
+        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory)
+        {
+            this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
+        }
+
         public override async Task ExecuteAsync()
         {
             RepoData[] srcRepos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
 
-            await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
+            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth()))
             {
-                GitReference gitRef = await GitHelper.PushChangesAsync(client, Options.GitOptions, "Merging image info updates from build.", async branch =>
+                await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
-                    string originalTargetImageInfoContents = await client.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
-                    List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
-
-                    ImageInfoHelper.MergeRepos(srcRepos, targetRepos);
-
-                    string newTargetImageInfoContents = JsonHelper.SerializeObject(targetRepos.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
-
-                    if (originalTargetImageInfoContents != newTargetImageInfoContents)
+                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options.GitOptions, "Merging image info updates from build.", async branch =>
                     {
-                        GitObject imageInfoGitObject = new GitObject
+                        string originalTargetImageInfoContents = await gitHubClient.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
+                        List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
+
+                        ImageInfoMergeOptions options = new ImageInfoMergeOptions
                         {
-                            Path = Options.GitOptions.Path,
-                            Type = GitObject.TypeBlob,
-                            Mode = GitObject.ModeFile,
-                            Content = newTargetImageInfoContents
+                            ReplaceTags = true
                         };
 
-                        return new GitObject[] { imageInfoGitObject };
+                        ImageInfoHelper.MergeRepos(srcRepos, targetRepos, options);
+
+                        string newTargetImageInfoContents = JsonHelper.SerializeObject(targetRepos.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
+
+                        if (originalTargetImageInfoContents != newTargetImageInfoContents)
+                        {
+                            GitObject imageInfoGitObject = new GitObject
+                            {
+                                Path = Options.GitOptions.Path,
+                                Type = GitObject.TypeBlob,
+                                Mode = GitObject.ModeFile,
+                                Content = newTargetImageInfoContents
+                            };
+
+                            return new GitObject[] { imageInfoGitObject };
+                        }
+                        else
+                        {
+                            return Enumerable.Empty<GitObject>();
+                        }
+                    });
+
+                    Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
+
+                    if (gitRef != null)
+                    {
+                        Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
+                        Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
                     }
                     else
                     {
-                        return Enumerable.Empty<GitObject>();
+                        Logger.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
                     }
                 });
-
-                Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
-
-                if (gitRef != null)
-                {
-                    Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
-                    Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
-                }
-                else
-                {
-                    Logger.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
-                }
-            });
+            }
         }
     }
 }

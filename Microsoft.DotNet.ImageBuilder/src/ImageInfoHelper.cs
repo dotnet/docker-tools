@@ -13,8 +13,13 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
-        public static void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos)
+        public static void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos, ImageInfoMergeOptions options = null)
         {
+            if (options == null)
+            {
+                options = new ImageInfoMergeOptions();
+            }
+
             foreach (RepoData srcRepo in srcRepos)
             {
                 RepoData targetRepo = targetRepos.FirstOrDefault(r => r.Repo == srcRepo.Repo);
@@ -24,12 +29,12 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else
                 {
-                    MergeData(srcRepo, targetRepo);
+                    MergeData(srcRepo, targetRepo, options);
                 }
             }
         }
 
-        private static void MergeData(object srcObj, object targetObj)
+        private static void MergeData(object srcObj, object targetObj, ImageInfoMergeOptions options)
         {
             if (srcObj.GetType() != targetObj.GetType())
             {
@@ -44,22 +49,35 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IDictionary).IsAssignableFrom(property.PropertyType))
                 {
-                    MergeDictionaries(property, srcObj, targetObj);
+                    MergeDictionaries(property, srcObj, targetObj, options);
                 }
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
                     if (srcObj is ImageData && property.Name == nameof(ImageData.SimpleTags))
                     {
-                        // SimpleTags are not to be merged. If an image is built, all of its tags are generated. There
-                        // would never be a case where an image gets built and only a subset of the tags specified in
-                        // the manifest are applied to the image.  So that means that the source image data indicates
-                        // the current "truth" of what the image's tags are. Any of the image's tags contained in the
-                        // target should be considered obsolete and should be replaced by the source.  This accounts
-                        // for the scenario where shared tags are moved from one image to another. If we had merged
-                        // instead of replaced, then the shared tag would not have been removed from the original image
-                        // in the image info in such a scenario.
+                        // SimpleTags can be merged or replaced depending on the scenario.
+                        // When merging multiple image info files together into a single file, the tags should be
+                        // merged to account for cases where tags for a given image are spread across multiple
+                        // image info files.  But when publishing an image info file it the source tags should replace
+                        // the destination tags.  Any of the image's tags contained in the target should be considered
+                        // obsolete and should be replaced by the source.  This accounts for the scenario where shared
+                        // tags are moved from one image to another. If we had merged instead of replaced, then the
+                        // shared tag would not have been removed from the original image in the image info in such
+                        // a scenario.
+                        // See:
+                        // - https://github.com/dotnet/docker-tools/pull/269
+                        // - https://github.com/dotnet/docker-tools/issues/289
 
-                        ReplaceValue(property, srcObj, targetObj);
+                        if (options.ReplaceTags)
+                        {
+                            
+
+                            ReplaceValue(property, srcObj, targetObj);
+                        }
+                        else
+                        {
+                            MergeLists(property, srcObj, targetObj);
+                        }
                     }
                     else
                     {
@@ -104,7 +122,8 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static void MergeDictionaries(PropertyInfo property, object srcObj, object targetObj)
+        private static void MergeDictionaries(PropertyInfo property, object srcObj, object targetObj,
+            ImageInfoMergeOptions options)
         {
             IDictionary srcDict = (IDictionary)property.GetValue(srcObj);
             if (srcDict == null)
@@ -129,7 +148,7 @@ namespace Microsoft.DotNet.ImageBuilder
                             }
                             else
                             {
-                                MergeData(kvp.Value, targetDict[kvp.Key]);
+                                MergeData(kvp.Value, targetDict[kvp.Key], options);
                             }
                         }
                         else

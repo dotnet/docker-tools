@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
         }
 
-        private async Task<GitObject[]> GetUpdatedVerionInfo(GitHubClient client, GitHubBranch branch)
+        private async Task<GitObject[]> GetUpdatedVerionInfo(IGitHubClient client, GitHubBranch branch)
         {
             List<GitObject> versionInfo = new List<GitObject>();
 

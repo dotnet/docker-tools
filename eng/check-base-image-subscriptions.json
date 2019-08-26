@@ -22,5 +22,17 @@
       "id": 359,
       "pathVariable": "imageBuilder.pathArgs"
     }
+  },
+  {
+    "repoInfo": {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "master"
+    },
+    "manifestPath": "manifest.samples.json",
+    "pipelineTrigger": {
+      "id": 376,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
   }
 ]

@@ -46,7 +46,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 {
                                     "image2",
-                                    new ImageData {
+                                    new ImageData
+                                    {
                                         SimpleTags =
                                         {
                                             "tag1"
@@ -65,7 +66,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 {
                                     "image1",
-                                    new ImageData {
+                                    new ImageData
+                                    {
                                         BaseImages = new SortedDictionary<string, string>
                                         {
                                             { "base1", "base1hash" }
@@ -89,7 +91,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 {
                                     "image2",
-                                    new ImageData {
+                                    new ImageData
+                                    {
                                         SimpleTags =
                                         {
                                             "tag2"
@@ -155,7 +158,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 new ImageData {
                                     SimpleTags =
                                     {
-                                        // Since SimpleTags get replaced rather than merged
+                                        "tag1",
                                         "tag2"
                                     }
                                 }

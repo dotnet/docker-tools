@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return new GitHubClient(githubAuth);
         }
 
-        public static async Task<GitReference> PushChangesAsync(GitHubClient client, GitOptions gitOptions, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
+        public static async Task<GitReference> PushChangesAsync(IGitHubClient client, GitOptions gitOptions, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
         {
             GitHubProject project = new GitHubProject(gitOptions.Repo, gitOptions.Owner);
             GitHubBranch branch = new GitHubBranch(gitOptions.Branch, project);
@@ -73,25 +73,31 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
         }
 
-        public static async Task ExecuteGitOperationsWithRetryAsync(GitOptions gitOptions, Func<GitHubClient, Task> execute,
+        public static Task ExecuteGitOperationsWithRetryAsync(GitOptions gitOptions, Func<IGitHubClient, Task> execute,
             int maxTries = DefaultMaxTries, int retryMillisecondsDelay = DefaultRetryMillisecondsDelay)
         {
             using (GitHubClient client = GitHelper.GetClient(gitOptions))
             {
-                for (int i = 0; i < maxTries; i++)
-                {
-                    try
-                    {
-                        await execute(client);
+                return ExecuteGitOperationsWithRetryAsync(() => execute(client), maxTries, retryMillisecondsDelay);
+            }
+        }
 
-                        break;
-                    }
-                    catch (HttpRequestException ex) when (i < (maxTries - 1))
-                    {
-                        Logger.WriteMessage($"Encountered exception interacting with GitHub: {ex.Message}");
-                        Logger.WriteMessage($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");
-                        await Task.Delay(retryMillisecondsDelay);
-                    }
+        public static async Task ExecuteGitOperationsWithRetryAsync(Func<Task> execute,
+            int maxTries = DefaultMaxTries, int retryMillisecondsDelay = DefaultRetryMillisecondsDelay)
+        {
+            for (int i = 0; i < maxTries; i++)
+            {
+                try
+                {
+                    await execute();
+
+                    break;
+                }
+                catch (HttpRequestException ex) when (i < (maxTries - 1))
+                {
+                    Logger.WriteMessage($"Encountered exception interacting with GitHub: {ex.Message}");
+                    Logger.WriteMessage($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");
+                    await Task.Delay(retryMillisecondsDelay);
                 }
             }
         }

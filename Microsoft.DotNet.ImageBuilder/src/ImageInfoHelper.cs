@@ -53,7 +53,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
-                    if (srcObj is ImageData && property.Name == nameof(ImageData.SimpleTags))
+                    if (srcObj is ImageData &&
+                        property.Name == nameof(ImageData.SimpleTags) &&
+                        options.ReplaceTags)
                     {
                         // SimpleTags can be merged or replaced depending on the scenario.
                         // When merging multiple image info files together into a single file, the tags should be
@@ -68,16 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         // - https://github.com/dotnet/docker-tools/pull/269
                         // - https://github.com/dotnet/docker-tools/issues/289
 
-                        if (options.ReplaceTags)
-                        {
-                            
-
-                            ReplaceValue(property, srcObj, targetObj);
-                        }
-                        else
-                        {
-                            MergeLists(property, srcObj, targetObj);
-                        }
+                        ReplaceValue(property, srcObj, targetObj);
                     }
                     else
                     {

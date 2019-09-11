@@ -73,12 +73,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
         }
 
-        public static Task ExecuteGitOperationsWithRetryAsync(GitOptions gitOptions, Func<IGitHubClient, Task> execute,
+        public static async Task ExecuteGitOperationsWithRetryAsync(GitOptions gitOptions, Func<IGitHubClient, Task> execute,
             int maxTries = DefaultMaxTries, int retryMillisecondsDelay = DefaultRetryMillisecondsDelay)
         {
             using (GitHubClient client = GitHelper.GetClient(gitOptions))
             {
-                return ExecuteGitOperationsWithRetryAsync(() => execute(client), maxTries, retryMillisecondsDelay);
+                await ExecuteGitOperationsWithRetryAsync(() => execute(client), maxTries, retryMillisecondsDelay);
             }
         }
 

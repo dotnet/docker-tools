@@ -9,6 +9,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -87,7 +88,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string repoPath = await GetGitRepoPath(subscription);
 
-            TempManifestOptions manifestOptions = new TempManifestOptions(Options.FilterOptions)
+            ManifestFilterOptions filterOptions = Options.FilterOptions.Clone();
+            filterOptions.OsType = subscription.OsType;
+            TempManifestOptions manifestOptions = new TempManifestOptions(filterOptions)
             {
                 Manifest = Path.Combine(repoPath, subscription.ManifestPath)
             };

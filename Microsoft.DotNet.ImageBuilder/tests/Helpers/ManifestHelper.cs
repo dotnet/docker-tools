@@ -34,13 +34,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
-        public static Platform CreatePlatform(string dockerfilePath, params string[] tags)
+        public static Platform CreatePlatform(string dockerfilePath, string[] tags, OS os = OS.Linux)
         {
             return new Platform
             {
                 Dockerfile = dockerfilePath,
                 OsVersion = "version",
-                OS = OS.Linux,
+                OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
                 Architecture = Architecture.AMD64
             };

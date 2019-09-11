@@ -17,6 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
         [JsonProperty(Required = Required.Always)]
         public PipelineTrigger PipelineTrigger { get; set; }
 
+        public string OsType { get; set; }
+
         public string Id => $"{RepoInfo.Owner}/{RepoInfo.Name}/{RepoInfo.Branch}/{ManifestPath}";
 
         public override string ToString() => Id;

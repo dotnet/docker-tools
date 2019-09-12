@@ -38,8 +38,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task GetStaleImagesCommand_SingleDigestChanged()
         {
             const string repo1 = "test-repo";
-            const string dockerfile1Path = "dockerfile1";
-            const string dockerfile2Path = "dockerfile2";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
 
             RepoData[] imageInfoData = new RepoData[]
             {
@@ -134,8 +134,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task GetStaleImagesCommand_MissingImageInfo()
         {
             const string repo1 = "test-repo";
-            const string dockerfile1Path = "dockerfile1";
-            const string dockerfile2Path = "dockerfile2";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
 
             RepoData[] imageInfoData = new RepoData[]
             {
@@ -206,9 +206,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "test-repo";
             const string repo2 = "test-repo2";
             const string repo3 = "test-repo3";
-            const string dockerfile1Path = "dockerfile1";
-            const string dockerfile2Path = "dockerfile2";
-            const string dockerfile3Path = "dockerfile3";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
+            const string dockerfile3Path = "dockerfile3/Dockerfile";
 
             RepoData[] imageInfoData = new RepoData[]
             {
@@ -351,8 +351,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task GetStaleImagesCommand_BaseImageCaching()
         {
             const string repo1 = "test-repo";
-            const string dockerfile1Path = "dockerfile1";
-            const string dockerfile2Path = "dockerfile2";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
             const string baseImage = "base1";
             const string baseImageDigest = "base1digest";
 
@@ -455,7 +455,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task GetStaleImagesCommand_NoBaseImageChange()
         {
             const string repo1 = "test-repo";
-            const string dockerfile1Path = "dockerfile1";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string baseImage = "base1";
             const string baseImageDigest = "base1digest";
 
@@ -536,11 +536,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string sdkRepo = "sdk-repo";
             const string aspnetRepo = "aspnet-repo";
             const string otherRepo = "other-repo";
-            const string runtimeDepsDockerfilePath = "runtime-deps/dockerfile1";
-            const string runtimeDockerfilePath = "runtime/dockerfile2";
-            const string sdkDockerfilePath = "sdk/dockerfile3";
-            const string aspnetDockerfilePath = "aspnet/dockerfile4";
-            const string otherDockerfilePath = "other/dockerfile";
+            const string runtimeDepsDockerfilePath = "runtime-deps/Dockerfile";
+            const string runtimeDockerfilePath = "runtime/Dockerfile";
+            const string sdkDockerfilePath = "sdk/Dockerfile";
+            const string aspnetDockerfilePath = "aspnet/Dockerfile";
+            const string otherDockerfilePath = "other/Dockerfile";
             const string baseImage = "base1";
             const string baseImageDigest = "base1digest";
             const string otherImage = "other";
@@ -663,6 +663,102 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             runtimeDockerfilePath,
                             sdkDockerfilePath,
                             aspnetDockerfilePath
+                        }
+                    }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
+        /// Verifies the correct path arguments are passed to the queued build when an image
+        /// built from a custom named Dockerfile.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_CustomDockerfilePath()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "path/to/Dockerfile.custom";
+            const string dockerfile2Path = "path/to/Dockerfile";
+
+            RepoData[] imageInfoData = new RepoData[]
+            {
+                new RepoData
+                {
+                    Repo = repo1,
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            dockerfile1Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { "base1", "base1digest-diff" }
+                                }
+                            }
+                        },
+                        {
+                            dockerfile2Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { "base2", "base2digest" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription(repo1)
+            };
+
+            Dictionary<Subscription, Manifest> subscriptionManifests =
+                new Dictionary<Subscription, Manifest>
+            {
+                {
+                    subscriptions[0],
+                    ManifestHelper.CreateManifest(
+                        ManifestHelper.CreateRepo(
+                            repo1,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(dockerfile1Path, "tag1"),
+                                ManifestHelper.CreatePlatform(dockerfile2Path, "tag2"))))
+                }
+            };
+
+            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitRepo, List<DockerfileInfo>>
+            {
+                {
+                    subscriptions[0].RepoInfo,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
+                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest")
+                    }
+                }
+            };
+
+            using (TestContext context =
+                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                // Only one of the images has a changed digest
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new Dictionary<Subscription, IList<string>>
+                {
+                    {
+                        subscriptions[0],
+                        new List<string>
+                        {
+                            dockerfile1Path
                         }
                     }
                 };
@@ -913,8 +1009,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
 
                 string dockerfilePath = Directory.CreateDirectory(
-                    Path.Combine(destinationPath, dockerfileInfo.DockerfilePath)).FullName;
-                File.WriteAllText(Path.Combine(dockerfilePath, "Dockerfile"), dockerfileContents);
+                    Path.Combine(destinationPath, Path.GetDirectoryName(dockerfileInfo.DockerfilePath))).FullName;
+
+                File.WriteAllText(Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
             }
 
             private Mock<IDockerService> CreateDockerServiceMock()
@@ -953,35 +1050,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Split("--path ", StringSplitOptions.RemoveEmptyEntries)
                     .Select(p => p.Trim().Trim('\''))
                     .ToList();
-                return CompareLists(expectedPaths, paths);
-            }
-
-            /// <summary>
-            /// Returns a value indicating whether the two lists are equivalent (order does not matter).
-            /// </summary>
-            private static bool CompareLists(IList<string> expectedPaths, IList<string> paths)
-            {
-                if (paths.Count != expectedPaths.Count)
-                {
-                    return false;
-                }
-
-                paths = paths
-                    .OrderBy(p => p)
-                    .ToList();
-                expectedPaths = expectedPaths
-                    .OrderBy(p => p)
-                    .ToList();
-
-                for (int i = 0; i < paths.Count; i++)
-                {
-                    if (paths[i] != expectedPaths[i])
-                    {
-                        return false;
-                    }
-                }
-
-                return true;
+                return TestHelper.CompareLists(expectedPaths, paths);
             }
 
             public void Dispose()

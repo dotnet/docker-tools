@@ -14,6 +14,7 @@ using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
@@ -24,9 +25,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
         private Lazy<RepoData[]> imageInfoRepos;
+        private readonly IAzureManagementFactory azureManagementFactory;
 
-        public CopyAcrImagesCommand() : base()
+        [ImportingConstructor]
+        public CopyAcrImagesCommand(IAzureManagementFactory azureManagementFactory) : base()
         {
+            this.azureManagementFactory = azureManagementFactory ?? throw new ArgumentNullException(nameof(azureManagementFactory));
             this.imageInfoRepos = new Lazy<RepoData[]>(() =>
             {
                 if (!String.IsNullOrEmpty(Options.ImageInfoPath))
@@ -59,10 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             AzureCredentials credentials = SdkContext.AzureCredentialsFactory
                 .FromServicePrincipal(Options.Username, Options.Password, Options.Tenant, AzureEnvironment.AzureGlobalCloud);
-            IAzure azure = Azure.Management.Fluent.Azure
-                .Configure()
-                .Authenticate(credentials)
-                .WithSubscription(Options.Subscription);
+            IAzure azure = this.azureManagementFactory.CreateAzureManager(credentials, Options.Subscription);
 
             string sourceTagName = destTagName.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
             ImportImageParametersInner importParams = new ImportImageParametersInner()
@@ -104,14 +105,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
                 if (repoData != null)
                 {
-                    if (repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData image))
+                    if (repoData.Images.TryGetValue(platform.Model.Dockerfile, out ImageData image))
                     {
                         destTagNames = image.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));
                     }
                     else
                     {
-                        Logger.WriteError($"Unable to find image info data for path '{platform.BuildContextPath}'.");
+                        Logger.WriteError($"Unable to find image info data for path '{platform.Model.Dockerfile}'.");
                         Environment.Exit(1);
                     }
                 }

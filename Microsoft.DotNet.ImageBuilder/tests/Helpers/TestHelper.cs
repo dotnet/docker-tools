@@ -3,7 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -14,25 +16,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return new TempFolderContext();
         }
 
-        public static IDisposable SetWorkingDirectory(string path)
+        /// <summary>
+        /// Returns a value indicating whether the two lists are equivalent (order does not matter).
+        /// </summary>
+        public static bool CompareLists(IList<string> expectedItems, IList<string> items)
         {
-            return new WorkingDirectoryContext(path);
-        }
-
-        private class WorkingDirectoryContext : IDisposable
-        {
-            private readonly string oldWorkingDirectory;
-
-            public WorkingDirectoryContext(string newWorkingDirectoryPath)
+            if (items.Count != expectedItems.Count)
             {
-                this.oldWorkingDirectory = Directory.GetCurrentDirectory();
-                Directory.SetCurrentDirectory(newWorkingDirectoryPath);
+                return false;
             }
 
-            public void Dispose()
+            items = items
+                .OrderBy(p => p)
+                .ToList();
+            expectedItems = expectedItems
+                .OrderBy(p => p)
+                .ToList();
+
+            for (int i = 0; i < items.Count; i++)
             {
-                Directory.SetCurrentDirectory(this.oldWorkingDirectory);
+                if (items[i] != expectedItems[i])
+                {
+                    return false;
+                }
             }
+
+            return true;
         }
     }
 

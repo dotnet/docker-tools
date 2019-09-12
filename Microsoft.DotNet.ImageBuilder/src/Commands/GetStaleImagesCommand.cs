@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (repoData != null &&
                         repoData.Images != null &&
-                        repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData imageData))
+                        repoData.Images.TryGetValue(platform.Model.Dockerfile, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
                         
@@ -146,13 +146,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         if (hasDigestChanged)
                         {
                             IEnumerable<PlatformInfo> dependentPlatforms = platform.GetDependencyGraph(allPlatforms);
-                            pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.BuildContextPath));
+                            pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));
                         }
                     }
                     else
                     {
-                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
-                        pathsToRebuild.Add(platform.BuildContextPath);
+                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.Model.Dockerfile}'. Adding path to build to be queued anyway.");
+                        pathsToRebuild.Add(platform.Model.Dockerfile);
                     }
                 }
             }

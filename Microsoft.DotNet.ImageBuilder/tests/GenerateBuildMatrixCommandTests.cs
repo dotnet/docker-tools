@@ -28,10 +28,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
-            using (TestHelper.SetWorkingDirectory(tempFolderContext.Path))
             {
                 GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
-                command.Options.Manifest = "manifest.json";
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 if (filterPaths != null)
                 {
@@ -59,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreatePlatform(runtimeRelativeDir, "runtime")))
                 );
 
-                File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
                 IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
@@ -88,10 +87,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void GenerateBuildMatrixCommand_PlatformDependencyGraph(string filterPaths, string expectedPaths)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
-            using (TestHelper.SetWorkingDirectory(tempFolderContext.Path))
             {
                 GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
-                command.Options.Manifest = "manifest.json";
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
                 if (filterPaths != null)
                 {
@@ -128,7 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreatePlatform(sampleRelativeDir, "tag")))
                 );
 
-                File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
                 IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();

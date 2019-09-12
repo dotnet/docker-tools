@@ -50,7 +50,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             platformInfo.FullRepoModelName = fullRepoModelName;
             platformInfo.VariableHelper = variableHelper;
 
-            if (File.Exists(model.Dockerfile))
+            // Ensure that we construct an absolute path here to check for the file. Using a relative path
+            // has a dependency on the current working directory which is set for the entire process and
+            // is incompatible with the parallelism that is used in the GetStaleImagesCommand.  That command
+            // processes multiple manifests in varying directories in parallel, so relying on current working
+            // directory is not possible in that case.
+            if (File.Exists(Path.Combine(baseDirectory, model.Dockerfile)))
             {
                 platformInfo.DockerfilePath = model.Dockerfile;
                 platformInfo.BuildContextPath = Path.GetDirectoryName(Path.Combine(baseDirectory, model.Dockerfile));

@@ -16,8 +16,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class UpdateVersionsCommand : ManifestCommand<UpdateVersionsOptions>
     {
-        public UpdateVersionsCommand() : base()
+        private readonly IDockerService dockerService;
+
+        [ImportingConstructor]
+        public UpdateVersionsCommand(IDockerService dockerService) : base()
         {
+            this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }
 
         public override async Task ExecuteAsync()
@@ -27,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            DockerHelper.PullBaseImages(Manifest, Options);
+            this.dockerService.PullBaseImages(Manifest, Options);
 
             await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {

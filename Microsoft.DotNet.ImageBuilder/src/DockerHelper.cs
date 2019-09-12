@@ -91,23 +91,6 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static void PullBaseImages(ManifestInfo manifest, ManifestOptions options)
-        {
-            Logger.WriteHeading("PULLING LATEST BASE IMAGES");
-            IEnumerable<string> baseImages = manifest.GetExternalFromImages().ToArray();
-            if (baseImages.Any())
-            {
-                foreach (string fromImage in baseImages)
-                {
-                    PullImage(fromImage, options.IsDryRun);
-                }
-            }
-            else
-            {
-                Logger.WriteMessage("No external base images to pull");
-            }
-        }
-
         public static void PullImage(string image, bool isDryRun)
         {
             ExecuteHelper.ExecuteWithRetry("docker", $"pull {image}", isDryRun);

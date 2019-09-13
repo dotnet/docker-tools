@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 OsVersion = "version",
                 OS = OS.Linux,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
-                Architecture = DockerHelper.Architecture
+                Architecture = Architecture.AMD64
             };
         }
     }

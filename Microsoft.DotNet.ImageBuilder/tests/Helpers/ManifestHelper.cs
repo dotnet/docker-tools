@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             {
                 Dockerfile = dockerfilePath,
                 OsVersion = "version",
-                OS = DockerHelper.OS,
+                OS = OS.Linux,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
                 Architecture = DockerHelper.Architecture
             };

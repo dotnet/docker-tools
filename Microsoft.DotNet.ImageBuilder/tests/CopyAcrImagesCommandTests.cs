@@ -70,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         Images = new SortedDictionary<string, ImageData>
                         {
                             {
-                                dockerfileRelativePath,
+                                PathHelper.NormalizePath(dockerfileRelativePath),
                                 new ImageData
                                 {
                                     SimpleTags =

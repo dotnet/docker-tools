@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 await command.ExecuteAsync();
 
                 RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(command.Options.ImageInfoOutputPath));
-                Assert.Equal(dockerfileRelativePath, repos[0].Images.First().Key);
+                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Key);
             }
         }
     }

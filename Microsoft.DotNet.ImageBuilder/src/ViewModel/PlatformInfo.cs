@@ -55,15 +55,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             // is incompatible with the parallelism that is used in the GetStaleImagesCommand.  That command
             // processes multiple manifests in varying directories in parallel, so relying on current working
             // directory is not possible in that case.
-            if (File.Exists(Path.Combine(baseDirectory, model.Dockerfile)))
+            string dockerfileWithBaseDir = Path.IsPathRooted(model.Dockerfile) ?
+                model.Dockerfile : Path.Combine(baseDirectory, model.Dockerfile);
+
+            if (File.Exists(dockerfileWithBaseDir))
             {
-                platformInfo.DockerfilePath = model.Dockerfile;
-                platformInfo.BuildContextPath = Path.GetDirectoryName(Path.Combine(baseDirectory, model.Dockerfile));
+                platformInfo.DockerfilePath = PathHelper.NormalizePath(model.Dockerfile);
+                platformInfo.BuildContextPath = Path.GetDirectoryName(dockerfileWithBaseDir);
             }
             else
             {
                 // Modeled Dockerfile is just the directory containing the "Dockerfile"
-                platformInfo.DockerfilePath = Path.Combine(baseDirectory, model.Dockerfile, "Dockerfile");
+                platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(dockerfileWithBaseDir, "Dockerfile"));
                 platformInfo.BuildContextPath = model.Dockerfile;
             }
 

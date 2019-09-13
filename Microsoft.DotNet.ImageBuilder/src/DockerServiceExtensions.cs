@@ -4,14 +4,13 @@
 
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class DockerServiceExtensions
     {
-        public static void PullBaseImages(this IDockerService dockerService, ManifestInfo manifest, ManifestOptions options)
+        public static void PullBaseImages(this IDockerService dockerService, ManifestInfo manifest, bool isDryRun)
         {
             Logger.WriteHeading("PULLING LATEST BASE IMAGES");
             IEnumerable<string> baseImages = manifest.GetExternalFromImages().ToArray();
@@ -19,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (string fromImage in baseImages)
                 {
-                    dockerService.PullImage(fromImage, options.IsDryRun);
+                    dockerService.PullImage(fromImage, isDryRun);
                 }
             }
             else

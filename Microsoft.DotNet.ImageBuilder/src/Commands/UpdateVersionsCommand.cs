@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            this.dockerService.PullBaseImages(Manifest, Options);
+            this.dockerService.PullBaseImages(Manifest, Options.IsDryRun);
 
             await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
             {

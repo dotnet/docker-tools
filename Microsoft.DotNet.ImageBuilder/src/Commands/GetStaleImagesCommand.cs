@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (repoData != null &&
                         repoData.Images != null &&
-                        repoData.Images.TryGetValue(platform.Model.Dockerfile, out ImageData imageData))
+                        repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
                         
@@ -151,7 +151,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.Model.Dockerfile}'. Adding path to build to be queued anyway.");
+                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
                         pathsToRebuild.Add(platform.Model.Dockerfile);
                     }
                 }

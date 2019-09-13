@@ -105,14 +105,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
                 if (repoData != null)
                 {
-                    if (repoData.Images.TryGetValue(platform.Model.Dockerfile, out ImageData image))
+                    if (repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData image))
                     {
                         destTagNames = image.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));
                     }
                     else
                     {
-                        Logger.WriteError($"Unable to find image info data for path '{platform.Model.Dockerfile}'.");
+                        Logger.WriteError($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                         Environment.Exit(1);
                     }
                 }

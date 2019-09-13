@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
                         ImageData imageData = new ImageData();
-                        images.Add(platform.Model.Dockerfile, imageData);
+                        images.Add(platform.DockerfilePath, imageData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -258,7 +258,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsSkipPullingEnabled)
             {
-                this.dockerService.PullBaseImages(Manifest, Options);
+                this.dockerService.PullBaseImages(Manifest, Options.IsDryRun);
             }
         }
 

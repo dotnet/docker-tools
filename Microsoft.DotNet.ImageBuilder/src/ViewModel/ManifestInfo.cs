@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -59,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             ManifestInfo manifestInfo = new ManifestInfo();
             manifestInfo.Model = model;
             manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
-            manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetTagById, manifestInfo.GetRepoById);
+            manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetRepoById);
             manifestInfo.AllRepos = manifestInfo.Model.Repos
                 .Select(repo => RepoInfo.Create(
                     repo,
@@ -151,12 +150,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public RepoInfo GetRepoById(string id)
         {
             return AllRepos.FirstOrDefault(repo => repo.Id == id);
-        }
-
-        public TagInfo GetTagById(string id)
-        {
-            return GetAllTags()
-                .FirstOrDefault(kvp => kvp.Model.Id == id);
         }
     }
 }

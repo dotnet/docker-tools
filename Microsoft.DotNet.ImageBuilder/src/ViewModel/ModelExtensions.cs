@@ -60,12 +60,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Select(kvp => kvp.Key)
                 .ToArray();
             ValidateUniqueElements(tagNames, "tags");
-
-            IEnumerable<string> tagIds = platformTags
-                .Select(kvp => kvp.Value.Id)
-                .Where(id => id != null)
-                .ToArray();
-            ValidateUniqueElements(tagIds, "tag IDs");
         }
 
         private static void ValidateUniqueElements(IEnumerable<string> source, string elementsDescription)

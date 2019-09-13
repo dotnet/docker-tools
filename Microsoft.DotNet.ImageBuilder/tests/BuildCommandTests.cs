@@ -17,12 +17,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class BuildCommandTests
     {
+        /// <summary>
+        /// Verifies the command outputs an image info correctly when the manifest references a custom named Dockerfile.
+        /// </summary>
         [Fact]
         public async Task BuildCommand_ImageInfoOutput_CustomDockerfile()
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
                 Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
+                dockerServiceMock
+                    .SetupGet(o => o.Architecture)
+                    .Returns(Architecture.AMD64);
 
                 BuildCommand command = new BuildCommand(dockerServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");

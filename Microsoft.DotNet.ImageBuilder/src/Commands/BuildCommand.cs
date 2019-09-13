@@ -148,7 +148,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
         {
-            if (platform.Model.Architecture == DockerHelper.Architecture)
+            if (platform.Model.Architecture == this.dockerService.Architecture)
             {
                 return;
             }

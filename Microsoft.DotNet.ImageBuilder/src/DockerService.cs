@@ -6,12 +6,15 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     [Export(typeof(IDockerService))]
     internal class DockerService : IDockerService
     {
+        public Architecture Architecture => DockerHelper.Architecture;
+
         public string GetImageDigest(string image, bool isDryRun)
         {
             return DockerHelper.GetImageDigest(image, isDryRun);

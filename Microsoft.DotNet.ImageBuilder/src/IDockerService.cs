@@ -3,11 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IDockerService
     {
+        Architecture Architecture { get; }
+
         void PullImage(string image, bool isDryRun);
 
         string GetImageDigest(string image, bool isDryRun);

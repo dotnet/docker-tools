@@ -39,9 +39,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             return new Platform
             {
                 Dockerfile = dockerfilePath,
-                OsVersion = "",
+                OsVersion = "version",
                 OS = OS.Linux,
-                Tags = tags.ToDictionary(tag => tag, tag => new Tag())
+                Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
+                Architecture = Architecture.AMD64
             };
         }
     }

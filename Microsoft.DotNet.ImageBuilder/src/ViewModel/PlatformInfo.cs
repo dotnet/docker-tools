@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -50,15 +51,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             platformInfo.FullRepoModelName = fullRepoModelName;
             platformInfo.VariableHelper = variableHelper;
 
-            if (File.Exists(model.Dockerfile))
+            // Ensure that we construct a path using the base directory here to check for the file. In cases like
+            // the GetStaleImagesCommand and unit tests, the base directory will be an absolute path to 
+            // distinguish between multiple repos.
+            string dockerfileWithBaseDir = Path.IsPathRooted(model.Dockerfile) ?
+                model.Dockerfile : Path.Combine(baseDirectory, model.Dockerfile);
+
+            if (File.Exists(dockerfileWithBaseDir))
             {
-                platformInfo.DockerfilePath = model.Dockerfile;
-                platformInfo.BuildContextPath = Path.GetDirectoryName(Path.Combine(baseDirectory, model.Dockerfile));
+                platformInfo.DockerfilePath = PathHelper.NormalizePath(model.Dockerfile);
+                platformInfo.BuildContextPath = Path.GetDirectoryName(model.Dockerfile);
             }
             else
             {
                 // Modeled Dockerfile is just the directory containing the "Dockerfile"
-                platformInfo.DockerfilePath = Path.Combine(baseDirectory, model.Dockerfile, "Dockerfile");
+                platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(model.Dockerfile, "Dockerfile"));
                 platformInfo.BuildContextPath = model.Dockerfile;
             }
 

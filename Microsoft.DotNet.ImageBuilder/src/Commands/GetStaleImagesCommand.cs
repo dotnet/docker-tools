@@ -92,6 +92,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest = Path.Combine(repoPath, subscription.ManifestPath)
             };
 
+            string baseDirectory = Path.GetDirectoryName(manifestOptions.Manifest);
+
             ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
 
             List<string> pathsToRebuild = new List<string>();
@@ -111,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (repoData != null &&
                         repoData.Images != null &&
-                        repoData.Images.TryGetValue(platform.BuildContextPath, out ImageData imageData))
+                        repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
                         
@@ -146,13 +148,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         if (hasDigestChanged)
                         {
                             IEnumerable<PlatformInfo> dependentPlatforms = platform.GetDependencyGraph(allPlatforms);
-                            pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.BuildContextPath));
+                            pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));
                         }
                     }
                     else
                     {
-                        this.loggerService.WriteMessage($"WARNING: Image info not found for '{platform.BuildContextPath}'. Adding path to build to be queued anyway.");
-                        pathsToRebuild.Add(platform.BuildContextPath);
+                        this.loggerService.WriteMessage(
+                            $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
+                        pathsToRebuild.Add(platform.Model.Dockerfile);
                     }
                 }
             }

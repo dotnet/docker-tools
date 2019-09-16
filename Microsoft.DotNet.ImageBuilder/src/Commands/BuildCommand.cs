@@ -22,10 +22,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
+        private readonly IDockerService dockerService;
+
         private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
 
-        public BuildCommand() : base()
+        [ImportingConstructor]
+        public BuildCommand(IDockerService dockerService)
         {
+            this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }
 
         public override Task ExecuteAsync()
@@ -49,6 +53,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<RepoData> reposList = new List<RepoData>();
 
+            string baseDirectory = Path.GetDirectoryName(Options.Manifest);
+
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
                 RepoData repoData = new RepoData
@@ -64,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
                         ImageData imageData = new ImageData();
-                        images.Add(platform.BuildContextPath, imageData);
+                        images.Add(platform.DockerfilePath, imageData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -77,19 +83,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             IEnumerable<string> allTags = platform.Tags
                                 .Concat(image.SharedTags)
                                 .Select(tag => tag.FullyQualifiedName);
-                            string tagArgs = $"-t {string.Join(" -t ", allTags)}";
 
-                            string buildArgs = GetDockerBuildArgs(platform);
-                            string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgs} {platform.BuildContextPath}";
-
-                            if (Options.IsRetryEnabled)
-                            {
-                                ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, Options.IsDryRun);
-                            }
-                            else
-                            {
-                                ExecuteHelper.Execute("docker", dockerArgs, Options.IsDryRun);
-                            }
+                            this.dockerService.BuildImage(
+                                dockerfilePath,
+                                platform.BuildContextPath,
+                                allTags,
+                                platform.BuildArgs,
+                                Options.IsRetryEnabled,
+                                Options.IsDryRun);
 
                             if (!Options.IsDryRun)
                             {
@@ -140,7 +141,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             SortedDictionary<string, string> baseImageDigestMappings = new SortedDictionary<string, string>();
             foreach (string fromImage in platform.ExternalFromImages)
             {
-                string digest = DockerHelper.GetImageDigest(fromImage, Options.IsDryRun);
+                string digest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
                 baseImageDigestMappings[fromImage] = digest;
             }
 
@@ -149,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
         {
-            if (platform.Model.Architecture == DockerHelper.Architecture)
+            if (platform.Model.Architecture == this.dockerService.Architecture)
             {
                 return;
             }
@@ -224,13 +225,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
         }
 
-        private string GetDockerBuildArgs(PlatformInfo platform)
-        {
-            IEnumerable<string> buildArgs = platform.BuildArgs
-                .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
-            return string.Join(string.Empty, buildArgs);
-        }
-
         private void InvokeBuildHook(string hookName, string buildContextPath)
         {
             string buildHookFolder = Path.GetFullPath(Path.Combine(buildContextPath, "hooks"));
@@ -266,7 +260,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsSkipPullingEnabled)
             {
-                DockerHelper.PullBaseImages(Manifest, Options);
+                this.dockerService.PullBaseImages(Manifest, Options.IsDryRun);
             }
         }
 
@@ -282,7 +276,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(tag => tag.FullyQualifiedName);
                     foreach (string tag in pushTags)
                     {
-                        ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", Options.IsDryRun);
+                        this.dockerService.PushImage(tag, Options.IsDryRun);
                     }
                 });
             }

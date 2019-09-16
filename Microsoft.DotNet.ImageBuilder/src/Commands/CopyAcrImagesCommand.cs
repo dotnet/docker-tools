@@ -25,6 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
         private Lazy<RepoData[]> imageInfoRepos;
+        private string baseDirectory;
         private readonly IAzureManagementFactory azureManagementFactory;
 
         [ImportingConstructor]
@@ -45,6 +46,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("COPYING IMAGES");
+
+            this.baseDirectory = Path.GetDirectoryName(Options.Manifest);
 
             string registryName = Manifest.Registry.TrimEnd(".azurecr.io");
 

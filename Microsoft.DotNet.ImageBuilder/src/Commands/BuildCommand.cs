@@ -53,6 +53,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<RepoData> reposList = new List<RepoData>();
 
+            string baseDirectory = Path.GetDirectoryName(Options.Manifest);
+
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
                 RepoData repoData = new RepoData

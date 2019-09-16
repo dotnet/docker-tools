@@ -18,9 +18,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             )]
         public string DocumentationGroup { get; set; }
 
-        // TODO: Remove this property: https://github.com/dotnet/docker-tools/issues/232
-        public string Id { get; set; }
-
         [Description(
             "Indicates whether the image should only be tagged with this tag on the " +
             "local machine that builds the image. The published image will not include " +

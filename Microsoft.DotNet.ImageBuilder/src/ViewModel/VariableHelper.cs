@@ -16,7 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public const string McrTagsYmlTagGroupTypeId = "McrTagsYmlTagGroup";
         public const string RepoVariableTypeId = "Repo";
         public const string SystemVariableTypeId = "System";
-        private const string TagVariableTypeId = "TagRef";
         private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";
 
@@ -24,18 +23,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private static readonly string s_timeStamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
 
         private Func<string, RepoInfo> GetRepoById { get; set; }
-        private Func<string, TagInfo> GetTagById { get; set; }
         private Manifest Manifest { get; set; }
         private IManifestOptionsInfo Options { get; set; }
 
-        public VariableHelper(
-            Manifest manifest,
-            IManifestOptionsInfo options,
-            Func<string, TagInfo> getTagById,
-            Func<string, RepoInfo> getRepoById)
+        public VariableHelper(Manifest manifest, IManifestOptionsInfo options, Func<string, RepoInfo> getRepoById)
         {
             GetRepoById = getRepoById;
-            GetTagById = getTagById;
             Manifest = manifest;
             Options = options;
         }
@@ -89,10 +82,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     variableValue = Options.GetOption(variableName);
                 }
-            }
-            else if (string.Equals(variableType, TagVariableTypeId, StringComparison.Ordinal))
-            {
-                variableValue = GetTagById(variableName)?.Name;
             }
             else if (string.Equals(variableType, RepoVariableTypeId, StringComparison.Ordinal))
             {

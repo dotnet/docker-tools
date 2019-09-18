@@ -62,7 +62,14 @@ namespace Microsoft.DotNet.ImageBuilder
             Logger.WriteSubheading($"EXECUTING: {executeMessageOverride}");
             if (!isDryRun)
             {
+                Stopwatch stopwatch = new Stopwatch();
+                stopwatch.Start();
+
                 process = executor(info);
+
+                stopwatch.Stop();
+                Logger.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+
                 if (process.ExitCode != 0)
                 {
                     string exceptionMsg = errorMessage ?? $"Failed to execute {info.FileName} {info.Arguments}";

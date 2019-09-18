@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that a subscription will be skipped if it's associated with a different OS type than the command is assigned with.
         /// </summary>
         [Fact]
-        public async Task GetStaleImagesCommand_OsTypeFiltering()
+        public async Task GetStaleImagesCommand_OsTypeFiltering_MatchingCommandFilter()
         {
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1";
@@ -173,8 +173,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
+            // Use windows here for the command's OsType filter which is the same as the subscription's OsType.
+            // This should cause the subscription to be processed.
+            const string commandOsType = "windows";
+
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos, commandOsType))
             {
                 await context.ExecuteCommandAsync();
 
@@ -189,6 +193,73 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             dockerfile3Path
                         }
                     }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
+        /// Verifies that a subscription will be skipped if it's associated with a different OS type than the command is assigned with.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_OsTypeFiltering_NonMatchingCommandFilter()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "dockerfile1";
+            const string dockerfile2Path = "dockerfile2";
+            const string dockerfile3Path = "dockerfile3";
+
+            RepoData[] imageInfoData = new RepoData[]
+            {
+            };
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription(repo1, osType: "windows")
+            };
+
+            Dictionary<Subscription, Manifest> subscriptionManifests =
+                new Dictionary<Subscription, Manifest>
+            {
+                {
+                    subscriptions[0],
+                    ManifestHelper.CreateManifest(
+                        ManifestHelper.CreateRepo(
+                            repo1,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
+                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows))))
+                }
+            };
+
+            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitRepo, List<DockerfileInfo>>
+            {
+                {
+                    subscriptions[0].RepoInfo,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
+                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest"),
+                        new DockerfileInfo(dockerfile3Path, "base3", "base3digest")
+                    }
+                }
+            };
+
+            // Use linux here for the command's OsType filter which is different than the subscription's OsType of Windows.
+            // This should cause the subscription to be ignored.
+            const string commandOsType = "linux";
+
+            using (TestContext context =
+                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos, commandOsType))
+            {
+                await context.ExecuteCommandAsync();
+
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new Dictionary<Subscription, IList<string>>
+                {
                 };
 
                 context.Verify(expectedPathsBySubscription);
@@ -894,6 +965,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly IHttpClientFactory httpClientFactory;
             private readonly GetStaleImagesCommand command;
             private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
+            private readonly string osType;
             private const string VariableName = "my-var";
 
             public Mock<IDockerService> DockerServiceMock { get; }
@@ -905,12 +977,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
             /// <param name="subscriptionManifests">A mapping of subscriptions to their associated manifests.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
+            /// <param name="osType">The OS type to filter the command with.</param>
             public TestContext(
                 RepoData[] imageInfoData,
                 Subscription[] subscriptions,
                 IDictionary<Subscription, Manifest> subscriptionManifests,
-                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos)
+                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos,
+                string osType = "*")
             {
+                this.osType = osType;
                 this.imageInfoPath = this.SerializeJsonObjectToTempFile(imageInfoData);
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
 
@@ -985,6 +1060,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.ImageInfoPath = this.imageInfoPath;
                 command.Options.VariableName = VariableName;
+                command.Options.FilterOptions.OsType = this.osType;
                 return command;
             }
 

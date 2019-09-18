@@ -9,6 +9,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -85,11 +86,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription, RepoData[] repos)
         {
+            // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
+            // then there are no images that need to be inspected.
+            string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(Options.FilterOptions.OsType);
+            if (!String.IsNullOrEmpty(subscription.OsType) &&
+                !Regex.IsMatch(subscription.OsType, osTypeRegexPattern, RegexOptions.IgnoreCase))
+            {
+                return Enumerable.Empty<string>();
+            }
+
             string repoPath = await GetGitRepoPath(subscription);
 
-            ManifestFilterOptions filterOptions = Options.FilterOptions.Clone();
-            filterOptions.OsType = subscription.OsType;
-            TempManifestOptions manifestOptions = new TempManifestOptions(filterOptions)
+            TempManifestOptions manifestOptions = new TempManifestOptions(Options.FilterOptions)
             {
                 Manifest = Path.Combine(repoPath, subscription.ManifestPath)
             };

@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
         }
 
-        private static string GetFilterRegexPattern(params string[] patterns)
+        public static string GetFilterRegexPattern(params string[] patterns)
         {
             string processedPatterns = patterns
                 .Select(pattern => Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", "."))

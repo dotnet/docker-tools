@@ -49,16 +49,5 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)");
             Paths = paths;
         }
-
-        public ManifestFilterOptions Clone()
-        {
-            return new ManifestFilterOptions
-            {
-                Architecture = Architecture,
-                OsType = OsType,
-                OsVersion = OsVersion,
-                Paths = Paths
-            };
-        }
     }
 }

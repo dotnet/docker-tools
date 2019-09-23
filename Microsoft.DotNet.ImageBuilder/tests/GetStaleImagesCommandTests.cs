@@ -16,6 +16,8 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.VersionTools.Automation;
+using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -961,12 +963,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
-            private readonly string imageInfoPath;
             private readonly IHttpClientFactory httpClientFactory;
             private readonly GetStaleImagesCommand command;
             private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
             private readonly string osType;
+            private readonly IGitHubClientFactory gitHubClientFactory;
+
             private const string VariableName = "my-var";
+            private const string GitHubBranch = "my-branch";
+            private const string GitHubRepo = "my-repo";
+            private const string GitHubOwner = "my-owner";
+            private const string GitHubPath = "my-path";
 
             public Mock<IDockerService> DockerServiceMock { get; }
 
@@ -986,7 +993,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string osType = "*")
             {
                 this.osType = osType;
-                this.imageInfoPath = this.SerializeJsonObjectToTempFile(imageInfoData);
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
 
                 // Cache image digests lookup
@@ -1004,6 +1010,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 };
 
                 this.httpClientFactory = CreateHttpClientFactory(subscriptions, subscriptionManifests, dockerfileInfos);
+
+                string imageInfoContents = JsonConvert.SerializeObject(imageInfoData);
+                this.gitHubClientFactory = CreateGitHubClientFactory(imageInfoContents);
 
                 this.DockerServiceMock = this.CreateDockerServiceMock();
                 this.command = this.CreateCommand();
@@ -1056,12 +1065,40 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new GetStaleImagesCommand(
-                    this.DockerServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object);
+                    this.DockerServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object, this.gitHubClientFactory);
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
-                command.Options.ImageInfoPath = this.imageInfoPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;
+                command.Options.GitOptions.Branch = GitHubBranch;
+                command.Options.GitOptions.Owner = GitHubOwner;
+                command.Options.GitOptions.Repo = GitHubRepo;
+                command.Options.GitOptions.Path = GitHubPath;
+                command.Options.GitOptions.Email = "test";
+                command.Options.GitOptions.Username = "test";
+                command.Options.GitOptions.AuthToken = "test";
                 return command;
+            }
+
+            private IGitHubClientFactory CreateGitHubClientFactory(string imageInfoContents)
+            {
+                Mock<IGitHubClient> gitHubClientMock = new Mock<IGitHubClient>();
+                gitHubClientMock
+                    .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.Is<GitHubBranch>(branch => IsMatchingBranch(branch))))
+                    .ReturnsAsync(imageInfoContents);
+
+                Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
+                gitHubClientFactoryMock
+                    .Setup(o => o.GetClient(It.IsAny<GitHubAuth>()))
+                    .Returns(gitHubClientMock.Object);
+
+                return gitHubClientFactoryMock.Object;
+            }
+
+            private static bool IsMatchingBranch(GitHubBranch branch)
+            {
+                return branch.Name == GitHubBranch &&
+                    branch.Project.Name == GitHubRepo &&
+                    branch.Project.Owner == GitHubOwner;
             }
 
             /// <summary>

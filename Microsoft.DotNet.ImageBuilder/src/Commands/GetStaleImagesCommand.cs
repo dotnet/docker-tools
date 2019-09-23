@@ -15,6 +15,8 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.VersionTools.Automation;
+using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -28,16 +30,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
+        private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly HttpClient httpClient;
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
             IDockerService dockerService,
             IHttpClientFactory httpClientFactory,
-            ILoggerService loggerService)
+            ILoggerService loggerService,
+            IGitHubClientFactory gitHubClientFactory)
         {
             this.dockerService = dockerService;
             this.loggerService = loggerService;
+            this.gitHubClientFactory = gitHubClientFactory;
             this.httpClient = httpClientFactory.GetClient();
         }
 
@@ -46,16 +51,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
 
-            string imageDataJson = File.ReadAllText(Options.ImageInfoPath);
-            RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(imageDataJson);
-
             try
             {
                 var results = await Task.WhenAll(
                     subscriptions.Select(async s => new SubscriptionImagePaths
                     {
                         SubscriptionId = s.Id,
-                        ImagePaths = (await GetPathsToRebuildAsync(s, repos)).ToArray()
+                        ImagePaths = (await GetPathsToRebuildAsync(s)).ToArray()
                     }));
 
                 // Filter out any results that don't have any images to rebuild
@@ -84,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription, RepoData[] repos)
+        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription)
         {
             // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
             // then there are no images that need to be inspected.
@@ -94,6 +96,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 return Enumerable.Empty<string>();
             }
+
+            RepoData[] repos = await GetImageInfoForSubscriptionAsync(subscription);
 
             string repoPath = await GetGitRepoPath(subscription);
 
@@ -118,7 +122,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = repos
                     .FirstOrDefault(s => s.Repo == repo.Model.Name);
 
-                
                 foreach (var platform in platforms)
                 {
                     if (repoData != null &&
@@ -126,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
-                        
+
                         foreach (string fromImage in platform.ExternalFromImages)
                         {
                             string currentDigest;
@@ -145,7 +148,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             {
                                 this.imageDigestsSemaphore.Release();
                             }
-                            
+
                             string lastDigest = imageData.BaseImages?[fromImage];
 
                             if (lastDigest != currentDigest)
@@ -171,6 +174,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return pathsToRebuild.Distinct().ToList();
+        }
+
+        private async Task<RepoData[]> GetImageInfoForSubscriptionAsync(Subscription subscription)
+        {
+            string imageDataJson;
+            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth()))
+            {
+                GitHubProject project = new GitHubProject(Options.GitOptions.Repo, Options.GitOptions.Owner);
+                GitHubBranch branch = new GitHubBranch(Options.GitOptions.Branch, project);
+
+                GitRepo repo = subscription.RepoInfo;
+                string imageInfoPath = $"{Options.GitOptions.Path}/image-info.{repo.Owner}-{repo.Name}-{repo.Branch}.json";
+                imageDataJson = await gitHubClient.GetGitHubFileContentsAsync(imageInfoPath, branch);
+            }
+
+            return JsonConvert.DeserializeObject<RepoData[]>(imageDataJson);
         }
 
         private async Task<string> GetGitRepoPath(Subscription sub)

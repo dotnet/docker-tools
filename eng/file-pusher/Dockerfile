@@ -1,4 +1,4 @@
-# This Dockerfile is intended to be build at the root of the repo.
+# This Dockerfile is intended to be built at the root of the repo.
 
 # build image
 FROM mcr.microsoft.com/dotnet/core/sdk:3.0-alpine AS build-env

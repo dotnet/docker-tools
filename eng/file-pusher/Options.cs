@@ -13,7 +13,7 @@ namespace FilePusher
         public string GitEmail { get; private set; }
         public string GitAuthToken { get; private set; }
         public string GitUser { get; private set; }
-        public string SubscriptionsPath { get; private set; }
+        public string ConfigPath { get; private set; }
 
         public void Parse(string[] args)
         {
@@ -23,15 +23,15 @@ namespace FilePusher
                 syntax.DefineOptionList(
                     "filter",
                     ref filters,
-                    "Filter to apply to repositories of the subscriptions.json - wildcard chars * and ? supported");
+                    "Filter to apply to repositories of the config json - wildcard chars * and ? supported");
                 Filters = filters;
 
-                string subscriptionsPath = null;
+                string configPath = null;
                 syntax.DefineParameter(
-                    "subscriptions",
-                    ref subscriptionsPath,
-                    "Path to the subscritions json file (defaults to subscriptions.json)");
-                SubscriptionsPath = subscriptionsPath;
+                    "config",
+                    ref configPath,
+                    "Path to the config json file");
+                ConfigPath = configPath;
 
                 string gitUser = null;
                 syntax.DefineParameter(

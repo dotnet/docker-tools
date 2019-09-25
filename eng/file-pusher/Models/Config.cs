@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace FilePusher.Models
 {
-    public class Subscriptions
+    public class Config
     {
         [JsonProperty(Required = Required.Always)]
         public string CommitMessage { get; set; }

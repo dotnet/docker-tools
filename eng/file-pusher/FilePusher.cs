@@ -30,16 +30,16 @@ namespace FilePusher
 
             Options.Parse(args);
 
-            string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
-            Subscriptions subscriptions = JsonConvert.DeserializeObject<Subscriptions>(subscriptionsJson);
+            string configJson = File.ReadAllText(Options.ConfigPath);
+            Config config = JsonConvert.DeserializeObject<Config>(configJson);
 
-            foreach (GitRepo repo in GetFilteredRepos(subscriptions))
+            foreach (GitRepo repo in GetFilteredRepos(config))
             {
                 Console.WriteLine($"Processing {repo.Name}/{repo.Branch}");
 
                 await ExecuteGitOperationsWithRetryAsync(Options, async client =>
                 {
-                    await CreatePullRequestAsync(client, repo, subscriptions);
+                    await CreatePullRequestAsync(client, repo, config);
                 });
             }
         }
@@ -56,6 +56,7 @@ namespace FilePusher
                 updatedContent = updatedContent.Replace("\r\n", "\n");
             }
 
+            filePath = filePath.Replace('\\','/');
             string currentContent = await client.GetGitHubFileContentsAsync(filePath, branch);
 
             if (currentContent == updatedContent)
@@ -67,7 +68,7 @@ namespace FilePusher
                 Console.WriteLine($"File '{filePath}' has changed.");
                 updatedFiles.Add(new GitObject
                 {
-                    Path = filePath.Replace('\\','/'),
+                    Path = filePath,
                     Type = GitObject.TypeBlob,
                     Mode = GitObject.ModeFile,
                     Content = updatedContent
@@ -88,9 +89,9 @@ namespace FilePusher
             }
         }
 
-        private static IEnumerable<GitRepo> GetFilteredRepos(Subscriptions subscriptions)
+        private static IEnumerable<GitRepo> GetFilteredRepos(Config config)
         {
-            IEnumerable<GitRepo> activeRepos = subscriptions.Repos;
+            IEnumerable<GitRepo> activeRepos = config.Repos;
             if (Options.Filters?.Any() ?? false)
             {
                 string pathsRegexPattern = GetFilterRegexPattern(Options.Filters.ToArray());
@@ -107,17 +108,14 @@ namespace FilePusher
             return activeRepos;
         }
 
-        private static async Task CreatePullRequestAsync(
-            GitHubClient client,
-            GitRepo gitRepo,
-            Subscriptions subscriptions)
+        private static async Task CreatePullRequestAsync(GitHubClient client, GitRepo gitRepo, Config config)
         {
             GitHubProject project = new GitHubProject(gitRepo.Name, gitRepo.Owner);
             GitHubProject forkedProject = new GitHubProject(gitRepo.Name, Options.GitUser);
             GitHubBranch baseBranch = new GitHubBranch(gitRepo.Branch, project);
-            GitHubBranch headBranch = new GitHubBranch($"{gitRepo.Owner}{subscriptions.WorkingBranchSuffix}", forkedProject);
+            GitHubBranch headBranch = new GitHubBranch($"{gitRepo.Owner}{config.WorkingBranchSuffix}", forkedProject);
 
-            IEnumerable<GitObject> changes = await GetUpdatedFiles(subscriptions.SourcePath, client, baseBranch);
+            IEnumerable<GitObject> changes = await GetUpdatedFiles(config.SourcePath, client, baseBranch);
 
             if (!changes.Any())
             {
@@ -127,11 +125,7 @@ namespace FilePusher
             GitReference currentRef = await client.GetReferenceAsync(project, $"heads/{baseBranch.Name}");
             string parentSha = currentRef.Object.Sha;
             GitTree tree = await client.PostTreeAsync(forkedProject, parentSha, changes.ToArray());
-            GitCommit commit = await client.PostCommitAsync(
-                forkedProject,
-                subscriptions.CommitMessage,
-                tree.Sha,
-                new[] { parentSha });
+            GitCommit commit = await client.PostCommitAsync(forkedProject, config.CommitMessage, tree.Sha, new[] { parentSha });
 
             string workingReference = $"heads/{headBranch.Name}";
             if (await BranchExists(client, forkedProject, workingReference))
@@ -151,8 +145,8 @@ namespace FilePusher
             if (pullRequestToUpdate == null)
             {
                 await client.PostGitHubPullRequestAsync(
-                    subscriptions.PullRequestTitle,
-                    subscriptions.PullRequestDescription,
+                    config.PullRequestTitle,
+                    config.PullRequestDescription,
                     headBranch,
                     baseBranch,
                     maintainersCanModify: true);

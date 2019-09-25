@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = ManifestHelper.CreateManifest(
                     ManifestHelper.CreateRepo("runtime",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(dockerfileRelativePath, "runtime")))
+                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "runtime" })))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

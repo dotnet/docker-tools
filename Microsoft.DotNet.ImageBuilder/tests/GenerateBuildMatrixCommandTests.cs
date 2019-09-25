@@ -52,10 +52,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = ManifestHelper.CreateManifest(
                     ManifestHelper.CreateRepo("runtime-deps",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, "tag"))),
+                            ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" }))),
                     ManifestHelper.CreateRepo("runtime",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(runtimeRelativeDir, "runtime")))
+                            ManifestHelper.CreatePlatform(runtimeRelativeDir, new string[] { "runtime" })))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -117,13 +117,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = ManifestHelper.CreateManifest(
                     ManifestHelper.CreateRepo("runtime-deps",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, "tag"))),
+                            ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" }))),
                     ManifestHelper.CreateRepo("sdk",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(sdkRelativeDir, "tag"))),
+                            ManifestHelper.CreatePlatform(sdkRelativeDir, new string[] { "tag" }))),
                     ManifestHelper.CreateRepo("sample",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(sampleRelativeDir, "tag")))
+                            ManifestHelper.CreatePlatform(sampleRelativeDir, new string[] { "tag" })))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

@@ -1,0 +1,28 @@
+{
+  "commitMessage": "Update common Docker engineering infrastructure with latest",
+  "pullRequestTitle": "Update common Docker engineering infrastructure with latest",
+  "sourcePath": "eng/common",
+  "workingBranchSuffix": "-update-eng-common",
+  "repos": [
+    {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "nightly"
+    },
+    {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "master"
+    },
+    {
+      "owner": "dotnet",
+      "name": "dotnet-buildtools-prereqs-docker",
+      "branch": "master"
+    },
+    {
+      "owner": "microsoft",
+      "name": "dotnet-framework-docker",
+      "branch": "master"
+    }
+  ]
+}

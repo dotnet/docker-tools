@@ -9,7 +9,8 @@
     "pipelineTrigger": {
       "id": 373,
       "pathVariable": "imageBuilder.pathArgs"
-    }
+    },
+    "osType": "linux"
   },
   {
     "repoInfo": {
@@ -21,7 +22,8 @@
     "pipelineTrigger": {
       "id": 359,
       "pathVariable": "imageBuilder.pathArgs"
-    }
+    },
+    "osType": "linux"
   },
   {
     "repoInfo": {
@@ -32,6 +34,18 @@
     "manifestPath": "manifest.samples.json",
     "pipelineTrigger": {
       "id": 376,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
+  },
+  {
+    "repoInfo": {
+      "owner": "Microsoft",
+      "name": "dotnet-framework-docker",
+      "branch": "master"
+    },
+    "manifestPath": "manifest.samples.json",
+    "pipelineTrigger": {
+      "id": 374,
       "pathVariable": "imageBuilder.pathArgs"
     }
   }

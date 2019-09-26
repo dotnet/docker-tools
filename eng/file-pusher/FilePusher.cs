@@ -113,7 +113,9 @@ namespace FilePusher
             GitHubProject project = new GitHubProject(gitRepo.Name, gitRepo.Owner);
             GitHubProject forkedProject = new GitHubProject(gitRepo.Name, Options.GitUser);
             GitHubBranch baseBranch = new GitHubBranch(gitRepo.Branch, project);
-            GitHubBranch headBranch = new GitHubBranch($"{gitRepo.Owner}{config.WorkingBranchSuffix}", forkedProject);
+            GitHubBranch headBranch = new GitHubBranch(
+                $"{gitRepo.Name}-{gitRepo.Branch}{config.WorkingBranchSuffix}",
+                forkedProject);
 
             IEnumerable<GitObject> changes = await GetUpdatedFiles(config.SourcePath, client, baseBranch);
 
@@ -145,7 +147,7 @@ namespace FilePusher
             if (pullRequestToUpdate == null)
             {
                 await client.PostGitHubPullRequestAsync(
-                    config.PullRequestTitle,
+                    $"[{gitRepo.Branch}] {config.PullRequestTitle}",
                     config.PullRequestDescription,
                     headBranch,
                     baseBranch,

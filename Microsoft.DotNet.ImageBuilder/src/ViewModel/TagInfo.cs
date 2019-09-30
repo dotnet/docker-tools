@@ -3,12 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.IO;
-using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {

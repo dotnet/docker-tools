@@ -7,12 +7,16 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
+        public static GitOptions GetVersionsRepoImageInfoOptions() =>
+            new GitOptions("dotnet", "versions", "master", "build-info/docker");
+
         public static void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos, ImageInfoMergeOptions options = null)
         {
             if (options == null)

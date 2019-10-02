@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected override string CommandHelp => "Publishes a build's merged image info.";
 
-        public GitOptions GitOptions { get; } = new GitOptions("dotnet", "versions", "master", "build-info/docker/image-info.json");
+        public GitOptions GitOptions { get; } = ImageInfoHelper.GetVersionsRepoImageInfoOptions();
 
         public string ImageInfoPath { get; set; }
 

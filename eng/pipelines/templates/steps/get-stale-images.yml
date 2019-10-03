@@ -4,18 +4,16 @@ parameters:
   useRemoteDockerServer: false
   staleImagePathsVariableName: null
 steps:
-  - script: >
-      curl -SLo image-info.json
-      https://raw.githubusercontent.com/dotnet/versions/master/build-info/docker/image-info.json
-    displayName: Download Image Info File
   - template: ${{ format('../../../common/templates/steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
     parameters:
       setupRemoteDockerServer: ${{ parameters.useRemoteDockerServer}}
   - script: >
       $(runImageBuilderCmd)
       getStaleImages
+      $(dotnetBot-userName)
+      $(dotnetBot-email)
+      $(dotnet-bot-user-repo-adminrepohook-pat)
       ${{ parameters.staleImagePathsVariableName }}
-      --image-info-path image-info.json
       --subscriptions-path $(checkBaseImageSubscriptionsPath)
       --os-type ${{ parameters.osType }}
     displayName: Get Stale Images

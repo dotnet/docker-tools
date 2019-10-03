@@ -6,21 +6,20 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GetStaleImagesOptions : Options, IFilterableOptions
+    public class GetStaleImagesOptions : Options, IFilterableOptions, IGitOptionsHost
     {
         protected override string CommandHelp => "Gets paths to images whose base images are out-of-date";
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
+        public GitOptions GitOptions { get; } = GitOptions.GetVersionsRepoImageInfoOptions();
+
         public string SubscriptionsPath { get; set; }
-        public string ImageInfoPath { get; set; }
         public string VariableName { get; set; }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
             base.ParseCommandLine(syntax);
-
-            FilterOptions.ParseCommandLine(syntax);
 
             const string DefaultSubscriptionsPath = "subscriptions.json";
             string subscriptionsPath = DefaultSubscriptionsPath;
@@ -30,14 +29,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').");
             SubscriptionsPath = subscriptionsPath;
 
-            const string DefaultImageInfoPath = "image-info.json";
-            string imageDataPath = DefaultImageInfoPath;
-            syntax.DefineOption(
-                "image-info-path",
-                ref imageDataPath,
-                $"Path to the file containing image info (defaults to '{DefaultImageInfoPath}').");
-            ImageInfoPath = imageDataPath;
-
+            FilterOptions.ParseCommandLine(syntax);
+            GitOptions.ParseCommandLine(syntax);
+            
             string variableName = null;
             syntax.DefineParameter(
                 "image-paths-variable",

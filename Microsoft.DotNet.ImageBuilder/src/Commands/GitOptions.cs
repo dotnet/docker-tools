@@ -82,5 +82,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             return new GitHubAuth(AuthToken, Username, Email);
         }
+
+        public static GitOptions GetVersionsRepoImageInfoOptions() =>
+            new GitOptions("dotnet", "versions", "master", "build-info/docker");
     }
 }

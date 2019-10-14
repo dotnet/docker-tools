@@ -1,0 +1,28 @@
+trigger:
+  batch: true
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - eng/common/*
+pr: none
+
+variables:
+- group: DotNet-Maestro
+
+jobs:
+- job: Build
+  pool: Hosted Ubuntu 1604
+  steps:
+  - script: >
+      docker build . -f ./eng/file-pusher/Dockerfile -t file-pusher
+    displayName: Build File Pusher
+  - script: >
+      docker run --rm file-pusher
+      $(filters)
+      ./eng/eng-common-file-pusher-config.json
+      dotnet-maestro-bot
+      dotnet-maestro-bot@microsoft.com
+      $(BotAccount-dotnet-maestro-bot-PAT)
+    displayName: Run File Pusher

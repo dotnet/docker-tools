@@ -9,8 +9,6 @@ trigger:
 pr: none
 
 variables:
-- group: DotNet-Docker-Common
-- group: DotNet-Docker-Secrets
 - group: DotNet-Maestro
 
 jobs:
@@ -24,7 +22,7 @@ jobs:
       docker run --rm file-pusher
       $(filters)
       ./eng/eng-common-file-pusher-config.json
-      $(dotnetBot-userName)
-      $(dotnetBot-email)
+      dotnet-maestro-bot
+      dotnet-maestro-bot@microsoft.com
       $(BotAccount-dotnet-maestro-bot-PAT)
     displayName: Run File Pusher

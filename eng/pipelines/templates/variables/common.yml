@@ -2,3 +2,7 @@ variables:
 - template: ../../../common/templates/variables/common.yml
 - name: checkBaseImageSubscriptionsPath
   value: eng/check-base-image-subscriptions.json
+- name: imageNames.pinger.linux
+  value: mcr.microsoft.com/windows/nanoserver:1809-arm32v7
+- name: imageNames.pinger.windows
+  value: arm32v7/debian:stretch

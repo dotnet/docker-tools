@@ -325,11 +325,23 @@ stages:
         or(
           or(
             and(
-              contains(variables['stages'], 'build'),
-              succeeded('build')),
-            and(
-              contains(variables['stages'], 'test'),
-              succeeded('test'))),
+              and(
+                contains(variables['stages'], 'build'),
+                succeeded('Post_Build')),
+              and(
+                contains(variables['stages'], 'test'),
+                succeeded('Test'))),
+            or(
+              and(
+                not(contains(variables['stages'], 'build')),
+                and(
+                  contains(variables['stages'], 'test'),
+                  succeeded('Test'))),
+              and(
+                not(contains(variables['stages'], 'test')),
+                and(
+                  contains(variables['stages'], 'build'),
+                  succeeded('Post_Build'))))),
           not(
             or(
               contains(variables['stages'], 'build'),

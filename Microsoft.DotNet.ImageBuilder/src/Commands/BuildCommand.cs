@@ -67,6 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Model.Name
                 };
+                reposList.Add(repoData);
 
                 SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
 
@@ -130,7 +131,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (images.Any())
                 {
                     repoData.Images = images;
-                    reposList.Add(repoData);
                 }
             }
 
@@ -274,6 +274,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ExecuteWithUser(() =>
                 {
                     var imagesToPush = this.reposList
+                        .Where(repoData => repoData.Images != null)
                         .Select(repoData => new
                         {
                             Repo = repoData,

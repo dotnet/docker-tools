@@ -25,9 +25,9 @@ namespace Microsoft.DotNet.ImageBuilder
             DockerHelper.PullImage(image, isDryRun);
         }
 
-        public void PushImage(string tag, bool isDryRun)
+        public string PushImage(string tag, bool isDryRun)
         {
-            ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
+            return DockerHelper.PushImage(tag, isDryRun);
         }
 
         public void BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun)

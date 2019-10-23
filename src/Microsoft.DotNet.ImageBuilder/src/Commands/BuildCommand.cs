@@ -23,8 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
         private readonly IDockerService dockerService;
+        private readonly List<RepoData> reposList = new List<RepoData>();
 
         private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
+        
 
         [ImportingConstructor]
         public BuildCommand(IDockerService dockerService)
@@ -42,6 +44,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 PushImages();
             }
 
+            if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
+            {
+                string imageInfoString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
+                File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
+            }
+
             WriteBuildSummary();
 
             return Task.CompletedTask;
@@ -50,8 +58,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void BuildImages()
         {
             Logger.WriteHeading("BUILDING IMAGES");
-
-            List<RepoData> reposList = new List<RepoData>();
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
@@ -126,12 +132,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             BuiltTags = BuiltTags.ToArray();
-
-            if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
-            {
-                string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
-                File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
-            }
         }
 
         private SortedDictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
@@ -270,11 +270,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ExecuteWithUser(() =>
                 {
-                    IEnumerable<string> pushTags = GetPushTags(BuiltTags)
-                        .Select(tag => tag.FullyQualifiedName);
-                    foreach (string tag in pushTags)
+                    var imagesToPush = this.reposList
+                        .Where(repoData => repoData.Images != null)
+                        .Select(repoData => new
+                        {
+                            Repo = repoData,
+                            RepoInfo = this.Manifest.GetRepoByModelName(repoData.Repo)
+                        })
+                        .SelectMany(repoData =>
+                            repoData.Repo.Images
+                                .Select(image => new
+                                {
+                                    Image = image.Value,
+                                    FullyQualifiedSimpleTags = image.Value.SimpleTags
+                                        .Select(tag => TagInfo.GetFullyQualifiedName(repoData.RepoInfo.Name, tag))
+                                }));
+
+                    foreach (var image in imagesToPush)
                     {
-                        this.dockerService.PushImage(tag, Options.IsDryRun);
+                        foreach (string tag in image.FullyQualifiedSimpleTags)
+                        {
+                            // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
+                            string digest = this.dockerService.PushImage(tag, Options.IsDryRun);
+                            if (image.Image.Digest != null && image.Image.Digest != digest)
+                            {
+                                // Pushing the same image with different tags should result in the same digest being output
+                                Logger.WriteError(
+                                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Image.Digest}'.");
+                                Environment.Exit(1);
+                            }
+
+                            image.Image.Digest = digest;
+                        }
                     }
                 });
             }

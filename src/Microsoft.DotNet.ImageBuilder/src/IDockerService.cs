@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         string GetImageDigest(string image, bool isDryRun);
 
-        void PushImage(string tag, bool isDryRun);
+        string PushImage(string tag, bool isDryRun);
 
         void BuildImage(
             string dockerfilePath,

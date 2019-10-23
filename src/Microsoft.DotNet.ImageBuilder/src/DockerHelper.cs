@@ -4,6 +4,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -90,6 +91,18 @@ namespace Microsoft.DotNet.ImageBuilder
         public static void PullImage(string image, bool isDryRun)
         {
             ExecuteHelper.ExecuteWithRetry("docker", $"pull {image}", isDryRun);
+        }
+
+        public static string PushImage(string tag, bool isDryRun)
+        {
+            string pushOutput = ExecuteCommand($"push {tag}", errorMessage: null, isDryRun: isDryRun, enableRetry: true);
+
+            string tagOnly = tag.Substring(tag.LastIndexOf(":") + 1);
+
+            const string DigestMatchName = "digest";
+            Regex imageDigestRegex = new Regex($@"{tagOnly}:\sdigest:\s(?<{DigestMatchName}>sha256:([a-f]+|[0-9])+)\ssize:\s\d+");
+            Match match = imageDigestRegex.Match(pushOutput);
+            return match.Groups[DigestMatchName].Value;
         }
 
         public static string ReplaceRepo(string image, string newRepo)
@@ -191,17 +204,27 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private static string ExecuteCommand(
-            string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
+            string command, string errorMessage, string additionalArgs = null, bool isDryRun = false, bool enableRetry = false)
         {
             ProcessStartInfo startInfo = new ProcessStartInfo("docker", $"{command} {additionalArgs}");
             startInfo.RedirectStandardOutput = true;
-            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
+
+            Process process;
+            if (enableRetry)
+            {
+                process = ExecuteHelper.ExecuteWithRetry(startInfo, isDryRun, errorMessage);
+            }
+            else
+            {
+                process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
+            }
+            
             return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }
 
         private static string ExecuteCommandWithFormat(
-            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false) =>
-            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
+            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false, bool enableRetry = false) =>
+            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun, enableRetry);
 
         private enum ManagementType
         {

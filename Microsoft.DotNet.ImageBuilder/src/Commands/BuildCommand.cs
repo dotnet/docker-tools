@@ -23,8 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
         private readonly IDockerService dockerService;
+        private readonly List<RepoData> reposList = new List<RepoData>();
 
         private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
+        
 
         [ImportingConstructor]
         public BuildCommand(IDockerService dockerService)
@@ -42,6 +44,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 PushImages();
             }
 
+            if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
+            {
+                string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
+                File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
+            }
+
             WriteBuildSummary();
 
             return Task.CompletedTask;
@@ -51,8 +59,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteHeading("BUILDING IMAGES");
 
-            List<RepoData> reposList = new List<RepoData>();
-
             string baseDirectory = Path.GetDirectoryName(Options.Manifest);
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
@@ -61,7 +67,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Model.Name
                 };
-                reposList.Add(repoData);
 
                 SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
 
@@ -114,7 +119,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             imageData.BaseImages = baseImageDigests;
                         }
 
-                        imageData.SimpleTags = GetPushTags(platform.Tags)
+                        imageData.SimpleTags = platform.Tags
+                            .Where(tag => !tag.Model.IsLocal)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
@@ -124,16 +130,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (images.Any())
                 {
                     repoData.Images = images;
+                    reposList.Add(repoData);
                 }
             }
 
             BuiltTags = BuiltTags.ToArray();
-
-            if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
-            {
-                string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
-                File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
-            }
         }
 
         private SortedDictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
@@ -272,18 +273,39 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ExecuteWithUser(() =>
                 {
-                    IEnumerable<string> pushTags = GetPushTags(BuiltTags)
-                        .Select(tag => tag.FullyQualifiedName);
-                    foreach (string tag in pushTags)
+                    var imagesToPush = this.reposList
+                        .Select(repoData => new
+                        {
+                            Repo = repoData,
+                            RepoInfo = this.Manifest.GetRepoByModelName(repoData.Repo)
+                        })
+                        .SelectMany(repoData =>
+                            repoData.Repo.Images
+                                .Select(image => new
+                                {
+                                    Image = image.Value,
+                                    FullyQualifiedSimpleTags = image.Value.SimpleTags
+                                        .Select(tag => TagInfo.GetFullyQualifiedName(repoData.RepoInfo.Name, tag))
+                                }));
+
+                    foreach (var image in imagesToPush)
                     {
-                        this.dockerService.PushImage(tag, Options.IsDryRun);
+                        foreach (var tag in image.FullyQualifiedSimpleTags)
+                        {
+                            string digest = this.dockerService.PushImage(tag, Options.IsDryRun);
+                            if (image.Image.Digest != null && image.Image.Digest != digest)
+                            {
+                                // Pushing the same image with different tags should result in the same digest being output
+                                Logger.WriteError($"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Image.Digest}'.");
+                                Environment.Exit(1);
+                            }
+
+                            image.Image.Digest = digest;
+                        }
                     }
                 });
             }
         }
-
-        private static IEnumerable<TagInfo> GetPushTags(IEnumerable<TagInfo> buildTags) =>
-            buildTags.Where(tag => !tag.Model.IsLocal);
 
         private bool UpdateDockerfileFromCommands(PlatformInfo platform, out string dockerfilePath)
         {

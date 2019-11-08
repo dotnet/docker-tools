@@ -19,10 +19,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
         public static Repo CreateRepo(string name, params Image[] images)
         {
+            return CreateRepo(name, images, mcrTagsMetadataTemplatePath: null);
+        }
+
+        public static Repo CreateRepo(string name, Image[] images, string mcrTagsMetadataTemplatePath = null)
+        {
             return new Repo
             {
                 Name = name,
-                Images = images
+                Images = images,
+                McrTagsMetadataTemplatePath = mcrTagsMetadataTemplatePath
             };
         }
 
@@ -34,12 +40,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
-        public static Platform CreatePlatform(string dockerfilePath, string[] tags, OS os = OS.Linux)
+        public static Platform CreatePlatform(string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco")
         {
             return new Platform
             {
                 Dockerfile = dockerfilePath,
-                OsVersion = "version",
+                OsVersion = osVersion,
                 OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
                 Architecture = Architecture.AMD64

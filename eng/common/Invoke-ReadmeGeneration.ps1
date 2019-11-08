@@ -35,7 +35,8 @@ $onTagsGenerated = {
 $imageBuilderArgs = "generateTagsReadme" `
     + " --manifest $Manifest" `
     + " --repo $Repo" `
-    + " $GitRepo/blob/${Branch}"
+    + " $GitRepo"
+    + " $Branch"
 
 & "$PSScriptRoot/Invoke-ImageBuilder.ps1" `
     -ImageBuilderArgs $imageBuilderArgs `

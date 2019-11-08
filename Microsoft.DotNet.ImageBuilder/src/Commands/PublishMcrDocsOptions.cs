@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptions GitOptions { get; } = new GitOptions("Microsoft", "mcrdocs", "master", "teams");
         
-        public string SourceUrl { get; set; }
+        public string SourceRepoUrl { get; set; }
 
         public PublishMcrDocsOptions() : base()
         {
@@ -24,9 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             GitOptions.ParseCommandLine(syntax);
 
-            string sourceUrl = null;
-            syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
-            SourceUrl = sourceUrl;
+            string sourceRepoUrl = null;
+            syntax.DefineParameter("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
+            SourceRepoUrl = sourceRepoUrl;
         }
     }
 }

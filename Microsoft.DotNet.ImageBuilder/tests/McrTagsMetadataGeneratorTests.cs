@@ -79,8 +79,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             // Execute generator
-            McrTagsMetadataGenerator generator = new McrTagsMetadataGenerator(gitServiceMock.Object);
-            string result = generator.Execute(manifestInfo, repo, SourceRepoUrl, sourceRepoBranch);
+            string result = McrTagsMetadataGenerator.Execute(
+                gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, sourceRepoBranch);
 
             Models.Mcr.McrTagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)

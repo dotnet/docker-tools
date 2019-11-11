@@ -22,13 +22,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
+            string sourceRepoBranch = null;
+            syntax.DefineOption("source-branch", ref sourceRepoBranch, "Repo branch of the Dockerfile sources (default is commit SHA)");
+            SourceRepoBranch = sourceRepoBranch;
+
             string sourceRepoUrl = null;
             syntax.DefineParameter("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
             SourceRepoUrl = sourceRepoUrl;
-
-            string sourceRepoBranch = null;
-            syntax.DefineParameter("source-branch", ref sourceRepoBranch, "Repo branch of the Dockerfile sources");
-            SourceRepoBranch = sourceRepoBranch;
         }
     }
 }

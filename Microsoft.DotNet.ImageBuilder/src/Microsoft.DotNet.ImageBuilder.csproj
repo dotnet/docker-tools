@@ -11,7 +11,6 @@
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.22.0" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="1.0.0-beta.19426.12" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.143.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="3.0.11" />
     <PackageReference Include="System.CommandLine" Version="0.1.0-e170603-2" />
     <PackageReference Include="System.ComponentModel.Composition" Version="4.5.0" />

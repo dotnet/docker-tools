@@ -13,16 +13,17 @@ using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
+namespace Microsoft.DotNet.ImageBuilder
 {
     public static class GitHelper
     {
         private const int DefaultMaxTries = 10;
         private const int DefaultRetryMillisecondsDelay = 5000;
 
-        public static string GetCommitSha(string filePath)
+        public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%h {filePath}");
+            string format = useFullHash ? "H" : "h";
+            ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}");
             startInfo.RedirectStandardOutput = true;
             Process gitLogProcess = ExecuteHelper.Execute(
                 startInfo, false, $"Unable to retrieve the latest commit SHA for {filePath}");

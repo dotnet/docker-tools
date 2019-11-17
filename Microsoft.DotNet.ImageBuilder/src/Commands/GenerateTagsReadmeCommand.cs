@@ -15,9 +15,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GenerateTagsReadmeCommand : ManifestCommand<GenerateTagsReadmeOptions>
     {
         private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";
+        private readonly IGitService gitService;
 
-        public GenerateTagsReadmeCommand() : base()
+        [ImportingConstructor]
+        public GenerateTagsReadmeCommand(IGitService gitService) : base()
         {
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         public override Task ExecuteAsync()
@@ -29,7 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             RepoInfo repo = Manifest.FilteredRepos.First();
-            string tagsMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, Options.SourceUrl);
+            string tagsMetadata = McrTagsMetadataGenerator.Execute(
+                this.gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch);
             string tagsListing = GenerateTagsListing(repo, tagsMetadata);
             UpdateReadme(repo, tagsListing);
 

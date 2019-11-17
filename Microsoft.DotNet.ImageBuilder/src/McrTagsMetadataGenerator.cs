@@ -9,27 +9,29 @@ using System.Linq;
 using System.Text;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder
 {
     public class McrTagsMetadataGenerator
     {
-        private List<ImageDocumentationInfo> _imageDocInfos;
+        private IGitService _gitService;
         private ManifestInfo _manifest;
         private RepoInfo _repo;
-        private string _sourceUrl;
+        private string _sourceRepoUrl;
+        private string _sourceBranch;
+        private List<ImageDocumentationInfo> _imageDocInfos;
 
-        private McrTagsMetadataGenerator()
-        {
-        }
-
-        public static string Execute(ManifestInfo manifest, RepoInfo repo, string sourceUrl)
+        public static string Execute(IGitService gitService, ManifestInfo manifest, RepoInfo repo, string sourceRepoUrl, string sourceBranch = null)
         {
             McrTagsMetadataGenerator generator = new McrTagsMetadataGenerator()
             {
+                _gitService = gitService,
                 _manifest = manifest,
                 _repo = repo,
-                _sourceUrl = sourceUrl,
+                _sourceRepoUrl = sourceRepoUrl,
+                _sourceBranch = sourceBranch,
             };
 
             return generator.Execute();
@@ -60,6 +62,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string metadata = yaml.ToString();
+
+            // Validate that the YAML is in a valid format
+            new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build()
+                .Deserialize<Models.Mcr.McrTagsMetadata>(metadata);
+
             Logger.WriteSubheading("Generated Metadata:");
             Logger.WriteMessage(metadata);
 
@@ -142,12 +151,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetTagGroupYaml(ImageDocumentationInfo info)
         {
+            string dockerfileRelativePath = info.Platform.DockerfilePath.Replace('\\', '/');
+            string branchOrShaPathSegment = _sourceBranch ??
+                _gitService.GetCommitSha(dockerfileRelativePath, useFullHash: true);
+            string dockerfilePath = $"{_sourceRepoUrl}/blob/{branchOrShaPathSegment}/{dockerfileRelativePath}";
+
             StringBuilder yaml = new StringBuilder();
             yaml.AppendLine($"  - tags: [ {info.FormattedDocumentedTags} ]");
             yaml.AppendLine($"    architecture: {info.Platform.Model.Architecture.GetDisplayName()}");
             yaml.AppendLine($"    os: {info.Platform.Model.OS.GetDockerName()}");
             yaml.AppendLine($"    osVersion: {GetOSDisplayName(info.Platform)}");
-            yaml.Append($"    dockerfile: {_sourceUrl}/{info.Platform.DockerfilePath.Replace('\\', '/')}");
+            yaml.Append($"    dockerfile: {dockerfilePath}");
 
             return yaml.ToString();
         }

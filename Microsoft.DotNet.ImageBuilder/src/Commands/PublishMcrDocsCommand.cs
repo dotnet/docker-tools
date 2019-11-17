@@ -19,10 +19,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
     {
         private const string McrTagsPlaceholder = "Tags go here.";
-        
+        private readonly IGitService gitService;
 
-        public PublishMcrDocsCommand() : base()
+        [ImportingConstructor]
+        public PublishMcrDocsCommand(IGitService gitService) : base()
         {
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         public override async Task ExecuteAsync()
@@ -108,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                string updatedMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, Options.SourceUrl);
+                string updatedMetadata = McrTagsMetadataGenerator.Execute(this.gitService, Manifest, repo, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplatePath);
                 await AddUpdatedFile(metadata, client, branch, productRepo, metadataFileName, updatedMetadata);
             }

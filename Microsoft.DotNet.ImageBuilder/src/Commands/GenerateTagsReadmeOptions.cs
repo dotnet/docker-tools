@@ -10,7 +10,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected override string CommandHelp => "Generates and updates the readme tag listing section";
 
-        public string SourceUrl { get; set; }
+        public string SourceRepoUrl { get; set; }
+
+        public string SourceRepoBranch { get; set; }
 
         public GenerateTagsReadmeOptions() : base()
         {
@@ -20,9 +22,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.ParseCommandLine(syntax);
 
-            string sourceUrl = null;
-            syntax.DefineParameter("source-url", ref sourceUrl, "Base URL of the Dockerfile sources");
-            SourceUrl = sourceUrl;
+            string sourceRepoBranch = null;
+            syntax.DefineOption("source-branch", ref sourceRepoBranch, "Repo branch of the Dockerfile sources (default is commit SHA)");
+            SourceRepoBranch = sourceRepoBranch;
+
+            string sourceRepoUrl = null;
+            syntax.DefineParameter("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
+            SourceRepoUrl = sourceRepoUrl;
         }
     }
 }

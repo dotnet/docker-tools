@@ -20,7 +20,7 @@ jobs:
     - ${{ if eq(parameters.publishImages, 'true') }}:
       - script: docker login -u $(acr.userName) -p $(BotAccount-dotnet-docker-acr-bot-password) $(acr.server)
         displayName: Docker Login
-    - powershell: Microsoft.DotNet.ImageBuilder/build.ps1 $(buildParameters)
+    - powershell: src/Microsoft.DotNet.ImageBuilder/build.ps1 $(buildParameters)
       displayName: Build and Publish ImageBuilder
     - ${{ if eq(parameters.publishImages, 'true') }}:
       - script: docker logout

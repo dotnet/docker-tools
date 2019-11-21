@@ -17,5 +17,10 @@ jobs:
 - template: build-image-builder-image.yml
   parameters:
     name: Windows
-    pool: Hosted Windows Container
+    pool:
+      ${{ if eq(variables['System.TeamProject'], 'public') }}:
+        name: DotNetCore-Docker-Public
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        name: DotNetCore-Docker
+      demands: VSTS_OS -equals Windows_Server_2019_Data_Center_RS5
     publishImages: ${{ parameters.publishImages }}

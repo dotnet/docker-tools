@@ -241,7 +241,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 return platformId.OsVersion
                     .Replace("nanoserver", "windows")
-                    .Replace("windowsservercore", "windows");
+                    .Replace("windowsservercore", "windows")
+                    .Replace("ltsc2019", "1809");
             }
 
             return platformId.OS.GetDockerName();

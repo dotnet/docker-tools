@@ -73,7 +73,7 @@ stages:
       customInitSteps: ${{ parameters.customBuildInitSteps }}
   - template: ../jobs/build-images.yml
     parameters:
-      name: Build_NanoServer1809_amd64
+      name: Build_Windows1809_amd64
       pool: # windows1809Amd64
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
           name: DotNetCore-Docker-Public

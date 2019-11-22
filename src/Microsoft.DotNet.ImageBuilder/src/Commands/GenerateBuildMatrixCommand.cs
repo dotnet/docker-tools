@@ -216,8 +216,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string[] matrixNameParts =
                 {
-                    $"{Options.MatrixType.ToString().ToCamelCase()}Matrix",
-                    platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName(),
+                    GetOsMatrixNamePart(platformGrouping.Key),
                     platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
                 };
                 BuildMatrixInfo matrix = new BuildMatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
@@ -234,6 +233,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return matrices;
+        }
+
+        private static string GetOsMatrixNamePart(PlatformId platformId)
+        {
+            if (platformId.OsVersion != null)
+            {
+                return platformId.OsVersion
+                    .Replace("nanoserver", "windows")
+                    .Replace("windowsservercore", "windows")
+                    .Replace("ltsc2019", "1809");
+            }
+
+            return platformId.OS.GetDockerName();
         }
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>

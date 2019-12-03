@@ -120,6 +120,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     displayName = "Ubuntu 19.04";
                 }
+                else if (os.Contains("focal"))
+                {
+                    displayName = "Ubuntu 20.04";
+                }
                 else if (os.Contains("alpine"))
                 {
                     int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });

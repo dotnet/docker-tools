@@ -5,7 +5,7 @@ trigger:
     - master
   paths:
     include:
-    - Microsoft.DotNet.ImageBuilder/*
+    - src/*
 pr: none
 
 variables:

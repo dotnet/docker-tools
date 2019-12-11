@@ -1,5 +1,6 @@
 parameters:
   osType: null
+  architecture: null
   dockerClientOS: null
   useRemoteDockerServer: false
   staleImagePathsVariableName: null
@@ -16,6 +17,7 @@ steps:
       ${{ parameters.staleImagePathsVariableName }}
       --subscriptions-path $(checkBaseImageSubscriptionsPath)
       --os-type ${{ parameters.osType }}
+      --architecture ${{ parameters.architecture }}
       --git-owner dotnet
       --git-repo versions
       --git-branch master

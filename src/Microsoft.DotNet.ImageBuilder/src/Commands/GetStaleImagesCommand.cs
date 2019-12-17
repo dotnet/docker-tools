@@ -149,7 +149,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 this.imageDigestsSemaphore.Release();
                             }
 
-                            string lastDigest = imageData.BaseImages?[fromImage];
+                            string lastDigest = null;
+                            imageData.BaseImages?.TryGetValue(fromImage, out lastDigest);
 
                             if (lastDigest != currentDigest)
                             {

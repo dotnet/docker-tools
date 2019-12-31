@@ -6,15 +6,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ValidateImageSizeOptions : ManifestOptions, IFilterableOptions
+    public class ValidateImageSizeOptions : ImageSizeOptionsBase
     {
         protected override string CommandHelp => "Validates the size of the images against a baseline";
 
-        public int AllowedVariance { get; set; }
-        public string BaselinePath { get; set; }
-        public bool IsPullEnabled { get; set; }
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
-        public bool UpdateBaseline { get; set; }
+        public bool CheckNewOrOldImagesOnly { get; set; }
 
         public ValidateImageSizeOptions() : base()
         {
@@ -22,25 +18,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
+            bool checkNewOrOldImagesOnly = false;
+            syntax.DefineOption("new-old-only", ref checkNewOrOldImagesOnly, "Only validate whether new or old images exist compared with baseline");
+            CheckNewOrOldImagesOnly = checkNewOrOldImagesOnly;
+
             base.ParseCommandLine(syntax);
-
-            FilterOptions.ParseCommandLine(syntax);
-
-            int allowedVariance = 5;
-            syntax.DefineOption("variance", ref allowedVariance, $"Allowed percent variance in size (default is `{allowedVariance}`");
-            AllowedVariance = allowedVariance;
-
-            bool isPullEnabled = false;
-            syntax.DefineOption("pull", ref isPullEnabled, "Pull the images vs using local images");
-            IsPullEnabled = isPullEnabled;
-
-            bool updateBaseline = false;
-            syntax.DefineOption("update", ref updateBaseline, "Update the baseline file (default is false)");
-            UpdateBaseline = updateBaseline;
-
-            string baselinePath = null;
-            syntax.DefineParameter("baseline", ref baselinePath, "Path to the baseline file");
-            BaselinePath = baselinePath;
         }
     }
 }

@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         {
             DirectoryInfo dir = Directory.CreateDirectory(destinationFolder);
             string dockerfilePath = Path.Combine(dir.FullName, "Dockerfile");
-            File.WriteAllText(dockerfilePath, "FROM base");
+            File.WriteAllText(dockerfilePath, $"FROM {fromTag}");
         }
     }
 }

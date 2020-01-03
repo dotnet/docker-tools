@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string OsVersion { get; set; }
         public IEnumerable<string> Paths { get; set; }
 
-        public void ParseCommandLine(ArgumentSyntax syntax)
+        public void DefineOptions(ArgumentSyntax syntax)
         {
             string architecture = DockerHelper.Architecture.GetDockerName();
             syntax.DefineOption(

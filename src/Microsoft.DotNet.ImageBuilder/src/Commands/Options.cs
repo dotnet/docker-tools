@@ -35,11 +35,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return result;
         }
 
-        public virtual void ParseCommandLine(ArgumentSyntax syntax)
+        public void ParseCommandLine(ArgumentSyntax syntax)
         {
             ArgumentCommand command = syntax.DefineCommand(GetCommandName(), this);
             command.Help = CommandHelp;
+            DefineOptions(syntax);
+            DefineParameters(syntax);
+        }
 
+        public virtual void DefineOptions(ArgumentSyntax syntax)
+        {
             bool isDryRun = false;
             syntax.DefineOption("dry-run", ref isDryRun, "Dry run of what images get built and order they would get built in");
             IsDryRun = isDryRun;
@@ -47,6 +52,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isVerbose = false;
             syntax.DefineOption("verbose", ref isVerbose, "Show details about the tasks run");
             IsVerbose = isVerbose;
+        }
+
+        public virtual void DefineParameters(ArgumentSyntax syntax)
+        {
         }
 
         public string GetCommandName()

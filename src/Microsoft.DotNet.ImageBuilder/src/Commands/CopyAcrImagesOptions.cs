@@ -23,15 +23,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
-            FilterOptions.ParseCommandLine(syntax);
+            FilterOptions.DefineOptions(syntax);
 
             string imageInfoPath = null;
             syntax.DefineOption("image-info", ref imageInfoPath, "Path to image info file");
             ImageInfoPath = imageInfoPath;
+        }
+
+        public override void DefineParameters(ArgumentSyntax syntax)
+        {
+            base.DefineParameters(syntax);
 
             string sourceRepoPrefix = null;
             syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");

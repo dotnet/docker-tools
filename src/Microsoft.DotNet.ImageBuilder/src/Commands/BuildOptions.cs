@@ -20,11 +20,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
-            FilterOptions.ParseCommandLine(syntax);
+            FilterOptions.DefineOptions(syntax);
 
             bool isPushEnabled = false;
             syntax.DefineOption("push", ref isPushEnabled, "Push built images to Docker registry");

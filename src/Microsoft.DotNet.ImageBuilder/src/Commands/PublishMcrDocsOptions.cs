@@ -18,11 +18,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
-            GitOptions.ParseCommandLine(syntax);
+            GitOptions.DefineOptions(syntax);
+        }
+
+        public override void DefineParameters(ArgumentSyntax syntax)
+        {
+            base.DefineParameters(syntax);
+
+            GitOptions.DefineParameters(syntax);
 
             string sourceRepoUrl = null;
             syntax.DefineParameter("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");

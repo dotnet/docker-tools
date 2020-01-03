@@ -49,5 +49,15 @@ namespace Microsoft.DotNet.ImageBuilder
                 ExecuteHelper.Execute("docker", dockerArgs, isDryRun);
             }
         }
+
+        public bool LocalImageExists(string tag, bool isDryRun)
+        {
+            return DockerHelper.LocalImageExists(tag, isDryRun);
+        }
+
+        public long GetImageSize(string image, bool isDryRun)
+        {
+            return DockerHelper.GetImageSize(image, isDryRun);
+        }
     }
 }

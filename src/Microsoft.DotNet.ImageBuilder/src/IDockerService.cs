@@ -24,5 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder
             IDictionary<string, string> buildArgs,
             bool isRetryEnabled,
             bool isDryRun);
+
+        bool LocalImageExists(string tag, bool isDryRun);
+
+        long GetImageSize(string image, bool isDryRun);
     }
 }

@@ -5,174 +5,170 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ValidateImageSizeCommand : ManifestCommand<ValidateImageSizeOptions>
+    public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions>
     {
-        public ValidateImageSizeCommand() : base()
+        private readonly ILoggerService loggerService;
+        private readonly IEnvironmentService environmentService;
+
+        [ImportingConstructor]
+        public ValidateImageSizeCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService)
+            : base(dockerService)
         {
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
+
+        public ImageSizeValidationResults ValidationResults { get; private set; }
 
         public override Task ExecuteAsync()
         {
-            if (Options.UpdateBaseline)
+            ValidationResults = ValidateImages();
+            LogResults(ValidationResults);
+            return Task.CompletedTask;
+        }
+
+        private ImageSizeValidationResults ValidateImages()
+        {
+            loggerService.WriteHeading("VALIDATING IMAGE SIZES");
+
+            Dictionary<string, ImageSizeInfo> imageData = LoadBaseline();
+
+            // This handler will be invoked for each image defined in the manifest
+            void processImage(string repoId, string imageId, string tagName)
             {
-                UpdateBaseline();
+                // If the CheckBaselineIntegrityOnly option is enabled, we want to skip the retrieval
+                // of the image size for images that are not missing or extraneous.
+                long? currentSize = null;
+                if (!(Options.CheckBaselineIntegrityOnly && imageData.ContainsKey(imageId)))
+                {
+                    currentSize = GetImageSize(tagName);
+                }
+                
+                // If the image is found in the generated set of ImageSizeInfos, it means we have
+                // baseline data for it and just need to update its CurrentSize.
+                if (imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
+                {
+                    imageSizeInfo.ImageExistsOnDisk = true;
+                    imageSizeInfo.CurrentSize = currentSize;
+                }
+                // Else the image has no baseline data defined, so we'll add a new entry w/o baseline size.
+                else
+                {
+                    imageData.Add(imageId, new ImageSizeInfo
+                    {
+                        Id = imageId,
+                        CurrentSize = currentSize,
+                        ImageExistsOnDisk = true
+                    });
+                }
+            }
+
+            ProcessImages(processImage);
+            return ValidateImages(imageData.Values);
+        }
+
+        private ImageSizeValidationResults ValidateImages(IEnumerable<ImageSizeInfo> imageSizeInfos)
+        {
+            IEnumerable<ImageSizeInfo> baselinedImages = imageSizeInfos.Where(info => info.BaselineSize.HasValue).ToArray();
+
+            IEnumerable<ImageSizeInfo> imagesWithMissingBaseline = imageSizeInfos.Except(baselinedImages).ToArray();
+            IEnumerable<ImageSizeInfo> imagesWithExtraneousBaseline = imageSizeInfos.Where(info => !info.ImageExistsOnDisk).ToArray();
+            IEnumerable<ImageSizeInfo> missingOrExtraImages = imagesWithMissingBaseline.Concat(imagesWithExtraneousBaseline).ToArray();
+
+            IEnumerable<ImageSizeInfo> imagesWithNoSizeChange;
+            IEnumerable<ImageSizeInfo> imagesWithAllowedSizeChange;
+            IEnumerable<ImageSizeInfo> imagesWithDisallowedSizeChange;
+            if (Options.CheckBaselineIntegrityOnly)
+            {
+                imagesWithNoSizeChange =
+                    imagesWithAllowedSizeChange =
+                    imagesWithDisallowedSizeChange =
+                    Enumerable.Empty<ImageSizeInfo>();
             }
             else
             {
-                ValidateImages();
+                imagesWithNoSizeChange = baselinedImages.Where(info => info.SizeDifference == 0).ToArray();
+                imagesWithAllowedSizeChange = baselinedImages
+                    .Except(missingOrExtraImages)
+                    .Where(info => info.SizeDifference != 0 && info.WithinAllowedVariance).ToArray();
+                imagesWithDisallowedSizeChange = baselinedImages
+                    .Except(missingOrExtraImages)
+                    .Where(info => !info.WithinAllowedVariance).ToArray();
             }
 
-            return Task.CompletedTask;
+            return new ImageSizeValidationResults(
+                imagesWithNoSizeChange,
+                imagesWithAllowedSizeChange,
+                imagesWithDisallowedSizeChange,
+                imagesWithMissingBaseline,
+                imagesWithExtraneousBaseline);
+        }
+
+        private void LogResults(ImageSizeValidationResults results)
+        {
+            loggerService.WriteHeading("VALIDATION RESULTS");
+            LogResults(results.ImagesWithNoSizeChange, "Images with no size change:");
+            LogResults(results.ImagesWithAllowedSizeChange, "Images with allowed size change:");
+            LogResults(results.ImagesWithDisallowedSizeChange, "Images exceeding size variance:");
+            LogResults(results.ImagesWithMissingBaseline, "Images missing from baseline:");
+            LogResults(results.ImagesWithExtraneousBaseline, "Extra baseline images not defined in manifest:");
+
+            if (results.ImagesWithDisallowedSizeChange.Any() ||
+                results.ImagesWithMissingBaseline.Any() ||
+                results.ImagesWithExtraneousBaseline.Any())
+            {
+                loggerService.WriteError("Image size validation failed");
+                loggerService.WriteMessage("The baseline file can be updated by running the updateImageSizeBaseline command.");
+
+                this.environmentService.Exit(1);
+            }
         }
 
         private void LogResults(IEnumerable<ImageSizeInfo> imageData, string header)
         {
             if (imageData.Any())
             {
-                Logger.WriteSubheading(header);
+                loggerService.WriteSubheading(header);
+
+                string indent = new string(' ', 4);
 
                 foreach (ImageSizeInfo info in imageData)
                 {
-                    string msg = $"{info.Id}{Environment.NewLine}"
-                        + $"    Actual:     {info.CurrentSize,15:N0}";
+                    StringBuilder msg = new StringBuilder();
+                    msg.AppendLine(info.Id);
+
+                    if (info.CurrentSize.HasValue)
+                    {
+                        msg.AppendLine($"{indent}Actual:     {info.CurrentSize,15:N0}");
+                    }
+
                     if (info.BaselineSize.HasValue)
                     {
-                        msg += $"{Environment.NewLine}    Expected:   {info.BaselineSize,15:N0}{Environment.NewLine}"
-                        + $"    Difference: {info.SizeDifference,15:N0}{Environment.NewLine}"
-                        + $"    Variation Allowed: {info.MinVariance:N0} - {info.MaxVariance:N0}";
+                        msg.AppendLine($"{indent}Expected:   {info.BaselineSize,15:N0}");
                     }
 
-                    Logger.WriteMessage(msg);
-                }
-
-                Logger.WriteMessage("----------------------------------------------------");
-            }
-        }
-
-        private void ProcessImages(Func<string, JObject> getRepoJson, Action<string, long, JObject> processImage)
-        {
-            foreach (RepoInfo repo in Manifest.FilteredRepos.Where(platform => platform.FilteredImages.Any()))
-            {
-                JObject repoJson = getRepoJson(repo.Model.Name);
-
-                IEnumerable<PlatformInfo> platforms = repo.FilteredImages
-                    .SelectMany(image => image.FilteredPlatforms);
-                foreach (PlatformInfo platform in platforms)
-                {
-                    string tagName = platform.Tags.First().FullyQualifiedName;
-
-                    if (Options.IsPullEnabled)
+                    if (info.SizeDifference.HasValue)
                     {
-                        DockerHelper.PullImage(tagName, Options.IsDryRun);
+                        msg.AppendLine($"{indent}Difference: {info.SizeDifference,15:N0}");
                     }
-                    else if (!DockerHelper.LocalImageExists(tagName, Options.IsDryRun))
+
+                    if (info.MinVariance.HasValue)
                     {
-                        throw new InvalidOperationException($"Image '{tagName}'not found locally");
+                        msg.AppendLine($"{indent}Variation Allowed: {info.MinVariance:N0} - {info.MaxVariance:N0}");
                     }
 
-                    long imageSize = DockerHelper.GetImageSize(tagName, Options.IsDryRun);
-                    processImage(platform.Model.Dockerfile, imageSize, repoJson);
-                }
-            }
-        }
-
-        private void UpdateBaseline()
-        {
-            Logger.WriteHeading("UPDATING IMAGE SIZE BASELINE");
-
-            JObject json = new JObject();
-
-            JObject getRepoJson(string repoName)
-            {
-                JObject repoJson = new JObject();
-                json[repoName] = repoJson;
-                return repoJson;
-            }
-            void processImage(string imageId, long imageSize, JObject repoJson) =>
-                repoJson.Add(imageId, new JValue(imageSize));
-            ProcessImages(getRepoJson, processImage);
-
-            Logger.WriteSubheading($"Updating `{Options.BaselinePath}`");
-            string formattedJson = json.ToString();
-            Logger.WriteMessage(formattedJson);
-            File.WriteAllText(Options.BaselinePath, formattedJson);
-        }
-
-        private void ValidateImages()
-        {
-            Logger.WriteHeading("VALIDATING IMAGE SIZES");
-
-            List<ImageSizeInfo> imageData = new List<ImageSizeInfo>();
-            string jsonContent = File.ReadAllText(Options.BaselinePath);
-            JObject json = JObject.Parse(jsonContent);
-
-            JObject getRepoJson(string repoName) => (JObject)json[repoName];
-            void processImage(string imageId, long imageSize, JObject repoJson)
-            {
-                long? baseline = null;
-
-                if (repoJson.TryGetValue(imageId, out JToken sizeJson))
-                {
-                    baseline = (long)sizeJson;
+                    loggerService.WriteMessage(msg.ToString());
                 }
 
-                imageData.Add(new ImageSizeInfo()
-                {
-                    Id = imageId,
-                    CurrentSize = imageSize,
-                    BaselineSize = baseline,
-                    AllowedVariance = baseline * (double)Options.AllowedVariance / 100,
-                });
+                loggerService.WriteMessage("----------------------------------------------------");
             }
-            ProcessImages(getRepoJson, processImage);
-
-            ValidateImages(imageData);
-        }
-
-        private void ValidateImages(IEnumerable<ImageSizeInfo> imageSizeInfos)
-        {
-            IEnumerable<ImageSizeInfo> baselinedImages = imageSizeInfos.Where(info => info.BaselineSize.HasValue).ToArray();
-
-            Logger.WriteHeading("VALIDATION RESULTS");
-            LogResults(
-                baselinedImages.Where(info => info.SizeDifference == 0),
-                "Images with no size change:");
-            LogResults(
-                baselinedImages.Where(info => info.SizeDifference != 0 && info.WithinAllowedVariance),
-                "Images with allowed size change:");
-
-            IEnumerable<ImageSizeInfo> exceedingImages = baselinedImages.Where(info => !info.WithinAllowedVariance).ToArray();
-            LogResults(exceedingImages, "Images exceeding size variance:");
-
-            IEnumerable<ImageSizeInfo> missingImages = imageSizeInfos.Except(baselinedImages).ToArray();
-            LogResults(missingImages, "Images missing from baseline:");
-
-            if (exceedingImages.Any() || missingImages.Any())
-            {
-                Logger.WriteError("Image size validation failed");
-                Environment.Exit(1);
-            }
-        }
-
-        private class ImageSizeInfo
-        {
-            public double? AllowedVariance { get; set; }
-            public long? BaselineSize { get; set; }
-            public long CurrentSize { get; set; }
-            public string Id { get; set; }
-            public double? MaxVariance => BaselineSize + AllowedVariance;
-            public double? MinVariance => BaselineSize - AllowedVariance;
-            public long? SizeDifference => CurrentSize - BaselineSize;
-            public bool WithinAllowedVariance => BaselineSize.HasValue && AllowedVariance > Math.Abs(SizeDifference.Value);
         }
     }
 }

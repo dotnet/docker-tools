@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public double? AllowedVariance { get; set; }
         public long? BaselineSize { get; set; }
         public long? CurrentSize { get; set; }
-        public bool ImageExists { get; set; }
+        public bool ImageExistsOnDisk { get; set; }
         public double? MaxVariance => BaselineSize + AllowedVariance;
         public double? MinVariance => BaselineSize - AllowedVariance;
         public long? SizeDifference => CurrentSize - BaselineSize;

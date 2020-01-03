@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class ImageSizeOptionsBase : ManifestOptions, IFilterableOptions
+    public abstract class ImageSizeOptions : ManifestOptions, IFilterableOptions
     {
         public ManifestFilterOptions FilterOptions => new ManifestFilterOptions();
 

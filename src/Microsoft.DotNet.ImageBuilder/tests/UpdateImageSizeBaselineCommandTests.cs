@@ -60,6 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object, Mock.Of<ILoggerService>());
             command.Options.BaselinePath = Path.Combine(tempFolderContext.Path, "baseline.json");
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.AllBaselineData = true;
 
             // Write manifest file
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -105,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object, Mock.Of<ILoggerService>());
             command.Options.BaselinePath = Path.Combine(tempFolderContext.Path, "baseline.json");
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.OutOfRangeOnly = true;
+            command.Options.AllBaselineData = false;
             command.Options.AllowedVariance = 10;
 
             // Write manifest file

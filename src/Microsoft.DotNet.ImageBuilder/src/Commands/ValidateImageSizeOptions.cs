@@ -6,11 +6,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ValidateImageSizeOptions : ImageSizeOptionsBase
+    public class ValidateImageSizeOptions : ImageSizeOptions
     {
         protected override string CommandHelp => "Validates the size of the images against a baseline";
 
-        public bool CheckNewOrOldImagesOnly { get; set; }
+        public bool CheckBaselineIntegrityOnly { get; set; }
 
         public ValidateImageSizeOptions() : base()
         {
@@ -18,9 +18,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
-            bool checkNewOrOldImagesOnly = false;
-            syntax.DefineOption("new-old-only", ref checkNewOrOldImagesOnly, "Only validate whether new or old images exist compared with baseline");
-            CheckNewOrOldImagesOnly = checkNewOrOldImagesOnly;
+            bool checkBaselineIntegrityOnly = false;
+            syntax.DefineOption("baseline-integrity-only", ref checkBaselineIntegrityOnly, "Only validate whether new or old images exist compared with baseline");
+            CheckBaselineIntegrityOnly = checkBaselineIntegrityOnly;
 
             base.ParseCommandLine(syntax);
         }

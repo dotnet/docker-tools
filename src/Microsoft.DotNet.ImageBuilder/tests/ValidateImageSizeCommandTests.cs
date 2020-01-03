@@ -191,7 +191,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// baseline data) are validated.
         /// </summary>
         [Fact]
-        public async Task CheckNewOrOldImagesOnly()
+        public async Task CheckBaselineIntegrityOnly()
         {
             const int AllowedVariance = 5;
             ImageSizeData[] imageSizes = new[]
@@ -203,7 +203,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new ImageSizeData(SdkRepo, SdkRelativeDir, SdkTag, baselineSize: null, 5)
             };
 
-            TestContext testContext = new TestContext(imageSizes, AllowedVariance, checkNewOrOldImagesOnly: true);
+            TestContext testContext = new TestContext(imageSizes, AllowedVariance, checkBaselineIntegrityOnly: true);
             ValidateImageSizeCommand command = await testContext.RunTestAsync();
 
             testContext.Verify(isValidationErrorExpected: true);
@@ -223,14 +223,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             private readonly IEnumerable<ImageSizeData> imageSizes;
             private readonly int? allowedVariance;
-            private readonly bool checkNewOrOldImagesOnly;
+            private readonly bool checkBaselineIntegrityOnly;
             private readonly Mock<IEnvironmentService> environmentServiceMock;
 
-            public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null, bool? checkNewOrOldImagesOnly = false)
+            public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null, bool? checkBaselineIntegrityOnly = false)
             {
                 this.imageSizes = imageSizes;
                 this.allowedVariance = allowedVariance;
-                this.checkNewOrOldImagesOnly = checkNewOrOldImagesOnly == true;
+                this.checkBaselineIntegrityOnly = checkBaselineIntegrityOnly == true;
                 this.environmentServiceMock = new Mock<IEnvironmentService>();
             }
 
@@ -256,7 +256,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.BaselinePath = baselinePath;
                 command.Options.AllowedVariance = this.allowedVariance ?? 0;
-                command.Options.CheckNewOrOldImagesOnly = this.checkNewOrOldImagesOnly;
+                command.Options.CheckBaselineIntegrityOnly = this.checkBaselineIntegrityOnly;
 
                 // Use the image size data defined by the test to generate a manifest file
                 Manifest manifest = CreateTestManifest(tempFolderContext.Path, this.imageSizes);

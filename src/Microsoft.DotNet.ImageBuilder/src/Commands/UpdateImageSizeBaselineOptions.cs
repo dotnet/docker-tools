@@ -6,17 +6,17 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class UpdateImageSizeBaselineOptions : ImageSizeOptionsBase
+    public class UpdateImageSizeBaselineOptions : ImageSizeOptions
     {
         protected override string CommandHelp => "Updates an image size baseline file with current image sizes";
 
-        public bool OutOfRangeOnly { get; set; }
+        public bool AllBaselineData { get; set; }
 
         public override void ParseCommandLine(ArgumentSyntax syntax)
         {
-            bool outOfRangeOnly = false;
-            syntax.DefineOption("out-of-range-only", ref outOfRangeOnly, "Only update baseline for image sizes outside the allowed range");
-            OutOfRangeOnly = outOfRangeOnly;
+            bool allBaselineData = false;
+            syntax.DefineOption("all", ref allBaselineData, "Updates baseline for all images regardless of size variance");
+            AllBaselineData = allBaselineData;
 
             base.ParseCommandLine(syntax);
         }

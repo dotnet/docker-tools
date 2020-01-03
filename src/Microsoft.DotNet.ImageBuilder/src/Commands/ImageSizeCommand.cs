@@ -13,10 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public delegate void ImageHandler(string repoId, string imageId, string imageTag);
 
-    public abstract class ImageSizeCommandBase<TOptions> : ManifestCommand<TOptions>
-        where TOptions : ImageSizeOptionsBase, new()
+    public abstract class ImageSizeCommand<TOptions> : ManifestCommand<TOptions>
+        where TOptions : ImageSizeOptions, new()
     {
-        public ImageSizeCommandBase(IDockerService dockerService)
+        public ImageSizeCommand(IDockerService dockerService)
         {
             this.DockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }

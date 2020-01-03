@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class UpdateImageSizeBaselineCommand : ImageSizeCommandBase<UpdateImageSizeBaselineOptions>
+    public class UpdateImageSizeBaselineCommand : ImageSizeCommand<UpdateImageSizeBaselineOptions>
     {
         private readonly ILoggerService loggerService;
 
@@ -32,8 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             loggerService.WriteHeading("UPDATING IMAGE SIZE BASELINE");
 
-            Dictionary<string, ImageSizeInfo> imageData = new Dictionary<string, ImageSizeInfo>();
-            if (Options.OutOfRangeOnly)
+            Dictionary<string, ImageSizeInfo> imageData = null;
+            if (!Options.AllBaselineData)
             {
                 imageData = LoadBaseline();
             }
@@ -42,16 +42,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             void processImage(string repoId, string imageId, string imageTag)
             {
+                loggerService.WriteMessage($"Processing '{imageId}'");
+
                 long imageSize = GetImageSize(imageTag);
 
-                if (imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
+                if (!Options.AllBaselineData && imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
                 {
                     imageSizeInfo.CurrentSize = imageSize;
-                }
 
-                if (Options.OutOfRangeOnly && imageSizeInfo.WithinAllowedVariance)
-                {
-                    imageSize = imageSizeInfo.BaselineSize.Value;
+                    if (imageSizeInfo.WithinAllowedVariance)
+                    {
+                        loggerService.WriteMessage(
+                            $"Skipping '{imageId}' because its image size ({imageSize}) is within the allowed range ({imageSizeInfo.MinVariance}-{imageSizeInfo.MaxVariance})");
+                        imageSize = imageSizeInfo.BaselineSize.Value;
+                    }
                 }
 
                 JObject repo;
@@ -67,6 +71,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 repo.Add(imageId, new JValue(imageSize));
             }
 
+            loggerService.WriteSubheading($"Processing images");
             ProcessImages(processImage);
 
             loggerService.WriteSubheading($"Updating `{Options.BaselinePath}`");

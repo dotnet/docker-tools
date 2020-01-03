@@ -5,16 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ValidateImageSizeCommand : ImageSizeCommandBase<ValidateImageSizeOptions>
+    public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions>
     {
         private readonly ILoggerService loggerService;
         private readonly IEnvironmentService environmentService;
@@ -27,11 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
-        public ImageSizeValidationResults ValidationResults
-        {
-            get;
-            private set;
-        }
+        public ImageSizeValidationResults ValidationResults { get; private set; }
 
         public override Task ExecuteAsync()
         {
@@ -49,10 +43,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // This handler will be invoked for each image defined in the manifest
             void processImage(string repoId, string imageId, string tagName)
             {
-                // If the CheckNewOrOldImagesOnly option is enabled, we want to skip the retrieval
+                // If the CheckBaselineIntegrityOnly option is enabled, we want to skip the retrieval
                 // of the image size for images that are not missing or extraneous.
                 long? currentSize = null;
-                if (!(Options.CheckNewOrOldImagesOnly && imageData.ContainsKey(imageId)))
+                if (!(Options.CheckBaselineIntegrityOnly && imageData.ContainsKey(imageId)))
                 {
                     currentSize = GetImageSize(tagName);
                 }
@@ -61,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // baseline data for it and just need to update its CurrentSize.
                 if (imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
                 {
-                    imageSizeInfo.ImageExists = true;
+                    imageSizeInfo.ImageExistsOnDisk = true;
                     imageSizeInfo.CurrentSize = currentSize;
                 }
                 // Else the image has no baseline data defined, so we'll add a new entry w/o baseline size.
@@ -71,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         Id = imageId,
                         CurrentSize = currentSize,
-                        ImageExists = true
+                        ImageExistsOnDisk = true
                     });
                 }
             }
@@ -85,13 +79,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<ImageSizeInfo> baselinedImages = imageSizeInfos.Where(info => info.BaselineSize.HasValue).ToArray();
 
             IEnumerable<ImageSizeInfo> imagesWithMissingBaseline = imageSizeInfos.Except(baselinedImages).ToArray();
-            IEnumerable<ImageSizeInfo> imagesWithExtraneousBaseline = imageSizeInfos.Where(info => !info.ImageExists).ToArray();
+            IEnumerable<ImageSizeInfo> imagesWithExtraneousBaseline = imageSizeInfos.Where(info => !info.ImageExistsOnDisk).ToArray();
             IEnumerable<ImageSizeInfo> missingOrExtraImages = imagesWithMissingBaseline.Concat(imagesWithExtraneousBaseline).ToArray();
 
             IEnumerable<ImageSizeInfo> imagesWithNoSizeChange;
             IEnumerable<ImageSizeInfo> imagesWithAllowedSizeChange;
             IEnumerable<ImageSizeInfo> imagesWithDisallowedSizeChange;
-            if (Options.CheckNewOrOldImagesOnly)
+            if (Options.CheckBaselineIntegrityOnly)
             {
                 imagesWithNoSizeChange =
                     imagesWithAllowedSizeChange =

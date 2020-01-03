@@ -18,9 +18,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string BuildProject { get; set; }
         public IEnumerable<string> AllSubscriptionImagePaths { get; set; }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
             const string DefaultSubscriptionsPath = "subscriptions.json";
             string subscriptionsPath = DefaultSubscriptionsPath;
@@ -36,6 +36,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref allSubscriptionImagePaths,
                 "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)");
             AllSubscriptionImagePaths = allSubscriptionImagePaths;
+        }
+
+        public override void DefineParameters(ArgumentSyntax syntax)
+        {
+            base.DefineParameters(syntax);
 
             string buildPersonalAccessToken = null;
             syntax.DefineParameter(

@@ -14,9 +14,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string DestinationImageInfoPath { get; set; }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineParameters(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineParameters(syntax);
 
             string sourceImageInfoFolderPath = null;
             syntax.DefineParameter(

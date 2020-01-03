@@ -12,13 +12,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public bool AllBaselineData { get; set; }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
+            base.DefineOptions(syntax);
+
             bool allBaselineData = false;
             syntax.DefineOption("all", ref allBaselineData, "Updates baseline for all images regardless of size variance");
             AllBaselineData = allBaselineData;
-
-            base.ParseCommandLine(syntax);
         }
     }
 }

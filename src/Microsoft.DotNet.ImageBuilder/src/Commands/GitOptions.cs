@@ -26,7 +26,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.Path = defaultPath ?? throw new ArgumentNullException(nameof(defaultPath));
         }
 
-        public void ParseCommandLine(ArgumentSyntax syntax)
+        public void DefineOptions
+            (ArgumentSyntax syntax)
         {
             string branch = Branch;
             syntax.DefineOption(
@@ -55,7 +56,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref repo,
                 $"GitHub repo to write to (defaults to {repo})");
             Repo = repo;
+        }
 
+        public void DefineParameters(ArgumentSyntax syntax)
+        {
             string username = null;
             syntax.DefineParameter(
                 "git-username",

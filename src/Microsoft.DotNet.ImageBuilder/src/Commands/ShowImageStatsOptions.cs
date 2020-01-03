@@ -16,11 +16,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
-            FilterOptions.ParseCommandLine(syntax);
+            FilterOptions.DefineOptions(syntax);
         }
     }
 }

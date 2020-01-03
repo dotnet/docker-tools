@@ -14,11 +14,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string BaselinePath { get; set; }
         public bool IsPullEnabled { get; set; }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
-            FilterOptions.ParseCommandLine(syntax);
+            FilterOptions.DefineOptions(syntax);
 
             int allowedVariance = 5;
             syntax.DefineOption("variance", ref allowedVariance, $"Allowed percent variance in size (default is `{allowedVariance}`");
@@ -27,6 +27,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool isPullEnabled = false;
             syntax.DefineOption("pull", ref isPullEnabled, "Pull the images vs using local images");
             IsPullEnabled = isPullEnabled;
+        }
+
+        public override void DefineParameters(ArgumentSyntax syntax)
+        {
+            base.DefineParameters(syntax);
 
             string baselinePath = null;
             syntax.DefineParameter("baseline", ref baselinePath, "Path to the baseline file");

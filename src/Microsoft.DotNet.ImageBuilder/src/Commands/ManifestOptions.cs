@@ -42,9 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return filter;
         }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
             string manifest = "manifest.json";
             syntax.DefineOption("manifest", ref manifest, "Path to json file which describes the repo");

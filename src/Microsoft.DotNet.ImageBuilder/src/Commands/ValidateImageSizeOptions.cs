@@ -16,13 +16,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
         }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            bool checkBaselineIntegrityOnly = false;
-            syntax.DefineOption("baseline-integrity-only", ref checkBaselineIntegrityOnly, "Only validate whether new or old images exist compared with baseline");
-            CheckBaselineIntegrityOnly = checkBaselineIntegrityOnly;
+            base.DefineOptions(syntax);
 
-            base.ParseCommandLine(syntax);
+            bool checkBaselineIntegrityOnly = false;
+            syntax.DefineOption("baseline-integrity-only", ref checkBaselineIntegrityOnly, "Validate the integrity of the baseline by checking for missing or extraneous data");
+            CheckBaselineIntegrityOnly = checkBaselineIntegrityOnly;
         }
     }
 }

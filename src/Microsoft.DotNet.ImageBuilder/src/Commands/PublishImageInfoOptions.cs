@@ -14,11 +14,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string ImageInfoPath { get; set; }
 
-        public override void ParseCommandLine(ArgumentSyntax syntax)
+        public override void DefineOptions(ArgumentSyntax syntax)
         {
-            base.ParseCommandLine(syntax);
+            base.DefineOptions(syntax);
 
-            GitOptions.ParseCommandLine(syntax);
+            GitOptions.DefineOptions(syntax);
+        }
+
+        public override void DefineParameters(ArgumentSyntax syntax)
+        {
+            base.DefineParameters(syntax);
+
+            GitOptions.DefineParameters(syntax);
 
             string imageInfoPath = null;
             syntax.DefineParameter(

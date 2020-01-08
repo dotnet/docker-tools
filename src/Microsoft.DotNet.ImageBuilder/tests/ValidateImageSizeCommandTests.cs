@@ -203,8 +203,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new ImageSizeData(SdkRepo, SdkRelativeDir, SdkTag, baselineSize: null, 5)
             };
 
+            // This will configure the test so that an exception will be thrown should the logic ever attempt to
+            // retrieve an image size. Image sizes should not be retrieved when we're only validating baseline integrity.
+            bool localImagesExist = false;
+
             TestContext testContext = new TestContext(imageSizes, AllowedVariance, checkBaselineIntegrityOnly: true,
-                localImagesExist: false);
+                localImagesExist: localImagesExist);
             ValidateImageSizeCommand command = await testContext.RunTestAsync();
 
             testContext.Verify(isValidationErrorExpected: true);

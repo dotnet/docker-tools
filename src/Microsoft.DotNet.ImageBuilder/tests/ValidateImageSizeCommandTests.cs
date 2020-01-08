@@ -203,7 +203,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new ImageSizeData(SdkRepo, SdkRelativeDir, SdkTag, baselineSize: null, 5)
             };
 
-            TestContext testContext = new TestContext(imageSizes, AllowedVariance, checkBaselineIntegrityOnly: true);
+            TestContext testContext = new TestContext(imageSizes, AllowedVariance, checkBaselineIntegrityOnly: true,
+                localImagesExist: false);
             ValidateImageSizeCommand command = await testContext.RunTestAsync();
 
             testContext.Verify(isValidationErrorExpected: true);
@@ -223,13 +224,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             private readonly IEnumerable<ImageSizeData> imageSizes;
             private readonly int? allowedVariance;
+            private readonly bool localImagesExist;
             private readonly bool checkBaselineIntegrityOnly;
             private readonly Mock<IEnvironmentService> environmentServiceMock;
 
-            public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null, bool? checkBaselineIntegrityOnly = false)
+            public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null, bool? checkBaselineIntegrityOnly = false,
+                bool? localImagesExist = true)
             {
                 this.imageSizes = imageSizes;
                 this.allowedVariance = allowedVariance;
+                this.localImagesExist = localImagesExist == true;
                 this.checkBaselineIntegrityOnly = checkBaselineIntegrityOnly == true;
                 this.environmentServiceMock = new Mock<IEnvironmentService>();
             }
@@ -245,10 +249,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // Use the image size data defined by the test to provide mock values for the image sizes
                 // from the DockerService.
                 Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
-                SetupDockerServiceImageSizes(dockerServiceMock, this.imageSizes);
                 dockerServiceMock
                     .Setup(o => o.LocalImageExists(It.IsAny<string>(), It.IsAny<bool>()))
-                    .Returns(true);
+                    .Returns(this.localImagesExist);
+                SetupDockerServiceImageSizes(dockerServiceMock, this.imageSizes);
 
                 // Setup the command
                 ValidateImageSizeCommand command = new ValidateImageSizeCommand(
@@ -257,6 +261,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.BaselinePath = baselinePath;
                 command.Options.AllowedVariance = this.allowedVariance ?? 0;
                 command.Options.CheckBaselineIntegrityOnly = this.checkBaselineIntegrityOnly;
+                command.Options.IsPullEnabled = false;
 
                 // Use the image size data defined by the test to generate a manifest file
                 Manifest manifest = CreateTestManifest(tempFolderContext.Path, this.imageSizes);

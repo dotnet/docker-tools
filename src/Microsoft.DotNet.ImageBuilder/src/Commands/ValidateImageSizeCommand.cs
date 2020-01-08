@@ -44,9 +44,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             void processImage(string repoId, string imageId, string tagName)
             {
                 // If the CheckBaselineIntegrityOnly option is enabled, we want to skip the retrieval
-                // of the image size for images that are not missing or extraneous.
+                // of the image size.
                 long? currentSize = null;
-                if (!(Options.CheckBaselineIntegrityOnly && imageData.ContainsKey(imageId)))
+                if (!Options.CheckBaselineIntegrityOnly)
                 {
                     currentSize = GetImageSize(tagName);
                 }

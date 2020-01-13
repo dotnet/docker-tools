@@ -9,7 +9,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
 
@@ -30,11 +29,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             RepoData[] srcRepos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
 
-            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth()))
+            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
-                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options.GitOptions, "Merging image info updates from build.", async branch =>
+                    bool hasChanges = false;
+                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, "Merging image info updates from build.", async branch =>
                     {
                         string originalTargetImageInfoContents = await gitHubClient.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
                         List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
@@ -58,6 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 Content = newTargetImageInfoContents
                             };
 
+                            hasChanges = true;
                             return new GitObject[] { imageInfoGitObject };
                         }
                         else
@@ -68,10 +69,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
 
-                    if (gitRef != null)
+                    if (hasChanges)
                     {
-                        Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
-                        Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
+                        if (!Options.IsDryRun)
+                        {
+                            Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
+                            Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
+                        }
+                        else
+                        {
+                            Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file would have been updated.");
+                        }
                     }
                     else
                     {

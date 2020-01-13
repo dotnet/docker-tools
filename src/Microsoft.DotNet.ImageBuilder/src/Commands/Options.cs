@@ -10,7 +10,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class Options : IOptionsInfo
+    public abstract class Options : IOptions
     {
         public bool IsDryRun { get; set; }
         public bool IsVerbose { get; set; }

@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
                 gitHubClientFactoryMock
-                    .Setup(o => o.GetClient(It.IsAny<GitHubAuth>()))
+                    .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
                 PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
@@ -161,9 +161,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<GitObject[]>()))
                 .ReturnsAsync(new GitTree());
 
+            GitCommit commit = new GitCommit
+            {
+                Sha = "sha"
+            };
+
             gitHubClientMock
                 .Setup(o => o.PostCommitAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new GitCommit());
+                .ReturnsAsync(commit);
+
+            gitHubClientMock
+                .Setup(o => o.PatchReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), commit.Sha, false))
+                .ReturnsAsync(new GitReference
+                {
+                    Object = new GitReferenceObject
+                    {
+                        Sha = commit.Sha
+                    }
+                });
+
             return gitHubClientMock;
         }
     }

@@ -45,14 +45,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return new Uri($"https://github.com/{gitOptions.Owner}/{gitOptions.Repo}/commit/{sha}");
         }
 
-        public static GitHubClient GetClient(GitOptions gitOptions)
+        public static async Task<GitReference> PushChangesAsync(IGitHubClient client, IGitOptionsHost options, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
         {
-            GitHubAuth githubAuth = new GitHubAuth(gitOptions.AuthToken, gitOptions.Username, gitOptions.Email);
-            return new GitHubClient(githubAuth);
-        }
-
-        public static async Task<GitReference> PushChangesAsync(IGitHubClient client, GitOptions gitOptions, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
-        {
+            GitOptions gitOptions = options.GitOptions;
             GitHubProject project = new GitHubProject(gitOptions.Repo, gitOptions.Owner);
             GitHubBranch branch = new GitHubBranch(gitOptions.Branch, project);
 
@@ -66,20 +61,28 @@ namespace Microsoft.DotNet.ImageBuilder
             string masterRef = $"heads/{gitOptions.Branch}";
             GitReference currentMaster = await client.GetReferenceAsync(project, masterRef);
             string masterSha = currentMaster.Object.Sha;
-            GitTree tree = await client.PostTreeAsync(project, masterSha, changes.ToArray());
-            GitCommit commit = await client.PostCommitAsync(
-                project, commitMessage, tree.Sha, new[] { masterSha });
 
-            // Only fast-forward. Don't overwrite other changes: throw exception instead.
-            return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
-        }
-
-        public static async Task ExecuteGitOperationsWithRetryAsync(GitOptions gitOptions, Func<IGitHubClient, Task> execute,
-            int maxTries = DefaultMaxTries, int retryMillisecondsDelay = DefaultRetryMillisecondsDelay)
-        {
-            using (GitHubClient client = GitHelper.GetClient(gitOptions))
+            if (!options.IsDryRun)
             {
-                await ExecuteGitOperationsWithRetryAsync(() => execute(client), maxTries, retryMillisecondsDelay);
+                GitTree tree = await client.PostTreeAsync(project, masterSha, changes.ToArray());
+                GitCommit commit = await client.PostCommitAsync(
+                    project, commitMessage, tree.Sha, new[] { masterSha });
+
+                // Only fast-forward. Don't overwrite other changes: throw exception instead.
+                return await client.PatchReferenceAsync(project, masterRef, commit.Sha, force: false);
+            }
+            else
+            {
+                Logger.WriteMessage($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
+                Logger.WriteMessage();
+                foreach (GitObject gitObject in changes)
+                {
+                    Logger.WriteMessage($"{gitObject.Path}:");
+                    Logger.WriteMessage(gitObject.Content);
+                    Logger.WriteMessage();
+                }
+
+                return null;
             }
         }
 

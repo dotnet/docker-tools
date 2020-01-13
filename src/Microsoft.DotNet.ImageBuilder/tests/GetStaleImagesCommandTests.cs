@@ -1169,7 +1169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
                 gitHubClientFactoryMock
-                    .Setup(o => o.GetClient(It.IsAny<GitHubAuth>()))
+                    .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
                 return gitHubClientFactoryMock.Object;

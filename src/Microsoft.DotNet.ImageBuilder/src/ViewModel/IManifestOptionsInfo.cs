@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
-    public interface IManifestOptionsInfo : IOptionsInfo
+    public interface IManifestOptionsInfo : IOptions
     {
         string Manifest { get; }
         string RegistryOverride { get; }

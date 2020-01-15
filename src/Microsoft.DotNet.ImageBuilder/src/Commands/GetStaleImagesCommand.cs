@@ -180,7 +180,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task<RepoData[]> GetImageInfoForSubscriptionAsync(Subscription subscription)
         {
             string imageDataJson;
-            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth()))
+            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
                 GitHubProject project = new GitHubProject(Options.GitOptions.Repo, Options.GitOptions.Owner);
                 GitHubBranch branch = new GitHubBranch(Options.GitOptions.Branch, project);

@@ -20,11 +20,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService gitService;
+        private readonly IGitHubClientFactory gitHubClientFactory;
 
         [ImportingConstructor]
-        public PublishMcrDocsCommand(IGitService gitService) : base()
+        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory) : base()
         {
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
         }
 
         public override async Task ExecuteAsync()
@@ -36,12 +38,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string productRepo = GetProductRepo();
 
-            await GitHelper.ExecuteGitOperationsWithRetryAsync(Options.GitOptions, async client =>
+            using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+
+            await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
             {
-                await GitHelper.PushChangesAsync(client, Options.GitOptions, $"Mirroring {productRepo} readmes", async branch =>
+                await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", async branch =>
                 {
-                    return (await GetUpdatedReadmes(productRepo, client, branch))
-                        .Concat(await GetUpdatedTagsMetadata(productRepo, client, branch));
+                    return (await GetUpdatedReadmes(productRepo, gitHubClient, branch))
+                        .Concat(await GetUpdatedTagsMetadata(productRepo, gitHubClient, branch));
                 });
             });
         }

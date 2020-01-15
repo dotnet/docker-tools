@@ -4,7 +4,7 @@
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public interface IGitOptionsHost
+    public interface IGitOptionsHost : IOptions
     {
         GitOptions GitOptions { get; }
     }

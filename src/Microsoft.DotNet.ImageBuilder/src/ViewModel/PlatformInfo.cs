@@ -44,11 +44,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory)
         {
-            PlatformInfo platformInfo = new PlatformInfo(baseDirectory);
-            platformInfo.Model = model;
-            platformInfo.RepoName = repoName;
-            platformInfo.FullRepoModelName = fullRepoModelName;
-            platformInfo.VariableHelper = variableHelper;
+            PlatformInfo platformInfo = new PlatformInfo(baseDirectory)
+            {
+                Model = model,
+                RepoName = repoName,
+                FullRepoModelName = fullRepoModelName,
+                VariableHelper = variableHelper
+            };
 
             // Ensure that we construct a path using the base directory here to check for the file. In cases like
             // the GetStaleImagesCommand and unit tests, the base directory will be an absolute path to 
@@ -58,14 +60,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (File.Exists(dockerfileWithBaseDir))
             {
-                platformInfo.DockerfilePath = PathHelper.NormalizePath(model.Dockerfile);
-                platformInfo.BuildContextPath = Path.GetDirectoryName(model.Dockerfile);
+                platformInfo.DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
+                platformInfo.BuildContextPath = Path.GetDirectoryName(dockerfileWithBaseDir);
             }
             else
             {
                 // Modeled Dockerfile is just the directory containing the "Dockerfile"
-                platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(model.Dockerfile, "Dockerfile"));
-                platformInfo.BuildContextPath = model.Dockerfile;
+                platformInfo.BuildContextPath = PathHelper.NormalizePath(dockerfileWithBaseDir);
+                platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(platformInfo.BuildContextPath, "Dockerfile"));
             }
 
             platformInfo.Tags = model.Tags
@@ -107,7 +109,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             _overriddenFromImages = new List<string>();
 
-            string dockerfile = File.ReadAllText(Path.Combine(this.baseDirectory, DockerfilePath));
+            string dockerfile = File.ReadAllText(DockerfilePath);
             IList<Match> fromMatches = FromRegex.Matches(dockerfile);
 
             if (!fromMatches.Any())

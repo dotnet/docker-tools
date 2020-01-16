@@ -53,8 +53,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<RepoData> reposList = new List<RepoData>();
 
-            string baseDirectory = Path.GetDirectoryName(Options.Manifest);
-
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
                 RepoData repoData = new RepoData
@@ -70,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
                         ImageData imageData = new ImageData();
-                        images.Add(platform.DockerfilePath, imageData);
+                        images.Add(PathHelper.StripBaseDirectory(Manifest.BaseDirectory, platform.DockerfilePath), imageData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 

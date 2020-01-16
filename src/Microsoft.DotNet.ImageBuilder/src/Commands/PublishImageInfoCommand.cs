@@ -37,16 +37,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, "Merging image info updates from build.", async branch =>
                     {
                         string originalTargetImageInfoContents = await gitHubClient.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
-                        List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
+                        IEnumerable<RepoData> newImageInfo;
 
-                        ImageInfoMergeOptions options = new ImageInfoMergeOptions
+                        if (originalTargetImageInfoContents != null)
                         {
-                            ReplaceTags = true
-                        };
+                            List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
 
-                        ImageInfoHelper.MergeRepos(srcRepos, targetRepos, options);
+                            ImageInfoMergeOptions options = new ImageInfoMergeOptions
+                            {
+                                ReplaceTags = true
+                            };
 
-                        string newTargetImageInfoContents = JsonHelper.SerializeObject(targetRepos.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
+                            ImageInfoHelper.MergeRepos(srcRepos, targetRepos, options);
+
+                            newImageInfo = targetRepos;
+                        }
+                        else
+                        {
+                            // If there is no existing file to update, there's nothing to merge with so the source data
+                            // becomes the target data.
+                            newImageInfo = srcRepos;
+                        }
+
+                        string newTargetImageInfoContents =
+                            JsonHelper.SerializeObject(newImageInfo.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
 
                         if (originalTargetImageInfoContents != newTargetImageInfoContents)
                         {

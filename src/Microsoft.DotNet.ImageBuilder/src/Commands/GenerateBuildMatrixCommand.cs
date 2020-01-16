@@ -108,9 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (Path.IsPathRooted(dockerfilePath))
             {
-                string baseDirectory = Path.GetDirectoryName(this.Options.Manifest);
-                Debug.Assert(dockerfilePath.StartsWith(PathHelper.NormalizePath(baseDirectory)));
-                dockerfilePath = dockerfilePath.Substring(baseDirectory.Length + 1);
+                return PathHelper.StripBaseDirectory(Manifest.BaseDirectory, dockerfilePath);
             }
 
             return dockerfilePath.Split(s_pathSeparators)[0];

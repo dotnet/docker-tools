@@ -39,7 +39,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IAzure azure = CreateAzureMock(registriesOperationsMock);
                 Mock<IAzureManagementFactory> azureManagementFactoryMock = CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object);
+                Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+                    azureManagementFactoryMock.Object, environmentServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -104,6 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             It.IsAny<Dictionary<string, List<string>>>(),
                             It.IsAny<CancellationToken>()));
                 }
+
+                environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             }
         }
 

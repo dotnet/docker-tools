@@ -106,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest = Path.Combine(repoPath, subscription.ManifestPath)
             };
 
-            string baseDirectory = Path.GetDirectoryName(manifestOptions.Manifest);
+            string baseDirectory = PathHelper.GetBaseDirectory(manifestOptions.Manifest);
 
             ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
 
@@ -124,9 +124,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (var platform in platforms)
                 {
+                    string lookupDockerfilePath = PathHelper.StripBaseDirectory(baseDirectory, platform.DockerfilePath);
+
                     if (repoData != null &&
                         repoData.Images != null &&
-                        repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData imageData))
+                        repoData.Images.TryGetValue(lookupDockerfilePath, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
 

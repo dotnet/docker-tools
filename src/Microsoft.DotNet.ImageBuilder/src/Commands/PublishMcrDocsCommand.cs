@@ -100,9 +100,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (string readmePath in readmePaths)
             {
-                string updatedReadMe = File.ReadAllText(readmePath);
+                string fullPath = Path.Combine(Manifest.BaseDirectory, readmePath);
+                string updatedReadMe = File.ReadAllText(fullPath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                await AddUpdatedFile(readmes, client, branch, productRepo, readmePath, updatedReadMe);
+                await AddUpdatedFile(readmes, client, branch, productRepo, fullPath, updatedReadMe);
             }
 
             return readmes.ToArray();

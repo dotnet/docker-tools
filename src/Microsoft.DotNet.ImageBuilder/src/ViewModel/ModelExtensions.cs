@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static string GetDockerName(this OS os) => os.ToString().ToLowerInvariant();
 
-        public static void Validate(this Manifest manifest)
+        public static void Validate(this Manifest manifest, string manifestDirectory)
         {
             foreach (Repo repo in manifest.Repos)
             {
@@ -49,15 +49,29 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     throw new ValidationException($"Readme path '{repo.ReadmePath}' for repo {repo.Name} must be a relative path.");
                 }
 
+                EnsureFileExists(repo.ReadmePath, manifestDirectory);
+
                 if (Path.IsPathRooted(repo.McrTagsMetadataTemplatePath))
                 {
                     throw new ValidationException($"Tags template path '{repo.McrTagsMetadataTemplatePath}' for repo {repo.Name} must be a relative path.");
                 }
+
+                EnsureFileExists(repo.McrTagsMetadataTemplatePath, manifestDirectory);
             }
 
             if (Path.IsPathRooted(manifest.ReadmePath))
             {
                 throw new ValidationException($"Readme path '{manifest.ReadmePath}' must be a relative path.");
+            }
+
+            EnsureFileExists(manifest.ReadmePath, manifestDirectory);
+        }
+
+        private static void EnsureFileExists(string path, string manifestDirectory)
+        {
+            if (path != null && !File.Exists(Path.Combine(manifestDirectory, path)))
+            {
+                throw new FileNotFoundException("Path specified in manifest file does not exist.", path);
             }
         }
 

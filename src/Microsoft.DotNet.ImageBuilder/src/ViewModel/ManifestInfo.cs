@@ -57,13 +57,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             string manifestJson = File.ReadAllText(manifestPath);
             Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson);
-            model.Validate();
+            string manifestDirectory = PathHelper.GetNormalizedDirectory(manifestPath);
+            model.Validate(manifestDirectory);
 
             ManifestInfo manifestInfo = new ManifestInfo
             {
                 Model = model,
                 Registry = options.RegistryOverride ?? model.Registry,
-                Directory = PathHelper.GetNormalizedDirectory(manifestPath)
+                Directory = manifestDirectory
             };
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetRepoById);
             manifestInfo.AllRepos = manifestInfo.Model.Repos

@@ -96,8 +96,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<string> GetDestinationTagNames(RepoInfo repo, PlatformInfo platform)
         {
-            string lookupDockerfilePath = PathHelper.StripBaseDirectory(Manifest.BaseDirectory, platform.DockerfilePath);
-
             IEnumerable<string> destTagNames = null;
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
@@ -109,7 +107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
                 if (repoData != null)
                 {
-                    if (repoData.Images.TryGetValue(lookupDockerfilePath, out ImageData image))
+                    if (repoData.Images.TryGetValue(platform.DockerfilePathRelativeToManifest, out ImageData image))
                     {
                         destTagNames = image.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));

@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
+        public string DockerfilePathRelativeToManifest { get; private set; }
         public IEnumerable<string> ExternalFromImages { get; private set; }
         public IEnumerable<string> InternalFromImages { get; private set; }
         public Platform Model { get; private set; }
@@ -69,6 +70,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 platformInfo.BuildContextPath = PathHelper.NormalizePath(dockerfileWithBaseDir);
                 platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(platformInfo.BuildContextPath, "Dockerfile"));
             }
+
+            platformInfo.DockerfilePathRelativeToManifest = PathHelper.TrimPath(baseDirectory, platformInfo.DockerfilePath);
 
             platformInfo.Tags = model.Tags
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, platformInfo.BuildContextPath))

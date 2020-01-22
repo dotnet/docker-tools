@@ -11,10 +11,15 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         public static string NormalizePath(string path) => path.Replace(@"\", "/");
 
-        public static string StripBaseDirectory(string baseDirectory, string path)
+        /// <summary>
+        /// Trims the <paramref name="trimPath"/> string from <paramref name="path"/>.
+        /// </summary>
+        /// <param name="trimPath">The path segment to remove from <paramref name="path"/>.</param>
+        /// <param name="path">The path to be trimmed.</param>
+        public static string TrimPath(string trimPath, string path)
         {
-            Debug.Assert(NormalizePath(path).StartsWith(NormalizePath(baseDirectory)));
-            string result = path.Substring(baseDirectory.Length);
+            Debug.Assert(NormalizePath(path).StartsWith(NormalizePath(trimPath)));
+            string result = path.Substring(trimPath.Length);
             if (result.StartsWith("/") || result.StartsWith("\\"))
             {
                 result = result.Substring(1);
@@ -23,9 +28,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return result;
         }
 
-        public static string GetBaseDirectory(string manifestPath)
+        public static string GetNormalizedDirectory(string path)
         {
-            return PathHelper.NormalizePath(Path.GetDirectoryName(manifestPath));
+            return PathHelper.NormalizePath(Path.GetDirectoryName(path));
         }
     }
 }

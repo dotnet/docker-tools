@@ -41,7 +41,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string DockerfileDir = $"1.0/{RepoName}/os";
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, DockerfileDir));
             string dockerfileRelativePath = Path.Combine(DockerfileDir, "Dockerfile");
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM base:tag");
+            string dockerfileFullPath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileFullPath, "FROM base:tag");
 
             // Create MCR tags metadata template file
             StringBuilder tagsMetadataTemplateBuilder = new StringBuilder();
@@ -74,7 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             if (sourceRepoBranch == null)
             {
                 gitServiceMock
-                    .Setup(o => o.GetCommitSha($"{DockerfileDir}/Dockerfile", true))
+                    .Setup(o => o.GetCommitSha(dockerfileFullPath, true))
                     .Returns(DockerfileSha);
             }
 

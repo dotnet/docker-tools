@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
                         ImageData imageData = new ImageData();
-                        images.Add(PathHelper.StripBaseDirectory(Manifest.BaseDirectory, platform.DockerfilePath), imageData);
+                        images.Add(platform.DockerfilePathRelativeToManifest, imageData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 

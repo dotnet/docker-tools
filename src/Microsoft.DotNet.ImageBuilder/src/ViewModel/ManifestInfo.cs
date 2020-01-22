@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         /// <summary>
         /// Gets the directory of the manifest file.
         /// </summary>
-        public string BaseDirectory { get; private set; }
+        public string Directory { get; private set; }
 
         private ManifestInfo()
         {
@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             {
                 Model = model,
                 Registry = options.RegistryOverride ?? model.Registry,
-                BaseDirectory = PathHelper.GetBaseDirectory(manifestPath)
+                Directory = PathHelper.GetNormalizedDirectory(manifestPath)
             };
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetRepoById);
             manifestInfo.AllRepos = manifestInfo.Model.Repos
@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     manifestFilter,
                     options,
                     manifestInfo.VariableHelper,
-                    manifestInfo.BaseDirectory))
+                    manifestInfo.Directory))
                 .ToArray();
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();

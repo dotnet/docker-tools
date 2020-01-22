@@ -50,15 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder
             StringBuilder yaml = new StringBuilder();
             yaml.AppendLine("repos:");
 
-            string templatePath;
-            if (Path.IsPathRooted(_repo.Model.McrTagsMetadataTemplatePath))
-            {
-                templatePath = _repo.Model.McrTagsMetadataTemplatePath;
-            }
-            else
-            {
-                templatePath = Path.Combine(_manifest.Directory, _repo.Model.McrTagsMetadataTemplatePath);
-            }
+            string templatePath = Path.Combine(_manifest.Directory, _repo.Model.McrTagsMetadataTemplatePath);
 
             string template = File.ReadAllText(templatePath);
             yaml.Append(_manifest.VariableHelper.SubstituteValues(template, GetVariableValue));

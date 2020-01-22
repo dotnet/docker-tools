@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
@@ -42,6 +43,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             foreach (Repo repo in manifest.Repos)
             {
                 ValidateUniqueTags(repo);
+
+                if (Path.IsPathRooted(repo.ReadmePath))
+                {
+                    throw new ValidationException($"Readme path '{repo.ReadmePath}' for repo {repo.Name} must be a relative path.");
+                }
+
+                if (Path.IsPathRooted(repo.McrTagsMetadataTemplatePath))
+                {
+                    throw new ValidationException($"Tags template path '{repo.McrTagsMetadataTemplatePath}' for repo {repo.Name} must be a relative path.");
+                }
+            }
+
+            if (Path.IsPathRooted(manifest.ReadmePath))
+            {
+                throw new ValidationException($"Readme path '{manifest.ReadmePath}' must be a relative path.");
             }
         }
 

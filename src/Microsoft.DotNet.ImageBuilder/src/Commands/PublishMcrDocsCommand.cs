@@ -100,8 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (string readmePath in readmePaths)
             {
-                string fullPath = Path.IsPathRooted(readmePath) ?
-                    readmePath : Path.Combine(Manifest.Directory, readmePath);
+                string fullPath = Path.Combine(Manifest.Directory, readmePath);
                 
                 string updatedReadMe = File.ReadAllText(fullPath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);

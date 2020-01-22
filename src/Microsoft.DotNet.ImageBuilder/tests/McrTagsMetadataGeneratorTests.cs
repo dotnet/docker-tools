@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateImage(
                             ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { TagName }))
                     },
-                    mcrTagsMetadataTemplatePath: tagsMetadataTemplatePath)
+                    mcrTagsMetadataTemplatePath: Path.GetFileName(tagsMetadataTemplatePath))
             );
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));

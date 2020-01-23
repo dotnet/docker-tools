@@ -25,13 +25,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
         private Lazy<RepoData[]> imageInfoRepos;
-        private string baseDirectory;
         private readonly IAzureManagementFactory azureManagementFactory;
+        private readonly IEnvironmentService environmentService;
 
         [ImportingConstructor]
-        public CopyAcrImagesCommand(IAzureManagementFactory azureManagementFactory) : base()
+        public CopyAcrImagesCommand(IAzureManagementFactory azureManagementFactory, IEnvironmentService environmentService) : base()
         {
             this.azureManagementFactory = azureManagementFactory ?? throw new ArgumentNullException(nameof(azureManagementFactory));
+            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             this.imageInfoRepos = new Lazy<RepoData[]>(() =>
             {
                 if (!String.IsNullOrEmpty(Options.ImageInfoPath))
@@ -46,8 +47,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("COPYING IMAGES");
-
-            this.baseDirectory = Path.GetDirectoryName(Options.Manifest);
 
             string registryName = Manifest.Registry.TrimEnd(".azurecr.io");
 
@@ -108,7 +107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
                 if (repoData != null)
                 {
-                    if (repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData image))
+                    if (repoData.Images.TryGetValue(platform.DockerfilePathRelativeToManifest, out ImageData image))
                     {
                         destTagNames = image.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));
@@ -116,13 +115,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     else
                     {
                         Logger.WriteError($"Unable to find image info data for path '{platform.DockerfilePath}'.");
-                        Environment.Exit(1);
+                        this.environmentService.Exit(1);
                     }
                 }
                 else
                 {
                     Logger.WriteError($"Unable to find image info data for repo '{repo.Model.Name}'.");
-                    Environment.Exit(1);
+                    this.environmentService.Exit(1);
                 }
             }
 

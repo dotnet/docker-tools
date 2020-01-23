@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
+        public string DockerfilePathRelativeToManifest { get; private set; }
         public IEnumerable<string> ExternalFromImages { get; private set; }
         public IEnumerable<string> InternalFromImages { get; private set; }
         public Platform Model { get; private set; }
@@ -44,29 +45,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory)
         {
-            PlatformInfo platformInfo = new PlatformInfo(baseDirectory);
-            platformInfo.Model = model;
-            platformInfo.RepoName = repoName;
-            platformInfo.FullRepoModelName = fullRepoModelName;
-            platformInfo.VariableHelper = variableHelper;
-
-            // Ensure that we construct a path using the base directory here to check for the file. In cases like
-            // the GetStaleImagesCommand and unit tests, the base directory will be an absolute path to 
-            // distinguish between multiple repos.
-            string dockerfileWithBaseDir = Path.IsPathRooted(model.Dockerfile) ?
-                model.Dockerfile : Path.Combine(baseDirectory, model.Dockerfile);
-
-            if (File.Exists(dockerfileWithBaseDir))
+            PlatformInfo platformInfo = new PlatformInfo(baseDirectory)
             {
-                platformInfo.DockerfilePath = PathHelper.NormalizePath(model.Dockerfile);
-                platformInfo.BuildContextPath = Path.GetDirectoryName(model.Dockerfile);
-            }
-            else
-            {
-                // Modeled Dockerfile is just the directory containing the "Dockerfile"
-                platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(model.Dockerfile, "Dockerfile"));
-                platformInfo.BuildContextPath = model.Dockerfile;
-            }
+                Model = model,
+                RepoName = repoName,
+                FullRepoModelName = fullRepoModelName,
+                VariableHelper = variableHelper
+            };
+
+            string dockerfileWithBaseDir = Path.Combine(baseDirectory, model.ResolveDockerfilePath(baseDirectory));
+
+            platformInfo.DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
+            platformInfo.BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));
+            platformInfo.DockerfilePathRelativeToManifest = PathHelper.TrimPath(baseDirectory, platformInfo.DockerfilePath);
 
             platformInfo.Tags = model.Tags
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, platformInfo.BuildContextPath))
@@ -107,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             _overriddenFromImages = new List<string>();
 
-            string dockerfile = File.ReadAllText(Path.Combine(this.baseDirectory, DockerfilePath));
+            string dockerfile = File.ReadAllText(DockerfilePath);
             IList<Match> fromMatches = FromRegex.Matches(dockerfile);
 
             if (!fromMatches.Any())

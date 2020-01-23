@@ -27,6 +27,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string Registry { get; private set; }
         public VariableHelper VariableHelper { get; set; }
 
+        /// <summary>
+        /// Gets the directory of the manifest file.
+        /// </summary>
+        public string Directory { get; private set; }
+
         private ManifestInfo()
         {
         }
@@ -50,14 +55,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
         {
-            string baseDirectory = Path.GetDirectoryName(manifestPath);
             string manifestJson = File.ReadAllText(manifestPath);
             Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson);
-            model.Validate();
+            string manifestDirectory = PathHelper.GetNormalizedDirectory(manifestPath);
+            model.Validate(manifestDirectory);
 
-            ManifestInfo manifestInfo = new ManifestInfo();
-            manifestInfo.Model = model;
-            manifestInfo.Registry = options.RegistryOverride ?? model.Registry;
+            ManifestInfo manifestInfo = new ManifestInfo
+            {
+                Model = model,
+                Registry = options.RegistryOverride ?? model.Registry,
+                Directory = manifestDirectory
+            };
             manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetRepoById);
             manifestInfo.AllRepos = manifestInfo.Model.Repos
                 .Select(repo => RepoInfo.Create(
@@ -67,7 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     manifestFilter,
                     options,
                     manifestInfo.VariableHelper,
-                    baseDirectory))
+                    manifestInfo.Directory))
                 .ToArray();
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();

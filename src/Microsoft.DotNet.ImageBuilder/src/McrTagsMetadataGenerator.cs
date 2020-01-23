@@ -50,7 +50,9 @@ namespace Microsoft.DotNet.ImageBuilder
             StringBuilder yaml = new StringBuilder();
             yaml.AppendLine("repos:");
 
-            string template = File.ReadAllText(_repo.Model.McrTagsMetadataTemplatePath);
+            string templatePath = Path.Combine(_manifest.Directory, _repo.Model.McrTagsMetadataTemplatePath);
+
+            string template = File.ReadAllText(templatePath);
             yaml.Append(_manifest.VariableHelper.SubstituteValues(template, GetVariableValue));
 
             if (_imageDocInfos.Any())
@@ -155,9 +157,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private string GetTagGroupYaml(ImageDocumentationInfo info)
         {
-            string dockerfileRelativePath = info.Platform.DockerfilePath.Replace('\\', '/');
             string branchOrShaPathSegment = _sourceBranch ??
-                _gitService.GetCommitSha(dockerfileRelativePath, useFullHash: true);
+                _gitService.GetCommitSha(info.Platform.DockerfilePath, useFullHash: true);
+
+            string dockerfileRelativePath = PathHelper.NormalizePath(info.Platform.DockerfilePathRelativeToManifest);
             string dockerfilePath = $"{_sourceRepoUrl}/blob/{branchOrShaPathSegment}/{dockerfileRelativePath}";
 
             StringBuilder yaml = new StringBuilder();

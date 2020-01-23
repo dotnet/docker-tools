@@ -106,8 +106,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest = Path.Combine(repoPath, subscription.ManifestPath)
             };
 
-            string baseDirectory = Path.GetDirectoryName(manifestOptions.Manifest);
-
             ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
 
             List<string> pathsToRebuild = new List<string>();
@@ -126,7 +124,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (repoData != null &&
                         repoData.Images != null &&
-                        repoData.Images.TryGetValue(platform.DockerfilePath, out ImageData imageData))
+                        repoData.Images.TryGetValue(platform.DockerfilePathRelativeToManifest, out ImageData imageData))
                     {
                         bool hasDigestChanged = false;
 

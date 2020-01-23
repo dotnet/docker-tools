@@ -106,13 +106,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetDotNetVersionFromPath(string dockerfilePath)
         {
-            if (Path.IsPathRooted(dockerfilePath))
-            {
-                string baseDirectory = Path.GetDirectoryName(this.Options.Manifest);
-                Debug.Assert(dockerfilePath.StartsWith(PathHelper.NormalizePath(baseDirectory)));
-                dockerfilePath = dockerfilePath.Substring(baseDirectory.Length + 1);
-            }
-
             return dockerfilePath.Split(s_pathSeparators)[0];
         }
 
@@ -122,7 +115,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
-                    DotNetVersion = GetDotNetVersionFromPath(platform.DockerfilePath),
+                    DotNetVersion = GetDotNetVersionFromPath(platform.DockerfilePathRelativeToManifest),
                     OsVariant = platform.Model.OsVersion
                 });
             foreach (var versionGrouping in versionGroups)

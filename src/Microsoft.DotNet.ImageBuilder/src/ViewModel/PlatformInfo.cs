@@ -53,24 +53,22 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 VariableHelper = variableHelper
             };
 
-            // Ensure that we construct a path using the base directory here to check for the file. In cases like
-            // the GetStaleImagesCommand and unit tests, the base directory will be an absolute path to 
-            // distinguish between multiple repos.
-            string dockerfileWithBaseDir = Path.IsPathRooted(model.Dockerfile) ?
-                model.Dockerfile : Path.Combine(baseDirectory, model.Dockerfile);
+            string dockerfilePath = model.Dockerfile;
 
-            if (File.Exists(dockerfileWithBaseDir))
+            try
             {
-                platformInfo.DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
-                platformInfo.BuildContextPath = Path.GetDirectoryName(dockerfileWithBaseDir);
+                PathHelper.ValidateFileReference(dockerfilePath, baseDirectory);
             }
-            else
+            catch (FileNotFoundException)
             {
-                // Modeled Dockerfile is just the directory containing the "Dockerfile"
-                platformInfo.BuildContextPath = PathHelper.NormalizePath(dockerfileWithBaseDir);
-                platformInfo.DockerfilePath = PathHelper.NormalizePath(Path.Combine(platformInfo.BuildContextPath, "Dockerfile"));
+                dockerfilePath = Path.Combine(model.Dockerfile, "Dockerfile");
+                PathHelper.ValidateFileReference(dockerfilePath, baseDirectory);
             }
 
+            string dockerfileWithBaseDir = Path.Combine(baseDirectory, dockerfilePath);
+
+            platformInfo.DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
+            platformInfo.BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));
             platformInfo.DockerfilePathRelativeToManifest = PathHelper.TrimPath(baseDirectory, platformInfo.DockerfilePath);
 
             platformInfo.Tags = model.Tags

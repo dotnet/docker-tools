@@ -43,36 +43,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             foreach (Repo repo in manifest.Repos)
             {
                 ValidateUniqueTags(repo);
-
-                if (Path.IsPathRooted(repo.ReadmePath))
-                {
-                    throw new ValidationException($"Readme path '{repo.ReadmePath}' for repo {repo.Name} must be a relative path.");
-                }
-
-                EnsureFileExists(repo.ReadmePath, manifestDirectory);
-
-                if (Path.IsPathRooted(repo.McrTagsMetadataTemplatePath))
-                {
-                    throw new ValidationException($"Tags template path '{repo.McrTagsMetadataTemplatePath}' for repo {repo.Name} must be a relative path.");
-                }
-
-                EnsureFileExists(repo.McrTagsMetadataTemplatePath, manifestDirectory);
+                PathHelper.ValidateFileReference(repo.ReadmePath, manifestDirectory);
+                PathHelper.ValidateFileReference(repo.McrTagsMetadataTemplatePath, manifestDirectory);
             }
 
-            if (Path.IsPathRooted(manifest.ReadmePath))
-            {
-                throw new ValidationException($"Readme path '{manifest.ReadmePath}' must be a relative path.");
-            }
-
-            EnsureFileExists(manifest.ReadmePath, manifestDirectory);
-        }
-
-        private static void EnsureFileExists(string path, string manifestDirectory)
-        {
-            if (path != null && !File.Exists(Path.Combine(manifestDirectory, path)))
-            {
-                throw new FileNotFoundException("Path specified in manifest file does not exist.", path);
-            }
+            PathHelper.ValidateFileReference(manifest.ReadmePath, manifestDirectory);
         }
 
         private static void ValidateUniqueTags(Repo repo)

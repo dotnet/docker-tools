@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
+using System;
 using System.IO;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -18,7 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <param name="path">The path to be trimmed.</param>
         public static string TrimPath(string trimPath, string path)
         {
-            Debug.Assert(NormalizePath(path).StartsWith(NormalizePath(trimPath)));
+            if (!NormalizePath(path).StartsWith(NormalizePath(trimPath)))
+            {
+                throw new InvalidOperationException($"'{path}' must start with '{trimPath}'");
+            }
             string result = path.Substring(trimPath.Length);
             if (result.StartsWith("/") || result.StartsWith("\\"))
             {
@@ -31,6 +34,19 @@ namespace Microsoft.DotNet.ImageBuilder
         public static string GetNormalizedDirectory(string path)
         {
             return PathHelper.NormalizePath(Path.GetDirectoryName(path));
+        }
+
+        public static void ValidateFileReference(string path, string manifestDirectory)
+        {
+            if (Path.IsPathRooted(path))
+            {
+                throw new ValidationException($"Path '{path}' specified in manifest file must be a relative path.");
+            }
+
+            if (path != null && !File.Exists(Path.Combine(manifestDirectory, path)))
+            {
+                throw new FileNotFoundException("Path specified in manifest file does not exist.", path);
+            }
         }
     }
 }

@@ -35,18 +35,5 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             return PathHelper.NormalizePath(Path.GetDirectoryName(path));
         }
-
-        public static void ValidateFileReference(string path, string manifestDirectory)
-        {
-            if (Path.IsPathRooted(path))
-            {
-                throw new ValidationException($"Path '{path}' specified in manifest file must be a relative path.");
-            }
-
-            if (path != null && !File.Exists(Path.Combine(manifestDirectory, path)))
-            {
-                throw new FileNotFoundException("Path specified in manifest file does not exist.", path);
-            }
-        }
     }
 }

@@ -53,19 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 VariableHelper = variableHelper
             };
 
-            string dockerfilePath = model.Dockerfile;
-
-            try
-            {
-                PathHelper.ValidateFileReference(dockerfilePath, baseDirectory);
-            }
-            catch (FileNotFoundException)
-            {
-                dockerfilePath = Path.Combine(model.Dockerfile, "Dockerfile");
-                PathHelper.ValidateFileReference(dockerfilePath, baseDirectory);
-            }
-
-            string dockerfileWithBaseDir = Path.Combine(baseDirectory, dockerfilePath);
+            string dockerfileWithBaseDir = Path.Combine(baseDirectory, model.ResolveDockerfilePath(baseDirectory));
 
             platformInfo.DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
             platformInfo.BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));

@@ -42,12 +42,68 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             foreach (Repo repo in manifest.Repos)
             {
-                ValidateUniqueTags(repo);
-                PathHelper.ValidateFileReference(repo.ReadmePath, manifestDirectory);
-                PathHelper.ValidateFileReference(repo.McrTagsMetadataTemplatePath, manifestDirectory);
+                ValidateRepo(repo, manifestDirectory);
             }
 
-            PathHelper.ValidateFileReference(manifest.ReadmePath, manifestDirectory);
+            ValidateFileReference(manifest.ReadmePath, manifestDirectory);
+        }
+
+        public static string ResolveDockerfilePath(this Platform platform, string manifestDirectory)
+        {
+            ValidatePathIsRelative(platform.Dockerfile);
+
+            string dockerfilePath = Path.Combine(manifestDirectory, platform.Dockerfile);
+            if (File.Exists(dockerfilePath))
+            {
+                return platform.Dockerfile;
+            }
+            else
+            {
+                return Path.Combine(platform.Dockerfile, "Dockerfile");
+            }
+        }
+
+        private static void ValidateFileReference(string path, string manifestDirectory)
+        {
+            ValidatePathIsRelative(path);
+
+            if (path != null && !File.Exists(Path.Combine(manifestDirectory, path)))
+            {
+                throw new FileNotFoundException("Path specified in manifest file does not exist.", path);
+            }
+        }
+
+        private static void ValidatePathIsRelative(string path)
+        {
+            if (Path.IsPathRooted(path))
+            {
+                throw new ValidationException($"Path '{path}' specified in manifest file must be a relative path.");
+            }
+        }
+
+        private static void ValidateRepo(Repo repo, string manifestDirectory)
+        {
+            ValidateUniqueTags(repo);
+            ValidateFileReference(repo.ReadmePath, manifestDirectory);
+            ValidateFileReference(repo.McrTagsMetadataTemplatePath, manifestDirectory);
+
+            foreach (Image image in repo.Images)
+            {
+                ValidateImage(image, manifestDirectory);
+            }
+        }
+
+        private static void ValidateImage(Image image, string manifestDirectory)
+        {
+            foreach (Platform platform in image.Platforms)
+            {
+                ValidatePlatform(platform, manifestDirectory);
+            }
+        }
+
+        private static void ValidatePlatform(Platform platform, string manifestDirectory)
+        {
+            ValidateFileReference(platform.ResolveDockerfilePath(manifestDirectory), manifestDirectory);
         }
 
         private static void ValidateUniqueTags(Repo repo)

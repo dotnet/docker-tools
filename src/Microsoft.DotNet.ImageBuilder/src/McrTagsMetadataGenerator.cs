@@ -63,14 +63,14 @@ namespace Microsoft.DotNet.ImageBuilder
 
             string metadata = yaml.ToString();
 
+            Logger.WriteSubheading("Generated Metadata:");
+            Logger.WriteMessage(metadata);
+
             // Validate that the YAML is in a valid format
             new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
                 .Deserialize<Models.Mcr.McrTagsMetadata>(metadata);
-
-            Logger.WriteSubheading("Generated Metadata:");
-            Logger.WriteMessage(metadata);
 
             return metadata;
         }

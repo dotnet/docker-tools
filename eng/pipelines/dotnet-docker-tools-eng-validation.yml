@@ -5,6 +5,7 @@ pr:
   paths:
     include:
     - eng/*
+    - test/*
 trigger:
   branches:
     include:
@@ -12,6 +13,7 @@ trigger:
   paths:
     include:
     - eng/*
+    - test/*
 
 variables:
 - template: ../common/templates/variables/common.yml

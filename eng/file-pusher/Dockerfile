@@ -1,7 +1,7 @@
 # This Dockerfile is intended to be built at the root of the repo.
 
 # build image
-FROM mcr.microsoft.com/dotnet/core/sdk:3.0-alpine AS build-env
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine AS build-env
 
 WORKDIR /file-pusher
 
@@ -16,7 +16,7 @@ RUN dotnet publish -c Release -o out --no-restore
 
 
 # runtime image
-FROM mcr.microsoft.com/dotnet/core/runtime:3.0-alpine
+FROM mcr.microsoft.com/dotnet/core/runtime:3.1-alpine
 
 # copy file-pusher
 WORKDIR /file-pusher

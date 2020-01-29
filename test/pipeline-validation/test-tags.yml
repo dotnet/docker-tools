@@ -1,0 +1,5 @@
+$(McrTagsYmlRepo:test)
+$(McrTagsYmlTagGroup:focal)
+$(McrTagsYmlTagGroup:focal-arm64)
+$(McrTagsYmlTagGroup:nanoserver-1809)
+$(McrTagsYmlTagGroup:nanoserver-1809-arm)

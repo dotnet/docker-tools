@@ -1,0 +1,52 @@
+{
+  "registry": "mcr.microsoft.com",
+  "repos": [
+    {
+      "id": "test",
+      "name": "dotnet/test",
+      "readmePath": "README.placeholder.md",
+      "mcrTagsMetadataTemplatePath": "test-tags.yml",
+      "images": [
+        {
+          "platforms": [
+            {
+              "dockerfile": "1.0/focal/amd64",
+              "os": "linux",
+              "osVersion": "focal",
+              "tags": {
+                "focal": {}
+              }
+            },
+            {
+              "architecture": "arm64",
+              "dockerfile": "1.0/focal/arm64v8",
+              "os": "linux",
+              "osVersion": "focal",
+              "tags": {
+                "focal-arm64": {}
+              },
+              "variant": "v8"
+            },
+            {
+              "dockerfile": "1.0/nanoserver-1809/amd64",
+              "os": "windows",
+              "osVersion": "nanoserver-1809",
+              "tags": {
+                "nanoserver-1809": {}
+              }
+            },
+            {
+              "architecture": "arm",
+              "dockerfile": "1.0/nanoserver-1809/arm32v7",
+              "os": "windows",
+              "osVersion": "nanoserver-1809",
+              "tags": {
+                "nanoserver-1809-arm": {}
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

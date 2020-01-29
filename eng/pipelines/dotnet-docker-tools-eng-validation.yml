@@ -1,0 +1,32 @@
+pr:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - eng/*
+    - test/*
+trigger:
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - eng/*
+    - test/*
+
+variables:
+- template: ../common/templates/variables/common.yml
+- name: manifest
+  value: test/pipeline-validation/test-manifest.json
+- name: testScriptPath
+  value: ./test/pipeline-validation/run-tests.ps1
+- name: testResultsDirectory
+  value: test/pipeline-validation/TestResults/
+- name: publicGitRepoUri
+  value: https://github.com/dotnet/dotnet-docker-test
+- name: publishRepoPrefix
+  value: test/
+
+stages:
+- template: ../common/templates/stages/build-test-publish-repo.yml

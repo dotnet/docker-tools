@@ -910,7 +910,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies an image with be marked to be rebuilt if it's base image is not included in the list of image data.
+        /// Verifies an image will be marked to be rebuilt if its base image is not included in the list of image data.
         /// </summary>
         [Fact]
         public async Task GetStaleImagesCommand_NoExistingImageData()

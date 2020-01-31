@@ -118,6 +118,21 @@ namespace Microsoft.DotNet.ImageBuilder
             DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
         }
 
+        public static string GetImageId(string image, bool isDryRun)
+        {
+            return DockerHelper.ExecuteCommandWithFormat(
+                "images",
+                ".ID",
+                "Failed to get image ID",
+                $"--filter \"reference={image}\"",
+                isDryRun);
+        }
+
+        public static void DeleteImage(string imageId, bool isDryRun)
+        {
+            DockerHelper.ExecuteCommand("rmi", "Failed to delete image", imageId, isDryRun);
+        }
+
         private static OS GetOS()
         {
             string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");
@@ -195,7 +210,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static string ExecuteCommandWithFormat(
             string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false) =>
-            ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
+            // Use the long format option name because not all commands support the short name
+            ExecuteCommand(command, errorMessage, $"{additionalArgs} --format \"{{{{ {outputFormat} }}}}\"", isDryRun);
 
         private enum ManagementType
         {

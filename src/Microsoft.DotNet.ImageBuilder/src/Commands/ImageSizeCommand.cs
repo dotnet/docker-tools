@@ -40,16 +40,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected long GetImageSize(string tagName)
         {
-            if (Options.IsPullEnabled)
+            bool localImageExists = DockerService.LocalImageExists(tagName, Options.IsDryRun);
+            try
             {
-                DockerService.PullImage(tagName, Options.IsDryRun);
-            }
-            else if (!DockerService.LocalImageExists(tagName, Options.IsDryRun))
-            {
-                throw new InvalidOperationException($"Image '{tagName}' not found locally");
-            }
+                if (Options.IsPullEnabled)
+                {
+                    DockerService.PullImage(tagName, Options.IsDryRun);
+                }
+                else if (!localImageExists)
+                {
+                    throw new InvalidOperationException($"Image '{tagName}' not found locally");
+                }
 
-            return DockerService.GetImageSize(tagName, Options.IsDryRun);
+                return DockerService.GetImageSize(tagName, Options.IsDryRun);
+            }
+            finally
+            {
+                // If we had to pull the image because it didn't exist locally, be sure to clean it up
+                if (!localImageExists)
+                {
+                    string imageId = DockerService.GetImageId(tagName, Options.IsDryRun);
+                    if (imageId != null)
+                    {
+                        DockerService.DeleteImage(imageId, Options.IsDryRun);
+                    }
+                }
+            }
         }
 
         protected Dictionary<string, ImageSizeInfo> LoadBaseline()

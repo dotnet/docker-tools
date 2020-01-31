@@ -32,5 +32,17 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             return source.Substring(0, 1).ToLowerInvariant() + source.Substring(1);
         }
+
+        public static string NormalizeLineEndings(this string value, string targetFormat)
+        {
+            string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
+            string valueLineEnding = value.Contains("\r\n") ? "\r\n" : "\n";
+            if (valueLineEnding != targetLineEnding)
+            {
+                value = value.Replace(valueLineEnding, targetLineEnding);
+            }
+
+            return value;
+        }
     }
 }

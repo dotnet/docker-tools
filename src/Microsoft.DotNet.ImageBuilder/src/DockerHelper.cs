@@ -118,19 +118,9 @@ namespace Microsoft.DotNet.ImageBuilder
             DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
         }
 
-        public static string GetImageId(string image, bool isDryRun)
+        public static void DeleteImage(string tag, bool isDryRun)
         {
-            return DockerHelper.ExecuteCommandWithFormat(
-                "images",
-                ".ID",
-                "Failed to get image ID",
-                $"--filter \"reference={image}\"",
-                isDryRun);
-        }
-
-        public static void DeleteImage(string imageId, bool isDryRun)
-        {
-            DockerHelper.ExecuteCommand("rmi", "Failed to delete image", imageId, isDryRun);
+            DockerHelper.ExecuteCommand("rmi", "Failed to delete image", tag, isDryRun);
         }
 
         private static OS GetOS()

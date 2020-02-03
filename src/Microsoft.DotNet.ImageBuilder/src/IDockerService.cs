@@ -29,8 +29,6 @@ namespace Microsoft.DotNet.ImageBuilder
 
         long GetImageSize(string image, bool isDryRun);
 
-        public string GetImageId(string image, bool isDryRun);
-
-        public void DeleteImage(string imageId, bool isDryRun);
+        public void DeleteImage(string tag, bool isDryRun);
     }
 }

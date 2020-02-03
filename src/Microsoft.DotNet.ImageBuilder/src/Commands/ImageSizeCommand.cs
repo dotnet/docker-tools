@@ -41,11 +41,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected long GetImageSize(string tagName)
         {
             bool localImageExists = DockerService.LocalImageExists(tagName, Options.IsDryRun);
+            bool isImagePulled = false;
             try
             {
                 if (Options.IsPullEnabled)
                 {
                     DockerService.PullImage(tagName, Options.IsDryRun);
+                    isImagePulled = true;
                 }
                 else if (!localImageExists)
                 {
@@ -57,13 +59,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             finally
             {
                 // If we had to pull the image because it didn't exist locally, be sure to clean it up
-                if (!localImageExists)
+                if (isImagePulled)
                 {
-                    string imageId = DockerService.GetImageId(tagName, Options.IsDryRun);
-                    if (imageId != null)
-                    {
-                        DockerService.DeleteImage(imageId, Options.IsDryRun);
-                    }
+                    DockerService.DeleteImage(tagName, Options.IsDryRun);
                 }
             }
         }

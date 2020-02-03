@@ -60,14 +60,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return DockerHelper.GetImageSize(image, isDryRun);
         }
 
-        public string GetImageId(string image, bool isDryRun)
+        public void DeleteImage(string tag, bool isDryRun)
         {
-            return DockerHelper.GetImageId(image, isDryRun);
-        }
-
-        public void DeleteImage(string imageId, bool isDryRun)
-        {
-            DockerHelper.DeleteImage(imageId, isDryRun);
+            DockerHelper.DeleteImage(tag, isDryRun);
         }
     }
 }

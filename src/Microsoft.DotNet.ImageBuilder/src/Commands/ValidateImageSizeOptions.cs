@@ -12,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public bool CheckBaselineIntegrityOnly { get; set; }
 
+        public bool SkipBaselineIntegrityCheck { get; set; }
+
         public ValidateImageSizeOptions() : base()
         {
         }
@@ -23,6 +25,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool checkBaselineIntegrityOnly = false;
             syntax.DefineOption("baseline-integrity-only", ref checkBaselineIntegrityOnly, "Validate the integrity of the baseline by checking for missing or extraneous data");
             CheckBaselineIntegrityOnly = checkBaselineIntegrityOnly;
+
+            bool skipBaselineIntegrityCheck = false;
+            syntax.DefineOption("skip-baseline-integrity", ref skipBaselineIntegrityCheck, "Skip validation of missing or extraneous data");
+            SkipBaselineIntegrityCheck = skipBaselineIntegrityCheck;
         }
     }
 }

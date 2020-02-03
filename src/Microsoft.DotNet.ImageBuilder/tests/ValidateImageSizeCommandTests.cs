@@ -224,21 +224,57 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(RuntimeDeps2RelativeDir, results.ImagesWithExtraneousBaseline.First().Id);
         }
 
+        /// <summary>
+        /// Verifies the validation skips checking for missing or extraneous baseline data.
+        /// </summary>
+        [Fact]
+        public async Task SkipBaselineIntegrityCheck()
+        {
+            // Specifying null for the actual size prevents the image from being defined in the manifest. But since
+            // a baseline size is defined, it'll end up in the baseline file. This is the scenario that we want to
+            // identify because there will be extraneous data in the baseline file for which no image exists.
+            ImageSizeData[] imageSizes = new[]
+            {
+                new ImageSizeData(RuntimeDepsRepo, RuntimeDeps1RelativeDir, RuntimeDeps1Tag, 1, actualSize: null),
+                new ImageSizeData(RuntimeDepsRepo, RuntimeDeps2RelativeDir, RuntimeDeps2Tag, baselineSize: null, 2),
+                new ImageSizeData(RuntimeRepo, RuntimeRelativeDir, RuntimeTag, 3, 3),
+                new ImageSizeData(AspnetRepo, AspnetRelativeDir, AspnetTag, 4, actualSize: null),
+                new ImageSizeData(SdkRepo, SdkRelativeDir, SdkTag, 5, 5)
+            };
+
+            TestContext testContext = new TestContext(imageSizes, skipBaselineIntegrityCheck: true);
+            ValidateImageSizeCommand command = await testContext.RunTestAsync();
+
+            testContext.Verify(isValidationErrorExpected: false);
+
+            ImageSizeValidationResults results = command.ValidationResults;
+
+            Assert.Equal(2, results.ImagesWithNoSizeChange.Count());
+            Assert.Equal(RuntimeRelativeDir, results.ImagesWithNoSizeChange.ElementAt(0).Id);
+            Assert.Equal(SdkRelativeDir, results.ImagesWithNoSizeChange.ElementAt(1).Id);
+            Assert.Empty(results.ImagesWithAllowedSizeChange);
+            Assert.Empty(results.ImagesWithDisallowedSizeChange);
+            Assert.Empty(results.ImagesWithMissingBaseline);
+            Assert.Empty(results.ImagesWithExtraneousBaseline);
+        }
+
         private class TestContext
         {
             private readonly IEnumerable<ImageSizeData> imageSizes;
             private readonly int? allowedVariance;
+            private readonly bool skipBaselineIntegrityCheck;
             private readonly bool localImagesExist;
             private readonly bool checkBaselineIntegrityOnly;
             private readonly Mock<IEnvironmentService> environmentServiceMock;
 
             public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null, bool? checkBaselineIntegrityOnly = false,
-                bool? localImagesExist = true)
+                bool? skipBaselineIntegrityCheck = false, bool? localImagesExist = true)
             {
                 this.imageSizes = imageSizes;
                 this.allowedVariance = allowedVariance;
-                this.localImagesExist = localImagesExist == true;
                 this.checkBaselineIntegrityOnly = checkBaselineIntegrityOnly == true;
+                this.skipBaselineIntegrityCheck = skipBaselineIntegrityCheck == true;
+                this.localImagesExist = localImagesExist == true;
                 this.environmentServiceMock = new Mock<IEnvironmentService>();
             }
 
@@ -265,6 +301,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.BaselinePath = baselinePath;
                 command.Options.AllowedVariance = this.allowedVariance ?? 0;
                 command.Options.CheckBaselineIntegrityOnly = this.checkBaselineIntegrityOnly;
+                command.Options.SkipBaselineIntegrityCheck = this.skipBaselineIntegrityCheck;
                 command.Options.IsPullEnabled = false;
 
                 // Use the image size data defined by the test to generate a manifest file

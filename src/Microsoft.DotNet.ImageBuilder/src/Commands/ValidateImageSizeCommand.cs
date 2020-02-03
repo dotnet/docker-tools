@@ -107,8 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 imagesWithNoSizeChange,
                 imagesWithAllowedSizeChange,
                 imagesWithDisallowedSizeChange,
-                imagesWithMissingBaseline,
-                imagesWithExtraneousBaseline);
+                Options.SkipBaselineIntegrityCheck ? Enumerable.Empty<ImageSizeInfo>() : imagesWithMissingBaseline,
+                Options.SkipBaselineIntegrityCheck ? Enumerable.Empty<ImageSizeInfo>() : imagesWithExtraneousBaseline);
         }
 
         private void LogResults(ImageSizeValidationResults results)

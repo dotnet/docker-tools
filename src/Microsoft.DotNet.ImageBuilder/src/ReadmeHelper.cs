@@ -11,24 +11,12 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private const string TagsSectionHeader = "# Full Tag Listing";
 
-        private static string NormalizeLineEndings(string value, string targetFormat)
-        {
-            string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
-            string valueLineEnding = value.Contains("\r\n") ? "\r\n" : "\n";
-            if (valueLineEnding != targetLineEnding)
-            {
-                value = value.Replace(valueLineEnding, targetLineEnding);
-            }
-
-            return value;
-        }
-
         public static string UpdateTagsListing(string readme, string tagsListing)
         {
             tagsListing = $"{TagsSectionHeader}{Environment.NewLine}{Environment.NewLine}{tagsListing}{Environment.NewLine}{Environment.NewLine}";
 
             // Normalize the line endings to match the readme.
-            tagsListing = NormalizeLineEndings(tagsListing, readme);
+            tagsListing = tagsListing.NormalizeLineEndings(readme);
 
             // Regex to find the entire tags listing section including the header.
             Regex regex = new Regex($"^{TagsSectionHeader}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);

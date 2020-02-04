@@ -43,10 +43,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // This handler will be invoked for each image defined in the manifest
             void processImage(string repoId, string imageId, string tagName)
             {
-                // If the CheckBaselineIntegrityOnly option is enabled, we want to skip the retrieval
-                // of the image size.
                 long? currentSize = null;
-                if (!Options.CheckBaselineIntegrityOnly)
+                if (Options.Mode.HasFlag(ImageSizeValidationMode.Size))
                 {
                     currentSize = GetImageSize(tagName);
                 }
@@ -85,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<ImageSizeInfo> imagesWithNoSizeChange;
             IEnumerable<ImageSizeInfo> imagesWithAllowedSizeChange;
             IEnumerable<ImageSizeInfo> imagesWithDisallowedSizeChange;
-            if (Options.CheckBaselineIntegrityOnly)
+            if (Options.Mode == ImageSizeValidationMode.Integrity)
             {
                 imagesWithNoSizeChange =
                     imagesWithAllowedSizeChange =
@@ -107,8 +105,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 imagesWithNoSizeChange,
                 imagesWithAllowedSizeChange,
                 imagesWithDisallowedSizeChange,
-                imagesWithMissingBaseline,
-                imagesWithExtraneousBaseline);
+                Options.Mode == ImageSizeValidationMode.Size ? Enumerable.Empty<ImageSizeInfo>() : imagesWithMissingBaseline,
+                Options.Mode == ImageSizeValidationMode.Size ? Enumerable.Empty<ImageSizeInfo>() : imagesWithExtraneousBaseline);
         }
 
         private void LogResults(ImageSizeValidationResults results)

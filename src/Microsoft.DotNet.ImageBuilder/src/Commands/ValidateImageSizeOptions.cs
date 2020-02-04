@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -10,9 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected override string CommandHelp => "Validates the size of the images against a baseline";
 
-        public bool CheckBaselineIntegrityOnly { get; set; }
-
-        public bool SkipBaselineIntegrityCheck { get; set; }
+        public ImageSizeValidationMode Mode { get; set; }
 
         public ValidateImageSizeOptions() : base()
         {
@@ -22,13 +21,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.DefineOptions(syntax);
 
-            bool checkBaselineIntegrityOnly = false;
-            syntax.DefineOption("baseline-integrity-only", ref checkBaselineIntegrityOnly, "Validate the integrity of the baseline by checking for missing or extraneous data");
-            CheckBaselineIntegrityOnly = checkBaselineIntegrityOnly;
-
-            bool skipBaselineIntegrityCheck = false;
-            syntax.DefineOption("skip-baseline-integrity", ref skipBaselineIntegrityCheck, "Skip validation of missing or extraneous data");
-            SkipBaselineIntegrityCheck = skipBaselineIntegrityCheck;
+            string mode = ImageSizeValidationMode.All.ToString().ToLowerInvariant();
+            syntax.DefineOption("mode", ref mode, "Mode of validation. Options: all (default), size, integrity");
+            Mode = (ImageSizeValidationMode)Enum.Parse(typeof(ImageSizeValidationMode), mode, ignoreCase: true);
         }
+    }
+
+    [Flags]
+    public enum ImageSizeValidationMode
+    {
+        All = Size | Integrity,
+        Size = 1,
+        Integrity = 2
     }
 }

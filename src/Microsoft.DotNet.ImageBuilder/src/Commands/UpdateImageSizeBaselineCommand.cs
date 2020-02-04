@@ -76,6 +76,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             loggerService.WriteSubheading($"Updating `{Options.BaselinePath}`");
             string formattedJson = json.ToString();
+            if (File.Exists(Options.BaselinePath))
+            {
+                formattedJson = formattedJson.NormalizeLineEndings(File.ReadAllText(Options.BaselinePath));
+            }
+
             loggerService.WriteMessage(formattedJson);
             File.WriteAllText(Options.BaselinePath, formattedJson);
         }

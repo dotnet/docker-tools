@@ -207,7 +207,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             // retrieve an image size. Image sizes should not be retrieved when we're only validating baseline integrity.
             bool localImagesExist = false;
 
-            TestContext testContext = new TestContext(imageSizes, AllowedVariance, checkBaselineIntegrityOnly: true,
+            TestContext testContext = new TestContext(imageSizes, AllowedVariance, validationMode: ImageSizeValidationMode.Integrity,
                 localImagesExist: localImagesExist);
             ValidateImageSizeCommand command = await testContext.RunTestAsync();
 
@@ -225,10 +225,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies the validation skips checking for missing or extraneous baseline data.
+        /// Verifies that the validation only checks size differences.
         /// </summary>
         [Fact]
-        public async Task SkipBaselineIntegrityCheck()
+        public async Task SizeOnlyValidationCheck()
         {
             // Specifying null for the actual size prevents the image from being defined in the manifest. But since
             // a baseline size is defined, it'll end up in the baseline file. This is the scenario that we want to
@@ -242,7 +242,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new ImageSizeData(SdkRepo, SdkRelativeDir, SdkTag, 5, 5)
             };
 
-            TestContext testContext = new TestContext(imageSizes, skipBaselineIntegrityCheck: true);
+            TestContext testContext = new TestContext(imageSizes, validationMode: ImageSizeValidationMode.Size);
             ValidateImageSizeCommand command = await testContext.RunTestAsync();
 
             testContext.Verify(isValidationErrorExpected: false);
@@ -262,18 +262,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             private readonly IEnumerable<ImageSizeData> imageSizes;
             private readonly int? allowedVariance;
-            private readonly bool skipBaselineIntegrityCheck;
+            private readonly ImageSizeValidationMode validationMode;
             private readonly bool localImagesExist;
-            private readonly bool checkBaselineIntegrityOnly;
             private readonly Mock<IEnvironmentService> environmentServiceMock;
 
-            public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null, bool? checkBaselineIntegrityOnly = false,
-                bool? skipBaselineIntegrityCheck = false, bool? localImagesExist = true)
+            public TestContext(IEnumerable<ImageSizeData> imageSizes, int? allowedVariance = null,
+                ImageSizeValidationMode validationMode = ImageSizeValidationMode.All, bool? localImagesExist = true)
             {
                 this.imageSizes = imageSizes;
                 this.allowedVariance = allowedVariance;
-                this.checkBaselineIntegrityOnly = checkBaselineIntegrityOnly == true;
-                this.skipBaselineIntegrityCheck = skipBaselineIntegrityCheck == true;
+                this.validationMode = validationMode;
                 this.localImagesExist = localImagesExist == true;
                 this.environmentServiceMock = new Mock<IEnvironmentService>();
             }
@@ -300,8 +298,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.BaselinePath = baselinePath;
                 command.Options.AllowedVariance = this.allowedVariance ?? 0;
-                command.Options.CheckBaselineIntegrityOnly = this.checkBaselineIntegrityOnly;
-                command.Options.SkipBaselineIntegrityCheck = this.skipBaselineIntegrityCheck;
+                command.Options.Mode = this.validationMode;
                 command.Options.IsPullEnabled = false;
 
                 // Use the image size data defined by the test to generate a manifest file

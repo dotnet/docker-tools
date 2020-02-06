@@ -98,8 +98,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest")
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest"))
                     }
                 }
             };
@@ -110,6 +110,110 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 await context.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new Dictionary<Subscription, IList<string>>
+                {
+                    {
+                        subscriptions[0],
+                        new List<string>
+                        {
+                            dockerfile1Path
+                        }
+                    }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
+        /// Verifies the correct path arguments are passed to the queued build for a multi-stage
+        /// Dockerfile scenario involving one image that has changed.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_MultiStage_SingleDigestChanged()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
+
+            RepoData[] imageInfoData = new RepoData[]
+            {
+                new RepoData
+                {
+                    Repo = repo1,
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            dockerfile1Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { "base1", "base1digest" },
+                                    { "base2", "base2digest-diff" }
+                                }
+                            }
+                        },
+                        {
+                            dockerfile2Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { "base2", "base2digest-diff" },
+                                    { "base3", "base3digest" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription(repo1)
+            };
+
+            Dictionary<Subscription, Manifest> subscriptionManifests =
+                new Dictionary<Subscription, Manifest>
+            {
+                {
+                    subscriptions[0],
+                    ManifestHelper.CreateManifest(
+                        ManifestHelper.CreateRepo(
+                            repo1,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
+                }
+            };
+
+            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitRepo, List<DockerfileInfo>>
+            {
+                {
+                    subscriptions[0].RepoInfo,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(
+                            dockerfile1Path, 
+                            new FromImageInfo("base1", "base1digest"),
+                            new FromImageInfo("base2", "base2digest")),
+                        new DockerfileInfo(
+                            dockerfile2Path, 
+                            new FromImageInfo("base2", "base2digest"), 
+                            new FromImageInfo("base3", "base3digest"))
+                    }
+                }
+            };
+
+            using (TestContext context =
+                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                // The base image of the final stage has changed for only one of the images.
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
                 {
@@ -168,9 +272,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest"),
-                        new DockerfileInfo(dockerfile3Path, "base3", "base3digest")
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest")),
+                        new DockerfileInfo(dockerfile3Path, new FromImageInfo("base3", "base3digest"))
                     }
                 }
             };
@@ -243,9 +347,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest"),
-                        new DockerfileInfo(dockerfile3Path, "base3", "base3digest")
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest")),
+                        new DockerfileInfo(dockerfile3Path, new FromImageInfo("base3", "base3digest"))
                     }
                 }
             };
@@ -309,8 +413,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest")
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest"))
                     }
                 }
             };
@@ -445,15 +549,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest")
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest"))
                     }
                 },
                 {
                     subscriptions[1].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest"),
-                        new DockerfileInfo(dockerfile3Path, "base3", "base3digest")
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest")),
+                        new DockerfileInfo(dockerfile3Path, new FromImageInfo("base3", "base3digest"))
                     }
                 }
             };
@@ -555,8 +659,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, baseImage, baseImageDigest),
-                        new DockerfileInfo(dockerfile2Path, baseImage, baseImageDigest)
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo(baseImage, baseImageDigest)),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo(baseImage, baseImageDigest))
                     }
                 }
             };
@@ -647,7 +751,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, baseImage, baseImageDigest)
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo(baseImage, baseImageDigest))
                     }
                 }
             };
@@ -780,11 +884,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(runtimeDepsDockerfilePath, baseImage, baseImageDigest),
-                        new DockerfileInfo(runtimeDockerfilePath, null, null, hasInternalFrom: true),
-                        new DockerfileInfo(sdkDockerfilePath, null, null, hasInternalFrom: true),
-                        new DockerfileInfo(aspnetDockerfilePath, null, null, hasInternalFrom: true),
-                        new DockerfileInfo(otherDockerfilePath, otherImage, otherImageDigest)
+                        new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
                     }
                 }
             };
@@ -881,8 +985,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base1", "base1digest"),
-                        new DockerfileInfo(dockerfile2Path, "base2", "base2digest")
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest"))
                     }
                 }
             };
@@ -964,7 +1068,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptions[0].RepoInfo,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, "base2", "base2digest"),
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base2", "base2digest")),
                     }
                 }
             };
@@ -1077,11 +1181,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
 
                 // Cache image digests lookup
-                foreach (DockerfileInfo dockerfileInfo in dockerfileInfos.Values.SelectMany(info => info))
+                foreach (FromImageInfo fromImage in 
+                    dockerfileInfos.Values.SelectMany(infos => infos).SelectMany(info => info.FromImages))
                 {
-                    if (dockerfileInfo.ImageName != null)
+                    if (fromImage.Name != null)
                     {
-                        this.imageDigests[dockerfileInfo.ImageName] = dockerfileInfo.ImageDigest;
+                        this.imageDigests[fromImage.Name] = fromImage.Digest;
                     }
                 }
 
@@ -1264,20 +1369,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="destinationPath">Folder path to store the Dockerfile.</param>
             private static void GenerateDockerfile(DockerfileInfo dockerfileInfo, string destinationPath)
             {
-                string dockerfileContents;
-                if (dockerfileInfo.HasInternalFrom)
+                string dockerfileContents = string.Empty;
+
+                foreach (FromImageInfo fromImage in dockerfileInfo.FromImages)
                 {
-                    dockerfileContents = $"FROM $REPO:{dockerfileInfo.ImageName}";
-                }
-                else
-                {
-                    dockerfileContents = $"FROM {dockerfileInfo.ImageName}";
+                    string repo = string.Empty;
+                    if (fromImage.IsInternal)
+                    {
+                        repo = "$REPO:";
+                    }
+
+                    dockerfileContents += $"FROM {repo}{fromImage.Name}{Environment.NewLine}";
                 }
 
                 string dockerfilePath = Directory.CreateDirectory(
                     Path.Combine(destinationPath, Path.GetDirectoryName(dockerfileInfo.DockerfilePath))).FullName;
 
-                File.WriteAllText(Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
+                File.WriteAllText(
+                    Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
             }
 
             private Mock<IDockerService> CreateDockerServiceMock()
@@ -1337,18 +1446,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class DockerfileInfo
         {
-            public DockerfileInfo(string dockerfilePath, string imageName, string imageDigest, bool hasInternalFrom = false)
+            public DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
             {
                 this.DockerfilePath = dockerfilePath;
-                this.ImageName = imageName;
-                this.ImageDigest = imageDigest;
-                this.HasInternalFrom = hasInternalFrom;
+                this.FromImages = fromImages;
             }
 
             public string DockerfilePath { get; }
-            public string ImageName { get; }
-            public string ImageDigest { get; }
-            public bool HasInternalFrom { get; }
+            public FromImageInfo[] FromImages { get; }
+        }
+
+        private class FromImageInfo
+        {
+            public FromImageInfo (string name, string digest, bool isInternal = false)
+            {
+                Name = name;
+                Digest = digest;
+                IsInternal = isInternal;
+            }
+
+            public string Digest { get; }
+            public bool IsInternal { get; }
+            public string Name { get; }
         }
 
         private class PagedList<T> : List<T>, IPagedList<T>

@@ -97,6 +97,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return Enumerable.Empty<string>();
             }
 
+            this.loggerService.WriteMessage($"Processing subscription:  {subscription.Id}");
+
             RepoData[] repos = await GetImageInfoForSubscriptionAsync(subscription);
 
             string repoPath = await GetGitRepoPath(subscription);
@@ -126,38 +128,36 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         repoData.Images != null &&
                         repoData.Images.TryGetValue(platform.DockerfilePathRelativeToManifest, out ImageData imageData))
                     {
-                        bool hasDigestChanged = false;
+                        string fromImage = platform.ExternalFromImages.Last();
+                        string currentDigest;
 
-                        foreach (string fromImage in platform.ExternalFromImages)
+                        await this.imageDigestsSemaphore.WaitAsync();
+                        try
                         {
-                            string currentDigest;
-
-                            await this.imageDigestsSemaphore.WaitAsync();
-                            try
+                            if (!this.imageDigests.TryGetValue(fromImage, out currentDigest))
                             {
-                                if (!this.imageDigests.TryGetValue(fromImage, out currentDigest))
-                                {
-                                    this.dockerService.PullImage(fromImage, Options.IsDryRun);
-                                    currentDigest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
-                                    this.imageDigests.Add(fromImage, currentDigest);
-                                }
-                            }
-                            finally
-                            {
-                                this.imageDigestsSemaphore.Release();
-                            }
-
-                            string lastDigest = null;
-                            imageData.BaseImages?.TryGetValue(fromImage, out lastDigest);
-
-                            if (lastDigest != currentDigest)
-                            {
-                                hasDigestChanged = true;
-                                break;
+                                this.dockerService.PullImage(fromImage, Options.IsDryRun);
+                                currentDigest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
+                                this.imageDigests.Add(fromImage, currentDigest);
                             }
                         }
+                        finally
+                        {
+                            this.imageDigestsSemaphore.Release();
+                        }
 
-                        if (hasDigestChanged)
+                        string lastDigest = null;
+                        imageData.BaseImages?.TryGetValue(fromImage, out lastDigest);
+
+                        bool rebuildImage = lastDigest != currentDigest;
+
+                        this.loggerService.WriteMessage(
+                            $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
+                            + $"\tLast build digest:    {lastDigest}{Environment.NewLine}"
+                            + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
+                            + $"\tImage is up-to-date:  {rebuildImage}{Environment.NewLine}");
+
+                        if (rebuildImage)
                         {
                             IEnumerable<PlatformInfo> dependentPlatforms = platform.GetDependencyGraph(allPlatforms);
                             pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));

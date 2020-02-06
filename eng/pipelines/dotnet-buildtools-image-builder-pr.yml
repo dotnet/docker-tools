@@ -1,5 +1,10 @@
 pr:
-- master
+  branches:
+    include:
+    - master
+  paths:
+    include:
+    - src/*
 
 trigger: none
 

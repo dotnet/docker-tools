@@ -26,6 +26,12 @@ param(
     [string]$ServicePrincipalTenant
 )
 
+function IsExpired {
+    param ([datetime] $LastUpdateTime)
+
+    return $LastUpdateTime.AddDays(30) -lt (Get-Date)
+}
+
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
@@ -55,10 +61,7 @@ foreach ($repoName in $filteredRepos) {
     $repo = az acr repository show --name $RegistryName --repository $repoName | ConvertFrom-Json
 
     if (-not $repoName.StartsWith("public/")) {
-        $lastUpdateTime = [datetime]$repo.lastUpdateTime
-
-        # If the repo was last updated more than X days ago, delete it
-        if ($lastUpdateTime.AddDays(30) -lt (Get-Date)) {
+        if (IsExpired([datetime]$repo.lastUpdateTime)) {
             Write-Host "Deleting repository '$repoName'"
             if (-not $WhatIf) {
                 az acr repository delete --name $RegistryName --repository $repoName -y
@@ -69,18 +72,20 @@ foreach ($repoName in $filteredRepos) {
     }
     else {
         Write-Host "Querying manifests"
-        $manifests = az acr repository show-manifests --name $RegistryName --repository $repoName | ConvertFrom-Json
+        $manifests = az acr repository show-manifests --name $RegistryName --repository $repoName --detail | ConvertFrom-Json
 
         # Delete all of the untagged images
-        $untaggedImages = $manifests | Where-Object { $_.tags.Count -eq 0 }
+        $untaggedImages = $manifests | Where-Object { $_.PSObject.Properties["tags"] -eq $null -or $_.tags.Count -eq 0 }
         foreach ($untaggedImage in $untaggedImages) {
-            $imageId = "$repoName@$($untaggedImage.digest)"
-            Write-Host "Deleting image '$imageId'"
-            if (-not $WhatIf) {
-                az acr repository delete --name $RegistryName --image $imageId -y
-            }
+            if (IsExpired([datetime]$untaggedImage.lastUpdateTime)) {
+                $imageId = "$repoName@$($untaggedImage.digest)"
+                Write-Host "Deleting image '$imageId'"
+                if (-not $WhatIf) {
+                    az acr repository delete --name $RegistryName --image $imageId -y
+                }
 
-            $deletedImages += $imageId
+                $deletedImages += $imageId
+            }
         }
     }
 

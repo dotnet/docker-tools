@@ -59,5 +59,10 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             return DockerHelper.GetImageSize(image, isDryRun);
         }
+
+        public DateTime GetCreatedDate(string image, bool isDryRun)
+        {
+            return DateTime.Parse(DockerHelper.GetCreatedDate(image, isDryRun));
+        }
     }
 }

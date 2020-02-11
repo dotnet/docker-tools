@@ -31,8 +31,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     // Find the last FROM image that's an external image. This is not the same as the last
                     // ExternalFromImage because that could be the first FROM listed in the Dockerfile which is
                     // not what we want.
-                    string finalFromImage = platform.FromImages.Last();
-                    return platform.IsInternalFromImage(finalFromImage) ? null : finalFromImage;
+                    return platform.IsInternalFromImage(platform.FinalStageFromImage) ?
+                        null : platform.FinalStageFromImage;
                 })
                 .Where(image => image != null)
                 .Distinct()

@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
         public string DockerfilePathRelativeToManifest { get; private set; }
-        public IEnumerable<string> FromImages { get; private set; }
+        public string FinalStageFromImage { get; private set; }
         public IEnumerable<string> ExternalFromImages { get; private set; }
         public IEnumerable<string> InternalFromImages { get; private set; }
         public Platform Model { get; private set; }
@@ -109,17 +109,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 throw new InvalidOperationException($"Unable to find a FROM image in {DockerfilePath}.");
             }
 
-            FromImages = fromMatches
+            IEnumerable<string> fromImages = fromMatches
                 .Select(match => match.Groups[FromImageMatchName].Value)
                 .Select(from => SubstituteOverriddenRepo(from))
                 .Select(from => SubstituteBuildArgs(from))
                 .Where(from => !IsStageReference(from, fromMatches))
                 .ToArray();
 
-            InternalFromImages = FromImages
+            FinalStageFromImage = fromImages.Last();
+
+            InternalFromImages = fromImages
                 .Where(from => IsInternalFromImage(from))
                 .ToArray();
-            ExternalFromImages = FromImages
+            ExternalFromImages = fromImages
                 .Except(InternalFromImages)
                 .ToArray();
         }

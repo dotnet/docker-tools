@@ -12,11 +12,28 @@ param(
 
     # Architecture to filter Dockerfiles to
     [string]
-    $Architecture = "*"
+    $Architecture = "*",
+
+    # A value indicating whether to run the script continously
+    [switch]
+    $Continuous
 )
 
 Set-StrictMode -Version Latest
 
-$imageBuilderArgs = "getBaseImageStatus --manifest $Manifest --architecture $Architecture"
+function RunCommand() {
+    $imageBuilderArgs = "getBaseImageStatus --manifest $Manifest --architecture $Architecture"
+    & "$PSScriptRoot/Invoke-ImageBuilder.ps1" -ImageBuilderArgs $imageBuilderArgs
+}
 
-& "$PSScriptRoot/Invoke-ImageBuilder.ps1" -ImageBuilderArgs $imageBuilderArgs
+if ($Continuous) {
+    while ($true) {
+        RunCommand
+
+        # Pause before continuing so the user can scan through the results
+        Start-Sleep -s 10
+    }
+}
+else {
+    RunCommand
+}

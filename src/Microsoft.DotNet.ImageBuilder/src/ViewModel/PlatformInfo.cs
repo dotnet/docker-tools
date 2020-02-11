@@ -23,11 +23,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private readonly string baseDirectory;
         private List<string> _overriddenFromImages;
+        private IEnumerable<string> internalRepos;
 
         public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
         public string DockerfilePathRelativeToManifest { get; private set; }
+        public string FinalStageFromImage { get; private set; }
         public IEnumerable<string> ExternalFromImages { get; private set; }
         public IEnumerable<string> InternalFromImages { get; private set; }
         public Platform Model { get; private set; }
@@ -68,8 +70,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public void Initialize(IEnumerable<string> internalRepos, string registry)
         {
+            this.internalRepos = internalRepos;
             InitializeBuildArgs();
-            InitializeFromImages(internalRepos);
+            InitializeFromImages();
 
             CustomLegGroupings = this.Model.CustomBuildLegGrouping
                 .Select(grouping =>
@@ -94,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
         }
 
-        private void InitializeFromImages(IEnumerable<string> internalRepos)
+        private void InitializeFromImages()
         {
             _overriddenFromImages = new List<string>();
 
@@ -113,12 +116,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Where(from => !IsStageReference(from, fromMatches))
                 .ToArray();
 
+            FinalStageFromImage = fromImages.Last();
+
             InternalFromImages = fromImages
-                .Where(from => internalRepos.Any(repo => from.StartsWith($"{repo}:")))
+                .Where(from => IsInternalFromImage(from))
                 .ToArray();
             ExternalFromImages = fromImages
                 .Except(InternalFromImages)
                 .ToArray();
+        }
+
+        public bool IsInternalFromImage(string fromImage)
+        {
+            return this.internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
         }
 
         private static bool IsStageReference(string fromImage, IList<Match> fromMatches)

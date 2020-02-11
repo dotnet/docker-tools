@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         repoData.Images != null &&
                         repoData.Images.TryGetValue(platform.DockerfilePathRelativeToManifest, out ImageData imageData))
                     {
-                        string fromImage = platform.ExternalFromImages.Last();
+                        string fromImage = platform.FinalStageFromImage;
                         string currentDigest;
 
                         await this.imageDigestsSemaphore.WaitAsync();

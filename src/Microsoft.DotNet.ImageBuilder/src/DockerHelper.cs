@@ -118,6 +118,12 @@ namespace Microsoft.DotNet.ImageBuilder
             DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
         }
 
+        public static string GetCreatedDate(string image, bool isDryRun)
+        {
+            return ExecuteCommandWithFormat(
+                "inspect", ".Created", "Failed to retrieve created date", image, isDryRun);
+        }
+
         private static OS GetOS()
         {
             string osString = ExecuteCommandWithFormat("version", ".Server.Os", "Failed to detect Docker OS");

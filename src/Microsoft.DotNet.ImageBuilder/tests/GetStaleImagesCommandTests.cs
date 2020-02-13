@@ -1095,6 +1095,90 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that a Dockerfile with only an internal FROM should not be considered stale.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_InternalFromOnly()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
+
+            RepoData[] imageInfoData = new RepoData[]
+            {
+                new RepoData
+                {
+                    Repo = repo1,
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            dockerfile1Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>()
+                            }
+                        },
+                        {
+                            dockerfile2Path,
+                            new ImageData
+                            {
+                                BaseImages = new SortedDictionary<string, string>
+                                {
+                                    { "base1", "base1digest" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription(repo1)
+            };
+
+            Dictionary<Subscription, Manifest> subscriptionManifests =
+                new Dictionary<Subscription, Manifest>
+            {
+                {
+                    subscriptions[0],
+                    ManifestHelper.CreateManifest(
+                        ManifestHelper.CreateRepo(
+                            repo1,
+                            ManifestHelper.CreateImage(
+                                CreatePlatformWithRepoBuildArg(dockerfile1Path, $"{repo1}:tag2", new string[] { "tag1" })),
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
+                }
+            };
+
+            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitRepo, List<DockerfileInfo>>
+            {
+                {
+                    subscriptions[0].RepoInfo,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base1", "base1digest"))
+                    }
+                }
+            };
+
+            using (TestContext context =
+                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                // No paths are expected
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new Dictionary<Subscription, IList<string>>();
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
         /// Use this method to generate a unique repo owner name for the tests. This ensures that each test
         /// uses a different name and prevents collisions when running the tests in parallel. This is because
         /// the <see cref="GetStaleImagesCommand"/> generates temp folders partially based on the name of

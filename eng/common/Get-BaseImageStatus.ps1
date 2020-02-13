@@ -16,24 +16,18 @@ param(
 
     # A value indicating whether to run the script continously
     [switch]
-    $Continuous
+    $Continuous,
+
+    # Number of seconds to wait between each iteration
+    [int]
+    $ContinuousDelay = 10
 )
 
 Set-StrictMode -Version Latest
 
-function RunCommand() {
-    $imageBuilderArgs = "getBaseImageStatus --manifest $Manifest --architecture $Architecture"
-    & "$PSScriptRoot/Invoke-ImageBuilder.ps1" -ImageBuilderArgs $imageBuilderArgs
-}
-
+$imageBuilderArgs = "getBaseImageStatus --manifest $Manifest --architecture $Architecture"
 if ($Continuous) {
-    while ($true) {
-        RunCommand
+    $imageBuilderArgs += " --continuous --continuous-delay $ContinuousDelay"
+}
 
-        # Pause before continuing so the user can scan through the results
-        Start-Sleep -s 10
-    }
-}
-else {
-    RunCommand
-}
+& "$PSScriptRoot/Invoke-ImageBuilder.ps1" -ImageBuilderArgs $imageBuilderArgs

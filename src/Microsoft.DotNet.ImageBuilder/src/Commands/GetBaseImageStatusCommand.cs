@@ -23,7 +23,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
+        {
+            if (Options.ContinuousMode)
+            {
+                while (true)
+                {
+                    CheckStatus();
+                    await Task.Delay(Options.ContinuousModeDelay);
+                }
+            }
+            else
+            {
+                CheckStatus();
+            }
+        }
+
+        private void CheckStatus()
         {
             IEnumerable<string> imageTags = Manifest.GetFilteredPlatforms()
                 .Select(platform =>
@@ -70,8 +86,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 this.loggerService.WriteMessage($"Created {days}{timeDiff.Minutes} minutes ago");
                 this.loggerService.WriteMessage();
             }
-
-            return Task.CompletedTask;
         }
     }
 }

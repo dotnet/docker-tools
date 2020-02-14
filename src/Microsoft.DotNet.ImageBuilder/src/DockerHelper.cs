@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 ProcessStartInfo startInfo = new ProcessStartInfo(
                     "docker", $"login -u {username} --password-stdin {server}");
                 startInfo.RedirectStandardInput = true;
-                ExecuteHelper.Execute(
+                ExecuteHelper.ExecuteWithRetry(
                     startInfo,
                     info =>
                     {
@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             else
             {
-                ExecuteHelper.Execute(
+                ExecuteHelper.ExecuteWithRetry(
                     "docker",
                     $"login -u {username} -p {password} {server}",
                     isDryRun,

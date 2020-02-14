@@ -45,6 +45,22 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
+        public static Process ExecuteWithRetry(
+            ProcessStartInfo info,
+            Func<ProcessStartInfo, Process> executor,
+            bool isDryRun,
+            string errorMessage = null,
+            string executeMessageOverride = null)
+        {
+            return Execute(
+                info,
+                startInfo => ExecuteWithRetry(startInfo, executor),
+                isDryRun,
+                errorMessage,
+                executeMessageOverride
+            );
+        }
+
         public static Process Execute(
             ProcessStartInfo info,
             Func<ProcessStartInfo, Process> executor,

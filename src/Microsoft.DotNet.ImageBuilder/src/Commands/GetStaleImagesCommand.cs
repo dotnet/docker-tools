@@ -117,7 +117,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (RepoInfo repo in manifest.FilteredRepos)
             {
                 IEnumerable<PlatformInfo> platforms = repo.FilteredImages
-                    .SelectMany(image => image.FilteredPlatforms);
+                    .SelectMany(image => image.FilteredPlatforms)
+                    .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
                 RepoData repoData = repos
                     .FirstOrDefault(s => s.Repo == repo.Model.Name);
@@ -155,7 +156,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
                             + $"\tLast build digest:    {lastDigest}{Environment.NewLine}"
                             + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
-                            + $"\tImage is up-to-date:  {rebuildImage}{Environment.NewLine}");
+                            + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");
 
                         if (rebuildImage)
                         {

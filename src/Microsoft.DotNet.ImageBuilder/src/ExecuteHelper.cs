@@ -89,6 +89,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 if (process.ExitCode != 0)
                 {
                     string exceptionMsg = errorMessage ?? $"Failed to execute {info.FileName} {info.Arguments}";
+                    exceptionMsg += $"{Environment.NewLine}{Environment.NewLine}{process.StandardError.ReadToEnd().Trim()}";
+
                     throw new InvalidOperationException(exceptionMsg);
                 }
             }

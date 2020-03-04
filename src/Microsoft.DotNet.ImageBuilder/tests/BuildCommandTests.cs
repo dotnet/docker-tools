@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Returns(Architecture.AMD64);
 
                 dockerServiceMock
-                    .Setup(o => o.PushImage($"{repoName}:{tag}", false))
+                    .Setup(o => o.GetImageDigest($"{repoName}:{tag}", false))
                     .Returns(digest);
 
                 dockerServiceMock

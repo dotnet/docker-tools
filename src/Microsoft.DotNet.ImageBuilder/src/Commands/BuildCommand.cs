@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
         private readonly IDockerService dockerService;
-        private readonly List<RepoData> reposList = new List<RepoData>();
+        private readonly List<RepoData> repoList = new List<RepoData>();
 
         private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
         
@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
             {
-                string imageInfoString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
+                string imageInfoString = JsonHelper.SerializeObject(repoList.OrderBy(r => r.Repo).ToArray());
                 File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
             }
 
@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Model.Name
                 };
-                reposList.Add(repoData);
+                repoList.Add(repoData);
 
                 SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
 
@@ -121,6 +121,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         imageData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
+                            .ToList();
+                        imageData.FullyQualifiedSimpleTags = imageData.SimpleTags
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.Name, tag))
                             .ToList();
                     }
                 }
@@ -270,37 +273,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ExecuteWithUser(() =>
                 {
-                    var imagesToPush = this.reposList
+                    var imagesToPush = this.repoList
                         .Where(repoData => repoData.Images != null)
-                        .Select(repoData => new
-                        {
-                            Repo = repoData,
-                            RepoInfo = this.Manifest.GetRepoByModelName(repoData.Repo)
-                        })
-                        .SelectMany(repoData =>
-                            repoData.Repo.Images
-                                .Select(image => new
-                                {
-                                    Image = image.Value,
-                                    FullyQualifiedSimpleTags = image.Value.SimpleTags
-                                        .Select(tag => TagInfo.GetFullyQualifiedName(repoData.RepoInfo.Name, tag))
-                                }));
+                        .SelectMany(repoData => repoData.Images.Values);
 
                     foreach (var image in imagesToPush)
                     {
                         foreach (string tag in image.FullyQualifiedSimpleTags)
                         {
-                            // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
-                            string digest = this.dockerService.PushImage(tag, Options.IsDryRun);
-                            if (image.Image.Digest != null && image.Image.Digest != digest)
-                            {
-                                // Pushing the same image with different tags should result in the same digest being output
-                                Logger.WriteError(
-                                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Image.Digest}'.");
-                                Environment.Exit(1);
-                            }
+                            
+                            this.dockerService.PushImage(tag, Options.IsDryRun);
 
-                            image.Image.Digest = digest;
+                            // Only bother getting the image digest if we're going to output the image info
+                            if (!String.IsNullOrEmpty(this.Options.ImageInfoOutputPath))
+                            {
+                                // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
+                                string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
+
+                                if (image.Digest != null && image.Digest != digest)
+                                {
+                                    // Pushing the same image with different tags should result in the same digest being output
+                                    Logger.WriteError(
+                                        $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Digest}'.");
+                                    Environment.Exit(1);
+                                }
+
+                                image.Digest = digest;
+                            }
                         }
                     }
                 });

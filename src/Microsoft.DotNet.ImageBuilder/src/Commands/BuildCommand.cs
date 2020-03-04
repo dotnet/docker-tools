@@ -140,7 +140,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (string fromImage in platform.ExternalFromImages)
             {
                 string digest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
-                baseImageDigestMappings[fromImage] = digest;
+                if (digest != null)
+                {
+                    baseImageDigestMappings[fromImage] = digest;
+                }
             }
 
             return baseImageDigestMappings;

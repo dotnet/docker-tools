@@ -39,8 +39,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetImageDigest(string image, bool isDryRun)
         {
-            return ExecuteCommandWithFormat(
-                "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
+            try
+            {
+                return ExecuteCommandWithFormat(
+                    "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
+            }
+            // A digest will not exist for images that have been built locally or have been manually installed
+            catch (InvalidOperationException e) when (e.Message.Contains("error calling index: index out of range: 0"))
+            {
+                return null;
+            }
         }
 
         public static long GetImageSize(string image, bool isDryRun)
@@ -195,6 +203,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ProcessStartInfo startInfo = new ProcessStartInfo("docker", $"{command} {additionalArgs}");
             startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
             Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
             return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
         }

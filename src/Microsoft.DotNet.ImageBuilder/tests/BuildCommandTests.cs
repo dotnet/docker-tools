@@ -25,7 +25,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task BuildCommand_ImageInfoOutput_Basic()
         {
             const string repoName = "runtime";
-            const string digest = "sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
+            const string sha = "sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
+            string digest = $"{repoName}@{sha}";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
@@ -46,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetImageDigest(baseImageTag, false))
                     .Returns(baseImageDigest);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object);
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
@@ -78,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 $"{runtimeRelativeDir}/Dockerfile",
                                 new ImageData
                                 {
-                                    Digest = digest,
+                                    Digest = sha,
                                     BaseImages = new SortedDictionary<string, string>
                                     {
                                         { baseImageTag, baseImageDigest }
@@ -112,8 +113,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock
                     .SetupGet(o => o.Architecture)
                     .Returns(Architecture.AMD64);
+                const string digest = "runtime@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest("runtime:runtime", false))
+                    .Returns(digest);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object);
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 

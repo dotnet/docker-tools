@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         public List<string> SimpleTags { get; set; } = new List<string>();
 
         [JsonIgnore]
-        public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
+        public IEnumerable<string> AllTags { get; set; }
 
         public string Digest;
     }

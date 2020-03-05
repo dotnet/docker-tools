@@ -298,7 +298,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .Where(repoData => repoData.Images != null)
             .SelectMany(repoData => repoData.Images.Values);
 
-        private IEnumerable<string> GetBuildTags() =>
+        private IEnumerable<string> GetBuiltTags() =>
             GetBuiltImages().SelectMany(image => image.AllTags);
 
         private void PushImages()
@@ -309,7 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ExecuteWithUser(() =>
                 {
-                    foreach (string tag in GetBuildTags())
+                    foreach (string tag in GetBuiltTags())
                     {
                         this.dockerService.PushImage(tag, Options.IsDryRun);
                     }
@@ -358,7 +358,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteHeading("IMAGES BUILT");
 
-            IEnumerable<string> builtTags = GetBuildTags();
+            IEnumerable<string> builtTags = GetBuiltTags();
 
             if (builtTags.Any())
             {

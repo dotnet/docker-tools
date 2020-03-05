@@ -4,7 +4,7 @@ parameters:
 jobs:
 - job: Initialize
   pool:
-    name: Hosted Windows Container
+    name: Hosted Ubuntu 1604
   steps:
   - powershell: write-host "##vso[task.setvariable variable=timestamp;isOutput=true]$(Get-Date -Format yyyyMMddHHmmss)"
     displayName: Define Timestamp Variable

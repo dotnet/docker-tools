@@ -58,13 +58,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            var pushedImages = this.repoList
-                .Where(repoData => repoData.Images != null)
-                .SelectMany(repoData => repoData.Images.Values);
-
-            foreach (var image in pushedImages)
+            foreach (var image in GetBuiltImages())
             {
-                foreach (string tag in image.AllTags)
+                foreach (string tag in image.FullyQualifiedSimpleTags)
                 {
                     // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
                     // It is output in the form of <repo>@<sha> but we only want the sha.
@@ -155,6 +151,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         imageData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
+                            .ToList();
+                        imageData.FullyQualifiedSimpleTags = imageData.SimpleTags
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.Name, tag))
                             .ToList();
                         imageData.AllTags = allTags;
                     }

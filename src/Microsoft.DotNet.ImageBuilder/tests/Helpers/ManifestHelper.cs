@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
@@ -32,11 +33,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
-        public static Image CreateImage(params Platform[] platforms)
+        public static Image CreateImage(params Platform[] platforms) =>
+            CreateImage(platforms, (IDictionary<string, Tag>)null);
+
+        public static Image CreateImage(Platform[] platforms, IDictionary<string, Tag> sharedTags)
         {
             return new Image
             {
-                Platforms = platforms
+                Platforms = platforms,
+                SharedTags = sharedTags
             };
         }
 

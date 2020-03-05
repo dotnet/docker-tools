@@ -29,24 +29,15 @@ namespace Microsoft.DotNet.ImageBuilder
             return Execute(info, ExecuteProcess, isDryRun, errorMessage, executeMessageOverride);
         }
 
-        public static Process ExecuteWithRetry(
+        public static void ExecuteWithRetry(
             string fileName,
             string args,
             bool isDryRun,
             string errorMessage = null,
             string executeMessageOverride = null)
         {
-            return ExecuteWithRetry(new ProcessStartInfo(fileName, args), isDryRun, errorMessage, executeMessageOverride);
-        }
-
-        public static Process ExecuteWithRetry(
-            ProcessStartInfo info,
-            bool isDryRun,
-            string errorMessage = null,
-            string executeMessageOverride = null)
-        {
-            return Execute(
-                info,
+            Execute(
+                new ProcessStartInfo(fileName, args),
                 info => ExecuteWithRetry(info, ExecuteProcess),
                 isDryRun,
                 errorMessage,

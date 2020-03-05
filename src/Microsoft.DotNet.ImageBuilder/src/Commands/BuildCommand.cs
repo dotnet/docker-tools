@@ -23,13 +23,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class BuildCommand : DockerRegistryCommand<BuildOptions>
     {
         private readonly IDockerService dockerService;
-
-        private IEnumerable<TagInfo> BuiltTags { get; set; } = Enumerable.Empty<TagInfo>();
+        private readonly ILoggerService loggerService;
+        private readonly IEnvironmentService environmentService;
+        private readonly List<RepoData> repoList = new List<RepoData>();
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService)
         {
             this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
         public override Task ExecuteAsync()
@@ -37,21 +40,52 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PullBaseImages();
             BuildImages();
 
-            if (BuiltTags.Any())
+            if (GetBuiltImages().Any())
             {
                 PushImages();
             }
 
+            PublishImageInfo();
             WriteBuildSummary();
 
             return Task.CompletedTask;
         }
 
+        private void PublishImageInfo()
+        {
+            if (String.IsNullOrEmpty(Options.ImageInfoOutputPath))
+            {
+                return;
+            }
+
+            foreach (var image in GetBuiltImages())
+            {
+                foreach (string tag in image.FullyQualifiedSimpleTags)
+                {
+                    // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
+                    // It is output in the form of <repo>@<sha> but we only want the sha.
+                    string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
+                    digest = digest.Substring(digest.IndexOf("@") + 1);
+
+                    if (image.Digest != null && image.Digest != digest)
+                    {
+                        // Pushing the same image with different tags should result in the same digest being output
+                        this.loggerService.WriteError(
+                            $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Digest}'.");
+                        this.environmentService.Exit(1);
+                    }
+
+                    image.Digest = digest;
+                }
+            }
+
+            string imageInfoString = JsonHelper.SerializeObject(repoList.OrderBy(r => r.Repo).ToArray());
+            File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
+        }
+
         private void BuildImages()
         {
-            Logger.WriteHeading("BUILDING IMAGES");
-
-            List<RepoData> reposList = new List<RepoData>();
+            this.loggerService.WriteHeading("BUILDING IMAGES");
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
@@ -59,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Model.Name
                 };
-                reposList.Add(repoData);
+                repoList.Add(repoData);
 
                 SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
 
@@ -72,15 +106,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
+                        IEnumerable<string> allTags;
+
                         try
                         {
                             InvokeBuildHook("pre-build", platform.BuildContextPath);
 
                             // Tag the built images with the shared tags as well as the platform tags.
                             // Some tests and image FROM instructions depend on these tags.
-                            IEnumerable<string> allTags = platform.Tags
+                            allTags = platform.Tags
                                 .Concat(image.SharedTags)
-                                .Select(tag => tag.FullyQualifiedName);
+                                .Select(tag => tag.FullyQualifiedName)
+                                .ToList();
 
                             this.dockerService.BuildImage(
                                 dockerfilePath,
@@ -96,7 +133,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             }
 
                             InvokeBuildHook("post-build", platform.BuildContextPath);
-                            BuiltTags = BuiltTags.Concat(platform.Tags);
                         }
                         finally
                         {
@@ -116,6 +152,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
+                        imageData.FullyQualifiedSimpleTags = imageData.SimpleTags
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.Name, tag))
+                            .ToList();
+                        imageData.AllTags = allTags;
                     }
                 }
 
@@ -123,14 +163,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     repoData.Images = images;
                 }
-            }
-
-            BuiltTags = BuiltTags.ToArray();
-
-            if (!String.IsNullOrEmpty(Options.ImageInfoOutputPath))
-            {
-                string digestsString = JsonHelper.SerializeObject(reposList.OrderBy(r => r.Repo).ToArray());
-                File.WriteAllText(Options.ImageInfoOutputPath, digestsString);
             }
         }
 
@@ -265,17 +297,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
+        private IEnumerable<ImageData> GetBuiltImages() => this.repoList
+            .Where(repoData => repoData.Images != null)
+            .SelectMany(repoData => repoData.Images.Values);
+
+        private IEnumerable<string> GetBuiltTags() =>
+            GetBuiltImages().SelectMany(image => image.AllTags);
+
         private void PushImages()
         {
             if (Options.IsPushEnabled)
             {
-                Logger.WriteHeading("PUSHING IMAGES");
+                this.loggerService.WriteHeading("PUSHING IMAGES");
 
                 ExecuteWithUser(() =>
                 {
-                    IEnumerable<string> pushTags = GetPushTags(BuiltTags)
-                        .Select(tag => tag.FullyQualifiedName);
-                    foreach (string tag in pushTags)
+                    foreach (string tag in GetBuiltTags())
                     {
                         this.dockerService.PushImage(tag, Options.IsDryRun);
                     }
@@ -301,7 +338,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
-                    Logger.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    this.loggerService.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
                     dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
                     updateDockerfile = true;
@@ -311,8 +348,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // Don't overwrite the original dockerfile - write it to a new path.
                     dockerfilePath += ".temp";
-                    Logger.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
-                    Logger.WriteMessage(dockerfileContents);
+                    this.loggerService.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
+                    this.loggerService.WriteMessage(dockerfileContents);
                     File.WriteAllText(dockerfilePath, dockerfileContents);
                 }
             }
@@ -322,21 +359,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteBuildSummary()
         {
-            Logger.WriteHeading("IMAGES BUILT");
+            this.loggerService.WriteHeading("IMAGES BUILT");
 
-            if (BuiltTags.Any())
+            IEnumerable<string> builtTags = GetBuiltTags();
+
+            if (builtTags.Any())
             {
-                foreach (string tag in BuiltTags.Select(tag => tag.FullyQualifiedName))
+                foreach (string tag in builtTags)
                 {
-                    Logger.WriteMessage(tag);
+                    this.loggerService.WriteMessage(tag);
                 }
             }
             else
             {
-                Logger.WriteMessage("No images built");
+                this.loggerService.WriteMessage("No images built");
             }
 
-            Logger.WriteMessage();
+            this.loggerService.WriteMessage();
         }
     }
 }

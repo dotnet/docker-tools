@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -41,7 +42,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 throw new ArgumentException("Object types don't match.", nameof(targetObj));
             }
 
-            foreach (PropertyInfo property in srcObj.GetType().GetProperties())
+            IEnumerable<PropertyInfo> properties = srcObj.GetType().GetProperties()
+                .Where(property => property.GetCustomAttribute<JsonIgnoreAttribute>() == null);
+
+            foreach (PropertyInfo property in properties)
             {
                 if (property.PropertyType == typeof(string))
                 {

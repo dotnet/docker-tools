@@ -159,5 +159,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             return AllRepos.FirstOrDefault(repo => repo.Id == id);
         }
+
+        public RepoInfo GetRepoByModelName(string name)
+        {
+            return AllRepos.FirstOrDefault(repo => repo.Model.Name == name);
+        }
     }
 }

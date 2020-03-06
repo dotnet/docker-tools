@@ -21,6 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonIgnore]
         public IEnumerable<string> AllTags { get; set; }
 
-        public string Digest;
+        public string Digest { get; set; }
     }
 }

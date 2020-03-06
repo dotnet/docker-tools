@@ -11,6 +11,46 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class ImageInfoHelperTests
     {
         [Fact]
+        public void ImageInfoHelper_MergeRepos_ImageDigest()
+        {
+            RepoData[] repoDataSet = new RepoData[]
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            "image1",
+                            new ImageData
+                            {
+                                Digest = "digest"
+                            }
+                        }
+                    }
+                }
+            };
+
+            List<RepoData> targetRepos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = "repo",
+                    Images = new SortedDictionary<string, ImageData>
+                    {
+                        {
+                            "image1",
+                            new ImageData()
+                        }
+                    }
+                }
+            };
+
+            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos);
+            CompareRepos(repoDataSet, targetRepos);
+        }
+
+        [Fact]
         public void ImageInfoHelper_MergeRepos_EmptyTarget()
         {
             RepoData[] repoDataSet = new RepoData[]

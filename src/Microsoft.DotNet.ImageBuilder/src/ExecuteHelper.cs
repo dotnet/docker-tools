@@ -68,6 +68,8 @@ namespace Microsoft.DotNet.ImageBuilder
             string errorMessage = null,
             string executeMessageOverride = null)
         {
+            info.RedirectStandardError = true;
+
             Process process = null;
 
             if (executeMessageOverride == null)

@@ -6,9 +6,9 @@
 
 [cmdletbinding()]
 param(
-    [string]$VersionFilter,
-    [string]$ArchitectureFilter,
-    [string]$OSFilter,
+    [string]$Version,
+    [string]$Architecture,
+    [string]$OS,
     [string]$Registry,
     [string]$RepoPrefix,
     [switch]$DisableHttpVerification,

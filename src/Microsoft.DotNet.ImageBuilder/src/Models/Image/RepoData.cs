@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Image
@@ -13,7 +12,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonProperty(Required = Required.Always)]
         public string Repo { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public SortedDictionary<string, ImageData> Images { get; set; }
+        public List<ImageData> Images { get; set; } = new List<ImageData>();
     }
 }

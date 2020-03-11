@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class MergeImageInfoOptions : Options
+    public class MergeImageInfoOptions : ManifestOptions
     {
         protected override string CommandHelp => "Merges the content of multiple image info files into one file";
 

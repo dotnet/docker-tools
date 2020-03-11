@@ -3,24 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class ImageData
     {
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public SortedDictionary<string, string> BaseImages { get; set; }
+        public SortedDictionary<string, PlatformData> Platforms { get; set; } =
+            new SortedDictionary<string, PlatformData>();
 
-        public List<string> SimpleTags { get; set; } = new List<string>();
-
+        /// <summary>
+        /// Gets or sets a reference to the corresponding image definition in the manifest.
+        /// </summary>
         [JsonIgnore]
-        public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
-
-        [JsonIgnore]
-        public IEnumerable<string> AllTags { get; set; }
-
-        public string Digest { get; set; }
+        public ImageInfo ManifestImage { get; set; }
     }
 }

@@ -5,15 +5,58 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
+        public static RepoData[] LoadFromContent(string imageInfoContent, ManifestInfo manifest)
+        {
+            RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(imageInfoContent);
+
+            foreach (RepoData repoData in repos)
+            {
+                RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Model.Name == repoData.Repo);
+                if (manifestRepo == null)
+                {
+                    continue;
+                }
+                foreach (ImageData imageData in repoData.Images)
+                {
+                    // A given Dockerfile path is unique to an image. Take one of those Dockerfile paths
+                    // from the platform of the image info model and find the manifest image that contains
+                    // that same Dockerfile path.
+                    string dockerfilePath = imageData.Platforms.FirstOrDefault().Key;
+                    if (dockerfilePath != null)
+                    {
+                        foreach (ImageInfo manifestImage in manifestRepo.AllImages)
+                        {
+                            PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms.FirstOrDefault(platform =>
+                                platform.DockerfilePathRelativeToManifest.Equals(dockerfilePath, StringComparison.OrdinalIgnoreCase));
+                            if (matchingManifestPlatform != null)
+                            {
+                                imageData.ManifestImage = manifestImage;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
+            return repos;
+        }
+
+        public static RepoData[] LoadFromFile(string path, ManifestInfo manifest)
+        {
+            return LoadFromContent(File.ReadAllText(path), manifest);
+        }
+
         public static void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos, ImageInfoMergeOptions options = null)
         {
             if (options == null)
@@ -57,8 +100,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
-                    if (srcObj is ImageData &&
-                        property.Name == nameof(ImageData.SimpleTags) &&
+                    if (srcObj is PlatformData &&
+                        property.Name == nameof(PlatformData.SimpleTags) &&
                         options.ReplaceTags)
                     {
                         // SimpleTags can be merged or replaced depending on the scenario.
@@ -78,8 +121,12 @@ namespace Microsoft.DotNet.ImageBuilder
                     }
                     else
                     {
-                        MergeLists(property, srcObj, targetObj);
+                        MergeStringLists(property, srcObj, targetObj);
                     }
+                }
+                else if (typeof(IList<ImageData>).IsAssignableFrom(property.PropertyType))
+                {
+                    MergeImageDataLists(property, srcObj, targetObj, options);
                 }
                 else
                 {
@@ -91,7 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj) =>
             property.SetValue(targetObj, property.GetValue(srcObj));
 
-        private static void MergeLists(PropertyInfo property, object srcObj, object targetObj)
+        private static void MergeStringLists(PropertyInfo property, object srcObj, object targetObj)
         {
             IList<string> srcList = (IList<string>)property.GetValue(srcObj);
             if (srcList == null)
@@ -109,6 +156,44 @@ namespace Microsoft.DotNet.ImageBuilder
                         .Union(srcList)
                         .OrderBy(element => element)
                         .ToList();
+                }
+                else
+                {
+                    targetList = srcList;
+                }
+
+                property.SetValue(targetObj, targetList);
+            }
+        }
+
+        private static void MergeImageDataLists(PropertyInfo property, object srcObj, object targetObj, ImageInfoMergeOptions options)
+        {
+            IList<ImageData> srcList = (IList<ImageData>)property.GetValue(srcObj);
+            if (srcList == null)
+            {
+                return;
+            }
+
+            IList<ImageData> targetList = (IList<ImageData>)property.GetValue(targetObj);
+
+            if (srcList.Any())
+            {
+                if (targetList?.Any() == true)
+                {
+                    foreach (ImageData srcImage in srcList)
+                    {
+                        // Find the target image that corresponds to the source by finding the matching manifest image reference.
+                        ImageData matchingTargetImage = targetList
+                            .FirstOrDefault(targetImage => srcImage.ManifestImage == targetImage.ManifestImage);
+                        if (matchingTargetImage != null)
+                        {
+                            MergeData(srcImage, matchingTargetImage, options);
+                        }
+                        else
+                        {
+                            targetList.Add(srcImage);
+                        }
+                    }
                 }
                 else
                 {

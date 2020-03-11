@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -18,13 +19,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                Digest = "digest"
+                                {
+                                    "image1",
+                                    new PlatformData
+                                    {
+                                        Digest = "digest"
+                                    }
+                                }
                             }
                         }
                     }
@@ -36,11 +43,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData()
+                            Platforms = new SortedDictionary<string, PlatformData>
+                            {
+                                {
+                                    "image1",
+                                    new PlatformData()
+                                }
+                            }
                         }
                     }
                 }
@@ -62,11 +75,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData()
+                            Platforms = new SortedDictionary<string, PlatformData>
+                            {
+                                {
+                                    "image1",
+                                    new PlatformData()
+                                }
+                            }
                         }
                     }
                 }
@@ -81,43 +100,55 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_ExistingTarget()
         {
-            ImageData repo2Image1;
-            ImageData repo2Image2;
-            ImageData repo2Image3;
-            ImageData repo3Image1;
+            PlatformData repo2Image1;
+            PlatformData repo2Image2;
+            PlatformData repo2Image3;
+            PlatformData repo3Image1;
 
             RepoData[] repoDataSet = new RepoData[]
             {
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            repo2Image1 = new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                BaseImages = new SortedDictionary<string, string>
                                 {
-                                    { "base1", "base1digest-NEW" }
+                                    "image1",
+                                    repo2Image1 = new PlatformData
+                                    {
+                                        BaseImages = new SortedDictionary<string, string>
+                                        {
+                                            { "base1", "base1digest-NEW" }
+                                        }
+                                    }
+                                }
+                                ,
+                                {
+                                    "image3",
+                                    repo2Image3 = new PlatformData()
                                 }
                             }
-                        }
-                        ,
-                        {
-                            "image3",
-                            repo2Image3 = new ImageData()
                         }
                     }
                 },
                 new RepoData
                 {
                     Repo = "repo3",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            repo3Image1 = new ImageData()
+                            Platforms = new SortedDictionary<string, PlatformData>
+                            {
+                                {
+                                    "image1",
+                                    repo3Image1 = new PlatformData()
+                                }
+                            }
                         }
                     }
                 },
@@ -136,25 +167,31 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                BaseImages = new SortedDictionary<string, string>
                                 {
-                                    { "base1", "base1digest" }
-                                }
-                            }
-                        },
-                        {
-                            "image2",
-                            repo2Image2 = new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
+                                    "image1",
+                                    new PlatformData
+                                    {
+                                        BaseImages = new SortedDictionary<string, string>
+                                        {
+                                            { "base1", "base1digest" }
+                                        }
+                                    }
+                                },
                                 {
-                                    { "base2", "base2digest" }
+                                    "image2",
+                                    repo2Image2 = new PlatformData
+                                    {
+                                        BaseImages = new SortedDictionary<string, string>
+                                        {
+                                            { "base2", "base2digest" }
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -177,30 +214,42 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo2",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            repo2Image1
-                        },
-                        {
-                            "image2",
-                            repo2Image2
-                        },
-                        {
-                            "image3",
-                            repo2Image3
+                            Platforms = new SortedDictionary<string, PlatformData>
+                            {
+                                {
+                                    "image1",
+                                    repo2Image1
+                                },
+                                {
+                                    "image2",
+                                    repo2Image2
+                                },
+                                {
+                                    "image3",
+                                    repo2Image3
+                                }
+                            }
                         }
                     }
                 },
                 new RepoData
                 {
                     Repo = "repo3",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            repo3Image1
+                            Platforms = new SortedDictionary<string, PlatformData>
+                            {
+                                {
+                                    "image1",
+                                    repo3Image1
+                                }
+                            }
                         }
                     }
                 },
@@ -219,24 +268,30 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_MergeTags()
         {
-            ImageData srcImage1;
-            ImageData targetImage2;
+            PlatformData srcImage1;
+            PlatformData targetImage2;
 
             RepoData[] repoDataSet = new RepoData[]
             {
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            srcImage1 = new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                SimpleTags =
                                 {
-                                    "tag1",
-                                    "tag3"
+                                    "image1",
+                                    srcImage1 = new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag3"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -249,27 +304,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                SimpleTags =
                                 {
-                                    "tag1",
-                                    "tag2",
-                                    "tag4"
-                                }
-                            }
-                        },
-                        {
-                            "image2",
-                            targetImage2 = new ImageData
-                            {
-                                SimpleTags =
+                                    "image1",
+                                    new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag2",
+                                            "tag4"
+                                        }
+                                    }
+                                },
                                 {
-                                    "a"
+                                    "image2",
+                                    targetImage2 = new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "a"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -284,24 +345,30 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                SimpleTags =
                                 {
-                                    "tag1",
-                                    "tag2",
-                                    "tag3",
-                                    "tag4"
+                                    "image1",
+                                    new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag2",
+                                            "tag3",
+                                            "tag4"
+                                        }
+                                    }
+                                },
+                                {
+                                    "image2",
+                                    targetImage2
                                 }
                             }
-                        },
-                        {
-                            "image2",
-                            targetImage2
                         }
                     }
                 }
@@ -318,24 +385,30 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_RemoveTag()
         {
-            ImageData srcImage1;
-            ImageData targetImage2;
+            PlatformData srcImage1;
+            PlatformData targetImage2;
 
             RepoData[] repoDataSet = new RepoData[]
             {
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            srcImage1 = new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                SimpleTags =
                                 {
-                                    "tag1",
-                                    "tag3"
+                                    "image1",
+                                    srcImage1 = new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag3"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -348,27 +421,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            new ImageData
+                            Platforms = new SortedDictionary<string, PlatformData>
                             {
-                                SimpleTags =
                                 {
-                                    "tag1",
-                                    "tag2",
-                                    "tag4"
-                                }
-                            }
-                        },
-                        {
-                            "image2",
-                            targetImage2 = new ImageData
-                            {
-                                SimpleTags =
+                                    "image1",
+                                    new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag2",
+                                            "tag4"
+                                        }
+                                    }
+                                },
                                 {
-                                    "a"
+                                    "image2",
+                                    targetImage2 = new PlatformData
+                                    {
+                                        SimpleTags =
+                                        {
+                                            "a"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -388,15 +467,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 new RepoData
                 {
                     Repo = "repo1",
-                    Images = new SortedDictionary<string, ImageData>
+                    Images = new List<ImageData>
                     {
+                        new ImageData
                         {
-                            "image1",
-                            srcImage1
-                        },
-                        {
-                            "image2",
-                            targetImage2
+                            Platforms = new SortedDictionary<string, PlatformData>
+                            {
+                                {
+                                    "image1",
+                                    srcImage1
+                                },
+                                {
+                                    "image2",
+                                    targetImage2
+                                }
+                            }
                         }
                     }
                 }

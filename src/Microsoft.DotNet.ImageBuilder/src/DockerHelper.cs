@@ -75,13 +75,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 startInfo.RedirectStandardInput = true;
                 ExecuteHelper.ExecuteWithRetry(
                     startInfo,
-                    info =>
+                    process =>
                     {
-                        Process process = Process.Start(info);
                         process.StandardInput.WriteLine(password);
                         process.StandardInput.Close();
-                        process.WaitForExit();
-                        return process;
                     },
                     isDryRun);
             }
@@ -201,11 +198,8 @@ namespace Microsoft.DotNet.ImageBuilder
         private static string ExecuteCommand(
             string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo("docker", $"{command} {additionalArgs}");
-            startInfo.RedirectStandardOutput = true;
-            startInfo.RedirectStandardError = true;
-            Process process = ExecuteHelper.Execute(startInfo, isDryRun, errorMessage);
-            return isDryRun ? "" : process.StandardOutput.ReadToEnd().Trim();
+            string output = ExecuteHelper.Execute("docker", $"{command} {additionalArgs}", isDryRun, errorMessage);
+            return isDryRun ? "" : output;
         }
 
         private static string ExecuteCommandWithFormat(

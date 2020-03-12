@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -23,11 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder
         public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
             string format = useFullHash ? "H" : "h";
-            ProcessStartInfo startInfo = new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}");
-            startInfo.RedirectStandardOutput = true;
-            Process gitLogProcess = ExecuteHelper.Execute(
-                startInfo, false, $"Unable to retrieve the latest commit SHA for {filePath}");
-            return gitLogProcess.StandardOutput.ReadToEnd().Trim();
+            return ExecuteHelper.Execute(
+                "git",
+                $"log -1 --format=format:%{format} {filePath}",
+                false,
+                $"Unable to retrieve the latest commit SHA for {filePath}");
         }
 
         public static Uri GetArchiveUrl(GitRepo gitRepo)

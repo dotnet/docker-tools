@@ -107,7 +107,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     foreach (ImageData imageData in repoData.Images)
                     {
-                        if (imageData.Platforms.TryGetValue(platform.DockerfilePathRelativeToManifest, out PlatformData platformData))
+                        PlatformData platformData = imageData.Platforms
+                            .FirstOrDefault(platformData => platformData.Path == platform.DockerfilePathRelativeToManifest);
+                        if (platformData != null)
                         {
                             destTagNames = platformData.SimpleTags
                                 .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));

@@ -131,6 +131,74 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return this.internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
         }
 
+        public string GetOSDisplayName()
+        {
+            string displayName;
+            string os = Model.OsVersion;
+            Logger.WriteMessage($"os: {os}");
+            Logger.WriteMessage($"osType: {Model.OS}");
+
+            if (Model.OS == OS.Windows)
+            {
+                if (os.Contains("2016"))
+                {
+                    displayName = "Windows Server 2016";
+                }
+                else if (os.Contains("2019") || os.Contains("1809"))
+                {
+                    displayName = "Windows Server 2019";
+                }
+                else
+                {
+                    string version = os.Split('-')[1];
+                    displayName = $"Windows Server, version {version}";
+                }
+            }
+            else
+            {
+                if (os.Contains("jessie"))
+                {
+                    displayName = "Debian 8";
+                }
+                else if (os.Contains("stretch"))
+                {
+                    displayName = "Debian 9";
+                }
+                else if (os.Contains("buster"))
+                {
+                    displayName = "Debian 10";
+                }
+                else if (os.Contains("bionic"))
+                {
+                    displayName = "Ubuntu 18.04";
+                }
+                else if (os.Contains("disco"))
+                {
+                    displayName = "Ubuntu 19.04";
+                }
+                else if (os.Contains("focal"))
+                {
+                    displayName = "Ubuntu 20.04";
+                }
+                else if (os.Contains("alpine"))
+                {
+                    int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
+                    if (versionIndex != -1)
+                    {
+                        os = os.Insert(versionIndex, " ");
+                    }
+
+                    displayName = os.FirstCharToUpper();
+                }
+                else
+                {
+                    throw new InvalidOperationException($"The OS version '{os}' is not supported.");
+                }
+            }
+
+            return displayName;
+        }
+
         private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
         {
             bool isStageReference = false;

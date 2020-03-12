@@ -102,8 +102,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
-                        PlatformData platformData = new PlatformData();
-                        imageData.Platforms.Add(platform.DockerfilePathRelativeToManifest, platformData);
+                        PlatformData platformData = new PlatformData
+                        {
+                            Path = platform.DockerfilePathRelativeToManifest,
+                            Architecture = platform.Model.Architecture.GetDisplayName(),
+                            OsType = platform.Model.OS.ToString(),
+                            OsVersion = platform.GetOSDisplayName()
+                        };
+
+                        imageData.Platforms.Add(platformData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -296,7 +303,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<PlatformData> GetBuiltPlatforms() => this.repoList
             .Where(repoData => repoData.Images != null)
             .SelectMany(repoData => repoData.Images)
-            .SelectMany(imageData => imageData.Platforms.Values);
+            .SelectMany(imageData => imageData.Platforms);
 
         private IEnumerable<string> GetBuiltTags() =>
             GetBuiltPlatforms().SelectMany(image => image.AllTags);

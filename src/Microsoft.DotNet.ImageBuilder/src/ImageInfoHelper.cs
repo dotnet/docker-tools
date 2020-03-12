@@ -32,11 +32,13 @@ namespace Microsoft.DotNet.ImageBuilder
                     // A given Dockerfile path is unique to an image. Take one of those Dockerfile paths
                     // from the platform of the image info model and find the manifest image that contains
                     // that same Dockerfile path.
-                    string dockerfilePath = imageData.Platforms.FirstOrDefault().Key;
+                    string dockerfilePath = imageData.Platforms.FirstOrDefault()?.Path;
                     if (dockerfilePath != null)
                     {
                         foreach (ImageInfo manifestImage in manifestRepo.AllImages)
                         {
+                            // This assumes that the manifest will never have two platforms with the same Dockerfile path contained
+                            // in different images, which logically should never happen.
                             PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms.FirstOrDefault(platform =>
                                 platform.DockerfilePathRelativeToManifest.Equals(dockerfilePath, StringComparison.OrdinalIgnoreCase));
                             if (matchingManifestPlatform != null)
@@ -126,7 +128,11 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<ImageData>).IsAssignableFrom(property.PropertyType))
                 {
-                    MergeImageDataLists(property, srcObj, targetObj, options);
+                    MergeLists<ImageData>(property, srcObj, targetObj, options);
+                }
+                else if (typeof(IList<PlatformData>).IsAssignableFrom(property.PropertyType))
+                {
+                    MergeLists<PlatformData>(property, srcObj, targetObj, options);
                 }
                 else
                 {
@@ -166,32 +172,32 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static void MergeImageDataLists(PropertyInfo property, object srcObj, object targetObj, ImageInfoMergeOptions options)
+        private static void MergeLists<T>(PropertyInfo property, object srcObj, object targetObj, ImageInfoMergeOptions options)
+            where T : IComparable<T>
         {
-            IList<ImageData> srcList = (IList<ImageData>)property.GetValue(srcObj);
+            IList<T> srcList = (IList<T>)property.GetValue(srcObj);
             if (srcList == null)
             {
                 return;
             }
 
-            IList<ImageData> targetList = (IList<ImageData>)property.GetValue(targetObj);
+            IList<T> targetList = (IList<T>)property.GetValue(targetObj);
 
             if (srcList.Any())
             {
                 if (targetList?.Any() == true)
                 {
-                    foreach (ImageData srcImage in srcList)
+                    foreach (T srcItem in srcList)
                     {
-                        // Find the target image that corresponds to the source by finding the matching manifest image reference.
-                        ImageData matchingTargetImage = targetList
-                            .FirstOrDefault(targetImage => srcImage.ManifestImage == targetImage.ManifestImage);
-                        if (matchingTargetImage != null)
+                        T matchingTargetItem = targetList
+                            .FirstOrDefault(targetItem => srcItem.CompareTo(targetItem) == 0);
+                        if (matchingTargetItem != null)
                         {
-                            MergeData(srcImage, matchingTargetImage, options);
+                            MergeData(srcItem, matchingTargetItem, options);
                         }
                         else
                         {
-                            targetList.Add(srcImage);
+                            targetList.Add(srcItem);
                         }
                     }
                 }
@@ -200,7 +206,10 @@ namespace Microsoft.DotNet.ImageBuilder
                     targetList = srcList;
                 }
 
-                property.SetValue(targetObj, targetList);
+                List<T> sortedList = targetList.ToList();
+                sortedList.Sort();
+
+                property.SetValue(targetObj, sortedList);
             }
         }
 

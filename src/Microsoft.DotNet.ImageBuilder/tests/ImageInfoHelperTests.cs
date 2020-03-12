@@ -23,14 +23,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
+                                new PlatformData
                                 {
-                                    "image1",
-                                    new PlatformData
-                                    {
-                                        Digest = "digest"
-                                    }
+                                    Path = "image1",
+                                    Digest = "digest"
                                 }
                             }
                         }
@@ -47,11 +45,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
+                                new PlatformData
                                 {
-                                    "image1",
-                                    new PlatformData()
+                                    Path = "image1"
                                 }
                             }
                         }
@@ -79,11 +77,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
+                                new PlatformData
                                 {
-                                    "image1",
-                                    new PlatformData()
+                                    Path = "image1"
                                 }
                             }
                         }
@@ -114,22 +112,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
                                 {
-                                    "image1",
                                     repo2Image1 = new PlatformData
                                     {
+                                        Path = "image1",
                                         BaseImages = new SortedDictionary<string, string>
                                         {
                                             { "base1", "base1digest-NEW" }
                                         }
                                     }
-                                }
-                                ,
+                                },
                                 {
-                                    "image3",
-                                    repo2Image3 = new PlatformData()
+                                    repo2Image3  = new PlatformData
+                                    {
+                                        Path = "image3"
+                                    }
                                 }
                             }
                         }
@@ -142,11 +141,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
                                 {
-                                    "image1",
-                                    repo3Image1 = new PlatformData()
+                                    repo3Image1 = new PlatformData
+                                    {
+                                        Path = "image1"
+                                    }
                                 }
                             }
                         }
@@ -171,22 +172,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
+                                new PlatformData
                                 {
-                                    "image1",
-                                    new PlatformData
+                                    Path = "image1",
+                                    BaseImages = new SortedDictionary<string, string>
                                     {
-                                        BaseImages = new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest" }
-                                        }
+                                        { "base1", "base1digest" }
                                     }
                                 },
                                 {
-                                    "image2",
                                     repo2Image2 = new PlatformData
                                     {
+                                        Path = "image2",
                                         BaseImages = new SortedDictionary<string, string>
                                         {
                                             { "base2", "base2digest" }
@@ -218,20 +217,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
-                                {
-                                    "image1",
-                                    repo2Image1
-                                },
-                                {
-                                    "image2",
-                                    repo2Image2
-                                },
-                                {
-                                    "image3",
-                                    repo2Image3
-                                }
+                                repo2Image1,
+                                repo2Image2,
+                                repo2Image3
                             }
                         }
                     }
@@ -243,12 +233,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
-                                {
-                                    "image1",
-                                    repo3Image1
-                                }
+                                repo3Image1
                             }
                         }
                     }
@@ -280,12 +267,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
                                 {
-                                    "image1",
                                     srcImage1 = new PlatformData
                                     {
+                                        Path = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
@@ -308,24 +295,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
+                                new PlatformData
                                 {
-                                    "image1",
-                                    new PlatformData
+                                    Path = "image1",
+                                    SimpleTags =
                                     {
-                                        SimpleTags =
-                                        {
-                                            "tag1",
-                                            "tag2",
-                                            "tag4"
-                                        }
+                                        "tag1",
+                                        "tag2",
+                                        "tag4"
                                     }
                                 },
                                 {
-                                    "image2",
                                     targetImage2 = new PlatformData
                                     {
+                                        Path = "image2",
                                         SimpleTags =
                                         {
                                             "a"
@@ -349,25 +334,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
+                                new PlatformData
                                 {
-                                    "image1",
-                                    new PlatformData
+                                    Path = "image1",
+                                    SimpleTags =
                                     {
-                                        SimpleTags =
-                                        {
-                                            "tag1",
-                                            "tag2",
-                                            "tag3",
-                                            "tag4"
-                                        }
+                                        "tag1",
+                                        "tag2",
+                                        "tag3",
+                                        "tag4"
                                     }
                                 },
-                                {
-                                    "image2",
-                                    targetImage2
-                                }
+                                targetImage2
                             }
                         }
                     }
@@ -397,12 +377,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
                                 {
-                                    "image1",
                                     srcImage1 = new PlatformData
                                     {
+                                        Path = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
@@ -425,12 +405,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
                                 {
-                                    "image1",
                                     new PlatformData
                                     {
+                                        Path = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
@@ -440,9 +420,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     }
                                 },
                                 {
-                                    "image2",
                                     targetImage2 = new PlatformData
                                     {
+                                        Path = "image2",
                                         SimpleTags =
                                         {
                                             "a"
@@ -471,16 +451,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new ImageData
                         {
-                            Platforms = new SortedDictionary<string, PlatformData>
+                            Platforms = new List<PlatformData>
                             {
-                                {
-                                    "image1",
-                                    srcImage1
-                                },
-                                {
-                                    "image2",
-                                    targetImage2
-                                }
+                                srcImage1,
+                                targetImage2
                             }
                         }
                     }

@@ -74,17 +74,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        PathHelper.NormalizePath(dockerfileRelativePath),
-                                        new PlatformData
+                                        Path = PathHelper.NormalizePath(dockerfileRelativePath),
+                                        SimpleTags =
                                         {
-                                            SimpleTags =
-                                            {
-                                                "tag1",
-                                                "tag2"
-                                            }
+                                            "tag1",
+                                            "tag2"
                                         }
                                     }
                                 }
@@ -98,7 +96,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().Value.SimpleTags
+                IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
                     .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
                     .ToList();
 

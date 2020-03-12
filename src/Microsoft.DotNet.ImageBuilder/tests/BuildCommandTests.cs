@@ -86,21 +86,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        $"{runtimeRelativeDir}/Dockerfile",
-                                        new PlatformData
+                                        Path = $"{runtimeRelativeDir}/Dockerfile",
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = sha,
+                                        BaseImages = new SortedDictionary<string, string>
                                         {
-                                            Digest = sha,
-                                            BaseImages = new SortedDictionary<string, string>
-                                            {
-                                                { baseImageTag, baseImageDigest }
-                                            },
-                                            SimpleTags = new List<string>
-                                            {
-                                                tag
-                                            }
+                                            { baseImageTag, baseImageDigest }
+                                        },
+                                        SimpleTags = new List<string>
+                                        {
+                                            tag
                                         }
                                     }
                                 }
@@ -219,7 +220,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 await command.ExecuteAsync();
 
                 RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(command.Options.ImageInfoOutputPath));
-                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Platforms.First().Key);
+                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Platforms.First().Path);
             }
         }
     }

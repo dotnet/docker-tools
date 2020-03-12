@@ -43,27 +43,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo2Image1Dockerfile,
-                                            new PlatformData
+                                            Path = repo2Image1Dockerfile,
+                                            SimpleTags =
                                             {
-                                                SimpleTags =
-                                                {
-                                                    "tag3"
-                                                }
+                                                "tag3"
                                             }
                                         }
                                     }
                                 },
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo2Image2Dockerfile,
-                                            new PlatformData()
+                                            Path = repo2Image2Dockerfile
                                         }
                                     }
                                 }
@@ -76,16 +74,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo4Image2Dockerfile,
-                                            new PlatformData
+                                            Path = repo4Image2Dockerfile,
+                                            SimpleTags =
                                             {
-                                                SimpleTags =
-                                                {
-                                                    "tag1"
-                                                }
+                                                "tag1"
                                             }
                                         }
                                     }
@@ -102,36 +98,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo2Image1Dockerfile,
-                                            new PlatformData
+                                            Path = repo2Image1Dockerfile,
+                                            BaseImages = new SortedDictionary<string, string>
                                             {
-                                                BaseImages = new SortedDictionary<string, string>
-                                                {
-                                                    { "base1", "base1hash" }
-                                                },
-                                                SimpleTags =
-                                                {
-                                                    "tag1"
-                                                }
+                                                { "base1", "base1hash" }
+                                            },
+                                            SimpleTags =
+                                            {
+                                                "tag1"
                                             }
                                         }
                                     }
                                 },
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo2Image2Dockerfile,
-                                            new PlatformData
+                                            Path = repo2Image2Dockerfile,
+                                            SimpleTags =
                                             {
-                                                SimpleTags =
-                                                {
-                                                    "tag2"
-                                                }
+                                                "tag2"
                                             }
                                         }
                                     }
@@ -149,32 +141,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo4Image2Dockerfile,
-                                            new PlatformData
+                                            Path = repo4Image2Dockerfile,
+                                            SimpleTags =
                                             {
-                                                SimpleTags =
-                                                {
-                                                    "tag2"
-                                                }
+                                                "tag2"
                                             }
                                         }
                                     }
                                 },
                                 new ImageData
                                 {
-                                    Platforms = new SortedDictionary<string, PlatformData>
+                                    Platforms = new List<PlatformData>
                                     {
+                                        new PlatformData
                                         {
-                                            repo4Image3Dockerfile,
-                                            new PlatformData
+                                            Path = repo4Image3Dockerfile,
+                                            SimpleTags =
                                             {
-                                                SimpleTags =
-                                                {
-                                                    "tag1"
-                                                }
+                                                "tag1"
                                             }
                                         }
                                     }
@@ -229,35 +217,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        repo2Image1Dockerfile,
-                                        new PlatformData {
-                                            BaseImages = new SortedDictionary<string, string>
-                                            {
-                                                { "base1", "base1hash" }
-                                            },
-                                            SimpleTags =
-                                            {
-                                                "tag1",
-                                                "tag3"
-                                            }
+                                        Path = repo2Image1Dockerfile,
+                                        BaseImages = new SortedDictionary<string, string>
+                                        {
+                                            { "base1", "base1hash" }
+                                        },
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag3"
                                         }
                                     }
                                 }
                             },
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        repo2Image2Dockerfile,
-                                        new PlatformData {
-                                            SimpleTags =
-                                            {
-                                                "tag2"
-                                            }
+                                        Path = repo2Image2Dockerfile,
+                                        SimpleTags =
+                                        {
+                                            "tag2"
                                         }
                                     }
                                 }
@@ -275,27 +261,130 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        repo4Image2Dockerfile,
-                                        new PlatformData {
-                                            SimpleTags =
-                                            {
-                                                "tag1",
-                                                "tag2"
-                                            }
+                                        Path = repo4Image2Dockerfile,
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag2"
                                         }
                                     }
                                 }
                             },
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        repo4Image3Dockerfile,
-                                        new PlatformData {
+                                        Path = repo4Image3Dockerfile,
+                                        SimpleTags =
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                };
+
+                ImageInfoHelperTests.CompareRepos(expected, actual);
+            }
+        }
+
+        [Fact]
+        public async Task MergeImageInfoFilesCommand_DuplicateDockerfilePaths()
+        {
+            using (TempFolderContext context = TestHelper.UseTempFolder())
+            {
+                string dockerfile1 = CreateDockerfile("1.0/repo1/os1", context);
+                string dockerfile2 = CreateDockerfile("1.0/repo1/os2", context);
+
+                List<RepoData[]> repoDataSets = new List<RepoData[]>
+                {
+                    new RepoData[]
+                    {
+                        new RepoData
+                        {
+                            Repo = "repo1",
+                            Images = new List<ImageData>
+                            {
+                                new ImageData
+                                {
+                                    Platforms = new List<PlatformData>
+                                    {
+                                        new PlatformData
+                                        {
+                                            Architecture = "arm",
+                                            Digest = "digest1",
+                                            Path = dockerfile1,
+                                            SimpleTags =
+                                            {
+                                                "tag1",
+                                                "tag2"
+                                            }
+                                        },
+                                        new PlatformData
+                                        {
+                                            Architecture = "arm64",
+                                            Digest = "digest2",
+                                            Path = dockerfile1,
+                                            SimpleTags =
+                                            {
+                                                "tag2"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData[]
+                    {
+                        new RepoData
+                        {
+                            Repo = "repo1",
+                            Images = new List<ImageData>
+                            {
+                                new ImageData
+                                {
+                                    Platforms = new List<PlatformData>
+                                    {
+                                        new PlatformData
+                                        {
+                                            Architecture = "arm64",
+                                            Digest = "digest2-new",
+                                            Path = dockerfile1,
+                                            SimpleTags =
+                                            {
+                                                "tag3",
+                                                "tag2"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData[]
+                    {
+                        new RepoData
+                        {
+                            Repo = "repo1",
+                            Images = new List<ImageData>
+                            {
+                                new ImageData
+                                {
+                                    Platforms = new List<PlatformData>
+                                    {
+                                        new PlatformData
+                                        {
+                                            Digest = "digest3",
+                                            Path = dockerfile2,
                                             SimpleTags =
                                             {
                                                 "tag1"
@@ -305,7 +394,89 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 }
                             }
                         }
-                    },
+                    }
+                };
+
+                MergeImageInfoCommand command = new MergeImageInfoCommand();
+                command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
+                command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
+                command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
+
+                Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
+                for (int i = 0; i < repoDataSets.Count; i++)
+                {
+                    string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
+                    File.WriteAllText(file, JsonHelper.SerializeObject(repoDataSets[i]));
+                }
+
+                Manifest manifest = CreateManifest(
+                    CreateRepo("repo1",
+                        CreateImage(
+                            CreatePlatform(dockerfile1, new string[0]),
+                            CreatePlatform(dockerfile1, new string[0])),
+                        CreateImage(
+                            CreatePlatform(dockerfile2, new string[0])))
+                );
+                File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+                command.LoadManifest();
+                await command.ExecuteAsync();
+
+                string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+                RepoData[] actual = JsonConvert.DeserializeObject<RepoData[]>(resultsContent);
+
+                RepoData[] expected = new RepoData[]
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images = new List<ImageData>
+                        {
+                            new ImageData
+                            {
+                                Platforms = new List<PlatformData>
+                                {
+                                    new PlatformData
+                                    {
+                                        Architecture = "arm",
+                                        Digest = "digest1",
+                                        Path = dockerfile1,
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag2"
+                                        }
+                                    },
+                                    new PlatformData
+                                    {
+                                        Architecture = "arm64",
+                                        Digest = "digest2-new",
+                                        Path = dockerfile1,
+                                        SimpleTags =
+                                        {
+                                            "tag2",
+                                            "tag3"
+                                        }
+                                    }
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms = new List<PlatformData>
+                                {
+                                    new PlatformData
+                                    {
+                                        Digest = "digest3",
+                                        Path = dockerfile2,
+                                        SimpleTags =
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 };
 
                 ImageInfoHelperTests.CompareRepos(expected, actual);

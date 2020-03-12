@@ -42,16 +42,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        "image1",
-                                        new PlatformData
+                                        Path = "image1",
+                                        SimpleTags =
                                         {
-                                            SimpleTags =
-                                            {
-                                                "newtag"
-                                            }
+                                            "newtag"
                                         }
                                     }
                                 }
@@ -65,16 +63,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        "image2",
-                                        new PlatformData
+                                        Path = "image2",
+                                        SimpleTags =
                                         {
-                                            SimpleTags =
-                                            {
-                                                "tag1"
-                                            }
+                                            "tag1"
                                         }
                                     }
                                 }
@@ -95,16 +91,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        "image1",
-                                        new PlatformData
+                                        Path = "image1",
+                                        SimpleTags =
                                         {
-                                            SimpleTags =
-                                            {
-                                                "oldtag"
-                                            }
+                                            "oldtag"
                                         }
                                     }
                                 }
@@ -140,16 +134,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                Platforms = new SortedDictionary<string, PlatformData>
+                                Platforms = new List<PlatformData>
                                 {
+                                    new PlatformData
                                     {
-                                        "image1",
-                                        new PlatformData
+                                        Path = "image1",
+                                        SimpleTags =
                                         {
-                                            SimpleTags =
-                                            {
-                                                "newtag"
-                                            }
+                                            "newtag"
                                         }
                                     }
                                 }

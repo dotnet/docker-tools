@@ -29,23 +29,24 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 foreach (ImageData imageData in repoData.Images)
                 {
-                    // A given Dockerfile path is unique to an image. Take one of those Dockerfile paths
-                    // from the platform of the image info model and find the manifest image that contains
-                    // that same Dockerfile path.
-                    string dockerfilePath = imageData.Platforms.FirstOrDefault()?.Path;
-                    if (dockerfilePath != null)
+                    PlatformData platformData = imageData.Platforms.FirstOrDefault();
+                    if (platformData != null)
                     {
                         foreach (ImageInfo manifestImage in manifestRepo.AllImages)
                         {
-                            // This assumes that the manifest will never have two platforms with the same Dockerfile path contained
-                            // in different images, which logically should never happen.
-                            PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms.FirstOrDefault(platform =>
-                                platform.DockerfilePathRelativeToManifest.Equals(dockerfilePath, StringComparison.OrdinalIgnoreCase));
+                            PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms
+                                .FirstOrDefault(platform => platformData.Equals(platform));
                             if (matchingManifestPlatform != null)
                             {
                                 imageData.ManifestImage = manifestImage;
                                 break;
                             }
+                        }
+
+                        if (imageData.ManifestImage == null)
+                        {
+                            throw new InvalidOperationException(
+                                $"Unable to find matching platform in manifest for platform '{platformData.GetIdentifier()}'.");
                         }
                     }
                 }

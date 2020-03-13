@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Path = "image1",
+                                    Dockerfile = "image1",
                                     Digest = "digest"
                                 }
                             }
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Path = "image1"
+                                    Dockerfile = "image1"
                                 }
                             }
                         }
@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Path = "image1"
+                                    Dockerfile = "image1"
                                 }
                             }
                         }
@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     repo2Image1 = new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         BaseImages = new SortedDictionary<string, string>
                                         {
                                             { "base1", "base1digest-NEW" }
@@ -127,7 +127,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     repo2Image3  = new PlatformData
                                     {
-                                        Path = "image3"
+                                        Dockerfile = "image3"
                                     }
                                 }
                             }
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     repo3Image1 = new PlatformData
                                     {
-                                        Path = "image1"
+                                        Dockerfile = "image1"
                                     }
                                 }
                             }
@@ -176,7 +176,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Path = "image1",
+                                    Dockerfile = "image1",
                                     BaseImages = new SortedDictionary<string, string>
                                     {
                                         { "base1", "base1digest" }
@@ -185,7 +185,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     repo2Image2 = new PlatformData
                                     {
-                                        Path = "image2",
+                                        Dockerfile = "image2",
                                         BaseImages = new SortedDictionary<string, string>
                                         {
                                             { "base2", "base2digest" }
@@ -272,7 +272,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     srcImage1 = new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
@@ -299,7 +299,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Path = "image1",
+                                    Dockerfile = "image1",
                                     SimpleTags =
                                     {
                                         "tag1",
@@ -310,7 +310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     targetImage2 = new PlatformData
                                     {
-                                        Path = "image2",
+                                        Dockerfile = "image2",
                                         SimpleTags =
                                         {
                                             "a"
@@ -338,7 +338,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Path = "image1",
+                                    Dockerfile = "image1",
                                     SimpleTags =
                                     {
                                         "tag1",
@@ -382,7 +382,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     srcImage1 = new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
@@ -410,7 +410,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
@@ -422,7 +422,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     targetImage2 = new PlatformData
                                     {
-                                        Path = "image2",
+                                        Dockerfile = "image2",
                                         SimpleTags =
                                         {
                                             "a"

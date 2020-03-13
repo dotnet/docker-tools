@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Path = $"{runtimeRelativeDir}/Dockerfile",
+                                        Dockerfile = $"{runtimeRelativeDir}/Dockerfile",
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
@@ -220,7 +220,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 await command.ExecuteAsync();
 
                 RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(command.Options.ImageInfoOutputPath));
-                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Platforms.First().Path);
+                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Platforms.First().Dockerfile);
             }
         }
     }

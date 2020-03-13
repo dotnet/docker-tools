@@ -5,13 +5,14 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class PlatformData : IComparable<PlatformData>
     {
-        public string Path { get; set; }
+        public string Dockerfile { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public SortedDictionary<string, string> BaseImages { get; set; }
@@ -42,6 +43,22 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
             return GetIdentifier().CompareTo(other.GetIdentifier());
         }
 
-        private string GetIdentifier() => $"{Path}-{Architecture}-{OsType}-{OsVersion}";
+        public bool Equals(PlatformInfo platformInfo)
+        {
+            return GetIdentifier() == FromPlatformInfo(platformInfo).GetIdentifier();
+        }
+
+        public string GetIdentifier() => $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}";
+
+        public static PlatformData FromPlatformInfo(PlatformInfo platform)
+        {
+            return new PlatformData
+            {
+                Dockerfile = platform.DockerfilePathRelativeToManifest,
+                Architecture = platform.Model.Architecture.GetDisplayName(),
+                OsType = platform.Model.OS.ToString(),
+                OsVersion = platform.GetOSDisplayName()
+            };
+        }
     }
 }

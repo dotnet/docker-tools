@@ -33,9 +33,15 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 0;
             }
 
-            // If we're comparing two different image items, compare them by the first Platform path's to
+            // If we're comparing two different image items, compare them by the first Platform to
             // provide deterministic ordering.
-            return Platforms.FirstOrDefault()?.Path.CompareTo(other.Platforms.FirstOrDefault()?.Path) ?? 1;
+            PlatformData thisFirstPlatform = Platforms
+                .OrderBy(platform => platform)
+                .FirstOrDefault();
+            PlatformData otherFirstPlatform = other.Platforms
+                .OrderBy(platform => platform)
+                .FirstOrDefault();
+            return thisFirstPlatform?.CompareTo(otherFirstPlatform) ?? 1;
         }
     }
 }

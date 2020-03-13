@@ -20,6 +20,7 @@ using Microsoft.Rest.Azure;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -76,15 +77,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData
-                                    {
-                                        Path = PathHelper.NormalizePath(dockerfileRelativePath),
-                                        SimpleTags =
+                                    CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfileRelativePath),
+                                        simpleTags: new List<string>
                                         {
                                             "tag1",
                                             "tag2"
-                                        }
-                                    }
+                                        })
                                 }
                             }
                         }

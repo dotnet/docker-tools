@@ -102,14 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
-                        PlatformData platformData = new PlatformData
-                        {
-                            Path = platform.DockerfilePathRelativeToManifest,
-                            Architecture = platform.Model.Architecture.GetDisplayName(),
-                            OsType = platform.Model.OS.ToString(),
-                            OsVersion = platform.GetOSDisplayName()
-                        };
-
+                        PlatformData platformData = PlatformData.FromPlatformInfo(platform);
                         imageData.Platforms.Add(platformData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);

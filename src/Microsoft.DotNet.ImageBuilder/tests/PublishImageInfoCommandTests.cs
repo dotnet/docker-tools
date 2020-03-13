@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "newtag"
@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Path = "image2",
+                                        Dockerfile = "image2",
                                         SimpleTags =
                                         {
                                             "tag1"
@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "oldtag"
@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Path = "image1",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "newtag"

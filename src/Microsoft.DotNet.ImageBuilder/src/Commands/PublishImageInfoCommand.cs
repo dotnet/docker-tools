@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -15,7 +14,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishImageInfoCommand : Command<PublishImageInfoOptions>
+    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
 
@@ -27,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            RepoData[] srcRepos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
+            RepoData[] srcRepos = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {

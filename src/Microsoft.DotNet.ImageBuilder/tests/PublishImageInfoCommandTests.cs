@@ -8,10 +8,12 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Moq;
+using Newtonsoft.Json;
 using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -36,15 +38,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new RepoData
                     {
                         Repo = "repo1",
-                        Images = new SortedDictionary<string, ImageData>
+                        Images = new List<ImageData>
                         {
+                            new ImageData
                             {
-                                "image1",
-                                new ImageData
+                                Platforms = new List<PlatformData>
                                 {
-                                    SimpleTags =
+                                    new PlatformData
                                     {
-                                        "newtag"
+                                        Dockerfile = "image1",
+                                        SimpleTags =
+                                        {
+                                            "newtag"
+                                        }
                                     }
                                 }
                             }
@@ -53,15 +59,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     repo2 = new RepoData
                     {
                         Repo = "repo2",
-                        Images = new SortedDictionary<string, ImageData>
+                        Images = new List<ImageData>
                         {
+                            new ImageData
                             {
-                                "image2",
-                                new ImageData
+                                Platforms = new List<PlatformData>
                                 {
-                                    SimpleTags =
+                                    new PlatformData
                                     {
-                                        "tag1"
+                                        Dockerfile = "image2",
+                                        SimpleTags =
+                                        {
+                                            "tag1"
+                                        }
                                     }
                                 }
                             }
@@ -77,15 +87,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new RepoData
                     {
                         Repo = "repo1",
-                        Images = new SortedDictionary<string, ImageData>
+                        Images = new List<ImageData>
                         {
+                            new ImageData
                             {
-                                "image1",
-                                new ImageData
+                                Platforms = new List<PlatformData>
                                 {
-                                    SimpleTags =
+                                    new PlatformData
                                     {
-                                        "oldtag"
+                                        Dockerfile = "image1",
+                                        SimpleTags =
+                                        {
+                                            "oldtag"
+                                        }
                                     }
                                 }
                             }
@@ -103,7 +117,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions.AuthToken = "token";
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
+                Manifest manifest = ManifestHelper.CreateManifest();
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+                command.LoadManifest();
                 await command.ExecuteAsync();
 
                 RepoData[] expectedRepos = new RepoData[]
@@ -111,15 +130,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new RepoData
                     {
                         Repo = "repo1",
-                        Images = new SortedDictionary<string, ImageData>
+                        Images = new List<ImageData>
                         {
+                            new ImageData
                             {
-                                "image1",
-                                new ImageData
+                                Platforms = new List<PlatformData>
                                 {
-                                    SimpleTags =
+                                    new PlatformData
                                     {
-                                        "newtag"
+                                        Dockerfile = "image1",
+                                        SimpleTags =
+                                        {
+                                            "newtag"
+                                        }
                                     }
                                 }
                             }

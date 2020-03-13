@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent;
@@ -16,7 +15,6 @@ using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Newtonsoft.Json;
 using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -37,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 if (!String.IsNullOrEmpty(Options.ImageInfoPath))
                 {
-                    return JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
+                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
                 }
 
                 return null;
@@ -107,9 +105,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
                 if (repoData != null)
                 {
-                    if (repoData.Images.TryGetValue(platform.DockerfilePathRelativeToManifest, out ImageData image))
+                    PlatformData platformData = repoData.Images
+                        .SelectMany(image => image.Platforms)
+                        .FirstOrDefault(platformData => platformData.Dockerfile == platform.DockerfilePathRelativeToManifest);
+                    if (platformData != null)
                     {
-                        destTagNames = image.SimpleTags
+                        destTagNames = platformData.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));
                     }
                     else
@@ -124,8 +125,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     this.environmentService.Exit(1);
                 }
             }
-
-            if (destTagNames == null)
+            else
             {
                 destTagNames = platform.Tags
                     .Select(tag => tag.FullyQualifiedName);

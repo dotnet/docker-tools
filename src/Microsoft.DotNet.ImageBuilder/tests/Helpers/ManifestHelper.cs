@@ -45,7 +45,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
-        public static Platform CreatePlatform(string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco")
+        public static Platform CreatePlatform(
+            string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco", Architecture architecture = Architecture.AMD64)
         {
             return new Platform
             {
@@ -53,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 OsVersion = osVersion,
                 OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
-                Architecture = Architecture.AMD64
+                Architecture = architecture
             };
         }
     }

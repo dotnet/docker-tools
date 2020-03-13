@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PullBaseImages();
             BuildImages();
 
-            if (GetBuiltImages().Any())
+            if (GetBuiltPlatforms().Any())
             {
                 PushImages();
             }
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            foreach (var image in GetBuiltImages())
+            foreach (var image in GetBuiltPlatforms())
             {
                 foreach (string tag in image.FullyQualifiedSimpleTags)
                 {
@@ -95,14 +95,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 };
                 repoList.Add(repoData);
 
-                SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
-
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
+                    ImageData imageData = new ImageData();
+                    repoData.Images.Add(imageData);
+
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
-                        ImageData imageData = new ImageData();
-                        images.Add(platform.DockerfilePathRelativeToManifest, imageData);
+                        PlatformData platformData = PlatformData.FromPlatformInfo(platform);
+                        imageData.Platforms.Add(platformData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -145,23 +146,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         SortedDictionary<string, string> baseImageDigests = GetBaseImageDigests(platform);
                         if (baseImageDigests.Any())
                         {
-                            imageData.BaseImages = baseImageDigests;
+                            platformData.BaseImages = baseImageDigests;
                         }
 
-                        imageData.SimpleTags = GetPushTags(platform.Tags)
+                        platformData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
-                        imageData.FullyQualifiedSimpleTags = imageData.SimpleTags
+                        platformData.FullyQualifiedSimpleTags = platformData.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.Name, tag))
                             .ToList();
-                        imageData.AllTags = allTags;
+                        platformData.AllTags = allTags;
                     }
-                }
-
-                if (images.Any())
-                {
-                    repoData.Images = images;
                 }
             }
         }
@@ -297,12 +293,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<ImageData> GetBuiltImages() => this.repoList
+        private IEnumerable<PlatformData> GetBuiltPlatforms() => this.repoList
             .Where(repoData => repoData.Images != null)
-            .SelectMany(repoData => repoData.Images.Values);
+            .SelectMany(repoData => repoData.Images)
+            .SelectMany(imageData => imageData.Platforms);
 
         private IEnumerable<string> GetBuiltTags() =>
-            GetBuiltImages().SelectMany(image => image.AllTags);
+            GetBuiltPlatforms().SelectMany(image => image.AllTags);
 
         private void PushImages()
         {

@@ -20,6 +20,7 @@ using Microsoft.Rest.Azure;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -70,17 +71,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     runtimeRepo = new RepoData
                     {
                         Repo = "runtime",
-                        Images = new SortedDictionary<string, ImageData>
+                        Images = new List<ImageData>
                         {
+                            new ImageData
                             {
-                                PathHelper.NormalizePath(dockerfileRelativePath),
-                                new ImageData
+                                Platforms = new List<PlatformData>
                                 {
-                                    SimpleTags =
-                                    {
-                                        "tag1",
-                                        "tag2"
-                                    }
+                                    CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfileRelativePath),
+                                        simpleTags: new List<string>
+                                        {
+                                            "tag1",
+                                            "tag2"
+                                        })
                                 }
                             }
                         }
@@ -92,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                IList<string> expectedTags = runtimeRepo.Images.First().Value.SimpleTags
+                IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
                     .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
                     .ToList();
 

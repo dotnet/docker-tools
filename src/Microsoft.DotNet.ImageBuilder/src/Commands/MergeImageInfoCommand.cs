@@ -9,12 +9,11 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class MergeImageInfoCommand : Command<MergeImageInfoOptions>
+    public class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
     {
         public override Task ExecuteAsync()
         {
@@ -25,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<RepoData[]> srcReposList = imageInfoFiles
                 .OrderBy(file => file) // Ensure the files are ordered for testing consistency between OS's.
-                .Select(imageDataPath => JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(imageDataPath)))
+                .Select(imageDataPath => ImageInfoHelper.LoadFromFile(imageDataPath, Manifest))
                 .ToList();
 
             if (!srcReposList.Any())

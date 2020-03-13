@@ -77,74 +77,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return metadata;
         }
 
-        public static string GetOSDisplayName(PlatformInfo platform)
-        {
-            string displayName;
-            string os = platform.Model.OsVersion;
-            Logger.WriteMessage($"os: {os}");
-            Logger.WriteMessage($"osType: {platform.Model.OS}");
-
-            if (platform.Model.OS == OS.Windows)
-            {
-                if (os.Contains("2016"))
-                {
-                    displayName = "Windows Server 2016";
-                }
-                else if (os.Contains("2019") || os.Contains("1809"))
-                {
-                    displayName = "Windows Server 2019";
-                }
-                else
-                {
-                    string version = os.Split('-')[1];
-                    displayName = $"Windows Server, version {version}";
-                }
-            }
-            else
-            {
-                if (os.Contains("jessie"))
-                {
-                    displayName = "Debian 8";
-                }
-                else if (os.Contains("stretch"))
-                {
-                    displayName = "Debian 9";
-                }
-                else if (os.Contains("buster"))
-                {
-                    displayName = "Debian 10";
-                }
-                else if (os.Contains("bionic"))
-                {
-                    displayName = "Ubuntu 18.04";
-                }
-                else if (os.Contains("disco"))
-                {
-                    displayName = "Ubuntu 19.04";
-                }
-                else if (os.Contains("focal"))
-                {
-                    displayName = "Ubuntu 20.04";
-                }
-                else if (os.Contains("alpine"))
-                {
-                    int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
-                    if (versionIndex != -1)
-                    {
-                        os = os.Insert(versionIndex, " ");
-                    }
-
-                    displayName = os.FirstCharToUpper();
-                }
-                else
-                {
-                    throw new InvalidOperationException($"The OS version '{os}' is not supported.");
-                }
-            }
-
-            return displayName;
-        }
-
         private static string GetRepoYaml(RepoInfo repo)
         {
             StringBuilder yaml = new StringBuilder();
@@ -167,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder
             yaml.AppendLine($"  - tags: [ {info.FormattedDocumentedTags} ]");
             yaml.AppendLine($"    architecture: {info.Platform.Model.Architecture.GetDisplayName()}");
             yaml.AppendLine($"    os: {info.Platform.Model.OS.GetDockerName()}");
-            yaml.AppendLine($"    osVersion: {GetOSDisplayName(info.Platform)}");
+            yaml.AppendLine($"    osVersion: {info.Platform.GetOSDisplayName()}");
             yaml.Append($"    dockerfile: {dockerfilePath}");
 
             return yaml.ToString();

@@ -63,16 +63,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest-diff" }
-                                        }),
+                                        baseImageDigest: "base1digest-diff"),
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base2", "base2digest" }
-                                        })
+                                        baseImageDigest: "base2digest")
                                 }
                             }
                         }
@@ -146,18 +140,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest" },
-                                            { "base2", "base2digest-diff" }
-                                        }),
+                                        baseImageDigest: "base2digest-diff"),
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base2", "base2digest-diff" },
-                                            { "base3", "base3digest" }
-                                        })
+                                        baseImageDigest: "base3digest")
                                 }
                             }
                         }
@@ -422,10 +408,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest-diff" }
-                                        })
+                                        baseImageDigest: "base1digest-diff")
                                 }
                             }
                         }
@@ -441,10 +424,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base2", "base2digest-diff" }
-                                        })
+                                        baseImageDigest: "base2digest-diff")
                                 }
                             }
                         }
@@ -472,10 +452,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest-diff" }
-                                        })
+                                        baseImageDigest: "base1digest-diff")
                                 }
                             }
                         }
@@ -491,10 +468,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base2", "base2digest-diff" }
-                                        })
+                                        baseImageDigest: "base2digest-diff")
                                 }
                             }
                         }
@@ -510,10 +484,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile3Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base3", "base3digest" }
-                                        })
+                                        baseImageDigest: "base3digest")
                                 }
                             }
                         }
@@ -602,16 +573,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { baseImage, baseImageDigest + "-diff" }
-                                        }),
+                                        baseImageDigest: baseImageDigest + "-diff"),
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { baseImage, baseImageDigest + "-diff" }
-                                        })
+                                        baseImageDigest: baseImageDigest + "-diff")
                                 }
                             }
                         }
@@ -693,10 +658,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { baseImage, baseImageDigest }
-                                        })
+                                        baseImageDigest: baseImageDigest)
                                 }
                             }
                         }
@@ -788,10 +750,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         runtimeDepsDockerfilePath,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { baseImage, baseImageDigest + "-diff" }
-                                        })
+                                        baseImageDigest: baseImageDigest + "-diff")
                                 }
                             }
                         }
@@ -820,10 +779,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         otherDockerfilePath,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { otherImage, otherImageDigest }
-                                        })
+                                        baseImageDigest: otherImageDigest)
                                 }
                             }
                         }
@@ -903,16 +859,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest-diff" }
-                                        }),
+                                        baseImageDigest: "base1digest-diff"),
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base2", "base2digest" }
-                                        })
+                                        baseImageDigest: "base2digest")
                                 }
                             }
                         }
@@ -984,10 +934,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreatePlatform(
                                         dockerfile1Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest" }
-                                        })
+                                        baseImageDigest: "base1digest")
                                 }
                             }
                         }
@@ -1061,10 +1008,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     CreatePlatform(dockerfile1Path),
                                     CreatePlatform(
                                         dockerfile2Path,
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest" }
-                                        })
+                                        baseImageDigest: "base1digest")
                                 }
                             }
                         }

@@ -100,10 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "tag1"
                                             },
-                                            baseImages: new SortedDictionary<string, string>
-                                            {
-                                                { "base1", "base1hash" }
-                                            })
+                                            baseImageDigest: "base1hash")
                                     }
                                 },
                                 new ImageData
@@ -214,10 +211,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             "tag1",
                                             "tag3"
                                         },
-                                        baseImages: new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1hash" }
-                                        })
+                                        baseImageDigest: "base1hash")
                                 }
                             },
                             new ImageData

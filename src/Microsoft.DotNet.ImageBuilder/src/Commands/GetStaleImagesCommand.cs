@@ -177,14 +177,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         this.imageDigestsSemaphore.Release();
                     }
 
-                    string lastDigest = null;
-                    platformData.BaseImages?.TryGetValue(fromImage, out lastDigest);
-
-                    bool rebuildImage = lastDigest != currentDigest;
+                    bool rebuildImage = platformData.BaseImageDigest != currentDigest;
 
                     this.loggerService.WriteMessage(
                         $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
-                        + $"\tLast build digest:    {lastDigest}{Environment.NewLine}"
+                        + $"\tLast build digest:    {platformData.BaseImageDigest}{Environment.NewLine}"
                         + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
                         + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");
 

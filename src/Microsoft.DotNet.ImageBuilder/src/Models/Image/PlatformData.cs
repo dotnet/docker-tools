@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         public string Dockerfile { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public SortedDictionary<string, string> BaseImages { get; set; }
+        public string BaseImageDigest { get; set; }
 
         public List<string> SimpleTags { get; set; } = new List<string>();
 

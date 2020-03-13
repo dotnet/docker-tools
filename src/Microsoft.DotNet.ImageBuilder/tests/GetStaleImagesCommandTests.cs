@@ -52,21 +52,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: "base1digest-diff"),
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: "base2digest")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -129,21 +135,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: "base2digest-diff"),
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: "base3digest")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base2digest-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base3digest")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -213,7 +225,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows))))
+                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                    new ImageArtifactDetails()
                 )
             };
 
@@ -278,7 +291,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows))))
+                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                    new ImageArtifactDetails()
                 )
             };
 
@@ -334,7 +348,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails()
                 )
             };
 
@@ -397,38 +412,44 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: "base1digest-diff")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff")
+                                        }
+                                    }
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = repo2,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest-diff")
+                                        }
+                                    }
                                 }
                             }
                         }
-                    },
-                    new RepoData
-                    {
-                        Repo = repo2,
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: "base2digest-diff")
-                                }
-                            }
-                        }
-                    }                    
+                    }
                 ),
                 new SubscriptionInfo(
                     CreateSubscription(repo2, 2),
@@ -441,50 +462,56 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             repo3,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: "base1digest-diff")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff")
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = repo2,
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
+                            },
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo2,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: "base2digest-diff")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest-diff")
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = repo3,
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
+                            },
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo3,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile3Path,
-                                        baseImageDigest: "base3digest")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile3Path,
+                                                baseImageDigest: "base3digest")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -562,21 +589,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images = new List<ImageData>
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: baseImageDigest + "-diff"),
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: baseImageDigest + "-diff")
+                                    new ImageData
+                                    {
+                                        Platforms = new List<PlatformData>
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: baseImageDigest + "-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: baseImageDigest + "-diff")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -647,18 +680,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: baseImageDigest)
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: baseImageDigest)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -739,47 +778,53 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             otherRepo,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = runtimeDepsRepo,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = runtimeDepsRepo,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        runtimeDepsDockerfilePath,
-                                        baseImageDigest: baseImageDigest + "-diff")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                runtimeDepsDockerfilePath,
+                                                baseImageDigest: baseImageDigest + "-diff")
+                                        }
+                                    }
                                 }
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = runtimeRepo
-                    },
-                    new RepoData
-                    {
-                        Repo = sdkRepo
-                    },
-                    new RepoData
-                    {
-                        Repo = aspnetRepo
-                    },
-                    // Include an image that has not been changed and should not be included in the expected paths.
-                    new RepoData
-                    {
-                        Repo = otherRepo,
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
+                            },
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = runtimeRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = sdkRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = aspnetRepo
+                            },
+                            // Include an image that has not been changed and should not be included in the expected paths.
+                            new RepoData
+                            {
+                                Repo = otherRepo,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        otherDockerfilePath,
-                                        baseImageDigest: otherImageDigest)
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                otherDockerfilePath,
+                                                baseImageDigest: otherImageDigest)
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -848,21 +893,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: "base1digest-diff"),
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: "base2digest")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -923,18 +974,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        dockerfile1Path,
-                                        baseImageDigest: "base1digest")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -996,19 +1053,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 CreatePlatformWithRepoBuildArg(dockerfile1Path, $"{repo1}:tag2", new string[] { "tag1" })),
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
-                    new RepoData
+                    new ImageArtifactDetails
                     {
-                        Repo = repo1,
-                        Images = new List<ImageData>
+                        Repos =
                         {
-                            new ImageData
+                            new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = repo1,
+                                Images =
                                 {
-                                    CreatePlatform(dockerfile1Path),
-                                    CreatePlatform(
-                                        dockerfile2Path,
-                                        baseImageDigest: "base1digest")
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(dockerfile1Path),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base1digest")
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -1214,10 +1277,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
                 {
-                    string imageInfoContents = JsonConvert.SerializeObject(subscriptionInfo.ImageInfo);
-                    gitHubClientMock
-                        .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.Is<GitHubBranch>(branch => IsMatchingBranch(branch))))
-                        .ReturnsAsync(imageInfoContents);
+                    if (subscriptionInfo.ImageInfo != null)
+                    {
+                        string imageInfoContents = JsonConvert.SerializeObject(subscriptionInfo.ImageInfo);
+                        gitHubClientMock
+                            .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.Is<GitHubBranch>(branch => IsMatchingBranch(branch))))
+                            .ReturnsAsync(imageInfoContents);
+                    }
                 }
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
@@ -1421,7 +1487,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class SubscriptionInfo
         {
-            public SubscriptionInfo(Subscription subscription, Manifest manifest, params RepoData[] imageInfo)
+            public SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
             {
                 Subscription = subscription;
                 Manifest = manifest;
@@ -1430,7 +1496,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public Subscription Subscription { get; }
             public Manifest Manifest { get; }
-            public RepoData[] ImageInfo { get; }
+            public ImageArtifactDetails ImageInfo { get; }
         }
     }
 }

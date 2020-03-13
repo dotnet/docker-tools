@@ -77,28 +77,31 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                List<RepoData> repos = new List<RepoData>
+                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
                 {
-                    new RepoData
+                    Repos =
                     {
-                        Repo = repoName,
-                        Images = new List<ImageData>
+                        new RepoData
                         {
-                            new ImageData
+                            Repo = repoName,
+                            Images =
                             {
-                                Platforms = new List<PlatformData>
+                                new ImageData
                                 {
-                                    new PlatformData
+                                    Platforms =
                                     {
-                                        Dockerfile = $"{runtimeRelativeDir}/Dockerfile",
-                                        Architecture = "amd64",
-                                        OsType = "Linux",
-                                        OsVersion = "Ubuntu 19.04",
-                                        Digest = sha,
-                                        BaseImageDigest = baseImageDigest,
-                                        SimpleTags = new List<string>
+                                        new PlatformData
                                         {
-                                            tag
+                                            Dockerfile = $"{runtimeRelativeDir}/Dockerfile",
+                                            Architecture = "amd64",
+                                            OsType = "Linux",
+                                            OsVersion = "Ubuntu 19.04",
+                                            Digest = sha,
+                                            BaseImageDigest = baseImageDigest,
+                                            SimpleTags =
+                                            {
+                                                tag
+                                            }
                                         }
                                     }
                                 }
@@ -107,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                string expectedOutput = JsonHelper.SerializeObject(repos);
+                string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
                 string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
                 Assert.Equal(expectedOutput, actualOutput);
@@ -216,8 +219,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(command.Options.ImageInfoOutputPath));
-                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Platforms.First().Dockerfile);
+                ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(
+                    File.ReadAllText(command.Options.ImageInfoOutputPath));
+                Assert.Equal(
+                    PathHelper.NormalizePath(dockerfileRelativePath),
+                    imageArtifactDetails.Repos[0].Images.First().Platforms.First().Dockerfile);
             }
         }
     }

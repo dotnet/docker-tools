@@ -29,129 +29,135 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string repo4Image2Dockerfile = CreateDockerfile("1.0/repo4/os2", context);
                 string repo4Image3Dockerfile = CreateDockerfile("1.0/repo4/os3", context);
 
-                List<RepoData[]> repoDataSets = new List<RepoData[]>
+                List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
                 {
-                    new RepoData[]
+                    new ImageArtifactDetails
                     {
-                        new RepoData
+                        Repos =
                         {
-                            Repo = "repo1"
-                        },
-                        new RepoData
-                        {
-                            Repo = "repo2",
-                            Images = new List<ImageData>
+                            new RepoData
                             {
-                                new ImageData
+                                Repo = "repo1"
+                            },
+                            new RepoData
+                            {
+                                Repo = "repo2",
+                                Images =
                                 {
-                                    Platforms = new List<PlatformData>
+                                    new ImageData
                                     {
-                                        CreatePlatform(
-                                            repo2Image1Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag3"
-                                            })
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                repo2Image1Dockerfile,
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag3"
+                                                })
+                                        }
+                                    },
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(repo2Image2Dockerfile)
+                                        }
                                     }
-                                },
-                                new ImageData
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = "repo4",
+                                Images =
                                 {
-                                    Platforms = new List<PlatformData>
+                                    new ImageData
                                     {
-                                        CreatePlatform(repo2Image2Dockerfile)
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                repo4Image2Dockerfile,
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag1"
+                                                })
+                                        }
                                     }
                                 }
                             }
-                        },
-                        new RepoData
-                        {
-                            Repo = "repo4",
-                            Images = new List<ImageData>
-                            {
-                                new ImageData
-                                {
-                                    Platforms = new List<PlatformData>
-                                    {
-                                        CreatePlatform(
-                                            repo4Image2Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag1"
-                                            })
-                                    }
-                                }
-                            }
-                        },
+                        }
                     },
-                    new RepoData[]
+                    new ImageArtifactDetails
                     {
-                        new RepoData
+                        Repos =
                         {
-                            Repo = "repo2",
-                            Images = new List<ImageData>
+                            new RepoData
                             {
-                                new ImageData
+                                Repo = "repo2",
+                                Images =
                                 {
-                                    Platforms = new List<PlatformData>
+                                    new ImageData
                                     {
-                                        CreatePlatform(
-                                            repo2Image1Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag1"
-                                            },
-                                            baseImageDigest: "base1hash")
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                repo2Image1Dockerfile,
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag1"
+                                                },
+                                                baseImageDigest: "base1hash")
+                                        }
+                                    },
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                repo2Image2Dockerfile,
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag2"
+                                                })
+                                        }
                                     }
-                                },
-                                new ImageData
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = "repo3",
+                            },
+                            new RepoData
+                            {
+                                Repo = "repo4",
+                                Images =
                                 {
-                                    Platforms = new List<PlatformData>
+                                    new ImageData
                                     {
-                                        CreatePlatform(
-                                            repo2Image2Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag2"
-                                            })
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                repo4Image2Dockerfile,
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag2"
+                                                })
+                                        }
+                                    },
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                repo4Image3Dockerfile,
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag1"
+                                                })
+                                        }
                                     }
                                 }
                             }
-                        },
-                        new RepoData
-                        {
-                            Repo = "repo3",
-                        },
-                        new RepoData
-                        {
-                            Repo = "repo4",
-                            Images = new List<ImageData>
-                            {
-                                new ImageData
-                                {
-                                    Platforms = new List<PlatformData>
-                                    {
-                                        CreatePlatform(
-                                            repo4Image2Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag2"
-                                            })
-                                    }
-                                },
-                                new ImageData
-                                {
-                                    Platforms = new List<PlatformData>
-                                    {
-                                        CreatePlatform(
-                                            repo4Image3Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag1"
-                                            })
-                                    }
-                                }
-                            }
-                        },
+                        }
                     }
                 };
 
@@ -161,10 +167,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
 
                 Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
-                for (int i = 0; i < repoDataSets.Count; i++)
+                for (int i = 0; i < imageArtifactDetailsList.Count; i++)
                 {
                     string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
-                    File.WriteAllText(file, JsonHelper.SerializeObject(repoDataSets[i]));
+                    File.WriteAllText(file, JsonHelper.SerializeObject(imageArtifactDetailsList[i]));
                 }
 
                 Manifest manifest = CreateManifest(
@@ -187,86 +193,89 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 await command.ExecuteAsync();
 
                 string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
-                RepoData[] actual = JsonConvert.DeserializeObject<RepoData[]>(resultsContent);
+                ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
-                RepoData[] expected = new RepoData[]
+                ImageArtifactDetails expected = new ImageArtifactDetails
                 {
-                    new RepoData
+                    Repos =
                     {
-                        Repo = "repo1"
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo2",
-                        Images = new List<ImageData>
+                        new RepoData
                         {
-                            new ImageData
+                            Repo = "repo1"
+                        },
+                        new RepoData
+                        {
+                            Repo = "repo2",
+                            Images =
                             {
-                                Platforms = new List<PlatformData>
+                                new ImageData
                                 {
-                                    CreatePlatform(
-                                        repo2Image1Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
-                                            "tag1",
-                                            "tag3"
-                                        },
-                                        baseImageDigest: "base1hash")
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            repo2Image1Dockerfile,
+                                            simpleTags: new List<string>
+                                            {
+                                                "tag1",
+                                                "tag3"
+                                            },
+                                            baseImageDigest: "base1hash")
+                                    }
+                                },
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            repo2Image2Dockerfile,
+                                            simpleTags: new List<string>
+                                            {
+                                                "tag2"
+                                            })
+                                    }
                                 }
-                            },
-                            new ImageData
+                            }
+                        },
+                        new RepoData
+                        {
+                            Repo = "repo3",
+                        },
+                        new RepoData
+                        {
+                            Repo = "repo4",
+                            Images =
                             {
-                                Platforms = new List<PlatformData>
+                                new ImageData
                                 {
-                                    CreatePlatform(
-                                        repo2Image2Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
-                                            "tag2"
-                                        })
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            repo4Image2Dockerfile,
+                                            simpleTags: new List<string>
+                                            {
+                                                "tag1",
+                                                "tag2"
+                                            })
+                                    }
+                                },
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            repo4Image3Dockerfile,
+                                            simpleTags: new List<string>
+                                            {
+                                                "tag1"
+                                            })
+                                    }
                                 }
                             }
                         }
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo3",
-                    },
-                    new RepoData
-                    {
-                        Repo = "repo4",
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    CreatePlatform(
-                                        repo4Image2Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
-                                            "tag1",
-                                            "tag2"
-                                        })
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    CreatePlatform(
-                                        repo4Image3Dockerfile,
-                                        simpleTags: new List<string>
-                                        {
-                                            "tag1"
-                                        })
-                                }
-                            }
-                        }
-                    },
+                    }
                 };
 
-                ImageInfoHelperTests.CompareRepos(expected, actual);
+                ImageInfoHelperTests.CompareImageArtifactDetails(expected, actual);
             }
         }
 
@@ -284,18 +293,195 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string dockerfile1 = CreateDockerfile("1.0/repo1/os1", context);
                 string dockerfile2 = CreateDockerfile("1.0/repo1/os2", context);
 
-                List<RepoData[]> repoDataSets = new List<RepoData[]>
+                List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
                 {
-                    new RepoData[]
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = "repo1",
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            new PlatformData
+                                            {
+                                                Architecture = "arm32",
+                                                OsVersion = Os1DisplayName,
+                                                OsType = OsType,
+                                                Digest = "digest1",
+                                                Dockerfile = dockerfile1,
+                                                SimpleTags =
+                                                {
+                                                    "tag1",
+                                                    "tag2"
+                                                }
+                                            },
+                                            new PlatformData
+                                            {
+                                                Architecture = "arm64",
+                                                OsVersion = Os1DisplayName,
+                                                OsType = OsType,
+                                                Digest = "digest2",
+                                                Dockerfile = dockerfile1,
+                                                SimpleTags =
+                                                {
+                                                    "tag2"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            new PlatformData
+                                            {
+                                                Architecture = "arm32",
+                                                OsVersion = Os2DisplayName,
+                                                OsType = OsType,
+                                                Digest = "digest4",
+                                                Dockerfile = dockerfile1,
+                                                SimpleTags =
+                                                {
+                                                    "tagA"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = "repo1",
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            new PlatformData
+                                            {
+                                                Architecture = "arm64",
+                                                OsVersion = Os1DisplayName,
+                                                OsType = OsType,
+                                                Digest = "digest2-new",
+                                                Dockerfile = dockerfile1,
+                                                SimpleTags =
+                                                {
+                                                    "tag3",
+                                                    "tag2"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = "repo1",
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            new PlatformData
+                                            {
+                                                Architecture = "amd64",
+                                                Digest = "digest3",
+                                                OsVersion = Os1DisplayName,
+                                                OsType = OsType,
+                                                Dockerfile = dockerfile2,
+                                                SimpleTags =
+                                                {
+                                                    "tag1"
+                                                }
+                                            }
+                                        }
+                                    },
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            new PlatformData
+                                            {
+                                                Architecture = "arm32",
+                                                OsVersion = Os2DisplayName,
+                                                OsType = OsType,
+                                                Digest = "digest4-new",
+                                                Dockerfile = dockerfile1,
+                                                SimpleTags =
+                                                {
+                                                    "tagB"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                MergeImageInfoCommand command = new MergeImageInfoCommand();
+                command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
+                command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
+                command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
+
+                Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
+                for (int i = 0; i < imageArtifactDetailsList.Count; i++)
+                {
+                    string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
+                    File.WriteAllText(file, JsonHelper.SerializeObject(imageArtifactDetailsList[i]));
+                }
+
+                Manifest manifest = CreateManifest(
+                    CreateRepo("repo1",
+                        CreateImage(
+                            CreatePlatform(dockerfile1, new string[0], osVersion: Os1, architecture: Architecture.ARM),
+                            CreatePlatform(dockerfile1, new string[0], osVersion: Os1, architecture: Architecture.ARM64)),
+                        CreateImage(
+                            CreatePlatform(dockerfile1, new string[0], osVersion: Os2, architecture: Architecture.ARM)),
+                        CreateImage(
+                            CreatePlatform(dockerfile2, new string[0], osVersion: Os1)))
+                );
+                File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+                command.LoadManifest();
+                await command.ExecuteAsync();
+
+                string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+                ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
+
+                ImageArtifactDetails expected = new ImageArtifactDetails
+                {
+                    Repos =
                     {
                         new RepoData
                         {
                             Repo = "repo1",
-                            Images = new List<ImageData>
+                            Images =
                             {
                                 new ImageData
                                 {
-                                    Platforms = new List<PlatformData>
+                                    Platforms =
                                     {
                                         new PlatformData
                                         {
@@ -315,75 +501,38 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             Architecture = "arm64",
                                             OsVersion = Os1DisplayName,
                                             OsType = OsType,
-                                            Digest = "digest2",
+                                            Digest = "digest2-new",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
                                             {
-                                                "tag2"
+                                                "tag2",
+                                                "tag3"
                                             }
                                         }
                                     }
                                 },
                                 new ImageData
                                 {
-                                    Platforms = new List<PlatformData>
+                                    Platforms =
                                     {
                                         new PlatformData
                                         {
                                             Architecture = "arm32",
                                             OsVersion = Os2DisplayName,
                                             OsType = OsType,
-                                            Digest = "digest4",
+                                            Digest = "digest4-new",
                                             Dockerfile = dockerfile1,
                                             SimpleTags =
                                             {
-                                                "tagA"
+                                                "tagA",
+                                                "tagB"
                                             }
                                         }
                                     }
-                                }
-                            }
-                        }
-                    },
-                    new RepoData[]
-                    {
-                        new RepoData
-                        {
-                            Repo = "repo1",
-                            Images = new List<ImageData>
-                            {
+                                },
                                 new ImageData
                                 {
-                                    Platforms = new List<PlatformData>
-                                    {
-                                        new PlatformData
-                                        {
-                                            Architecture = "arm64",
-                                            OsVersion = Os1DisplayName,
-                                            OsType = OsType,
-                                            Digest = "digest2-new",
-                                            Dockerfile = dockerfile1,
-                                            SimpleTags =
-                                            {
-                                                "tag3",
-                                                "tag2"
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    new RepoData[]
-                    {
-                        new RepoData
-                        {
-                            Repo = "repo1",
-                            Images = new List<ImageData>
-                            {
-                                new ImageData
-                                {
-                                    Platforms = new List<PlatformData>
+                                    Platforms =
                                     {
                                         new PlatformData
                                         {
@@ -398,141 +547,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     }
-                                },
-                                new ImageData
-                                {
-                                    Platforms = new List<PlatformData>
-                                    {
-                                        new PlatformData
-                                        {
-                                            Architecture = "arm32",
-                                            OsVersion = Os2DisplayName,
-                                            OsType = OsType,
-                                            Digest = "digest4-new",
-                                            Dockerfile = dockerfile1,
-                                            SimpleTags =
-                                            {
-                                                "tagB"
-                                            }
-                                        }
-                                    }
                                 }
                             }
                         }
                     }
                 };
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand();
-                command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
-                command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
-                command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
-
-                Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
-                for (int i = 0; i < repoDataSets.Count; i++)
-                {
-                    string file = Path.Combine(command.Options.SourceImageInfoFolderPath, $"{i}.json");
-                    File.WriteAllText(file, JsonHelper.SerializeObject(repoDataSets[i]));
-                }
-
-                Manifest manifest = CreateManifest(
-                    CreateRepo("repo1",
-                        CreateImage(
-                            CreatePlatform(dockerfile1, new string[0], osVersion: Os1, architecture: Architecture.ARM),
-                            CreatePlatform(dockerfile1, new string[0], osVersion: Os1, architecture: Architecture.ARM64)),
-                        CreateImage(
-                            CreatePlatform(dockerfile1, new string[0], osVersion: Os2, architecture: Architecture.ARM)),
-                        CreateImage(
-                            CreatePlatform(dockerfile2, new string[0], osVersion: Os1)))
-                );
-                File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-                command.LoadManifest();
-                await command.ExecuteAsync();
-
-                string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
-                RepoData[] actual = JsonConvert.DeserializeObject<RepoData[]>(resultsContent);
-
-                RepoData[] expected = new RepoData[]
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
-                        {
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData
-                                    {
-                                        Architecture = "arm32",
-                                        OsVersion = Os1DisplayName,
-                                        OsType = OsType,
-                                        Digest = "digest1",
-                                        Dockerfile = dockerfile1,
-                                        SimpleTags =
-                                        {
-                                            "tag1",
-                                            "tag2"
-                                        }
-                                    },
-                                    new PlatformData
-                                    {
-                                        Architecture = "arm64",
-                                        OsVersion = Os1DisplayName,
-                                        OsType = OsType,
-                                        Digest = "digest2-new",
-                                        Dockerfile = dockerfile1,
-                                        SimpleTags =
-                                        {
-                                            "tag2",
-                                            "tag3"
-                                        }
-                                    }
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData
-                                    {
-                                        Architecture = "arm32",
-                                        OsVersion = Os2DisplayName,
-                                        OsType = OsType,
-                                        Digest = "digest4-new",
-                                        Dockerfile = dockerfile1,
-                                        SimpleTags =
-                                        {
-                                            "tagA",
-                                            "tagB"
-                                        }
-                                    }
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms = new List<PlatformData>
-                                {
-                                    new PlatformData
-                                    {
-                                        Architecture = "amd64",
-                                        Digest = "digest3",
-                                        OsVersion = Os1DisplayName,
-                                        OsType = OsType,
-                                        Dockerfile = dockerfile2,
-                                        SimpleTags =
-                                        {
-                                            "tag1"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                };
-
-                ImageInfoHelperTests.CompareRepos(expected, actual);
+                ImageInfoHelperTests.CompareImageArtifactDetails(expected, actual);
             }
         }
 
@@ -551,9 +572,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using (TempFolderContext context = TestHelper.UseTempFolder())
             {
+                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                {
+                    Repos =
+                    {
+                        new RepoData { Repo = "repo" }
+                    }
+                };
+                        
                 // Store the content in a .txt file which the command should NOT be looking for.
-                File.WriteAllText("image-info.txt",
-                    JsonHelper.SerializeObject(new RepoData[] { new RepoData { Repo = "repo" } }));
+                File.WriteAllText("image-info.txt", JsonHelper.SerializeObject(imageArtifactDetails));
 
                 MergeImageInfoCommand command = new MergeImageInfoCommand();
                 command.Options.SourceImageInfoFolderPath = context.Path;

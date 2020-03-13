@@ -66,31 +66,36 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 RepoData runtimeRepo;
 
-                RepoData[] repos = new RepoData[]
+                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
                 {
-                    runtimeRepo = new RepoData
+                    Repos =
                     {
-                        Repo = "runtime",
-                        Images = new List<ImageData>
                         {
-                            new ImageData
+                            runtimeRepo = new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = "runtime",
+                                Images =
                                 {
-                                    CreatePlatform(
-                                        PathHelper.NormalizePath(dockerfileRelativePath),
-                                        simpleTags: new List<string>
+                                    new ImageData
+                                    {
+                                        Platforms =
                                         {
-                                            "tag1",
-                                            "tag2"
-                                        })
+                                            CreatePlatform(
+                                                PathHelper.NormalizePath(dockerfileRelativePath),
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag1",
+                                                    "tag2"
+                                                })
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 };
 
-                File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(repos));
+                File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
                 command.LoadManifest();
                 await command.ExecuteAsync();

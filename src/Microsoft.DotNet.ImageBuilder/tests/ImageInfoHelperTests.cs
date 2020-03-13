@@ -14,21 +14,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_ImageDigest()
         {
-            RepoData[] repoDataSet = new RepoData[]
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
-                                new PlatformData
+                                Platforms =
                                 {
-                                    Dockerfile = "image1",
-                                    Digest = "digest"
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        Digest = "digest"
+                                    }
                                 }
                             }
                         }
@@ -36,20 +39,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            List<RepoData> targetRepos = new List<RepoData>
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
-                                new PlatformData
+                                Platforms =
                                 {
-                                    Dockerfile = "image1"
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1"
+                                    }
                                 }
                             }
                         }
@@ -57,31 +63,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos);
-            CompareRepos(repoDataSet, targetRepos);
+            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
         }
 
         [Fact]
         public void ImageInfoHelper_MergeRepos_EmptyTarget()
         {
-            RepoData[] repoDataSet = new RepoData[]
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1",
-                },
-                new RepoData
-                {
-                    Repo = "repo2",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1",
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo2",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
-                                new PlatformData
+                                Platforms =
                                 {
-                                    Dockerfile = "image1"
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1"
+                                    }
                                 }
                             }
                         }
@@ -89,10 +98,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            List<RepoData> targetRepos = new List<RepoData>();
-            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos);
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails();
+            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
 
-            CompareRepos(repoDataSet, targetRepos);
+            CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
         }
 
         [Fact]
@@ -103,141 +112,150 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PlatformData repo2Image3;
             PlatformData repo3Image1;
 
-            RepoData[] repoDataSet = new RepoData[]
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo2",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo2",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
+                                Platforms =
                                 {
-                                    repo2Image1 = new PlatformData
+                                    {
+                                        repo2Image1 = new PlatformData
+                                        {
+                                            Dockerfile = "image1",
+                                            BaseImageDigest = "base1digest-NEW"
+                                        }
+                                    },
+                                    {
+                                        repo2Image3  = new PlatformData
+                                        {
+                                            Dockerfile = "image3"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo3",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    {
+                                        repo3Image1 = new PlatformData
+                                        {
+                                            Dockerfile = "image1"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo4",
+                    }
+                }
+            };
+
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1"
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo2",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        BaseImageDigest = "base1digest-NEW"
-                                    }
-                                },
-                                {
-                                    repo2Image3  = new PlatformData
+                                        BaseImageDigest = "base1digest"
+                                    },
                                     {
-                                        Dockerfile = "image3"
+                                        repo2Image2 = new PlatformData
+                                        {
+                                            Dockerfile = "image2",
+                                            BaseImageDigest = "base2digest"
+                                        }
                                     }
                                 }
                             }
                         }
-                    }
-                },
-                new RepoData
-                {
-                    Repo = "repo3",
-                    Images = new List<ImageData>
+                    },
+                    new RepoData
                     {
-                        new ImageData
-                        {
-                            Platforms = new List<PlatformData>
-                            {
-                                {
-                                    repo3Image1 = new PlatformData
-                                    {
-                                        Dockerfile = "image1"
-                                    }
-                                }
-                            }
-                        }
+                        Repo = "repo3"
                     }
-                },
-                new RepoData
-                {
-                    Repo = "repo4",
                 }
             };
 
-            List<RepoData> targetRepos = new List<RepoData>
+            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+
+            ImageArtifactDetails expected = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1"
-                },
-                new RepoData
-                {
-                    Repo = "repo2",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1"
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo2",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
-                                new PlatformData
+                                Platforms =
                                 {
-                                    Dockerfile = "image1",
-                                    BaseImageDigest = "base1digest"
-                                },
-                                {
-                                    repo2Image2 = new PlatformData
-                                    {
-                                        Dockerfile = "image2",
-                                        BaseImageDigest = "base2digest"
-                                    }
+                                    repo2Image1,
+                                    repo2Image2,
+                                    repo2Image3
                                 }
                             }
                         }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo3",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    repo3Image1
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo4",
                     }
-                },
-                new RepoData
-                {
-                    Repo = "repo3"
                 }
             };
 
-            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos);
-
-            List<RepoData> expected = new List<RepoData>
-            {
-                new RepoData
-                {
-                    Repo = "repo1"
-                },
-                new RepoData
-                {
-                    Repo = "repo2",
-                    Images = new List<ImageData>
-                    {
-                        new ImageData
-                        {
-                            Platforms = new List<PlatformData>
-                            {
-                                repo2Image1,
-                                repo2Image2,
-                                repo2Image3
-                            }
-                        }
-                    }
-                },
-                new RepoData
-                {
-                    Repo = "repo3",
-                    Images = new List<ImageData>
-                    {
-                        new ImageData
-                        {
-                            Platforms = new List<PlatformData>
-                            {
-                                repo3Image1
-                            }
-                        }
-                    }
-                },
-                new RepoData
-                {
-                    Repo = "repo4",
-                }
-            };
-
-            CompareRepos(expected, targetRepos);
+            CompareImageArtifactDetails(expected, targetImageArtifactDetails);
         }
 
         /// <summary>
@@ -249,25 +267,68 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PlatformData srcImage1;
             PlatformData targetImage2;
 
-            RepoData[] repoDataSet = new RepoData[]
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
+                                Platforms =
                                 {
-                                    srcImage1 = new PlatformData
+                                    {
+                                        srcImage1 = new PlatformData
+                                        {
+                                            Dockerfile = "image1",
+                                            SimpleTags =
+                                            {
+                                                "tag1",
+                                                "tag3"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
                                     {
                                         Dockerfile = "image1",
                                         SimpleTags =
                                         {
                                             "tag1",
-                                            "tag3"
+                                            "tag2",
+                                            "tag4"
+                                        }
+                                    },
+                                    {
+                                        targetImage2 = new PlatformData
+                                        {
+                                            Dockerfile = "image2",
+                                            SimpleTags =
+                                            {
+                                                "a"
+                                            }
                                         }
                                     }
                                 }
@@ -277,36 +338,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            List<RepoData> targetRepos = new List<RepoData>
+            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+
+            ImageArtifactDetails expected = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
-                                new PlatformData
+                                Platforms =
                                 {
-                                    Dockerfile = "image1",
-                                    SimpleTags =
+                                    new PlatformData
                                     {
-                                        "tag1",
-                                        "tag2",
-                                        "tag4"
-                                    }
-                                },
-                                {
-                                    targetImage2 = new PlatformData
-                                    {
-                                        Dockerfile = "image2",
+                                        Dockerfile = "image1",
                                         SimpleTags =
                                         {
-                                            "a"
+                                            "tag1",
+                                            "tag2",
+                                            "tag3",
+                                            "tag4"
                                         }
-                                    }
+                                    },
+                                    targetImage2
                                 }
                             }
                         }
@@ -314,38 +372,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos);
-
-            List<RepoData> expected = new List<RepoData>
-            {
-                new RepoData
-                {
-                    Repo = "repo1",
-                    Images = new List<ImageData>
-                    {
-                        new ImageData
-                        {
-                            Platforms = new List<PlatformData>
-                            {
-                                new PlatformData
-                                {
-                                    Dockerfile = "image1",
-                                    SimpleTags =
-                                    {
-                                        "tag1",
-                                        "tag2",
-                                        "tag3",
-                                        "tag4"
-                                    }
-                                },
-                                targetImage2
-                            }
-                        }
-                    }
-                }
-            };
-
-            CompareRepos(expected, targetRepos);
+            CompareImageArtifactDetails(expected, targetImageArtifactDetails);
         }
 
         /// <summary>
@@ -359,25 +386,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PlatformData srcImage1;
             PlatformData targetImage2;
 
-            RepoData[] repoDataSet = new RepoData[]
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
+                                Platforms =
                                 {
-                                    srcImage1 = new PlatformData
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
+                                        srcImage1 = new PlatformData
                                         {
-                                            "tag1",
-                                            "tag3"
+                                            Dockerfile = "image1",
+                                            SimpleTags =
+                                            {
+                                                "tag1",
+                                                "tag3"
+                                            }
                                         }
                                     }
                                 }
@@ -387,36 +417,39 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            List<RepoData> targetRepos = new List<RepoData>
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
+                                Platforms =
                                 {
-                                    new PlatformData
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
+                                        new PlatformData
                                         {
-                                            "tag1",
-                                            "tag2",
-                                            "tag4"
+                                            Dockerfile = "image1",
+                                            SimpleTags =
+                                            {
+                                                "tag1",
+                                                "tag2",
+                                                "tag4"
+                                            }
                                         }
-                                    }
-                                },
-                                {
-                                    targetImage2 = new PlatformData
+                                    },
                                     {
-                                        Dockerfile = "image2",
-                                        SimpleTags =
+                                        targetImage2 = new PlatformData
                                         {
-                                            "a"
+                                            Dockerfile = "image2",
+                                            SimpleTags =
+                                            {
+                                                "a"
+                                            }
                                         }
                                     }
                                 }
@@ -431,31 +464,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ReplaceTags = true
             };
 
-            ImageInfoHelper.MergeRepos(repoDataSet, targetRepos, options);
+            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails, options);
 
-            List<RepoData> expected = new List<RepoData>
+            ImageArtifactDetails expected = new ImageArtifactDetails
             {
-                new RepoData
+                Repos =
                 {
-                    Repo = "repo1",
-                    Images = new List<ImageData>
+                    new RepoData
                     {
-                        new ImageData
+                        Repo = "repo1",
+                        Images =
                         {
-                            Platforms = new List<PlatformData>
+                            new ImageData
                             {
-                                srcImage1,
-                                targetImage2
+                                Platforms =
+                                {
+                                    srcImage1,
+                                    targetImage2
+                                }
                             }
                         }
                     }
                 }
             };
 
-            CompareRepos(expected, targetRepos);
+            CompareImageArtifactDetails(expected, targetImageArtifactDetails);
         }
 
-        public static void CompareRepos(IList<RepoData> expected, IList<RepoData> actual)
+        public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
         {
             Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));
         }

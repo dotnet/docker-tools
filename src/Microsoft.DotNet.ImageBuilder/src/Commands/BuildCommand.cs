@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
         private readonly IEnvironmentService environmentService;
-        private readonly List<RepoData> repoList = new List<RepoData>();
+        private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
 
         [ImportingConstructor]
         public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService)
@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
-            string imageInfoString = JsonHelper.SerializeObject(repoList.OrderBy(r => r.Repo).ToArray());
+            string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
         }
 
@@ -93,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Model.Name
                 };
-                repoList.Add(repoData);
+                imageArtifactDetails.Repos.Add(repoData);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
@@ -274,7 +274,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<PlatformData> GetBuiltPlatforms() => this.repoList
+        private IEnumerable<PlatformData> GetBuiltPlatforms() => this.imageArtifactDetails.Repos
             .Where(repoData => repoData.Images != null)
             .SelectMany(repoData => repoData.Images)
             .SelectMany(imageData => imageData.Platforms);

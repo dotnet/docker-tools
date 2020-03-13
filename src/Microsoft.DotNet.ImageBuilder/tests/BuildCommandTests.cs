@@ -95,10 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
                                         Digest = sha,
-                                        BaseImages = new SortedDictionary<string, string>
-                                        {
-                                            { baseImageTag, baseImageDigest }
-                                        },
+                                        BaseImageDigest = baseImageDigest,
                                         SimpleTags = new List<string>
                                         {
                                             tag

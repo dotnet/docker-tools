@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
     {
         public static PlatformData CreatePlatform(
             string dockerfile, string digest = null, string architecture = "amd64", string osType = "Linux", string osVersion = "Ubuntu 19.04",
-            List<string> simpleTags = null, SortedDictionary<string, string> baseImages = null)
+            List<string> simpleTags = null, string baseImageDigest = null)
         {
             return new PlatformData
             {
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 OsType = osType,
                 OsVersion = osVersion,
                 SimpleTags = simpleTags,
-                BaseImages = baseImages
+                BaseImageDigest = baseImageDigest
             };
         }
     }

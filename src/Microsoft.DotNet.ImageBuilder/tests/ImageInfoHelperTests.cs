@@ -118,10 +118,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     repo2Image1 = new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        BaseImages = new SortedDictionary<string, string>
-                                        {
-                                            { "base1", "base1digest-NEW" }
-                                        }
+                                        BaseImageDigest = "base1digest-NEW"
                                     }
                                 },
                                 {
@@ -177,19 +174,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 new PlatformData
                                 {
                                     Dockerfile = "image1",
-                                    BaseImages = new SortedDictionary<string, string>
-                                    {
-                                        { "base1", "base1digest" }
-                                    }
+                                    BaseImageDigest = "base1digest"
                                 },
                                 {
                                     repo2Image2 = new PlatformData
                                     {
                                         Dockerfile = "image2",
-                                        BaseImages = new SortedDictionary<string, string>
-                                        {
-                                            { "base2", "base2digest" }
-                                        }
+                                        BaseImageDigest = "base2digest"
                                     }
                                 }
                             }

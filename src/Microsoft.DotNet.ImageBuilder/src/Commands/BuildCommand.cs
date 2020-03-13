@@ -143,11 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             }
                         }
 
-                        SortedDictionary<string, string> baseImageDigests = GetBaseImageDigests(platform);
-                        if (baseImageDigests.Any())
-                        {
-                            platformData.BaseImages = baseImageDigests;
-                        }
+                        platformData.BaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
 
                         platformData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
@@ -160,21 +156,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
             }
-        }
-
-        private SortedDictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
-        {
-            SortedDictionary<string, string> baseImageDigestMappings = new SortedDictionary<string, string>();
-            foreach (string fromImage in platform.ExternalFromImages)
-            {
-                string digest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
-                if (digest != null)
-                {
-                    baseImageDigestMappings[fromImage] = digest;
-                }
-            }
-
-            return baseImageDigestMappings;
         }
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)

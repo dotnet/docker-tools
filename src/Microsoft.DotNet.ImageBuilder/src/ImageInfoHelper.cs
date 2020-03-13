@@ -25,6 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Name == repoData.Repo);
                 if (manifestRepo == null)
                 {
+                    Console.WriteLine($"Image info repo not loaded:  {repoData.Repo}");
                     continue;
                 }
                 foreach (ImageData imageData in repoData.Images)

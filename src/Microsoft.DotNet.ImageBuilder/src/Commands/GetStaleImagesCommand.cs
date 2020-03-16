@@ -108,7 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
 
-            RepoData[] repos = await GetImageInfoForSubscriptionAsync(subscription, manifest);
+            ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
             List<string> pathsToRebuild = new List<string>();
 
@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .SelectMany(image => image.FilteredPlatforms)
                     .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
-                RepoData repoData = repos
+                RepoData repoData = imageArtifactDetails.Repos
                     .FirstOrDefault(s => s.Repo == repo.Model.Name);
 
                 foreach (PlatformInfo platform in platforms)
@@ -203,7 +203,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return pathsToRebuild;
         }
 
-        private async Task<RepoData[]> GetImageInfoForSubscriptionAsync(Subscription subscription, ManifestInfo manifest)
+        private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Subscription subscription, ManifestInfo manifest)
         {
             string imageDataJson;
             using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))

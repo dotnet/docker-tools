@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
-        private Lazy<RepoData[]> imageInfoRepos;
+        private Lazy<ImageArtifactDetails> imageArtifactDetails;
         private readonly IAzureManagementFactory azureManagementFactory;
         private readonly IEnvironmentService environmentService;
 
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.azureManagementFactory = azureManagementFactory ?? throw new ArgumentNullException(nameof(azureManagementFactory));
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-            this.imageInfoRepos = new Lazy<RepoData[]>(() =>
+            this.imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!String.IsNullOrEmpty(Options.ImageInfoPath))
                 {
@@ -100,9 +100,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
             // of the tag for the image that was actually built rather than just generating new tag values when parsing
             // the manifest.
-            if (imageInfoRepos.Value != null)
+            if (imageArtifactDetails.Value != null)
             {
-                RepoData repoData = imageInfoRepos.Value.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
+                RepoData repoData = imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
                 if (repoData != null)
                 {
                     PlatformData platformData = repoData.Images

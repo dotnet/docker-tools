@@ -33,44 +33,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 RepoData repo2;
 
-                RepoData[] sourceRepos = new RepoData[]
+                ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
                 {
-                    new RepoData
+                    Repos =
                     {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
+                        new RepoData
                         {
-                            new ImageData
+                            Repo = "repo1",
+                            Images =
                             {
-                                Platforms = new List<PlatformData>
+                                new ImageData
                                 {
-                                    new PlatformData
+                                    Platforms =
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
+                                        new PlatformData
                                         {
-                                            "newtag"
+                                            Dockerfile = "image1",
+                                            SimpleTags =
+                                            {
+                                                "newtag"
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    },
-                    repo2 = new RepoData
-                    {
-                        Repo = "repo2",
-                        Images = new List<ImageData>
+                        },
                         {
-                            new ImageData
+                            repo2 = new RepoData
                             {
-                                Platforms = new List<PlatformData>
+                                Repo = "repo2",
+                                Images =
                                 {
-                                    new PlatformData
+                                    new ImageData
                                     {
-                                        Dockerfile = "image2",
-                                        SimpleTags =
+                                        Platforms =
                                         {
-                                            "tag1"
+                                            new PlatformData
+                                            {
+                                                Dockerfile = "image2",
+                                                SimpleTags =
+                                                {
+                                                    "tag1"
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -80,25 +85,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 };
 
                 string file = Path.Combine(tempFolderContext.Path, "image-info.json");
-                File.WriteAllText(file, JsonHelper.SerializeObject(sourceRepos));
+                File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
 
-                RepoData[] targetRepos = new RepoData[]
+                ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
                 {
-                    new RepoData
+                    Repos =
                     {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
+                        new RepoData
                         {
-                            new ImageData
+                            Repo = "repo1",
+                            Images =
                             {
-                                Platforms = new List<PlatformData>
+                                new ImageData
                                 {
-                                    new PlatformData
+                                    Platforms =
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
+                                        new PlatformData
                                         {
-                                            "oldtag"
+                                            Dockerfile = "image1",
+                                            SimpleTags =
+                                            {
+                                                "oldtag"
+                                            }
                                         }
                                     }
                                 }
@@ -107,7 +115,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock(targetRepos);
+                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock(targetImageArtifactDetails);
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
                 gitHubClientFactoryMock
@@ -125,30 +133,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                RepoData[] expectedRepos = new RepoData[]
+                ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
                 {
-                    new RepoData
+                    Repos =
                     {
-                        Repo = "repo1",
-                        Images = new List<ImageData>
+                        new RepoData
                         {
-                            new ImageData
+                            Repo = "repo1",
+                            Images =
                             {
-                                Platforms = new List<PlatformData>
+                                new ImageData
                                 {
-                                    new PlatformData
+                                    Platforms =
                                     {
-                                        Dockerfile = "image1",
-                                        SimpleTags =
+                                        new PlatformData
                                         {
-                                            "newtag"
+                                            Dockerfile = "image1",
+                                            SimpleTags =
+                                            {
+                                                "newtag"
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
-                    },
-                    repo2
+                        },
+                        repo2
+                    }
                 };
 
                 Func<GitObject[], bool> verifyGitObjects = (gitObjects) =>
@@ -158,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         return false;
                     }
 
-                    return gitObjects[0].Content.Trim() == JsonHelper.SerializeObject(expectedRepos).Trim();
+                    return gitObjects[0].Content.Trim() == JsonHelper.SerializeObject(expectedImageArtifactDetails).Trim();
                 };
 
                 gitHubClientMock.Verify(
@@ -166,12 +177,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        private static Mock<IGitHubClient> GetGitHubClientMock(RepoData[] targetRepos)
+        private static Mock<IGitHubClient> GetGitHubClientMock(ImageArtifactDetails imageArtifactDetails)
         {
             Mock<IGitHubClient> gitHubClientMock = new Mock<IGitHubClient>();
             gitHubClientMock
                 .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.IsAny<GitHubBranch>()))
-                .ReturnsAsync(JsonHelper.SerializeObject(targetRepos));
+                .ReturnsAsync(JsonHelper.SerializeObject(imageArtifactDetails));
 
             gitHubClientMock
                 .Setup(o => o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()))

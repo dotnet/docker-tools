@@ -16,11 +16,11 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
-        public static RepoData[] LoadFromContent(string imageInfoContent, ManifestInfo manifest)
+        public static ImageArtifactDetails LoadFromContent(string imageInfoContent, ManifestInfo manifest)
         {
-            RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(imageInfoContent);
+            ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContent);
 
-            foreach (RepoData repoData in repos)
+            foreach (RepoData repoData in imageArtifactDetails.Repos)
             {
                 RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Model.Name == repoData.Repo);
                 if (manifestRepo == null)
@@ -52,33 +52,22 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
 
-            return repos;
+            return imageArtifactDetails;
         }
 
-        public static RepoData[] LoadFromFile(string path, ManifestInfo manifest)
+        public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest)
         {
             return LoadFromContent(File.ReadAllText(path), manifest);
         }
 
-        public static void MergeRepos(RepoData[] srcRepos, List<RepoData> targetRepos, ImageInfoMergeOptions options = null)
+        public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)
         {
             if (options == null)
             {
                 options = new ImageInfoMergeOptions();
             }
 
-            foreach (RepoData srcRepo in srcRepos)
-            {
-                RepoData targetRepo = targetRepos.FirstOrDefault(r => r.Repo == srcRepo.Repo);
-                if (targetRepo == null)
-                {
-                    targetRepos.Add(srcRepo);
-                }
-                else
-                {
-                    MergeData(srcRepo, targetRepo, options);
-                }
-            }
+            MergeData(src, target, options);
         }
 
         private static void MergeData(object srcObj, object targetObj, ImageInfoMergeOptions options)
@@ -134,6 +123,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 else if (typeof(IList<PlatformData>).IsAssignableFrom(property.PropertyType))
                 {
                     MergeLists<PlatformData>(property, srcObj, targetObj, options);
+                }
+                else if (typeof(IList<RepoData>).IsAssignableFrom(property.PropertyType))
+                {
+                    MergeLists<RepoData>(property, srcObj, targetObj, options);
                 }
                 else
                 {

@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            RepoData[] srcRepos = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+            ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
@@ -36,30 +36,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, "Merging image info updates from build.", async branch =>
                     {
                         string originalTargetImageInfoContents = await gitHubClient.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
-                        IEnumerable<RepoData> newImageInfo;
+                        ImageArtifactDetails newImageArtifactDetails;
 
                         if (originalTargetImageInfoContents != null)
                         {
-                            List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
+                            ImageArtifactDetails targetImageArtifactDetails = ImageInfoHelper.LoadFromContent(originalTargetImageInfoContents, Manifest);
 
                             ImageInfoMergeOptions options = new ImageInfoMergeOptions
                             {
                                 ReplaceTags = true
                             };
 
-                            ImageInfoHelper.MergeRepos(srcRepos, targetRepos, options);
+                            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);
 
-                            newImageInfo = targetRepos;
+                            newImageArtifactDetails = targetImageArtifactDetails;
                         }
                         else
                         {
                             // If there is no existing file to update, there's nothing to merge with so the source data
                             // becomes the target data.
-                            newImageInfo = srcRepos;
+                            newImageArtifactDetails = srcImageArtifactDetails;
                         }
 
                         string newTargetImageInfoContents =
-                            JsonHelper.SerializeObject(newImageInfo.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
+                            JsonHelper.SerializeObject(newImageArtifactDetails) + Environment.NewLine;
 
                         if (originalTargetImageInfoContents != newTargetImageInfoContents)
                         {

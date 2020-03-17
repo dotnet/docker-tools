@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -116,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
-                    DotNetVersion = GetDotNetVersion(platform.Image),
+                    DotNetVersion = GetDotNetVersion(Manifest.GetImageByPlatform(platform)),
                     OsVariant = platform.Model.OsVersion
                 });
             foreach (var versionGrouping in versionGroups)

@@ -97,7 +97,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
-                    ImageData imageData = new ImageData();
+                    ImageData imageData = new ImageData
+                    {
+                        ProductVersion = image.Model.ProductVersion
+                    };
                     repoData.Images.Add(imageData);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)

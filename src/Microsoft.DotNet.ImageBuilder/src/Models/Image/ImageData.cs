@@ -15,6 +15,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
     {
         public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string ProductVersion { get; set; }
+
         /// <summary>
         /// Gets or sets a reference to the corresponding image definition in the manifest.
         /// </summary>

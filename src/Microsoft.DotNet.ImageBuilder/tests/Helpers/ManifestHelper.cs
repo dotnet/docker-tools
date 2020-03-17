@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         public static Image CreateImage(params Platform[] platforms) =>
             CreateImage(platforms, (IDictionary<string, Tag>)null);
 
-        public static Image CreateImage(Platform[] platforms, IDictionary<string, Tag> sharedTags, string productVersion = null)
+        public static Image CreateImage(Platform[] platforms, IDictionary<string, Tag> sharedTags = null, string productVersion = null)
         {
             return new Image
             {

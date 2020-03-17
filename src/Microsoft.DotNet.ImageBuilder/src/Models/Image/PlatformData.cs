@@ -27,6 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         
         public string OsVersion { get; set; }
 
+        public DateTime Created { get; set; }
+
         [JsonIgnore]
         public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
 

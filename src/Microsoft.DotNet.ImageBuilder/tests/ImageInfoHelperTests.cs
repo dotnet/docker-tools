@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -112,6 +113,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PlatformData repo2Image3;
             PlatformData repo3Image1;
 
+            DateTime oldCreatedDate = DateTime.Now.Subtract(TimeSpan.FromDays(1));
+            DateTime newCreatedDate = DateTime.Now;
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -129,7 +133,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         repo2Image1 = new PlatformData
                                         {
                                             Dockerfile = "image1",
-                                            BaseImageDigest = "base1digest-NEW"
+                                            BaseImageDigest = "base1digest-NEW",
+                                            Created = newCreatedDate
                                         }
                                     },
                                     {
@@ -188,7 +193,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        BaseImageDigest = "base1digest"
+                                        BaseImageDigest = "base1digest",
+                                        Created = oldCreatedDate
                                     },
                                     {
                                         repo2Image2 = new PlatformData

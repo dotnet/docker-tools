@@ -97,14 +97,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
-                    ImageData imageData = new ImageData();
-                    if (image.SharedTags.Any())
+                    ImageData imageData = new ImageData
+                    {
+                        ProductVersion = image.Model.ProductVersion
+                    };
+                 	if (image.SharedTags.Any())
                     {
                         imageData.SharedTags = image.SharedTags
                             .Select(tag => tag.Name)
                             .ToList();
-                    }
-                    repoData.Images.Add(imageData);
+                    }   repoData.Images.Add(imageData);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {

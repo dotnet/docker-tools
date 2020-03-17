@@ -52,10 +52,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = ManifestHelper.CreateManifest(
                     ManifestHelper.CreateRepo("runtime-deps",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" }))),
+                            new Platform[]
+                            {
+                                ManifestHelper.CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
+                            },
+                            productVersion: "2.1.1")),
                     ManifestHelper.CreateRepo("runtime",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(runtimeRelativeDir, new string[] { "runtime" })))
+                            new Platform[]
+                            {
+                                ManifestHelper.CreatePlatform(runtimeRelativeDir, new string[] { "runtime" })
+                            },
+                            productVersion: "2.2.3"))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

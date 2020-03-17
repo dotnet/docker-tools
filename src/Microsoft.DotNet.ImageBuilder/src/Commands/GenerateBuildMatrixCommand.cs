@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -104,9 +102,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
         }
 
-        private string GetDotNetVersionFromPath(string dockerfilePath)
+        private string GetDotNetVersion(ImageInfo image)
         {
-            return dockerfilePath.Split(s_pathSeparators)[0];
+            Version version = Version.Parse(image.Model.ProductVersion);
+            return version.ToString(2); // Return major.minor
         }
 
         private void AddVersionedOsLegs(BuildMatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
@@ -115,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
-                    DotNetVersion = GetDotNetVersionFromPath(platform.DockerfilePathRelativeToManifest),
+                    DotNetVersion = GetDotNetVersion(Manifest.GetImageByPlatform(platform)),
                     OsVariant = platform.Model.OsVersion
                 });
             foreach (var versionGrouping in versionGroups)

@@ -16,6 +16,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string ProductVersion { get; set; }
+        
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public List<string> SharedTags { get; set; }
 
         /// <summary>

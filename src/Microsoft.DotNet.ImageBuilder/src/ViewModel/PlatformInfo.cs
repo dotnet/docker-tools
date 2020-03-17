@@ -21,7 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
 
-        private readonly string baseDirectory;
         private List<string> _overriddenFromImages;
         private IEnumerable<string> internalRepos;
 
@@ -40,14 +39,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IDictionary<string, CustomBuildLegGroupingInfo> CustomLegGroupings { get; private set; }
         private VariableHelper VariableHelper { get; set; }
 
-        private PlatformInfo(string baseDirectory)
-        {
-            this.baseDirectory = baseDirectory;
-        }
-
         public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory)
         {
-            PlatformInfo platformInfo = new PlatformInfo(baseDirectory)
+            PlatformInfo platformInfo = new PlatformInfo
             {
                 Model = model,
                 RepoName = repoName,

@@ -59,6 +59,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), $"FROM {baseImageTag}");
 
+                const string ProductVersion = "1.0.1";
+
                 Manifest manifest = CreateManifest(
                     CreateRepo(repoName,
                         CreateImage(
@@ -69,7 +71,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new Dictionary<string, Tag>
                             {
                                 { "shared", new Tag() }
-                            }))
+                            },
+                            ProductVersion))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -88,6 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new ImageData
                                 {
+                                    ProductVersion = ProductVersion,
                                     Platforms =
                                     {
                                         new PlatformData

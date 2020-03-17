@@ -103,6 +103,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 tag
                                             }
                                         }
+                                    },
+                                    SharedTags = new List<string>()
+                                    {
+                                        "shared"
                                     }
                                 }
                             }

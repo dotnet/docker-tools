@@ -17,6 +17,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string ProductVersion { get; set; }
+        
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public List<string> SharedTags { get; set; }
 
         /// <summary>
         /// Gets or sets a reference to the corresponding image definition in the manifest.

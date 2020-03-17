@@ -101,7 +101,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         ProductVersion = image.Model.ProductVersion
                     };
-                    repoData.Images.Add(imageData);
+                 	if (image.SharedTags.Any())
+                    {
+                        imageData.SharedTags = image.SharedTags
+                            .Select(tag => tag.Name)
+                            .ToList();
+                    }   repoData.Images.Add(imageData);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {

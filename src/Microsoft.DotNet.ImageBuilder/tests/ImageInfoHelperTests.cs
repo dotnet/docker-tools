@@ -297,6 +297,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     }
+                                },
+                                SharedTags = new List<string>
+                                {
+                                    "shared1",
+                                    "shared2"
                                 }
                             }
                         }
@@ -337,6 +342,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     }
+                                },
+                                SharedTags = new List<string>
+                                {
+                                    "shared2",
+                                    "shared3"
                                 }
                             }
                         }
@@ -371,6 +381,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     },
                                     targetImage2
+                                },
+                                SharedTags = new List<string>
+                                {
+                                    "shared1",
+                                    "shared2",
+                                    "shared3"
                                 }
                             }
                         }
@@ -389,8 +405,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_RemoveTag()
         {
-            PlatformData srcImage1;
-            PlatformData targetImage2;
+            PlatformData srcPlatform1;
+            PlatformData targetPlatform2;
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
@@ -406,7 +422,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 Platforms =
                                 {
                                     {
-                                        srcImage1 = new PlatformData
+                                        srcPlatform1 = new PlatformData
                                         {
                                             Dockerfile = "image1",
                                             SimpleTags =
@@ -416,6 +432,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     }
+                                },
+                                SharedTags = new List<string>
+                                {
+                                    "sharedtag1"
                                 }
                             }
                         }
@@ -449,7 +469,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     },
                                     {
-                                        targetImage2 = new PlatformData
+                                        targetPlatform2 = new PlatformData
                                         {
                                             Dockerfile = "image2",
                                             SimpleTags =
@@ -458,6 +478,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     }
+                                },
+                                SharedTags = new List<string>
+                                {
+                                    "sharedtag2"
                                 }
                             }
                         }
@@ -485,8 +509,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    srcImage1,
-                                    targetImage2
+                                    srcPlatform1,
+                                    targetPlatform2
+                                },
+                                SharedTags = new List<string>
+                                {
+                                    "sharedtag1"
                                 }
                             }
                         }

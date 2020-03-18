@@ -92,14 +92,14 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
-                    if (srcObj is PlatformData &&
-                        property.Name == nameof(PlatformData.SimpleTags) &&
-                        options.ReplaceTags)
+                    if (options.ReplaceTags &&
+                        ((srcObj is PlatformData && property.Name == nameof(PlatformData.SimpleTags)) ||
+                        (srcObj is ImageData && property.Name == nameof(ImageData.SharedTags))))
                     {
-                        // SimpleTags can be merged or replaced depending on the scenario.
+                        // Tags can be merged or replaced depending on the scenario.
                         // When merging multiple image info files together into a single file, the tags should be
                         // merged to account for cases where tags for a given image are spread across multiple
-                        // image info files.  But when publishing an image info file it the source tags should replace
+                        // image info files.  But when publishing an image info file the source tags should replace
                         // the destination tags.  Any of the image's tags contained in the target should be considered
                         // obsolete and should be replaced by the source.  This accounts for the scenario where shared
                         // tags are moved from one image to another. If we had merged instead of replaced, then the

@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetDotNetVersion(ImageInfo image)
         {
-            Version version = Version.Parse(image.Model.ProductVersion);
+            Version version = Version.Parse(image.ProductVersion);
             return version.ToString(2); // Return major.minor
         }
 

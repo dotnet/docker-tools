@@ -298,10 +298,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<string>
+                                SharedTags = new List<SharedTag>
                                 {
-                                    "shared1",
-                                    "shared2"
+                                    new SharedTag
+                                    {
+                                        Name = "shared1"
+                                    },
+                                    new SharedTag
+                                    {
+                                        Name = "shared2"
+                                    }
                                 }
                             }
                         }
@@ -343,10 +349,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<string>
+                                SharedTags = new List<SharedTag>
                                 {
-                                    "shared2",
-                                    "shared3"
+                                    new SharedTag
+                                    {
+                                        Name = "shared2"
+                                    },
+                                    new SharedTag
+                                    {
+                                        Name = "shared3"
+                                    }
                                 }
                             }
                         }
@@ -382,11 +394,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     },
                                     targetImage2
                                 },
-                                SharedTags = new List<string>
+                                SharedTags = new List<SharedTag>
                                 {
-                                    "shared1",
-                                    "shared2",
-                                    "shared3"
+                                    new SharedTag
+                                    {
+                                        Name = "shared1"
+                                    },
+                                    new SharedTag
+                                    {
+                                        Name = "shared2"
+                                    },
+                                    new SharedTag
+                                    {
+                                        Name = "shared3"
+                                    }
                                 }
                             }
                         }
@@ -433,9 +454,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<string>
+                                SharedTags = new List<SharedTag>
                                 {
-                                    "sharedtag1"
+                                    new SharedTag
+                                    {
+                                        Name = "sharedtag1"
+                                    }
                                 }
                             }
                         }
@@ -479,9 +503,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<string>
+                                SharedTags = new List<SharedTag>
                                 {
-                                    "sharedtag2"
+                                    new SharedTag
+                                    {
+                                        Name = "sharedtag2"
+                                    }
                                 }
                             }
                         }
@@ -512,9 +539,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     srcPlatform1,
                                     targetPlatform2
                                 },
-                                SharedTags = new List<string>
+                                SharedTags = new List<SharedTag>
                                 {
-                                    "sharedtag1"
+                                    new SharedTag
+                                    {
+                                        Name = "sharedtag1"
+                                    }
                                 }
                             }
                         }

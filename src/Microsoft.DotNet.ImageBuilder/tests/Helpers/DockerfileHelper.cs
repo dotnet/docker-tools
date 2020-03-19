@@ -8,11 +8,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
     public static class DockerfileHelper
     {
-        public static void CreateDockerfile(string destinationFolder, string fromTag)
+        public static string CreateDockerfile(string relativeDirectory, TempFolderContext context, string fromTag = "base")
         {
-            DirectoryInfo dir = Directory.CreateDirectory(destinationFolder);
-            string dockerfilePath = Path.Combine(dir.FullName, "Dockerfile");
-            File.WriteAllText(dockerfilePath, $"FROM {fromTag}");
+            Directory.CreateDirectory(Path.Combine(context.Path, relativeDirectory));
+            string dockerfileRelativePath = Path.Combine(relativeDirectory, "Dockerfile");
+            File.WriteAllText(PathHelper.NormalizePath(Path.Combine(context.Path, dockerfileRelativePath)), $"FROM {fromTag}");
+            return PathHelper.NormalizePath(dockerfileRelativePath);
         }
     }
 }

@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task UpdateAllImages()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Manifest manifest = CreateTestData(tempFolderContext.Path);
+            Manifest manifest = CreateTestData(tempFolderContext);
 
             const int RuntimeDepsSize = 1;
             const int RuntimeSize = 2;
@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task UpdateOutOfRangeImagesOnly()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Manifest manifest = CreateTestData(tempFolderContext.Path);
+            Manifest manifest = CreateTestData(tempFolderContext);
 
             const long ActualRuntimeDepsSize = 105;
             const long ActualRuntimeSize = 111;
@@ -150,11 +150,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return baseline;
         }
 
-        private static Manifest CreateTestData(string basePath)
+        private static Manifest CreateTestData(TempFolderContext tempFolderContext)
         {
-            CreateDockerfile(Path.Combine(basePath, RuntimeDepsRelativeDir), "base");
-            CreateDockerfile(Path.Combine(basePath, RuntimeRelativeDir), GetTag(RuntimeDepsRepo, RuntimeDepsTag));
-            CreateDockerfile(Path.Combine(basePath, SdkRelativeDir), "base");
+            CreateDockerfile(RuntimeDepsRelativeDir, tempFolderContext);
+            CreateDockerfile(RuntimeRelativeDir, tempFolderContext, GetTag(RuntimeDepsRepo, RuntimeDepsTag));
+            CreateDockerfile(SdkRelativeDir, tempFolderContext, "base");
 
             return CreateManifest(
                 CreateRepo(RuntimeDepsRepo,

@@ -93,8 +93,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
                     if (options.ReplaceTags &&
-                        ((srcObj is PlatformData && property.Name == nameof(PlatformData.SimpleTags)) ||
-                        (srcObj is ImageData && property.Name == nameof(ImageData.SharedTags))))
+                        srcObj is PlatformData &&
+                        property.Name == nameof(PlatformData.SimpleTags))
                     {
                         // Tags can be merged or replaced depending on the scenario.
                         // When merging multiple image info files together into a single file, the tags should be
@@ -127,6 +127,20 @@ namespace Microsoft.DotNet.ImageBuilder
                 else if (typeof(IList<RepoData>).IsAssignableFrom(property.PropertyType))
                 {
                     MergeLists<RepoData>(property, srcObj, targetObj, options);
+                }
+                else if (typeof(IList<SharedTag>).IsAssignableFrom(property.PropertyType))
+                {
+                    if (options.ReplaceTags &&
+                        srcObj is ImageData &&
+                        property.Name == nameof(ImageData.SharedTags))
+                    {
+                        // Replace shared tags instead of merging them. See comment for SimpleTags above.
+                        ReplaceValue(property, srcObj, targetObj);
+                    }
+                    else
+                    {
+                        MergeLists<SharedTag>(property, srcObj, targetObj, options);
+                    }
                 }
                 else
                 {

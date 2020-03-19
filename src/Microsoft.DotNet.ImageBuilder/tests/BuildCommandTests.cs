@@ -116,9 +116,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     },
-                                    SharedTags = new List<string>()
+                                    SharedTags = new List<SharedTag>()
                                     {
-                                        "shared"
+                                        new SharedTag
+                                        {
+                                            Name = "shared"
+                                        }
                                     }
                                 }
                             }

@@ -118,7 +118,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                  	if (image.SharedTags.Any())
                     {
                         imageData.SharedTags = image.SharedTags
-                            .Select(tag => tag.Name)
+                            .Select(tag => new SharedTag
+                            {
+                                Name = tag.Name
+                            })
                             .ToList();
                     }   repoData.Images.Add(imageData);
 

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -16,31 +17,43 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
     {
-        public PublishManifestCommand() : base()
+        private readonly IManifestToolService manifestToolService;
+        private readonly IEnvironmentService environmentService;
+        private readonly ILoggerService loggerService;
+
+        [ImportingConstructor]
+        public PublishManifestCommand(
+            IManifestToolService manifestToolService,
+            IEnvironmentService environmentService,
+            ILoggerService loggerService)
         {
+            this.manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
+            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING MANIFESTS");
+            this.loggerService.WriteHeading("GENERATING MANIFESTS");
 
             ExecuteWithUser(() =>
             {
                 IEnumerable<ImageInfo> multiArchImages = Manifest.GetFilteredImages()
-                    .Where(image => image.SharedTags.Any());
+                    .Where(image => image.SharedTags.Any())
+                    .ToList();
+
+                DateTime createdDate = DateTime.Now.ToUniversalTime();
                 Parallel.ForEach(multiArchImages, image =>
                 {
                     string manifest = GenerateManifest(image);
 
                     string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
-                    Logger.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
+                    this.loggerService.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
                     File.WriteAllText(manifestFilename, manifest);
 
                     try
                     {
-                        // ExecuteWithRetry because the manifest-tool fails periodically while communicating
-                        // with the Docker Registry.
-                        ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFilename}", Options.IsDryRun);
+                        this.manifestToolService.PushFromSpec(manifestFilename, Options.IsDryRun);
                     }
                     finally
                     {
@@ -49,9 +62,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
 
                 WriteManifestSummary(multiArchImages);
+
+                SaveTagInfoToImageInfoFile(multiArchImages, createdDate);
             });
 
             return Task.CompletedTask;
+        }
+
+        private void SaveTagInfoToImageInfoFile(IEnumerable<ImageInfo> imageInfos, DateTime createdDate)
+        {
+            this.loggerService.WriteSubheading("SETTING TAG INFO");
+
+            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+
+            // Find the images from the image info file that correspond to the images that were published
+            IEnumerable<ImageData> imageDataList = imageArtifactDetails.Repos
+                .SelectMany(repo => repo.Images)
+                .Where(image => imageInfos.Contains(image.ManifestImage));
+
+            if (imageDataList.Count() != imageInfos.Count())
+            {
+                this.loggerService.WriteError(
+                    $"There is a mismatch between the number of images being published and the number of images contained in the image info file ({imageInfos.Count()} vs {imageDataList.Count()}, respectively).");
+                this.environmentService.Exit(1);
+            }
+
+            IEnumerable<SharedTag> sharedTags = imageDataList
+                .SelectMany(image => image.SharedTags.OrderBy(tag => tag.Name));
+
+            IEnumerable<TagInfo> tagInfos = imageDataList
+                .SelectMany(image => image.ManifestImage.SharedTags.OrderBy(tag => tag.Name));
+
+            // Generate a set of tuples that pairs each SharedTag with its corresponding TagInfo
+            IEnumerable<(SharedTag SharedTag, TagInfo TagInfo)> sharedTagInfos = sharedTags.Zip(tagInfos);
+
+            foreach ((SharedTag SharedTag, TagInfo TagInfo) sharedTagInfo in sharedTagInfos)
+            {
+                sharedTagInfo.SharedTag.Created = createdDate;
+            }
+
+            string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
+            File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
         }
 
         private string GenerateManifest(ImageInfo image)
@@ -85,7 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteManifestSummary(IEnumerable<ImageInfo> multiArchImages)
         {
-            Logger.WriteHeading("MANIFEST TAGS PUBLISHED");
+            this.loggerService.WriteHeading("MANIFEST TAGS PUBLISHED");
 
             IEnumerable<string> multiArchTags = multiArchImages.SelectMany(image => image.SharedTags)
                 .Select(tag => tag.FullyQualifiedName)
@@ -94,15 +145,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 foreach (string tag in multiArchTags)
                 {
-                    Logger.WriteMessage(tag);
+                    this.loggerService.WriteMessage(tag);
                 }
             }
             else
             {
-                Logger.WriteMessage("No manifests published");
+                this.loggerService.WriteMessage("No manifests published");
             }
 
-            Logger.WriteMessage();
+            this.loggerService.WriteMessage();
         }
     }
 }

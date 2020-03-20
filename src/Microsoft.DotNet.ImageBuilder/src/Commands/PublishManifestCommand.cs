@@ -87,18 +87,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 this.environmentService.Exit(1);
             }
 
-            IEnumerable<SharedTag> sharedTags = imageDataList
-                .SelectMany(image => image.SharedTags.OrderBy(tag => tag.Name));
-
-            IEnumerable<TagInfo> tagInfos = imageDataList
-                .SelectMany(image => image.ManifestImage.SharedTags.OrderBy(tag => tag.Name));
-
-            // Generate a set of tuples that pairs each SharedTag with its corresponding TagInfo
-            IEnumerable<(SharedTag SharedTag, TagInfo TagInfo)> sharedTagInfos = sharedTags.Zip(tagInfos);
-
-            foreach ((SharedTag SharedTag, TagInfo TagInfo) sharedTagInfo in sharedTagInfos)
+            foreach (ImageData image in imageDataList)
             {
-                sharedTagInfo.SharedTag.Created = createdDate;
+                image.Manifest.Created = createdDate;
             }
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);

@@ -298,15 +298,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "shared1"
-                                    },
-                                    new SharedTag
-                                    {
-                                        Name = "shared2"
+                                        "shared1",
+                                        "shared2"
                                     }
                                 }
                             }
@@ -349,15 +346,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "shared2"
-                                    },
-                                    new SharedTag
-                                    {
-                                        Name = "shared3"
+                                        "shared2",
+                                        "shared3"
                                     }
                                 }
                             }
@@ -394,19 +388,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     },
                                     targetImage2
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "shared1"
-                                    },
-                                    new SharedTag
-                                    {
-                                        Name = "shared2"
-                                    },
-                                    new SharedTag
-                                    {
-                                        Name = "shared3"
+                                        "shared1",
+                                        "shared2",
+                                        "shared3"
                                     }
                                 }
                             }
@@ -454,11 +442,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "sharedtag1"
+                                        "sharedtag1",
                                     }
                                 }
                             }
@@ -503,11 +491,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         }
                                     }
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "sharedtag2"
+                                        "sharedtag2",
                                     }
                                 }
                             }
@@ -539,11 +527,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     srcPlatform1,
                                     targetPlatform2
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "sharedtag1"
+                                        "sharedtag1",
                                     }
                                 }
                             }

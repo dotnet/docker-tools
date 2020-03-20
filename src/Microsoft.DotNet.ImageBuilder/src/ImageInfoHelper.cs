@@ -72,6 +72,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void MergeData(object srcObj, object targetObj, ImageInfoMergeOptions options)
         {
+            if (!((srcObj is null && targetObj is null) || (!(srcObj is null) && !(targetObj is null))))
+            {
+                throw new InvalidOperationException("The src and target objects must either be both null or both non-null.");
+            }
+
+            if (srcObj is null)
+            {
+                return;
+            }
+
             if (srcObj.GetType() != targetObj.GetType())
             {
                 throw new ArgumentException("Object types don't match.", nameof(targetObj));
@@ -93,8 +103,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
                     if (options.ReplaceTags &&
-                        srcObj is PlatformData &&
-                        property.Name == nameof(PlatformData.SimpleTags))
+                        ((srcObj is PlatformData && property.Name == nameof(PlatformData.SimpleTags)) ||
+                        (srcObj is ManifestData && property.Name == nameof(ManifestData.SharedTags))))
                     {
                         // Tags can be merged or replaced depending on the scenario.
                         // When merging multiple image info files together into a single file, the tags should be
@@ -128,19 +138,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     MergeLists<RepoData>(property, srcObj, targetObj, options);
                 }
-                else if (typeof(IList<SharedTag>).IsAssignableFrom(property.PropertyType))
+                else if (typeof(ManifestData).IsAssignableFrom(property.PropertyType))
                 {
-                    if (options.ReplaceTags &&
-                        srcObj is ImageData &&
-                        property.Name == nameof(ImageData.SharedTags))
-                    {
-                        // Replace shared tags instead of merging them. See comment for SimpleTags above.
-                        ReplaceValue(property, srcObj, targetObj);
-                    }
-                    else
-                    {
-                        MergeLists<SharedTag>(property, srcObj, targetObj, options);
-                    }
+                    MergeData(property.GetValue(srcObj), property.GetValue(targetObj), options);
                 }
                 else
                 {

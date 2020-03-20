@@ -13,13 +13,13 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class ImageData : IComparable<ImageData>
     {
-        public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
-
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string ProductVersion { get; set; }
-        
+
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public List<SharedTag> SharedTags { get; set; }
+        public ManifestData Manifest { get; set; }
+
+        public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
 
         /// <summary>
         /// Gets or sets a reference to the corresponding image definition in the manifest.

@@ -57,15 +57,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         
                                     }
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "sharedtag1"
-                                    },
-                                    new SharedTag
-                                    {
-                                        Name = "sharedtag2"
+                                        "sharedtag1",
+                                        "sharedtag2"
                                     }
                                 }
                             }
@@ -86,15 +83,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                                     }
                                 },
-                                SharedTags = new List<SharedTag>
+                                Manifest = new ManifestData
                                 {
-                                    new SharedTag
+                                    SharedTags =
                                     {
-                                        Name = "sharedtag1"
-                                    },
-                                    new SharedTag
-                                    {
-                                        Name = "sharedtag3"
+                                        "sharedtag1",
+                                        "sharedtag3"
                                     }
                                 }
                             }
@@ -139,14 +133,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Since we don't know what the exact Created time will be that the command has calculated, we're going to
             // pull it from the data, verify that it's recent and then use it for constructing our expected data value.
-            DateTime actualCreatedDate = actualImageArtifactDetails.Repos[0].Images[0].SharedTags[0].Created;
+            DateTime actualCreatedDate = actualImageArtifactDetails.Repos[0].Images[0].Manifest.Created;
             Assert.True(actualCreatedDate > (DateTime.Now.ToUniversalTime() - TimeSpan.FromMinutes(1)));
             Assert.True(actualCreatedDate < (DateTime.Now.ToUniversalTime() + TimeSpan.FromMinutes(1)));
 
-            imageArtifactDetails.Repos[0].Images[0].SharedTags[0].Created = actualCreatedDate;
-            imageArtifactDetails.Repos[0].Images[0].SharedTags[1].Created = actualCreatedDate;
-            imageArtifactDetails.Repos[1].Images[0].SharedTags[0].Created = actualCreatedDate;
-            imageArtifactDetails.Repos[1].Images[0].SharedTags[1].Created = actualCreatedDate;
+            imageArtifactDetails.Repos[0].Images[0].Manifest.Created = actualCreatedDate;
+            imageArtifactDetails.Repos[1].Images[0].Manifest.Created = actualCreatedDate;
 
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
 

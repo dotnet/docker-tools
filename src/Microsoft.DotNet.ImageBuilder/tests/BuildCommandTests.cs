@@ -116,11 +116,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             }
                                         }
                                     },
-                                    SharedTags = new List<SharedTag>()
+                                    Manifest = new ManifestData
                                     {
-                                        new SharedTag
+                                        SharedTags =
                                         {
-                                            Name = "shared"
+                                            "shared"
                                         }
                                     }
                                 }

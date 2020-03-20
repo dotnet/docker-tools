@@ -58,24 +58,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            foreach (var image in GetBuiltPlatforms())
+            foreach (var platform in GetBuiltPlatforms())
             {
-                foreach (string tag in image.FullyQualifiedSimpleTags)
+                foreach (string tag in platform.FullyQualifiedSimpleTags)
                 {
-                    // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
-                    // It is output in the form of <repo>@<sha> but we only want the sha.
-                    string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
-                    digest = digest.Substring(digest.IndexOf("@") + 1);
-
-                    if (image.Digest != null && image.Digest != digest)
+                    if (Options.IsPushEnabled)
                     {
-                        // Pushing the same image with different tags should result in the same digest being output
+                        // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
+                        // It is output in the form of <repo>@<sha> but we only want the sha.
+                        string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
+                        digest = digest.Substring(digest.IndexOf("@") + 1);
+
+                        if (platform.Digest != null && platform.Digest != digest)
+                        {
+                            // Pushing the same image with different tags should result in the same digest being output
+                            this.loggerService.WriteError(
+                                $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{platform.Digest}'.");
+                            this.environmentService.Exit(1);
+                        }
+
+                        platform.Digest = digest;
+                    }
+
+                    DateTime createdDate = this.dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
+                    if (platform.Created != default && platform.Created != createdDate)
+                    {
+                        // All of the tags associated with the platform should have the same Created date
                         this.loggerService.WriteError(
-                            $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Digest}'.");
+                            $"Tag '{tag}' has a Created date that differs from the corresponding image's Created date value of '{platform.Created}'.");
                         this.environmentService.Exit(1);
                     }
 
-                    image.Digest = digest;
+                    platform.Created = createdDate;
                 }
             }
 
@@ -101,12 +115,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         ProductVersion = image.ProductVersion
                     };
+
                  	if (image.SharedTags.Any())
                     {
-                        imageData.SharedTags = image.SharedTags
-                            .Select(tag => tag.Name)
-                            .ToList();
-                    }   repoData.Images.Add(imageData);
+                        imageData.Manifest = new ManifestData
+                        {
+                            SharedTags = image.SharedTags
+                                .Select(tag => tag.Name)
+                                .ToList()
+                        };
+                    }
+                    
+                    repoData.Images.Add(imageData);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {

@@ -12,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
+        public string ImageInfoPath { get; set; }
+
         public PublishManifestOptions() : base()
         {
         }
@@ -21,6 +23,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.DefineOptions(syntax);
 
             FilterOptions.DefineOptions(syntax);
+        }
+
+        public override void DefineParameters(ArgumentSyntax syntax)
+        {
+            base.DefineParameters(syntax);
+
+            string imageInfoPath = null;
+            syntax.DefineParameter(
+                "image-info-path",
+                ref imageInfoPath,
+                "Image info file path");
+            ImageInfoPath = imageInfoPath;
         }
     }
 }

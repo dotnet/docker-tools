@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -48,6 +49,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock
                     .Setup(o => o.GetImageDigest(baseImageTag, false))
                     .Returns(baseImageDigest);
+
+                DateTime createdDate = DateTime.Now;
+
+                dockerServiceMock
+                    .Setup(o => o.GetCreatedDate($"{repoName}:{tag}", false))
+                    .Returns(createdDate);
 
                 BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -102,15 +109,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             OsVersion = "Ubuntu 19.04",
                                             Digest = sha,
                                             BaseImageDigest = baseImageDigest,
+                                            Created = createdDate.ToUniversalTime(),
                                             SimpleTags =
                                             {
                                                 tag
                                             }
                                         }
                                     },
-                                    SharedTags = new List<string>()
+                                    Manifest = new ManifestData
                                     {
-                                        "shared"
+                                        SharedTags =
+                                        {
+                                            "shared"
+                                        }
                                     }
                                 }
                             }

@@ -72,6 +72,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void MergeData(object srcObj, object targetObj, ImageInfoMergeOptions options)
         {
+            if (!((srcObj is null && targetObj is null) || (!(srcObj is null) && !(targetObj is null))))
+            {
+                throw new InvalidOperationException("The src and target objects must either be both null or both non-null.");
+            }
+
+            if (srcObj is null)
+            {
+                return;
+            }
+
             if (srcObj.GetType() != targetObj.GetType())
             {
                 throw new ArgumentException("Object types don't match.", nameof(targetObj));
@@ -82,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (PropertyInfo property in properties)
             {
-                if (property.PropertyType == typeof(string))
+                if (property.PropertyType == typeof(string) || property.PropertyType == typeof(DateTime))
                 {
                     property.SetValue(targetObj, property.GetValue(srcObj));
                 }
@@ -94,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     if (options.ReplaceTags &&
                         ((srcObj is PlatformData && property.Name == nameof(PlatformData.SimpleTags)) ||
-                        (srcObj is ImageData && property.Name == nameof(ImageData.SharedTags))))
+                        (srcObj is ManifestData && property.Name == nameof(ManifestData.SharedTags))))
                     {
                         // Tags can be merged or replaced depending on the scenario.
                         // When merging multiple image info files together into a single file, the tags should be
@@ -127,6 +137,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 else if (typeof(IList<RepoData>).IsAssignableFrom(property.PropertyType))
                 {
                     MergeLists<RepoData>(property, srcObj, targetObj, options);
+                }
+                else if (typeof(ManifestData).IsAssignableFrom(property.PropertyType))
+                {
+                    MergeData(property.GetValue(srcObj), property.GetValue(targetObj), options);
                 }
                 else
                 {

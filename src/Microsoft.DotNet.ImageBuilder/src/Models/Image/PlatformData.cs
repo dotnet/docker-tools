@@ -14,18 +14,20 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
     {
         public string Dockerfile { get; set; }
 
-        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public string BaseImageDigest { get; set; }
-
         public List<string> SimpleTags { get; set; } = new List<string>();
 
         public string Digest { get; set; }
 
-        public string Architecture { get; set; }
-        
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public string BaseImageDigest { get; set; }
+
         public string OsType { get; set; }
-        
+
         public string OsVersion { get; set; }
+
+        public string Architecture { get; set; }
+
+        public DateTime Created { get; set; }
 
         [JsonIgnore]
         public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }

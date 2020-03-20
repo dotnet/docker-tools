@@ -302,7 +302,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.IsPullEnabled = false;
 
                 // Use the image size data defined by the test to generate a manifest file
-                Manifest manifest = CreateTestManifest(tempFolderContext.Path, this.imageSizes);
+                Manifest manifest = CreateTestManifest(tempFolderContext, this.imageSizes);
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 // Execute the command
@@ -354,7 +354,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(path, json.ToString());
         }
 
-        private static Manifest CreateTestManifest(string basePath, IEnumerable<ImageSizeData> imageSizes)
+        private static Manifest CreateTestManifest(TempFolderContext tempFolderContext, IEnumerable<ImageSizeData> imageSizes)
         {
             // An image is only defined in the manifest if its test data indicates it has an actual image size.
             bool isImageDefined(string imagePath) =>
@@ -367,13 +367,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 List<Platform> platforms = new List<Platform>();
                 if (isImageDefined(RuntimeDeps1RelativeDir))
                 {
-                    CreateDockerfile(Path.Combine(basePath, RuntimeDeps1RelativeDir), "base");
+                    CreateDockerfile(RuntimeDeps1RelativeDir, tempFolderContext);
                     platforms.Add(CreatePlatform(RuntimeDeps1RelativeDir, new string[] { RuntimeDeps1Tag }));
                 }
 
                 if (isImageDefined(RuntimeDeps2RelativeDir))
                 {
-                    CreateDockerfile(Path.Combine(basePath, RuntimeDeps2RelativeDir), "base");
+                    CreateDockerfile(RuntimeDeps2RelativeDir, tempFolderContext);
                     platforms.Add(CreatePlatform(RuntimeDeps2RelativeDir, new string[] { RuntimeDeps2Tag }));
                 }
 
@@ -382,7 +382,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (isImageDefined(RuntimeRelativeDir))
             {
-                CreateDockerfile(Path.Combine(basePath, RuntimeRelativeDir), GetTag(RuntimeDepsRepo, RuntimeDeps1Tag));
+                CreateDockerfile(RuntimeRelativeDir, tempFolderContext, GetTag(RuntimeDepsRepo, RuntimeDeps1Tag));
                 repos.Add(CreateRepo(RuntimeRepo,
                     CreateImage(
                         CreatePlatform(RuntimeRelativeDir, new string[] { RuntimeTag }))));
@@ -390,7 +390,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (isImageDefined(AspnetRelativeDir))
             {
-                CreateDockerfile(Path.Combine(basePath, AspnetRelativeDir), GetTag(RuntimeRepo, RuntimeTag));
+                CreateDockerfile(AspnetRelativeDir, tempFolderContext, GetTag(RuntimeRepo, RuntimeTag));
                 repos.Add(CreateRepo(AspnetRepo,
                     CreateImage(
                         CreatePlatform(AspnetRelativeDir, new string[] { AspnetTag }))));
@@ -398,7 +398,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (isImageDefined(SdkRelativeDir))
             {
-                CreateDockerfile(Path.Combine(basePath, SdkRelativeDir), "base");
+                CreateDockerfile(SdkRelativeDir, tempFolderContext);
                 repos.Add(CreateRepo(SdkRepo,
                     CreateImage(
                         CreatePlatform(SdkRelativeDir, new string[] { SdkTag }))));

@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
@@ -589,14 +590,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
             }
-        }
-
-        private static string CreateDockerfile(string relativeDirectory, TempFolderContext context)
-        {
-            Directory.CreateDirectory(Path.Combine(context.Path, relativeDirectory));
-            string dockerfileRelativePath = Path.Combine(relativeDirectory, "Dockerfile");
-            File.WriteAllText(PathHelper.NormalizePath(Path.Combine(context.Path, dockerfileRelativePath)), "FROM base");
-            return PathHelper.NormalizePath(dockerfileRelativePath);
         }
     }
 }

@@ -45,7 +45,6 @@ jobs:
   - script: >
       $(runImageBuilderCmd) publishManifest
       $(artifactsPath)/image-info.json
-      $(artifactsPath)/image-info.json
       --repo-prefix $(publishRepoPrefix)
       --username $(acr.userName)
       --password $(BotAccount-dotnet-docker-acr-bot-password)

@@ -34,7 +34,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info-output.json");
 
             string dockerfile1 = CreateDockerfile("1.0/repo1/os", tempFolderContext);
             string dockerfile2 = CreateDockerfile("1.0/repo2/os", tempFolderContext);
@@ -134,7 +133,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoPath);
 
             ImageArtifactDetails actualImageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(actualOutput);
 

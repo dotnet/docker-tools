@@ -14,8 +14,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string ImageInfoPath { get; set; }
 
-        public string ImageInfoOutputPath { get; set; }
-
         public PublishManifestOptions() : base()
         {
         }
@@ -37,13 +35,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref imageInfoPath,
                 "Image info file path");
             ImageInfoPath = imageInfoPath;
-
-            string imageInfoOutputPath = null;
-            syntax.DefineParameter(
-                "image-info-output-path",
-                ref imageInfoOutputPath,
-                "Path to output image info");
-            ImageInfoOutputPath = imageInfoOutputPath;
         }
     }
 }

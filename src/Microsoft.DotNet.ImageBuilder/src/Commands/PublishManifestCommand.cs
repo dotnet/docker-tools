@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
-            File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
+            File.WriteAllText(Options.ImageInfoPath, imageInfoString);
         }
 
         private string GenerateManifest(ImageInfo image)

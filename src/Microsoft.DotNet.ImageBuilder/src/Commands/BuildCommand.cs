@@ -99,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     ImageData imageData = new ImageData
                     {
-                        ProductVersion = image.Model.ProductVersion
+                        ProductVersion = image.ProductVersion
                     };
                  	if (image.SharedTags.Any())
                     {

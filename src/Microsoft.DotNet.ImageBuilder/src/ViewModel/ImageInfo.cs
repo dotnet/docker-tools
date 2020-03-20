@@ -22,6 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public Image Model { get; private set; }
         public IEnumerable<TagInfo> SharedTags { get; private set; }
+        public string ProductVersion { get; private set; }
 
         private ImageInfo()
         {
@@ -32,6 +33,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             ImageInfo imageInfo = new ImageInfo();
             imageInfo.Model = model;
+
+            imageInfo.ProductVersion = variableHelper.SubstituteValues(model.ProductVersion);
 
             if (model.SharedTags == null)
             {

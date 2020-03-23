@@ -9,6 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class ManifestData
     {
+        public string Digest { get; set; }
         public DateTime Created { get; set; }
         public List<string> SharedTags { get; set; } = new List<string>();
     }

@@ -11,6 +11,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -20,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IManifestToolService manifestToolService;
         private readonly IEnvironmentService environmentService;
         private readonly ILoggerService loggerService;
+
+        public const string ManifestListMediaType = "application/vnd.docker.distribution.manifest.list.v2+json";
 
         [ImportingConstructor]
         public PublishManifestCommand(
@@ -87,10 +90,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 this.environmentService.Exit(1);
             }
 
-            foreach (ImageData image in imageDataList)
+            Parallel.ForEach(imageDataList, image =>
             {
                 image.Manifest.Created = createdDate;
-            }
+
+                TagInfo sharedTag = image.ManifestImage.SharedTags.First();
+                JArray tagManifest = this.manifestToolService.Inspect(sharedTag.FullyQualifiedName, Options.IsDryRun);
+                string digest = tagManifest
+                    .OfType<JObject>()
+                    .First(manifestType => manifestType["MediaType"].Value<string>() == ManifestListMediaType)
+                    ["Digest"].Value<string>();
+                image.Manifest.Digest = digest;
+            });
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoPath, imageInfoString);

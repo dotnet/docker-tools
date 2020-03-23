@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -14,6 +16,12 @@ namespace Microsoft.DotNet.ImageBuilder
             // ExecuteWithRetry because the manifest-tool fails periodically while communicating
             // with the Docker Registry.
             ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFile}", isDryRun);
+        }
+
+        public JArray Inspect(string image, bool isDryRun)
+        {
+            string output = ExecuteHelper.ExecuteWithRetry("manifest-tool", $"inspect {image} --raw", isDryRun);
+            return JsonConvert.DeserializeObject<JArray>(output);
         }
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -16,6 +17,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
     {
         private readonly static char[] s_pathSeparators = { '/', '\\' };
+
+        private const string VersionRegGroupName = "Version";
+        private static readonly Regex s_versionRegex = new Regex(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
 
         public GenerateBuildMatrixCommand() : base()
         {
@@ -104,8 +108,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetDotNetVersion(ImageInfo image)
         {
-            Version version = Version.Parse(image.ProductVersion);
-            return version.ToString(2); // Return major.minor
+            if (image.ProductVersion is null)
+            {
+                return null;
+            }
+
+            Match match = s_versionRegex.Match(image.ProductVersion);
+            if (match.Success)
+            {
+                Version version = Version.Parse(match.Groups[VersionRegGroupName].Value);
+                return version.ToString(2); // Return major.minor
+            }
+
+            return null;            
         }
 
         private void AddVersionedOsLegs(BuildMatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)

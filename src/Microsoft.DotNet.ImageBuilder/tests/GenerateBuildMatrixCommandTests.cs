@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 ManifestHelper.CreatePlatform(runtimeRelativeDir, new string[] { "runtime" })
                             },
-                            productVersion: "2.2.3"))
+                            productVersion: "2.2.3-preview"))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

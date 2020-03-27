@@ -1,6 +1,13 @@
 trigger: none
 pr: none
 
+schedules:
+- cron: "0 0,4,8,12,16,20 * * *"
+  displayName: Daily build
+  branches:
+    include:
+    - feature/image-info-schema
+
 variables:
 - template: templates/variables/common.yml
 

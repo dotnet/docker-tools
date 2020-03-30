@@ -8,13 +8,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class BuildOptions : DockerRegistryOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Builds and Tests Dockerfiles";
+        protected override string CommandHelp => "Builds Dockerfiles";
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
         public string ImageInfoOutputPath { get; set; }
+        public string SourceRepoUrl { get; set; }
 
         public BuildOptions() : base()
         {
@@ -41,6 +42,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string imageInfoOutputPath = null;
             syntax.DefineOption("image-info-output-path", ref imageInfoOutputPath, "Path to output image info");
             ImageInfoOutputPath = imageInfoOutputPath;
+
+            string sourceRepoUrl = null;
+            syntax.DefineOption("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
+            SourceRepoUrl = sourceRepoUrl;
         }
     }
 }

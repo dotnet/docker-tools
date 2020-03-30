@@ -55,16 +55,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock
                     .Setup(o => o.GetCreatedDate($"{repoName}:{tag}", false))
                     .Returns(createdDate);
+                
+                const string runtimeRelativeDir = "1.0/runtime/os";
+                Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+                string dockerfileRelativePath = PathHelper.NormalizePath(Path.Combine(runtimeRelativeDir, "Dockerfile"));
+                string fullDockerfilePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+                File.WriteAllText(fullDockerfilePath, $"FROM {baseImageTag}");
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
+                const string dockerfileCommitSha = "mycommit";
+                Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+                gitServiceMock
+                    .Setup(o => o.GetCommitSha(fullDockerfilePath, It.IsAny<bool>()))
+                    .Returns(dockerfileCommitSha);
+
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                    gitServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
-
-                const string runtimeRelativeDir = "1.0/runtime/os";
-                Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-                string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
-                File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), $"FROM {baseImageTag}");
+                command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
                 const string ProductVersion = "1.0.1";
 
@@ -113,7 +122,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             SimpleTags =
                                             {
                                                 tag
-                                            }
+                                            },
+                                            CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{dockerfileRelativePath}"
                                         }
                                     },
                                     Manifest = new ManifestData
@@ -154,7 +164,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .SetupGet(o => o.Architecture)
                 .Returns(Architecture.AMD64);
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -218,14 +229,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetImageDigest("runtime:runtime", false))
                     .Returns(digest);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
-                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-                command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-
                 const string runtimeRelativeDir = "1.0/runtime/os";
                 Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
                 string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+                const string dockerfileCommitSha = "mycommit";
+                Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+                gitServiceMock
+                    .Setup(o => o.GetCommitSha(dockerfileRelativePath, It.IsAny<bool>()))
+                    .Returns(dockerfileCommitSha);
+
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                    gitServiceMock.Object);
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+                command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
                 Manifest manifest = CreateManifest(
                     CreateRepo("runtime",

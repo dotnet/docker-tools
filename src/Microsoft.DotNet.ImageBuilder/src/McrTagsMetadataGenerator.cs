@@ -89,11 +89,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private string GetTagGroupYaml(ImageDocumentationInfo info)
         {
-            string branchOrShaPathSegment = _sourceBranch ??
-                _gitService.GetCommitSha(info.Platform.DockerfilePath, useFullHash: true);
-
-            string dockerfileRelativePath = PathHelper.NormalizePath(info.Platform.DockerfilePathRelativeToManifest);
-            string dockerfilePath = $"{_sourceRepoUrl}/blob/{branchOrShaPathSegment}/{dockerfileRelativePath}";
+            string dockerfilePath = _gitService.GetDockerfileCommitUrl(info.Platform, _sourceRepoUrl, _sourceBranch);
 
             StringBuilder yaml = new StringBuilder();
             yaml.AppendLine($"  - tags: [ {info.FormattedDocumentedTags} ]");

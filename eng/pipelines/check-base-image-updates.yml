@@ -6,7 +6,9 @@ schedules:
   displayName: Daily build
   branches:
     include:
+    - master
     - feature/image-info-schema
+  always: true
 
 variables:
 - template: templates/variables/common.yml

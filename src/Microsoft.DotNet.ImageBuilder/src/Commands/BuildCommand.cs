@@ -61,6 +61,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
+            if (String.IsNullOrEmpty(Options.SourceRepoUrl))
+            {
+                throw new InvalidOperationException("Source repo URL must be provided when outputting to an image info file.");
+            }
+
             foreach (var platform in GetBuiltPlatforms())
             {
                 foreach (string tag in platform.FullyQualifiedSimpleTags)

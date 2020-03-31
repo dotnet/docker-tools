@@ -25,14 +25,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
         private readonly IEnvironmentService environmentService;
+        private readonly IGitService gitService;
         private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
+            IGitService gitService)
         {
             this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         public override Task ExecuteAsync()
@@ -56,6 +59,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (String.IsNullOrEmpty(Options.ImageInfoOutputPath))
             {
                 return;
+            }
+
+            if (String.IsNullOrEmpty(Options.SourceRepoUrl))
+            {
+                throw new InvalidOperationException("Source repo URL must be provided when outputting to an image info file.");
             }
 
             foreach (var platform in GetBuiltPlatforms())
@@ -90,6 +98,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
 
                     platform.Created = createdDate;
+
+                    PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
+                        .First(manifestPlatform => platform.Equals(manifestPlatform));
+
+                    platform.CommitUrl = gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
                 }
             }
 
@@ -308,7 +321,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .SelectMany(imageData => imageData.Platforms);
 
         private IEnumerable<string> GetBuiltTags() =>
-            GetBuiltPlatforms().SelectMany(image => image.AllTags);
+            GetBuiltPlatforms().SelectMany(platform => platform.AllTags);
 
         private void PushImages()
         {

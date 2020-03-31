@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public DateTime Created { get; set; }
 
+        public string CommitUrl { get; set; }
+
         [JsonIgnore]
         public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
 

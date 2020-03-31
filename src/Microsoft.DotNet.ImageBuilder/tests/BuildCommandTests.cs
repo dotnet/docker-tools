@@ -244,6 +244,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     gitServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+                command.Options.SourceRepoUrl = "https://source";
 
                 Manifest manifest = CreateManifest(
                     CreateRepo("runtime",

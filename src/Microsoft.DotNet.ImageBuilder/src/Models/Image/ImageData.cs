@@ -24,6 +24,10 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         /// <summary>
         /// Gets or sets a reference to the corresponding image definition in the manifest.
         /// </summary>
+        /// <remarks>
+        /// This can be null for an image info file that contains content for a platform that was once supported
+        /// but has since been removed from the manifest.
+        /// </remarks>
         [JsonIgnore]
         public ImageInfo ManifestImage { get; set; }
 
@@ -32,6 +36,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
             if (other is null)
             {
                 return 1;
+            }
+
+            if (ManifestImage is null || other.ManifestImage is null)
+            {
+                throw new InvalidOperationException($"Can't compare {nameof(ImageData)} objects if {nameof(ManifestImage)} is null.");
             }
 
             if (ManifestImage == other.ManifestImage)

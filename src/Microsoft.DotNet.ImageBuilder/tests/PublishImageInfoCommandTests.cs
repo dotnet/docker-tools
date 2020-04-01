@@ -15,6 +15,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -31,6 +32,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
+                string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+                string repo2Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
+                Manifest manifest = CreateManifest(
+                    CreateRepo("repo1",
+                        CreateImage(
+                            CreatePlatform(repo1Image1DockerfilePath, new string[0]))),
+                    CreateRepo("repo2",
+                        CreateImage(
+                            CreatePlatform(repo2Image2DockerfilePath, new string[0])))
+                );
+
                 RepoData repo2;
 
                 ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
@@ -46,14 +58,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     Platforms =
                                     {
-                                        new PlatformData
+                                        Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags: new List<string>
                                         {
-                                            Dockerfile = "image1",
-                                            SimpleTags =
-                                            {
-                                                "newtag"
-                                            }
-                                        }
+                                            "newtag"
+                                        })
                                     }
                                 }
                             }
@@ -68,14 +77,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Platforms =
                                         {
-                                            new PlatformData
+                                            Helpers.ImageInfoHelper.CreatePlatform(repo2Image2DockerfilePath,
+                                            simpleTags: new List<string>
                                             {
-                                                Dockerfile = "image2",
-                                                SimpleTags =
-                                                {
-                                                    "tag1"
-                                                }
-                                            }
+                                                "tag1"
+                                            })
                                         }
                                     }
                                 }
@@ -100,14 +106,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     Platforms =
                                     {
-                                        new PlatformData
-                                        {
-                                            Dockerfile = "image1",
-                                            SimpleTags =
+                                        Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                            simpleTags: new List<string>
                                             {
                                                 "oldtag"
-                                            }
-                                        }
+                                            })
                                     }
                                 }
                             }
@@ -127,7 +130,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.GitOptions.AuthToken = "token";
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
-                Manifest manifest = ManifestHelper.CreateManifest();
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
@@ -146,14 +148,160 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     Platforms =
                                     {
-                                        new PlatformData
-                                        {
-                                            Dockerfile = "image1",
-                                            SimpleTags =
+                                        Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                            simpleTags: new List<string>
                                             {
                                                 "newtag"
-                                            }
+                                            })
+                                    }
+                                }
+                            }
+                        },
+                        repo2
+                    }
+                };
+
+                Func<GitObject[], bool> verifyGitObjects = (gitObjects) =>
+                {
+                    if (gitObjects.Length != 1)
+                    {
+                        return false;
+                    }
+
+                    return gitObjects[0].Content.Trim() == JsonHelper.SerializeObject(expectedImageArtifactDetails).Trim();
+                };
+
+                gitHubClientMock.Verify(
+                    o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.Is<GitObject[]>(gitObjects => verifyGitObjects(gitObjects))));
+            }
+        }
+
+        /// <summary>
+        /// Verifies the command will remove any out-of-date content that exists within the target image info file,
+        /// meaning that it has content which isn't reflected in the manifest.
+        /// </summary>
+        [Fact]
+        public async Task PublishImageInfoCommand_RemoveOutOfDateContent()
+        {
+            using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+            {
+                string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+                string repo2Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
+                Manifest manifest = CreateManifest(
+                    CreateRepo("repo1",
+                        CreateImage(
+                            CreatePlatform(repo1Image1DockerfilePath, new string[0]))),
+                    CreateRepo("repo2",
+                        CreateImage(
+                            CreatePlatform(repo2Image2DockerfilePath, new string[0])))
+                );
+
+                RepoData repo2;
+
+                ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+                {
+                    Repos =
+                    {
+                        new RepoData
+                        {
+                            Repo = "repo1",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath)
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            repo2 = new RepoData
+                            {
+                                Repo = "repo2",
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            Helpers.ImageInfoHelper.CreatePlatform(repo2Image2DockerfilePath)
                                         }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                string file = Path.Combine(tempFolderContext.Path, "image-info.json");
+                File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
+
+                ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+                {
+                    Repos =
+                    {
+                        new RepoData
+                        {
+                            Repo = "repo1",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath)
+                                    }
+                                },
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        Helpers.ImageInfoHelper.CreatePlatform(
+                                            DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext))
+                                    }
+                                }
+                            }
+                        },
+                        new RepoData
+                        {
+                            Repo = "repo4"
+                        }
+                    }
+                };
+
+                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock(targetImageArtifactDetails);
+
+                Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
+                gitHubClientFactoryMock
+                    .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
+                    .Returns(gitHubClientMock.Object);
+
+                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
+                command.Options.ImageInfoPath = file;
+                command.Options.GitOptions.AuthToken = "token";
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+                command.LoadManifest();
+                await command.ExecuteAsync();
+
+                ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+                {
+                    Repos =
+                    {
+                        new RepoData
+                        {
+                            Repo = "repo1",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath)
                                     }
                                 }
                             }

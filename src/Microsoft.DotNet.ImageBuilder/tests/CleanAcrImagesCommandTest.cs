@@ -116,11 +116,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Manifest
                     {
                         Digest = repo1Digest1,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(1)),
                         Tags = new string[0]
                     },
                     new Manifest
                     {
                         Digest = repo1Digest2,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(31)),
                         Tags = new string[]
                         {
                             "tag"
@@ -140,11 +142,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Manifest
                     {
                         Digest = repo3Digest1,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(29)),
                         Tags = new string[0]
                     },
                     new Manifest
                     {
                         Digest = repo3Digest2,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(31)),
                         Tags = new string[0]
                     }
                 }
@@ -183,11 +187,114 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo1Name, repo1Digest1));
+            acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo1Name, repo1Digest1), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo1Name, repo1Digest2), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo2Name, It.IsAny<string>()), Times.Never);
-            acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest1));
+            acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest1), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest2));
+        }
+
+        [Fact]
+        public async Task TestRepos()
+        {
+            const string acrName = "myacr.azurecr.io";
+            const string tenant = "mytenant";
+            const string username = "fake user";
+            const string password = "fake password";
+            const string subscription = "my sub";
+            const string resourceGroup = "group";
+
+            const string repo1Name = "test/repo1";
+            const string repo2Name = "test/repo2";
+
+            Catalog catalog = new Catalog
+            {
+                RepositoryNames = new string[]
+                {
+                    repo1Name,
+                    repo2Name
+                }
+            };
+
+            const string repo1Digest1 = "sha256:repo1digest1";
+            const string repo1Digest2 = "sha256:repo1digest2";
+
+            RepositoryManifests repo1Manifests = new RepositoryManifests
+            {
+                RepositoryName = repo1Name,
+                Manifests = new Manifest[]
+                {
+                    new Manifest
+                    {
+                        Digest = repo1Digest1,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(8))
+                    },
+                    new Manifest
+                    {
+                        Digest = repo1Digest2,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(6))
+                    }
+                }
+            };
+
+            const string repo2Digest1 = "sha256:repo2digest1";
+            const string repo2Digest2 = "sha256:repo2digest2";
+
+            RepositoryManifests repo2Manifests = new RepositoryManifests
+            {
+                RepositoryName = repo2Name,
+                Manifests = new Manifest[]
+                {
+                    new Manifest
+                    {
+                        Digest = repo2Digest1,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(1))
+                    },
+                    new Manifest
+                    {
+                        Digest = repo2Digest2,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(31))
+                    }
+                }
+            };
+
+            Mock<IAcrClient> acrClientMock = new Mock<IAcrClient>();
+            acrClientMock
+                .Setup(o => o.GetCatalogAsync())
+                .ReturnsAsync(catalog);
+            foreach (string repoName in catalog.RepositoryNames)
+            {
+                acrClientMock
+                    .Setup(o => o.GetRepositoryAsync(repoName))
+                    .ReturnsAsync(new Repository { Name = repoName });
+            }
+            acrClientMock
+                .Setup(o => o.GetRepositoryManifests(repo1Name))
+                .ReturnsAsync(repo1Manifests);
+            acrClientMock
+                .Setup(o => o.GetRepositoryManifests(repo2Name))
+                .ReturnsAsync(repo2Manifests);
+
+            Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();
+            acrClientFactoryMock
+                .Setup(o => o.CreateAsync(acrName, tenant, username, password))
+                .ReturnsAsync(acrClientMock.Object);
+
+            CleanAcrImagesCommand command = new CleanAcrImagesCommand(
+                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+            command.Options.Subscription = subscription;
+            command.Options.Password = password;
+            command.Options.Username = username;
+            command.Options.Tenant = tenant;
+            command.Options.ResourceGroup = resourceGroup;
+            command.Options.RegistryName = acrName;
+
+            await command.ExecuteAsync();
+
+            acrClientMock.Verify(o => o.DeleteManifestAsync(repo1Name, repo1Digest1));
+            acrClientMock.Verify(o => o.DeleteManifestAsync(repo1Name, repo1Digest2), Times.Never);
+            acrClientMock.Verify(o => o.DeleteManifestAsync(repo2Name, repo2Digest1), Times.Never);
+            acrClientMock.Verify(o => o.DeleteManifestAsync(repo2Name, repo2Digest2));
         }
     }
 }

@@ -58,25 +58,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<Task> GetRepoProcessingTasks(
             IAcrClient acrClient, IEnumerable<Repository> repositories, List<string> deletedRepos, List<string> deletedImages)
         {
-            int publicCount = 0;
-            int nonPublicCount = 0;
             foreach (Repository repository in repositories)
             {
                 if (IsPublicRepo(repository.Name))
                 {
-                    publicCount++;
-                    if (publicCount <= 2)
-                    {
-                        yield return ProcessPublicRepoAsync(acrClient, deletedImages, repository);
-                    }
+                    yield return ProcessPublicRepoAsync(acrClient, deletedImages, repository);
                 }
                 else
                 {
-                    nonPublicCount++;
-                    if (nonPublicCount <= 20)
-                    {
-                        yield return ProcessNonPublicRepoAsync(acrClient, deletedRepos, repository);
-                    }
+                    yield return ProcessNonPublicRepoAsync(acrClient, deletedRepos, repository);
                 }
             }
         }
@@ -111,8 +101,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifests(repository.Name);
 
             IEnumerable<Manifest> untaggedImages = repoManifests.Manifests
-                .Where(manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, 30))
-                .Take(10);
+                .Where(manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, 30));
 
             List<Task> tasks = new List<Task>();
             foreach (Manifest untaggedImage in untaggedImages)
@@ -123,7 +112,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await Task.WhenAll(tasks);
         }
 
-        private async Task ProcessUntaggedImageAsync(IAcrClient acrClient, List<string> deletedImages, Repository repository, Manifest untaggedImage)
+        private async Task ProcessUntaggedImageAsync(
+            IAcrClient acrClient, List<string> deletedImages, Repository repository, Manifest untaggedImage)
         {
             if (!Options.IsDryRun)
             {

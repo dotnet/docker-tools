@@ -88,24 +88,29 @@ namespace Microsoft.DotNet.ImageBuilder
         private static async Task<string> GetAadAccessTokenAsync(string tenant, string username, string password)
         {
             AuthenticationContext authContext = new AuthenticationContext($"https://login.microsoftonline.com/{tenant}");
-            AuthenticationResult result = await authContext.AcquireTokenAsync("https://management.azure.com", new ClientCredential(username, password));
+            AuthenticationResult result = await authContext.AcquireTokenAsync(
+                "https://management.azure.com", new ClientCredential(username, password));
             return result.AccessToken;
         }
 
-        private static async Task<string> GetAcrRefreshTokenAsync(HttpClient httpClient, string acrName, string tenant, string aadAccessToken)
+        private static async Task<string> GetAcrRefreshTokenAsync(
+            HttpClient httpClient, string acrName, string tenant, string aadAccessToken)
         {
             StringContent oauthExchangeBody = new StringContent(
                 $"grant_type=access_token&service={acrName}&tenant={tenant}&access_token={aadAccessToken}",
                 Encoding.UTF8,
                 "application/x-www-form-urlencoded");
 
-            HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync($"https://{acrName}/oauth2/exchange", oauthExchangeBody);
+            HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync(
+                $"https://{acrName}/oauth2/exchange", oauthExchangeBody);
             tokenExchangeResponse.EnsureSuccessStatusCode();
-            OAuthExchangeResult acrRefreshTokenResult = JsonConvert.DeserializeObject<OAuthExchangeResult>(await tokenExchangeResponse.Content.ReadAsStringAsync());
+            OAuthExchangeResult acrRefreshTokenResult = JsonConvert.DeserializeObject<OAuthExchangeResult>(
+                await tokenExchangeResponse.Content.ReadAsStringAsync());
             return acrRefreshTokenResult.RefreshToken;
         }
 
-        private static async Task<string> GetAcrAccessTokenAsync(HttpClient httpClient, string acrName, string refreshToken, params string[] scopes)
+        private static async Task<string> GetAcrAccessTokenAsync(
+            HttpClient httpClient, string acrName, string refreshToken, params string[] scopes)
         {
             string scopesArgs = String.Join('&', scopes
                 .Select(scope => $"scope={scope}")
@@ -116,7 +121,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 "application/x-www-form-urlencoded");
             HttpResponseMessage tokenResponse = await httpClient.PostAsync($"https://{acrName}/oauth2/token", oauthTokenBody);
             tokenResponse.EnsureSuccessStatusCode();
-            OAuthTokenResult acrAccessTokenResult = JsonConvert.DeserializeObject<OAuthTokenResult>(await tokenResponse.Content.ReadAsStringAsync());
+            OAuthTokenResult acrAccessTokenResult = JsonConvert.DeserializeObject<OAuthTokenResult>(
+                await tokenResponse.Content.ReadAsStringAsync());
             return acrAccessTokenResult.AccessToken;
         }
 

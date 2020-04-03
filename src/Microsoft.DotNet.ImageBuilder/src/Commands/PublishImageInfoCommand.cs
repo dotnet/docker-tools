@@ -133,7 +133,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     for (int platformIndex = imageData.Platforms.Count - 1; platformIndex >= 0; platformIndex--)
                     {
                         PlatformData platformData = imageData.Platforms[platformIndex];
-
                         PlatformInfo manifestPlatform = manifestImage.AllPlatforms
                             .FirstOrDefault(manifestPlatform => platformData.Equals(manifestPlatform));
 
@@ -143,18 +142,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             imageData.Platforms.Remove(platformData);
                         }
                     }
-
-                    // If all of the image's platforms were removed, then remove the image too
-                    if (!imageData.Platforms.Any())
-                    {
-                        repoData.Images.Remove(imageData);
-                    }
-                }
-
-                // If all of the repo's images were removed, then remove the repo too
-                if (!repoData.Images.Any())
-                {
-                    imageArtifactDetails.Repos.Remove(repoData);
                 }
             }
         }

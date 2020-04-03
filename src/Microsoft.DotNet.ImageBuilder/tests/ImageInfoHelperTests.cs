@@ -3,9 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Moq;
 using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -15,6 +16,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void ImageInfoHelper_MergeRepos_ImageDigest()
         {
+            ImageInfo imageInfo1 = CreateImageInfo();
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -26,6 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -51,6 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -116,6 +121,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime oldCreatedDate = DateTime.Now.Subtract(TimeSpan.FromDays(1));
             DateTime newCreatedDate = DateTime.Now;
 
+            ImageInfo imageInfo1 = CreateImageInfo();
+            ImageInfo imageInfo2 = CreateImageInfo();
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -127,6 +135,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     {
@@ -154,6 +163,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo2,
                                 Platforms =
                                 {
                                     {
@@ -188,6 +198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -273,6 +284,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PlatformData srcImage1;
             PlatformData targetImage2;
 
+            ImageInfo imageInfo1 = CreateImageInfo();
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -284,6 +297,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     {
@@ -323,6 +337,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -417,6 +432,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PlatformData srcPlatform1;
             PlatformData targetPlatform2;
 
+            ImageInfo imageInfo1 = CreateImageInfo();
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -428,6 +445,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     {
@@ -466,6 +484,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     {
@@ -546,6 +565,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
         {
             Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));
+        }
+
+        private static ImageInfo CreateImageInfo()
+        {
+            return ImageInfo.Create(
+                new Image
+                {
+                    Platforms = Array.Empty<Platform>()
+                },
+                "fullrepo",
+                "repo",
+                new ManifestFilter(),
+                new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
+                "base");
         }
     }
 }

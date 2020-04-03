@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
-        public static ImageArtifactDetails LoadFromContent(string imageInfoContent, ManifestInfo manifest)
+        public static ImageArtifactDetails LoadFromContent(string imageInfoContent, ManifestInfo manifest, bool skipManifestValidation = false)
         {
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContent);
 
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder
                             }
                         }
 
-                        if (imageData.ManifestImage == null)
+                        if (!skipManifestValidation && imageData.ManifestImage == null)
                         {
                             throw new InvalidOperationException(
                                 $"Unable to find matching platform in manifest for platform '{platformData.GetIdentifier()}'.");

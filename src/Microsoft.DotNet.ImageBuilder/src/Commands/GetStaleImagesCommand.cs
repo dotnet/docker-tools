@@ -216,7 +216,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 imageDataJson = await gitHubClient.GetGitHubFileContentsAsync(imageInfoPath, branch);
             }
 
-            return ImageInfoHelper.LoadFromContent(imageDataJson, manifest);
+            return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
         }
 
         private async Task<string> GetGitRepoPath(Subscription sub)

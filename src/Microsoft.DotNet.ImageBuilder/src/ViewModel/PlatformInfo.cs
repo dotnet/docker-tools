@@ -150,7 +150,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
             else
             {
-                if (os.Contains("jessie"))
+                if (os.Contains("debian"))
+                {
+                    displayName = "Debian";
+                }
+                else if (os.Contains("jessie"))
                 {
                     displayName = "Debian 8";
                 }
@@ -161,6 +165,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 else if (os.Contains("buster"))
                 {
                     displayName = "Debian 10";
+                }
+                else if (os.Contains("xenial"))
+                {
+                    displayName = "Ubuntu 16.04";
                 }
                 else if (os.Contains("bionic"))
                 {
@@ -174,7 +182,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = "Ubuntu 20.04";
                 }
-                else if (os.Contains("alpine"))
+                else if (os.Contains("alpine") || os.Contains("centos") || os.Contains("fedora"))
                 {
                     int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
                     if (versionIndex != -1)

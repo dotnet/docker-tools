@@ -3,6 +3,19 @@
     "repoInfo": {
       "owner": "dotnet",
       "name": "dotnet-docker",
+      "branch": "master"
+    },
+    "manifestPath": "manifest.json",
+    "pipelineTrigger": {
+      "id": 373,
+      "pathVariable": "imageBuilder.pathArgs"
+    },
+    "osType": "linux"
+  },
+  {
+    "repoInfo": {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
       "branch": "nightly"
     },
     "manifestPath": "manifest.json",
@@ -11,5 +24,29 @@
       "pathVariable": "imageBuilder.pathArgs"
     },
     "osType": "linux"
+  },
+  {
+    "repoInfo": {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "master"
+    },
+    "manifestPath": "manifest.samples.json",
+    "pipelineTrigger": {
+      "id": 376,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
+  },
+  {
+    "repoInfo": {
+      "owner": "Microsoft",
+      "name": "dotnet-framework-docker",
+      "branch": "master"
+    },
+    "manifestPath": "manifest.samples.json",
+    "pipelineTrigger": {
+      "id": 374,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
   }
 ]

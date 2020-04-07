@@ -2,7 +2,7 @@ pr:
   branches:
     include:
     - master
-    - feature/image-info-schema
+    - feature/*
   paths:
     include:
     - src/*

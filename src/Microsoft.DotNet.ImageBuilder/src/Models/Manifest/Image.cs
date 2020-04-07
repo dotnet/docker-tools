@@ -24,6 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "Linux-based tag.")]
         public IDictionary<string, Tag> SharedTags { get; set; }
 
+        [Description("The full version of the product that the Docker image contains.")]
+        public string ProductVersion { get; set; }
+
         public Image()
         {
         }

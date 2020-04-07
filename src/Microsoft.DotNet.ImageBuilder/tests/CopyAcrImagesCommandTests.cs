@@ -20,6 +20,7 @@ using Microsoft.Rest.Azure;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -65,21 +66,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 RepoData runtimeRepo;
 
-                RepoData[] repos = new RepoData[]
+                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
                 {
-                    runtimeRepo = new RepoData
+                    Repos =
                     {
-                        Repo = "runtime",
-                        Images = new SortedDictionary<string, ImageData>
                         {
+                            runtimeRepo = new RepoData
                             {
-                                PathHelper.NormalizePath(dockerfileRelativePath),
-                                new ImageData
+                                Repo = "runtime",
+                                Images =
                                 {
-                                    SimpleTags =
+                                    new ImageData
                                     {
-                                        "tag1",
-                                        "tag2"
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                PathHelper.NormalizePath(dockerfileRelativePath),
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag1",
+                                                    "tag2"
+                                                })
+                                        }
                                     }
                                 }
                             }
@@ -87,12 +95,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(repos));
+                File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
 
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                IList<string> expectedTags = runtimeRepo.Images.First().Value.SimpleTags
+                IList<string> expectedTags = runtimeRepo.Images.First().Platforms.First().SimpleTags
                     .Select(tag => $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:{tag}")
                     .ToList();
 

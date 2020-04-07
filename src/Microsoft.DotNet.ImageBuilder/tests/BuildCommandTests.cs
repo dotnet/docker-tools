@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -49,15 +50,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetImageDigest(baseImageTag, false))
                     .Returns(baseImageDigest);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
+                DateTime createdDate = DateTime.Now;
+
+                dockerServiceMock
+                    .Setup(o => o.GetCreatedDate($"{repoName}:{tag}", false))
+                    .Returns(createdDate);
+                
+                const string runtimeRelativeDir = "1.0/runtime/os";
+                Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+                string dockerfileRelativePath = PathHelper.NormalizePath(Path.Combine(runtimeRelativeDir, "Dockerfile"));
+                string fullDockerfilePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+                File.WriteAllText(fullDockerfilePath, $"FROM {baseImageTag}");
+
+                const string dockerfileCommitSha = "mycommit";
+                Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+                gitServiceMock
+                    .Setup(o => o.GetCommitSha(fullDockerfilePath, It.IsAny<bool>()))
+                    .Returns(dockerfileCommitSha);
+
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                    gitServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
+                command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
-                const string runtimeRelativeDir = "1.0/runtime/os";
-                Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-                string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
-                File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), $"FROM {baseImageTag}");
+                const string ProductVersion = "1.0.1";
 
                 Manifest manifest = CreateManifest(
                     CreateRepo(repoName,
@@ -69,7 +87,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new Dictionary<string, Tag>
                             {
                                 { "shared", new Tag() }
-                            }))
+                            },
+                            ProductVersion))
                 );
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -77,25 +96,42 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                List<RepoData> repos = new List<RepoData>
+                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
                 {
-                    new RepoData
+                    Repos =
                     {
-                        Repo = repoName,
-                        Images = new SortedDictionary<string, ImageData>
+                        new RepoData
                         {
+                            Repo = repoName,
+                            Images =
                             {
-                                $"{runtimeRelativeDir}/Dockerfile",
                                 new ImageData
                                 {
-                                    Digest = sha,
-                                    BaseImages = new SortedDictionary<string, string>
+                                    ProductVersion = ProductVersion,
+                                    Platforms =
                                     {
-                                        { baseImageTag, baseImageDigest }
+                                        new PlatformData
+                                        {
+                                            Dockerfile = $"{runtimeRelativeDir}/Dockerfile",
+                                            Architecture = "amd64",
+                                            OsType = "Linux",
+                                            OsVersion = "Ubuntu 19.04",
+                                            Digest = sha,
+                                            BaseImageDigest = baseImageDigest,
+                                            Created = createdDate.ToUniversalTime(),
+                                            SimpleTags =
+                                            {
+                                                tag
+                                            },
+                                            CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{dockerfileRelativePath}"
+                                        }
                                     },
-                                    SimpleTags = new List<string>
+                                    Manifest = new ManifestData
                                     {
-                                        tag
+                                        SharedTags =
+                                        {
+                                            "shared"
+                                        }
                                     }
                                 }
                             }
@@ -103,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                string expectedOutput = JsonHelper.SerializeObject(repos);
+                string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
                 string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
                 Assert.Equal(expectedOutput, actualOutput);
@@ -128,7 +164,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .SetupGet(o => o.Architecture)
                 .Returns(Architecture.AMD64);
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -192,14 +229,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetImageDigest("runtime:runtime", false))
                     .Returns(digest);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>());
-                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-                command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-
                 const string runtimeRelativeDir = "1.0/runtime/os";
                 Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
                 string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+                const string dockerfileCommitSha = "mycommit";
+                Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+                gitServiceMock
+                    .Setup(o => o.GetCommitSha(dockerfileRelativePath, It.IsAny<bool>()))
+                    .Returns(dockerfileCommitSha);
+
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                    gitServiceMock.Object);
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+                command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+                command.Options.SourceRepoUrl = "https://source";
 
                 Manifest manifest = CreateManifest(
                     CreateRepo("runtime",
@@ -212,8 +257,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                RepoData[] repos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(command.Options.ImageInfoOutputPath));
-                Assert.Equal(PathHelper.NormalizePath(dockerfileRelativePath), repos[0].Images.First().Key);
+                ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(
+                    File.ReadAllText(command.Options.ImageInfoOutputPath));
+                Assert.Equal(
+                    PathHelper.NormalizePath(dockerfileRelativePath),
+                    imageArtifactDetails.Repos[0].Images.First().Platforms.First().Dockerfile);
             }
         }
     }

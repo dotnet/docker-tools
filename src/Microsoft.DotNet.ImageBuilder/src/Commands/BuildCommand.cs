@@ -25,14 +25,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
         private readonly IEnvironmentService environmentService;
-        private readonly List<RepoData> repoList = new List<RepoData>();
+        private readonly IGitService gitService;
+        private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
+            IGitService gitService)
         {
             this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         public override Task ExecuteAsync()
@@ -40,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PullBaseImages();
             BuildImages();
 
-            if (GetBuiltImages().Any())
+            if (GetBuiltPlatforms().Any())
             {
                 PushImages();
             }
@@ -58,28 +61,52 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            foreach (var image in GetBuiltImages())
+            if (String.IsNullOrEmpty(Options.SourceRepoUrl))
             {
-                foreach (string tag in image.FullyQualifiedSimpleTags)
-                {
-                    // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
-                    // It is output in the form of <repo>@<sha> but we only want the sha.
-                    string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
-                    digest = digest.Substring(digest.IndexOf("@") + 1);
+                throw new InvalidOperationException("Source repo URL must be provided when outputting to an image info file.");
+            }
 
-                    if (image.Digest != null && image.Digest != digest)
+            foreach (var platform in GetBuiltPlatforms())
+            {
+                foreach (string tag in platform.FullyQualifiedSimpleTags)
+                {
+                    if (Options.IsPushEnabled)
                     {
-                        // Pushing the same image with different tags should result in the same digest being output
+                        // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
+                        // It is output in the form of <repo>@<sha> but we only want the sha.
+                        string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
+                        digest = digest.Substring(digest.IndexOf("@") + 1);
+
+                        if (platform.Digest != null && platform.Digest != digest)
+                        {
+                            // Pushing the same image with different tags should result in the same digest being output
+                            this.loggerService.WriteError(
+                                $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{platform.Digest}'.");
+                            this.environmentService.Exit(1);
+                        }
+
+                        platform.Digest = digest;
+                    }
+
+                    DateTime createdDate = this.dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
+                    if (platform.Created != default && platform.Created != createdDate)
+                    {
+                        // All of the tags associated with the platform should have the same Created date
                         this.loggerService.WriteError(
-                            $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{image.Digest}'.");
+                            $"Tag '{tag}' has a Created date that differs from the corresponding image's Created date value of '{platform.Created}'.");
                         this.environmentService.Exit(1);
                     }
 
-                    image.Digest = digest;
+                    platform.Created = createdDate;
+
+                    PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
+                        .First(manifestPlatform => platform.Equals(manifestPlatform));
+
+                    platform.CommitUrl = gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
                 }
             }
 
-            string imageInfoString = JsonHelper.SerializeObject(repoList.OrderBy(r => r.Repo).ToArray());
+            string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
         }
 
@@ -93,16 +120,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Model.Name
                 };
-                repoList.Add(repoData);
-
-                SortedDictionary<string, ImageData> images = new SortedDictionary<string, ImageData>();
+                imageArtifactDetails.Repos.Add(repoData);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
+                    ImageData imageData = new ImageData
+                    {
+                        ProductVersion = image.ProductVersion
+                    };
+
+                 	if (image.SharedTags.Any())
+                    {
+                        imageData.Manifest = new ManifestData
+                        {
+                            SharedTags = image.SharedTags
+                                .Select(tag => tag.Name)
+                                .ToList()
+                        };
+                    }
+                    
+                    repoData.Images.Add(imageData);
+
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
-                        ImageData imageData = new ImageData();
-                        images.Add(platform.DockerfilePathRelativeToManifest, imageData);
+                        PlatformData platformData = PlatformData.FromPlatformInfo(platform);
+                        imageData.Platforms.Add(platformData);
 
                         bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
@@ -142,43 +184,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             }
                         }
 
-                        SortedDictionary<string, string> baseImageDigests = GetBaseImageDigests(platform);
-                        if (baseImageDigests.Any())
-                        {
-                            imageData.BaseImages = baseImageDigests;
-                        }
+                        platformData.BaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
 
-                        imageData.SimpleTags = GetPushTags(platform.Tags)
+                        platformData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
-                        imageData.FullyQualifiedSimpleTags = imageData.SimpleTags
+                        platformData.FullyQualifiedSimpleTags = platformData.SimpleTags
                             .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.Name, tag))
                             .ToList();
-                        imageData.AllTags = allTags;
+                        platformData.AllTags = allTags;
                     }
                 }
-
-                if (images.Any())
-                {
-                    repoData.Images = images;
-                }
             }
-        }
-
-        private SortedDictionary<string, string> GetBaseImageDigests(PlatformInfo platform)
-        {
-            SortedDictionary<string, string> baseImageDigestMappings = new SortedDictionary<string, string>();
-            foreach (string fromImage in platform.ExternalFromImages)
-            {
-                string digest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
-                if (digest != null)
-                {
-                    baseImageDigestMappings[fromImage] = digest;
-                }
-            }
-
-            return baseImageDigestMappings;
         }
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
@@ -297,12 +315,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<ImageData> GetBuiltImages() => this.repoList
+        private IEnumerable<PlatformData> GetBuiltPlatforms() => this.imageArtifactDetails.Repos
             .Where(repoData => repoData.Images != null)
-            .SelectMany(repoData => repoData.Images.Values);
+            .SelectMany(repoData => repoData.Images)
+            .SelectMany(imageData => imageData.Platforms);
 
         private IEnumerable<string> GetBuiltTags() =>
-            GetBuiltImages().SelectMany(image => image.AllTags);
+            GetBuiltPlatforms().SelectMany(platform => platform.AllTags);
 
         private void PushImages()
         {

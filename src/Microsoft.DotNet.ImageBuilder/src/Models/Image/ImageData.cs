@@ -2,25 +2,61 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
-    public class ImageData
+    public class ImageData : IComparable<ImageData>
     {
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public SortedDictionary<string, string> BaseImages { get; set; }
+        public string ProductVersion { get; set; }
 
-        public List<string> SimpleTags { get; set; } = new List<string>();
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public ManifestData Manifest { get; set; }
 
+        public List<PlatformData> Platforms { get; set; } = new List<PlatformData>();
+
+        /// <summary>
+        /// Gets or sets a reference to the corresponding image definition in the manifest.
+        /// </summary>
+        /// <remarks>
+        /// This can be null for an image info file that contains content for a platform that was once supported
+        /// but has since been removed from the manifest.
+        /// </remarks>
         [JsonIgnore]
-        public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
+        public ImageInfo ManifestImage { get; set; }
 
-        [JsonIgnore]
-        public IEnumerable<string> AllTags { get; set; }
+        public int CompareTo([AllowNull] ImageData other)
+        {
+            if (other is null)
+            {
+                return 1;
+            }
 
-        public string Digest { get; set; }
+            if (ManifestImage is null || other.ManifestImage is null)
+            {
+                throw new InvalidOperationException($"Can't compare {nameof(ImageData)} objects if {nameof(ManifestImage)} is null.");
+            }
+
+            if (ManifestImage == other.ManifestImage)
+            {
+                return 0;
+            }
+
+            // If we're comparing two different image items, compare them by the first Platform to
+            // provide deterministic ordering.
+            PlatformData thisFirstPlatform = Platforms
+                .OrderBy(platform => platform)
+                .FirstOrDefault();
+            PlatformData otherFirstPlatform = other.Platforms
+                .OrderBy(platform => platform)
+                .FirstOrDefault();
+            return thisFirstPlatform?.CompareTo(otherFirstPlatform) ?? 1;
+        }
     }
 }

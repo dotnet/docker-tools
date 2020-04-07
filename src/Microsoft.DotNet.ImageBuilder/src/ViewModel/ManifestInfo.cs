@@ -93,6 +93,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public IEnumerable<ImageInfo> GetAllImages() => AllRepos.SelectMany(repo => repo.AllImages);
+        
+        public ImageInfo GetImageByPlatform(PlatformInfo platform) =>
+            GetAllImages()
+                .FirstOrDefault(image => image.AllPlatforms.Contains(platform));
 
         public IEnumerable<PlatformInfo> GetAllPlatforms() => GetAllImages().SelectMany(image => image.AllPlatforms);
 

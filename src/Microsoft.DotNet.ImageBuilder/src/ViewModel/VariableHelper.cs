@@ -35,6 +35,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string SubstituteValues(string expression, Func<string, string, string> getContextBasedSystemValue = null)
         {
+            if (expression == null)
+            {
+                return null;
+            }
+
             foreach (Match match in Regex.Matches(expression, s_tagVariablePattern))
             {
                 string variableValue;

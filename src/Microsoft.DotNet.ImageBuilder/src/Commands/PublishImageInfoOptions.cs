@@ -6,7 +6,7 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishImageInfoOptions : Options, IGitOptionsHost
+    public class PublishImageInfoOptions : ManifestOptions, IGitOptionsHost
     {
         protected override string CommandHelp => "Publishes a build's merged image info.";
 

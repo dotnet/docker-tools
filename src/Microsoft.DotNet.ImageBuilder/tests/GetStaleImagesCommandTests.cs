@@ -25,6 +25,7 @@ using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -41,61 +42,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest-diff" }
-                                }
-                            }
-                        },
-                        {
-                            dockerfile2Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base2", "base2digest" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -104,8 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+            using (TestContext context = new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -114,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path
@@ -137,63 +125,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest" },
-                                    { "base2", "base2digest-diff" }
-                                }
-                            }
-                        },
-                        {
-                            dockerfile2Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base2", "base2digest-diff" },
-                                    { "base3", "base3digest" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base2digest-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base3digest")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(
@@ -209,7 +183,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -218,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path
@@ -241,35 +215,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile2Path = "dockerfile2";
             const string dockerfile3Path = "dockerfile3";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1, osType: "windows")
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1, osType: "windows"),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                    new ImageArtifactDetails()
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -284,7 +249,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string commandOsType = "windows";
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos, commandOsType))
+                new TestContext(subscriptionInfos, dockerfileInfos, commandOsType))
             {
                 await context.ExecuteCommandAsync();
 
@@ -292,7 +257,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path,
@@ -316,35 +281,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile2Path = "dockerfile2";
             const string dockerfile3Path = "dockerfile3";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1, osType: "windows")
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1, osType: "windows"),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
                                 ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                    new ImageArtifactDetails()
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -359,7 +315,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string commandOsType = "linux";
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos, commandOsType))
+                new TestContext(subscriptionInfos, dockerfileInfos, commandOsType))
             {
                 await context.ExecuteCommandAsync();
 
@@ -383,34 +339,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails()
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -420,7 +367,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -429,7 +376,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path,
@@ -456,80 +403,56 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile2Path = "dockerfile2/Dockerfile";
             const string dockerfile3Path = "dockerfile3/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest-diff" }
-                                }
-                            }
-                        }
-                    }
-                },
-                new RepoData
-                {
-                    Repo = repo2,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile2Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base2", "base2digest-diff" }
-                                }
-                            }
-                        }
-                    }
-                },
-                new RepoData
-                {
-                    Repo = repo3,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile3Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base3", "base3digest" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1, 1),
-                CreateSubscription(repo2, 2)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1, 1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }))))
-                },
-                {
-                    subscriptions[1],
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff")
+                                        }
+                                    }
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = repo2,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest-diff")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                ),
+                new SubscriptionInfo(
+                    CreateSubscription(repo2, 2),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo2,
@@ -538,22 +461,76 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateRepo(
                             repo3,
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff")
+                                        }
+                                    }
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = repo2,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest-diff")
+                                        }
+                                    }
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = repo3,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile3Path,
+                                                baseImageDigest: "base3digest")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest"))
                     }
                 },
                 {
-                    subscriptions[1].RepoInfo,
+                    subscriptionInfos[1].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest")),
@@ -563,7 +540,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -571,14 +548,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path
                         }
                     },
                     {
-                        subscriptions[1],
+                        subscriptionInfos[1].Subscription,
                         new List<string>
                         {
                             dockerfile2Path
@@ -602,61 +579,50 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string baseImage = "base1";
             const string baseImageDigest = "base1digest";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { baseImage, baseImageDigest + "-diff" }
-                                }
-                            }
-                        },
-                        {
-                            dockerfile2Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { baseImage, baseImageDigest + "-diff" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images = new List<ImageData>
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms = new List<PlatformData>
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: baseImageDigest + "-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: baseImageDigest + "-diff")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
+
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo(baseImage, baseImageDigest)),
@@ -666,7 +632,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -675,7 +641,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path,
@@ -705,50 +671,45 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string baseImage = "base1";
             const string baseImageDigest = "base1digest";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { baseImage, baseImageDigest }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: baseImageDigest)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo(baseImage, baseImageDigest))
@@ -757,7 +718,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -792,67 +753,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string otherImage = "other";
             const string otherImageDigest = "otherDigest";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = runtimeDepsRepo,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            runtimeDepsDockerfilePath,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { baseImage, baseImageDigest + "-diff" }
-                                }
-                            }
-                        }
-                    }
-                },
-                new RepoData
-                {
-                    Repo = runtimeRepo
-                },
-                new RepoData
-                {
-                    Repo = sdkRepo
-                },
-                new RepoData
-                {
-                    Repo = aspnetRepo
-                },
-                // Include an image that has not been changed and should not be included in the expected paths.
-                new RepoData
-                {
-                    Repo = otherRepo,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            otherDockerfilePath,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { otherImage, otherImageDigest }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription("repo1")
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription("repo1"),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             runtimeDepsRepo,
@@ -873,15 +777,66 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateRepo(
                             otherRepo,
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(otherDockerfilePath, new string[] { "tag1" }))))
-                }
+                                ManifestHelper.CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = runtimeDepsRepo,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                runtimeDepsDockerfilePath,
+                                                baseImageDigest: baseImageDigest + "-diff")
+                                        }
+                                    }
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = runtimeRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = sdkRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = aspnetRepo
+                            },
+                            // Include an image that has not been changed and should not be included in the expected paths.
+                            new RepoData
+                            {
+                                Repo = otherRepo,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                otherDockerfilePath,
+                                                baseImageDigest: otherImageDigest)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
@@ -894,7 +849,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -902,7 +857,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             runtimeDepsDockerfilePath,
@@ -928,61 +883,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile1Path = "path/to/Dockerfile.custom";
             const string dockerfile2Path = "path/to/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest-diff" }
-                                }
-                            }
-                        },
-                        {
-                            dockerfile2Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base2", "base2digest" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest-diff"),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base2digest")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -992,7 +935,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -1001,7 +944,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path
@@ -1022,50 +965,45 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base2", "base2digest")),
@@ -1074,7 +1012,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -1082,7 +1020,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new Dictionary<Subscription, IList<string>>
                 {
                     {
-                        subscriptions[0],
+                        subscriptionInfos[0].Subscription,
                         new List<string>
                         {
                             dockerfile1Path
@@ -1104,59 +1042,48 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string dockerfile2Path = "dockerfile2/Dockerfile";
 
-            RepoData[] imageInfoData = new RepoData[]
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
-                new RepoData
-                {
-                    Repo = repo1,
-                    Images = new SortedDictionary<string, ImageData>
-                    {
-                        {
-                            dockerfile1Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>()
-                            }
-                        },
-                        {
-                            dockerfile2Path,
-                            new ImageData
-                            {
-                                BaseImages = new SortedDictionary<string, string>
-                                {
-                                    { "base1", "base1digest" }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            Subscription[] subscriptions = new Subscription[]
-            {
-                CreateSubscription(repo1)
-            };
-
-            Dictionary<Subscription, Manifest> subscriptionManifests =
-                new Dictionary<Subscription, Manifest>
-            {
-                {
-                    subscriptions[0],
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
                     ManifestHelper.CreateManifest(
                         ManifestHelper.CreateRepo(
                             repo1,
                             ManifestHelper.CreateImage(
                                 CreatePlatformWithRepoBuildArg(dockerfile1Path, $"{repo1}:tag2", new string[] { "tag1" })),
                             ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))))
-                }
+                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(dockerfile1Path),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: "base1digest")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
             };
 
             Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
                 new Dictionary<GitRepo, List<DockerfileInfo>>
             {
                 {
-                    subscriptions[0].RepoInfo,
+                    subscriptionInfos[0].Subscription.RepoInfo,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo(null, null, isInternal: true)),
@@ -1166,7 +1093,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             using (TestContext context =
-                new TestContext(imageInfoData, subscriptions, subscriptionManifests, dockerfileInfos))
+                new TestContext(subscriptionInfos, dockerfileInfos))
             {
                 await context.ExecuteCommandAsync();
 
@@ -1249,20 +1176,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <summary>
             /// Initializes a new instance of <see cref="TestContext"/>.
             /// </summary>
-            /// <param name="imageInfoData">The set of image info data for all Git repos.</param>
-            /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
-            /// <param name="subscriptionManifests">A mapping of subscriptions to their associated manifests.</param>
+            /// <param name="subscriptionInfos">Mapping of data to subscriptions.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
             /// <param name="osType">The OS type to filter the command with.</param>
             public TestContext(
-                RepoData[] imageInfoData,
-                Subscription[] subscriptions,
-                IDictionary<Subscription, Manifest> subscriptionManifests,
+                SubscriptionInfo[] subscriptionInfos,
                 Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos,
                 string osType = "*")
             {
                 this.osType = osType;
-                this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
+                this.subscriptionsPath = this.SerializeJsonObjectToTempFile(
+                    subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
                 // Cache image digests lookup
                 foreach (FromImageInfo fromImage in 
@@ -1279,10 +1203,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Id = Guid.NewGuid()
                 };
 
-                this.httpClientFactory = CreateHttpClientFactory(subscriptions, subscriptionManifests, dockerfileInfos);
-
-                string imageInfoContents = JsonConvert.SerializeObject(imageInfoData);
-                this.gitHubClientFactory = CreateGitHubClientFactory(imageInfoContents);
+                this.httpClientFactory = CreateHttpClientFactory(subscriptionInfos, dockerfileInfos);
+                this.gitHubClientFactory = CreateGitHubClientFactory(subscriptionInfos);
 
                 this.DockerServiceMock = this.CreateDockerServiceMock();
                 this.command = this.CreateCommand();
@@ -1349,12 +1271,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 return command;
             }
 
-            private IGitHubClientFactory CreateGitHubClientFactory(string imageInfoContents)
+            private IGitHubClientFactory CreateGitHubClientFactory(SubscriptionInfo[] subscriptionInfos)
             {
                 Mock<IGitHubClient> gitHubClientMock = new Mock<IGitHubClient>();
-                gitHubClientMock
-                    .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.Is<GitHubBranch>(branch => IsMatchingBranch(branch))))
-                    .ReturnsAsync(imageInfoContents);
+
+                foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
+                {
+                    if (subscriptionInfo.ImageInfo != null)
+                    {
+                        string imageInfoContents = JsonConvert.SerializeObject(subscriptionInfo.ImageInfo);
+                        gitHubClientMock
+                            .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.Is<GitHubBranch>(branch => IsMatchingBranch(branch))))
+                            .ReturnsAsync(imageInfoContents);
+                    }
+                }
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
                 gitHubClientFactoryMock
@@ -1375,30 +1305,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// Returns an <see cref="IHttpClientFactory"/> that creates an <see cref="HttpClient"/> which 
             /// bypasses the network and return back pre-built responses for GitHub repo zip files.
             /// </summary>
-            /// <param name="subscriptions">The set of subscriptions referring to GitHub repos that should have file responses.</param>
-            /// <param name="subscriptionManifests">A mapping of subscriptions to their associated manifests.</param>
+            /// <param name="subscriptionInfos">Mapping of data to subscriptions.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
             private IHttpClientFactory CreateHttpClientFactory(
-                Subscription[] subscriptions,
-                IDictionary<Subscription, Manifest> subscriptionManifests,
+                SubscriptionInfo[] subscriptionInfos,
                 Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos)
             {
                 Dictionary<string, HttpResponseMessage> responses = new Dictionary<string, HttpResponseMessage>();
-                foreach (Subscription subscription in subscriptions)
+                foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
                 {
-                    if (subscriptionManifests.TryGetValue(subscription, out Manifest manifest))
-                    {
-                        List<DockerfileInfo> repoDockerfileInfos = dockerfileInfos[subscription.RepoInfo];
-                        string repoZipPath = GenerateRepoZipFile(subscription, manifest, repoDockerfileInfos);
+                    Subscription subscription = subscriptionInfo.Subscription;
+                    List<DockerfileInfo> repoDockerfileInfos = dockerfileInfos[subscription.RepoInfo];
+                    string repoZipPath = GenerateRepoZipFile(subscription, subscriptionInfo.Manifest, repoDockerfileInfos);
 
-                        responses.Add(
-                            $"https://github.com/{subscription.RepoInfo.Owner}/{subscription.RepoInfo.Name}/archive/{subscription.RepoInfo.Branch}.zip",
-                            new HttpResponseMessage
-                            {
-                                StatusCode = HttpStatusCode.OK,
-                                Content = new ByteArrayContent(File.ReadAllBytes(repoZipPath))
-                            });
-                    }
+                    responses.Add(
+                        $"https://github.com/{subscription.RepoInfo.Owner}/{subscription.RepoInfo.Name}/archive/{subscription.RepoInfo.Branch}.zip",
+                        new HttpResponseMessage
+                        {
+                            StatusCode = HttpStatusCode.OK,
+                            Content = new ByteArrayContent(File.ReadAllBytes(repoZipPath))
+                        });
                 }
 
                 HttpClient client = new HttpClient(new TestHttpMessageHandler(responses));
@@ -1557,6 +1483,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private class PagedList<T> : List<T>, IPagedList<T>
         {
             public string ContinuationToken => throw new NotImplementedException();
+        }
+
+        private class SubscriptionInfo
+        {
+            public SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
+            {
+                Subscription = subscription;
+                Manifest = manifest;
+                ImageInfo = imageInfo;
+            }
+
+            public Subscription Subscription { get; }
+            public Manifest Manifest { get; }
+            public ImageArtifactDetails ImageInfo { get; }
         }
     }
 }

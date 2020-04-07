@@ -31,14 +31,14 @@ namespace Microsoft.DotNet.ImageBuilder
             return Execute(info, info => ExecuteProcess(info), isDryRun, errorMessage, executeMessageOverride);
         }
 
-        public static void ExecuteWithRetry(
+        public static string ExecuteWithRetry(
             string fileName,
             string args,
             bool isDryRun,
             string errorMessage = null,
             string executeMessageOverride = null)
         {
-            ExecuteWithRetry(
+            return ExecuteWithRetry(
                 new ProcessStartInfo(fileName, args),
                 isDryRun: isDryRun,
                 errorMessage: errorMessage,

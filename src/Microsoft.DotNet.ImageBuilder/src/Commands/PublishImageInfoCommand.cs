@@ -3,19 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishImageInfoCommand : Command<PublishImageInfoOptions>
+    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
 
@@ -27,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            RepoData[] srcRepos = JsonConvert.DeserializeObject<RepoData[]>(File.ReadAllText(Options.ImageInfoPath));
+            ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
@@ -37,30 +35,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, "Merging image info updates from build.", async branch =>
                     {
                         string originalTargetImageInfoContents = await gitHubClient.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
-                        IEnumerable<RepoData> newImageInfo;
+                        ImageArtifactDetails newImageArtifactDetails;
 
                         if (originalTargetImageInfoContents != null)
                         {
-                            List<RepoData> targetRepos = JsonConvert.DeserializeObject<RepoData[]>(originalTargetImageInfoContents).ToList();
+                            ImageArtifactDetails targetImageArtifactDetails = ImageInfoHelper.LoadFromContent(
+                                originalTargetImageInfoContents, Manifest, skipManifestValidation: true);
+
+                            RemoveOutOfDateContent(targetImageArtifactDetails);
 
                             ImageInfoMergeOptions options = new ImageInfoMergeOptions
                             {
                                 ReplaceTags = true
                             };
 
-                            ImageInfoHelper.MergeRepos(srcRepos, targetRepos, options);
+                            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);
 
-                            newImageInfo = targetRepos;
+                            newImageArtifactDetails = targetImageArtifactDetails;
                         }
                         else
                         {
                             // If there is no existing file to update, there's nothing to merge with so the source data
                             // becomes the target data.
-                            newImageInfo = srcRepos;
+                            newImageArtifactDetails = srcImageArtifactDetails;
                         }
 
                         string newTargetImageInfoContents =
-                            JsonHelper.SerializeObject(newImageInfo.OrderBy(r => r.Repo).ToArray()) + Environment.NewLine;
+                            JsonHelper.SerializeObject(newImageArtifactDetails) + Environment.NewLine;
 
                         if (originalTargetImageInfoContents != newTargetImageInfoContents)
                         {
@@ -100,6 +101,48 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Logger.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
                     }
                 });
+            }
+        }
+
+        private void RemoveOutOfDateContent(ImageArtifactDetails imageArtifactDetails)
+        {
+            for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
+            {
+                RepoData repoData = imageArtifactDetails.Repos[repoIndex];
+                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
+
+                // If there doesn't exist a matching repo in the manifest, remove it from the image info
+                if (manifestRepo is null)
+                {
+                    imageArtifactDetails.Repos.Remove(repoData);
+                    continue;
+                }
+
+                for (int imageIndex = repoData.Images.Count - 1; imageIndex >= 0; imageIndex--)
+                {
+                    ImageData imageData = repoData.Images[imageIndex];
+                    ImageInfo manifestImage = imageData.ManifestImage;
+
+                    // If there doesn't exist a matching image in the manifest, remove it from the image info
+                    if (manifestImage is null)
+                    {
+                        repoData.Images.Remove(imageData);
+                        continue;
+                    }
+                    
+                    for (int platformIndex = imageData.Platforms.Count - 1; platformIndex >= 0; platformIndex--)
+                    {
+                        PlatformData platformData = imageData.Platforms[platformIndex];
+                        PlatformInfo manifestPlatform = manifestImage.AllPlatforms
+                            .FirstOrDefault(manifestPlatform => platformData.Equals(manifestPlatform));
+
+                        // If there doesn't exist a matching platform in the manifest, remove it from the image info
+                        if (manifestPlatform is null)
+                        {
+                            imageData.Platforms.Remove(platformData);
+                        }
+                    }
+                }
             }
         }
     }

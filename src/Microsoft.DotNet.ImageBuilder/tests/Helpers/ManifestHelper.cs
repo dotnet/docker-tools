@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -36,16 +37,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         public static Image CreateImage(params Platform[] platforms) =>
             CreateImage(platforms, (IDictionary<string, Tag>)null);
 
-        public static Image CreateImage(Platform[] platforms, IDictionary<string, Tag> sharedTags)
+        public static Image CreateImage(Platform[] platforms, IDictionary<string, Tag> sharedTags = null, string productVersion = null)
         {
             return new Image
             {
                 Platforms = platforms,
-                SharedTags = sharedTags
+                SharedTags = sharedTags,
+                ProductVersion = productVersion
             };
         }
 
-        public static Platform CreatePlatform(string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco")
+        public static Platform CreatePlatform(
+            string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco", Architecture architecture = Architecture.AMD64)
         {
             return new Platform
             {
@@ -53,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 OsVersion = osVersion,
                 OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
-                Architecture = Architecture.AMD64
+                Architecture = architecture
             };
         }
     }

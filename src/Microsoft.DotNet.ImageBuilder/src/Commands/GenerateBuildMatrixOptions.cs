@@ -10,11 +10,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Generate the VSTS build matrix for building the images";
+        protected override string CommandHelp => "Generate the Azure DevOps build matrix for building the images";
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
         public string CustomBuildLegGrouping { get; set; }
+        public int ProductVersionComponents { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -40,6 +41,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref customBuildLegGrouping,
                 "Name of custom build leg grouping to use.");
             CustomBuildLegGrouping = customBuildLegGrouping;
+
+            int productVersionComponents = 2;
+            syntax.DefineOption(
+                "productVersionComponents",
+                ref productVersionComponents,
+                "Number of components of the product version considered to be significant");
+            ProductVersionComponents = productVersionComponents;
         }
     }
 }

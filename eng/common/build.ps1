@@ -16,7 +16,7 @@ param(
     # Type of architecture to filter by
     [string]$Architecture,
 
-    # Additional custom path filters (overrides Version)
+    # Additional custom path filter (overrides Version)
     [string]$Path,
 
     # Path to manifest file
@@ -58,7 +58,7 @@ try {
     }
 
     if ($Path) {
-        $args += " $Path"
+        $args += " --path $Path"
     }
     else {
         $args += " --path '$Version/*'"

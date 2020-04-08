@@ -16,8 +16,8 @@ param(
     # Type of architecture to filter by
     [string]$Architecture,
 
-    # Additional custom path filter (overrides Version)
-    [string]$Path,
+    # Additional custom path filters (overrides Version)
+    [string[]]$Paths,
 
     # Path to manifest file
     [string]$Manifest = "manifest.json",
@@ -57,8 +57,8 @@ try {
         $args += " --architecture $Architecture"
     }
 
-    if ($Path) {
-        $args += " --path $Path"
+    if ($Paths) {
+        $args += " --path " + ($Paths -join " --path ")
     }
     else {
         $args += " --path '$Version/*'"

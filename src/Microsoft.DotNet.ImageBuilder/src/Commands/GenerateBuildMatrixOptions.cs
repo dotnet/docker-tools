@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Name of custom build leg grouping to use.");
             CustomBuildLegGrouping = customBuildLegGrouping;
 
-            int productVersionComponents = 0;
+            int productVersionComponents = 2;
             syntax.DefineOption(
                 "productVersionComponents",
                 ref productVersionComponents,

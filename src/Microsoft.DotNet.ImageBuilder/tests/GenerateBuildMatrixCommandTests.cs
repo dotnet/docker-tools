@@ -32,6 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+                command.Options.ProductVersionComponents = 2;
                 if (filterPaths != null)
                 {
                     command.Options.FilterOptions.Paths = filterPaths.Replace("--path ", "").Split(" ");

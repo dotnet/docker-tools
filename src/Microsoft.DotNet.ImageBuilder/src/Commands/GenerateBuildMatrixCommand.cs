@@ -116,8 +116,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Match match = s_versionRegex.Match(image.ProductVersion);
             if (match.Success)
             {
+                if (Options.ProductVersionComponents <= 0)
+                {
+                    throw new InvalidOperationException($"The {nameof(Options.ProductVersionComponents)} option must be set to a value greater than zero.");
+                }
+
                 Version version = Version.Parse(match.Groups[VersionRegGroupName].Value);
-                return version.ToString(2); // Return major.minor
+                return version.ToString(Options.ProductVersionComponents); // Return major.minor
             }
 
             return null;            

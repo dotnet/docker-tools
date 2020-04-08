@@ -122,7 +122,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 Version version = Version.Parse(match.Groups[VersionRegGroupName].Value);
-                return version.ToString(Options.ProductVersionComponents); // Return major.minor
+
+                // We can't call ToString with a number that's greater than the number of components in the actual
+                // version.  So we first need to determine how many components are in the version and then get the
+                // number of components specified in the options or contained by the actual version value, whichever is smaller.
+                int componentCount = Math.Min(version.ToString().Count(c => c == '.') + 1, Options.ProductVersionComponents);
+                return version.ToString(componentCount);
             }
 
             return null;            

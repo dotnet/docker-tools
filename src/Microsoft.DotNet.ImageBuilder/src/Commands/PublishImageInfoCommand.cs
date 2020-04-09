@@ -7,7 +7,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -41,8 +40,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             ImageArtifactDetails targetImageArtifactDetails = ImageInfoHelper.LoadFromContent(
                                 originalTargetImageInfoContents, Manifest, skipManifestValidation: true);
-
-                            RemoveOutOfDateContent(targetImageArtifactDetails);
 
                             ImageInfoMergeOptions options = new ImageInfoMergeOptions
                             {
@@ -101,48 +98,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Logger.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
                     }
                 });
-            }
-        }
-
-        private void RemoveOutOfDateContent(ImageArtifactDetails imageArtifactDetails)
-        {
-            for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
-            {
-                RepoData repoData = imageArtifactDetails.Repos[repoIndex];
-                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
-
-                // If there doesn't exist a matching repo in the manifest, remove it from the image info
-                if (manifestRepo is null)
-                {
-                    imageArtifactDetails.Repos.Remove(repoData);
-                    continue;
-                }
-
-                for (int imageIndex = repoData.Images.Count - 1; imageIndex >= 0; imageIndex--)
-                {
-                    ImageData imageData = repoData.Images[imageIndex];
-                    ImageInfo manifestImage = imageData.ManifestImage;
-
-                    // If there doesn't exist a matching image in the manifest, remove it from the image info
-                    if (manifestImage is null)
-                    {
-                        repoData.Images.Remove(imageData);
-                        continue;
-                    }
-                    
-                    for (int platformIndex = imageData.Platforms.Count - 1; platformIndex >= 0; platformIndex--)
-                    {
-                        PlatformData platformData = imageData.Platforms[platformIndex];
-                        PlatformInfo manifestPlatform = manifestImage.AllPlatforms
-                            .FirstOrDefault(manifestPlatform => platformData.Equals(manifestPlatform));
-
-                        // If there doesn't exist a matching platform in the manifest, remove it from the image info
-                        if (manifestPlatform is null)
-                        {
-                            imageData.Platforms.Remove(platformData);
-                        }
-                    }
-                }
             }
         }
     }

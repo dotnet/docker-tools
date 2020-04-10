@@ -109,7 +109,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
             {
                 RepoData repoData = imageArtifactDetails.Repos[repoIndex];
-                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
+                
+                // Since the registry name is not represented in the image info, make sure to compare the repo name with the
+                // manifest's repo model name which isn't registry-qualified.
+                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Model.Name == repoData.Repo);
 
                 // If there doesn't exist a matching repo in the manifest, remove it from the image info
                 if (manifestRepo is null)
@@ -143,6 +146,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
                     }
                 }
+            }
+
+            if (imageArtifactDetails.Repos.Count == 0)
+            {
+                // Failsafe to prevent wiping out the image info due to a bug in the logic
+                throw new InvalidOperationException(
+                    "Removal of out-of-date content resulted in there being no content remaining in the target image info file. Something is probably wrong with the logic.");
             }
         }
     }

@@ -195,6 +195,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateImage(
                             CreatePlatform(repo2Image2DockerfilePath, new string[0])))
                 );
+                manifest.Registry = "mcr.microsoft.com";
 
                 RepoData repo2;
 

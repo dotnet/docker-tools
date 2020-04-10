@@ -24,7 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string FullModelName { get; private set; }    
         public string Id { get; private set; }
-        public string Name { get; private set; }
+        public string QualifiedName { get; private set; }
+        public string Name => Model.Name;
         public Repo Model { get; private set; }
 
         private RepoInfo()
@@ -47,16 +48,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (options.RepoOverrides.TryGetValue(model.Name, out string nameOverride))
             {
-                repoInfo.Name = nameOverride;
+                repoInfo.QualifiedName = nameOverride;
             }
             else
             {
                 registry = string.IsNullOrEmpty(registry) ? string.Empty : $"{registry}/";
-                repoInfo.Name = registry + options.RepoPrefix + model.Name;
+                repoInfo.QualifiedName = registry + options.RepoPrefix + model.Name;
             }
 
             repoInfo.AllImages = model.Images
-                .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.Name, manifestFilter, variableHelper, baseDirectory))
+                .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.QualifiedName, manifestFilter, variableHelper, baseDirectory))
                 .ToArray();
 
             repoInfo.FilteredImages = repoInfo.AllImages

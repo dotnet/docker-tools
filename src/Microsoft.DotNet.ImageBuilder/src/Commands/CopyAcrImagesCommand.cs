@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // the manifest.
             if (imageArtifactDetails.Value != null)
             {
-                RepoData repoData = imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Model.Name);
+                RepoData repoData = imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
                 if (repoData != null)
                 {
                     PlatformData platformData = repoData.Images
@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (platformData != null)
                     {
                         destTagNames = platformData.SimpleTags
-                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.Name, tag));
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag));
                     }
                     else
                     {
@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 else
                 {
-                    Logger.WriteError($"Unable to find image info data for repo '{repo.Model.Name}'.");
+                    Logger.WriteError($"Unable to find image info data for repo '{repo.Name}'.");
                     this.environmentService.Exit(1);
                 }
             }

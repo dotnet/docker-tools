@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     manifestInfo.Directory))
                 .ToArray();
 
-            IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.Name).ToArray();
+            IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.QualifiedName).ToArray();
             foreach (PlatformInfo platform in manifestInfo.GetAllPlatforms())
             {
                 platform.Initialize(repoNames, manifestInfo.Registry);

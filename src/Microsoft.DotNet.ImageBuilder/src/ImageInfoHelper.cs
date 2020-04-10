@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (RepoData repoData in imageArtifactDetails.Repos)
             {
-                RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Model.Name == repoData.Repo);
+                RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Name == repoData.Repo);
                 if (manifestRepo == null)
                 {
                     continue;

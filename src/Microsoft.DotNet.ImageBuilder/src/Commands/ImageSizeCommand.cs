@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (PlatformInfo platform in platforms)
                 {
                     string tagName = platform.Tags.First().FullyQualifiedName;
-                    processImage(repo.Model.Name, platform.Model.Dockerfile, tagName);
+                    processImage(repo.Name, platform.Model.Dockerfile, tagName);
                 }
             }
         }

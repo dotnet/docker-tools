@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static string GetRepoYaml(RepoInfo repo)
         {
             StringBuilder yaml = new StringBuilder();
-            yaml.AppendLine($"- repoName: public/{repo.Model.Name}");
+            yaml.AppendLine($"- repoName: public/{repo.Name}");
             yaml.AppendLine("  customTablePivots: true");
             yaml.Append("  tagGroups:");
 

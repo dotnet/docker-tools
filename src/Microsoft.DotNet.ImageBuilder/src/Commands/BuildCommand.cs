@@ -118,7 +118,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 RepoData repoData = new RepoData
                 {
-                    Repo = repoInfo.Model.Name
+                    Repo = repoInfo.Name
                 };
                 imageArtifactDetails.Repos.Add(repoData);
 
@@ -191,7 +191,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .OrderBy(name => name)
                             .ToList();
                         platformData.FullyQualifiedSimpleTags = platformData.SimpleTags
-                            .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.Name, tag))
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.QualifiedName, tag))
                             .ToList();
                         platformData.AllTags = allTags;
                     }
@@ -356,7 +356,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
-                    string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.Name);
+                    string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.QualifiedName);
                     this.loggerService.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
                     dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");

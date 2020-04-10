@@ -112,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 
                 // Since the registry name is not represented in the image info, make sure to compare the repo name with the
                 // manifest's repo model name which isn't registry-qualified.
-                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Model.Name == repoData.Repo);
+                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
 
                 // If there doesn't exist a matching repo in the manifest, remove it from the image info
                 if (manifestRepo is null)

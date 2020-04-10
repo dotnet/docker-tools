@@ -129,8 +129,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             string displayName;
             string os = Model.OsVersion;
-            Logger.WriteMessage($"os: {os}");
-            Logger.WriteMessage($"osType: {Model.OS}");
 
             if (Model.OS == OS.Windows)
             {

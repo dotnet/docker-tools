@@ -143,7 +143,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 this.loggerService.WriteMessage(
                     $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
-                pathsToRebuild.Add(platform.Model.Dockerfile);
+                IEnumerable<PlatformInfo> dependentPlatforms = platform.GetDependencyGraph(allPlatforms);
+                pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));
             }
 
             if (repoData == null || repoData.Images == null)

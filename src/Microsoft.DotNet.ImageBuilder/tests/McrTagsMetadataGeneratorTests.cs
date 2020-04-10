@@ -102,10 +102,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns(manifestPath);
 
             manifestOptionsMock
-                .SetupGet(o => o.RepoOverrides)
-                .Returns(new Dictionary<string, string>());
-
-            manifestOptionsMock
                 .Setup(o => o.GetManifestFilter())
                 .Returns(new ManifestFilter());
 

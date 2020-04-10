@@ -765,15 +765,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateRepo(
                             runtimeRepo,
                             ManifestHelper.CreateImage(
-                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, "runtime-deps", new string[] { "tag1" }))),
+                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
                         ManifestHelper.CreateRepo(
                             sdkRepo,
                             ManifestHelper.CreateImage(
-                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, "runtime", new string[] { "tag1" }))),
+                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
                         ManifestHelper.CreateRepo(
                             aspnetRepo,
                             ManifestHelper.CreateImage(
-                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, "runtime", new string[] { "tag1" }))),
+                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
                         ManifestHelper.CreateRepo(
                             otherRepo,
                             ManifestHelper.CreateImage(
@@ -840,9 +840,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
-                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo(null, null, isInternal: true)),
-                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo(null, null, isInternal: true)),
-                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
                         new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
                     }
                 }
@@ -864,6 +864,101 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             runtimeDockerfilePath,
                             sdkDockerfilePath,
                             aspnetDockerfilePath
+                        }
+                    }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
+        /// Verifies the correct path arguments are passed to the queued build when
+        /// a base image changes where the image referencing that base image has other
+        /// images dependent upon it and no image info data exists.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_DependencyGraph_MissingImageInfo()
+        {
+            const string runtimeDepsRepo = "runtimedeps-repo";
+            const string runtimeRepo = "runtime-repo";
+            const string sdkRepo = "sdk-repo";
+            const string aspnetRepo = "aspnet-repo";
+            const string otherRepo = "other-repo";
+            const string runtimeDepsDockerfilePath = "runtime-deps/Dockerfile";
+            const string runtimeDockerfilePath = "runtime/Dockerfile";
+            const string sdkDockerfilePath = "sdk/Dockerfile";
+            const string aspnetDockerfilePath = "aspnet/Dockerfile";
+            const string otherDockerfilePath = "other/Dockerfile";
+            const string baseImage = "base1";
+            const string baseImageDigest = "base1digest";
+            const string otherImage = "other";
+            const string otherImageDigest = "otherDigest";
+
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
+            {
+                new SubscriptionInfo(
+                    CreateSubscription("repo1"),
+                    ManifestHelper.CreateManifest(
+                        ManifestHelper.CreateRepo(
+                            runtimeDepsRepo,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
+                        ManifestHelper.CreateRepo(
+                            runtimeRepo,
+                            ManifestHelper.CreateImage(
+                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
+                        ManifestHelper.CreateRepo(
+                            sdkRepo,
+                            ManifestHelper.CreateImage(
+                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, aspnetRepo, new string[] { "tag1" }))),
+                        ManifestHelper.CreateRepo(
+                            aspnetRepo,
+                            ManifestHelper.CreateImage(
+                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                        ManifestHelper.CreateRepo(
+                            otherRepo,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
+                    new ImageArtifactDetails
+                    {
+                    }
+                )
+            };
+
+            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitRepo, List<DockerfileInfo>>
+            {
+                {
+                    subscriptionInfos[0].Subscription.RepoInfo,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
+                    }
+                }
+            };
+
+            using (TestContext context =
+                new TestContext(subscriptionInfos, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new Dictionary<Subscription, IList<string>>
+                {
+                    {
+                        subscriptionInfos[0].Subscription,
+                        new List<string>
+                        {
+                            runtimeDepsDockerfilePath,
+                            runtimeDockerfilePath,
+                            aspnetDockerfilePath,
+                            sdkDockerfilePath,
+                            otherDockerfilePath
                         }
                     }
                 };

@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Project = new TeamProjectReference { Id = project.Id },
                     Definition = new BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
-                    SourceBranch = subscription.RepoInfo.Branch,
+                    SourceBranch = subscription.Manifest.Branch,
                     Parameters = parameters
                 };
 

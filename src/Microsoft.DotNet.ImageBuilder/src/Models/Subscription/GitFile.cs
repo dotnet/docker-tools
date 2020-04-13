@@ -6,15 +6,18 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 {
-    public class GitRepo
+    public class GitFile
     {
         [JsonProperty(Required = Required.Always)]
         public string Owner { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string Name { get; set; }
+        public string RepoName { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public string Branch { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
+        public string Path { get; set; }
     }
 }

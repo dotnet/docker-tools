@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Repo { get; set; }
         public string Username { get; set; }
 
-        public GitOptions(string defaultOwner, string defaultRepo, string defaultBranch, string defaultPath)
+        public GitOptions(string defaultOwner = "", string defaultRepo = "", string defaultBranch = "", string defaultPath = "")
         {
             this.Owner = defaultOwner ?? throw new ArgumentNullException(nameof(defaultOwner));
             this.Repo = defaultRepo ?? throw new ArgumentNullException(nameof(defaultRepo));
@@ -86,8 +86,5 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             return new GitHubAuth(AuthToken, Username, Email);
         }
-
-        public static GitOptions GetVersionsRepoImageInfoOptions() =>
-            new GitOptions("dotnet", "versions", "master", "build-info/docker");
     }
 }

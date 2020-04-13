@@ -29,9 +29,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 $"Unable to retrieve the latest commit SHA for {filePath}");
         }
 
-        public static Uri GetArchiveUrl(GitRepo gitRepo)
+        public static Uri GetArchiveUrl(GitFile gitRepo)
         {
-            return new Uri($"https://github.com/{gitRepo.Owner}/{gitRepo.Name}/archive/{gitRepo.Branch}.zip");
+            return new Uri($"https://github.com/{gitRepo.Owner}/{gitRepo.RepoName}/archive/{gitRepo.Branch}.zip");
         }
 
         public static Uri GetBlobUrl(GitOptions gitOptions)

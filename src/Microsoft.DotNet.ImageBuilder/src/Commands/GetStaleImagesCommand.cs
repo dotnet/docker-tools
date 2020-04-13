@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             TempManifestOptions manifestOptions = new TempManifestOptions(Options.FilterOptions)
             {
-                Manifest = Path.Combine(repoPath, subscription.ManifestPath)
+                Manifest = Path.Combine(repoPath, subscription.Manifest.Path)
             };
 
             ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
@@ -209,12 +209,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string imageDataJson;
             using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
-                GitHubProject project = new GitHubProject(Options.GitOptions.Repo, Options.GitOptions.Owner);
-                GitHubBranch branch = new GitHubBranch(Options.GitOptions.Branch, project);
+                GitHubProject project = new GitHubProject(subscription.ImageInfo.RepoName, subscription.ImageInfo.Owner);
+                GitHubBranch branch = new GitHubBranch(subscription.ImageInfo.Branch, project);
 
-                GitRepo repo = subscription.RepoInfo;
-                string imageInfoPath = $"{Options.GitOptions.Path}/image-info.{repo.Owner}-{repo.Name}-{repo.Branch}.json";
-                imageDataJson = await gitHubClient.GetGitHubFileContentsAsync(imageInfoPath, branch);
+                GitFile repo = subscription.Manifest;
+                imageDataJson = await gitHubClient.GetGitHubFileContentsAsync(subscription.ImageInfo.Path, branch);
             }
 
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
@@ -226,11 +225,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await gitRepoPathSemaphore.WaitAsync();
             try
             {
-                string uniqueName = $"{sub.RepoInfo.Owner}-{sub.RepoInfo.Name}-{sub.RepoInfo.Branch}";
+                string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.RepoName}-{sub.Manifest.Branch}";
                 if (!this.gitRepoIdToPathMapping.TryGetValue(uniqueName, out repoPath))
                 {
                     string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-                    Uri repoContentsUrl = GitHelper.GetArchiveUrl(sub.RepoInfo);
+                    Uri repoContentsUrl = GitHelper.GetArchiveUrl(sub.Manifest);
                     string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
                     File.WriteAllBytes(zipPath, await this.httpClient.GetByteArrayAsync(repoContentsUrl));
 
@@ -243,7 +242,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         File.Delete(zipPath);
                     }
 
-                    repoPath = Path.Combine(extractPath, $"{sub.RepoInfo.Name}-{sub.RepoInfo.Branch}");
+                    repoPath = Path.Combine(extractPath, $"{sub.Manifest.RepoName}-{sub.Manifest.Branch}");
                     this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
                 }
             }

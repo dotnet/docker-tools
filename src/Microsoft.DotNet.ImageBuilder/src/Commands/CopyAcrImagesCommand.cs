@@ -107,7 +107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     PlatformData platformData = repoData.Images
                         .SelectMany(image => image.Platforms)
-                        .FirstOrDefault(platformData => platformData.Dockerfile == platform.DockerfilePathRelativeToManifest);
+                        .FirstOrDefault(platformData => platformData.Equals(platform));
                     if (platformData != null)
                     {
                         destTagNames = platformData.SimpleTags

@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 
         public string OsType { get; set; }
 
-        public string Id => $"{Manifest.Owner}/{Manifest.RepoName}/{Manifest.Branch}/{Manifest.Path}";
+        public string Id => $"{Manifest.Owner}/{Manifest.Repo}/{Manifest.Branch}/{Manifest.Path}";
 
         public override string ToString() => Id;
     }

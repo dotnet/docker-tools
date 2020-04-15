@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
         public string Owner { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string RepoName { get; set; }
+        public string Repo { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public string Branch { get; set; }

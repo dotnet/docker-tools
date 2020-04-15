@@ -1241,7 +1241,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest = new GitFile
                 {
                     Branch = "testBranch" + index,
-                    RepoName = repoName,
+                    Repo = repoName,
                     Owner = GetRepoOwner(testMethodName, index.ToString()),
                     Path = "testmanifest.json"
                 },
@@ -1249,7 +1249,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
 
                     Owner = GetStaleImagesCommandTests.GitHubOwner,
-                    RepoName = GetStaleImagesCommandTests.GitHubRepo,
+                    Repo = GetStaleImagesCommandTests.GitHubRepo,
                     Branch = GetStaleImagesCommandTests.GitHubBranch,
                     Path = "docker/image-info.json"
                 },
@@ -1418,7 +1418,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     string repoZipPath = GenerateRepoZipFile(subscription, subscriptionInfo.Manifest, repoDockerfileInfos);
 
                     responses.Add(
-                        $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.RepoName}/archive/{subscription.Manifest.Branch}.zip",
+                        $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}/archive/{subscription.Manifest.Branch}.zip",
                         new HttpResponseMessage
                         {
                             StatusCode = HttpStatusCode.OK,
@@ -1455,7 +1455,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 // Create a sub-folder inside the temp folder that represents the repo contents.
                 string repoPath = Directory.CreateDirectory(
-                    Path.Combine(tempDir, $"{subscription.Manifest.RepoName}-{subscription.Manifest.Branch}")).FullName;
+                    Path.Combine(tempDir, $"{subscription.Manifest.Repo}-{subscription.Manifest.Branch}")).FullName;
 
                 // Serialize the manifest model to a file in the repo folder.
                 string manifestPath = Path.Combine(repoPath, subscription.Manifest.Path);

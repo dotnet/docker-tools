@@ -128,6 +128,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions.AuthToken = "token";
+                command.Options.GitOptions.Repo = "testRepo";
+                command.Options.GitOptions.Branch = "testBranch";
+                command.Options.GitOptions.Path = "imageinfo.json";
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

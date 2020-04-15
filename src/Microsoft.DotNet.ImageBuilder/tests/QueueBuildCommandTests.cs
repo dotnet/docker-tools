@@ -284,14 +284,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest = new GitFile
                 {
                     Branch = "testBranch" + index,
-                    RepoName = repoName,
+                    Repo = repoName,
                     Owner = GetRepoOwner(testMethodName, index.ToString()),
                     Path = "testmanifest.json"
                 },
                 ImageInfo = new GitFile
                 {
                     Owner = "dotnetOwner",
-                    RepoName = "versionsRepo",
+                    Repo = "versionsRepo",
                     Branch = "masterBranch",
                     Path = "docker/image-info.json"
                 }

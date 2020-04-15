@@ -18,12 +18,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Repo { get; set; }
         public string Username { get; set; }
 
-        public GitOptions(string defaultOwner = "", string defaultRepo = "", string defaultBranch = "", string defaultPath = "")
+        public GitOptions()
         {
-            this.Owner = defaultOwner ?? throw new ArgumentNullException(nameof(defaultOwner));
-            this.Repo = defaultRepo ?? throw new ArgumentNullException(nameof(defaultRepo));
-            this.Branch = defaultBranch ?? throw new ArgumentNullException(nameof(defaultBranch));
-            this.Path = defaultPath ?? throw new ArgumentNullException(nameof(defaultPath));
+        }
+
+        public GitOptions(string defaultOwner, string defaultRepo, string defaultBranch, string defaultPath)
+        {
+            this.Owner = defaultOwner;
+            this.Repo = defaultRepo;
+            this.Branch = defaultBranch;
+            this.Path = defaultPath;
         }
 
         public void DefineOptions
@@ -33,28 +37,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption(
                 "git-branch",
                 ref branch,
-                $"GitHub branch to write to (defaults to {branch})");
+                $"GitHub branch to write to (defaults to '{branch}')");
             Branch = branch;
 
             string owner = Owner;
             syntax.DefineOption(
                 "git-owner",
                 ref owner,
-                $"Owner of the GitHub repo to write to (defaults to {owner})");
+                $"Owner of the GitHub repo to write to (defaults to '{owner}')");
             Owner = owner;
 
             string path = Path;
             syntax.DefineOption(
                 "git-path",
                 ref path,
-                $"Path within the GitHub repo to write to (defaults to {path})");
+                $"Path within the GitHub repo to write to (defaults to '{path}')");
             Path = path;
 
             string repo = Repo;
             syntax.DefineOption(
                 "git-repo",
                 ref repo,
-                $"GitHub repo to write to (defaults to {repo})");
+                $"GitHub repo to write to (defaults to '{repo}')");
             Repo = repo;
         }
 

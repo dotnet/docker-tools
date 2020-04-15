@@ -209,7 +209,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string imageDataJson;
             using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
-                GitHubProject project = new GitHubProject(subscription.ImageInfo.RepoName, subscription.ImageInfo.Owner);
+                GitHubProject project = new GitHubProject(subscription.ImageInfo.Repo, subscription.ImageInfo.Owner);
                 GitHubBranch branch = new GitHubBranch(subscription.ImageInfo.Branch, project);
 
                 GitFile repo = subscription.Manifest;
@@ -225,7 +225,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await gitRepoPathSemaphore.WaitAsync();
             try
             {
-                string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.RepoName}-{sub.Manifest.Branch}";
+                string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.Repo}-{sub.Manifest.Branch}";
                 if (!this.gitRepoIdToPathMapping.TryGetValue(uniqueName, out repoPath))
                 {
                     string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
@@ -242,7 +242,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         File.Delete(zipPath);
                     }
 
-                    repoPath = Path.Combine(extractPath, $"{sub.Manifest.RepoName}-{sub.Manifest.Branch}");
+                    repoPath = Path.Combine(extractPath, $"{sub.Manifest.Repo}-{sub.Manifest.Branch}");
                     this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
                 }
             }

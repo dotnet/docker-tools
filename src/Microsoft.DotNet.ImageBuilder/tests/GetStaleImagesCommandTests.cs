@@ -1201,6 +1201,90 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies the correct path arguments are passed to the queued build for a
+        /// scenario involving two platforms sharing the same Dockerfile.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_SharedDockerfile()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
+            {
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
+                    ManifestHelper.CreateManifest(
+                        ManifestHelper.CreateRepo(
+                            repo1,
+                            ManifestHelper.CreateImage(
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, osVersion: "alpine3.10"),
+                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag2" }, osVersion: "alpine3.11")))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base1digest",
+                                                osVersion: "Alpine 3.10"),
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: "base2digest-diff",
+                                                osVersion: "Alpine 3.11")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+            };
+
+            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitRepo, List<DockerfileInfo>>
+            {
+                {
+                    subscriptionInfos[0].Subscription.RepoInfo,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base2", "base2digest"))
+                    }
+                }
+            };
+
+            using (TestContext context = new TestContext(subscriptionInfos, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                // Only one of the images has a changed digest
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new Dictionary<Subscription, IList<string>>
+                {
+                    {
+                        subscriptionInfos[0].Subscription,
+                        new List<string>
+                        {
+                            dockerfile1Path
+                        }
+                    }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
         /// Use this method to generate a unique repo owner name for the tests. This ensures that each test
         /// uses a different name and prevents collisions when running the tests in parallel. This is because
         /// the <see cref="GetStaleImagesCommand"/> generates temp folders partially based on the name of

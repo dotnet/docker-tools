@@ -120,6 +120,112 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
+        /// <summary>
+        /// Verifies that image tags associated with a Dockerfile that is shared by more than one platform are copied.
+        /// </summary>
+        [Fact]
+        public async Task CopyAcrImagesCommand_SharedDockerfile()
+        {
+            const string subscriptionId = "my subscription";
+
+            using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+            {
+                Mock<IRegistriesOperations> registriesOperationsMock = CreateRegistriesOperationsMock();
+                IAzure azure = CreateAzureMock(registriesOperationsMock);
+                Mock<IAzureManagementFactory> azureManagementFactoryMock = CreateAzureManagementFactoryMock(subscriptionId, azure);
+
+                Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+                    azureManagementFactoryMock.Object, environmentServiceMock.Object);
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+                command.Options.Subscription = subscriptionId;
+                command.Options.ResourceGroup = "my resource group";
+                command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+                command.Options.ImageInfoPath = "image-info.json";
+
+                const string runtimeRelativeDir = "1.0/runtime/os";
+                Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+                string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+                Manifest manifest = ManifestHelper.CreateManifest(
+                    ManifestHelper.CreateRepo("runtime",
+                        ManifestHelper.CreateImage(
+                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
+                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
+                );
+                manifest.Registry = "mcr.microsoft.com";
+
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+                RepoData runtimeRepo;
+
+                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                {
+                    Repos =
+                    {
+                        {
+                            runtimeRepo = new RepoData
+                            {
+                                Repo = "runtime",
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                PathHelper.NormalizePath(dockerfileRelativePath),
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag1a",
+                                                    "tag1b"
+                                                },
+                                                osVersion: "Alpine 3.10"),
+                                            CreatePlatform(
+                                                PathHelper.NormalizePath(dockerfileRelativePath),
+                                                simpleTags: new List<string>
+                                                {
+                                                    "tag2a"
+                                                },
+                                                osVersion: "Alpine 3.11")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                };
+
+                File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+                command.LoadManifest();
+                await command.ExecuteAsync();
+
+                List<string> expectedTags = new List<string>
+                {
+                    $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1a",
+                    $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1b",
+                    $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2a"
+                };
+
+                foreach (string expectedTag in expectedTags)
+                {
+                    registriesOperationsMock
+                        .Verify(o => o.ImportImageWithHttpMessagesAsync(
+                            command.Options.ResourceGroup,
+                            manifest.Registry,
+                            It.Is<ImportImageParametersInner>(parameters =>
+                                VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
+                            It.IsAny<Dictionary<string, List<string>>>(),
+                            It.IsAny<CancellationToken>()));
+                }
+
+                environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+            }
+        }
+
         private static Mock<IAzureManagementFactory> CreateAzureManagementFactoryMock(string subscriptionId, IAzure azure)
         {
             Mock<IAzureManagementFactory> azureManagementFactoryMock = new Mock<IAzureManagementFactory>();

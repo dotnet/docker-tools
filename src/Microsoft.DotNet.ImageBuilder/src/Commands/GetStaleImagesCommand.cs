@@ -156,7 +156,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (ImageData imageData in repoData.Images)
             {
                 PlatformData platformData = imageData.Platforms
-                    .FirstOrDefault(platformData => platformData.Dockerfile == platform.DockerfilePathRelativeToManifest);
+                    .FirstOrDefault(platformData => platformData.Equals(platform));
                 if (platformData != null)
                 {
                     foundImageInfo = true;

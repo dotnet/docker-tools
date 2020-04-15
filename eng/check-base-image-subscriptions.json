@@ -1,11 +1,17 @@
 [
   {
-    "repoInfo": {
+    "manifest": {
       "owner": "dotnet",
-      "name": "dotnet-docker",
-      "branch": "master"
+      "repoName": "dotnet-docker",
+      "branch": "master",
+      "path": "manifest.json"
     },
-    "manifestPath": "manifest.json",
+    "imageInfo": {
+      "owner": "dotnet",
+      "repoName": "versions",
+      "branch": "dev/mthalman/image-info-test",
+      "path": "build-info/docker/image-info.dotnet-dotnet-docker-master.json"
+    },
     "pipelineTrigger": {
       "id": 373,
       "pathVariable": "imageBuilder.pathArgs"
@@ -13,12 +19,18 @@
     "osType": "linux"
   },
   {
-    "repoInfo": {
+    "manifest": {
       "owner": "dotnet",
-      "name": "dotnet-docker",
-      "branch": "nightly"
+      "repoName": "dotnet-docker",
+      "branch": "nightly",
+      "path": "manifest.json"
     },
-    "manifestPath": "manifest.json",
+    "imageInfo": {
+      "owner": "dotnet",
+      "repoName": "versions",
+      "branch": "dev/mthalman/image-info-test",
+      "path": "build-info/docker/image-info.dotnet-dotnet-docker-nightly.json"
+    },
     "pipelineTrigger": {
       "id": 359,
       "pathVariable": "imageBuilder.pathArgs"
@@ -26,24 +38,36 @@
     "osType": "linux"
   },
   {
-    "repoInfo": {
+    "manifest": {
       "owner": "dotnet",
-      "name": "dotnet-docker",
-      "branch": "master"
+      "repoName": "dotnet-docker",
+      "branch": "nightly",
+      "path": "manifest.samples.json"
     },
-    "manifestPath": "manifest.samples.json",
+    "imageInfo": {
+      "owner": "dotnet",
+      "repoName": "versions",
+      "branch": "dev/mthalman/image-info-test",
+      "path": "build-info/docker/image-info.dotnet-dotnet-docker-master-samples.json"
+    },
     "pipelineTrigger": {
       "id": 376,
       "pathVariable": "imageBuilder.pathArgs"
     }
   },
   {
-    "repoInfo": {
+    "manifest": {
       "owner": "Microsoft",
-      "name": "dotnet-framework-docker",
-      "branch": "master"
+      "repoName": "dotnet-framework-docker",
+      "branch": "master",
+      "path": "manifest.samples.json"
     },
-    "manifestPath": "manifest.samples.json",
+    "imageInfo": {
+      "owner": "dotnet",
+      "repoName": "versions",
+      "branch": "dev/mthalman/image-info-test",
+      "path": "build-info/docker/image-info.Microsoft-dotnet-framework-docker-master-samples.json"
+    },
     "pipelineTrigger": {
       "id": 374,
       "pathVariable": "imageBuilder.pathArgs"

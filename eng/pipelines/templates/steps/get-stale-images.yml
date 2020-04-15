@@ -18,10 +18,6 @@ steps:
       --subscriptions-path $(checkBaseImageSubscriptionsPath)
       --os-type ${{ parameters.osType }}
       --architecture ${{ parameters.architecture }}
-      --git-owner dotnet
-      --git-repo versions
-      --git-branch master
-      --git-path build-info/docker
     displayName: Get Stale Images
     name: GetStaleImages
   - template: ${{ format('../../../common/templates/steps/cleanup-docker-{0}.yml', parameters.dockerClientOS) }}

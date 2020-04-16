@@ -1254,11 +1254,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),

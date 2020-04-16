@@ -276,17 +276,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             return new Subscription
             {
-                ManifestPath = "testmanifest.json",
                 PipelineTrigger = new PipelineTrigger
                 {
                     Id = 1,
                     PathVariable = "--my-path"
                 },
-                RepoInfo = new GitRepo
+                Manifest = new GitFile
                 {
                     Branch = "testBranch" + index,
-                    Name = repoName,
-                    Owner = GetRepoOwner(testMethodName, index.ToString())
+                    Repo = repoName,
+                    Owner = GetRepoOwner(testMethodName, index.ToString()),
+                    Path = "testmanifest.json"
+                },
+                ImageInfo = new GitFile
+                {
+                    Owner = "dotnetOwner",
+                    Repo = "versionsRepo",
+                    Branch = "masterBranch",
+                    Path = "docker/image-info.json"
                 }
             };
         }
@@ -461,7 +468,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private static bool FilterBuildToSubscription(Build build, Subscription subscription, IList<string> expectedPaths)
             {
                 return build.Definition.Id == subscription.PipelineTrigger.Id &&
-                    build.SourceBranch == subscription.RepoInfo.Branch &&
+                    build.SourceBranch == subscription.Manifest.Branch &&
                     FilterBuildToParameters(build.Parameters, subscription.PipelineTrigger.PathVariable, expectedPaths);
             }
 

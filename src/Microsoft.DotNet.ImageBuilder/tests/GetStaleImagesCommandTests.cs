@@ -31,6 +31,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class GetStaleImagesCommandTests
     {
+        private const string GitHubBranch = "my-branch";
+        private const string GitHubRepo = "my-repo";
+        private const string GitHubOwner = "my-owner";
+
         /// <summary>
         /// Verifies the correct path arguments are passed to the queued build for a basic
         /// scenario involving one image that has changed.
@@ -80,11 +84,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -163,11 +167,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(
@@ -230,11 +234,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -296,11 +300,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -353,11 +357,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -519,18 +523,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest"))
                     }
                 },
                 {
-                    subscriptionInfos[1].Subscription.RepoInfo,
+                    subscriptionInfos[1].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest")),
@@ -618,11 +622,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo(baseImage, baseImageDigest)),
@@ -705,11 +709,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo(baseImage, baseImageDigest))
@@ -832,11 +836,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
@@ -926,11 +930,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
@@ -1016,11 +1020,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
@@ -1094,11 +1098,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo("base2", "base2digest")),
@@ -1174,11 +1178,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 )
             };
 
-            Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos =
-                new Dictionary<GitRepo, List<DockerfileInfo>>
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
             {
                 {
-                    subscriptionInfos[0].Subscription.RepoInfo,
+                    subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(dockerfile1Path, new FromImageInfo(null, null, isInternal: true)),
@@ -1313,17 +1317,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             return new Subscription
             {
-                ManifestPath = "testmanifest.json",
                 PipelineTrigger = new PipelineTrigger
                 {
                     Id = 1,
                     PathVariable = "--my-path"
                 },
-                RepoInfo = new GitRepo
+                Manifest = new GitFile
                 {
                     Branch = "testBranch" + index,
-                    Name = repoName,
-                    Owner = GetRepoOwner(testMethodName, index.ToString())
+                    Repo = repoName,
+                    Owner = GetRepoOwner(testMethodName, index.ToString()),
+                    Path = "testmanifest.json"
+                },
+                ImageInfo = new GitFile
+                {
+
+                    Owner = GetStaleImagesCommandTests.GitHubOwner,
+                    Repo = GetStaleImagesCommandTests.GitHubRepo,
+                    Branch = GetStaleImagesCommandTests.GitHubBranch,
+                    Path = "docker/image-info.json"
                 },
                 OsType = osType
             };
@@ -1345,10 +1357,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly IGitHubClientFactory gitHubClientFactory;
 
             private const string VariableName = "my-var";
-            private const string GitHubBranch = "my-branch";
-            private const string GitHubRepo = "my-repo";
-            private const string GitHubOwner = "my-owner";
-            private const string GitHubPath = "my-path";
 
             public Mock<IDockerService> DockerServiceMock { get; }
 
@@ -1360,7 +1368,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="osType">The OS type to filter the command with.</param>
             public TestContext(
                 SubscriptionInfo[] subscriptionInfos,
-                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos,
+                Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos,
                 string osType = "*")
             {
                 this.osType = osType;
@@ -1440,10 +1448,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;
-                command.Options.GitOptions.Branch = GitHubBranch;
-                command.Options.GitOptions.Owner = GitHubOwner;
-                command.Options.GitOptions.Repo = GitHubRepo;
-                command.Options.GitOptions.Path = GitHubPath;
                 command.Options.GitOptions.Email = "test";
                 command.Options.GitOptions.Username = "test";
                 command.Options.GitOptions.AuthToken = "test";
@@ -1488,17 +1492,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
             private IHttpClientFactory CreateHttpClientFactory(
                 SubscriptionInfo[] subscriptionInfos,
-                Dictionary<GitRepo, List<DockerfileInfo>> dockerfileInfos)
+                Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos)
             {
                 Dictionary<string, HttpResponseMessage> responses = new Dictionary<string, HttpResponseMessage>();
                 foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
                 {
                     Subscription subscription = subscriptionInfo.Subscription;
-                    List<DockerfileInfo> repoDockerfileInfos = dockerfileInfos[subscription.RepoInfo];
+                    List<DockerfileInfo> repoDockerfileInfos = dockerfileInfos[subscription.Manifest];
                     string repoZipPath = GenerateRepoZipFile(subscription, subscriptionInfo.Manifest, repoDockerfileInfos);
 
                     responses.Add(
-                        $"https://github.com/{subscription.RepoInfo.Owner}/{subscription.RepoInfo.Name}/archive/{subscription.RepoInfo.Branch}.zip",
+                        $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}/archive/{subscription.Manifest.Branch}.zip",
                         new HttpResponseMessage
                         {
                             StatusCode = HttpStatusCode.OK,
@@ -1535,10 +1539,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 // Create a sub-folder inside the temp folder that represents the repo contents.
                 string repoPath = Directory.CreateDirectory(
-                    Path.Combine(tempDir, $"{subscription.RepoInfo.Name}-{subscription.RepoInfo.Branch}")).FullName;
+                    Path.Combine(tempDir, $"{subscription.Manifest.Repo}-{subscription.Manifest.Branch}")).FullName;
 
                 // Serialize the manifest model to a file in the repo folder.
-                string manifestPath = Path.Combine(repoPath, subscription.ManifestPath);
+                string manifestPath = Path.Combine(repoPath, subscription.Manifest.Path);
                 File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
                 foreach (DockerfileInfo dockerfileInfo in repoDockerfileInfos)
@@ -1596,7 +1600,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private static bool FilterBuildToSubscription(Build build, Subscription subscription, IList<string> expectedPaths)
             {
                 return build.Definition.Id == subscription.PipelineTrigger.Id &&
-                    build.SourceBranch == subscription.RepoInfo.Branch &&
+                    build.SourceBranch == subscription.Manifest.Branch &&
                     FilterBuildToParameters(build.Parameters, subscription.PipelineTrigger.PathVariable, expectedPaths);
             }
 

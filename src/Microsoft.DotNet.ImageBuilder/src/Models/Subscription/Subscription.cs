@@ -9,17 +9,17 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
     public class Subscription
     {
         [JsonProperty(Required = Required.Always)]
-        public GitRepo RepoInfo { get; set; }
+        public GitFile Manifest { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string ManifestPath { get; set; }
+        public GitFile ImageInfo { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public PipelineTrigger PipelineTrigger { get; set; }
 
         public string OsType { get; set; }
 
-        public string Id => $"{RepoInfo.Owner}/{RepoInfo.Name}/{RepoInfo.Branch}/{ManifestPath}";
+        public string Id => $"{Manifest.Owner}/{Manifest.Repo}/{Manifest.Branch}/{Manifest.Path}";
 
         public override string ToString() => Id;
     }

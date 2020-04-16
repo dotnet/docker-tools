@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
-        public GitOptions GitOptions { get; } = GitOptions.GetVersionsRepoImageInfoOptions();
+        public GitOptions GitOptions { get; } = new GitOptions();
 
         public string SubscriptionsPath { get; set; }
         public string VariableName { get; set; }

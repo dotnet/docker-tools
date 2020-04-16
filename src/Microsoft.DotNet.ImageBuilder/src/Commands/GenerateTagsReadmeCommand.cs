@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string outputPath = Path.Combine(tempDir, "output.md");
                     ExecuteHelper.Execute(
                         "docker",
-                        $"cp {renderingToolId}:/tableapp/files/{repo.Model.Name.Replace('/', '-')}.md {outputPath}",
+                        $"cp {renderingToolId}:/tableapp/files/{repo.Name.Replace('/', '-')}.md {outputPath}",
                         Options.IsDryRun
                     );
 

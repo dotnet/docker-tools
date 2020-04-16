@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
             else if (string.Equals(variableType, RepoVariableTypeId, StringComparison.Ordinal))
             {
-                variableValue = GetRepoById(variableName)?.Name;
+                variableValue = GetRepoById(variableName)?.QualifiedName;
             }
             else if (getContextBasedSystemValue != null)
             {

@@ -11,7 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         string Manifest { get; }
         string RegistryOverride { get; }
-        IDictionary<string, string> RepoOverrides { get; }
         string RepoPrefix { get; }
         IDictionary<string, string> Variables { get; }
 

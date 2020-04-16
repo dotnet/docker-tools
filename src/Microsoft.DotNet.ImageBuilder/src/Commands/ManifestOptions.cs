@@ -16,7 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string RegistryOverride { get; set; }
         public string Repo { get; set; }
         public string RepoPrefix { get; set; }
-        public IDictionary<string, string> RepoOverrides { get; set; } = new Dictionary<string, string>();
         public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
         protected ManifestOptions()
@@ -57,12 +56,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string repo = null;
             syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
             Repo = repo;
-
-            IReadOnlyList<string> repoOverrides = Array.Empty<string>();
-            syntax.DefineOptionList("repo-override", ref repoOverrides, "Alternative repos which overrides the manifest (<target repo>=<override>)");
-            RepoOverrides = repoOverrides
-                .Select(pair => pair.Split(new char[] { '=' }, 2))
-                .ToDictionary(split => split[0], split => split[1]);
 
             string repoPrefix = null;
             syntax.DefineOption("repo-prefix", ref repoPrefix, "Prefix to add to the repo names specified in the manifest");

@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
                 RepoData repoData = imageArtifactDetails.Repos
-                    .FirstOrDefault(s => s.Repo == repo.Model.Name);
+                    .FirstOrDefault(s => s.Repo == repo.Name);
 
                 foreach (PlatformInfo platform in platforms)
                 {

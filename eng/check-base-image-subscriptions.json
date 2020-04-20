@@ -9,7 +9,7 @@
     "imageInfo": {
       "owner": "dotnet",
       "repoName": "versions",
-      "branch": "dev/mthalman/image-info-test",
+      "branch": "master",
       "path": "build-info/docker/image-info.dotnet-dotnet-docker-master.json"
     },
     "pipelineTrigger": {
@@ -28,7 +28,7 @@
     "imageInfo": {
       "owner": "dotnet",
       "repoName": "versions",
-      "branch": "dev/mthalman/image-info-test",
+      "branch": "master",
       "path": "build-info/docker/image-info.dotnet-dotnet-docker-nightly.json"
     },
     "pipelineTrigger": {
@@ -47,7 +47,7 @@
     "imageInfo": {
       "owner": "dotnet",
       "repoName": "versions",
-      "branch": "dev/mthalman/image-info-test",
+      "branch": "master",
       "path": "build-info/docker/image-info.dotnet-dotnet-docker-master-samples.json"
     },
     "pipelineTrigger": {
@@ -65,7 +65,7 @@
     "imageInfo": {
       "owner": "dotnet",
       "repoName": "versions",
-      "branch": "dev/mthalman/image-info-test",
+      "branch": "master",
       "path": "build-info/docker/image-info.Microsoft-dotnet-framework-docker-master-samples.json"
     },
     "pipelineTrigger": {

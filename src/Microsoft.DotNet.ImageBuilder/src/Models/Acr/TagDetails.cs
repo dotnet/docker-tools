@@ -2,14 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-
 namespace Microsoft.DotNet.ImageBuilder.Models.Acr
 {
-    public class Manifest
+    public class TagDetails
     {
-        public string[] Tags { get; set; } = Array.Empty<string>();
-        public string Digest { get; set; }
-        public DateTime LastUpdateTime { get; set; }
+        public string Name { get; set; }
     }
 }

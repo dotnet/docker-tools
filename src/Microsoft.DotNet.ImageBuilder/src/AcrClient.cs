@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
@@ -16,22 +18,43 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public class AcrClient : IAcrClient, IDisposable
     {
+        private const int MaxPagedResults = 999;
+        private const string LinkUrlGroup = "LinkUrl";
+        private const string RelationshipTypeGroup = "RelationshipType";
+        private static readonly Regex linkHeaderRegex =
+            new Regex($"<(?<{LinkUrlGroup}>.+)>;\\s*rel=\"(?<{RelationshipTypeGroup}>.+)\"");
+
         private readonly HttpClient httpClient = new HttpClient();
+        private readonly string baseUrl;
         private readonly string acrV1BaseUrl;
         private readonly string acrV2BaseUrl;
 
         private AcrClient(HttpClient httpClient,string acrName)
         {
             this.httpClient = httpClient;
-            this.acrV1BaseUrl = $"https://{acrName}/acr/v1";
-            this.acrV2BaseUrl = $"https://{acrName}/v2";
+            this.baseUrl = $"https://{acrName}";
+            this.acrV1BaseUrl = $"{baseUrl}/acr/v1";
+            this.acrV2BaseUrl = $"{baseUrl}/v2";
         }
 
         public async Task<Catalog> GetCatalogAsync()
         {
-            HttpResponseMessage response = await this.httpClient.GetAsync($"{this.acrV1BaseUrl}/_catalog?n={Int32.MaxValue}");
-            response.EnsureSuccessStatusCode();
-            return JsonConvert.DeserializeObject<Catalog>(await response.Content.ReadAsStringAsync());
+            Catalog result = null;
+            await GetPagedResponseAsync<Catalog>(
+                $"{this.acrV1BaseUrl}/_catalog?n={MaxPagedResults}",
+                pagedCatalog =>
+                {
+                    if (result is null)
+                    {
+                        result = pagedCatalog;
+                    }
+                    else
+                    {
+                        result.RepositoryNames.AddRange(pagedCatalog.RepositoryNames);
+                    }
+                });
+
+            return result;
         }
 
         public async Task<Repository> GetRepositoryAsync(string name)
@@ -50,12 +73,24 @@ namespace Microsoft.DotNet.ImageBuilder
             return JsonConvert.DeserializeObject<DeleteRepositoryResponse>(await response.Content.ReadAsStringAsync());
         }
 
-        public async Task<RepositoryManifests> GetRepositoryManifests(string repositoryName)
+        public async Task<RepositoryManifests> GetRepositoryManifestsAsync(string repositoryName)
         {
-            HttpResponseMessage response = await this.httpClient.GetAsync(
-                $"{this.acrV1BaseUrl}/{repositoryName}/_manifests?n={Int32.MaxValue}");
-            response.EnsureSuccessStatusCode();
-            return JsonConvert.DeserializeObject<RepositoryManifests>(await response.Content.ReadAsStringAsync());
+            RepositoryManifests result = null;
+            await GetPagedResponseAsync<RepositoryManifests>(
+                $"{this.acrV1BaseUrl}/{repositoryName}/_manifests?n={MaxPagedResults}",
+                pagedRepoManifests =>
+            {
+                if (result is null)
+                {
+                    result = pagedRepoManifests;
+                }
+                else
+                {
+                    result.Manifests.AddRange(pagedRepoManifests.Manifests);
+                }
+            });
+
+            return result;
         }
 
         public async Task DeleteManifestAsync(string repositoryName, string digest)
@@ -78,11 +113,45 @@ namespace Microsoft.DotNet.ImageBuilder
                 acrRefreshToken,
                 "registry:catalog:*",
                 "repository:*:metadata_read",
-                "repository:*:delete");
+                "repository:*:delete",
+                "repository:*:pull");
 
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
             return new AcrClient(httpClient, acrName);
+        }
+
+        private async Task GetPagedResponseAsync<T>(string url, Action<T> onGetResults)
+        {
+            string currentUrl = url;
+            while (true)
+            {
+                HttpResponseMessage response = await this.httpClient.GetAsync(
+                    currentUrl);
+                response.EnsureSuccessStatusCode();
+                T results = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+
+                onGetResults(results);
+
+                if (response.Headers.TryGetValues("Link", out IEnumerable<string> linkValues))
+                {
+                    Match nextLinkMatch = linkValues
+                        .Select(linkValue => linkHeaderRegex.Match(linkValue))
+                        .FirstOrDefault(match => match.Success && match.Groups[RelationshipTypeGroup].Value == "next");
+
+                    if (nextLinkMatch == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unable to parse link header '{String.Join(", ", linkValues.ToArray())}'");
+                    }
+
+                    currentUrl = $"{baseUrl}{nextLinkMatch.Groups[LinkUrlGroup].Value}";
+                }
+                else
+                {
+                    return;
+                }
+            }
         }
 
         private static async Task<string> GetAadAccessTokenAsync(string tenant, string username, string password)

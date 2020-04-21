@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Acr
 {
-    public class Catalog
+    public class GetTagsResponse
     {
-        [JsonProperty("repositories")]
-        public List<string> RepositoryNames { get; set; }
+        public string ImageName { get; set; }
+        public string Registry { get; set; }
+        public List<TagDetails> Tags { get; set; }
     }
 }

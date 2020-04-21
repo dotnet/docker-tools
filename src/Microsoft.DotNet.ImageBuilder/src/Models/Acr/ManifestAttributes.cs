@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
-using Newtonsoft.Json;
+using System;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Acr
 {
-    public class Catalog
+    public class ManifestAttributes
     {
-        [JsonProperty("repositories")]
-        public List<string> RepositoryNames { get; set; }
+        public string[] Tags { get; set; } = Array.Empty<string>();
+        public string Digest { get; set; }
+        public DateTime LastUpdateTime { get; set; }
     }
 }

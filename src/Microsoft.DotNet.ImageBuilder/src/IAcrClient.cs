@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         Task<DeleteRepositoryResponse> DeleteRepositoryAsync(string name);
 
-        Task<RepositoryManifests> GetRepositoryManifests(string repositoryName);
+        Task<RepositoryManifests> GetRepositoryManifestsAsync(string repositoryName);
 
         Task DeleteManifestAsync(string repositoryName, string digest);
     }

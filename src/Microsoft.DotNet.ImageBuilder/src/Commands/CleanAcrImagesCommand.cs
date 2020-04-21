@@ -36,46 +36,45 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
             Catalog catalog = await acrClient.GetCatalogAsync();
 
-            this.loggerService.WriteSubheading($"Querying repository details of ACR '{Options.RegistryName}'");
-            IEnumerable<Task<Repository>> getRepositoryTasks = catalog.RepositoryNames
-                .Where(repoName => IsTestRepo(repoName) || !IsPublicRepo(repoName) || IsNightlyRepo(repoName))
-                .Select(repoName => acrClient.GetRepositoryAsync(repoName))
-                .ToArray();
-            await Task.WhenAll(getRepositoryTasks);
-            IEnumerable<Repository> repositories = getRepositoryTasks
-                .Select(task => task.Result)
-                .ToArray();
+            this.loggerService.WriteHeading("DELETING IMAGES");
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
 
-            this.loggerService.WriteHeading("DELETING IMAGES");
-            await Task.WhenAll(GetRepoProcessingTasks(acrClient, repositories, deletedRepos, deletedImages));
+            IEnumerable<Task> cleanupTasks = catalog.RepositoryNames
+                .Where(repoName => IsTestRepo(repoName) || IsStagingRepo(repoName) || IsPublicNightlyRepo(repoName))
+                .Select(repoName => acrClient.GetRepositoryAsync(repoName))
+                .Select(getRepoTask => ProcessRepoAsync(acrClient, getRepoTask, deletedRepos, deletedImages))
+                .ToArray();
 
-            LogSummary(catalog, deletedRepos, deletedImages);
+            await Task.WhenAll(cleanupTasks);
+
+            await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }
 
-        private IEnumerable<Task> GetRepoProcessingTasks(
-            IAcrClient acrClient, IEnumerable<Repository> repositories, List<string> deletedRepos, List<string> deletedImages)
+        private async Task ProcessRepoAsync(
+            IAcrClient acrClient, Task<Repository> getRepoTask, List<string> deletedRepos, List<string> deletedImages)
         {
-            foreach (Repository repository in repositories)
+            Repository repository = await getRepoTask;
+            if (IsPublicNightlyRepo(repository.Name))
             {
-                if (IsPublicRepo(repository.Name))
-                {
-                    yield return ProcessPublicRepoAsync(acrClient, deletedImages, repository);
-                }
-                else if (IsTestRepo(repository.Name))
-                {
-                    yield return ProcessTestRepoAsync(acrClient, deletedImages, repository);
-                }
-                else
-                {
-                    yield return ProcessNonPublicRepoAsync(acrClient, deletedRepos, repository);
-                }
+                await ProcessPublicRepoAsync(acrClient, deletedImages, repository);
+            }
+            else if (IsTestRepo(repository.Name))
+            {
+                await ProcessTestRepoAsync(acrClient, deletedImages, repository);
+            }
+            else if (IsStagingRepo(repository.Name))
+            {
+                await ProcessStagingRepoAsync(acrClient, deletedRepos, repository);
+            }
+            else
+            {
+                throw new NotSupportedException($"Unexpected request to process repo '{repository.Name}'.");
             }
         }
 
-        private void LogSummary(Catalog catalog, List<string> deletedRepos, List<string> deletedImages)
+        private async Task LogSummaryAsync(IAcrClient acrClient, List<string> deletedRepos, List<string> deletedImages)
         {
             this.loggerService.WriteHeading("SUMMARY");
 
@@ -95,43 +94,52 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             this.loggerService.WriteMessage();
 
-            this.loggerService.WriteSubheading($"Total images deleted: {deletedImages.Count}");
-            this.loggerService.WriteSubheading($"Total repos deleted: {deletedRepos.Count}");
-            this.loggerService.WriteSubheading($"Total repos remaining: {catalog.RepositoryNames.Length - deletedRepos.Count}");
+            this.loggerService.WriteSubheading("DELETED DATA");
+            this.loggerService.WriteMessage($"Total images deleted: {deletedImages.Count}");
+            this.loggerService.WriteMessage($"Total repos deleted: {deletedRepos.Count}");
+            this.loggerService.WriteMessage();
+
+            this.loggerService.WriteMessage("<Querying remaining data...>");
+
+            // Requery the catalog to get the latest info after things have been deleted
+            Catalog catalog = await acrClient.GetCatalogAsync();
+
+            this.loggerService.WriteSubheading($"Total repos remaining: {catalog.RepositoryNames.Count}");
+
         }
 
-        private async Task ProcessTestRepoAsync(IAcrClient acrClient, List<string> deletedImages, Repository repository)
+        private async Task ProcessTestRepoAsync(
+            IAcrClient acrClient, List<string> deletedImages, Repository repository)
         {
-            RepositoryManifests repoManifests = await acrClient.GetRepositoryManifests(repository.Name);
-            IEnumerable<Manifest> expiredTestImages = repoManifests.Manifests
+            RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
+            IEnumerable<ManifestAttributes> expiredTestImages = repoManifests.Manifests
                 .Where(manifest => IsExpired(manifest.LastUpdateTime, 7));
             await DeleteManifestsAsync(acrClient, deletedImages, repository, expiredTestImages);
         }
 
-        private async Task ProcessPublicRepoAsync(IAcrClient acrClient, List<string> deletedImages, Repository repository)
+        private async Task ProcessPublicRepoAsync(
+            IAcrClient acrClient, List<string> deletedImages, Repository repository)
         {
-            RepositoryManifests repoManifests = await acrClient.GetRepositoryManifests(repository.Name);
-
-            IEnumerable<Manifest> untaggedImages = repoManifests.Manifests
+            RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
+            IEnumerable<ManifestAttributes> untaggedImages = repoManifests.Manifests
                 .Where(manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, 30));
-
             await DeleteManifestsAsync(acrClient, deletedImages, repository, untaggedImages);
         }
 
         private async Task DeleteManifestsAsync(
-            IAcrClient acrClient, List<string> deletedImages, Repository repository, IEnumerable<Manifest> manifests)
+            IAcrClient acrClient, List<string> deletedImages, Repository repository, IEnumerable<ManifestAttributes> manifests)
         {
             List<Task> tasks = new List<Task>();
-            foreach (Manifest manifest in manifests)
+            foreach (ManifestAttributes manifest in manifests)
             {
                 tasks.Add(DeleteManifestAsync(acrClient, deletedImages, repository, manifest));
             }
-
+            
             await Task.WhenAll(tasks);
         }
 
         private async Task DeleteManifestAsync(
-            IAcrClient acrClient, List<string> deletedImages, Repository repository, Manifest manifest)
+            IAcrClient acrClient, List<string> deletedImages, Repository repository, ManifestAttributes manifest)
         {
             if (!Options.IsDryRun)
             {
@@ -148,36 +156,49 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task ProcessNonPublicRepoAsync(IAcrClient acrClient, List<string> deletedRepos, Repository repository)
+        private async Task ProcessStagingRepoAsync(IAcrClient acrClient, List<string> deletedRepos, Repository repository)
         {
             if (IsExpired(repository.LastUpdateTime, 15))
             {
+                string[] manifestsDeleted;
+                string[] tagsDeleted;
+                
+                ManifestAttributes[] manifests = (await acrClient.GetRepositoryManifestsAsync(repository.Name)).Manifests.ToArray();
+                
                 if (!Options.IsDryRun)
                 {
                     DeleteRepositoryResponse deleteResponse =
                         await acrClient.DeleteRepositoryAsync(repository.Name);
-
-                    StringBuilder messageBuilder = new StringBuilder();
-                    messageBuilder.AppendLine($"Deleted repository '{repository.Name}'");
-                    messageBuilder.AppendLine($"\tIncluded manifests:");
-                    foreach (string manifest in deleteResponse.ManifestsDeleted)
-                    {
-                        messageBuilder.AppendLine($"\t{manifest}");
-                    }
-
-                    messageBuilder.AppendLine();
-                    messageBuilder.AppendLine($"\tIncluded tags:");
-                    foreach (string tag in deleteResponse.TagsDeleted)
-                    {
-                        messageBuilder.AppendLine($"\t{tag}");
-                    }
-
-                    this.loggerService.WriteMessage(messageBuilder.ToString());
+                    manifestsDeleted = deleteResponse.ManifestsDeleted;
+                    tagsDeleted = deleteResponse.TagsDeleted;
                 }
                 else
                 {
-                    this.loggerService.WriteMessage($"Deleted repository '{repository.Name}'");
+                    manifestsDeleted = manifests
+                        .Select(manifest => manifest.Digest)
+                        .ToArray();
+
+                    tagsDeleted = manifests
+                        .SelectMany(manifest => manifest.Tags)
+                        .ToArray();
                 }
+
+                StringBuilder messageBuilder = new StringBuilder();
+                messageBuilder.AppendLine($"Deleted repository '{repository.Name}'");
+                messageBuilder.AppendLine($"\tIncluded manifests:");
+                foreach (string manifest in manifestsDeleted.OrderBy(manifest => manifest))
+                {
+                    messageBuilder.AppendLine($"\t{manifest}");
+                }
+
+                messageBuilder.AppendLine();
+                messageBuilder.AppendLine($"\tIncluded tags:");
+                foreach (string tag in tagsDeleted.OrderBy(tag => tag))
+                {
+                    messageBuilder.AppendLine($"\t{tag}");
+                }
+
+                this.loggerService.WriteMessage(messageBuilder.ToString());
 
                 lock (deletedRepos)
                 {
@@ -187,8 +208,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private bool IsExpired(DateTime dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTime.Now;
-        private bool IsPublicRepo(string repoName) => repoName.StartsWith("public/");
-        private bool IsNightlyRepo(string repoName) => repoName.Contains("/core-nightly");
+        private bool IsStagingRepo(string repoName) => repoName.StartsWith("build-staging/");
+        private bool IsPublicNightlyRepo(string repoName) =>
+            IsPublicRepo(repoName) && repoName.Contains("/core-nightly");
         private bool IsTestRepo(string repoName) => repoName.StartsWith("test/");
+        private bool IsPublicRepo(string repoName) => repoName.StartsWith("public/");
     }
 }

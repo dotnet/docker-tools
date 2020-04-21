@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
@@ -14,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class CleanAcrImagesCommandTest
     {
         [Fact]
-        public async Task NonPublicRepos()
+        public async Task StagingRepos()
         {
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
@@ -23,28 +24,56 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
-            const string nonPublicRepo1Name = "repo1";
-            const string nonPublicRepo2Name = "repo2";
+            const string stagingRepo1Name = "build-staging/repo1";
+            const string stagingRepo2Name = "build-staging/repo2";
 
             Catalog catalog = new Catalog
             {
-                RepositoryNames = new string[]
+                RepositoryNames = new List<string>
                 {
-                    nonPublicRepo1Name,
-                    nonPublicRepo2Name
+                    stagingRepo1Name,
+                    stagingRepo2Name
                 }
             };
 
             Repository nonPublicRepo1 = new Repository
             {
                 LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(14)),
-                Name = nonPublicRepo1Name
+                Name = stagingRepo1Name
             };
 
             Repository nonPublicRepo2 = new Repository
             {
                 LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(16)),
-                Name = nonPublicRepo2Name
+                Name = stagingRepo2Name
+            };
+
+            const string repo1Digest1 = "sha256:repo1digest1";
+
+            RepositoryManifests repo1Manifests = new RepositoryManifests
+            {
+                RepositoryName = stagingRepo1Name,
+                Manifests = new List<ManifestAttributes>
+                {
+                    new ManifestAttributes
+                    {
+                        Digest = repo1Digest1
+                    }
+                }
+            };
+
+            const string repo2Digest1 = "sha256:repo2digest1";
+
+            RepositoryManifests repo2Manifests = new RepositoryManifests
+            {
+                RepositoryName = stagingRepo2Name,
+                Manifests = new List<ManifestAttributes>
+                {
+                    new ManifestAttributes
+                    {
+                        Digest = repo2Digest1
+                    }
+                }
             };
 
             Mock<IAcrClient> acrClientMock = new Mock<IAcrClient>();
@@ -52,13 +81,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCatalogAsync())
                 .ReturnsAsync(catalog);
             acrClientMock
-                .Setup(o => o.GetRepositoryAsync(nonPublicRepo1Name))
+                .Setup(o => o.GetRepositoryManifestsAsync(stagingRepo1Name))
+                .ReturnsAsync(repo1Manifests);
+            acrClientMock
+                .Setup(o => o.GetRepositoryManifestsAsync(stagingRepo2Name))
+                .ReturnsAsync(repo2Manifests);
+            acrClientMock
+                .Setup(o => o.GetRepositoryAsync(stagingRepo1Name))
                 .ReturnsAsync(nonPublicRepo1);
             acrClientMock
-                .Setup(o => o.GetRepositoryAsync(nonPublicRepo2Name))
+                .Setup(o => o.GetRepositoryAsync(stagingRepo2Name))
                 .ReturnsAsync(nonPublicRepo2);
             acrClientMock
-                .Setup(o => o.DeleteRepositoryAsync(nonPublicRepo2Name))
+                .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name))
                 .ReturnsAsync(new DeleteRepositoryResponse());
 
             Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();
@@ -77,12 +112,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(nonPublicRepo1Name), Times.Never);
-            acrClientMock.Verify(o => o.DeleteRepositoryAsync(nonPublicRepo2Name));
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo1Name), Times.Never);
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo2Name));
         }
 
         [Fact]
-        public async Task PublicRepos()
+        public async Task PublicNightlyRepos()
         {
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
@@ -97,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Catalog catalog = new Catalog
             {
-                RepositoryNames = new string[]
+                RepositoryNames = new List<string>
                 {
                     publicRepo1Name,
                     publicRepo2Name,
@@ -111,15 +146,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             RepositoryManifests repo1Manifests = new RepositoryManifests
             {
                 RepositoryName = publicRepo1Name,
-                Manifests = new Manifest[]
+                Manifests = new List<ManifestAttributes>
                 {
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo1Digest1,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(1)),
                         Tags = new string[0]
                     },
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo1Digest2,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(31)),
@@ -137,15 +172,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             RepositoryManifests repo3Manifests = new RepositoryManifests
             {
                 RepositoryName = publicRepo3Name,
-                Manifests = new Manifest[]
+                Manifests = new List<ManifestAttributes>
                 {
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo3Digest1,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(29)),
                         Tags = new string[0]
                     },
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo3Digest2,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(31)),
@@ -165,10 +200,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .ReturnsAsync(new Repository { Name = repoName });
             }
             acrClientMock
-                .Setup(o => o.GetRepositoryManifests(publicRepo1Name))
+                .Setup(o => o.GetRepositoryManifestsAsync(publicRepo1Name))
                 .ReturnsAsync(repo1Manifests);
             acrClientMock
-                .Setup(o => o.GetRepositoryManifests(publicRepo3Name))
+                .Setup(o => o.GetRepositoryManifestsAsync(publicRepo3Name))
                 .ReturnsAsync(repo3Manifests);
 
             Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();
@@ -209,7 +244,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Catalog catalog = new Catalog
             {
-                RepositoryNames = new string[]
+                RepositoryNames = new List<string>
                 {
                     repo1Name,
                     repo2Name
@@ -222,14 +257,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             RepositoryManifests repo1Manifests = new RepositoryManifests
             {
                 RepositoryName = repo1Name,
-                Manifests = new Manifest[]
+                Manifests = new List<ManifestAttributes>
                 {
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo1Digest1,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(8))
                     },
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo1Digest2,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(6))
@@ -243,14 +278,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             RepositoryManifests repo2Manifests = new RepositoryManifests
             {
                 RepositoryName = repo2Name,
-                Manifests = new Manifest[]
+                Manifests = new List<ManifestAttributes>
                 {
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo2Digest1,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(1))
                     },
-                    new Manifest
+                    new ManifestAttributes
                     {
                         Digest = repo2Digest2,
                         LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(31))
@@ -269,10 +304,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .ReturnsAsync(new Repository { Name = repoName });
             }
             acrClientMock
-                .Setup(o => o.GetRepositoryManifests(repo1Name))
+                .Setup(o => o.GetRepositoryManifestsAsync(repo1Name))
                 .ReturnsAsync(repo1Manifests);
             acrClientMock
-                .Setup(o => o.GetRepositoryManifests(repo2Name))
+                .Setup(o => o.GetRepositoryManifestsAsync(repo2Name))
                 .ReturnsAsync(repo2Manifests);
 
             Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();

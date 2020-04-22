@@ -2,13 +2,13 @@
   {
     "manifest": {
       "owner": "dotnet",
-      "repoName": "dotnet-docker",
+      "repo": "dotnet-docker",
       "branch": "master",
       "path": "manifest.json"
     },
     "imageInfo": {
       "owner": "dotnet",
-      "repoName": "versions",
+      "repo": "versions",
       "branch": "master",
       "path": "build-info/docker/image-info.dotnet-dotnet-docker-master.json"
     },
@@ -21,13 +21,13 @@
   {
     "manifest": {
       "owner": "dotnet",
-      "repoName": "dotnet-docker",
+      "repo": "dotnet-docker",
       "branch": "nightly",
       "path": "manifest.json"
     },
     "imageInfo": {
       "owner": "dotnet",
-      "repoName": "versions",
+      "repo": "versions",
       "branch": "master",
       "path": "build-info/docker/image-info.dotnet-dotnet-docker-nightly.json"
     },
@@ -40,13 +40,13 @@
   {
     "manifest": {
       "owner": "dotnet",
-      "repoName": "dotnet-docker",
+      "repo": "dotnet-docker",
       "branch": "nightly",
       "path": "manifest.samples.json"
     },
     "imageInfo": {
       "owner": "dotnet",
-      "repoName": "versions",
+      "repo": "versions",
       "branch": "master",
       "path": "build-info/docker/image-info.dotnet-dotnet-docker-master-samples.json"
     },
@@ -58,13 +58,13 @@
   {
     "manifest": {
       "owner": "Microsoft",
-      "repoName": "dotnet-framework-docker",
+      "repo": "dotnet-framework-docker",
       "branch": "master",
       "path": "manifest.samples.json"
     },
     "imageInfo": {
       "owner": "dotnet",
-      "repoName": "versions",
+      "repo": "versions",
       "branch": "master",
       "path": "build-info/docker/image-info.Microsoft-dotnet-framework-docker-master-samples.json"
     },

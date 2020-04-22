@@ -23,10 +23,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class IngestKustoImageInfoCommandTests
     {
-        ITestOutputHelper _outputHelper;
+        private ITestOutputHelper _outputHelper;
 
         public IngestKustoImageInfoCommandTests(ITestOutputHelper outputHelper)
-
         {
             _outputHelper = outputHelper;
         }
@@ -37,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task IngestKustoImageInfoCommand_MultipleRepos()
         {
-            TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext);
             string repo2Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/sdk/os", tempFolderContext);

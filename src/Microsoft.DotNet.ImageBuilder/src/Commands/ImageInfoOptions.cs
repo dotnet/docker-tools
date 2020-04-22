@@ -16,6 +16,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override void DefineParameters(ArgumentSyntax syntax)
         {
+            base.DefineParameters(syntax);
+
             string imageInfoPath = null;
             syntax.DefineParameter("image-info-path", ref imageInfoPath, "Image info file path");
             ImageInfoPath = imageInfoPath;

@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
 
-            string csv = GetImageInfoCSV();
+            string csv = GetImageInfoCsv();
             this.loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{csv}");
 
             using MemoryStream stream = new MemoryStream();
@@ -41,11 +41,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await kustoClient.IngestFromCsvStreamAsync(stream, Options);
         }
 
-        private string GetImageInfoCSV()
+        private string GetImageInfoCsv()
         {
             StringBuilder builder = new StringBuilder();
 
-            
             foreach (RepoData repo in ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest).Repos)
             {
                 foreach (ImageData image in repo.Images)
@@ -53,11 +52,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformData platform in image.Platforms)
                     {
                         string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
-                        builder.AppendLine(FormatCSV(platform.Digest, platform, image, repo, timestamp));
+                        builder.AppendLine(FormatCsv(platform.Digest, platform, image, repo, timestamp));
 
                         foreach (string tag in platform.SimpleTags)
                         {
-                            builder.AppendLine(FormatCSV(tag, platform, image, repo, timestamp));
+                            builder.AppendLine(FormatCsv(tag, platform, image, repo, timestamp));
                         }
                     }
                 }
@@ -67,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return builder.ToString().TrimEnd(Environment.NewLine);
         }
 
-        private string FormatCSV(string imageId, PlatformData platform, ImageData image, RepoData repo, string timestamp) =>
+        private string FormatCsv(string imageId, PlatformData platform, ImageData image, RepoData repo, string timestamp) =>
             $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.OsVersion}\","
                 + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo.Repo}\",\"{timestamp}\"";
     }

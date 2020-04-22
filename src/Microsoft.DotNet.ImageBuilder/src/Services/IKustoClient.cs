@@ -10,6 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IKustoClient
     {
-        Task IngestFromCsvStreamAsync(Stream csv, IngestKustoImageInfoOptions Options);
+        Task IngestFromCsvStreamAsync(Stream csv, IngestKustoImageInfoOptions options);
     }
 }

@@ -17,26 +17,26 @@ namespace Microsoft.DotNet.ImageBuilder.Services
     [Export(typeof(IKustoClient))]
     internal class KustoClientWrapper : IKustoClient
     {
-        public async Task IngestFromCsvStreamAsync(Stream csv, IngestKustoImageInfoOptions Options)
+        public async Task IngestFromCsvStreamAsync(Stream csv, IngestKustoImageInfoOptions options)
         {
             KustoConnectionStringBuilder connectionBuilder =
-                new KustoConnectionStringBuilder($"https://{Options.Cluster}.kusto.windows.net")
-                    .WithAadApplicationKeyAuthentication(Options.ClientID, Options.Secret, Options.Tenant);
+                new KustoConnectionStringBuilder($"https://{options.Cluster}.kusto.windows.net")
+                    .WithAadApplicationKeyAuthentication(options.ClientID, options.Secret, options.Tenant);
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {
                 KustoIngestionProperties properties =
-                    new KustoIngestionProperties(Options.Database, Options.Table) { Format = DataSourceFormat.csv };
-                StreamSourceOptions sourceOptions = new StreamSourceOptions() { SourceId = Guid.NewGuid() };
+                    new KustoIngestionProperties(options.Database, options.Table) { Format = DataSourceFormat.csv };
+                StreamSourceOptions sourceOptions = new StreamSourceOptions { SourceId = Guid.NewGuid() };
 
-                if (!Options.IsDryRun)
+                if (!options.IsDryRun)
                 {
                     IKustoIngestionResult result = await client.IngestFromStreamAsync(csv, properties, sourceOptions);
 
                     IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
-                    while (ingestionStatus.Status == Status.Pending)
+                    for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
                     {
-                        Thread.Sleep(TimeSpan.FromSeconds(30));
+                        await Task.Delay(TimeSpan.FromSeconds(30));
                         ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                     }
 
@@ -44,6 +44,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     {
                         throw new InvalidOperationException(
                             $"Failed to ingest Kusto data.{Environment.NewLine}{ingestionStatus.Details}");
+                    }
+                    else if (ingestionStatus.Status == Status.Pending)
+                    {
+                        throw new InvalidOperationException($"Timeout while ingesting Kusto data.");
                     }
                 }
             }

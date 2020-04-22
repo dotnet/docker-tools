@@ -6,13 +6,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishImageInfoOptions : ManifestOptions, IGitOptionsHost
+    public class PublishImageInfoOptions : ImageInfoOptions, IGitOptionsHost
     {
         protected override string CommandHelp => "Publishes a build's merged image info.";
 
         public GitOptions GitOptions { get; } = new GitOptions();
-
-        public string ImageInfoPath { get; set; }
 
         public override void DefineOptions(ArgumentSyntax syntax)
         {
@@ -26,13 +24,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.DefineParameters(syntax);
 
             GitOptions.DefineParameters(syntax);
-
-            string imageInfoPath = null;
-            syntax.DefineParameter(
-                "image-info-path",
-                ref imageInfoPath,
-                "Image info file path");
-            ImageInfoPath = imageInfoPath;
         }
     }
 }

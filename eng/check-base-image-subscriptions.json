@@ -41,7 +41,7 @@
     "manifest": {
       "owner": "dotnet",
       "repo": "dotnet-docker",
-      "branch": "nightly",
+      "branch": "master",
       "path": "manifest.samples.json"
     },
     "imageInfo": {

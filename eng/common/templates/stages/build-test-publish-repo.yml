@@ -133,6 +133,19 @@ stages:
       customInitSteps: ${{ parameters.customBuildInitSteps }}
   - template: ../jobs/build-images.yml
     parameters:
+      name: Build_Windows2004_amd64
+      pool: # windows2004Amd64
+        ${{ if eq(variables['System.TeamProject'], 'public') }}:
+          name: DotNetCore-Docker-Public
+        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+          name: DotNetCore-Docker
+        demands: VSTS_OS -equals Windows-ServerDatacenter-2004
+      matrix: dependencies.GenerateBuildMatrix.outputs['matrix.Windows2004Amd64']
+      dockerClientOS: windows
+      buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
+      customInitSteps: ${{ parameters.customBuildInitSteps }}
+  - template: ../jobs/build-images.yml
+    parameters:
       name: Build_WindowsLtsc2016_amd64
       pool: # windows1607Amd64Pool
         ${{ if eq(variables['System.TeamProject'], 'public') }}:
@@ -242,6 +255,15 @@ stages:
           name: DotNetCore-Docker
           demands: VSTS_OS -equals Windows-ServerDatacenter-1909
         matrix: dependencies.GenerateTestMatrix.outputs['matrix.Windows1909Amd64']
+        testJobTimeout: ${{ parameters.windowsAmdTestJobTimeout }}
+    - template: ../jobs/test-images-windows-client.yml
+      parameters:
+        name: Test_Windows2004_amd64
+        buildDependencies: Build_Windows2004_amd64
+        pool: # windows2004Amd64
+          name: DotNetCore-Docker
+          demands: VSTS_OS -equals Windows-ServerDatacenter-2004
+        matrix: dependencies.GenerateTestMatrix.outputs['matrix.Windows2004Amd64']
         testJobTimeout: ${{ parameters.windowsAmdTestJobTimeout }}
     - template: ../jobs/test-images-windows-client.yml
       parameters:

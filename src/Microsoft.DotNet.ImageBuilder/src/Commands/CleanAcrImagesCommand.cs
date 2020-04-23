@@ -58,11 +58,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Repository repository = await getRepoTask;
             if (IsPublicNightlyRepo(repository.Name))
             {
-                await ProcessPublicRepoAsync(acrClient, deletedImages, repository);
+                await ProcessPublicNightlyRepoAsync(acrClient, deletedImages, repository);
             }
             else if (IsTestRepo(repository.Name))
             {
-                await ProcessTestRepoAsync(acrClient, deletedImages, repository);
+                await ProcessTestRepoAsync(acrClient, deletedImages, deletedRepos, repository);
             }
             else if (IsStagingRepo(repository.Name))
             {
@@ -109,15 +109,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task ProcessTestRepoAsync(
-            IAcrClient acrClient, List<string> deletedImages, Repository repository)
+            IAcrClient acrClient, List<string> deletedImages, List<string> deletedRepos, Repository repository)
         {
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
+            if (!repoManifests.Manifests.Any())
+            {
+                await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
+                return;
+            }
+
             IEnumerable<ManifestAttributes> expiredTestImages = repoManifests.Manifests
                 .Where(manifest => IsExpired(manifest.LastUpdateTime, 7));
             await DeleteManifestsAsync(acrClient, deletedImages, repository, expiredTestImages);
         }
 
-        private async Task ProcessPublicRepoAsync(
+        private async Task ProcessPublicNightlyRepoAsync(
             IAcrClient acrClient, List<string> deletedImages, Repository repository)
         {
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
@@ -134,7 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 tasks.Add(DeleteManifestAsync(acrClient, deletedImages, repository, manifest));
             }
-            
+
             await Task.WhenAll(tasks);
         }
 
@@ -160,50 +166,55 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (IsExpired(repository.LastUpdateTime, 15))
             {
-                string[] manifestsDeleted;
-                string[] tagsDeleted;
-                
-                ManifestAttributes[] manifests = (await acrClient.GetRepositoryManifestsAsync(repository.Name)).Manifests.ToArray();
-                
-                if (!Options.IsDryRun)
-                {
-                    DeleteRepositoryResponse deleteResponse =
-                        await acrClient.DeleteRepositoryAsync(repository.Name);
-                    manifestsDeleted = deleteResponse.ManifestsDeleted;
-                    tagsDeleted = deleteResponse.TagsDeleted;
-                }
-                else
-                {
-                    manifestsDeleted = manifests
-                        .Select(manifest => manifest.Digest)
-                        .ToArray();
+                await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
+            }
+        }
 
-                    tagsDeleted = manifests
-                        .SelectMany(manifest => manifest.Tags)
-                        .ToArray();
-                }
+        private async Task DeleteRepositoryAsync(IAcrClient acrClient, List<string> deletedRepos, Repository repository)
+        {
+            string[] manifestsDeleted;
+            string[] tagsDeleted;
 
-                StringBuilder messageBuilder = new StringBuilder();
-                messageBuilder.AppendLine($"Deleted repository '{repository.Name}'");
-                messageBuilder.AppendLine($"\tIncluded manifests:");
-                foreach (string manifest in manifestsDeleted.OrderBy(manifest => manifest))
-                {
-                    messageBuilder.AppendLine($"\t{manifest}");
-                }
+            ManifestAttributes[] manifests = (await acrClient.GetRepositoryManifestsAsync(repository.Name)).Manifests.ToArray();
 
-                messageBuilder.AppendLine();
-                messageBuilder.AppendLine($"\tIncluded tags:");
-                foreach (string tag in tagsDeleted.OrderBy(tag => tag))
-                {
-                    messageBuilder.AppendLine($"\t{tag}");
-                }
+            if (!Options.IsDryRun)
+            {
+                DeleteRepositoryResponse deleteResponse =
+                    await acrClient.DeleteRepositoryAsync(repository.Name);
+                manifestsDeleted = deleteResponse.ManifestsDeleted;
+                tagsDeleted = deleteResponse.TagsDeleted;
+            }
+            else
+            {
+                manifestsDeleted = manifests
+                    .Select(manifest => manifest.Digest)
+                    .ToArray();
 
-                this.loggerService.WriteMessage(messageBuilder.ToString());
+                tagsDeleted = manifests
+                    .SelectMany(manifest => manifest.Tags)
+                    .ToArray();
+            }
 
-                lock (deletedRepos)
-                {
-                    deletedRepos.Add(repository.Name);
-                }
+            StringBuilder messageBuilder = new StringBuilder();
+            messageBuilder.AppendLine($"Deleted repository '{repository.Name}'");
+            messageBuilder.AppendLine($"\tIncluded manifests:");
+            foreach (string manifest in manifestsDeleted.OrderBy(manifest => manifest))
+            {
+                messageBuilder.AppendLine($"\t{manifest}");
+            }
+
+            messageBuilder.AppendLine();
+            messageBuilder.AppendLine($"\tIncluded tags:");
+            foreach (string tag in tagsDeleted.OrderBy(tag => tag))
+            {
+                messageBuilder.AppendLine($"\t{tag}");
+            }
+
+            this.loggerService.WriteMessage(messageBuilder.ToString());
+
+            lock (deletedRepos)
+            {
+                deletedRepos.Add(repository.Name);
             }
         }
 

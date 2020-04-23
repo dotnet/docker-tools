@@ -221,7 +221,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private bool IsExpired(DateTime dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTime.Now;
         private bool IsStagingRepo(string repoName) => repoName.StartsWith("build-staging/");
         private bool IsPublicNightlyRepo(string repoName) =>
-            IsPublicRepo(repoName) && repoName.Contains("/core-nightly");
+            IsPublicRepo(repoName) && (repoName.Contains("/core-nightly/") || repoName.Contains("/nightly/"));
         private bool IsTestRepo(string repoName) => repoName.StartsWith("test/");
         private bool IsPublicRepo(string repoName) => repoName.StartsWith("public/");
     }

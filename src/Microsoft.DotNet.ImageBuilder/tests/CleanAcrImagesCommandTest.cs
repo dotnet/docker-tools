@@ -129,6 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string publicRepo1Name = "public/dotnet/core-nightly/repo1";
             const string publicRepo2Name = "public/dotnet/core/repo2";
             const string publicRepo3Name = "public/dotnet/core-nightly/repo3";
+            const string publicRepo4Name = "public/dotnet/nightly/repo4";
 
             Catalog catalog = new Catalog
             {
@@ -136,7 +137,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     publicRepo1Name,
                     publicRepo2Name,
-                    publicRepo3Name
+                    publicRepo3Name,
+                    publicRepo4Name
                 }
             };
 
@@ -189,6 +191,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
+            const string repo4Digest1 = "sha256:repo4digest1";
+
+            RepositoryManifests repo4Manifests = new RepositoryManifests
+            {
+                RepositoryName = publicRepo4Name,
+                Manifests = new List<ManifestAttributes>
+                {
+                    new ManifestAttributes
+                    {
+                        Digest = repo4Digest1,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(60)),
+                        Tags = new string[0]
+                    }
+                }
+            };
+
             Mock<IAcrClient> acrClientMock = new Mock<IAcrClient>();
             acrClientMock
                 .Setup(o => o.GetCatalogAsync())
@@ -205,6 +223,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock
                 .Setup(o => o.GetRepositoryManifestsAsync(publicRepo3Name))
                 .ReturnsAsync(repo3Manifests);
+            acrClientMock
+                .Setup(o => o.GetRepositoryManifestsAsync(publicRepo4Name))
+                .ReturnsAsync(repo4Manifests);
 
             Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();
             acrClientFactoryMock
@@ -227,6 +248,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo2Name, It.IsAny<string>()), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest1), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest2));
+            acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo4Name, repo4Digest1));
         }
 
         /// <summary>

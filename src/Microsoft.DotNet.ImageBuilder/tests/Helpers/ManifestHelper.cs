@@ -48,7 +48,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         public static Platform CreatePlatform(
-            string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco", Architecture architecture = Architecture.AMD64)
+            string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco", Architecture architecture = Architecture.AMD64,
+            CustomBuildLegGrouping[] customBuildLegGroupings = null)
         {
             return new Platform
             {
@@ -56,7 +57,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 OsVersion = osVersion,
                 OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
-                Architecture = architecture
+                Architecture = architecture,
+                CustomBuildLegGrouping = customBuildLegGroupings ?? Array.Empty<CustomBuildLegGrouping>()
             };
         }
     }

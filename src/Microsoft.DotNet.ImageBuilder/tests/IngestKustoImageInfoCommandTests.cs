@@ -131,6 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 ""t2"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:56""
 ""jkl"",""amd64"",""Linux"",""Ubuntu 19.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""
 ""t3"",""amd64"",""Linux"",""Ubuntu 19.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""";
+            expectedData = expectedData.NormalizeLineEndings(Environment.NewLine).Trim();
 
             string imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             File.WriteAllText(imageInfoPath, JsonHelper.SerializeObject(srcImageArtifactDetails));

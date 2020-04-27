@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
             const string username = "fake user";
-            const string password = "fake password";
+            const string password = "PLACEHOLDER";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -122,7 +122,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
             const string username = "fake user";
-            const string password = "fake password";
+            const string password = "PLACEHOLDER";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -260,7 +260,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
             const string username = "fake user";
-            const string password = "fake password";
+            const string password = "PLACEHOLDER";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -348,7 +348,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
             const string username = "fake user";
-            const string password = "fake password";
+            const string password = "PLACEHOLDER";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -427,7 +427,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string acrName = "myacr.azurecr.io";
             const string tenant = "mytenant";
             const string username = "fake user";
-            const string password = "fake password";
+            const string password = "PLACEHOLDER";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 

@@ -9,18 +9,20 @@ schedules:
     - master
 
 variables:
-- group: DotNet-Docker-Common
-- group: DotNet-Docker-Secrets
+- template: ../common/templates/variables/common.yml
 
 jobs:
 - job: Build
   pool: Hosted Ubuntu 1604
   steps:
-  - powershell: >
-      $(Build.Repository.LocalPath)/eng/Invoke-AcrCleanup.ps1 `
-      -RegistryName $(acr.server) `
-      -SubscriptionId $(acr.subscription) `
-      -ServicePrincipalName $(acr.servicePrincipalName) `
-      -ServicePrincipalPassword $(app-dotnetdockerbuild-client-secret) `
-      -ServicePrincipalTenant $(acr.servicePrincipalTenant)
-    displayName: Cleanup ACR Images
+  - template: ../common/templates/steps/init-docker-linux.yml
+  - script: >
+      $(runImageBuilderCmd) cleanAcrImages
+      $(acr.servicePrincipalName)
+      $(app-dotnetdockerbuild-client-secret)
+      $(acr.servicePrincipalTenant)
+      $(acr.subscription)
+      $(acr.resourceGroup)
+      $(acr.server)
+    displayName: Clean ACR Images
+  - template: ../common/templates/steps/cleanup-docker-linux.yml

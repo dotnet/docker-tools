@@ -118,8 +118,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            IEnumerable<ManifestAttributes> expiredTestImages = repoManifests.Manifests
-                .Where(manifest => IsExpired(manifest.LastUpdateTime, 7));
+            ManifestAttributes[] expiredTestImages = repoManifests.Manifests
+                .Where(manifest => IsExpired(manifest.LastUpdateTime, 7))
+                .ToArray();
+
+            // If all the images in the repo are expired, delete the whole repo instead of 
+            // deleting each individual image.
+            if (expiredTestImages.Length == repoManifests.Manifests.Count)
+            {
+                await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
+                return;
+            }
+
             await DeleteManifestsAsync(acrClient, deletedImages, repository, expiredTestImages);
         }
 

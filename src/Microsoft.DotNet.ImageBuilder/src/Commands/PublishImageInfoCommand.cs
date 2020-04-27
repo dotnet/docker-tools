@@ -20,12 +20,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly ILoggerService loggerService;
+        private readonly HttpClient httpClient;
 
         [ImportingConstructor]
-        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService)
+        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientFactory httpClientFactory)
         {
+            if (httpClientFactory is null)
+            {
+                throw new ArgumentNullException(nameof(httpClientFactory));
+            }
+
             this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+
+            this.httpClient = httpClientFactory.GetClient();
         }
 
         public override async Task ExecuteAsync()
@@ -64,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(new HttpClient(), Options.GitOptions);
+            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, Options.GitOptions);
             try
             {
                 string repoImageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);

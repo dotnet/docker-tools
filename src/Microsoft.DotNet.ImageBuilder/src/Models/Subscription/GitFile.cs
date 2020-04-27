@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
 {
-    public class GitFile
+    public class GitFile : IGitFileRef
     {
         [JsonProperty(Required = Required.Always)]
         public string Owner { get; set; }

@@ -125,7 +125,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
-                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
+                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>());
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions.AuthToken = "token";
                 command.Options.GitOptions.Repo = "testRepo";
@@ -282,7 +282,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
-                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
+                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>());
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions.AuthToken = "token";
                 command.Options.GitOptions.Repo = "repo";

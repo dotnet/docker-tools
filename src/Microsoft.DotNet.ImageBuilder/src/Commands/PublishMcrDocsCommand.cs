@@ -21,61 +21,87 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService gitService;
         private readonly IGitHubClientFactory gitHubClientFactory;
+        private readonly ILoggerService loggerService;
 
         [ImportingConstructor]
-        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory) : base()
+        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
+            ILoggerService loggerService) : base()
         {
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("PUBLISHING MCR DOCS");
+            loggerService.WriteHeading("PUBLISHING MCR DOCS");
 
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
             string productRepo = GetProductRepo();
 
-            using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+            IEnumerable<GitObject> gitObjects =
+                GetUpdatedReadmes(productRepo)
+                .Concat(GetUpdatedTagsMetadata(productRepo));
 
-            await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
+            if (Options.IsDryRun)
             {
-                await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", async branch =>
+                foreach (GitObject gitObject in gitObjects)
                 {
-                    return (await GetUpdatedReadmes(productRepo, gitHubClient, branch))
-                        .Concat(await GetUpdatedTagsMetadata(productRepo, gitHubClient, branch));
+                    this.loggerService.WriteMessage(
+                        $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
+                }
+            }
+            else
+            {
+                using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+
+                await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
+                {
+                    await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
+                    {
+                        return FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch);
+                    });
                 });
-            });
+            }
         }
 
-        private async Task AddUpdatedFile(
-            List<GitObject> updatedFiles,
-            IGitHubClient client,
-            GitHubBranch branch,
+        private async Task<IEnumerable<GitObject>> FilterUpdatedGitObjectsAsync(
+            IEnumerable<GitObject> gitObjects, IGitHubClient gitHubClient, GitHubBranch branch)
+        {
+            List<GitObject> updatedGitObjects = new List<GitObject>();
+            foreach (GitObject gitObject in gitObjects)
+            {
+                string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
+                if (currentContent == gitObject.Content)
+                {
+                    this.loggerService.WriteMessage($"File '{gitObject.Path}' has not changed.");
+                }
+                else
+                {
+                    this.loggerService.WriteMessage($"File '{gitObject.Path}' has changed.");
+                    updatedGitObjects.Add(gitObject);
+                }
+            }
+
+            return updatedGitObjects;
+        }
+
+        private GitObject GetGitObject(
             string repo,
             string filePath,
             string updatedContent)
         {
             string gitPath = string.Join('/', Options.GitOptions.Path, repo, filePath);
-            string currentContent = await client.GetGitHubFileContentsAsync(gitPath, branch);
-
-            if (currentContent == updatedContent)
+            
+            return new GitObject
             {
-                Logger.WriteMessage($"File '{filePath}' has not changed.");
-            }
-            else
-            {
-                Logger.WriteMessage($"File '{filePath}' has changed.");
-                updatedFiles.Add(new GitObject
-                {
-                    Path = gitPath,
-                    Type = GitObject.TypeBlob,
-                    Mode = GitObject.ModeFile,
-                    Content = updatedContent
-                });
-            }
+                Path = gitPath,
+                Type = GitObject.TypeBlob,
+                Mode = GitObject.ModeFile,
+                Content = updatedContent
+            };
         }
 
         private string GetProductRepo()
@@ -85,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
         }
 
-        private async Task<GitObject[]> GetUpdatedReadmes(string productRepo, IGitHubClient client, GitHubBranch branch)
+        private GitObject[] GetUpdatedReadmes(string productRepo)
         {
             List<GitObject> readmes = new List<GitObject>();
 
@@ -104,13 +130,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 
                 string updatedReadMe = File.ReadAllText(fullPath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                await AddUpdatedFile(readmes, client, branch, productRepo, fullPath, updatedReadMe);
+                readmes.Add(GetGitObject(productRepo, fullPath, updatedReadMe));
             }
 
             return readmes.ToArray();
         }
 
-        private async Task<GitObject[]> GetUpdatedTagsMetadata(string productRepo, IGitHubClient client, GitHubBranch branch)
+        private GitObject[] GetUpdatedTagsMetadata(string productRepo)
         {
             List<GitObject> metadata = new List<GitObject>();
 
@@ -118,7 +144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string updatedMetadata = McrTagsMetadataGenerator.Execute(this.gitService, Manifest, repo, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplatePath);
-                await AddUpdatedFile(metadata, client, branch, productRepo, metadataFileName, updatedMetadata);
+                metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
             }
 
             return metadata.ToArray();

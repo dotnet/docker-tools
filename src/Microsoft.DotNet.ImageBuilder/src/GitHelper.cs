@@ -4,11 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
@@ -29,20 +30,14 @@ namespace Microsoft.DotNet.ImageBuilder
                 $"Unable to retrieve the latest commit SHA for {filePath}");
         }
 
-        public static Uri GetArchiveUrl(GitFile gitFile)
-        {
-            return new Uri($"https://github.com/{gitFile.Owner}/{gitFile.Repo}/archive/{gitFile.Branch}.zip");
-        }
+        public static Uri GetArchiveUrl(IGitBranchRef branchRef) =>
+            new Uri($"https://github.com/{branchRef.Owner}/{branchRef.Repo}/archive/{branchRef.Branch}.zip");
 
-        public static Uri GetBlobUrl(GitOptions gitOptions)
-        {
-            return new Uri($"https://github.com/{gitOptions.Owner}/{gitOptions.Repo}/blob/{gitOptions.Branch}/{gitOptions.Path}");
-        }
+        public static Uri GetBlobUrl(IGitFileRef fileRef) =>
+            new Uri($"https://github.com/{fileRef.Owner}/{fileRef.Repo}/blob/{fileRef.Branch}/{fileRef.Path}");
 
-        public static Uri GetCommitUrl(GitOptions gitOptions, string sha)
-        {
-            return new Uri($"https://github.com/{gitOptions.Owner}/{gitOptions.Repo}/commit/{sha}");
-        }
+        public static Uri GetCommitUrl(IGitRepoRef repoRef, string sha) =>
+            new Uri($"https://github.com/{repoRef.Owner}/{repoRef.Repo}/commit/{sha}");
 
         public static async Task<GitReference> PushChangesAsync(IGitHubClient client, IGitOptionsHost options, string commitMessage, Func<GitHubBranch, Task<IEnumerable<GitObject>>> getChanges)
         {
@@ -103,6 +98,26 @@ namespace Microsoft.DotNet.ImageBuilder
                     await Task.Delay(retryMillisecondsDelay);
                 }
             }
+        }
+
+        public static async Task<string> DownloadAndExtractGitRepoArchiveAsync(HttpClient httpClient, IGitBranchRef branchRef)
+        {
+            string uniqueName = $"{branchRef.Owner}-{branchRef.Repo}-{branchRef.Branch}";
+            string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
+            Uri repoContentsUrl = GitHelper.GetArchiveUrl(branchRef);
+            string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
+            File.WriteAllBytes(zipPath, await httpClient.GetByteArrayAsync(repoContentsUrl));
+
+            try
+            {
+                ZipFile.ExtractToDirectory(zipPath, extractPath);
+            }
+            finally
+            {
+                File.Delete(zipPath);
+            }
+
+            return Path.Combine(extractPath, $"{branchRef.Repo}-{branchRef.Branch}");
         }
     }
 }

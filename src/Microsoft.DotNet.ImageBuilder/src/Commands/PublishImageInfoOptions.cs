@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected override string CommandHelp => "Publishes a build's merged image info.";
 
-        public GitOptions GitOptions { get; } = new GitOptions();
+        public GitOptions GitOptions { get; set; } = new GitOptions();
 
         public override void DefineOptions(ArgumentSyntax syntax)
         {

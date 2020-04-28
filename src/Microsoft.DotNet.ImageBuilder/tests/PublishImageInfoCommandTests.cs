@@ -5,6 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -19,8 +22,15 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class PublishImageInfoCommandTests
+    public class PublishImageInfoCommandTests : IDisposable
     {
+        private readonly List<string> foldersToDelete = new List<string>();
+
+        public void Dispose()
+        {
+            foldersToDelete.ForEach(folder => Directory.Delete(folder, recursive: true));
+        }
+
         /// <summary>
         /// Verifies the command will replace any existing tags of a merged image.
         /// </summary>
@@ -118,19 +128,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock(targetImageArtifactDetails);
+                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock();
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
                 gitHubClientFactoryMock
                     .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
-                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
+                GitOptions gitOptions = new GitOptions
+                {
+                    AuthToken = "token",
+                    Repo = "testRepo",
+                    Branch = "testBranch",
+                    Path = "imageinfo.json"
+                };
+
+                PublishImageInfoCommand command = new PublishImageInfoCommand(
+                    gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>(),
+                    CreateHttpClientFactory(gitOptions, targetImageArtifactDetails));
                 command.Options.ImageInfoPath = file;
-                command.Options.GitOptions.AuthToken = "token";
-                command.Options.GitOptions.Repo = "testRepo";
-                command.Options.GitOptions.Branch = "testBranch";
-                command.Options.GitOptions.Path = "imageinfo.json";
+                command.Options.GitOptions = gitOptions;
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -275,20 +292,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock(targetImageArtifactDetails);
+                Mock<IGitHubClient> gitHubClientMock = GetGitHubClientMock();
 
                 Mock<IGitHubClientFactory> gitHubClientFactoryMock = new Mock<IGitHubClientFactory>();
                 gitHubClientFactoryMock
                     .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
-                PublishImageInfoCommand command = new PublishImageInfoCommand(gitHubClientFactoryMock.Object);
+                GitOptions gitOptions = new GitOptions
+                {
+                    AuthToken = "token",
+                    Repo = "repo",
+                    Owner = "owner",
+                    Path = "imageinfo.json",
+                    Branch = "branch"
+                };
+
+                PublishImageInfoCommand command = new PublishImageInfoCommand(
+                    gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>(),
+                    CreateHttpClientFactory(gitOptions, targetImageArtifactDetails));
                 command.Options.ImageInfoPath = file;
-                command.Options.GitOptions.AuthToken = "token";
-                command.Options.GitOptions.Repo = "repo";
-                command.Options.GitOptions.Owner = "owner";
-                command.Options.GitOptions.Path = "imageinfo.json";
-                command.Options.GitOptions.Branch = "branch";
+                command.Options.GitOptions = gitOptions;
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -333,12 +357,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        private static Mock<IGitHubClient> GetGitHubClientMock(ImageArtifactDetails imageArtifactDetails)
+        private static Mock<IGitHubClient> GetGitHubClientMock()
         {
             Mock<IGitHubClient> gitHubClientMock = new Mock<IGitHubClient>();
-            gitHubClientMock
-                .Setup(o => o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.IsAny<GitHubBranch>()))
-                .ReturnsAsync(JsonHelper.SerializeObject(imageArtifactDetails));
 
             gitHubClientMock
                 .Setup(o => o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()))
@@ -371,6 +392,43 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             return gitHubClientMock;
+        }
+
+        private IHttpClientFactory CreateHttpClientFactory(IGitFileRef imageOptionsFileRef, ImageArtifactDetails imageArtifactDetails)
+        {
+            string tempDir = Directory.CreateDirectory(
+                    Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())).FullName;
+            this.foldersToDelete.Add(tempDir);
+
+            string repoPath = Directory.CreateDirectory(
+                   Path.Combine(tempDir, $"{imageOptionsFileRef.Repo}-{imageOptionsFileRef.Branch}")).FullName;
+
+            string imageInfoPath = Path.Combine(repoPath, imageOptionsFileRef.Path);
+            File.WriteAllText(imageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+            string repoZipPath = Path.Combine(tempDir, "repo.zip");
+            ZipFile.CreateFromDirectory(repoPath, repoZipPath, CompressionLevel.Fastest, true);
+
+            Dictionary<string, HttpResponseMessage> responses = new Dictionary<string, HttpResponseMessage>
+            {
+                {
+                    GitHelper.GetArchiveUrl(imageOptionsFileRef).ToString(),
+                    new HttpResponseMessage
+                    {
+                        StatusCode = HttpStatusCode.OK,
+                        Content = new ByteArrayContent(File.ReadAllBytes(repoZipPath))
+                    }
+                }
+            };
+
+            HttpClient client = new HttpClient(new TestHttpMessageHandler(responses));
+
+            Mock<IHttpClientFactory> httpClientFactoryMock = new Mock<IHttpClientFactory>();
+            httpClientFactoryMock
+                .Setup(o => o.GetClient())
+                .Returns(client);
+
+            return httpClientFactoryMock.Object;
         }
     }
 }

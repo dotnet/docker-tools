@@ -228,21 +228,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.Repo}-{sub.Manifest.Branch}";
                 if (!this.gitRepoIdToPathMapping.TryGetValue(uniqueName, out repoPath))
                 {
-                    string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-                    Uri repoContentsUrl = GitHelper.GetArchiveUrl(sub.Manifest);
-                    string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
-                    File.WriteAllBytes(zipPath, await this.httpClient.GetByteArrayAsync(repoContentsUrl));
-
-                    try
-                    {
-                        ZipFile.ExtractToDirectory(zipPath, extractPath);
-                    }
-                    finally
-                    {
-                        File.Delete(zipPath);
-                    }
-
-                    repoPath = Path.Combine(extractPath, $"{sub.Manifest.Repo}-{sub.Manifest.Branch}");
+                    repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, sub.Manifest);
                     this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
                 }
             }

@@ -45,15 +45,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 GetUpdatedReadmes(productRepo)
                 .Concat(GetUpdatedTagsMetadata(productRepo));
 
-            if (Options.IsDryRun)
+            foreach (GitObject gitObject in gitObjects)
             {
-                foreach (GitObject gitObject in gitObjects)
-                {
-                    this.loggerService.WriteMessage(
-                        $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
-                }
+                this.loggerService.WriteMessage(
+                    $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
             }
-            else
+
+            if (!Options.IsDryRun)
             {
                 using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
 

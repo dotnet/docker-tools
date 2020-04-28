@@ -47,13 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            if (Options.IsDryRun)
-            {
-                loggerService.WriteMessage(
-                    $"The '{imageInfoPathIdentifier}' file would have been updated with the following content:" +
-                        Environment.NewLine + imageInfoGitObject.Content + Environment.NewLine);
-            }
-            else
+            loggerService.WriteMessage(
+                $"The '{imageInfoPathIdentifier}' file has been updated with the following content:" +
+                    Environment.NewLine + imageInfoGitObject.Content + Environment.NewLine);
+
+            if (!Options.IsDryRun)
             {
                 using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>

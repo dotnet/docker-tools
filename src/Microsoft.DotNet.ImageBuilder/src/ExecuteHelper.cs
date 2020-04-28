@@ -100,7 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
 
-            return processResult.StandardOutput;
+            return processResult?.StandardOutput;
         }
 
         private static ProcessResult ExecuteProcess(ProcessStartInfo info, Action<Process> processStartedCallback = null)

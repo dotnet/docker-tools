@@ -166,7 +166,7 @@ namespace Microsoft.DotNet.ImageBuilder
             HttpResponseMessage response = await Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
                 .WaitAndRetryAsync(RetryHelper.MaxRetries, RetryHelper.SleepDurationProvider,
-                    RetryHelper.GetRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService))
+                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService))
                 .ExecuteAsync(() => httpClient.SendAsync(createMessage()));
 
             response.EnsureSuccessStatusCode();

@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static readonly Func<int, TimeSpan> SleepDurationProvider =
             retryAttempt => TimeSpan.FromSeconds(Math.Pow(waitFactor, retryAttempt - 1));
 
-        public static Action<DelegateResult<T>, TimeSpan, int, Context> GetRetryDelegate<T>(
+        public static Action<DelegateResult<T>, TimeSpan, int, Context> GetOnRetryDelegate<T>(
             int maxRetries, ILoggerService loggerService)
         {
             return (delegateResult, timeSpan, retryCount, context) => loggerService.WriteMessage(

@@ -75,8 +75,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             Options.CustomBuildLegGrouping,
                             out CustomBuildLegGroupingInfo customBuildLegGroupingInfo))
                     {
-                        return customBuildLegGroupingInfo.DependencyImages
+                        IEnumerable<PlatformInfo> dependencyPlatforms = customBuildLegGroupingInfo.DependencyImages
                             .Select(image => Manifest.GetPlatformByTag(image));
+                        return dependencyPlatforms
+                            .Concat(dependencyPlatforms
+                                .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
                     }
 
                     return Enumerable.Empty<PlatformInfo>();
@@ -263,6 +266,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return platformId.OS.GetDockerName();
+        }
+
+        private IEnumerable<PlatformInfo> GetParents(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms)
+        {
+            List<PlatformInfo> parents = new List<PlatformInfo>();
+            foreach (PlatformInfo parent in GetPlatformDependencies(platform, availablePlatforms))
+            {
+                parents.Add(parent);
+                parents.AddRange(GetParents(parent, availablePlatforms));
+            }
+
+            return parents;
         }
 
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>

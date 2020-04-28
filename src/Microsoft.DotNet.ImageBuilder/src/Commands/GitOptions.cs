@@ -8,7 +8,7 @@ using Microsoft.DotNet.VersionTools.Automation;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GitOptions
+    public class GitOptions : IGitFileRef
     {
         public string AuthToken { get; set; }
         public string Branch { get; set; }

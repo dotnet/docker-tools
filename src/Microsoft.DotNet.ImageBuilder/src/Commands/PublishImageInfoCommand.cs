@@ -3,8 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -16,91 +19,109 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
     {
         private readonly IGitHubClientFactory gitHubClientFactory;
+        private readonly ILoggerService loggerService;
+        private readonly HttpClient httpClient;
 
         [ImportingConstructor]
-        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory)
+        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientFactory httpClientFactory)
         {
+            if (httpClientFactory is null)
+            {
+                throw new ArgumentNullException(nameof(httpClientFactory));
+            }
+
             this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+
+            this.httpClient = httpClientFactory.GetClient();
         }
 
         public override async Task ExecuteAsync()
         {
-            ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+            Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
+            GitObject imageInfoGitObject = await GetUpdatedImageInfoGitObjectAsync();
 
-            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
+            if (imageInfoGitObject is null)
             {
+                loggerService.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
+                return;
+            }
+
+            loggerService.WriteMessage(
+                $"The '{imageInfoPathIdentifier}' file has been updated with the following content:" +
+                    Environment.NewLine + imageInfoGitObject.Content + Environment.NewLine);
+
+            if (!Options.IsDryRun)
+            {
+                using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
-                    bool hasChanges = false;
-                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, "Merging image info updates from build.", async branch =>
-                    {
-                        string originalTargetImageInfoContents = await gitHubClient.GetGitHubFileContentsAsync(Options.GitOptions.Path, branch);
-                        ImageArtifactDetails newImageArtifactDetails;
+                    GitReference gitRef = await GitHelper.PushChangesAsync(
+                        gitHubClient, Options, "Merging image info updates from build.",
+                        branch => Task.FromResult<IEnumerable<GitObject>>(new GitObject[] { imageInfoGitObject }));
 
-                        if (originalTargetImageInfoContents != null)
-                        {
-                            ImageArtifactDetails targetImageArtifactDetails = ImageInfoHelper.LoadFromContent(
-                                originalTargetImageInfoContents, Manifest, skipManifestValidation: true);
-
-                            RemoveOutOfDateContent(targetImageArtifactDetails);
-
-                            ImageInfoMergeOptions options = new ImageInfoMergeOptions
-                            {
-                                ReplaceTags = true
-                            };
-
-                            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);
-
-                            newImageArtifactDetails = targetImageArtifactDetails;
-                        }
-                        else
-                        {
-                            // If there is no existing file to update, there's nothing to merge with so the source data
-                            // becomes the target data.
-                            newImageArtifactDetails = srcImageArtifactDetails;
-                        }
-
-                        string newTargetImageInfoContents =
-                            JsonHelper.SerializeObject(newImageArtifactDetails) + Environment.NewLine;
-
-                        if (originalTargetImageInfoContents != newTargetImageInfoContents)
-                        {
-                            GitObject imageInfoGitObject = new GitObject
-                            {
-                                Path = Options.GitOptions.Path,
-                                Type = GitObject.TypeBlob,
-                                Mode = GitObject.ModeFile,
-                                Content = newTargetImageInfoContents
-                            };
-
-                            hasChanges = true;
-                            return new GitObject[] { imageInfoGitObject };
-                        }
-                        else
-                        {
-                            return Enumerable.Empty<GitObject>();
-                        }
-                    });
-
-                    Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
-
-                    if (hasChanges)
-                    {
-                        if (!Options.IsDryRun)
-                        {
-                            Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
-                            Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
-                        }
-                        else
-                        {
-                            Logger.WriteMessage($"The '{imageInfoPathIdentifier}' file would have been updated.");
-                        }
-                    }
-                    else
-                    {
-                        Logger.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
-                    }
+                    Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
+                    loggerService.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
                 });
+            }
+        }
+
+        private async Task<GitObject> GetUpdatedImageInfoGitObjectAsync()
+        {
+            ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+
+            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, Options.GitOptions);
+            try
+            {
+                string repoImageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
+                string originalTargetImageInfoContents = File.ReadAllText(repoImageInfoPath);
+
+                ImageArtifactDetails newImageArtifactDetails;
+
+                if (originalTargetImageInfoContents != null)
+                {
+                    ImageArtifactDetails targetImageArtifactDetails = ImageInfoHelper.LoadFromContent(
+                        originalTargetImageInfoContents, Manifest, skipManifestValidation: true);
+
+                    RemoveOutOfDateContent(targetImageArtifactDetails);
+
+                    ImageInfoMergeOptions options = new ImageInfoMergeOptions
+                    {
+                        ReplaceTags = true
+                    };
+
+                    ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);
+
+                    newImageArtifactDetails = targetImageArtifactDetails;
+                }
+                else
+                {
+                    // If there is no existing file to update, there's nothing to merge with so the source data
+                    // becomes the target data.
+                    newImageArtifactDetails = srcImageArtifactDetails;
+                }
+
+                string newTargetImageInfoContents =
+                    JsonHelper.SerializeObject(newImageArtifactDetails) + Environment.NewLine;
+
+                if (originalTargetImageInfoContents != newTargetImageInfoContents)
+                {
+                    return new GitObject
+                    {
+                        Path = Options.GitOptions.Path,
+                        Type = GitObject.TypeBlob,
+                        Mode = GitObject.ModeFile,
+                        Content = newTargetImageInfoContents
+                    };
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            finally
+            {
+                Directory.Delete(repoPath, recursive: true);
             }
         }
 

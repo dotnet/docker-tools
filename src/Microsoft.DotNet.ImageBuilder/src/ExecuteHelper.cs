@@ -6,12 +6,14 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
+using Polly;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ExecuteHelper
     {
+        private static readonly ILoggerService loggerService = new LoggerService();
+
         public static string Execute(
             string fileName,
             string args,
@@ -78,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 executeMessageOverride = $"{info.FileName} {info.Arguments}";
             }
 
-            Logger.WriteSubheading($"EXECUTING: {executeMessageOverride}");
+            loggerService.WriteSubheading($"EXECUTING: {executeMessageOverride}");
             if (!isDryRun)
             {
                 Stopwatch stopwatch = new Stopwatch();
@@ -87,7 +89,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 processResult = executor(info);
 
                 stopwatch.Stop();
-                Logger.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+                loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
 
                 if (processResult.Process.ExitCode != 0)
                 {
@@ -142,25 +144,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static ProcessResult ExecuteWithRetry(ProcessStartInfo info, Func<ProcessStartInfo, ProcessResult> executor)
         {
-            const int maxRetries = 5;
-            const int waitFactor = 5;
-
-            int retryCount = 0;
-
-            ProcessResult processResult = executor(info);
-            while (processResult.Process.ExitCode != 0)
-            {
-                retryCount++;
-                if (retryCount >= maxRetries)
-                {
-                    break;
-                }
-
-                int waitTime = Convert.ToInt32(Math.Pow(waitFactor, retryCount - 1));
-                Logger.WriteMessage($"Retry {retryCount}/{maxRetries}, retrying in {waitTime} seconds...");
-                Thread.Sleep(waitTime * 1000);
-                processResult = executor(info);
-            }
+            ProcessResult processResult = Policy
+                .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
+                .WaitAndRetry(RetryHelper.MaxRetries, RetryHelper.SleepDurationProvider,
+                    RetryHelper.GetRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, loggerService))
+                .Execute(() => executor(info));
 
             return processResult;
         }

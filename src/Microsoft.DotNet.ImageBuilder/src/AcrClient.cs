@@ -15,6 +15,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Acr;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
 using Polly;
+using Polly.Contrib.WaitAndRetry;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -166,11 +167,7 @@ namespace Microsoft.DotNet.ImageBuilder
             HttpResponseMessage response = await Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
                 .WaitAndRetryAsync(
-                    RetryHelper.MaxRetries,
-                    RetryHelper.ExponentialSleepDurationProvider
-                        .AddJitter(TimeSpan.FromSeconds(5))
-                        .AddOffset(TimeSpan.FromSeconds(5))
-                        .ToFunc(),
+                    Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
                     RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService))
                 .ExecuteAsync(() => httpClient.SendAsync(createMessage()));
 

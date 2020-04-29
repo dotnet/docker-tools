@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using Polly;
+using Polly.Contrib.WaitAndRetry;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -146,7 +147,8 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ProcessResult processResult = Policy
                 .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
-                .WaitAndRetry(RetryHelper.MaxRetries, RetryHelper.ExponentialSleepDurationProviderFunc,
+                .WaitAndRetry(
+                    Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
                     RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, loggerService))
                 .Execute(() => executor(info));
 

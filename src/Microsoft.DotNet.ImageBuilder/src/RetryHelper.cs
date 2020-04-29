@@ -7,33 +7,10 @@ using Polly;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public delegate TimeSpan SleepDurationProvider(int retryAttempt);
-
     public static class RetryHelper
     {
-        private const int waitFactor = 5;
+        public const int WaitFactor = 5;
         public const int MaxRetries = 5;
-
-        private static readonly Random jitterer = new Random();
-
-        public static SleepDurationProvider ExponentialSleepDurationProvider =
-            retryAttempt => TimeSpan.FromSeconds(Math.Pow(waitFactor, retryAttempt - 1));
-
-        public static Func<int, TimeSpan> ExponentialSleepDurationProviderFunc =
-            ExponentialSleepDurationProvider.ToFunc();
-
-        public static SleepDurationProvider AddJitter(this SleepDurationProvider sleepDurationProvider, TimeSpan maxJitterTime)
-        {
-            TimeSpan jitterOffset = TimeSpan.FromMilliseconds(jitterer.Next(0, (int)maxJitterTime.TotalMilliseconds));
-            return retryAttempt => sleepDurationProvider(retryAttempt) + jitterOffset;
-        }
-
-        public static SleepDurationProvider AddOffset(
-            this SleepDurationProvider sleepDurationProvider, TimeSpan timeOffset) =>
-                retryAttempt => sleepDurationProvider(retryAttempt) + timeOffset;
-
-        public static Func<int, TimeSpan> ToFunc(this SleepDurationProvider sleepDurationProvider) =>
-            retryAttempt => sleepDurationProvider(retryAttempt);
 
         public static Action<DelegateResult<T>, TimeSpan, int, Context> GetOnRetryDelegate<T>(
             int maxRetries, ILoggerService loggerService)

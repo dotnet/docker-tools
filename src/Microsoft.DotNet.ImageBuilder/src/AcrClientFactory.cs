@@ -11,9 +11,17 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IAcrClientFactory))]
     public class AcrClientFactory : IAcrClientFactory
     {
+        private readonly ILoggerService loggerService;
+
+        [ImportingConstructor]
+        public AcrClientFactory(ILoggerService loggerService)
+        {
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+        }
+
         public Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password)
         {
-            return AcrClient.CreateAsync(acrName, tenant, username, password);
+            return AcrClient.CreateAsync(acrName, tenant, username, password, loggerService);
         }
     }
 }

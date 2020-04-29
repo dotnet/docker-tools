@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
@@ -13,6 +14,8 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Contrib.WaitAndRetry;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -25,13 +28,15 @@ namespace Microsoft.DotNet.ImageBuilder
             new Regex($"<(?<{LinkUrlGroup}>.+)>;\\s*rel=\"(?<{RelationshipTypeGroup}>.+)\"");
 
         private readonly HttpClient httpClient = new HttpClient();
+        private readonly ILoggerService loggerService;
         private readonly string baseUrl;
         private readonly string acrV1BaseUrl;
         private readonly string acrV2BaseUrl;
 
-        private AcrClient(HttpClient httpClient,string acrName)
+        private AcrClient(HttpClient httpClient,string acrName, ILoggerService loggerService)
         {
             this.httpClient = httpClient;
+            this.loggerService = loggerService;
             this.baseUrl = $"https://{acrName}";
             this.acrV1BaseUrl = $"{baseUrl}/acr/v1";
             this.acrV2BaseUrl = $"{baseUrl}/v2";
@@ -57,19 +62,15 @@ namespace Microsoft.DotNet.ImageBuilder
             return result;
         }
 
-        public async Task<Repository> GetRepositoryAsync(string name)
+        public Task<Repository> GetRepositoryAsync(string name)
         {
-            HttpResponseMessage response = await this.httpClient.GetAsync(
-                $"{this.acrV1BaseUrl}/{name}");
-            response.EnsureSuccessStatusCode();
-            return JsonConvert.DeserializeObject<Repository>(await response.Content.ReadAsStringAsync());
+            return SendGetRequestAsync<Repository>($"{this.acrV1BaseUrl}/{name}");
         }
 
         public async Task<DeleteRepositoryResponse> DeleteRepositoryAsync(string name)
         {
-            HttpResponseMessage response = await this.httpClient.DeleteAsync(
-                $"{this.acrV1BaseUrl}/{name}");
-            response.EnsureSuccessStatusCode();
+            HttpResponseMessage response = await SendRequestAsync(
+                () => new HttpRequestMessage(HttpMethod.Delete, $"{this.acrV1BaseUrl}/{name}"));
             return JsonConvert.DeserializeObject<DeleteRepositoryResponse>(await response.Content.ReadAsStringAsync());
         }
 
@@ -93,14 +94,14 @@ namespace Microsoft.DotNet.ImageBuilder
             return result;
         }
 
-        public async Task DeleteManifestAsync(string repositoryName, string digest)
+        public Task DeleteManifestAsync(string repositoryName, string digest)
         {
-            HttpResponseMessage response = await this.httpClient.DeleteAsync(
-                $"{this.acrV2BaseUrl}/{repositoryName}/manifests/{digest}");
-            response.EnsureSuccessStatusCode();
+            return SendRequestAsync(
+                () => new HttpRequestMessage(
+                    HttpMethod.Delete, $"{this.acrV2BaseUrl}/{repositoryName}/manifests/{digest}"));
         }
 
-        public static async Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password)
+        public static async Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password, ILoggerService loggerService)
         {
             string aadAccessToken = await GetAadAccessTokenAsync(tenant, username, password);
             
@@ -118,7 +119,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
 
-            return new AcrClient(httpClient, acrName);
+            return new AcrClient(httpClient, acrName, loggerService);
         }
 
         private async Task GetPagedResponseAsync<T>(string url, Action<T> onGetResults)
@@ -126,9 +127,9 @@ namespace Microsoft.DotNet.ImageBuilder
             string currentUrl = url;
             while (true)
             {
-                HttpResponseMessage response = await this.httpClient.GetAsync(
-                    currentUrl);
-                response.EnsureSuccessStatusCode();
+                HttpResponseMessage response = await SendRequestAsync(
+                    () => new HttpRequestMessage(HttpMethod.Get, currentUrl));
+                
                 T results = JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
 
                 onGetResults(results);
@@ -152,6 +153,27 @@ namespace Microsoft.DotNet.ImageBuilder
                     return;
                 }
             }
+        }
+
+        private async Task<T> SendGetRequestAsync<T>(string url)
+        {
+            HttpResponseMessage response = await SendRequestAsync(
+                () => new HttpRequestMessage(HttpMethod.Get, url));
+            return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+        }
+
+        private async Task<HttpResponseMessage> SendRequestAsync(Func<HttpRequestMessage> createMessage)
+        {
+            HttpResponseMessage response = await Policy
+                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
+                .WaitAndRetryAsync(
+                    Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
+                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService))
+                .ExecuteAsync(() => httpClient.SendAsync(createMessage()));
+
+            response.EnsureSuccessStatusCode();
+
+            return response;
         }
 
         private static async Task<string> GetAadAccessTokenAsync(string tenant, string username, string password)

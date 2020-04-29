@@ -33,17 +33,10 @@ $activeOS = docker version -f "{{ .Server.Os }}"
 Invoke-CleanupDocker $activeOS
 
 try {
-    if ($activeOS -eq "windows") {
-        $osFlavor = "nanoserver"
-    }
-    else {
-        $osFlavor = "debian"
-    }
-
-    $stableTag = "$($DockerRepo):$osFlavor-$TagTimestamp"
+    $stableTag = "$($DockerRepo):$activeOS-$TagTimestamp"
     $floatingTag = "image-builder"
 
-    & docker build --pull -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$osFlavor" $PSScriptRoot
+    & docker build --pull -t $stableTag -t $floatingTag -f "$($PSScriptRoot)/Dockerfile.$activeOS" $PSScriptRoot
     if ($LastExitCode -ne 0) {
         throw "Failed building ImageBuilder"
     }

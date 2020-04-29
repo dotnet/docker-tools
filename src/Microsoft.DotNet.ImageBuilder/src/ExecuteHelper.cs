@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ProcessResult processResult = Policy
                 .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
-                .WaitAndRetry(RetryHelper.MaxRetries, RetryHelper.SleepDurationProvider,
+                .WaitAndRetry(RetryHelper.MaxRetries, RetryHelper.ExponentialSleepDurationProviderFunc,
                     RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, loggerService))
                 .Execute(() => executor(info));
 

@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
             }
             // A digest will not exist for images that have been built locally or have been manually installed
-            catch (InvalidOperationException e) when (e.Message.Contains("error calling index: index out of range: 0"))
+            catch (InvalidOperationException e) when (e.Message.Contains("index out of range"))
             {
                 return null;
             }

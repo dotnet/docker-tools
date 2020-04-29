@@ -22,15 +22,14 @@ namespace Microsoft.DotNet.ImageBuilder
         public static Func<int, TimeSpan> ExponentialSleepDurationProviderFunc =
             ExponentialSleepDurationProvider.ToFunc();
 
-        public static SleepDurationProvider AddJitter(this SleepDurationProvider sleepDurationProvider, TimeSpan maxJitterTime = default)
+        public static SleepDurationProvider AddJitter(this SleepDurationProvider sleepDurationProvider, TimeSpan maxJitterTime)
         {
-            TimeSpan jitterOffset = maxJitterTime != default ?
-                TimeSpan.FromMilliseconds(jitterer.Next(0, (int)maxJitterTime.TotalMilliseconds)) : TimeSpan.Zero;
+            TimeSpan jitterOffset = TimeSpan.FromMilliseconds(jitterer.Next(0, (int)maxJitterTime.TotalMilliseconds));
             return retryAttempt => sleepDurationProvider(retryAttempt) + jitterOffset;
         }
 
         public static SleepDurationProvider AddOffset(
-            this SleepDurationProvider sleepDurationProvider, TimeSpan timeOffset = default) =>
+            this SleepDurationProvider sleepDurationProvider, TimeSpan timeOffset) =>
                 retryAttempt => sleepDurationProvider(retryAttempt) + timeOffset;
 
         public static Func<int, TimeSpan> ToFunc(this SleepDurationProvider sleepDurationProvider) =>

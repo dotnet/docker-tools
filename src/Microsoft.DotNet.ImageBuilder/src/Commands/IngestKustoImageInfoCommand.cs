@@ -38,7 +38,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             writer.Flush();
             stream.Seek(0, SeekOrigin.Begin);
 
-            await kustoClient.IngestFromCsvStreamAsync(stream, Options);
+            if (!Options.IsDryRun)
+            {
+                await kustoClient.IngestFromCsvStreamAsync(stream, Options);
+            }
         }
 
         private string GetImageInfoCsv()

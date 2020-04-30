@@ -15,6 +15,45 @@ variables:
   value: 2
 - name: imageInfoVariant
   value: ""
+
+  # Default values for variables defined in variable groups
+- name: acr.resourceGroup
+  value: "''"
+- name: acr.server
+  value: "''"
+- name: acr.servicePrincipalName
+  value: "''"
+- name: acr.servicePrincipalTenant
+  value: "''"
+- name: acr.subscription
+  value: "''"
+- name: acr.userName
+  value: "''"
+- name: app-dotnetdockerbuild-client-secret
+  value: "''"
+- name: app-DotnetDockerTelemetryIngestion-client-secret
+  value: PLACEHOLDER
+- name: BotAccount-dotnet-docker-acr-bot-password
+  value: "''"
+- name: BotAccount-dotnet-docker-bot-PAT
+  value: "''"
+- name: dotnetDockerBot.email
+  value: "''"
+- name: dotnetDockerBot.userName
+  value: "''"
+- name: kusto.cluster
+  value: "''"
+- name: kusto.database
+  value: "''"
+- name: kusto.table
+  value: "''"
+- name: kusto.servicePrincipalName
+  value: PLACEHOLDER
+- name: kusto.servicePrincipalTenant
+  value: PLACEHOLDER
+- name: publishRepoPrefix
+  value: "test/"
+
 - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
   - group: DotNet-Docker-Common
   - group: DotNet-Docker-Secrets

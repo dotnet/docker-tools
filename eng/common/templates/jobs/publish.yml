@@ -22,10 +22,15 @@ jobs:
     # Use dry-run option for certain publish operations if this is not a production build
   - script: |
       dryRunArg=""
-      if [ "$PUBLISHREPOPREFIX" != "public/" ]; then
+      if [[ "$PUBLISHREPOPREFIX" != "public/" || "$SYSTEM_TEAMPROJECT" == "public" ]]; then
         dryRunArg=" --dry-run"
       fi
+
+      # Replace '/' with '-'
+      buildRepoName=$(echo $BUILD_REPOSITORY_NAME | sed -e 's/\//-/g')
+      
       echo "##vso[task.setvariable variable=dryRunArg]$dryRunArg"
+      echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
     displayName: Set Publish Variables
   - script: >
       $(runImageBuilderCmd) copyAcrImages
@@ -39,6 +44,7 @@ jobs:
       --architecture '*'
       --repo-prefix $(publishRepoPrefix)
       --image-info $(artifactsPath)/image-info.json
+      $(dryRunArg)
       $(imageBuilder.pathArgs)
       $(imageBuilder.commonCmdArgs)
     displayName: Copy Images
@@ -50,9 +56,13 @@ jobs:
       --password $(BotAccount-dotnet-docker-acr-bot-password)
       --os-type '*'
       --architecture '*'
+      $(dryRunArg)
       $(imageBuilder.pathArgs)
       $(imageBuilder.commonCmdArgs)
     displayName: Publish Manifest
+  - publish: $(Build.ArtifactStagingDirectory)/image-info.json
+    artifact: image-info-final
+    displayName: Publish Image Info File Artifact
   - template: ../steps/publish-readmes.yml
     parameters:
       dryRunArg: $(dryRunArg)
@@ -67,7 +77,7 @@ jobs:
       --git-owner dotnet
       --git-repo versions
       --git-branch master
-      --git-path build-info/docker/image-info.$(Build.Repository.Name)-$(publicSourceBranch)$(imageInfoVariant).json
+      --git-path build-info/docker/image-info.$(buildRepoName)-$(publicSourceBranch)$(imageInfoVariant).json
       $(dryRunArg)
     displayName: Publish Image Info
   - script: >

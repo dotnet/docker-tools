@@ -228,7 +228,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             {
                 if (!BuildArgs.TryGetValue(match.Groups[ArgGroupName].Value, out string argValue))
                 {
-                    throw new InvalidOperationException($"A value was not found for the ARG '{match.Value}'");
+                    throw new InvalidOperationException(
+                        $"A value was not found for the ARG '{match.Value}' in `{DockerfilePath}`");
                 }
 
                 instruction = instruction.Replace(match.Value, argValue);

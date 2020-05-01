@@ -96,7 +96,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 TagInfo sharedTag = image.ManifestImage.SharedTags.First();
                 JArray tagManifest = this.manifestToolService.Inspect(sharedTag.FullyQualifiedName, Options.IsDryRun);
-                string digest = tagManifest
+                string digest = tagManifest?
                     .OfType<JObject>()
                     .First(manifestType => manifestType["MediaType"].Value<string>() == ManifestListMediaType)
                     ["Digest"].Value<string>();

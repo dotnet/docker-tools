@@ -21,6 +21,11 @@ namespace Microsoft.DotNet.ImageBuilder
         public JArray Inspect(string image, bool isDryRun)
         {
             string output = ExecuteHelper.ExecuteWithRetry("manifest-tool", $"inspect {image} --raw", isDryRun);
+            if (isDryRun)
+            {
+                return null;
+            }
+
             return JsonConvert.DeserializeObject<JArray>(output);
         }
     }

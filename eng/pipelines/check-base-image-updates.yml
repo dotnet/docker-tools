@@ -13,49 +13,15 @@ variables:
 - template: templates/variables/common.yml
 
 jobs:
-- job: Get_Stale_Images_Linux_AMD
+- job: Get_Stale_Images_Linux
   pool: Hosted Ubuntu 1604
   steps:
   - template: templates/steps/get-stale-images.yml
     parameters:
       osType: linux
-      architecture: amd64
-      dockerClientOS: linux
-      staleImagePathsVariableName: linux-amd-stale-image-paths
+      staleImagePathsVariableName: linux-stale-image-paths
 
-- job: Get_Stale_Images_Linux_ARM32
-  pool:
-    name: DotNetCore-Docker
-    demands:
-    - agent.os -equals linux
-    - RemoteDockerServerOS -equals linux
-    - RemoteDockerServerArch -equals aarch64
-  steps:
-  - template: templates/steps/get-stale-images.yml
-    parameters:
-      osType: linux
-      architecture: arm
-      dockerClientOS: linux
-      useRemoteDockerServer: true
-      staleImagePathsVariableName: linux-arm32-stale-image-paths
-
-- job: Get_Stale_Images_Linux_ARM64
-  pool:
-    name: DotNetCore-Docker
-    demands:
-    - agent.os -equals linux
-    - RemoteDockerServerOS -equals linux
-    - RemoteDockerServerArch -equals aarch64
-  steps:
-  - template: templates/steps/get-stale-images.yml
-    parameters:
-      osType: linux
-      architecture: arm64
-      dockerClientOS: linux
-      useRemoteDockerServer: true
-      staleImagePathsVariableName: linux-arm64-stale-image-paths
-
-- job: Get_Stale_Images_Windows_AMD
+- job: Get_Stale_Images_Windows
   # Use the most recent Windows version so we can pull all image versions of Windows
   pool:
     name: DotNetCore-Docker
@@ -64,41 +30,16 @@ jobs:
   - template: templates/steps/get-stale-images.yml
     parameters:
       osType: windows
-      architecture: amd64
-      dockerClientOS: windows
-      staleImagePathsVariableName: windows-amd-stale-image-paths
-
-- job: Get_Stale_Images_Windows_ARM32
-  # Use the most recent ARM-supported Windows version so we can pull all image versions of Windows
-  pool:
-    name: DotNetCore-Docker
-    demands:
-    - agent.os -equals linux
-    - RemoteDockerServerOS -equals nanoserver-1809
-    - RemoteDockerServerArch -equals arm32
-  steps:
-  - template: templates/steps/get-stale-images.yml
-    parameters:
-      osType: windows
-      architecture: arm
-      dockerClientOS: linux
-      useRemoteDockerServer: true
-      staleImagePathsVariableName: windows-arm32-stale-image-paths
+      staleImagePathsVariableName: windows-stale-image-paths
 
 - job: Queue_Stale_Image_Builds
   dependsOn:
-  - Get_Stale_Images_Linux_AMD
-  - Get_Stale_Images_Linux_ARM32
-  - Get_Stale_Images_Linux_ARM64
-  - Get_Stale_Images_Windows_AMD
-  - Get_Stale_Images_Windows_ARM32
+  - Get_Stale_Images_Linux
+  - Get_Stale_Images_Windows
   pool: Hosted Ubuntu 1604
   variables:
-    imagePaths1: $[ dependencies.Get_Stale_Images_Linux_AMD.outputs['GetStaleImages.linux-amd-stale-image-paths'] ]
-    imagePaths2: $[ dependencies.Get_Stale_Images_Linux_ARM32.outputs['GetStaleImages.linux-arm32-stale-image-paths'] ]
-    imagePaths3: $[ dependencies.Get_Stale_Images_Linux_ARM64.outputs['GetStaleImages.linux-arm64-stale-image-paths'] ]
-    imagePaths4: $[ dependencies.Get_Stale_Images_Windows_AMD.outputs['GetStaleImages.windows-amd-stale-image-paths'] ]
-    imagePaths5: $[ dependencies.Get_Stale_Images_Windows_ARM32.outputs['GetStaleImages.windows-arm32-stale-image-paths'] ]
+    imagePaths1: $[ dependencies.Get_Stale_Images_Linux_AMD.outputs['GetStaleImages.linux-stale-image-paths'] ]
+    imagePaths2: $[ dependencies.Get_Stale_Images_Windows_AMD.outputs['GetStaleImages.windows-stale-image-paths'] ]
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
   - script: >
@@ -110,8 +51,5 @@ jobs:
       --subscriptions-path $(checkBaseImageSubscriptionsPath)
       --image-paths "$(imagePaths1)"
       --image-paths "$(imagePaths2)"
-      --image-paths "$(imagePaths3)"
-      --image-paths "$(imagePaths4)"
-      --image-paths "$(imagePaths5)"
     displayName: Queue Build for Stale Images
   - template: ../common/templates/steps/cleanup-docker-linux.yml

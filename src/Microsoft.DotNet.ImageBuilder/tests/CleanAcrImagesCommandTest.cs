@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
@@ -544,25 +545,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            const string repoDigest1 = "sha256:repodigest1";
-            const string repoDigest2 = "sha256:repodigest2";
+            const int manifestCount = 10;
 
             RepositoryManifests repoManifests = new RepositoryManifests
             {
                 RepositoryName = repoName,
-                Manifests = new List<ManifestAttributes>
-                {
-                    new ManifestAttributes
+                Manifests = Enumerable.Range(0, manifestCount)
+                    .Select(index => new ManifestAttributes
                     {
-                        Digest = repoDigest1,
-                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(8))
-                    },
-                    new ManifestAttributes
-                    {
-                        Digest = repoDigest2,
-                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(6))
-                    }
-                }
+                        Digest = $"sha256:repodigest{index}",
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(index))
+                    })
+                    .ToList()
             };
 
             Mock<IAcrClient> acrClientMock = new Mock<IAcrClient>();
@@ -595,8 +589,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            acrClientMock.Verify(o => o.DeleteManifestAsync(repoName, repoDigest1));
-            acrClientMock.Verify(o => o.DeleteManifestAsync(repoName, repoDigest2), Times.Never);
+            const int expectedImageCountNotDeleted = 6;
+
+            for (int i = 0; i < manifestCount; i++)
+            {
+                Times deleteTimes = i <= expectedImageCountNotDeleted ? Times.Never() : Times.Once();
+                acrClientMock.Verify(o => o.DeleteManifestAsync(repoName, $"sha256:repodigest{i}"), deleteTimes);
+            }
         }
     }
 }

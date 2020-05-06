@@ -192,8 +192,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task ProcessImageBuilderRepoAsync(IAcrClient acrClient, List<string> deletedImages, Repository repository)
         {
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
-            ManifestAttributes[] expiredImages = GetExpiredManifests(repoManifests, 7).ToArray();
-            await DeleteManifestsAsync(acrClient, deletedImages, repository, expiredImages);
+
+            // Keep the last n number of images, delete everything else older than x days.
+            // Since image-builder is published in pairs (linux/windows), this effectively
+            // gives you n/2 number of image-builder "releases".
+            ManifestAttributes[] imagesToDelete = repoManifests.Manifests
+                .OrderByDescending(manifest => manifest.LastUpdateTime)
+                .Skip(6)
+                .Where(manifest => IsExpired(manifest.LastUpdateTime, 7))
+                .ToArray();
+
+            await DeleteManifestsAsync(acrClient, deletedImages, repository, imagesToDelete);
         }
 
         private async Task DeleteRepositoryAsync(IAcrClient acrClient, List<string> deletedRepos, Repository repository)

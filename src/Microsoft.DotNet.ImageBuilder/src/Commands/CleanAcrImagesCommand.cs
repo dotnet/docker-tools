@@ -42,7 +42,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> deletedImages = new List<string>();
 
             IEnumerable<Task> cleanupTasks = catalog.RepositoryNames
-                .Where(repoName => IsTestRepo(repoName) || IsStagingRepo(repoName) || IsPublicNightlyRepo(repoName))
+                .Where(repoName =>
+                    IsTestRepo(repoName) ||
+                    IsStagingRepo(repoName) ||
+                    IsPublicNightlyRepo(repoName) ||
+                    IsImageBuilderRepo(repoName))
                 .Select(repoName => acrClient.GetRepositoryAsync(repoName))
                 .Select(getRepoTask => ProcessRepoAsync(acrClient, getRepoTask, deletedRepos, deletedImages))
                 .ToArray();
@@ -67,6 +71,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             else if (IsStagingRepo(repository.Name))
             {
                 await ProcessStagingRepoAsync(acrClient, deletedRepos, repository);
+            }
+            else if (IsImageBuilderRepo(repository.Name))
+            {
+                await ProcessImageBuilderRepoAsync(acrClient, deletedImages, repository);
             }
             else
             {
@@ -118,9 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            ManifestAttributes[] expiredTestImages = repoManifests.Manifests
-                .Where(manifest => IsExpired(manifest.LastUpdateTime, 7))
-                .ToArray();
+            ManifestAttributes[] expiredTestImages = GetExpiredManifests(repoManifests, 7).ToArray();
 
             // If all the images in the repo are expired, delete the whole repo instead of 
             // deleting each individual image.
@@ -137,10 +143,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrClient acrClient, List<string> deletedImages, Repository repository)
         {
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
-            IEnumerable<ManifestAttributes> untaggedImages = repoManifests.Manifests
-                .Where(manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, 30));
+            IEnumerable<ManifestAttributes> untaggedImages = GetExpiredManifests(repoManifests, 30)
+                .Where(manifest => !manifest.Tags.Any());
             await DeleteManifestsAsync(acrClient, deletedImages, repository, untaggedImages);
         }
+
+        private IEnumerable<ManifestAttributes> GetExpiredManifests(RepositoryManifests repoManifests, int expirationDays) =>
+            repoManifests.Manifests.Where(manifest => IsExpired(manifest.LastUpdateTime, expirationDays));
 
         private async Task DeleteManifestsAsync(
             IAcrClient acrClient, List<string> deletedImages, Repository repository, IEnumerable<ManifestAttributes> manifests)
@@ -178,6 +187,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
             }
+        }
+
+        private async Task ProcessImageBuilderRepoAsync(IAcrClient acrClient, List<string> deletedImages, Repository repository)
+        {
+            RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
+            ManifestAttributes[] expiredImages = GetExpiredManifests(repoManifests, 7).ToArray();
+            await DeleteManifestsAsync(acrClient, deletedImages, repository, expiredImages);
         }
 
         private async Task DeleteRepositoryAsync(IAcrClient acrClient, List<string> deletedRepos, Repository repository)
@@ -234,5 +250,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IsPublicRepo(repoName) && (repoName.Contains("/core-nightly/") || repoName.Contains("/nightly/"));
         private bool IsTestRepo(string repoName) => repoName.StartsWith("test/");
         private bool IsPublicRepo(string repoName) => repoName.StartsWith("public/");
+        private bool IsImageBuilderRepo(string repoName) => repoName.Contains("/dotnet-buildtools/image-builder");
     }
 }

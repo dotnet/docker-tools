@@ -523,5 +523,80 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock.Verify(o => o.DeleteManifestAsync(repo2Name, repo2Digest1), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(repo2Name, repo2Digest2));
         }
+
+        [Fact]
+        public async Task ImageBuilderRepo()
+        {
+            const string acrName = "myacr.azurecr.io";
+            const string tenant = "mytenant";
+            const string username = "fake user";
+            const string password = "PLACEHOLDER";
+            const string subscription = "my sub";
+            const string resourceGroup = "group";
+
+            const string repoName = "public/dotnet-buildtools/image-builder";
+
+            Catalog catalog = new Catalog
+            {
+                RepositoryNames = new List<string>
+                {
+                    repoName
+                }
+            };
+
+            const string repoDigest1 = "sha256:repodigest1";
+            const string repoDigest2 = "sha256:repodigest2";
+
+            RepositoryManifests repoManifests = new RepositoryManifests
+            {
+                RepositoryName = repoName,
+                Manifests = new List<ManifestAttributes>
+                {
+                    new ManifestAttributes
+                    {
+                        Digest = repoDigest1,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(8))
+                    },
+                    new ManifestAttributes
+                    {
+                        Digest = repoDigest2,
+                        LastUpdateTime = DateTime.Now.Subtract(TimeSpan.FromDays(6))
+                    }
+                }
+            };
+
+            Mock<IAcrClient> acrClientMock = new Mock<IAcrClient>();
+            acrClientMock
+                .Setup(o => o.GetCatalogAsync())
+                .ReturnsAsync(catalog);
+            foreach (string name in catalog.RepositoryNames)
+            {
+                acrClientMock
+                    .Setup(o => o.GetRepositoryAsync(name))
+                    .ReturnsAsync(new Repository { Name = name });
+            }
+            acrClientMock
+                .Setup(o => o.GetRepositoryManifestsAsync(repoName))
+                .ReturnsAsync(repoManifests);
+
+            Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();
+            acrClientFactoryMock
+                .Setup(o => o.CreateAsync(acrName, tenant, username, password))
+                .ReturnsAsync(acrClientMock.Object);
+
+            CleanAcrImagesCommand command = new CleanAcrImagesCommand(
+                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+            command.Options.Subscription = subscription;
+            command.Options.Password = password;
+            command.Options.Username = username;
+            command.Options.Tenant = tenant;
+            command.Options.ResourceGroup = resourceGroup;
+            command.Options.RegistryName = acrName;
+
+            await command.ExecuteAsync();
+
+            acrClientMock.Verify(o => o.DeleteManifestAsync(repoName, repoDigest1));
+            acrClientMock.Verify(o => o.DeleteManifestAsync(repoName, repoDigest2), Times.Never);
+        }
     }
 }

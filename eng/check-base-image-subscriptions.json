@@ -66,7 +66,7 @@
       "owner": "dotnet",
       "repo": "versions",
       "branch": "master",
-      "path": "build-info/docker/image-info.Microsoft-dotnet-framework-docker-master-samples.json"
+      "path": "build-info/docker/image-info.microsoft-dotnet-framework-docker-master-samples.json"
     },
     "pipelineTrigger": {
       "id": 374,

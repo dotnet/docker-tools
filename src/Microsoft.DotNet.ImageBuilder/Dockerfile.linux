@@ -2,8 +2,13 @@
 #     docker build -t image-builder .
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
+ARG ALPINE_TAG_SUFFIX=""
+
 # build Microsoft.DotNet.ImageBuilder
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-alpine AS build-env
+FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
+
+ARG RID_ARCH=x64
+
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
@@ -17,11 +22,13 @@ RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln
 COPY . ./
 RUN dotnet build Microsoft.DotNet.ImageBuilder.sln
 RUN dotnet test tests/Microsoft.DotNet.ImageBuilder.Tests.csproj
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-x64 /p:ShowLinkerSizeComparison=true
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-$RID_ARCH /p:ShowLinkerSizeComparison=true
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-alpine
+FROM mcr.microsoft.com/dotnet/core/runtime-deps:3.1-alpine$ALPINE_TAG_SUFFIX
+
+ARG MANIFEST_TOOL_ARCH=amd64
 
 # install tooling
 RUN apk add --no-cache \
@@ -30,7 +37,7 @@ RUN apk add --no-cache \
 
 # install manifest-tool
 RUN wget -O /usr/local/bin/manifest-tool \
-        "https://github.com/estesp/manifest-tool/releases/download/v1.0.2/manifest-tool-linux-amd64" \
+        "https://github.com/estesp/manifest-tool/releases/download/v1.0.2/manifest-tool-linux-$MANIFEST_TOOL_ARCH" \
     && chmod +x /usr/local/bin/manifest-tool
 
 # install image-builder

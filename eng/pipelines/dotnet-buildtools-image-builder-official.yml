@@ -6,13 +6,11 @@ trigger:
   paths:
     include:
     - src/*
+
 pr: none
 
 variables:
-- group: DotNet-Docker-Common
-- group: DotNet-Docker-Secrets
+- template: templates/variables/image-builder.yml
 
-jobs:
-- template: templates/jobs/build-image-builder.yml
-  parameters:
-    publishImages: true
+stages:
+- template: ../common/templates/stages/build-test-publish-repo.yml

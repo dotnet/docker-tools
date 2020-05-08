@@ -10,3 +10,6 @@
 # Visual Studio user-specific files
 **/launchSettings.json
 **/*.user
+
+# ImageBuilder directory
+.Microsoft.DotNet.ImageBuilder

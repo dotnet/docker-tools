@@ -39,11 +39,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            string productRepo = GetProductRepo();
-
             IEnumerable<GitObject> gitObjects =
-                GetUpdatedReadmes(productRepo)
-                .Concat(GetUpdatedTagsMetadata(productRepo));
+                GetUpdatedReadmes()
+                .Concat(GetUpdatedTagsMetadata());
 
             foreach (GitObject gitObject in gitObjects)
             {
@@ -57,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
-                    await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
+                    await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring readmes", branch =>
                     {
                         return FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch);
                     });
@@ -92,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string updatedContent)
         {
             string gitPath = string.Join('/', Options.GitOptions.Path, repo, filePath);
-            
+
             return new GitObject
             {
                 Path = gitPath,
@@ -102,39 +100,36 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
         }
 
-        private string GetProductRepo()
+        private static string GetProductRepoName(RepoInfo repo)
         {
-            string firstRepoName = Manifest.AllRepos.First().QualifiedName
-                .TrimStart($"{Manifest.Registry}/");
-            return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
+            return repo.Name.Substring(0, repo.Name.LastIndexOf('/'));
         }
 
-        private GitObject[] GetUpdatedReadmes(string productRepo)
+        private GitObject[] GetUpdatedReadmes()
         {
             List<GitObject> readmes = new List<GitObject>();
 
-            List<string> readmePaths = Manifest.FilteredRepos
-                .Select(repo => repo.Model.ReadmePath)
-                .ToList();
+            List<string> readmePaths = new List<string>();
 
             if (!string.IsNullOrEmpty(Manifest.Model.ReadmePath))
             {
                 readmePaths.Add(Manifest.Model.ReadmePath);
             }
 
-            foreach (string readmePath in readmePaths)
+            foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                string fullPath = Path.Combine(Manifest.Directory, readmePath);
-                
+                readmePaths.Add(repo.Model.ReadmePath);
+                string fullPath = Path.Combine(Manifest.Directory, repo.Model.ReadmePath);
+
                 string updatedReadMe = File.ReadAllText(fullPath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                readmes.Add(GetGitObject(productRepo, fullPath, updatedReadMe));
+                readmes.Add(GetGitObject(GetProductRepoName(repo), fullPath, updatedReadMe));
             }
 
             return readmes.ToArray();
         }
 
-        private GitObject[] GetUpdatedTagsMetadata(string productRepo)
+        private GitObject[] GetUpdatedTagsMetadata()
         {
             List<GitObject> metadata = new List<GitObject>();
 
@@ -142,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string updatedMetadata = McrTagsMetadataGenerator.Execute(this.gitService, Manifest, repo, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplatePath);
-                metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
+                metadata.Add(GetGitObject(GetProductRepoName(repo), metadataFileName, updatedMetadata));
             }
 
             return metadata.ToArray();

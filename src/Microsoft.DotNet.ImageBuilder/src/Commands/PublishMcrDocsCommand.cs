@@ -109,24 +109,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             List<GitObject> readmes = new List<GitObject>();
 
-            List<string> readmePaths = new List<string>();
-
             if (!string.IsNullOrEmpty(Manifest.Model.ReadmePath))
             {
-                readmePaths.Add(Manifest.Model.ReadmePath);
+                IEnumerable<string> productRepoNames = Manifest.FilteredRepos
+                    .Select(repo => GetProductRepoName(repo))
+                    .Distinct();
+                foreach (string productRepo in productRepoNames)
+                {
+                    readmes.Add(GetReadMeGitObject(productRepo, Manifest.Model.ReadmePath));
+                }
             }
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                readmePaths.Add(repo.Model.ReadmePath);
-                string fullPath = Path.Combine(Manifest.Directory, repo.Model.ReadmePath);
-
-                string updatedReadMe = File.ReadAllText(fullPath);
-                updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                readmes.Add(GetGitObject(GetProductRepoName(repo), fullPath, updatedReadMe));
+                readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), repo.Model.ReadmePath));
             }
 
             return readmes.ToArray();
+        }
+
+        private GitObject GetReadMeGitObject(string productRepoName, string readmePath)
+        {
+            string fullPath = Path.Combine(Manifest.Directory, readmePath);
+            string updatedReadMe = File.ReadAllText(fullPath);
+            updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
+            return GetGitObject(productRepoName, fullPath, updatedReadMe);
         }
 
         private GitObject[] GetUpdatedTagsMetadata()

@@ -68,37 +68,18 @@ jobs:
       dockerClientOS: windows
       staleImagePathsVariableName: windows-amd-stale-image-paths
 
-- job: Get_Stale_Images_Windows_ARM32
-  # Use the most recent ARM-supported Windows version so we can pull all image versions of Windows
-  pool:
-    name: DotNetCore-Docker
-    demands:
-    - agent.os -equals linux
-    - RemoteDockerServerOS -equals nanoserver-1809
-    - RemoteDockerServerArch -equals arm32
-  steps:
-  - template: templates/steps/get-stale-images.yml
-    parameters:
-      osType: windows
-      architecture: arm
-      dockerClientOS: linux
-      useRemoteDockerServer: true
-      staleImagePathsVariableName: windows-arm32-stale-image-paths
-
 - job: Queue_Stale_Image_Builds
   dependsOn:
   - Get_Stale_Images_Linux_AMD
   - Get_Stale_Images_Linux_ARM32
   - Get_Stale_Images_Linux_ARM64
   - Get_Stale_Images_Windows_AMD
-  - Get_Stale_Images_Windows_ARM32
   pool: Hosted Ubuntu 1604
   variables:
     imagePaths1: $[ dependencies.Get_Stale_Images_Linux_AMD.outputs['GetStaleImages.linux-amd-stale-image-paths'] ]
     imagePaths2: $[ dependencies.Get_Stale_Images_Linux_ARM32.outputs['GetStaleImages.linux-arm32-stale-image-paths'] ]
     imagePaths3: $[ dependencies.Get_Stale_Images_Linux_ARM64.outputs['GetStaleImages.linux-arm64-stale-image-paths'] ]
     imagePaths4: $[ dependencies.Get_Stale_Images_Windows_AMD.outputs['GetStaleImages.windows-amd-stale-image-paths'] ]
-    imagePaths5: $[ dependencies.Get_Stale_Images_Windows_ARM32.outputs['GetStaleImages.windows-arm32-stale-image-paths'] ]
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
   - script: >
@@ -112,6 +93,5 @@ jobs:
       --image-paths "$(imagePaths2)"
       --image-paths "$(imagePaths3)"
       --image-paths "$(imagePaths4)"
-      --image-paths "$(imagePaths5)"
     displayName: Queue Build for Stale Images
   - template: ../common/templates/steps/cleanup-docker-linux.yml

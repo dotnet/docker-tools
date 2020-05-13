@@ -18,8 +18,3 @@ focal-arm64 | [Dockerfile](https://github.com/dotnet/dotnet-docker-test/blob/mas
 Tag | Dockerfile
 ---------| ---------------
 nanoserver-1809 | [Dockerfile](https://github.com/dotnet/dotnet-docker-test/blob/master/test/pipeline-validation/1.0/nanoserver-1809/amd64/Dockerfile)
-
-## Windows Server 2019 arm32 Tags
-Tag | Dockerfile
----------| ---------------
-nanoserver-1809-arm | [Dockerfile](https://github.com/dotnet/dotnet-docker-test/blob/master/test/pipeline-validation/1.0/nanoserver-1809/arm32v7/Dockerfile)

@@ -136,9 +136,11 @@ namespace Microsoft.DotNet.ImageBuilder
                 DocumentedTags = GetDocumentedTags(Platform.Tags, documentationGroup)
                     .Concat(GetDocumentedTags(image.SharedTags, documentationGroup))
                     .ToArray();
-                FormattedDocumentedTags = DocumentedTags
-                    .Select(tag => tag.Name)
-                    .Aggregate((working, next) => $"{working}, {next}");
+                FormattedDocumentedTags = String.Join(
+                    ", ",
+                    DocumentedTags
+                        .Select(tag => tag.Name)
+                        .ToArray());
             }
 
             public static IEnumerable<ImageDocumentationInfo> Create(ImageInfo image, PlatformInfo platform)

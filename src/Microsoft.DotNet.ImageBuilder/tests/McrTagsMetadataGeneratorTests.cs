@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -93,6 +94,80 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
         }
 
+        /// <summary>
+        /// Verifies that <see cref="McrTagsMetadataGenerator"/> can be run against a platform that has no
+        /// documented tags.
+        /// </summary>
+        [Fact]
+        public void HandlesUndocumentedPlatform()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            const string SourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
+            const string RepoName = "repo";
+            const string SourceBranch = "branch";
+
+            // Create MCR tags metadata template file
+            StringBuilder tagsMetadataTemplateBuilder = new StringBuilder();
+            tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{RepoName})");
+            tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlTagGroup:tag1a)");
+            string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
+            File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
+
+            Platform platform = ManifestHelper.CreatePlatform(
+                DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
+                Array.Empty<string>());
+            platform.Tags = new Dictionary<string, Tag>
+            {
+                {
+                    "tag2",
+                    new Tag
+                    {
+                        IsUndocumented = true
+                    }
+                }
+            };
+
+            // Create manifest
+            Manifest manifest = ManifestHelper.CreateManifest(
+                ManifestHelper.CreateRepo(RepoName,
+                    new Image[]
+                    {
+                        ManifestHelper.CreateImage(
+                            platform,
+                            ManifestHelper.CreatePlatform(
+                                DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os2", tempFolderContext),
+                                new string[] { "tag1a", "tag1b" }))
+                    },
+                    mcrTagsMetadataTemplatePath: Path.GetFileName(tagsMetadataTemplatePath))
+            );
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
+
+            // Load manifest
+            IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
+            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            RepoInfo repo = manifestInfo.AllRepos.First();
+
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+
+            // Execute generator
+            string result = McrTagsMetadataGenerator.Execute(
+                gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, SourceBranch);
+
+            Models.Mcr.McrTagsMetadata tagsMetadata = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build()
+                .Deserialize<Models.Mcr.McrTagsMetadata>(result);
+
+            // Verify the output only contains the platform with the documented tag
+            Assert.Single(tagsMetadata.Repos[0].TagGroups);
+            Assert.Equal(
+                $"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile",
+                tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
+            Assert.Equal(new string[] { "tag1a", "tag1b" }, tagsMetadata.Repos[0].TagGroups[0].Tags);
+        }
+        
         private static IManifestOptionsInfo GetManifestOptions(string manifestPath)
         {
             Mock<IManifestOptionsInfo> manifestOptionsMock = new Mock<IManifestOptionsInfo>();

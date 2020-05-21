@@ -39,14 +39,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddDockerfilePathLegs(
             BuildMatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
+            // Pass 1: Find direct dependencies from the Dockerfile's FROM statement
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
                 platform => GetPlatformDependencies(platform, platformGrouping));
 
+            // Pass 2: Find dependencies amongst the subgraphs that result from custom leg grouping definitions
+            // to produce a new set of subgraphs.
+            subgraphs = subgraphs.GetCompleteSubgraphs(subgraph => GetCustomLegGroupingDependencies(subgraph, subgraphs))
+                .Select(set => set.SelectMany(subgraph => subgraph))
+                .ToArray();
+
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
-                string[] dockerfilePaths = GetDockerfilePaths(subgraph)
-                    .Union(GetCustomLegGroupingDockerfilePaths(subgraph))
-                    .ToArray();
+                string[] dockerfilePaths = GetDockerfilePaths(subgraph).ToArray();
 
                 BuildLegInfo leg = new BuildLegInfo()
                 {
@@ -59,6 +64,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
+        private IEnumerable<IEnumerable<PlatformInfo>> GetCustomLegGroupingDependencies(
+            IEnumerable<PlatformInfo> subgraph, IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
+        {
+            IEnumerable<IEnumerable<PlatformInfo>> dependencySubgraphs = subgraph
+                .Select(platform =>
+                {
+                    // Find the subgraphs of the platforms that are the custom leg dependencies of this platform
+                    IEnumerable<IEnumerable<PlatformInfo>> dependencySubgraphs = GetCustomLegGroupingPlatforms(platform)
+                        .Select(dependency =>
+                            subgraphs
+                                .Where(otherSubgraph => subgraph != otherSubgraph)
+                                .FirstOrDefault(otherSubgraph => otherSubgraph.Contains(dependency)))
+                        .Distinct();
+
+                    if (dependencySubgraphs.Count() > 1)
+                    {
+                        throw new NotSupportedException(
+                            $"Platform '{platform.DockerfilePathRelativeToManifest}' has a custom leg grouping dependency on more than one subgraphs.");
+                    }
+
+                    return dependencySubgraphs.FirstOrDefault();
+                })
+                .Distinct()
+                .Where(subgraph => subgraph != null)
+                .ToArray();
+
+            return dependencySubgraphs;
+        }
+
         private static string[] GetDockerfilePaths(IEnumerable<PlatformInfo> platforms)
         {
             return platforms
@@ -68,24 +102,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string[] GetCustomLegGroupingDockerfilePaths(IEnumerable<PlatformInfo> platforms)
         {
-            IEnumerable<PlatformInfo> subgraphs = platforms.GetCompleteSubgraphs(platform =>
-                {
-                    if (Options.CustomBuildLegGrouping != null &&
-                        platform.CustomLegGroupings.TryGetValue(
-                            Options.CustomBuildLegGrouping,
-                            out CustomBuildLegGroupingInfo customBuildLegGroupingInfo))
-                    {
-                        IEnumerable<PlatformInfo> dependencyPlatforms = customBuildLegGroupingInfo.DependencyImages
-                            .Select(image => Manifest.GetPlatformByTag(image));
-                        return dependencyPlatforms
-                            .Concat(dependencyPlatforms
-                                .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
-                    }
-
-                    return Enumerable.Empty<PlatformInfo>();
-                })
-                .SelectMany(image => image);
+            IEnumerable<PlatformInfo> subgraphs = platforms.GetCompleteSubgraphs(
+                platform => GetCustomLegGroupingPlatforms(platform))
+                .SelectMany(platforms => platforms);
             return GetDockerfilePaths(subgraphs);
+        }
+
+        private IEnumerable<PlatformInfo> GetCustomLegGroupingPlatforms(PlatformInfo platform)
+        {
+            if (Options.CustomBuildLegGrouping != null &&
+                platform.CustomLegGroupings.TryGetValue(
+                    Options.CustomBuildLegGrouping,
+                    out CustomBuildLegGroupingInfo customBuildLegGroupingInfo))
+            {
+                IEnumerable<PlatformInfo> dependencyPlatforms = customBuildLegGroupingInfo.DependencyImages
+                    .Select(image => Manifest.GetPlatformByTag(image));
+                return dependencyPlatforms
+                    .Concat(dependencyPlatforms
+                        .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
+            }
+
+            return Enumerable.Empty<PlatformInfo>();
         }
 
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, BuildLegInfo leg)
@@ -257,12 +294,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string GetOsMatrixNamePart(PlatformId platformId)
         {
-            if (platformId.OsVersion != null)
+            if (platformId.NormalizedOsVersion != null)
             {
-                return platformId.OsVersion
-                    .Replace("nanoserver", "windows")
-                    .Replace("windowsservercore", "windows")
-                    .Replace("ltsc2019", "1809");
+                return platformId.NormalizedOsVersion;
             }
 
             return platformId.OS.GetDockerName();
@@ -307,19 +341,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public Architecture Architecture { get; set; }
             public OS OS { get; set; }
             public string OsVersion { get; set; }
+            public string NormalizedOsVersion
+            {
+                get => OsVersion?
+                    .Replace("nanoserver", "windows")
+                    .Replace("windowsservercore", "windows")
+                    .Replace("ltsc2019", "1809");
+            }
             public string Variant { get; set; }
 
             public bool Equals(PlatformId other)
             {
                 return Architecture == other.Architecture
                     && OS == other.OS
-                    && OsVersion == other.OsVersion
+                    && NormalizedOsVersion == other.NormalizedOsVersion
                     && Variant == other.Variant;
             }
 
             public override int GetHashCode()
             {
-                return $"{Architecture}-{OS}-{OsVersion}-{Variant}".GetHashCode();
+                return $"{Architecture}-{OS}-{NormalizedOsVersion}-{Variant}".GetHashCode();
             }
         }
     }

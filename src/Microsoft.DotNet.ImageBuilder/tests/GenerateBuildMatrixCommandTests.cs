@@ -233,5 +233,92 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Equal("--path 2.0/runtime/os2/Dockerfile --path 2.0/sdk/os2/Dockerfile", imageBuilderPaths);
             }
         }
+
+        /// <summary>
+        /// Verifies that a <see cref="MatrixType.PlatformDependencyGraph"/> build matrix can be generated correctly
+        /// when there are both Windows Server Core and Nano Server platforms that have a custom build leg grouping
+        /// dependency. The scenario for this is that, for a given matching version between Server Core and Nano Server,
+        /// those Dockerfiles should be built in the same job.
+        /// </summary>
+        [Fact]
+        public void GenerateBuildMatrixCommand_ServerCoreAndNanoServerDependency()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            const string customBuildLegGrouping = "custom";
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ProductVersionComponents = 2;
+            command.Options.CustomBuildLegGrouping = customBuildLegGrouping;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/runtime/nanoserver-1909", tempFolderContext),
+                                new string[] { "nanoserver-1909" },
+                                os: OS.Windows,
+                                osVersion: "nanoserver-1909")
+                        },
+                        productVersion: "1.0"),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/runtime/windowsservercore-1909", tempFolderContext),
+                                new string[] { "windowsservercore-1909" },
+                                os: OS.Windows,
+                                osVersion: "windowsservercore-1909")
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("aspnet",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/aspnet/nanoserver-1909", tempFolderContext, "runtime:nanoserver-1909"),
+                                new string[] { "nanoserver-1909" },
+                                os: OS.Windows,
+                                osVersion: "nanoserver-1909")
+                        },
+                        productVersion: "1.0"),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/aspnet/windowsservercore-1909", tempFolderContext, "runtime:windowsservercore-1909"),
+                                new string[] { "windowsservercore-1909" },
+                                os: OS.Windows,
+                                osVersion: "windowsservercore-1909",
+                                customBuildLegGroupings: new CustomBuildLegGrouping[]
+                                {
+                                    new CustomBuildLegGrouping
+                                    {
+                                        Name = customBuildLegGrouping,
+                                        Dependencies = new string[]
+                                        {
+                                            "aspnet:nanoserver-1909"
+                                        }
+                                    }
+                                })
+                        },
+                        productVersion: "1.0"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            BuildLegInfo leg = matrixInfo.Legs.First();
+            string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(
+                "--path 1.0/runtime/nanoserver-1909/Dockerfile --path 1.0/aspnet/nanoserver-1909/Dockerfile --path 1.0/runtime/windowsservercore-1909/Dockerfile --path 1.0/aspnet/windowsservercore-1909/Dockerfile",
+                imageBuilderPaths);
+        }
     }
 }

@@ -24,8 +24,7 @@ jobs:
               $_.Group |
                   Sort-Object JobAttempt |
                   Select-Object -ExpandProperty FullName -SkipLast 1 |
-                  #Remove-Item -Recurse -Force
-                  Write-Host
+                  Remove-Item -Recurse -Force
           }
     displayName: Prune Publish Artifacts
   - script: >

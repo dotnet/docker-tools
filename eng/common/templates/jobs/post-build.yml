@@ -12,14 +12,14 @@ jobs:
       Get-ChildItem $(Build.ArtifactStagingDirectory) -Directory |
           ForEach-Object {
               [pscustomobject]@{
-                  # Parse the artifact filename to separate the base of the filename from the job attempt number 
+                  # Parse the artifact name to separate the base of the name from the job attempt number 
                   BaseName = $_.Name.Substring(0, $_.Name.LastIndexOf('-'));
                   JobAttempt = $_.Name.Substring($_.Name.LastIndexOf('-') + 1)
                   FullName = $_.FullName
               }
           } |
           Group-Object BaseName |
-          # Delete all but the last artifact from each base filename
+          # Delete all but the last artifact from each base name
           ForEach-Object {
               $_.Group |
                   Sort-Object JobAttempt |

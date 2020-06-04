@@ -109,6 +109,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
+            command.Options.RepoName = "build-staging/*";
+            command.Options.Action = CleanAcrImagesAction.Delete;
+            command.Options.DaysOld = 15;
 
             await command.ExecuteAsync();
 
@@ -226,6 +229,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock
                 .Setup(o => o.GetRepositoryManifestsAsync(publicRepo4Name))
                 .ReturnsAsync(repo4Manifests);
+            acrClientMock
+                .Setup(o => o.DeleteRepositoryAsync(publicRepo4Name))
+                .ReturnsAsync(new DeleteRepositoryResponse());
 
             Mock<IAcrClientFactory> acrClientFactoryMock = new Mock<IAcrClientFactory>();
             acrClientFactoryMock
@@ -240,6 +246,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
+            command.Options.RepoName = "public/dotnet/*nightly/*";
+            command.Options.Action = CleanAcrImagesAction.PruneDangling;
+            command.Options.DaysOld = 30;
 
             await command.ExecuteAsync();
 
@@ -248,7 +257,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo2Name, It.IsAny<string>()), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest1), Times.Never);
             acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo3Name, repo3Digest2));
-            acrClientMock.Verify(o => o.DeleteManifestAsync(publicRepo4Name, repo4Digest1));
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(publicRepo4Name));
         }
 
         /// <summary>
@@ -331,6 +340,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
+            command.Options.RepoName = "test/*";
+            command.Options.Action = CleanAcrImagesAction.PruneAll;
+            command.Options.DaysOld = 7;
 
             await command.ExecuteAsync();
 
@@ -414,6 +426,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
+            command.Options.RepoName = "test/*";
+            command.Options.Action = CleanAcrImagesAction.PruneAll;
+            command.Options.DaysOld = 7;
 
             await command.ExecuteAsync();
 
@@ -515,6 +530,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
+            command.Options.RepoName = "test/*";
+            command.Options.Action = CleanAcrImagesAction.PruneAll;
+            command.Options.DaysOld = 7;
 
             await command.ExecuteAsync();
 

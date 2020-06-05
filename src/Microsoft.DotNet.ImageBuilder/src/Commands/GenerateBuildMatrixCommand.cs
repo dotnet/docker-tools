@@ -136,14 +136,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static void AddCommonVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, BuildLegInfo leg)
         {
             string fullyQualifiedLegName =
-                (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) +
-                platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant) +
+                (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) + "-" +
+                platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant) + "-" +
                 leg.Name;
 
             leg.Variables.Add(("legName", fullyQualifiedLegName));
             leg.Variables.Add(("osType", platformGrouping.Key.OS.GetDockerName()));
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
-            leg.Variables.Add(("osVersion", platformGrouping.Key.OsVersion ?? "*"));
         }
 
         private string GetDotNetVersion(ImageInfo image)
@@ -251,6 +250,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
+        private static string GetNormalizedOsVersion(string osVersion) =>
+            osVersion?
+                .Replace("nanoserver", "windows")
+                .Replace("windowsservercore", "windows")
+                .Replace("ltsc2019", "1809");
+
         public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
         {
             List<BuildMatrixInfo> matrices = new List<BuildMatrixInfo>();
@@ -260,7 +265,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new PlatformId()
                 {
                     OS = platform.Model.OS,
-                    OsVersion = platform.Model.OS == OS.Linux ? null : platform.Model.OsVersion,
+                    OsVersion = platform.Model.OS == OS.Linux ? null : GetNormalizedOsVersion(platform.Model.OsVersion),
                     Architecture = platform.Model.Architecture,
                     Variant = platform.Model.Variant
                 })
@@ -294,9 +299,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string GetOsMatrixNamePart(PlatformId platformId)
         {
-            if (platformId.NormalizedOsVersion != null)
+            if (platformId.OsVersion != null)
             {
-                return platformId.NormalizedOsVersion;
+                return platformId.OsVersion;
             }
 
             return platformId.OS.GetDockerName();
@@ -341,26 +346,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public Architecture Architecture { get; set; }
             public OS OS { get; set; }
             public string OsVersion { get; set; }
-            public string NormalizedOsVersion
-            {
-                get => OsVersion?
-                    .Replace("nanoserver", "windows")
-                    .Replace("windowsservercore", "windows")
-                    .Replace("ltsc2019", "1809");
-            }
             public string Variant { get; set; }
 
             public bool Equals(PlatformId other)
             {
                 return Architecture == other.Architecture
                     && OS == other.OS
-                    && NormalizedOsVersion == other.NormalizedOsVersion
+                    && OsVersion == other.OsVersion
                     && Variant == other.Variant;
             }
 
             public override int GetHashCode()
             {
-                return $"{Architecture}-{OS}-{NormalizedOsVersion}-{Variant}".GetHashCode();
+                return $"{Architecture}-{OS}-{OsVersion}-{Variant}".GetHashCode();
             }
         }
     }

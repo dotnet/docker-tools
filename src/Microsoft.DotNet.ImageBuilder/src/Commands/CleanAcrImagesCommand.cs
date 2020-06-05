@@ -66,14 +66,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 case CleanAcrImagesAction.PruneDangling:
                     await ProcessManifestsAsync(acrClient, deletedImages, deletedRepos, repository,
-                        manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, Options.DaysOld));
+                        manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, deletedImages, deletedRepos, repository,
-                        manifest => IsExpired(manifest.LastUpdateTime, Options.DaysOld));
+                        manifest => IsExpired(manifest.LastUpdateTime, Options.Age));
                     break;
                 case CleanAcrImagesAction.Delete:
-                    if (IsExpired(repository.LastUpdateTime, Options.DaysOld))
+                    if (IsExpired(repository.LastUpdateTime, Options.Age))
                     {
                         await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
                     }

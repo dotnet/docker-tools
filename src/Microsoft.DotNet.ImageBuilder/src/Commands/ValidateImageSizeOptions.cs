@@ -21,11 +21,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.DefineOptions(syntax);
 
-            ImageSizeValidationMode defaultValidationMode = ImageSizeValidationMode.All;
-            string mode = defaultValidationMode.ToString().ToLowerInvariant();
+            ImageSizeValidationMode mode = ImageSizeValidationMode.All;
             syntax.DefineOption("mode", ref mode,
-                $"Mode of validation. {EnumHelper.GetHelpTextOptions(defaultValidationMode)}");
-            Mode = (ImageSizeValidationMode)Enum.Parse(typeof(ImageSizeValidationMode), mode, ignoreCase: true);
+                value => (ImageSizeValidationMode)Enum.Parse(typeof(ImageSizeValidationMode), value, true),
+                $"Mode of validation. {EnumHelper.GetHelpTextOptions(mode)}");
+            Mode = mode;
         }
     }
 

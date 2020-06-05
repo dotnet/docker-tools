@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "build-staging/*";
             command.Options.Action = CleanAcrImagesAction.Delete;
-            command.Options.DaysOld = 15;
+            command.Options.Age = 15;
 
             await command.ExecuteAsync();
 
@@ -248,7 +248,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "public/dotnet/*nightly/*";
             command.Options.Action = CleanAcrImagesAction.PruneDangling;
-            command.Options.DaysOld = 30;
+            command.Options.Age = 30;
 
             await command.ExecuteAsync();
 
@@ -342,7 +342,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.DaysOld = 7;
+            command.Options.Age = 7;
 
             await command.ExecuteAsync();
 
@@ -428,7 +428,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.DaysOld = 7;
+            command.Options.Age = 7;
 
             await command.ExecuteAsync();
 
@@ -532,7 +532,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
-            command.Options.DaysOld = 7;
+            command.Options.Age = 7;
 
             await command.ExecuteAsync();
 

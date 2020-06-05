@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }
-        public int DaysOld { get; set; }
+        public int Age { get; set; }
         public string Username { get; set; }
         public string Password { get; set; }
         public string Tenant { get; set; }
@@ -58,15 +58,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.DefineOptions(syntax);
 
-            const CleanAcrImagesAction defaultAction = CleanAcrImagesAction.PruneDangling;
-            string action = defaultAction.ToString().ToCamelCase();
+            CleanAcrImagesAction action = CleanAcrImagesAction.PruneDangling;
             syntax.DefineOption("action", ref action,
-                $"Type of delete action. {EnumHelper.GetHelpTextOptions(defaultAction)}");
-            Action = (CleanAcrImagesAction)Enum.Parse(typeof(CleanAcrImagesAction), action, ignoreCase: true);
+                value => (CleanAcrImagesAction)Enum.Parse(typeof(CleanAcrImagesAction), value, true),
+                $"Type of delete action. {EnumHelper.GetHelpTextOptions(action)}");
+            Action = action;
 
-            int daysOld = 30;
-            syntax.DefineOption("days", ref action, "Number of days old to be considered for deletion");
-            DaysOld = daysOld;
+            int age = 30;
+            syntax.DefineOption("age", ref age, $"Minimum age (days) of repo or images to be deleted (default: {age})");
+            Age = age;
         }
     }
 

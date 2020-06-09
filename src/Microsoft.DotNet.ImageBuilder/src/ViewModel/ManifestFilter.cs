@@ -56,9 +56,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (IncludeOsVersions?.Any() ?? false)
             {
-                string includeOsVersionPattern = GetFilterRegexPattern(IncludeOsVersions.ToArray());
+                string includeOsVersionsPattern = GetFilterRegexPattern(IncludeOsVersions.ToArray());
                 platforms = platforms.Where(platform =>
-                    Regex.IsMatch(platform.OsVersion ?? string.Empty, includeOsVersionPattern, RegexOptions.IgnoreCase));
+                    Regex.IsMatch(platform.OsVersion ?? string.Empty, includeOsVersionsPattern, RegexOptions.IgnoreCase));
             }
 
             return platforms.ToArray();

@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ManifestFilterOptions filterOptions = ((IFilterableOptions)this).FilterOptions;
                 filter.IncludeArchitecture = filterOptions.Architecture;
                 filter.IncludeOsType = filterOptions.OsType;
-                filter.IncludeOsVersion = filterOptions.OsVersion;
+                filter.IncludeOsVersions = filterOptions.OsVersions;
                 filter.IncludePaths = filterOptions.Paths;
             }
 

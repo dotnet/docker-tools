@@ -205,14 +205,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" })
+                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "buster")
                             },
                             productVersion: "2.0")),
                     CreateRepo("sdk2",
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(dockerfileSdk2FullPath, new string[] { "tag" })
+                                CreatePlatform(dockerfileSdk2FullPath, new string[] { "tag" }, osVersion: "buster")
                             },
                             productVersion: "2.0"))
                 );
@@ -227,10 +227,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
+                string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
+                Assert.Equal("--os-version disco --os-version buster", osVersions);
 
                 BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
                 imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 2.0/runtime/os2/Dockerfile --path 2.0/sdk/os2/Dockerfile", imageBuilderPaths);
+                osVersions = leg_2_0.Variables.First(variable => variable.Name == "osVersions").Value;
+                Assert.Equal("--os-version buster", osVersions);
             }
         }
 

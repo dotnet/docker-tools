@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 matrix.Legs.Add(leg);
 
                 AddImageBuilderPathsVariable(dockerfilePaths, leg);
-                AddCommonVariables(platformGrouping, leg);
+                AddCommonVariables(platformGrouping, subgraph, leg);
             }
         }
 
@@ -133,16 +133,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
 
-        private static void AddCommonVariables(IGrouping<PlatformId, PlatformInfo> platformGrouping, BuildLegInfo leg)
+        private static void AddCommonVariables(
+            IGrouping<PlatformId, PlatformInfo> platformGrouping, IEnumerable<PlatformInfo> subgraph, BuildLegInfo leg)
         {
             string fullyQualifiedLegName =
-                (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) + "-" +
-                platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant) + "-" +
+                (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) +
+                platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant) +
                 leg.Name;
 
             leg.Variables.Add(("legName", fullyQualifiedLegName));
             leg.Variables.Add(("osType", platformGrouping.Key.OS.GetDockerName()));
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
+
+            string[] osVersions = subgraph
+                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.Model.OsVersion}")
+                .Distinct()
+                .ToArray();
+            leg.Variables.Add(("osVersions", String.Join(" ", osVersions)));
         }
 
         private string GetDotNetVersion(ImageInfo image)
@@ -172,6 +179,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return null;            
         }
 
+        private static string GetNormalizedOsVersion(string osVersion) =>
+            osVersion?
+                .Replace("nanoserver", "windows")
+                .Replace("windowsservercore", "windows")
+                .Replace("ltsc2019", "1809");
+
         private void AddVersionedOsLegs(BuildMatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             var versionGroups = platformGrouping
@@ -190,7 +203,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 BuildLegInfo leg = new BuildLegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
                 matrix.Legs.Add(leg);
 
-                AddCommonVariables(platformGrouping, leg);
+                AddCommonVariables(platformGrouping, subgraphs, leg);
                 leg.Variables.Add(("dotnetVersion", versionGrouping.Key.DotNetVersion));
                 leg.Variables.Add(("osVariant", versionGrouping.Key.OsVariant));
 
@@ -249,12 +262,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string[] allParts = parts.SelectMany(part => part.Split('-')).ToArray();
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
-
-        private static string GetNormalizedOsVersion(string osVersion) =>
-            osVersion?
-                .Replace("nanoserver", "windows")
-                .Replace("windowsservercore", "windows")
-                .Replace("ltsc2019", "1809");
 
         public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
         {

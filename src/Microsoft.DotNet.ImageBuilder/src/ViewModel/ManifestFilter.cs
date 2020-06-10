@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string IncludeArchitecture { get; set; }
         public string IncludeOsType { get; set; }
         public string IncludeRepo { get; set; }
-        public string IncludeOsVersion { get; set; }
+        public IEnumerable<string> IncludeOsVersions { get; set; }
         public IEnumerable<string> IncludePaths { get; set; }
 
         public ManifestFilter()
@@ -54,11 +54,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     Regex.IsMatch(platform.Dockerfile, pathsRegexPattern, RegexOptions.IgnoreCase));
             }
 
-            if (IncludeOsVersion != null)
+            if (IncludeOsVersions?.Any() ?? false)
             {
-                string includeOsVersionPattern = GetFilterRegexPattern(IncludeOsVersion);
+                string includeOsVersionsPattern = GetFilterRegexPattern(IncludeOsVersions.ToArray());
                 platforms = platforms.Where(platform =>
-                    Regex.IsMatch(platform.OsVersion ?? string.Empty, includeOsVersionPattern, RegexOptions.IgnoreCase));
+                    Regex.IsMatch(platform.OsVersion ?? string.Empty, includeOsVersionsPattern, RegexOptions.IgnoreCase));
             }
 
             return platforms.ToArray();

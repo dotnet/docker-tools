@@ -319,6 +319,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(
                 "--path 1.0/runtime/nanoserver-1909/Dockerfile --path 1.0/aspnet/nanoserver-1909/Dockerfile --path 1.0/runtime/windowsservercore-1909/Dockerfile --path 1.0/aspnet/windowsservercore-1909/Dockerfile",
                 imageBuilderPaths);
+            string osVersions = leg.Variables.First(variable => variable.Name == "osVersions").Value;
+            Assert.Equal(
+                "--os-version nanoserver-1909 --os-version windowsservercore-1909",
+                osVersions);
         }
     }
 }

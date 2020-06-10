@@ -16,13 +16,19 @@ jobs:
   pool: Hosted Ubuntu 1604
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
-  - script: >
-      $(runImageBuilderCmd) cleanAcrImages
-      $(acr.servicePrincipalName)
-      $(app-dotnetdockerbuild-client-secret)
-      $(acr.servicePrincipalTenant)
-      $(acr.subscription)
-      $(acr.resourceGroup)
-      $(acr.server)
-    displayName: Clean ACR Images
+  - template: templates/steps/clean-acr-images.yml
+    parameters:
+      repo: "build-staging/*"
+      action: delete
+      age: 15
+  - template: templates/steps/clean-acr-images.yml
+    parameters:
+      repo: "public/dotnet/*nightly/*"
+      action: pruneDangling
+      age: 30
+  - template: templates/steps/clean-acr-images.yml
+    parameters:
+      repo: "test/*"
+      action: pruneAll
+      age: 7
   - template: ../common/templates/steps/cleanup-docker-linux.yml

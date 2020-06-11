@@ -27,6 +27,8 @@ variables:
   value: https://github.com/dotnet/dotnet-docker-test
 - name: publishRepoPrefix
   value: test/
+- name: imageInfoVariant
+  value: "-test"
 
 stages:
 - template: ../common/templates/stages/build-test-publish-repo.yml

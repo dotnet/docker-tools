@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "type",
                 ref matrixType,
                 value => (MatrixType)Enum.Parse(typeof(MatrixType), value, true),
-                $"Type of matrix to generate - {Enum.GetNames(typeof(MatrixType)).Aggregate((s1, s2) => $"{s1}, {s2}")}");
+                $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(matrixType)}");
             MatrixType = matrixType;
 
             string customBuildLegGrouping = null;

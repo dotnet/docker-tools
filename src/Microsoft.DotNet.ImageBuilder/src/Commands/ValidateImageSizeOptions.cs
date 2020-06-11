@@ -21,9 +21,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.DefineOptions(syntax);
 
-            string mode = ImageSizeValidationMode.All.ToString().ToLowerInvariant();
-            syntax.DefineOption("mode", ref mode, "Mode of validation. Options: all (default), size, integrity");
-            Mode = (ImageSizeValidationMode)Enum.Parse(typeof(ImageSizeValidationMode), mode, ignoreCase: true);
+            ImageSizeValidationMode mode = ImageSizeValidationMode.All;
+            syntax.DefineOption("mode", ref mode,
+                value => (ImageSizeValidationMode)Enum.Parse(typeof(ImageSizeValidationMode), value, true),
+                $"Mode of validation. {EnumHelper.GetHelpTextOptions(mode)}");
+            Mode = mode;
         }
     }
 

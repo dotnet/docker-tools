@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -17,6 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IAcrClientFactory acrClientFactory;
         private readonly ILoggerService loggerService;
+        private Regex repoNameFilterRegex;
 
         [ImportingConstructor]
         public CleanAcrImagesCommand(IAcrClientFactory acrClientFactory, ILoggerService loggerService)
@@ -27,6 +30,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
+            this.repoNameFilterRegex = new Regex(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
+
             this.loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
 
             this.loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
@@ -42,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> deletedImages = new List<string>();
 
             IEnumerable<Task> cleanupTasks = catalog.RepositoryNames
-                .Where(repoName => IsTestRepo(repoName) || IsStagingRepo(repoName) || IsPublicNightlyRepo(repoName))
+                .Where(repoName => this.repoNameFilterRegex.IsMatch(repoName))
                 .Select(repoName => acrClient.GetRepositoryAsync(repoName))
                 .Select(getRepoTask => ProcessRepoAsync(acrClient, getRepoTask, deletedRepos, deletedImages))
                 .ToArray();
@@ -56,21 +61,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrClient acrClient, Task<Repository> getRepoTask, List<string> deletedRepos, List<string> deletedImages)
         {
             Repository repository = await getRepoTask;
-            if (IsPublicNightlyRepo(repository.Name))
+
+            switch (Options.Action)
             {
-                await ProcessPublicNightlyRepoAsync(acrClient, deletedImages, repository);
-            }
-            else if (IsTestRepo(repository.Name))
-            {
-                await ProcessTestRepoAsync(acrClient, deletedImages, deletedRepos, repository);
-            }
-            else if (IsStagingRepo(repository.Name))
-            {
-                await ProcessStagingRepoAsync(acrClient, deletedRepos, repository);
-            }
-            else
-            {
-                throw new NotSupportedException($"Unexpected request to process repo '{repository.Name}'.");
+                case CleanAcrImagesAction.PruneDangling:
+                    await ProcessManifestsAsync(acrClient, deletedImages, deletedRepos, repository,
+                        manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, Options.Age));
+                    break;
+                case CleanAcrImagesAction.PruneAll:
+                    await ProcessManifestsAsync(acrClient, deletedImages, deletedRepos, repository,
+                        manifest => IsExpired(manifest.LastUpdateTime, Options.Age));
+                    break;
+                case CleanAcrImagesAction.Delete:
+                    if (IsExpired(repository.LastUpdateTime, Options.Age))
+                    {
+                        await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
+                    }
+                    break;
+                default:
+                    throw new NotSupportedException($"Unsupported action: {Options.Action}");
             }
         }
 
@@ -108,8 +117,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         }
 
-        private async Task ProcessTestRepoAsync(
-            IAcrClient acrClient, List<string> deletedImages, List<string> deletedRepos, Repository repository)
+        private async Task ProcessManifestsAsync(
+            IAcrClient acrClient, List<string> deletedImages, List<string> deletedRepos, Repository repository,
+            Func<ManifestAttributes, bool> canDeleteManifest)
         {
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
             if (!repoManifests.Manifests.Any())
@@ -119,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             ManifestAttributes[] expiredTestImages = repoManifests.Manifests
-                .Where(manifest => IsExpired(manifest.LastUpdateTime, 7))
+                .Where(manifest => canDeleteManifest(manifest))
                 .ToArray();
 
             // If all the images in the repo are expired, delete the whole repo instead of 
@@ -131,15 +141,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             await DeleteManifestsAsync(acrClient, deletedImages, repository, expiredTestImages);
-        }
-
-        private async Task ProcessPublicNightlyRepoAsync(
-            IAcrClient acrClient, List<string> deletedImages, Repository repository)
-        {
-            RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
-            IEnumerable<ManifestAttributes> untaggedImages = repoManifests.Manifests
-                .Where(manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdateTime, 30));
-            await DeleteManifestsAsync(acrClient, deletedImages, repository, untaggedImages);
         }
 
         private async Task DeleteManifestsAsync(
@@ -169,14 +170,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             lock (deletedImages)
             {
                 deletedImages.Add(imageId);
-            }
-        }
-
-        private async Task ProcessStagingRepoAsync(IAcrClient acrClient, List<string> deletedRepos, Repository repository)
-        {
-            if (IsExpired(repository.LastUpdateTime, 15))
-            {
-                await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
             }
         }
 
@@ -229,10 +222,5 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private bool IsExpired(DateTime dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTime.Now;
-        private bool IsStagingRepo(string repoName) => repoName.StartsWith("build-staging/");
-        private bool IsPublicNightlyRepo(string repoName) =>
-            IsPublicRepo(repoName) && (repoName.Contains("/core-nightly/") || repoName.Contains("/nightly/"));
-        private bool IsTestRepo(string repoName) => repoName.StartsWith("test/");
-        private bool IsPublicRepo(string repoName) => repoName.StartsWith("public/");
     }
 }

@@ -82,6 +82,8 @@ jobs:
     imagePaths4: $[ dependencies.Get_Stale_Images_Windows_AMD.outputs['GetStaleImages.windows-amd-stale-image-paths'] ]
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
+    parameters:
+      useImageInfo: false
   - script: >
       $(runImageBuilderCmd)
       queueBuild

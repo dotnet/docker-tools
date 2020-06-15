@@ -5,6 +5,8 @@ parameters:
   
 steps:
   - template: ${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
+    parameters:
+      useImageInfo: false
   - powershell: >
       ./tests/performance/Validate-ImageSize.ps1
       -ImageBuilderCustomArgs "--architecture '${{ parameters.architecture }}'"

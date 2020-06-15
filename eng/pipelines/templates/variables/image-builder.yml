@@ -1,0 +1,10 @@
+variables:
+- template: common.yml
+- name: manifest
+  value: src/Microsoft.DotNet.ImageBuilder/manifest.json
+- name: publishReadme
+  value: false
+- name: manifestVariables
+  value: --var UniqueId=$(sourceBuildId)
+- name: imageInfoVariant
+  value: "-imagebuilder"

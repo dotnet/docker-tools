@@ -2,5 +2,7 @@ variables:
 - template: ../../../common/templates/variables/common.yml
 - name: checkBaseImageSubscriptionsPath
   value: eng/check-base-image-subscriptions.json
+- name: publicGitRepoUri
+  value: https://github.com/dotnet/docker-tools
 - name: imageNames.pinger.linux
   value: arm32v7/debian:stretch

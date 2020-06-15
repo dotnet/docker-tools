@@ -36,8 +36,9 @@ jobs:
       --architecture $(architecture)
       --retry
       --source-repo $(publicGitRepoUri)
-      $(imageBuilderBuildArgs)
       $(imageBuilderImageInfoArg)
+      $(manifestVariables)
+      $(imageBuilderBuildArgs)
     displayName: Build Images
   - publish: $(Build.ArtifactStagingDirectory)/$(legName)-image-info.json
     artifact: $(legName)-image-info-$(System.JobAttempt)

@@ -9,7 +9,10 @@ pr:
 
 trigger: none
 
-jobs:
-- template: templates/jobs/build-image-builder.yml
+variables:
+- template: templates/variables/image-builder.yml
+
+stages:
+- template: ../common/templates/stages/build-test-publish-repo.yml
   parameters:
-    publishImages: false
+    buildMatrixType: platformVersionedOs

@@ -121,7 +121,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrClient acrClient, List<string> deletedImages, List<string> deletedRepos, Repository repository,
             Func<ManifestAttributes, bool> canDeleteManifest)
         {
+            this.loggerService.WriteMessage($"Querying manifests for repo '{repository.Name}'");
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
+            this.loggerService.WriteMessage($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {repoManifests.Manifests.Count}");
+
             if (!repoManifests.Manifests.Any())
             {
                 await DeleteRepositoryAsync(acrClient, deletedRepos, repository);

@@ -4,10 +4,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -21,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public class AcrClient : IAcrClient, IDisposable
     {
-        private const int MaxPagedResults = 999;
+        private const int MaxPagedResults = 500;
         private const string LinkUrlGroup = "LinkUrl";
         private const string RelationshipTypeGroup = "RelationshipType";
         private static readonly Regex linkHeaderRegex =
@@ -166,6 +168,9 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             HttpResponseMessage response = await Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
+                .Or<TaskCanceledException>(exception =>
+                    exception.InnerException is IOException ioException &&
+                    ioException.InnerException is SocketException)
                 .WaitAndRetryAsync(
                     Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
                     RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService))

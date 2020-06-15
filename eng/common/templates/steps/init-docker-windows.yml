@@ -17,9 +17,9 @@ steps:
   # Setup Image Builder (Optional)
   ################################################################################
 - ${{ if eq(parameters.setupImageBuilder, 'true') }}:
-  - powershell: $(engCommonPath)/Invoke-WithRetry.ps1 "docker pull $(imageNames.imagebuilder.windows)"
+  - powershell: $(engCommonPath)/Invoke-WithRetry.ps1 "docker pull $(imageNames.imageBuilder)"
     displayName: Pull Image Builder
-  - script: docker create --name setupImageBuilder-$(Build.BuildId)-$(System.JobId) $(imageNames.imagebuilder.windows)
+  - script: docker create --name setupImageBuilder-$(Build.BuildId)-$(System.JobId) $(imageNames.imageBuilder)
     displayName: Create Setup Container
   - script: >
       docker cp

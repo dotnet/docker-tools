@@ -11,6 +11,8 @@
           "platforms": [
             {
               "buildArgs": {
+                "RID_ARCH": "x64",
+                "MANIFEST_TOOL_ARCH": "amd64",
                 "ALPINE_TAG_SUFFIX": ""
               },
               "dockerfile": "Dockerfile.linux",

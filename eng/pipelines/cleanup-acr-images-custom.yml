@@ -1,0 +1,18 @@
+trigger: none
+pr: none
+
+variables:
+- template: ../common/templates/variables/common.yml
+
+jobs:
+- job: Build
+  pool: Hosted Ubuntu 1604
+  steps:
+  - template: ../common/templates/steps/init-docker-linux.yml
+  - template: templates/steps/clean-acr-images.yml
+    parameters:
+      repo: $(repo)
+      action: $(action)
+      age: $(age)
+      customArgs: $(customArgs)
+  - template: ../common/templates/steps/cleanup-docker-linux.yml

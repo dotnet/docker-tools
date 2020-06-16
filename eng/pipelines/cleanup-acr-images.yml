@@ -16,8 +16,6 @@ jobs:
   pool: Hosted Ubuntu 1604
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
-    parameters:
-      useImageInfo: false
   - template: templates/steps/clean-acr-images.yml
     parameters:
       repo: "build-staging/*"

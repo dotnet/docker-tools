@@ -8,7 +8,6 @@ steps:
   - template: ${{ format('../../../common/templates/steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
     parameters:
       setupRemoteDockerServer: ${{ parameters.useRemoteDockerServer}}
-      useImageInfo: false
   - script: >
       $(runImageBuilderCmd)
       getStaleImages

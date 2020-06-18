@@ -13,7 +13,8 @@ variables:
 
 jobs:
 - job: Build
-  pool: Hosted Ubuntu 1604
+  pool:
+    vmImage: $(defaultAmd64PoolImage)
   steps:
   - script: >
       docker build . -f ./eng/file-pusher/Dockerfile -t file-pusher

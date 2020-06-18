@@ -6,7 +6,8 @@ variables:
 
 jobs:
 - job: Build
-  pool: Hosted Ubuntu 1604
+  pool:
+    vmImage: $(defaultAmd64PoolImage)
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
   - template: templates/steps/clean-acr-images.yml

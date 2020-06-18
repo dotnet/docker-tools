@@ -4,7 +4,7 @@ jobs:
   # disk space on the Linux agents. See https://github.com/dotnet/dotnet-docker/issues/1588
   - job: LinuxAmd64PerfTests
     pool:
-      vmImage: $(defaultAmd64PoolImage)
+      vmImage: $(defaultLinuxAmd64PoolImage)
     workspace:
       clean: all
     steps:
@@ -15,7 +15,7 @@ jobs:
         validationMode: size
   - job: LinuxArmPerfTests
     pool:
-      vmImage: $(defaultAmd64PoolImage)
+      vmImage: $(defaultLinuxAmd64PoolImage)
     workspace:
       clean: all
     steps:
@@ -26,7 +26,7 @@ jobs:
         validationMode: size
 - job: LinuxBaselineIntegrityPerfTests
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   workspace:
     clean: all
   steps:

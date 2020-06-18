@@ -6,7 +6,7 @@ parameters:
 jobs:
 - job: ${{ parameters.name }}
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../steps/init-docker-linux.yml
   - script: >

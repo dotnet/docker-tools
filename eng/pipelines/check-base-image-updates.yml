@@ -15,7 +15,7 @@ variables:
 jobs:
 - job: Get_Stale_Images_Linux_AMD
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: templates/steps/get-stale-images.yml
     parameters:
@@ -76,7 +76,7 @@ jobs:
   - Get_Stale_Images_Linux_ARM64
   - Get_Stale_Images_Windows_AMD
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   variables:
     imagePaths1: $[ dependencies.Get_Stale_Images_Linux_AMD.outputs['GetStaleImages.linux-amd-stale-image-paths'] ]
     imagePaths2: $[ dependencies.Get_Stale_Images_Linux_ARM32.outputs['GetStaleImages.linux-arm32-stale-image-paths'] ]

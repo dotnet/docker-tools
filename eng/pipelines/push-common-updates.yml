@@ -14,7 +14,7 @@ variables:
 jobs:
 - job: Build
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - script: >
       docker build . -f ./eng/file-pusher/Dockerfile -t file-pusher

@@ -14,7 +14,7 @@ variables:
 jobs:
 - job: Build
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
   - template: templates/steps/clean-acr-images.yml

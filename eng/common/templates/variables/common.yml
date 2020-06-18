@@ -17,7 +17,7 @@ variables:
   value: ""
 - name: manifestVariables
   value: ""
-- name: defaultAmd64PoolImage
+- name: defaultLinuxAmd64PoolImage
   value: ubuntu-latest
 
 - ${{ if eq(variables['System.TeamProject'], 'internal') }}:

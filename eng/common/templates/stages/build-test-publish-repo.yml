@@ -13,7 +13,7 @@ parameters:
   windowsAmdTestJobTimeout: 60
 
   linuxAmd64BuildPool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
 
 stages:
 
@@ -170,7 +170,7 @@ stages:
       parameters:
         name: Linux_amd64
         pool:
-          vmImage: $(defaultAmd64PoolImage)
+          vmImage: $(defaultLinuxAmd64PoolImage)
         matrix: dependencies.GenerateTestMatrix.outputs['matrix.LinuxAmd64']
         testJobTimeout: ${{ parameters.linuxAmdTestJobTimeout }}
     - template: ../jobs/test-images-linux-client.yml
@@ -277,4 +277,4 @@ stages:
   - template: ../jobs/publish.yml
     parameters:
       pool:
-        vmImage: $(defaultAmd64PoolImage)
+        vmImage: $(defaultLinuxAmd64PoolImage)

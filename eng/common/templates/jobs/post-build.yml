@@ -1,7 +1,7 @@
 jobs:
 - job: Build
   pool:
-    vmImage: $(defaultAmd64PoolImage)
+    vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../steps/init-docker-linux.yml
   - template: ../steps/download-build-artifact.yml

@@ -50,18 +50,36 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         public static Platform CreatePlatform(
-            string dockerfilePath, string[] tags, OS os = OS.Linux, string osVersion = "disco", Architecture architecture = Architecture.AMD64,
-            CustomBuildLegGrouping[] customBuildLegGroupings = null)
+            string dockerfilePath, 
+            string[] tags, 
+            OS os = OS.Linux, 
+            string osVersion = "disco",
+            Architecture architecture = Architecture.AMD64,
+            string variant = null,
+            CustomBuildLegGrouping[] customBuildLegGroupings = null,
+            string dockerfileTemplatePath = null)
         {
             return new Platform
             {
                 Dockerfile = dockerfilePath,
+                DockerfileTemplate = dockerfileTemplatePath,
                 OsVersion = osVersion,
                 OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
                 Architecture = architecture,
+                Variant = variant,
                 CustomBuildLegGrouping = customBuildLegGroupings ?? Array.Empty<CustomBuildLegGrouping>()
             };
+        }
+
+        public static void AddVariable(Manifest manifest, string name, string value)
+        {
+            if (manifest.Variables == null)
+            {
+                manifest.Variables = new Dictionary<string, string>();
+            }
+
+            manifest.Variables.Add(name, value);
         }
 
         public static IManifestOptionsInfo GetManifestOptions(string manifestPath)

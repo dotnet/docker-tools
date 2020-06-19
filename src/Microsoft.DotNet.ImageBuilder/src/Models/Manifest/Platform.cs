@@ -36,6 +36,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public string Dockerfile { get; set; }
 
         [Description(
+            "Relative path to the template the Dockerfile is generated from."
+            )]
+        public string DockerfileTemplate { get; set; }
+
+        [Description(
             "The generic name of the operating system associated with the image."
             )]
         [JsonConverter(typeof(StringEnumConverter))]

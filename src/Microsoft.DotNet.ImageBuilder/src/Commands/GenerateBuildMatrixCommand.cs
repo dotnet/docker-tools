@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
 
             string[] osVersions = subgraph
-                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.Model.OsVersion}")
+                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.BaseOsVersion}")
                 .Distinct()
                 .ToArray();
             leg.Variables.Add(("osVersions", String.Join(" ", osVersions)));
@@ -184,7 +184,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // Assumption:  Dockerfile path format <ProductVersion>/<ImageVariant>/<OsVariant>/...
                     DotNetVersion = GetDotNetVersion(Manifest.GetImageByPlatform(platform)),
-                    OsVariant = platform.Model.OsVersion
+                    OsVariant = platform.BaseOsVersion
                 });
             foreach (var versionGrouping in versionGroups)
             {
@@ -266,7 +266,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new PlatformId()
                 {
                     OS = platform.Model.OS,
-                    OsVersion = platform.Model.OS == OS.Linux ? null : GetNormalizedOsVersion(platform.Model.OsVersion),
+                    OsVersion = platform.Model.OS == OS.Linux ? null : GetNormalizedOsVersion(platform.BaseOsVersion),
                     Architecture = platform.Model.Architecture,
                     Variant = platform.Model.Variant
                 })

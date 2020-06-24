@@ -12,14 +12,13 @@ ARG RID_ARCH=x64
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
-COPY Microsoft.DotNet.ImageBuilder.sln ./
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln
+RUN dotnet restore ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and build
 COPY . ./
-RUN dotnet build Microsoft.DotNet.ImageBuilder.sln
+RUN dotnet build ./src/Microsoft.DotNet.ImageBuilder.csproj
 RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-$RID_ARCH /p:ShowLinkerSizeComparison=true
 
 

@@ -6,7 +6,7 @@ using System.Net.Http;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public interface IHttpClientFactory
+    public interface IHttpClientProvider
     {
         HttpClient GetClient();
     }

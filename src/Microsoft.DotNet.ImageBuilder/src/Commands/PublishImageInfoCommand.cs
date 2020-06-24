@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly HttpClient httpClient;
 
         [ImportingConstructor]
-        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientFactory httpClientFactory)
+        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientProvider httpClientFactory)
         {
             if (httpClientFactory is null)
             {

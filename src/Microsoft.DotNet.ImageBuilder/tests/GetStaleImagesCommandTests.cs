@@ -1350,7 +1350,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
-            private readonly IHttpClientFactory httpClientFactory;
+            private readonly IHttpClientProvider httpClientFactory;
             private readonly GetStaleImagesCommand command;
             private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
             private readonly string osType;
@@ -1485,12 +1485,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             /// <summary>
-            /// Returns an <see cref="IHttpClientFactory"/> that creates an <see cref="HttpClient"/> which 
+            /// Returns an <see cref="IHttpClientProvider"/> that creates an <see cref="HttpClient"/> which 
             /// bypasses the network and return back pre-built responses for GitHub repo zip files.
             /// </summary>
             /// <param name="subscriptionInfos">Mapping of data to subscriptions.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
-            private IHttpClientFactory CreateHttpClientFactory(
+            private IHttpClientProvider CreateHttpClientFactory(
                 SubscriptionInfo[] subscriptionInfos,
                 Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos)
             {
@@ -1512,7 +1512,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 HttpClient client = new HttpClient(new TestHttpMessageHandler(responses));
 
-                Mock<IHttpClientFactory> httpClientFactoryMock = new Mock<IHttpClientFactory>();
+                Mock<IHttpClientProvider> httpClientFactoryMock = new Mock<IHttpClientProvider>();
                 httpClientFactoryMock
                     .Setup(o => o.GetClient())
                     .Returns(client);

@@ -394,7 +394,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return gitHubClientMock;
         }
 
-        private IHttpClientFactory CreateHttpClientFactory(IGitFileRef imageOptionsFileRef, ImageArtifactDetails imageArtifactDetails)
+        private IHttpClientProvider CreateHttpClientFactory(IGitFileRef imageOptionsFileRef, ImageArtifactDetails imageArtifactDetails)
         {
             string tempDir = Directory.CreateDirectory(
                     Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())).FullName;
@@ -423,7 +423,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             HttpClient client = new HttpClient(new TestHttpMessageHandler(responses));
 
-            Mock<IHttpClientFactory> httpClientFactoryMock = new Mock<IHttpClientFactory>();
+            Mock<IHttpClientProvider> httpClientFactoryMock = new Mock<IHttpClientProvider>();
             httpClientFactoryMock
                 .Setup(o => o.GetClient())
                 .Returns(client);

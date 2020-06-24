@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
         private readonly SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
-        private readonly SemaphoreSlim imageDigestsSemaphore = new SemaphoreSlim(1);
+        private readonly object imageDigestsLock = new object();
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
         private readonly IGitHubClientFactory gitHubClientFactory;
@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [ImportingConstructor]
         public GetStaleImagesCommand(
             IDockerService dockerService,
-            IHttpClientFactory httpClientFactory,
+            IHttpClientProvider httpClientFactory,
             ILoggerService loggerService,
             IGitHubClientFactory gitHubClientFactory)
         {
@@ -163,20 +163,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string fromImage = platform.FinalStageFromImage;
                     string currentDigest;
 
-                    await this.imageDigestsSemaphore.WaitAsync();
-                    try
-                    {
-                        if (!this.imageDigests.TryGetValue(fromImage, out currentDigest))
+                    currentDigest = LockHelper.DoubleCheckedLockLookup(this.imageDigestsLock, this.imageDigests, fromImage,
+                        () =>
                         {
                             this.dockerService.PullImage(fromImage, Options.IsDryRun);
-                            currentDigest = this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
-                            this.imageDigests.Add(fromImage, currentDigest);
-                        }
-                    }
-                    finally
-                    {
-                        this.imageDigestsSemaphore.Release();
-                    }
+                            return this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
+                        });
 
                     bool rebuildImage = platformData.BaseImageDigest != currentDigest;
 
@@ -219,32 +211,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
         }
 
-        private async Task<string> GetGitRepoPath(Subscription sub)
+        private Task<string> GetGitRepoPath(Subscription sub)
         {
-            string repoPath;
-            await gitRepoPathSemaphore.WaitAsync();
-            try
-            {
-                string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.Repo}-{sub.Manifest.Branch}";
-                if (!this.gitRepoIdToPathMapping.TryGetValue(uniqueName, out repoPath))
-                {
-                    repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, sub.Manifest);
-                    this.gitRepoIdToPathMapping.Add(uniqueName, repoPath);
-                }
-            }
-            finally
-            {
-                gitRepoPathSemaphore.Release();
-            }
+            string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.Repo}-{sub.Manifest.Branch}";
 
-            return repoPath;
+            return gitRepoPathSemaphore.DoubleCheckedLockLookupAsync(this.gitRepoIdToPathMapping, uniqueName,
+                () => GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, sub.Manifest));
         }
 
         public void Dispose()
         {
             this.httpClient.Dispose();
             this.gitRepoPathSemaphore.Dispose();
-            this.imageDigestsSemaphore.Dispose();
         }
 
         private class TempManifestOptions : ManifestOptions, IFilterableOptions

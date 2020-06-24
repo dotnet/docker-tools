@@ -7,10 +7,8 @@ COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
 RUN dotnet restore ./src/Microsoft.DotNet.ImageBuilder.csproj
 
-# copy everything else and build
+# copy everything else and publish
 COPY . ./
-RUN dotnet build ./src/Microsoft.DotNet.ImageBuilder.csproj
-
 RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64
 
 

@@ -9,12 +9,19 @@ $ErrorActionPreference = 'Stop'
 
 $dotnetInstallDir = "$PSScriptRoot/../../.dotnet"
 
-& ../../eng/common/Install-DotNetSdk.ps1 $dotnetInstallDir
+Push-Location $PSScriptRoot
 
-$cmd = "$DotnetInstallDir/dotnet test --logger:trx"
+try {
+    & ../../eng/common/Install-DotNetSdk.ps1 $dotnetInstallDir
 
-Write-Output "Executing '$cmd'"
-Invoke-Expression $cmd
-if ($LASTEXITCODE -ne 0) {
-    throw "Failed: '$cmd'"
+    $cmd = "$DotnetInstallDir/dotnet test --logger:trx"
+
+    Write-Output "Executing '$cmd'"
+    Invoke-Expression $cmd
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed: '$cmd'"
+    }
+}
+finally {
+    Pop-Location
 }

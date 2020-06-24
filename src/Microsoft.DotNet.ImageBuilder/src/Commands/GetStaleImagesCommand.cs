@@ -125,14 +125,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (PlatformInfo platform in platforms)
                 {
-                    pathsToRebuild.AddRange(await GetPathsToRebuildAsync(allPlatforms, platform, repoData));
+                    pathsToRebuild.AddRange(GetPathsToRebuild(allPlatforms, platform, repoData));
                 }
             }
 
             return pathsToRebuild.Distinct().ToList();
         }
 
-        private async Task<List<string>> GetPathsToRebuildAsync(
+        private List<string> GetPathsToRebuild(
             IEnumerable<PlatformInfo> allPlatforms, PlatformInfo platform, RepoData repoData)
         {
             bool foundImageInfo = false;

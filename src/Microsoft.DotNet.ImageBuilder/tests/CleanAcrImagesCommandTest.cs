@@ -104,9 +104,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
-            command.Options.Password = password;
-            command.Options.Username = username;
-            command.Options.Tenant = tenant;
+            command.Options.ServicePrincipalOptions.Secret = password;
+            command.Options.ServicePrincipalOptions.ClientId = username;
+            command.Options.ServicePrincipalOptions.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "build-staging/*";
@@ -241,9 +241,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
-            command.Options.Password = password;
-            command.Options.Username = username;
-            command.Options.Tenant = tenant;
+            command.Options.ServicePrincipalOptions.Secret = password;
+            command.Options.ServicePrincipalOptions.ClientId = username;
+            command.Options.ServicePrincipalOptions.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "public/dotnet/*nightly/*";
@@ -335,9 +335,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
-            command.Options.Password = password;
-            command.Options.Username = username;
-            command.Options.Tenant = tenant;
+            command.Options.ServicePrincipalOptions.Secret = password;
+            command.Options.ServicePrincipalOptions.ClientId = username;
+            command.Options.ServicePrincipalOptions.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "test/*";
@@ -421,9 +421,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
-            command.Options.Password = password;
-            command.Options.Username = username;
-            command.Options.Tenant = tenant;
+            command.Options.ServicePrincipalOptions.Secret = password;
+            command.Options.ServicePrincipalOptions.ClientId = username;
+            command.Options.ServicePrincipalOptions.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "test/*";
@@ -525,9 +525,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
-            command.Options.Password = password;
-            command.Options.Username = username;
-            command.Options.Tenant = tenant;
+            command.Options.ServicePrincipalOptions.Secret = password;
+            command.Options.ServicePrincipalOptions.ClientId = username;
+            command.Options.ServicePrincipalOptions.Tenant = tenant;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = acrName;
             command.Options.RepoName = "test/*";

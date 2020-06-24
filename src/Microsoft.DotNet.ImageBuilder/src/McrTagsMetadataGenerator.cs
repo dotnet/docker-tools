@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
@@ -72,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder
             new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<Models.Mcr.McrTagsMetadata>(metadata);
+                .Deserialize<McrTagsMetadata>(metadata);
 
             return metadata;
         }

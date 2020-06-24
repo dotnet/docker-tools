@@ -4,12 +4,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Net.Http.Headers;
-using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -17,7 +13,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
 using Newtonsoft.Json;
 using Polly;
-using Polly.Contrib.WaitAndRetry;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -47,6 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly SemaphoreSlim sharedSemaphore = new SemaphoreSlim(1);
         private readonly string tenant;
         private readonly string aadAccessToken;
+        private readonly AsyncPolicy<HttpResponseMessage> httpPolicy;
 
         private AcrClient(HttpClient httpClient, string acrName, string tenant, string aadAccessToken, ILoggerService loggerService)
         {
@@ -61,6 +57,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
             this.acrRefreshToken = new AsyncLockedValue<string>(semaphore: this.sharedSemaphore);
             this.acrAccessToken = new AsyncLockedValue<string>(semaphore: this.sharedSemaphore);
+
+            this.httpPolicy = HttpPolicyBuilder.Create()
+                .WithMeteredRetryPolicy(loggerService)
+                .WithRefreshAccessTokenPolicy(GetAcrRefreshTokenAsync, loggerService)
+                .Build();
         }
 
         public async Task<Catalog> GetCatalogAsync()
@@ -170,39 +171,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
         }
 
-        private async Task<HttpResponseMessage> SendRequestAsync(Func<HttpRequestMessage> createMessage)
-        {
-            var waitPolicy = Policy
-                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
-                .Or<TaskCanceledException>(exception =>
-                    exception.InnerException is IOException ioException &&
-                    ioException.InnerException is SocketException)
-                .WaitAndRetryAsync(
-                    Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
-                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService));
-
-            var unauthorizedPolicy = Policy
-                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
-                .RetryAsync(1, async (result, retryCount, context) =>
-                {
-                    await GetAcrAccessTokenAsync(refresh: true);
-                });
-
-            HttpResponseMessage response = await waitPolicy
-                .WrapAsync(unauthorizedPolicy)
-                .ExecuteAsync(async () =>
-                {
-                    HttpRequestMessage message = createMessage();
-
-                    string acrAccessToken = await GetAcrAccessTokenAsync();
-                    message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", acrAccessToken);
-                    return await httpClient.SendAsync(message);
-                });
-
-            response.EnsureSuccessStatusCode();
-
-            return response;
-        }
+        private Task<HttpResponseMessage> SendRequestAsync(Func<HttpRequestMessage> createMessage) =>
+            this.httpClient.SendRequestAsync(createMessage, () => GetAcrAccessTokenAsync(), this.httpPolicy);
 
         private Task<string> GetAcrRefreshTokenAsync()
         {

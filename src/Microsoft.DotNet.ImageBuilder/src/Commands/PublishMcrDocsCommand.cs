@@ -55,10 +55,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
-                    await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring readmes", branch =>
+                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring readmes", branch =>
                     {
                         return FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch);
                     });
+
+                    if (gitRef != null)
+                    {
+                        this.loggerService.WriteMessage(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                    }
                 });
             }
         }

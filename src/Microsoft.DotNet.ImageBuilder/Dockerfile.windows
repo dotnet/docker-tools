@@ -3,21 +3,12 @@ FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
-COPY Microsoft.DotNet.ImageBuilder.sln ./
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-COPY tests/Microsoft.DotNet.ImageBuilder.Tests.csproj ./tests/
-RUN dotnet restore Microsoft.DotNet.ImageBuilder.sln
+RUN dotnet restore ./src/Microsoft.DotNet.ImageBuilder.csproj
 
-# copy everything else and build
+# copy everything else and publish
 COPY . ./
-RUN dotnet build Microsoft.DotNet.ImageBuilder.sln
-
-# Workaround:  Tests rely on Path.GetTempPath which isn't compatible with the default ContainerUser.
-USER ContainerAdministrator
-RUN dotnet test tests/Microsoft.DotNet.ImageBuilder.Tests.csproj
-USER ContainerUser
-
 RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64
 
 

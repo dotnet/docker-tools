@@ -8,3 +8,7 @@ variables:
   value: --var UniqueId=$(sourceBuildId)
 - name: imageInfoVariant
   value: "-imagebuilder"
+- name: testScriptPath
+  value: ./src/Microsoft.DotNet.ImageBuilder/run-tests.ps1
+- name: testResultsDirectory
+  value: src/Microsoft.DotNet.ImageBuilder/tests/TestResults/

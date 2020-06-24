@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private List<string> _overriddenFromImages;
         private IEnumerable<string> internalRepos;
 
+        public string BaseOsVersion { get; private set; }
         public IDictionary<string, string> BuildArgs { get; private set; }
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
@@ -43,9 +44,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             PlatformInfo platformInfo = new PlatformInfo
             {
+                BaseOsVersion = model.OsVersion.TrimEnd("-slim"),
+                FullRepoModelName = fullRepoModelName,
                 Model = model,
                 RepoName = repoName,
-                FullRepoModelName = fullRepoModelName,
                 VariableHelper = variableHelper
             };
 
@@ -128,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string GetOSDisplayName()
         {
             string displayName;
-            string os = Model.OsVersion;
+            string os = BaseOsVersion;
 
             if (Model.OS == OS.Windows)
             {

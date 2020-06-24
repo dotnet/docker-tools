@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "buster")
+                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "buster-slim")
                             },
                             productVersion: "2.0")),
                     CreateRepo("sdk2",

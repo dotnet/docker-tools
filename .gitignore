@@ -13,3 +13,9 @@
 
 # ImageBuilder directory
 .Microsoft.DotNet.ImageBuilder
+
+# dotnet install directory
+.dotnet/
+
+# Test files
+*.trx

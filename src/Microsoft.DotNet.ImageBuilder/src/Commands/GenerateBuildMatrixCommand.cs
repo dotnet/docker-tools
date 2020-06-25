@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
 
             string[] osVersions = subgraph
-                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.BaseOsVersion}")
+                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.Model.OsVersion}")
                 .Distinct()
                 .ToArray();
             leg.Variables.Add(("osVersions", String.Join(" ", osVersions)));

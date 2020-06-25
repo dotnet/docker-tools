@@ -228,13 +228,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
                 string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                Assert.Equal("--os-version disco --os-version buster", osVersions);
+                Assert.Equal("--os-version disco --os-version buster --os-version buster-slim", osVersions);
 
                 BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
                 imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 2.0/runtime/os2/Dockerfile --path 2.0/sdk/os2/Dockerfile", imageBuilderPaths);
                 osVersions = leg_2_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                Assert.Equal("--os-version buster", osVersions);
+                Assert.Equal("--os-version buster-slim --os-version buster", osVersions);
             }
         }
 

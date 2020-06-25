@@ -12,9 +12,9 @@ using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Acr;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Newtonsoft.Json;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
@@ -28,20 +28,39 @@ namespace Microsoft.DotNet.ImageBuilder
         private const string RelationshipTypeGroup = "RelationshipType";
         private static readonly Regex linkHeaderRegex =
             new Regex($"<(?<{LinkUrlGroup}>.+)>;\\s*rel=\"(?<{RelationshipTypeGroup}>.+)\"");
+        private static readonly string[] scopes = new string[]
+        {
+            "registry:catalog:*",
+            "repository:*:metadata_read",
+            "repository:*:delete",
+            "repository:*:pull"
+        };
 
-        private readonly HttpClient httpClient = new HttpClient();
+        private readonly HttpClient httpClient;
+        private readonly string acrName;
         private readonly ILoggerService loggerService;
         private readonly string baseUrl;
         private readonly string acrV1BaseUrl;
         private readonly string acrV2BaseUrl;
+        private readonly AsyncLockedValue<string> acrRefreshToken;
+        private readonly AsyncLockedValue<string> acrAccessToken;
+        private readonly SemaphoreSlim sharedSemaphore = new SemaphoreSlim(1);
+        private readonly string tenant;
+        private readonly string aadAccessToken;
 
-        private AcrClient(HttpClient httpClient,string acrName, ILoggerService loggerService)
+        private AcrClient(HttpClient httpClient, string acrName, string tenant, string aadAccessToken, ILoggerService loggerService)
         {
             this.httpClient = httpClient;
+            this.acrName = acrName;
+            this.tenant = tenant;
+            this.aadAccessToken = aadAccessToken;
             this.loggerService = loggerService;
             this.baseUrl = $"https://{acrName}";
             this.acrV1BaseUrl = $"{baseUrl}/acr/v1";
             this.acrV2BaseUrl = $"{baseUrl}/v2";
+
+            this.acrRefreshToken = new AsyncLockedValue<string>(semaphore: this.sharedSemaphore);
+            this.acrAccessToken = new AsyncLockedValue<string>(semaphore: this.sharedSemaphore);
         }
 
         public async Task<Catalog> GetCatalogAsync()
@@ -103,25 +122,12 @@ namespace Microsoft.DotNet.ImageBuilder
                     HttpMethod.Delete, $"{this.acrV2BaseUrl}/{repositoryName}/manifests/{digest}"));
         }
 
-        public static async Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password, ILoggerService loggerService)
+        public static async Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password,
+            ILoggerService loggerService, IHttpClientProvider httpClientProvider)
         {
-            string aadAccessToken = await GetAadAccessTokenAsync(tenant, username, password);
-            
-            HttpClient httpClient = new HttpClient();
-            string acrRefreshToken = await GetAcrRefreshTokenAsync(httpClient, acrName, tenant, aadAccessToken);
+            string aadAccessToken = await AuthHelper.GetAadAccessTokenAsync("https://management.azure.com", tenant, username, password);
 
-            string accessToken = await GetAcrAccessTokenAsync(
-                httpClient,
-                acrName,
-                acrRefreshToken,
-                "registry:catalog:*",
-                "repository:*:metadata_read",
-                "repository:*:delete",
-                "repository:*:pull");
-
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
-
-            return new AcrClient(httpClient, acrName, loggerService);
+            return new AcrClient(httpClientProvider.GetClient(), acrName, tenant, aadAccessToken, loggerService);
         }
 
         private async Task GetPagedResponseAsync<T>(string url, Action<T> onGetResults)
@@ -166,65 +172,84 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private async Task<HttpResponseMessage> SendRequestAsync(Func<HttpRequestMessage> createMessage)
         {
-            HttpResponseMessage response = await Policy
+            var waitPolicy = Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
                 .Or<TaskCanceledException>(exception =>
                     exception.InnerException is IOException ioException &&
                     ioException.InnerException is SocketException)
                 .WaitAndRetryAsync(
                     Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
-                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService))
-                .ExecuteAsync(() => httpClient.SendAsync(createMessage()));
+                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService));
+
+            var unauthorizedPolicy = Policy
+                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
+                .RetryAsync(1, async (result, retryCount, context) =>
+                {
+                    await GetAcrAccessTokenAsync(refresh: true);
+                });
+
+            HttpResponseMessage response = await waitPolicy
+                .WrapAsync(unauthorizedPolicy)
+                .ExecuteAsync(async () =>
+                {
+                    HttpRequestMessage message = createMessage();
+
+                    string acrAccessToken = await GetAcrAccessTokenAsync();
+                    message.Headers.Authorization = new AuthenticationHeaderValue("Bearer", acrAccessToken);
+                    return await httpClient.SendAsync(message);
+                });
 
             response.EnsureSuccessStatusCode();
 
             return response;
         }
 
-        private static async Task<string> GetAadAccessTokenAsync(string tenant, string username, string password)
+        private Task<string> GetAcrRefreshTokenAsync()
         {
-            AuthenticationContext authContext = new AuthenticationContext($"https://login.microsoftonline.com/{tenant}");
-            AuthenticationResult result = await authContext.AcquireTokenAsync(
-                "https://management.azure.com", new ClientCredential(username, password));
-            return result.AccessToken;
+            return this.acrRefreshToken.GetValueAsync(async () =>
+            {
+                StringContent oauthExchangeBody = new StringContent(
+                    $"grant_type=access_token&service={acrName}&tenant={tenant}&access_token={aadAccessToken}",
+                    Encoding.UTF8,
+                    "application/x-www-form-urlencoded");
+
+                HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync(
+                    $"https://{acrName}/oauth2/exchange", oauthExchangeBody);
+                tokenExchangeResponse.EnsureSuccessStatusCode();
+                OAuthExchangeResult acrRefreshTokenResult = JsonConvert.DeserializeObject<OAuthExchangeResult>(
+                    await tokenExchangeResponse.Content.ReadAsStringAsync());
+               return acrRefreshTokenResult.RefreshToken;
+            });
         }
 
-        private static async Task<string> GetAcrRefreshTokenAsync(
-            HttpClient httpClient, string acrName, string tenant, string aadAccessToken)
+        private async Task<string> GetAcrAccessTokenAsync(bool refresh = false)
         {
-            StringContent oauthExchangeBody = new StringContent(
-                $"grant_type=access_token&service={acrName}&tenant={tenant}&access_token={aadAccessToken}",
-                Encoding.UTF8,
-                "application/x-www-form-urlencoded");
+            string refreshToken = await GetAcrRefreshTokenAsync();
+            async Task<string> valueInitializer()
+            {
+                string scopesArgs = String.Join('&', scopes
+                    .Select(scope => $"scope={scope}")
+                    .ToArray());
+                StringContent oauthTokenBody = new StringContent(
+                    $"grant_type=refresh_token&service={acrName}&{scopesArgs}&refresh_token={refreshToken}",
+                    Encoding.UTF8,
+                    "application/x-www-form-urlencoded");
+                HttpResponseMessage tokenResponse = await httpClient.PostAsync($"https://{acrName}/oauth2/token", oauthTokenBody);
+                tokenResponse.EnsureSuccessStatusCode();
+                OAuthTokenResult acrAccessTokenResult = JsonConvert.DeserializeObject<OAuthTokenResult>(
+                    await tokenResponse.Content.ReadAsStringAsync());
+                return acrAccessTokenResult.AccessToken;
+            }
 
-            HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync(
-                $"https://{acrName}/oauth2/exchange", oauthExchangeBody);
-            tokenExchangeResponse.EnsureSuccessStatusCode();
-            OAuthExchangeResult acrRefreshTokenResult = JsonConvert.DeserializeObject<OAuthExchangeResult>(
-                await tokenExchangeResponse.Content.ReadAsStringAsync());
-            return acrRefreshTokenResult.RefreshToken;
-        }
-
-        private static async Task<string> GetAcrAccessTokenAsync(
-            HttpClient httpClient, string acrName, string refreshToken, params string[] scopes)
-        {
-            string scopesArgs = String.Join('&', scopes
-                .Select(scope => $"scope={scope}")
-                .ToArray());
-            StringContent oauthTokenBody = new StringContent(
-                $"grant_type=refresh_token&service={acrName}&{scopesArgs}&refresh_token={refreshToken}",
-                Encoding.UTF8,
-                "application/x-www-form-urlencoded");
-            HttpResponseMessage tokenResponse = await httpClient.PostAsync($"https://{acrName}/oauth2/token", oauthTokenBody);
-            tokenResponse.EnsureSuccessStatusCode();
-            OAuthTokenResult acrAccessTokenResult = JsonConvert.DeserializeObject<OAuthTokenResult>(
-                await tokenResponse.Content.ReadAsStringAsync());
-            return acrAccessTokenResult.AccessToken;
+            return refresh ?
+                await this.acrAccessToken.ResetValueAsync(valueInitializer) :
+                await this.acrAccessToken.GetValueAsync(valueInitializer);
         }
 
         public void Dispose()
         {
             this.httpClient.Dispose();
+            this.sharedSemaphore.Dispose();
         }
     }
 }

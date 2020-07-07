@@ -12,8 +12,6 @@ steps:
   ################################################################################
 - ${{ if eq(parameters.cleanupDocker, 'true') }}:
   - template: cleanup-docker-linux.yml
-    parameters:
-      initCleanup: true
 
   ################################################################################
   # Setup Image Builder (Optional)

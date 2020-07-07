@@ -28,32 +28,28 @@ jobs:
   pool:
     name: DotNetCore-Docker
     demands:
-    - agent.os -equals linux
-    - RemoteDockerServerOS -equals linux
-    - RemoteDockerServerArch -equals aarch64
+    - Agent.OS -equals linux
+    - Agent.OSArchitecture -equals ARM64
   steps:
   - template: templates/steps/get-stale-images.yml
     parameters:
       osType: linux
       architecture: arm
       dockerClientOS: linux
-      useRemoteDockerServer: true
       staleImagePathsVariableName: linux-arm32-stale-image-paths
 
 - job: Get_Stale_Images_Linux_ARM64
   pool:
     name: DotNetCore-Docker
     demands:
-    - agent.os -equals linux
-    - RemoteDockerServerOS -equals linux
-    - RemoteDockerServerArch -equals aarch64
+    - Agent.OS -equals linux
+    - Agent.OSArchitecture -equals ARM64
   steps:
   - template: templates/steps/get-stale-images.yml
     parameters:
       osType: linux
       architecture: arm64
       dockerClientOS: linux
-      useRemoteDockerServer: true
       staleImagePathsVariableName: linux-arm64-stale-image-paths
 
 - job: Get_Stale_Images_Windows_AMD

@@ -85,10 +85,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string result = McrTagsMetadataGenerator.Execute(
                 gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, sourceRepoBranch);
 
-            McrTagsMetadata tagsMetadata = new DeserializerBuilder()
+            TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<McrTagsMetadata>(result);
+                .Deserialize<TagsMetadata>(result);
 
             string branchOrSha = sourceRepoBranch ?? DockerfileSha;
             Assert.Equal($"{SourceRepoUrl}/blob/{branchOrSha}/{DockerfileDir}/Dockerfile",
@@ -156,10 +156,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string result = McrTagsMetadataGenerator.Execute(
                 gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, SourceBranch);
 
-            McrTagsMetadata tagsMetadata = new DeserializerBuilder()
+            TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<McrTagsMetadata>(result);
+                .Deserialize<TagsMetadata>(result);
 
             // Verify the output only contains the platform with the documented tag
             Assert.Single(tagsMetadata.Repos[0].TagGroups);

@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string Cluster { get; set; }
         public string Database { get; set; }
-        public ServicePrincipalOptions ServicePrincipalOptions { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
         public string Table { get; set; }
 
         public override void DefineOptions(ArgumentSyntax syntax)
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter("table", ref table, "The table to ingest the data to");
             Table = table;
 
-            ServicePrincipalOptions.DefineParameters(syntax);
+            ServicePrincipal.DefineParameters(syntax);
         }
     }
 }

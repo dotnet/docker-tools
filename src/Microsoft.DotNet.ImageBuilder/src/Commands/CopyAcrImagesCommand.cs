@@ -62,9 +62,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task ImportImageAsync(string destTagName, string registryName)
         {
             AzureCredentials credentials = SdkContext.AzureCredentialsFactory.FromServicePrincipal(
-                Options.ServicePrincipalOptions.ClientId,
-                Options.ServicePrincipalOptions.Secret,
-                Options.ServicePrincipalOptions.Tenant,
+                Options.ServicePrincipal.ClientId,
+                Options.ServicePrincipal.Secret,
+                Options.ServicePrincipal.Tenant,
                 AzureEnvironment.AzureGlobalCloud);
             IAzure azure = this.azureManagementFactory.CreateAzureManager(credentials, Options.Subscription);
 

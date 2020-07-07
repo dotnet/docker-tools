@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string ResourceGroup { get; set; }
         public string SourceRepoPrefix { get; set; }
         public string Subscription { get; set; }
-        public ServicePrincipalOptions ServicePrincipalOptions { get; set; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
         public string ImageInfoPath { get; set; }
 
         public CopyAcrImagesOptions() : base()
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");
             SourceRepoPrefix = sourceRepoPrefix;
 
-            ServicePrincipalOptions.DefineParameters(syntax);
+            ServicePrincipal.DefineParameters(syntax);
 
             string subscription = null;
             syntax.DefineParameter("subscription", ref subscription, "Azure subscription to operate on");

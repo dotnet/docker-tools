@@ -12,13 +12,13 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class WaitForReadmePublishCommand : Command<WaitForReadmePublishOptions>
+    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions>
     {
         private readonly ILoggerService loggerService;
         private readonly IMcrStatusClientFactory mcrStatusClientFactory;
 
         [ImportingConstructor]
-        public WaitForReadmePublishCommand(
+        public WaitForMcrDocIngestionCommand(
             ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory)
         {
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -28,16 +28,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
-                Options.ServicePrincipalOptions.Tenant, Options.ServicePrincipalOptions.ClientId, Options.ServicePrincipalOptions.Secret);
+                Options.ServicePrincipal.Tenant, Options.ServicePrincipal.ClientId, Options.ServicePrincipal.Secret);
 
             this.loggerService.WriteHeading("QUERYING COMMIT RESULT");
 
-            var result = await WaitForPublishAsync(statusClient);
+            var result = await WaitForIngestionAsync(statusClient);
 
-            LogResults(result.CommitResult, result.CommitStatus);
+            LogSuccessfulResults(result.CommitResult, result.CommitStatus);
         }
 
-        private async Task<(CommitResult CommitResult, CommitStatus CommitStatus)> WaitForPublishAsync(IMcrStatusClient statusClient)
+        private async Task<(CommitResult CommitResult, CommitStatus CommitStatus)> WaitForIngestionAsync(IMcrStatusClient statusClient)
         {
             CommitResult commitResult = null;
             CommitStatus commitStatus = null;
@@ -60,6 +60,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .OrderBy(status => status.QueueTime)
                     .Last();
 
+                this.loggerService.WriteMessage($"Readme status results for commit '{Options.CommitDigest}': {commitStatus.OverallStatus}");
+
                 switch (commitStatus.OverallStatus)
                 {
                     case StageStatus.Processing:
@@ -79,14 +81,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (DateTime.Now - startTime >= Options.WaitTimeout)
                 {
-                    throw new TimeoutException($"Timed out after '{Options.WaitTimeout}' waiting for the images to be published.");
+                    throw new TimeoutException($"Timed out after '{Options.WaitTimeout}' waiting for the docs to be ingested.");
                 }
             }
 
             return (commitResult, commitStatus);
         }
 
-        private void LogResults(CommitResult commitResult, CommitStatus commitStatus)
+        private void LogSuccessfulResults(CommitResult commitResult, CommitStatus commitStatus)
         {
             this.loggerService.WriteMessage("Commit info:");
             this.loggerService.WriteMessage($"\tCommit digest: {commitResult.CommitDigest}");
@@ -97,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             this.loggerService.WriteMessage();
 
-            this.loggerService.WriteMessage("Readme publishing complete!");
+            this.loggerService.WriteMessage("Doc ingestion complete!");
         }
 
         private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus)

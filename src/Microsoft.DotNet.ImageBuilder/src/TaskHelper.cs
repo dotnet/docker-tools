@@ -23,5 +23,16 @@ namespace Microsoft.DotNet.ImageBuilder
                 throw new TimeoutException($"Timed out after waiting '{timeout}'.");
             }
         }
+
+        /// <summary>
+        /// Acts as an overload of <see cref="Task.WhenAll{TResult}(IEnumerable{Task{TResult}})"/> that adds timeout logic.
+        /// </summary>
+        public static async Task<TResult[]> WhenAll<TResult>(IEnumerable<Task<TResult>> tasks, TimeSpan timeout)
+        {
+            await WhenAll((IEnumerable<Task>)tasks, timeout);
+            return tasks
+                .Select(task => task.Result)
+                .ToArray();
+        }
     }
 }

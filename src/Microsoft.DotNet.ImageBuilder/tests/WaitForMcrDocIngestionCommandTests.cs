@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class WaitForReadmePublishCommandTests
+    public class WaitForMcrDocIngestionCommandTests
     {
         [Fact]
         public async Task SuccessfulPublish()
@@ -82,14 +82,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IMcrStatusClientFactory statusClientFactory = CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object);
 
-            WaitForReadmePublishCommand command = new WaitForReadmePublishCommand(
+            WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 statusClientFactory);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
             await command.ExecuteAsync();
@@ -170,14 +170,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IMcrStatusClientFactory statusClientFactory = CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object);
 
-            WaitForReadmePublishCommand command = new WaitForReadmePublishCommand(
+            WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 statusClientFactory);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
             await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
@@ -251,14 +251,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IMcrStatusClientFactory statusClientFactory = CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object);
 
-            WaitForReadmePublishCommand command = new WaitForReadmePublishCommand(
+            WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 statusClientFactory);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
             await command.ExecuteAsync();
@@ -294,14 +294,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IMcrStatusClientFactory statusClientFactory = CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object);
 
-            WaitForReadmePublishCommand command = new WaitForReadmePublishCommand(
+            WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 statusClientFactory);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.WaitTimeout = TimeSpan.FromSeconds(3);
 
             await Assert.ThrowsAsync<TimeoutException>(() => command.ExecuteAsync());

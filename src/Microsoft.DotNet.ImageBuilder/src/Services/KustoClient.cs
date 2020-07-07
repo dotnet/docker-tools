@@ -22,9 +22,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             KustoConnectionStringBuilder connectionBuilder =
                 new KustoConnectionStringBuilder($"https://{options.Cluster}.kusto.windows.net")
                     .WithAadApplicationKeyAuthentication(
-                        options.ServicePrincipalOptions.ClientId,
-                        options.ServicePrincipalOptions.Secret,
-                        options.ServicePrincipalOptions.Tenant);
+                        options.ServicePrincipal.ClientId,
+                        options.ServicePrincipal.Secret,
+                        options.ServicePrincipal.Tenant);
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {

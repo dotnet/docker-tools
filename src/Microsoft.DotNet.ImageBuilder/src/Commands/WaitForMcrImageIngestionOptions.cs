@@ -7,11 +7,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class WaitForImagePublishOptions : ManifestOptions
+    public class WaitForMcrImageIngestionOptions : ManifestOptions
     {
         public const string MinimumQueueTimeOptionName = "min-queue-time";
 
-        protected override string CommandHelp => "Waits for images to complete publishing to MCR";
+        protected override string CommandHelp => "Waits for images to complete ingestion into MCR";
 
         public string ImageInfoPath { get; set; }
 
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public TimeSpan RequeryDelay { get; set; }
 
-        public ServicePrincipalOptions ServicePrincipalOptions { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
 
         public override void DefineParameters(ArgumentSyntax syntax)
         {
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter("image-info", ref imageInfoPath, "Path to image info file");
             ImageInfoPath = imageInfoPath;
 
-            ServicePrincipalOptions.DefineParameters(syntax);
+            ServicePrincipal.DefineParameters(syntax);
         }
 
         public override void DefineOptions(ArgumentSyntax syntax)
@@ -43,9 +43,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Minimum queue time an image must have to be awaited");
             MinimumQueueTime = minimumQueueTime.ToUniversalTime();
 
-            TimeSpan waitTimeout = TimeSpan.FromHours(1);
+            TimeSpan waitTimeout = TimeSpan.FromMinutes(20);
             syntax.DefineOption("timeout", ref waitTimeout, val => TimeSpan.Parse(val),
-                $"Maximum time to wait for image publishing (default: {waitTimeout})");
+                $"Maximum time to wait for image ingestion (default: {waitTimeout})");
             WaitTimeout = waitTimeout;
 
             TimeSpan requeryDelay = TimeSpan.FromSeconds(10);

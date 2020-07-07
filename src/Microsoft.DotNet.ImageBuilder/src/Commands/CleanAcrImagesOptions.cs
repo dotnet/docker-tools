@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }
         public int Age { get; set; }
-        public ServicePrincipalOptions ServicePrincipalOptions { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
         public string Subscription { get; set; }
         public string ResourceGroup { get; set; }
         public string RegistryName { get; set; }
@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter("repo", ref repoName, "Name of repo to target (wildcard chars * and ? supported)");
             RepoName = repoName;
 
-            ServicePrincipalOptions.DefineParameters(syntax);
+            ServicePrincipal.DefineParameters(syntax);
 
             string subscription = null;
             syntax.DefineParameter("subscription", ref subscription, "Azure subscription to operate on");

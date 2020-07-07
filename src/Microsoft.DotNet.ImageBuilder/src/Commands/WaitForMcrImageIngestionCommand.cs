@@ -15,14 +15,14 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class WaitForImagePublishCommand : ManifestCommand<WaitForImagePublishOptions>
+    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions>
     {
         private readonly ILoggerService loggerService;
         private readonly IMcrStatusClientFactory mcrStatusClientFactory;
         private readonly IEnvironmentService environmentService;
 
         [ImportingConstructor]
-        public WaitForImagePublishCommand(
+        public WaitForMcrImageIngestionCommand(
             ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
         {
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -33,17 +33,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
-                Options.ServicePrincipalOptions.Tenant,
-                Options.ServicePrincipalOptions.ClientId,
-                Options.ServicePrincipalOptions.Secret);
+                Options.ServicePrincipal.Tenant,
+                Options.ServicePrincipal.ClientId,
+                Options.ServicePrincipal.Secret);
 
-            IEnumerable<ImageResultInfo> imageResultInfos = await this.WaitForImagePublishAsync(statusClient);
+            IEnumerable<ImageResultInfo> imageResultInfos = await this.WaitForImageIngestionAsync(statusClient);
 
             loggerService.WriteMessage();
 
             await this.LogResults(statusClient, imageResultInfos);
 
-            loggerService.WriteMessage("Image publishing complete!");
+            loggerService.WriteMessage("Image ingestion complete!");
         }
 
         private static IEnumerable<DigestInfo> GetImageDigestInfos(ImageArtifactDetails imageArtifactDetails) =>
@@ -127,17 +127,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task<IEnumerable<ImageResultInfo>> WaitForImagePublishAsync(IMcrStatusClient statusClient)
+        private async Task<IEnumerable<ImageResultInfo>> WaitForImageIngestionAsync(IMcrStatusClient statusClient)
         {
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
-            ConcurrentQueue<DigestInfo> digests = new ConcurrentQueue<DigestInfo>(GetImageDigestInfos(imageArtifactDetails));
 
             List<Task<ImageResultInfo>> tasks = GetImageDigestInfos(imageArtifactDetails)
                 .Select(digestInfo => ReportImageStatusWithContinuationAsync(statusClient, digestInfo))
                 .ToList();
 
-            await TaskHelper.WhenAll(tasks, Options.WaitTimeout);
-            return tasks.Select(task => task.Result);
+            return await TaskHelper.WhenAll(tasks, Options.WaitTimeout);
         }
 
         private async Task<ImageResultInfo> ReportImageStatusWithContinuationAsync(IMcrStatusClient statusClient, DigestInfo digestInfo)
@@ -199,9 +197,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ImageResult imageResult = await statusClient.GetImageResultAsync(digestInfo.Digest);
 
-            // Find the image statuses that are being targeting the repo indicated in the image info. This filter is needed
+            // Find the image statuses that are associated with the repo indicated in the image info. This filter is needed
             // because MCR's webhook responds to all image pushes in the ACR, even those to staging locations. A queue time filter
-            // is needed in order to filter out onboarding requests from a previous publish of the same digests.
+            // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
             IEnumerable<IGrouping<string, ImageStatus>> imageStatusGroups = imageResult.Value
                 .Where(status => status.TargetRepository == digestInfo.Repo.Repo && status.QueueTime >= Options.MinimumQueueTime)
                 .GroupBy(status => status.Tag);
@@ -212,7 +210,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     this.loggerService.WriteMessage($"WARNING:" + Environment.NewLine +
                         $"Multiple image statuses were found for tag '{imageStatusGroup.Key}' of image '{qualifiedDigest}'. " +
-                        $"This happens when a given image digest has been published multiple times. The {WaitForImagePublishOptions.MinimumQueueTimeOptionName} " +
+                        $"This happens when a given image digest has been ingested multiple times. The {WaitForMcrImageIngestionOptions.MinimumQueueTimeOptionName} " +
                         $"option should be set appropriately to mitigate this issue. The tag that was last queued will be awaited.");
                 }
             }

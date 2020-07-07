@@ -20,7 +20,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class WaitForImagePublishCommandTests
+    public class WaitForMcrImageIngestionCommandTests
     {
         [Fact]
         public async Task SuccessfulPublish()
@@ -199,7 +199,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            WaitForImagePublishCommand command = new WaitForImagePublishCommand(
+            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -290,9 +290,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -450,7 +450,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            WaitForImagePublishCommand command = new WaitForImagePublishCommand(
+            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -510,9 +510,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -607,7 +607,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            WaitForImagePublishCommand command = new WaitForImagePublishCommand(
+            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -658,9 +658,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -710,7 +710,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            WaitForImagePublishCommand command = new WaitForImagePublishCommand(
+            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -761,9 +761,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipalOptions.Tenant = tenant;
-            command.Options.ServicePrincipalOptions.ClientId = clientId;
-            command.Options.ServicePrincipalOptions.Secret = clientSecret;
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromSeconds(3);
 

@@ -7,9 +7,9 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class WaitForReadmePublishOptions : Options
+    public class WaitForMcrDocIngestionOptions : Options
     {
-        protected override string CommandHelp => "Waits for readmes to complete publishing to Docker Hub";
+        protected override string CommandHelp => "Waits for docs to complete ingestion into Docker Hub";
 
         public string CommitDigest { get; set; }
 
@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public TimeSpan RequeryDelay { get; set; }
 
-        public ServicePrincipalOptions ServicePrincipalOptions { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
 
         public override void DefineParameters(ArgumentSyntax syntax)
         {
@@ -27,16 +27,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter("commit-digest", ref commitDigest, "Git commit digest of the readme changes");
             CommitDigest = commitDigest;
 
-            ServicePrincipalOptions.DefineParameters(syntax);
+            ServicePrincipal.DefineParameters(syntax);
         }
 
         public override void DefineOptions(ArgumentSyntax syntax)
         {
             base.DefineOptions(syntax);
 
-            TimeSpan waitTimeout = TimeSpan.FromHours(1);
+            TimeSpan waitTimeout = TimeSpan.FromMinutes(5);
             syntax.DefineOption("timeout", ref waitTimeout, val => TimeSpan.Parse(val),
-                $"Maximum time to wait for readme publishing (default: {waitTimeout})");
+                $"Maximum time to wait for doc ingestion (default: {waitTimeout})");
             WaitTimeout = waitTimeout;
 
             TimeSpan requeryDelay = TimeSpan.FromSeconds(10);

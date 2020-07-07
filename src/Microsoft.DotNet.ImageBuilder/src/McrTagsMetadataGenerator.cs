@@ -72,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder
             new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<McrTagsMetadata>(metadata);
+                .Deserialize<TagsMetadata>(metadata);
 
             return metadata;
         }

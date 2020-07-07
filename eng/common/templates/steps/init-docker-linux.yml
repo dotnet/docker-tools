@@ -31,7 +31,6 @@ steps:
       -v /var/run/docker.sock:/var/run/docker.sock
       -v $(Build.ArtifactStagingDirectory):$(artifactsPath)
       -w /repo
-      $(dockerArmRunOptions)
       $(imageBuilderDockerRunExtraOptions)
       $(imageNames.imageBuilder.withrepo)"
     displayName: Define runImageBuilderCmd Variable

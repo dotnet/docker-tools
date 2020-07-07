@@ -2,12 +2,9 @@ parameters:
   osType: null
   architecture: null
   dockerClientOS: null
-  useRemoteDockerServer: false
   staleImagePathsVariableName: null
 steps:
   - template: ${{ format('../../../common/templates/steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
-    parameters:
-      setupRemoteDockerServer: ${{ parameters.useRemoteDockerServer}}
   - script: >
       $(runImageBuilderCmd)
       getStaleImages

@@ -11,6 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.VisualBasic.CompilerServices;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -535,7 +536,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// properly to filter them to just one onboarding request.
         /// </summary>
         [Fact]
-        public async Task OnboardingRequestsWithDuplicateDigest()
+        public async Task OnboardingRequestsWithDuplicateDigest_Success()
         {
             DateTime baselineTime = DateTime.Now;
             const string platformTag1 = "platformTag1";
@@ -549,7 +550,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Tag = platformTag1,
                 TargetRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
-                OverallStatus = StageStatus.Succeeded
+                OverallStatus = StageStatus.Processing
             };
 
             ImageStatus platformTag1bImageStatus = new ImageStatus
@@ -580,8 +581,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             Digest = platformDigest1,
                             Value = new List<ImageStatus>
                             {
-                                platformTag1aImageStatus,
-                                Clone(platformTag1bImageStatus, StageStatus.Succeeded),
+                                Clone(platformTag1aImageStatus, StageStatus.Succeeded),
+                                Clone(platformTag1bImageStatus, StageStatus.Failed),
                             }
                         }
                     }.GetEnumerator()
@@ -672,6 +673,189 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest1), Times.Exactly(2));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Tests the scenario where a given digest has been queued for onboarding multiple times and the minimum queue time isn't set
+        /// properly to filter them to just one onboarding request.
+        /// </summary>
+        [Fact]
+        public async Task OnboardingRequestsWithDuplicateDigest_Failed()
+        {
+            DateTime baselineTime = DateTime.Now;
+            const string platformTag1 = "platformTag1";
+            const string repo1 = "repo1";
+            const string platformDigest1 = "platformDigest1";
+            const string tag1aOnboardingRequestId = "onboard request1";
+            const string tag1bOnboardingRequestId = "onboard request2";
+
+            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+
+            ImageStatus platformTag1aImageStatus = new ImageStatus
+            {
+                Tag = platformTag1,
+                TargetRepository = repo1,
+                QueueTime = baselineTime.AddHours(1),
+                OverallStatus = StageStatus.Processing,
+                OnboardingRequestId = tag1aOnboardingRequestId
+            };
+            
+            ImageStatus platformTag1bImageStatus = new ImageStatus
+            {
+                Tag = platformTag1,
+                TargetRepository = repo1,
+                QueueTime = baselineTime.AddHours(2),
+                OverallStatus = StageStatus.Processing,
+                OnboardingRequestId = tag1bOnboardingRequestId
+            };
+
+            Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
+            {
+                {
+                    platformDigest1,
+                    new List<ImageResult>
+                    {
+                        new ImageResult
+                        {
+                            Digest = platformDigest1,
+                            Value = new List<ImageStatus>
+                            {
+                                platformTag1aImageStatus,
+                                platformTag1bImageStatus,
+                            }
+                        },
+                        new ImageResult
+                        {
+                            Digest = platformDigest1,
+                            Value = new List<ImageStatus>
+                            {
+                                Clone(platformTag1aImageStatus, StageStatus.Failed),
+                                platformTag1bImageStatus,
+                            }
+                        },
+                        new ImageResult
+                        {
+                            Digest = platformDigest1,
+                            Value = new List<ImageStatus>
+                            {
+                                Clone(platformTag1aImageStatus, StageStatus.Failed),
+                                Clone(platformTag1bImageStatus, StageStatus.Failed),
+                            }
+                        }
+                    }.GetEnumerator()
+                }
+            };
+
+            statusClientMock
+                .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
+                .ReturnsAsync((string digest) =>
+                {
+                    IEnumerator<ImageResult> enumerator = imageResultMapping[digest];
+                    if (enumerator.MoveNext())
+                    {
+                        return enumerator.Current;
+                    }
+
+                    return null;
+                });
+
+            statusClientMock
+                .Setup(o => o.GetImageResultDetailedAsync(platformDigest1, tag1aOnboardingRequestId))
+                .ReturnsAsync(new ImageResultDetailed
+                {
+                    CommitDigest = platformDigest1,
+                    OnboardingRequestId = tag1aOnboardingRequestId,
+                    OverallStatus = StageStatus.Failed,
+                    Tag = platformTag1,
+                    TargetRepository = repo1,
+                    Substatus = new ImageSubstatus()
+                });
+
+            statusClientMock
+                .Setup(o => o.GetImageResultDetailedAsync(platformDigest1, tag1bOnboardingRequestId))
+                .ReturnsAsync(new ImageResultDetailed
+                {
+                    CommitDigest = platformDigest1,
+                    OnboardingRequestId = tag1bOnboardingRequestId,
+                    OverallStatus = StageStatus.Failed,
+                    Tag = platformTag1,
+                    TargetRepository = repo1,
+                    Substatus = new ImageSubstatus()
+                });
+
+            const string tenant = "my tenant";
+            const string clientId = "my id";
+            const string clientSecret = "very secret";
+
+            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+
+            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<ILoggerService>(),
+                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                environmentServiceMock.Object);
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string dockerfile1Path = CreateDockerfile("1.0/repo1/os", tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repo1,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfile1Path, new string[] { platformTag1 })
+                        },
+                        productVersion: "1.0"))
+            );
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    {
+                        new RepoData
+                        {
+                            Repo = repo1,
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            PathHelper.NormalizePath(dockerfile1Path),
+                                            simpleTags: new List<string>
+                                            {
+                                                platformTag1
+                                            },
+                                            digest: platformDigest1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
+            command.Options.MinimumQueueTime = baselineTime;
+            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+            command.LoadManifest();
+
+            await command.ExecuteAsync();
+
+            statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest1), Times.Exactly(3));
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(platformDigest1, tag1aOnboardingRequestId), Times.Once);
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(platformDigest1, tag1bOnboardingRequestId), Times.Once);
+            environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
         }
 
         /// <summary>

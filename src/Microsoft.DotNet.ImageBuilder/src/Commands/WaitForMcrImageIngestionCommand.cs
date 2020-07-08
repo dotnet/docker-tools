@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -36,6 +35,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.ServicePrincipal.Tenant,
                 Options.ServicePrincipal.ClientId,
                 Options.ServicePrincipal.Secret);
+
+            loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
 
             IEnumerable<ImageResultInfo> imageResultInfos = await this.WaitForImageIngestionAsync(statusClient);
 
@@ -70,7 +71,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<Task<string>> failedStatusTasks = new List<Task<string>>();
 
             IEnumerable<ImageResultInfo> failedResults = imageResultInfos
-                .Where(result => result.ImageResult.Value.Any(status => status.OverallStatus == StageStatus.Failed))
+                // Find any result where all of the statuses of a given tag have failed
+                .Where(result => result.ImageResult.Value
+                    .GroupBy(status => status.Tag)
+                    .Any(statusGroup => statusGroup.All(status => status.OverallStatus == StageStatus.Failed)))
                 .OrderBy(result => result.DigestInfo.Repo)
                 .ThenBy(result => result.DigestInfo.Digest);
             IEnumerable<ImageResultInfo> successfulResults = imageResultInfos.Except(failedResults);
@@ -106,8 +110,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     this.loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo.Repo, imageResult.DigestInfo.Digest));
                     string tags = String.Join(", ",
-                        GetStatusToProcess(imageResult.ImageResult.Value.GroupBy(status => status.Tag))
-                            .Select(status => status.Tag));
+                        imageResult.ImageResult.Value
+                            .First(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
+                            .Tag);
                     this.loggerService.WriteMessage($"\tTags: {tags}");
                     this.loggerService.WriteMessage();
                 }
@@ -179,12 +184,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string GetQualifiedDigest(string repo, string imageDigest) => $"{repo}@{imageDigest}";
 
-        private static IEnumerable<ImageStatus> GetStatusToProcess(IEnumerable<IGrouping<string, ImageStatus>> imageStatusGroups) =>
-            imageStatusGroups
-                .Select(group => group
-                    .OrderBy(status => status.QueueTime)
-                    .Last());
-
         private async Task<ImageResultInfo> ReportImageStatusAsync(IMcrStatusClient statusClient, DigestInfo digestInfo)
         {
             string qualifiedDigest = GetQualifiedDigest(digestInfo.Repo.Repo, digestInfo.Digest);
@@ -200,22 +199,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Find the image statuses that are associated with the repo indicated in the image info. This filter is needed
             // because MCR's webhook responds to all image pushes in the ACR, even those to staging locations. A queue time filter
             // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
-            IEnumerable<IGrouping<string, ImageStatus>> imageStatusGroups = imageResult.Value
-                .Where(status => status.TargetRepository == digestInfo.Repo.Repo && status.QueueTime >= Options.MinimumQueueTime)
-                .GroupBy(status => status.Tag);
-
-            foreach (IGrouping<string, ImageStatus> imageStatusGroup in imageStatusGroups)
-            {
-                if (imageStatusGroup.Count() > 1)
-                {
-                    this.loggerService.WriteMessage($"WARNING:" + Environment.NewLine +
-                        $"Multiple image statuses were found for tag '{imageStatusGroup.Key}' of image '{qualifiedDigest}'. " +
-                        $"This happens when a given image digest has been ingested multiple times. The {WaitForMcrImageIngestionOptions.MinimumQueueTimeOptionName} " +
-                        $"option should be set appropriately to mitigate this issue. The tag that was last queued will be awaited.");
-                }
-            }
-
-            IEnumerable<ImageStatus> imageStatuses = GetStatusToProcess(imageStatusGroups);
+            IEnumerable<ImageStatus> imageStatuses = imageResult.Value
+                .Where(status => status.TargetRepository == digestInfo.Repo.Repo && status.QueueTime >= Options.MinimumQueueTime);
 
             if (imageStatuses.Any())
             {
@@ -223,23 +208,36 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 stringBuilder.AppendLine();
                 stringBuilder.AppendLine($"Image status results for '{qualifiedDigest}':");
 
-                foreach (ImageStatus imageStatus in imageStatuses)
-                {
-                    stringBuilder.AppendLine($"{imageStatus.Tag}: {imageStatus.OverallStatus}");
+                var statusesByTag = imageStatuses.GroupBy(status => status.Tag);
 
-                    switch (imageStatus.OverallStatus)
+                foreach (IGrouping<string, ImageStatus> tagImageStatuses in statusesByTag)
+                {
+                    foreach (ImageStatus imageStatus in tagImageStatuses)
                     {
-                        case StageStatus.Processing:
-                        case StageStatus.NotStarted:
-                            break;
-                        case StageStatus.Failed:
-                        case StageStatus.Succeeded:
-                            digestInfo.RemainingTags.Remove(imageStatus.Tag);
-                            break;
-                        case StageStatus.NotApplicable:
-                        default:
-                            throw new NotSupportedException(
-                                $"Unexpected image status for digest '{qualifiedDigest}' with tag '{imageStatus.Tag}' and request ID '{imageStatus.OnboardingRequestId}': {imageStatus.OverallStatus}");
+                        stringBuilder.AppendLine(
+                            $"Status for tag '{imageStatus.Tag}' with request ID '{imageStatus.OnboardingRequestId}': {imageStatus.OverallStatus}");
+
+                        switch (imageStatus.OverallStatus)
+                        {
+                            case StageStatus.Processing:
+                            case StageStatus.NotStarted:
+                            case StageStatus.Failed:
+                                break;
+                            case StageStatus.Succeeded:
+                                // If we've found at least one successful overall status for the tag, we're done with that tag.
+                                digestInfo.RemainingTags.Remove(imageStatus.Tag);
+                                break;
+                            case StageStatus.NotApplicable:
+                            default:
+                                throw new NotSupportedException(
+                                    $"Unexpected image status for digest '{qualifiedDigest}' with tag '{imageStatus.Tag}' and request ID '{imageStatus.OnboardingRequestId}': {imageStatus.OverallStatus}");
+                        }
+                    }
+
+                    // If all found statuses for a given tag have failed, we're done with that tag.
+                    if (tagImageStatuses.All(status => status.OverallStatus == StageStatus.Failed))
+                    {
+                        digestInfo.RemainingTags.Remove(tagImageStatuses.Key);
                     }
                 }
 

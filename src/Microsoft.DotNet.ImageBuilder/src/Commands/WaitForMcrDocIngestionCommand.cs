@@ -75,7 +75,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (commitResult.Value.All(status => status.OverallStatus == StageStatus.Failed))
                 {
-                    isComplete = true;
                     this.loggerService.WriteError("Doc ingestion failed.");
                     this.environmentService.Exit(1);
                 }

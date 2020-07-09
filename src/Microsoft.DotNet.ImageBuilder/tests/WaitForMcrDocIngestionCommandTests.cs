@@ -376,6 +376,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IMcrStatusClientFactory statusClientFactory = CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object);
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            Exception exitException = new Exception();
+            environmentServiceMock
+                .Setup(o => o.Exit(1))
+                .Throws(exitException);
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
                 Mock.Of<ILoggerService>(),
@@ -388,8 +392,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            await command.ExecuteAsync();
+            Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
 
+            Assert.Same(exitException, actualException);
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(2));
         }

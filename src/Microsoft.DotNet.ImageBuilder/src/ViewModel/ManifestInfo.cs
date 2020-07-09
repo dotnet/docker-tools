@@ -55,9 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
         {
-            string manifestJson = File.ReadAllText(manifestPath);
-            Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson);
             string manifestDirectory = PathHelper.GetNormalizedDirectory(manifestPath);
+            Manifest model = LoadModel(manifestPath, manifestDirectory);
             model.Validate(manifestDirectory);
 
             ManifestInfo manifestInfo = new ManifestInfo
@@ -167,6 +166,36 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public RepoInfo GetRepoByModelName(string name)
         {
             return AllRepos.FirstOrDefault(repo => repo.Model.Name == name);
+        }
+
+        private static Manifest LoadModel(string path, string manifestDirectory)
+        {
+            string manifestJson = File.ReadAllText(path);
+            Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson);
+
+            if (model.Includes != null)
+            {
+                // Limitation:  Includes only support variables at this time based on usage needs.
+                // There is nothing that prevents expanding this to support other metadata.
+                foreach (string includePath in model.Includes)
+                {
+                    ModelExtensions.ValidateFileReference(includePath, manifestDirectory);
+                    manifestJson = File.ReadAllText(Path.Combine(manifestDirectory, includePath));
+                    Manifest includeModel = JsonConvert.DeserializeObject<Manifest>(manifestJson);
+                    foreach (KeyValuePair<string, string> kvp in includeModel.Variables)
+                    {
+                        if (model.Variables.ContainsKey(kvp.Key))
+                        {
+                            throw new InvalidOperationException(
+                                $"The manifest contains multiple '{kvp.Key}' variables.  Each variable name must be unique.");
+                        }
+
+                        model.Variables.Add(kvp.Key, kvp.Value);
+                    }
+                }
+            }
+
+            return model;
         }
     }
 }

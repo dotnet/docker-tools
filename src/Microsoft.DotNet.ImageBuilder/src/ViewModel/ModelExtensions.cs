@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static void Validate(this Manifest manifest, string manifestDirectory)
         {
-            if (manifest.Repos == null)
+            if (manifest.Repos == null || !manifest.Repos.Any())
             {
                 throw new ValidationException($"The manifest must contain at least one repo.");
             }

@@ -175,6 +175,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (model.Includes != null)
             {
+                if (model.Variables == null)
+                {
+                    model.Variables = new Dictionary<string, string>();
+                }
+
                 // Limitation:  Includes only support variables at this time based on usage needs.
                 // There is nothing that prevents expanding this to support other metadata.
                 foreach (string includePath in model.Includes)

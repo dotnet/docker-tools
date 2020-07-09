@@ -12,12 +12,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
-        public string ClientID { get; set; }
         public string Cluster { get; set; }
         public string Database { get; set; }
-        public string Secret { get; set; }
+        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
         public string Table { get; set; }
-        public string Tenant { get; set; }
 
         public override void DefineOptions(ArgumentSyntax syntax)
         {
@@ -42,17 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineParameter("table", ref table, "The table to ingest the data to");
             Table = table;
 
-            string clientID = null;
-            syntax.DefineParameter("client-id", ref clientID, "The URL or name associated with the service principal");
-            ClientID = clientID;
-
-            string secret = null;
-            syntax.DefineParameter("secret", ref secret, "The service principal password");
-            Secret = secret;
-
-            string tenant = null;
-            syntax.DefineParameter("tenant", ref tenant, "The tenant associated with the service principal");
-            Tenant = tenant;
+            ServicePrincipal.DefineParameters(syntax);
         }
     }
 }

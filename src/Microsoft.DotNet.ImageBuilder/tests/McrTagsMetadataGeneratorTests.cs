@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
@@ -84,10 +85,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string result = McrTagsMetadataGenerator.Execute(
                 gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, sourceRepoBranch);
 
-            Models.Mcr.McrTagsMetadata tagsMetadata = new DeserializerBuilder()
+            TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<Models.Mcr.McrTagsMetadata>(result);
+                .Deserialize<TagsMetadata>(result);
 
             string branchOrSha = sourceRepoBranch ?? DockerfileSha;
             Assert.Equal($"{SourceRepoUrl}/blob/{branchOrSha}/{DockerfileDir}/Dockerfile",
@@ -155,10 +156,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string result = McrTagsMetadataGenerator.Execute(
                 gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, SourceBranch);
 
-            Models.Mcr.McrTagsMetadata tagsMetadata = new DeserializerBuilder()
+            TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<Models.Mcr.McrTagsMetadata>(result);
+                .Deserialize<TagsMetadata>(result);
 
             // Verify the output only contains the platform with the documented tag
             Assert.Single(tagsMetadata.Repos[0].TagGroups);

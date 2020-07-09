@@ -36,7 +36,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             this.loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
             using IAcrClient acrClient = await this.acrClientFactory.CreateAsync(
-                Options.RegistryName, Options.Tenant, Options.Username, Options.Password);
+                Options.RegistryName,
+                Options.ServicePrincipal.Tenant,
+                Options.ServicePrincipal.ClientId,
+                Options.ServicePrincipal.Secret);
 
             this.loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
             Catalog catalog = await acrClient.GetCatalogAsync();

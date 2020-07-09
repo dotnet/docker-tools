@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
             // Load manifest
-            IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
+            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
             ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
             // Load manifest
-            IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
+            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
             ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
@@ -167,21 +167,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 $"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile",
                 tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
             Assert.Equal(new string[] { "tag1a", "tag1b" }, tagsMetadata.Repos[0].TagGroups[0].Tags);
-        }
-        
-        private static IManifestOptionsInfo GetManifestOptions(string manifestPath)
-        {
-            Mock<IManifestOptionsInfo> manifestOptionsMock = new Mock<IManifestOptionsInfo>();
-
-            manifestOptionsMock
-                .SetupGet(o => o.Manifest)
-                .Returns(manifestPath);
-
-            manifestOptionsMock
-                .Setup(o => o.GetManifestFilter())
-                .Returns(new ManifestFilter());
-
-            return manifestOptionsMock.Object;
         }
     }
 }

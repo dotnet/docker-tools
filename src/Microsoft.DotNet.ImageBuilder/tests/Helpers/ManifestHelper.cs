@@ -6,6 +6,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Moq;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
@@ -60,6 +62,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Architecture = architecture,
                 CustomBuildLegGrouping = customBuildLegGroupings ?? Array.Empty<CustomBuildLegGrouping>()
             };
+        }
+
+        public static IManifestOptionsInfo GetManifestOptions(string manifestPath)
+        {
+            Mock<IManifestOptionsInfo> manifestOptionsMock = new Mock<IManifestOptionsInfo>();
+
+            manifestOptionsMock
+                .SetupGet(o => o.Manifest)
+                .Returns(manifestPath);
+
+            manifestOptionsMock
+                .Setup(o => o.GetManifestFilter())
+                .Returns(new ManifestFilter());
+
+            return manifestOptionsMock.Object;
         }
     }
 }

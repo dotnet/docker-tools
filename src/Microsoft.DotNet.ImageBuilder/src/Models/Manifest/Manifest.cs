@@ -18,6 +18,12 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
     public class Manifest
     {
         [Description(
+            "Additional json files to be loaded with this manifest.  This is a convienent" +
+            "way to split the manifest apart into logical parts."
+            )]
+        public string[] Includes { get; set; }
+
+        [Description(
             "Relative path to the GitHub readme Markdown file associated with the manifest. " +
             "This readme file documents the overall set of Docker repositories described by " +
             "the manifest.")]
@@ -31,7 +37,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         [Description(
             "The set of Docker repositories described by this manifest."
             )]
-        [JsonProperty(Required = Required.Always)]
         public Repo[] Repos { get; set; }
 
         [Description(

@@ -40,6 +40,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static void Validate(this Manifest manifest, string manifestDirectory)
         {
+            if (manifest.Repos == null || !manifest.Repos.Any())
+            {
+                throw new ValidationException($"The manifest must contain at least one repo.");
+            }
+
             foreach (Repo repo in manifest.Repos)
             {
                 ValidateRepo(repo, manifestDirectory);
@@ -63,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
         }
 
-        private static void ValidateFileReference(string path, string manifestDirectory)
+        public static void ValidateFileReference(string path, string manifestDirectory)
         {
             ValidatePathIsRelative(path);
 

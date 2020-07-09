@@ -29,14 +29,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
-                Options.ServicePrincipal.Tenant, Options.ServicePrincipal.ClientId, Options.ServicePrincipal.Secret);
-
             this.loggerService.WriteHeading("QUERYING COMMIT RESULT");
 
-            CommitResult result = await WaitForIngestionAsync(statusClient);
+            if (!this.Options.IsDryRun)
+            {
+                IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
+                Options.ServicePrincipal.Tenant, Options.ServicePrincipal.ClientId, Options.ServicePrincipal.Secret);
 
-            LogSuccessfulResults(result);
+                CommitResult result = await WaitForIngestionAsync(statusClient);
+
+                LogSuccessfulResults(result);
+            }
+
+            this.loggerService.WriteMessage();
+
+            this.loggerService.WriteMessage("Doc ingestion successfully completed!");
         }
 
         private async Task<CommitResult> WaitForIngestionAsync(IMcrStatusClient statusClient)
@@ -95,10 +102,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.loggerService.WriteMessage($"\tBranch: {commitResult.Branch}");
             this.loggerService.WriteMessage("\tFiles updated:");
             commitResult.ContentFiles.ForEach(file => this.loggerService.WriteMessage($"\t\t{file}"));
-
-            this.loggerService.WriteMessage();
-
-            this.loggerService.WriteMessage("Doc ingestion successfully completed!");
         }
 
         private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus)

@@ -31,18 +31,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
-                Options.ServicePrincipal.Tenant,
-                Options.ServicePrincipal.ClientId,
-                Options.ServicePrincipal.Secret);
-
             loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
 
-            IEnumerable<ImageResultInfo> imageResultInfos = await this.WaitForImageIngestionAsync(statusClient);
+            if (!Options.IsDryRun)
+            {
+                IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
+                    Options.ServicePrincipal.Tenant,
+                    Options.ServicePrincipal.ClientId,
+                    Options.ServicePrincipal.Secret);
 
-            loggerService.WriteMessage();
+                IEnumerable<ImageResultInfo> imageResultInfos = await this.WaitForImageIngestionAsync(statusClient);
 
-            await this.LogResults(statusClient, imageResultInfos);
+                loggerService.WriteMessage();
+
+                await this.LogResults(statusClient, imageResultInfos);
+            }
 
             loggerService.WriteMessage("Image ingestion complete!");
         }

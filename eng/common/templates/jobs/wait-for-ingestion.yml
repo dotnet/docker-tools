@@ -1,5 +1,5 @@
 jobs:
-- job: Build
+- job: WaitForIngestion
   pool:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:

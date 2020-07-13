@@ -32,4 +32,9 @@ jobs:
       repo: "test/*"
       action: pruneAll
       age: 7
+  - template: templates/steps/clean-acr-images.yml
+    parameters:
+      repo: "public/dotnet/*/samples*"
+      action: pruneDangling
+      age: 0
   - template: ../common/templates/steps/cleanup-docker-linux.yml

@@ -1,0 +1,14 @@
+variables:
+- template: ../../../common/templates/variables/common.yml
+- name: manifest
+  value: eng/tests/pipeline-validation/test-manifest.json
+- name: testScriptPath
+  value: ./eng/tests/pipeline-validation/run-tests.ps1
+- name: testResultsDirectory
+  value: eng/tests/pipeline-validation/TestResults/
+- name: publicGitRepoUri
+  value: https://github.com/dotnet/dotnet-docker-test
+- name: publishRepoPrefix
+  value: test/
+- name: imageInfoVariant
+  value: "-test"

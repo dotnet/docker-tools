@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Logger.WriteMessage($"Template:{Environment.NewLine}{template}");
                 }
 
-                await GenerateDockerfile(template, platform, outOfSyncDockerfiles, invalidTemplates);
+                await GenerateDockerfileAsync(template, platform, outOfSyncDockerfiles, invalidTemplates);
             }
 
             if (outOfSyncDockerfiles.Any() || invalidTemplates.Any())
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task GenerateDockerfile(string template, PlatformInfo platform, List<string> outOfSyncDockerfiles, List<string> invalidTemplates)
+        private async Task GenerateDockerfileAsync(string template, PlatformInfo platform, List<string> outOfSyncDockerfiles, List<string> invalidTemplates)
         {
             try
             {
@@ -144,7 +144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ["ARCH_VERSIONED"] = versionedArch,
                 ["ARCH_TAG_SUFFIX"] = platform.Model.Architecture != Architecture.AMD64 ? $"-{versionedArch}" : string.Empty,
                 ["OS_VERSION"] = platform.Model.OsVersion,
-                ["OS_VERSION_BASE"] = platform.Model.OsVersion.TrimEnd("-slim"),
+                ["OS_VERSION_BASE"] = platform.BaseOsVersion,
                 ["OS_VERSION_NUMBER"] = Regex.Match(platform.Model.OsVersion, @"\d+.\d+").Value,
                 ["OS_ARCH_HYPHENATED"] = GetOsArchHyphenatedName(platform),
                 ["VARIABLES"] = Manifest.Model?.Variables?.ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value)

@@ -114,8 +114,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     this.loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo.Repo, imageResult.DigestInfo.Digest));
                     string tags = String.Join(", ",
                         imageResult.ImageResult.Value
-                            .First(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
-                            .Tag);
+                            .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
+                            .Select(imageStatus => imageStatus.Tag));
                     this.loggerService.WriteMessage($"\tTags: {tags}");
                     this.loggerService.WriteMessage();
                 }

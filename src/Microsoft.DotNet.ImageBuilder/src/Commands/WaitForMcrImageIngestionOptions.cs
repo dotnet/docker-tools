@@ -39,17 +39,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.DefineOptions(syntax);
 
             DateTime minimumQueueTime = DateTime.MinValue;
-            syntax.DefineOption(MinimumQueueTimeOptionName, ref minimumQueueTime, val => DateTime.Parse(val),
+            syntax.DefineOption(MinimumQueueTimeOptionName, ref minimumQueueTime,
+                val => String.IsNullOrEmpty(val) ? minimumQueueTime : DateTime.Parse(val),
                 "Minimum queue time an image must have to be awaited");
             MinimumQueueTime = minimumQueueTime.ToUniversalTime();
 
             TimeSpan waitTimeout = TimeSpan.FromMinutes(20);
-            syntax.DefineOption("timeout", ref waitTimeout, val => TimeSpan.Parse(val),
+            syntax.DefineOption("timeout", ref waitTimeout,
+                val => String.IsNullOrEmpty(val) ? waitTimeout : TimeSpan.Parse(val),
                 $"Maximum time to wait for image ingestion (default: {waitTimeout})");
             WaitTimeout = waitTimeout;
 
             TimeSpan requeryDelay = TimeSpan.FromSeconds(10);
-            syntax.DefineOption("requery-delay", ref requeryDelay, val => TimeSpan.Parse(val),
+            syntax.DefineOption("requery-delay", ref requeryDelay,
+                val => String.IsNullOrEmpty(val) ? requeryDelay : TimeSpan.Parse(val),
                 $"Amount of time to wait before requerying the status of an image (default: {requeryDelay})");
             RequeryDelay = requeryDelay;
         }

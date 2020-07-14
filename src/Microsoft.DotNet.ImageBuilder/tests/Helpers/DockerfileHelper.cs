@@ -10,10 +10,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
     {
         public static string CreateDockerfile(string relativeDirectory, TempFolderContext context, string fromTag = "base")
         {
-            Directory.CreateDirectory(Path.Combine(context.Path, relativeDirectory));
-            string dockerfileRelativePath = Path.Combine(relativeDirectory, "Dockerfile");
-            File.WriteAllText(PathHelper.NormalizePath(Path.Combine(context.Path, dockerfileRelativePath)), $"FROM {fromTag}");
-            return PathHelper.NormalizePath(dockerfileRelativePath);
+            string relativeDockerfilePath = PathHelper.NormalizePath(Path.Combine(relativeDirectory, "Dockerfile"));
+            CreateFile(relativeDockerfilePath, context, $"FROM {fromTag}");
+            return relativeDockerfilePath;
+        }
+
+        public static void CreateFile(string relativeFileName, TempFolderContext context, string content)
+        {
+            string fullFilePath = Path.Combine(context.Path, relativeFileName);
+            Directory.CreateDirectory(Directory.GetParent(fullFilePath).FullName);
+            File.WriteAllText(fullFilePath, content);
         }
     }
 }

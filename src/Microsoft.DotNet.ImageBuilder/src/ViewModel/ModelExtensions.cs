@@ -34,6 +34,43 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return displayName;
         }
 
+        public static string GetShortName(this Architecture architecture)
+        {
+            string shortName;
+
+            switch (architecture)
+            {
+                case Architecture.AMD64:
+                    shortName = "x64";
+                    break;
+                default:
+                    shortName = architecture.ToString().ToLowerInvariant();
+                    break;
+            }
+
+            return shortName;
+        }
+
+        public static string GetNupkgName(this Architecture architecture)
+        {
+            string nupkgName;
+
+            switch (architecture)
+            {
+                case Architecture.AMD64:
+                    nupkgName = "x64";
+                    break;
+                case Architecture.ARM:
+                    nupkgName = "arm32";
+                    break;
+                default:
+                    nupkgName = architecture.ToString().ToLowerInvariant();
+                    break;
+            }
+
+            return nupkgName;
+        }
+
         public static string GetDockerName(this Architecture architecture) => architecture.ToString().ToLowerInvariant();
 
         public static string GetDockerName(this OS os) => os.ToString().ToLowerInvariant();
@@ -109,6 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private static void ValidatePlatform(Platform platform, string manifestDirectory)
         {
             ValidateFileReference(platform.ResolveDockerfilePath(manifestDirectory), manifestDirectory);
+            ValidateFileReference(platform.DockerfileTemplate, manifestDirectory);
         }
 
         private static void ValidateUniqueTags(Repo repo)

@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _imageDocInfos = _repo.FilteredImages
                 .SelectMany(image =>
                     image.AllPlatforms.SelectMany(platform => ImageDocumentationInfo.Create(image, platform)))
-                .Where(info => info.DocumentedTags.Any())
+                .Where(info => info.DocumentedPlatformTags.Any())
                 .ToList();
 
             StringBuilder yaml = new StringBuilder();
@@ -126,15 +126,19 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private class ImageDocumentationInfo
         {
-            public IEnumerable<TagInfo> DocumentedTags { get; set; }
-            public string FormattedDocumentedTags { get; set; }
+            public IEnumerable<TagInfo> DocumentedSharedTags { get; }
+            public IEnumerable<TagInfo> DocumentedPlatformTags { get; }
+            public IEnumerable<TagInfo> DocumentedTags { get; }
+            public string FormattedDocumentedTags { get; }
             public PlatformInfo Platform { get; }
 
             private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
             {
                 Platform = platform;
-                DocumentedTags = GetDocumentedTags(Platform.Tags, documentationGroup)
-                    .Concat(GetDocumentedTags(image.SharedTags, documentationGroup))
+                DocumentedSharedTags = GetDocumentedTags(image.SharedTags, documentationGroup).ToArray();
+                DocumentedPlatformTags = GetDocumentedTags(Platform.Tags, documentationGroup).ToArray();
+                DocumentedTags = DocumentedPlatformTags
+                    .Concat(DocumentedSharedTags)
                     .ToArray();
                 FormattedDocumentedTags = String.Join(
                     ", ",

@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public HttpPolicyBuilder WithMeteredRetryPolicy(ILoggerService loggerService)
         {
             policies.Add(Policy
-                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
+                .HandleResult<HttpResponseMessage>(response => response?.StatusCode == HttpStatusCode.TooManyRequests)
                 .Or<TaskCanceledException>(exception =>
                     exception.InnerException is IOException ioException &&
                     ioException.InnerException is SocketException)

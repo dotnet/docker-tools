@@ -26,12 +26,13 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public bool IsLocal { get; set; }
 
         [Description(
-            "Indicates whether this tag should not be documented in the readme file. The " +
-            "image will still be tagged with this tag however and will still be published. " +
+            "Indicates how this tag should not be documented in the readme file. Regardless of the " +
+            "setting, the image will still be tagged with this tag and will still be published. " +
             "This is useful when deprecating a tag that still needs to be kept up-to-date " +
             "but not wanting it documented."
             )]
-        public bool IsUndocumented { get; set; }
+        [DefaultValue(TagDocumentationType.Documented)]
+        public TagDocumentationType DocType { get; set; }
 
         public Tag()
         {

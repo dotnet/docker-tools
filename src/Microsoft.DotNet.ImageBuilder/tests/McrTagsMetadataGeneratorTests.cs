@@ -99,8 +99,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that <see cref="McrTagsMetadataGenerator"/> can be run against a platform that has no
         /// documented tags.
         /// </summary>
-        [Fact]
-        public void HandlesUndocumentedPlatform()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void HandlesUndocumentedPlatform(bool hasSharedTag)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -124,17 +126,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     "tag2",
                     new Tag
                     {
-                        IsUndocumented = true
+                        DocType = TagDocumentationType.Undocumented
                     }
                 }
             };
+
+            Image image;
 
             // Create manifest
             Manifest manifest = ManifestHelper.CreateManifest(
                 ManifestHelper.CreateRepo(RepoName,
                     new Image[]
                     {
-                        ManifestHelper.CreateImage(
+                        image = ManifestHelper.CreateImage(
                             platform,
                             ManifestHelper.CreatePlatform(
                                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os2", tempFolderContext),
@@ -142,6 +146,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     },
                     mcrTagsMetadataTemplatePath: Path.GetFileName(tagsMetadataTemplatePath))
             );
+
+            if (hasSharedTag)
+            {
+                image.SharedTags = new Dictionary<string, Tag>
+                {
+                    { "shared", new Tag
+                        {
+                            DocType = TagDocumentationType.PlatformDocumented
+                        }
+                    }
+                };
+            }
+
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
@@ -166,7 +183,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(
                 $"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile",
                 tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
-            Assert.Equal(new string[] { "tag1a", "tag1b" }, tagsMetadata.Repos[0].TagGroups[0].Tags);
+
+            List<string> expectedTags = new List<string>
+            {
+                "tag1a",
+                "tag1b"
+            };
+            if (hasSharedTag)
+            {
+                expectedTags.Add("shared");
+            }
+
+            Assert.Equal(expectedTags, tagsMetadata.Repos[0].TagGroups[0].Tags);
         }
     }
 }

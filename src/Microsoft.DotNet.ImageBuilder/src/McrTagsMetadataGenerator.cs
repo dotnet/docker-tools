@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
@@ -126,15 +127,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private class ImageDocumentationInfo
         {
-            public IEnumerable<TagInfo> DocumentedTags { get; set; }
-            public string FormattedDocumentedTags { get; set; }
+            public IEnumerable<TagInfo> DocumentedTags { get; }
+            public string FormattedDocumentedTags { get; }
             public PlatformInfo Platform { get; }
 
             private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
             {
                 Platform = platform;
-                DocumentedTags = GetDocumentedTags(Platform.Tags, documentationGroup)
-                    .Concat(GetDocumentedTags(image.SharedTags, documentationGroup))
+                IEnumerable<TagInfo> documentedPlatformTags = GetDocumentedTags(Platform.Tags, documentationGroup).ToArray();
+                DocumentedTags = documentedPlatformTags
+                    .Concat(GetDocumentedTags(image.SharedTags, documentationGroup, documentedPlatformTags))
                     .ToArray();
                 FormattedDocumentedTags = String.Join(
                     ", ",
@@ -155,8 +157,12 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
 
-            private static IEnumerable<TagInfo> GetDocumentedTags(IEnumerable<TagInfo> tagInfos, string documentationGroup) =>
-                tagInfos.Where(tag => !tag.Model.IsUndocumented && tag.Model.DocumentationGroup == documentationGroup);
+            private static IEnumerable<TagInfo> GetDocumentedTags(
+                IEnumerable<TagInfo> tagInfos, string documentationGroup, IEnumerable<TagInfo> documentedPlatformTags = null) =>
+                    tagInfos.Where(tag =>
+                        tag.Model.DocumentationGroup == documentationGroup &&
+                            (tag.Model.DocType == TagDocumentationType.Documented ||
+                                (tag.Model.DocType == TagDocumentationType.PlatformDocumented && documentedPlatformTags?.Any() == true)));
         }
     }
 }

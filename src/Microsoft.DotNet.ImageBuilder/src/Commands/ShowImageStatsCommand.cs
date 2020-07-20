@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -81,8 +82,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             TagInfo[] platformTags = Manifest.GetFilteredPlatformTags().ToArray();
             TagInfo[] sharedTags = Manifest.GetFilteredImages().SelectMany(image => image.SharedTags).ToArray();
-            TagInfo[] undocumentedPlatformTags = platformTags.Where(tag => tag.Model.IsUndocumented).ToArray();
-            TagInfo[] undocumentedSharedTags = sharedTags.Where(tag => tag.Model.IsUndocumented).ToArray();
+            TagInfo[] undocumentedPlatformTags = platformTags.Where(tag => tag.Model.DocType != TagDocumentationType.Undocumented).ToArray();
+            TagInfo[] undocumentedSharedTags = sharedTags.Where(tag => tag.Model.DocType != TagDocumentationType.Undocumented).ToArray();
 
             Logger.WriteMessage($"Total Unique Images:  {platforms.Length}");
             Logger.WriteMessage($"Total Simple Tags:  {platformTags.Length}");

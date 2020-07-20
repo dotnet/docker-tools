@@ -126,7 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     "tag2",
                     new Tag
                     {
-                        IsUndocumented = true
+                        DocType = TagDocumentationType.Undocumented
                     }
                 }
             };
@@ -151,7 +151,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 image.SharedTags = new Dictionary<string, Tag>
                 {
-                    { "shared", new Tag() }
+                    { "shared", new Tag
+                        {
+                            DocType = TagDocumentationType.PlatformDocumented
+                        }
+                    }
                 };
             }
 

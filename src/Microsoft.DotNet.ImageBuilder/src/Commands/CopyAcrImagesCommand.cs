@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
@@ -15,6 +16,7 @@ using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Polly;
 using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -22,15 +24,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class CopyAcrImagesCommand : ManifestCommand<CopyAcrImagesOptions>
     {
-        private Lazy<ImageArtifactDetails> imageArtifactDetails;
+        private readonly Lazy<ImageArtifactDetails> imageArtifactDetails;
         private readonly IAzureManagementFactory azureManagementFactory;
         private readonly IEnvironmentService environmentService;
+        private readonly ILoggerService loggerService;
 
         [ImportingConstructor]
-        public CopyAcrImagesCommand(IAzureManagementFactory azureManagementFactory, IEnvironmentService environmentService) : base()
+        public CopyAcrImagesCommand(
+            IAzureManagementFactory azureManagementFactory, IEnvironmentService environmentService, ILoggerService loggerService) : base()
         {
             this.azureManagementFactory = azureManagementFactory ?? throw new ArgumentNullException(nameof(azureManagementFactory));
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             this.imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!String.IsNullOrEmpty(Options.ImageInfoPath))
@@ -44,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("COPYING IMAGES");
+            this.loggerService.WriteHeading("COPYING IMAGES");
 
             string registryName = Manifest.Registry.TrimEnd(".azurecr.io");
 
@@ -79,17 +84,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 TargetTags = new string[] { destTagName }
             };
 
-            Logger.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
+            this.loggerService.WriteMessage($"Importing '{destTagName}' from '{sourceTagName}'");
 
             if (!Options.IsDryRun)
             {
                 try
                 {
-                    await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+                    AsyncPolicy<HttpResponseMessage> policy = HttpPolicyBuilder.Create()
+                        .WithMeteredRetryPolicy(this.loggerService)
+                        .Build();
+                    await policy.ExecuteAsync(async () =>
+                    {
+                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, registryName, importParams);
+                        return null;
+                    });
                 }
                 catch (Exception e)
                 {
-                    Logger.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
+                    this.loggerService.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
                     throw;
                 }
             }
@@ -118,13 +130,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        Logger.WriteError($"Unable to find image info data for path '{platform.DockerfilePath}'.");
+                        this.loggerService.WriteError($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                         this.environmentService.Exit(1);
                     }
                 }
                 else
                 {
-                    Logger.WriteError($"Unable to find image info data for repo '{repo.Name}'.");
+                    this.loggerService.WriteError($"Unable to find image info data for repo '{repo.Name}'.");
                     this.environmentService.Exit(1);
                 }
             }

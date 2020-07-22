@@ -9,6 +9,11 @@ param(
     [string]$Version,
     [string]$Architecture,
     [string]$OS,
+    [string]$Registry,
+    [string]$RepoPrefix,
+    [switch]$DisableHttpVerification,
+    [switch]$PullImages,
+    [string]$ImageInfoPath,
     [ValidateSet("functional", "pre-build")]
     [string[]]$TestCategories = @("functional")
 )

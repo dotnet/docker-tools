@@ -13,7 +13,9 @@ param(
     [string]$RepoPrefix,
     [switch]$DisableHttpVerification,
     [switch]$PullImages,
-    [string]$ImageInfoPath
+    [string]$ImageInfoPath,
+    [ValidateSet("functional", "pre-build")]
+    [string[]]$TestCategories = @("functional")
 )
 
 # This script intentionally doesn't run any tests. It is to be used for pipeline validation.

@@ -6,6 +6,9 @@
 
 [cmdletbinding()]
 param(
+    [string]$Version,
+    [string]$Architecture,
+    [string]$OS,
     [ValidateSet("functional", "pre-build")]
     [string[]]$TestCategories = @("functional")
 )

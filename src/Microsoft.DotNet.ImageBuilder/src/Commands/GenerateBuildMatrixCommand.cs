@@ -191,6 +191,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<PlatformInfo> subgraphs = versionGrouping
                     .GetCompleteSubgraphs(platform => GetPlatformDependencies(platform, platformGrouping))
                     .SelectMany(subgraph => subgraph);
+                subgraphs = subgraphs
+                    .Union(subgraphs.SelectMany(platform => GetParents(platform, platformGrouping)));
 
                 BuildLegInfo leg = new BuildLegInfo() { Name = $"{versionGrouping.Key.DotNetVersion}-{versionGrouping.Key.OsVariant}" };
                 matrix.Legs.Add(leg);

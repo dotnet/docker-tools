@@ -328,5 +328,76 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 "--os-version nanoserver-1909 --os-version windowsservercore-1909",
                 osVersions);
         }
+
+        /// <summary>
+        /// Verifies the platformVersionedOs matrix type is generated correctly when there's a dependency on a
+        /// tag that's outside the platform grouping.
+        /// </summary>
+        [Fact]
+        public void GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGrouping()
+        {
+            using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
+            {
+                const string customBuildLegGrouping = "custom";
+                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+                command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+                command.Options.ProductVersionComponents = 2;
+                command.Options.CustomBuildLegGrouping = customBuildLegGrouping;
+
+                string dockerfileRuntimeFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+                string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
+
+                string dockerfileRuntime3FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
+                string dockerfileSdk3FullPath = DockerfileHelper.CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
+
+                Manifest manifest = CreateManifest(
+                    CreateRepo("runtime",
+                        CreateImage(
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfileRuntimeFullPath, new string[] { "tag" }, osVersion: "buster")
+                            },
+                            productVersion: "1.0")),
+                    CreateRepo("runtime2",
+                        CreateImage(
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "runtime" }, osVersion: "buster")
+                            },
+                            productVersion: "1.0")),
+                    CreateRepo("runtime3",
+                        CreateImage(
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfileRuntime3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
+                            },
+                            productVersion: "1.0")),
+                    CreateRepo("sdk3",
+                        CreateImage(
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfileSdk3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
+                            },
+                            productVersion: "1.0"))
+                );
+
+                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+                command.LoadManifest();
+                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+                Assert.Single(matrixInfos);
+
+                BuildMatrixInfo matrixInfo = matrixInfos.First();
+                Assert.Equal(2, matrixInfo.Legs.Count);
+                BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
+                string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal("--path 1.0/runtime/os/Dockerfile --path 1.0/runtime2/os/Dockerfile --path 1.0/sdk3/os2/Dockerfile --path 1.0/runtime3/os2/Dockerfile", imageBuilderPaths);
+
+                BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
+                imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal("--path 1.0/runtime3/os2/Dockerfile --path 1.0/sdk3/os2/Dockerfile", imageBuilderPaths);
+            }
+        }
     }
 }

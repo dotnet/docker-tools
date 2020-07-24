@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder
             ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
         }
 
-        public void BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun)
+        public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun)
         {
             string tagArgs = $"-t {string.Join(" -t ", tags)}";
 
@@ -42,11 +42,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
             if (isRetryEnabled)
             {
-                ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, isDryRun);
+                return ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, isDryRun);
             }
             else
             {
-                ExecuteHelper.Execute("docker", dockerArgs, isDryRun);
+                return ExecuteHelper.Execute("docker", dockerArgs, isDryRun);
             }
         }
 

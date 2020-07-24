@@ -161,13 +161,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 .Select(tag => tag.FullyQualifiedName)
                                 .ToList();
 
-                            this.dockerService.BuildImage(
+                            string buildOutput = this.dockerService.BuildImage(
                                 dockerfilePath,
                                 platform.BuildContextPath,
                                 allTags,
                                 platform.BuildArgs,
                                 Options.IsRetryEnabled,
                                 Options.IsDryRun);
+
+                            if (buildOutput.Contains("Pulling from"))
+                            {
+                                throw new InvalidOperationException(
+                                    "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +
+                                    "Any other image that's not accounted for means there's some kind of mistake in how things are " +
+                                    "configured or a bug in the code.");
+                            }
 
                             if (!Options.IsDryRun)
                             {

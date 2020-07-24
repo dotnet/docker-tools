@@ -4,7 +4,6 @@
 
 using System;
 using System.CommandLine;
-using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -14,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
-        public string CustomBuildLegGrouping { get; set; }
+        public string CustomBuildLegGroup { get; set; }
         public int ProductVersionComponents { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
@@ -35,16 +34,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(matrixType)}");
             MatrixType = matrixType;
 
-            string customBuildLegGrouping = null;
+            string customBuildLegGroup = null;
             syntax.DefineOption(
-                "customBuildLegGrouping",
-                ref customBuildLegGrouping,
-                "Name of custom build leg grouping to use.");
-            CustomBuildLegGrouping = customBuildLegGrouping;
+                "custom-build-leg-group",
+                ref customBuildLegGroup,
+                "Name of custom build leg group to use.");
+            CustomBuildLegGroup = customBuildLegGroup;
 
             int productVersionComponents = 2;
             syntax.DefineOption(
-                "productVersionComponents",
+                "product-version-components",
                 ref productVersionComponents,
                 "Number of components of the product version considered to be significant");
             ProductVersionComponents = productVersionComponents;

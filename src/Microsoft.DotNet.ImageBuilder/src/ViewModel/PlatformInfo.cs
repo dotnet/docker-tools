@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private string FullRepoModelName { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
-        public IDictionary<string, CustomBuildLegGroupingInfo> CustomLegGroupings { get; private set; }
+        public IDictionary<string, CustomBuildLegGroup> CustomLegGroups { get; private set; }
         private VariableHelper VariableHelper { get; set; }
 
         public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory)
@@ -76,13 +76,20 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             InitializeBuildArgs();
             InitializeFromImages();
 
-            CustomLegGroupings = this.Model.CustomBuildLegGrouping
-                .Select(grouping =>
-                    new CustomBuildLegGroupingInfo(
-                        grouping.Name,
-                        grouping.Dependencies
-                            .Select(d => VariableHelper.SubstituteValues(d))
-                            .ToArray()))
+            CustomLegGroups = this.Model.CustomBuildLegGroups
+                .Select(group =>
+                    new CustomBuildLegGroup
+                    {
+                        Name = group.Name,
+                        Dependencies = group.Dependencies
+                            .Select(dependency =>
+                                new CustomBuildLegDependency
+                                {
+                                    ImageTag = VariableHelper.SubstituteValues(dependency.ImageTag),
+                                    Type = dependency.Type
+                                })
+                            .ToArray()
+                    })
                 .ToDictionary(info => info.Name)
             ;
         }

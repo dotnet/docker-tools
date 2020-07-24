@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// https://github.com/dotnet/docker-tools/issues/243
         /// </remarks>
         [Theory]
-        [InlineData(null, "--path 2.2/runtime/os --path 2.1.1/runtime-deps/os", "2.2")]
+        [InlineData(null, "--path 2.1.1/runtime-deps/os --path 2.2/runtime/os", "2.1.1")]
         [InlineData("--path 2.2/runtime/os", "--path 2.2/runtime/os", "2.2")]
         [InlineData("--path 2.1.1/runtime-deps/os", "--path 2.1.1/runtime-deps/os", "2.1.1")]
         public void GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
@@ -152,22 +152,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         /// <summary>
         /// Verifies the platformVersionedOs matrix type is generated correctly when a 
-        /// custom build leg grouping is defined that has a parent graph.
+        /// custom build leg group is defined that has a parent graph.
         /// </summary>
         /// <remarks>
         /// https://github.com/dotnet/docker-tools/issues/243
         /// </remarks>
-        [Fact]
-        public void GenerateBuildMatrixCommand_CustomBuildLegGroupingParentGraph()
+        [Theory]
+        [InlineData(CustomBuildLegDependencyType.Integral)]
+        [InlineData(CustomBuildLegDependencyType.Supplemental)]
+        public void GenerateBuildMatrixCommand_CustomBuildLegGroupingParentGraph(CustomBuildLegDependencyType dependencyType)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                const string customBuildLegGrouping = "custom";
+                const string customBuildLegGroup = "custom";
                 GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 command.Options.ProductVersionComponents = 2;
-                command.Options.CustomBuildLegGrouping = customBuildLegGrouping;
+                command.Options.CustomBuildLegGroup = customBuildLegGroup;
 
                 string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
                 string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
@@ -188,14 +190,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new Platform[]
                             {
                                 CreatePlatform(dockerfileRuntimePath, new string[] { "runtime" },
-                                    customBuildLegGroupings: new CustomBuildLegGrouping[]
+                                    customBuildLegGroups: new CustomBuildLegGroup[]
                                     {
-                                        new CustomBuildLegGrouping
+                                        new CustomBuildLegGroup
                                         {
-                                            Name = customBuildLegGrouping,
-                                            Dependencies = new string[]
+                                            Name = customBuildLegGroup,
+                                            Dependencies = new CustomBuildLegDependency[]
                                             {
-                                                "sdk2:tag"
+                                                new CustomBuildLegDependency
+                                                {
+                                                    ImageTag = "sdk2:tag",
+                                                    Type = dependencyType
+                                                }
                                             }
                                         }
                                     })
@@ -224,23 +230,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Single(matrixInfos);
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
+
                 BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
                 string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
                 Assert.Equal("--os-version disco --os-version buster --os-version buster-slim", osVersions);
 
-                BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
-                imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal("--path 2.0/runtime/os2/Dockerfile --path 2.0/sdk/os2/Dockerfile", imageBuilderPaths);
-                osVersions = leg_2_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                Assert.Equal("--os-version buster-slim --os-version buster", osVersions);
+                if (dependencyType == CustomBuildLegDependencyType.Integral)
+                {
+                    Assert.Single(matrixInfo.Legs);
+                }
+                else
+                {
+                    Assert.Equal(2, matrixInfo.Legs.Count);
+
+                    BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
+                    imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                    Assert.Equal("--path 2.0/runtime/os2/Dockerfile --path 2.0/sdk/os2/Dockerfile", imageBuilderPaths);
+                    osVersions = leg_2_0.Variables.First(variable => variable.Name == "osVersions").Value;
+                    Assert.Equal("--os-version buster-slim --os-version buster", osVersions);
+                }
             }
         }
 
         /// <summary>
         /// Verifies that a <see cref="MatrixType.PlatformDependencyGraph"/> build matrix can be generated correctly
-        /// when there are both Windows Server Core and Nano Server platforms that have a custom build leg grouping
+        /// when there are both Windows Server Core and Nano Server platforms that have a custom build leg group
         /// dependency. The scenario for this is that, for a given matching version between Server Core and Nano Server,
         /// those Dockerfiles should be built in the same job.
         /// </summary>
@@ -248,12 +264,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void GenerateBuildMatrixCommand_ServerCoreAndNanoServerDependency()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            const string customBuildLegGrouping = "custom";
+            const string customBuildLegGroup = "custom";
             GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
-            command.Options.CustomBuildLegGrouping = customBuildLegGrouping;
+            command.Options.CustomBuildLegGroup = customBuildLegGroup;
 
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime",
@@ -296,14 +312,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 new string[] { "windowsservercore-1909" },
                                 os: OS.Windows,
                                 osVersion: "windowsservercore-1909",
-                                customBuildLegGroupings: new CustomBuildLegGrouping[]
+                                customBuildLegGroups: new CustomBuildLegGroup[]
                                 {
-                                    new CustomBuildLegGrouping
+                                    new CustomBuildLegGroup
                                     {
-                                        Name = customBuildLegGrouping,
-                                        Dependencies = new string[]
+                                        Name = customBuildLegGroup,
+                                        Dependencies = new CustomBuildLegDependency[]
                                         {
-                                            "aspnet:nanoserver-1909"
+                                            new CustomBuildLegDependency
+                                            {
+                                                ImageTag = "aspnet:nanoserver-1909",
+                                                Type = CustomBuildLegDependencyType.Supplemental
+                                            }
                                         }
                                     }
                                 })
@@ -331,73 +351,71 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         /// <summary>
         /// Verifies the platformVersionedOs matrix type is generated correctly when there's a dependency on a
-        /// tag that's outside the platform grouping.
+        /// tag that's outside the platform group.
         /// </summary>
         [Fact]
-        public void GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGrouping()
+        public void GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGroup()
         {
-            using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
-            {
-                const string customBuildLegGrouping = "custom";
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
-                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-                command.Options.MatrixType = MatrixType.PlatformVersionedOs;
-                command.Options.ProductVersionComponents = 2;
-                command.Options.CustomBuildLegGrouping = customBuildLegGrouping;
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ProductVersionComponents = 2;
 
-                string dockerfileRuntimeFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-                string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
+            string dockerfileRuntimeFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
 
-                string dockerfileRuntime3FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
-                string dockerfileSdk3FullPath = DockerfileHelper.CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
+            string dockerfileRuntime3FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
+            string dockerfileSdk3FullPath = DockerfileHelper.CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
 
-                Manifest manifest = CreateManifest(
-                    CreateRepo("runtime",
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(dockerfileRuntimeFullPath, new string[] { "tag" }, osVersion: "buster")
-                            },
-                            productVersion: "1.0")),
-                    CreateRepo("runtime2",
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "runtime" }, osVersion: "buster")
-                            },
-                            productVersion: "1.0")),
-                    CreateRepo("runtime3",
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(dockerfileRuntime3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
-                            },
-                            productVersion: "1.0")),
-                    CreateRepo("sdk3",
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(dockerfileSdk3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
-                            },
-                            productVersion: "1.0"))
-                );
+            Manifest manifest = CreateManifest(
+                // Define a Dockerfile that has the same OS version and product version as runtime2 but no actual dependency to
+                // ensure it gets its own matrix leg.
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRuntimeFullPath, new string[] { "tag" }, osVersion: "buster")
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("runtime2",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRuntime2FullPath, new string[] { "runtime" }, osVersion: "buster")
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("runtime3",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRuntime3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("sdk3",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileSdk3FullPath, new string[] { "tag" }, osVersion: "alpine3.12")
+                        },
+                        productVersion: "1.0"))
+            );
 
-                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
-                command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
-                Assert.Single(matrixInfos);
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
 
-                BuildMatrixInfo matrixInfo = matrixInfos.First();
-                Assert.Equal(2, matrixInfo.Legs.Count);
-                BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
-                string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal("--path 1.0/runtime/os/Dockerfile --path 1.0/runtime2/os/Dockerfile --path 1.0/sdk3/os2/Dockerfile --path 1.0/runtime3/os2/Dockerfile", imageBuilderPaths);
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            Assert.Equal(2, matrixInfo.Legs.Count);
+            BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
+            string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal("--path 1.0/runtime/os/Dockerfile", imageBuilderPaths);
 
-                BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
-                imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal("--path 1.0/runtime3/os2/Dockerfile --path 1.0/sdk3/os2/Dockerfile", imageBuilderPaths);
-            }
+            BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
+            imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal("--path 1.0/runtime2/os/Dockerfile --path 1.0/sdk3/os2/Dockerfile --path 1.0/runtime3/os2/Dockerfile", imageBuilderPaths);
         }
     }
 }

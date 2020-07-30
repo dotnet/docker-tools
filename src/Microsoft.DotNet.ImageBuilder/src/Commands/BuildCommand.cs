@@ -169,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 Options.IsRetryEnabled,
                                 Options.IsDryRun);
 
-                            if (buildOutput.Contains("Pulling from"))
+                            if (!Options.IsSkipPullingEnabled && buildOutput.Contains("Pulling from"))
                             {
                                 throw new InvalidOperationException(
                                     "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +

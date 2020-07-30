@@ -280,8 +280,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies an exception is thrown if the build output contains pull information.
         /// </summary>
-        [Fact]
-        public async Task BuildCommand_ThrowsIfImageIsPulled()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BuildCommand_ThrowsIfImageIsPulled(bool isSkipPullingEnabled)
         {
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock("Pulling from");
 
@@ -296,17 +298,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
                 Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime",
                     CreateImage(
                         new Platform[]
                         {
-                                CreatePlatform(dockerfileRelativePath, new string[] { "tag" })
+                             CreatePlatform(dockerfileRelativePath, new string[] { "tag" })
                         },
                         new Dictionary<string, Tag>
                         {
-                                { "shared", new Tag() }
+                             { "shared", new Tag() }
                         },
                         "1.0.1"))
             );
@@ -315,7 +318,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
+            if (isSkipPullingEnabled)
+            {
+                await command.ExecuteAsync();
+            }
+            else
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
+            }
         }
     }
 }

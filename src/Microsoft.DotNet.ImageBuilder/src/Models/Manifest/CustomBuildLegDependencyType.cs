@@ -3,24 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {
-    [Description(
-        "Describes the tag dependency an image has for a specific scenario."
-        )]
-    public class CustomBuildLegDependency
-    {
-        [Description("Name of the group. This is just a custom label that can then be used by tooling to lookup the grouping when necessary.")]
-        [JsonProperty(Required = Required.Always)]
-        public string ImageTag { get; set; }
-
-        [Description("The type of the dependency which impacts how it's used during the build.")]
-        [JsonProperty(Required = Required.Always)]
-        public CustomBuildLegDependencyType Type { get; set; }
-    }
-
     [Description(
         "The type of dependency an image has for a specific scenario."
         )]

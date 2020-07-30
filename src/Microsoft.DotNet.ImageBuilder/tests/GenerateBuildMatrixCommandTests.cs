@@ -195,13 +195,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         new CustomBuildLegGroup
                                         {
                                             Name = customBuildLegGroup,
-                                            Dependencies = new CustomBuildLegDependency[]
+                                            Type = dependencyType,
+                                            Dependencies = new string[]
                                             {
-                                                new CustomBuildLegDependency
-                                                {
-                                                    ImageTag = "sdk2:tag",
-                                                    Type = dependencyType
-                                                }
+                                                "sdk2:tag"
                                             }
                                         }
                                     })
@@ -317,13 +314,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new CustomBuildLegGroup
                                     {
                                         Name = customBuildLegGroup,
-                                        Dependencies = new CustomBuildLegDependency[]
+                                        Type = CustomBuildLegDependencyType.Supplemental,
+                                        Dependencies = new string[]
                                         {
-                                            new CustomBuildLegDependency
-                                            {
-                                                ImageTag = "aspnet:nanoserver-1909",
-                                                Type = CustomBuildLegDependencyType.Supplemental
-                                            }
+                                            "aspnet:nanoserver-1909"
                                         }
                                     }
                                 })
@@ -456,13 +450,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new CustomBuildLegGroup
                                     {
                                         Name = customBuildLegGroup1,
-                                        Dependencies = new CustomBuildLegDependency[]
+                                        Type = CustomBuildLegDependencyType.Supplemental,
+                                        Dependencies = new string[]
                                         {
-                                            new CustomBuildLegDependency
-                                            {
-                                                ImageTag = "repo1:tag",
-                                                Type = CustomBuildLegDependencyType.Supplemental
-                                            }
+                                            "repo1:tag"
                                         }
                                     }
                                 })
@@ -489,13 +480,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new CustomBuildLegGroup
                                     {
                                         Name = customBuildLegGroup1,
-                                        Dependencies = new CustomBuildLegDependency[]
+                                        Type = CustomBuildLegDependencyType.Integral,
+                                        Dependencies = new string[]
                                         {
-                                            new CustomBuildLegDependency
-                                            {
-                                                ImageTag = "repo3:tag",
-                                                Type = CustomBuildLegDependencyType.Integral
-                                            }
+                                            "repo3:tag"
                                         }
                                     }
                                 })

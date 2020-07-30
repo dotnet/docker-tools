@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.ComponentModel;
 using Newtonsoft.Json;
 
@@ -27,8 +28,12 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         [JsonProperty(Required = Required.Always)]
         public string Name { get; set; }
 
+        [Description("The type of the dependency which impacts how it's used during the build.")]
+        [JsonProperty(Required = Required.Always)]
+        public CustomBuildLegDependencyType Type { get; set; }
+
         [Description("The set of dependencies the image has for this scenario.")]
         [JsonProperty(Required = Required.Always)]
-        public CustomBuildLegDependency[] Dependencies { get; set; }
+        public string[] Dependencies { get; set; } = Array.Empty<string>();
     }
 }

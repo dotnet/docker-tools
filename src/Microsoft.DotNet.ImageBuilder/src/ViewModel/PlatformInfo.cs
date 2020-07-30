@@ -81,13 +81,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     new CustomBuildLegGroup
                     {
                         Name = group.Name,
+                        Type = group.Type,
                         Dependencies = group.Dependencies
-                            .Select(dependency =>
-                                new CustomBuildLegDependency
-                                {
-                                    ImageTag = VariableHelper.SubstituteValues(dependency.ImageTag),
-                                    Type = dependency.Type
-                                })
+                            .Select(dependency => VariableHelper.SubstituteValues(dependency))
                             .ToArray()
                     })
                 .ToDictionary(info => info.Name)

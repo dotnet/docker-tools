@@ -109,12 +109,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     platform.CustomLegGroups.TryGetValue(groupName, out CustomBuildLegGroup group);
                     return group;
                 })
-                .Where(group => group != null)
+                .Where(group => group != null && (!dependencyType.HasValue || group?.Type == dependencyType))
                 .SelectMany(group =>
                 {
                     IEnumerable<PlatformInfo> dependencyPlatforms = group.Dependencies
-                        .Where(dependency => !dependencyType.HasValue || dependency.Type == dependencyType)
-                        .Select(dependency => Manifest.GetPlatformByTag(dependency.ImageTag));
+                        .Select(dependency => Manifest.GetPlatformByTag(dependency));
                     return dependencyPlatforms
                         .Concat(dependencyPlatforms
                             .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));

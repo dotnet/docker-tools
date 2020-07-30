@@ -21,6 +21,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class BuildCommandTests
     {
+        private static Mock<IDockerService> CreateDockerServiceMock(string buildOutput = null)
+        {
+            Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
+            dockerServiceMock
+                .SetupGet(o => o.Architecture)
+                .Returns(Architecture.AMD64);
+
+            dockerServiceMock
+                .Setup(o =>
+                    o.BuildImage(
+                        It.IsAny<string>(),
+                        It.IsAny<string>(),
+                        It.IsAny<IEnumerable<string>>(),
+                        It.IsAny<IDictionary<string, string>>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<bool>()))
+                .Returns(buildOutput ?? String.Empty);
+
+            return dockerServiceMock;
+        }
+
         /// <summary>
         /// Verifies the command outputs an image info correctly for a basic scenario.
         /// </summary>
@@ -37,10 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
-                dockerServiceMock
-                    .SetupGet(o => o.Architecture)
-                    .Returns(Architecture.AMD64);
+                Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
                 dockerServiceMock
                     .Setup(o => o.GetImageDigest($"{repoName}:{tag}", false))
@@ -159,10 +177,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string baseImageTag = $"{baseImageRepo}:basetag";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
-            dockerServiceMock
-                .SetupGet(o => o.Architecture)
-                .Returns(Architecture.AMD64);
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
                 Mock.Of<IGitService>());
@@ -220,10 +235,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
-                dockerServiceMock
-                    .SetupGet(o => o.Architecture)
-                    .Returns(Architecture.AMD64);
+                Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
                 const string digest = "runtime@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
                 dockerServiceMock
                     .Setup(o => o.GetImageDigest("runtime:runtime", false))
@@ -262,6 +274,57 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Equal(
                     PathHelper.NormalizePath(dockerfileRelativePath),
                     imageArtifactDetails.Repos[0].Images.First().Platforms.First().Dockerfile);
+            }
+        }
+
+        /// <summary>
+        /// Verifies an exception is thrown if the build output contains pull information.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BuildCommand_ThrowsIfImageIsPulled(bool isSkipPullingEnabled)
+        {
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock("Pulling from");
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = PathHelper.NormalizePath(Path.Combine(runtimeRelativeDir, "Dockerfile"));
+            string fullDockerfilePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(fullDockerfilePath, $"FROM baserepo:basetag");
+
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
+                Mock.Of<IGitService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                             CreatePlatform(dockerfileRelativePath, new string[] { "tag" })
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                             { "shared", new Tag() }
+                        },
+                        "1.0.1"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+
+            if (isSkipPullingEnabled)
+            {
+                await command.ExecuteAsync();
+            }
+            else
+            {
+                await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
             }
         }
     }

@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string osVersion = "disco",
             Architecture architecture = Architecture.AMD64,
             string variant = null,
-            CustomBuildLegGrouping[] customBuildLegGroupings = null,
+            CustomBuildLegGroup[] customBuildLegGroups = null,
             string dockerfileTemplatePath = null)
         {
             return new Platform
@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
                 Architecture = architecture,
                 Variant = variant,
-                CustomBuildLegGrouping = customBuildLegGroupings ?? Array.Empty<CustomBuildLegGrouping>()
+                CustomBuildLegGroups = customBuildLegGroups ?? Array.Empty<CustomBuildLegGroup>()
             };
         }
 

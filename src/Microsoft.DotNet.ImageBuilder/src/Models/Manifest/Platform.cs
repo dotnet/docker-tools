@@ -61,9 +61,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public IDictionary<string, Tag> Tags { get; set; }
 
         [Description(
-            "The custom build leg groupings associated with the platform."
+            "The custom build leg groups associated with the platform."
             )]
-        public CustomBuildLegGrouping[] CustomBuildLegGrouping { get; set; } = Array.Empty<CustomBuildLegGrouping>();
+        public CustomBuildLegGroup[] CustomBuildLegGroups { get; set; } = Array.Empty<CustomBuildLegGroup>();
 
         [Description(
             "A label which further distinguishes the architecture when it " +

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
@@ -14,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
-        public string CustomBuildLegGrouping { get; set; }
+        public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
@@ -35,16 +36,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(matrixType)}");
             MatrixType = matrixType;
 
-            string customBuildLegGrouping = null;
-            syntax.DefineOption(
-                "customBuildLegGrouping",
-                ref customBuildLegGrouping,
-                "Name of custom build leg grouping to use.");
-            CustomBuildLegGrouping = customBuildLegGrouping;
+            IReadOnlyList<string> customBuildLegGroups = Array.Empty<string>();
+            syntax.DefineOptionList(
+                "custom-build-leg-group",
+                ref customBuildLegGroups,
+                "Name of custom build leg group to use.");
+            CustomBuildLegGroups = customBuildLegGroups;
 
             int productVersionComponents = 2;
             syntax.DefineOption(
-                "productVersionComponents",
+                "product-version-components",
                 ref productVersionComponents,
                 "Number of components of the product version considered to be significant");
             ProductVersionComponents = productVersionComponents;

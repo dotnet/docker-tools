@@ -103,20 +103,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<PlatformInfo> GetCustomLegGroupPlatforms(PlatformInfo platform, CustomBuildLegDependencyType? dependencyType)
         {
-            if (Options.CustomBuildLegGroup != null &&
-                platform.CustomLegGroups.TryGetValue(
-                    Options.CustomBuildLegGroup,
-                    out CustomBuildLegGroup customBuildLegGroup))
-            {
-                IEnumerable<PlatformInfo> dependencyPlatforms = customBuildLegGroup.Dependencies
-                    .Where(dependency => !dependencyType.HasValue || dependency.Type == dependencyType)
-                    .Select(dependency => Manifest.GetPlatformByTag(dependency.ImageTag));
-                return dependencyPlatforms
-                    .Concat(dependencyPlatforms
-                        .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
-            }
-
-            return Enumerable.Empty<PlatformInfo>();
+            return Options.CustomBuildLegGroups
+                .Select(groupName =>
+                {
+                    platform.CustomLegGroups.TryGetValue(groupName, out CustomBuildLegGroup group);
+                    return group;
+                })
+                .Where(group => group != null)
+                .SelectMany(group =>
+                {
+                    IEnumerable<PlatformInfo> dependencyPlatforms = group.Dependencies
+                        .Where(dependency => !dependencyType.HasValue || dependency.Type == dependencyType)
+                        .Select(dependency => Manifest.GetPlatformByTag(dependency.ImageTag));
+                    return dependencyPlatforms
+                        .Concat(dependencyPlatforms
+                            .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
+                })
+                .Distinct();
         }
 
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, BuildLegInfo leg)

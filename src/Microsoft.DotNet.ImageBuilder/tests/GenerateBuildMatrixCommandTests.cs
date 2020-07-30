@@ -169,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 command.Options.ProductVersionComponents = 2;
-                command.Options.CustomBuildLegGroup = customBuildLegGroup;
+                command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
 
                 string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
                 string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
@@ -269,7 +269,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
-            command.Options.CustomBuildLegGroup = customBuildLegGroup;
+            command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
 
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime",
@@ -416,6 +416,118 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
             imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal("--path 1.0/runtime2/os/Dockerfile --path 1.0/sdk3/os2/Dockerfile --path 1.0/runtime3/os2/Dockerfile", imageBuilderPaths);
+        }
+
+        /// <summary>
+        /// Verifies that a <see cref="MatrixType.PlatformVersionedOs"/> build matrix can be generated correctly
+        /// when there are multiple custom build leg groups defined.
+        /// </summary>
+        [Fact]
+        public void GenerateBuildMatrixCommand_MultiBuildLegGroups()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            const string customBuildLegGroup1 = "custom1";
+            const string customBuildLegGroup2 = "custom2";
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ProductVersionComponents = 2;
+            command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup1, customBuildLegGroup2 };
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/repo1/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("repo2",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/repo2/os", tempFolderContext),
+                                new string[] { "tag" },
+                                customBuildLegGroups: new CustomBuildLegGroup[]
+                                {
+                                    new CustomBuildLegGroup
+                                    {
+                                        Name = customBuildLegGroup1,
+                                        Dependencies = new CustomBuildLegDependency[]
+                                        {
+                                            new CustomBuildLegDependency
+                                            {
+                                                ImageTag = "repo1:tag",
+                                                Type = CustomBuildLegDependencyType.Supplemental
+                                            }
+                                        }
+                                    }
+                                })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("repo3",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/repo3/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("repo4",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("1.0/repo4/os", tempFolderContext),
+                                new string[] { "tag" },
+                                customBuildLegGroups: new CustomBuildLegGroup[]
+                                {
+                                    new CustomBuildLegGroup
+                                    {
+                                        Name = customBuildLegGroup1,
+                                        Dependencies = new CustomBuildLegDependency[]
+                                        {
+                                            new CustomBuildLegDependency
+                                            {
+                                                ImageTag = "repo3:tag",
+                                                Type = CustomBuildLegDependencyType.Integral
+                                            }
+                                        }
+                                    }
+                                })
+                        },
+                        productVersion: "1.0"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            Assert.Equal(3, matrixInfo.Legs.Count());
+            BuildLegInfo leg = matrixInfo.Legs.First();
+            string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(
+                "--path 1.0/repo1/os/Dockerfile",
+                imageBuilderPaths);
+
+            leg = matrixInfo.Legs.ElementAt(1);
+            imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(
+                "--path 1.0/repo2/os/Dockerfile --path 1.0/repo1/os/Dockerfile",
+                imageBuilderPaths);
+
+            leg = matrixInfo.Legs.ElementAt(2);
+            imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(
+                "--path 1.0/repo3/os/Dockerfile --path 1.0/repo4/os/Dockerfile",
+                imageBuilderPaths);
         }
     }
 }

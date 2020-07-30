@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "include an SDK image supported on a particular architecture in order to test a runtime OS " +
             "that doesn't its own SDK on that architecture (Buster ARM SDK to test Alpine ARM runtime); " +
             "in that case, the SDK will be included in a leg together with the runtime and the SDK will " +
-            "still have its own leg."
+            "still have have its own leg."
             )]
         Supplemental
     }

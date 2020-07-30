@@ -65,14 +65,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private IEnumerable<IEnumerable<PlatformInfo>> GetCustomLegGroupingDependencies(
-            IEnumerable<PlatformInfo> subgraph, IEnumerable<IEnumerable<PlatformInfo>> subgraphs, CustomBuildLegDependencyType? dependencyType = null)
+            IEnumerable<PlatformInfo> subgraph, IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
         {
             IEnumerable<IEnumerable<PlatformInfo>> dependencySubgraphs = subgraph
                 .Select(platform =>
                 {
                     // Find the subgraphs of the platforms that are the custom leg dependencies of this platform
                     IEnumerable<IEnumerable<PlatformInfo>> dependencySubgraphs =
-                        GetCustomLegGroupPlatforms(platform, dependencyType)
+                        GetCustomLegGroupPlatforms(platform)
                             .Select(dependency =>
                                 subgraphs
                                     .Where(otherSubgraph => subgraph != otherSubgraph)
@@ -101,7 +101,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ToArray();
         }
 
-        private IEnumerable<PlatformInfo> GetCustomLegGroupPlatforms(PlatformInfo platform, CustomBuildLegDependencyType? dependencyType)
+        private IEnumerable<PlatformInfo> GetCustomLegGroupPlatforms(PlatformInfo platform, CustomBuildLegDependencyType? dependencyType = null)
         {
             return Options.CustomBuildLegGroups
                 .Select(groupName =>

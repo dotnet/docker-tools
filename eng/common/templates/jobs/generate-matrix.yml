@@ -1,7 +1,7 @@
 parameters:
   matrixType: null
   name: null
-  customBuildLegGroup: ""
+  customBuildLegGroupArgs: ""
 
 jobs:
 - job: ${{ parameters.name }}
@@ -15,8 +15,8 @@ jobs:
       --type ${{ parameters.matrixType }}
       --os-type '*'
       --architecture '*'
-      --custom-build-leg-group "${{ parameters.customBuildLegGroup }}"
       --product-version-components $(productVersionComponents)
+      ${{ parameters.customBuildLegGroupArgs }}
       $(imageBuilder.pathArgs)
       $(manifestVariables)
     displayName: Generate ${{ parameters.matrixType }} Matrix

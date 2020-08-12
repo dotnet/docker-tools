@@ -64,6 +64,15 @@ ENV TEST2 Value1";
         }
 
         [Fact]
+        public async Task GenerateDockerfilesCommand_MissingTemplate()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, null, allowOptionalTemplates: false);
+
+            await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
+        }
+
+        [Fact]
         public async Task GenerateDockerfilesCommand_Validate_UpToDate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -127,10 +136,17 @@ ENV TEST2 Value1";
             TempFolderContext tempFolderContext,
             string dockerfileTemplate = DefaultDockerfileTemplate,
             string dockerfile = DefaultDockerfile,
+            bool allowOptionalTemplates = true,
             bool validate = false)
         {
-            DockerfileHelper.CreateFile(DockerfileTemplatePath, tempFolderContext, dockerfileTemplate);
             DockerfileHelper.CreateFile(DockerfilePath, tempFolderContext, dockerfile);
+
+            string templatePath = null;
+            if (dockerfileTemplate != null)
+            {
+                DockerfileHelper.CreateFile(DockerfileTemplatePath, tempFolderContext, dockerfileTemplate);
+                templatePath = DockerfileTemplatePath;
+            }
 
             Manifest manifest = CreateManifest(
                 CreateRepo("repo1",
@@ -142,7 +158,7 @@ ENV TEST2 Value1";
                             "buster-slim",
                             Architecture.ARM,
                             "v7",
-                            dockerfileTemplatePath: DockerfileTemplatePath),
+                            dockerfileTemplatePath: templatePath),
                         CreatePlatform(
                             DockerfilePath,
                             new string[] { "tag2" },
@@ -166,6 +182,7 @@ ENV TEST2 Value1";
 
             GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(_environmentServiceMock.Object);
             command.Options.Manifest = manifestPath;
+            command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;
             command.LoadManifest();
 

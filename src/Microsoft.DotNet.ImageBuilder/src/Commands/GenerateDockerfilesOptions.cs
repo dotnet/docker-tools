@@ -12,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
+        public bool AllowOptionalTemplates { get; set; }
+
         public bool Validate { get; set; }
 
         public GenerateDockerfilesOptions() : base()
@@ -23,6 +25,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.DefineOptions(syntax);
 
             FilterOptions.DefineOptions(syntax);
+
+            bool allowOptionalTemplates = false;
+            syntax.DefineOption("optional-templates", ref allowOptionalTemplates, "Do not require templates for each Dockerfile");
+            AllowOptionalTemplates = allowOptionalTemplates;
 
             bool validate = false;
             syntax.DefineOption("validate", ref validate, "Validates the Dockerfiles and templates are in sync");

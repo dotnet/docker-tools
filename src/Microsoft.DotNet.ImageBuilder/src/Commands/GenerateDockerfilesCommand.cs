@@ -43,10 +43,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> outOfSyncDockerfiles = new List<string>();
             List<string> invalidTemplates = new List<string>();
 
-            IEnumerable<PlatformInfo> platforms = Manifest.GetFilteredPlatforms()
-                .Where(platform => platform.DockerfileTemplate != null);
-            foreach (PlatformInfo platform in platforms)
+            foreach (PlatformInfo platform in Manifest.GetFilteredPlatforms())
             {
+                if (platform.DockerfileTemplate == null)
+                {
+                    if (Options.AllowOptionalTemplates)
+                    {
+                        continue;
+                    }
+
+                    throw new InvalidOperationException(
+                        $"The Dockerfile `{platform.DockerfilePath}` does not have a DockerfileTemplate specified.");
+                }
+
                 Logger.WriteSubheading($"Generating '{platform.DockerfilePath}' from '{platform.DockerfileTemplate}'");
 
                 string template = await File.ReadAllTextAsync(platform.DockerfileTemplate);

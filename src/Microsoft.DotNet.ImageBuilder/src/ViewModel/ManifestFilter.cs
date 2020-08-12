@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         public string IncludeArchitecture { get; set; }
         public string IncludeOsType { get; set; }
-        public string IncludeRepo { get; set; }
+        public IEnumerable<string> IncludeRepos { get; set; }
         public IEnumerable<string> IncludeOsVersions { get; set; }
         public IEnumerable<string> IncludePaths { get; set; }
 
@@ -66,8 +66,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public IEnumerable<Repo> GetRepos(Manifest manifest)
         {
+            if (IncludeRepos == null || !IncludeRepos.Any())
+            {
+                return manifest.Repos;
+            }
+
             return manifest.Repos
-                .Where(repo => string.IsNullOrWhiteSpace(IncludeRepo) || repo.Name == IncludeRepo)
+                .Where(repo => IncludeRepos.Contains(repo.Name))
                 .ToArray();
         }
     }

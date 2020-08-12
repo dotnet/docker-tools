@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public string Manifest { get; set; }
         public string RegistryOverride { get; set; }
-        public string Repo { get; set; }
+        public IEnumerable<string> Repos { get; set; }
         public string RepoPrefix { get; set; }
         public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ManifestFilter filter = new ManifestFilter()
             {
-                IncludeRepo = Repo,
+                IncludeRepos = Repos,
             };
 
             if (this is IFilterableOptions)
@@ -53,9 +53,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption("registry-override", ref registryOverride, "Alternative registry which overrides the manifest");
             RegistryOverride = registryOverride;
 
-            string repo = null;
-            syntax.DefineOption("repo", ref repo, "Repo to operate on (Default is all)");
-            Repo = repo;
+            IReadOnlyList<string> repos = Array.Empty<string>();
+            syntax.DefineOptionList("repo", ref repos, "Repos to operate on (Default is all)");
+            Repos = repos;
 
             string repoPrefix = null;
             syntax.DefineOption("repo-prefix", ref repoPrefix, "Prefix to add to the repo names specified in the manifest");

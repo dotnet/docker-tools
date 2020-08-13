@@ -84,56 +84,70 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (Options.IsPushEnabled)
                     {
-                        // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
-                        // It is output in the form of <repo>@<sha> but we only want the sha because the repo portion is tied
-                        // to the staging location being pushed to when we actually want the final MCR-qualified repo name.
-                        string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
-                        digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
-
-                        if (platform.Digest != null && platform.Digest != digest)
-                        {
-                            // Pushing the same image with different tags should result in the same digest being output
-                            this.loggerService.WriteError(
-                                $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{platform.Digest}'.");
-                            this.environmentService.Exit(1);
-                        }
-
-                        platform.Digest = digest;
-
-                        if (platform.BaseImageDigest == null && manifestPlatform.FinalStageFromImage != null)
-                        {
-                            if (!platformDataByTag.TryGetValue(manifestPlatform.FinalStageFromImage, out PlatformData basePlatformData))
-                            {
-                                throw new InvalidOperationException(
-                                    $"Unable to find platform data for tag '{manifestPlatform.FinalStageFromImage}'. " +
-                                    "It's likely that the platforms are not ordered according to dependency.");
-                            }
-
-                            if (basePlatformData.Digest == null)
-                            {
-                                throw new InvalidOperationException($"Digest for platform '{basePlatformData.GetIdentifier()}' has not been calculated yet.");
-                            }
-
-                            platform.BaseImageDigest = basePlatformData.Digest;
-                        }
+                        SetPlatformDataDigest(platform, manifestPlatform, tag);
+                        SetPlatformDataBaseDigest(platform, manifestPlatform, platformDataByTag);
                     }
 
-                    DateTime createdDate = this.dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
-                    if (platform.Created != default && platform.Created != createdDate)
-                    {
-                        // All of the tags associated with the platform should have the same Created date
-                        this.loggerService.WriteError(
-                            $"Tag '{tag}' has a Created date that differs from the corresponding image's Created date value of '{platform.Created}'.");
-                        this.environmentService.Exit(1);
-                    }
-
-                    platform.Created = createdDate;
+                    SetPlatformDataCreatedDate(platform, tag);
                     platform.CommitUrl = gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
                 }
             }
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
+        }
+
+        private void SetPlatformDataCreatedDate(PlatformData platform, string tag)
+        {
+            DateTime createdDate = this.dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
+            if (platform.Created != default && platform.Created != createdDate)
+            {
+                // All of the tags associated with the platform should have the same Created date
+                this.loggerService.WriteError(
+                    $"Tag '{tag}' has a Created date that differs from the corresponding image's Created date value of '{platform.Created}'.");
+                this.environmentService.Exit(1);
+            }
+
+            platform.Created = createdDate;
+        }
+
+        private static void SetPlatformDataBaseDigest(PlatformData platform, PlatformInfo manifestPlatform, Dictionary<string, PlatformData> platformDataByTag)
+        {
+            if (platform.BaseImageDigest == null && manifestPlatform.FinalStageFromImage != null)
+            {
+                if (!platformDataByTag.TryGetValue(manifestPlatform.FinalStageFromImage, out PlatformData basePlatformData))
+                {
+                    throw new InvalidOperationException(
+                        $"Unable to find platform data for tag '{manifestPlatform.FinalStageFromImage}'. " +
+                        "It's likely that the platforms are not ordered according to dependency.");
+                }
+
+                if (basePlatformData.Digest == null)
+                {
+                    throw new InvalidOperationException($"Digest for platform '{basePlatformData.GetIdentifier()}' has not been calculated yet.");
+                }
+
+                platform.BaseImageDigest = basePlatformData.Digest;
+            }
+        }
+
+        private void SetPlatformDataDigest(PlatformData platform, PlatformInfo manifestPlatform, string tag)
+        {
+            // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
+            // It is output in the form of <repo>@<sha> but we only want the sha because the repo portion is tied
+            // to the staging location being pushed to when we actually want the final MCR-qualified repo name.
+            string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
+            digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+
+            if (platform.Digest != null && platform.Digest != digest)
+            {
+                // Pushing the same image with different tags should result in the same digest being output
+                this.loggerService.WriteError(
+                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{platform.Digest}'.");
+                this.environmentService.Exit(1);
+            }
+
+            platform.Digest = digest;
         }
 
         private void BuildImages()

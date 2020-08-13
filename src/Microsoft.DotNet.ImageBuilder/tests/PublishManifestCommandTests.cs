@@ -156,9 +156,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.True(actualCreatedDate > (DateTime.Now.ToUniversalTime() - TimeSpan.FromMinutes(1)));
             Assert.True(actualCreatedDate < (DateTime.Now.ToUniversalTime() + TimeSpan.FromMinutes(1)));
 
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "digest1";
+            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "repo1@digest1";
             imageArtifactDetails.Repos[0].Images[0].Manifest.Created = actualCreatedDate;
-            imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "digest2";
+            imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "repo2@digest2";
             imageArtifactDetails.Repos[1].Images[0].Manifest.Created = actualCreatedDate;
 
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);

@@ -150,8 +150,18 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj) =>
-            property.SetValue(targetObj, property.GetValue(srcObj));
+        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj)
+        {
+            object value = property.GetValue(srcObj);
+            if (value is IList<string> stringList)
+            {
+                value = stringList
+                    .OrderBy(item => item)
+                    .ToList<string>();
+            }
+
+            property.SetValue(targetObj, value);
+        }
 
         private static void MergeStringLists(PropertyInfo property, object srcObj, object targetObj)
         {

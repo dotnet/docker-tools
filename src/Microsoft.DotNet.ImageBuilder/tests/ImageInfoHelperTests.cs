@@ -454,8 +454,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             Dockerfile = "image1",
                                             SimpleTags =
                                             {
-                                                "tag1",
-                                                "tag3"
+                                                "tag3",
+                                                "tag1"
                                             }
                                         }
                                     }
@@ -464,7 +464,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     SharedTags =
                                     {
-                                        "sharedtag1",
+                                        "sharedtag1b",
+                                        "sharedtag1a",
                                     }
                                 }
                             }
@@ -543,14 +544,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    srcPlatform1,
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        SimpleTags =
+                                        {
+                                            "tag1",
+                                            "tag3"
+                                        }
+                                    },
                                     targetPlatform2
                                 },
                                 Manifest = new ManifestData
                                 {
                                     SharedTags =
                                     {
-                                        "sharedtag1",
+                                        "sharedtag1a",
+                                        "sharedtag1b",
                                     }
                                 }
                             }

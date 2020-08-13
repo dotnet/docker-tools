@@ -79,9 +79,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             // Find the images from the image info file that correspond to the images that were published
-            IEnumerable<ImageData> imageDataList = imageArtifactDetails.Repos
-                .SelectMany(repo => repo.Images)
-                .Where(image => imageInfos.Contains(image.ManifestImage));
+            IEnumerable<(ImageData Image, string RepoName)> imageDataList = imageArtifactDetails.Repos
+                .SelectMany(repo =>
+                    repo.Images
+                        .Select(image => (image, Manifest.AllRepos.First(manifestRepo => repo.Repo.Equals(manifestRepo.Name)).FullModelName)))
+                .Where(image => imageInfos.Contains(image.image.ManifestImage));
 
             if (imageDataList.Count() != imageInfos.Count())
             {
@@ -92,15 +94,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             Parallel.ForEach(imageDataList, image =>
             {
-                image.Manifest.Created = createdDate;
+                image.Image.Manifest.Created = createdDate;
 
-                TagInfo sharedTag = image.ManifestImage.SharedTags.First();
+                TagInfo sharedTag = image.Image.ManifestImage.SharedTags.First();
                 JArray tagManifest = this.manifestToolService.Inspect(sharedTag.FullyQualifiedName, Options.IsDryRun);
                 string digest = tagManifest?
                     .OfType<JObject>()
                     .First(manifestType => manifestType["MediaType"].Value<string>() == ManifestListMediaType)
                     ["Digest"].Value<string>();
-                image.Manifest.Digest = digest;
+                image.Image.Manifest.Digest = DockerHelper.GetDigestString(image.RepoName, digest);
             });
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);

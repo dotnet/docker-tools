@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformData platform in image.Platforms)
                     {
                         string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
-                        builder.AppendLine(FormatCsv(platform.Digest, platform, image, repo, timestamp));
+                        builder.AppendLine(FormatCsv(DockerHelper.GetDigestSha(platform.Digest), platform, image, repo, timestamp));
 
                         foreach (string tag in platform.SimpleTags)
                         {

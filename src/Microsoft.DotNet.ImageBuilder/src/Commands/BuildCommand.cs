@@ -66,16 +66,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 throw new InvalidOperationException("Source repo URL must be provided when outputting to an image info file.");
             }
 
+            Dictionary<string, PlatformData> platformDataByTag = new Dictionary<string, PlatformData>();
+            foreach (PlatformData platformData in GetBuiltPlatforms())
+            {
+                foreach (string tag in platformData.FullyQualifiedSimpleTags)
+                {
+                    platformDataByTag.Add(tag, platformData);
+                }
+            }
+
             foreach (var platform in GetBuiltPlatforms())
             {
+                PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
+                   .First(manifestPlatform => platform.Equals(manifestPlatform));
+
                 foreach (string tag in platform.FullyQualifiedSimpleTags)
                 {
                     if (Options.IsPushEnabled)
                     {
                         // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
-                        // It is output in the form of <repo>@<sha> but we only want the sha.
+                        // It is output in the form of <repo>@<sha> but we only want the sha because the repo portion is tied
+                        // to the staging location being pushed to when we actually want the final MCR-qualified repo name.
                         string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
-                        digest = digest.Substring(digest.IndexOf("@") + 1);
+                        digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
 
                         if (platform.Digest != null && platform.Digest != digest)
                         {
@@ -86,6 +99,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
 
                         platform.Digest = digest;
+
+                        if (platform.BaseImageDigest == null && manifestPlatform.FinalStageFromImage != null)
+                        {
+                            if (!platformDataByTag.TryGetValue(manifestPlatform.FinalStageFromImage, out PlatformData basePlatformData))
+                            {
+                                throw new InvalidOperationException(
+                                    $"Unable to find platform data for tag '{manifestPlatform.FinalStageFromImage}'. " +
+                                    "It's likely that the platforms are not ordered according to dependency.");
+                            }
+
+                            if (basePlatformData.Digest == null)
+                            {
+                                throw new InvalidOperationException($"Digest for platform '{basePlatformData.GetIdentifier()}' has not been calculated yet.");
+                            }
+
+                            platform.BaseImageDigest = basePlatformData.Digest;
+                        }
                     }
 
                     DateTime createdDate = this.dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
@@ -98,10 +128,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
 
                     platform.Created = createdDate;
-
-                    PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
-                        .First(manifestPlatform => platform.Equals(manifestPlatform));
-
                     platform.CommitUrl = gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
                 }
             }
@@ -120,7 +146,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Repo = repoInfo.Name
                 };
-                imageArtifactDetails.Repos.Add(repoData);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
@@ -203,6 +228,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .ToList();
                         platformData.AllTags = allTags;
                     }
+                }
+
+                if (repoData.Images.Any())
+                {
+                    imageArtifactDetails.Repos.Add(repoData);
                 }
             }
         }

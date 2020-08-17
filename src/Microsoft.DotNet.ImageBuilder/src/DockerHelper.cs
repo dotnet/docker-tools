@@ -129,8 +129,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 "inspect", ".Created", "Failed to retrieve created date", image, isDryRun);
         }
 
-        public static string GetDigestSha(string digest) => digest.Substring(digest.IndexOf("@") + 1);
-
+        public static string GetDigestSha(string digest) => digest?.Substring(digest.IndexOf("@") + 1);
+        
         public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
 
         private static OS GetOS()

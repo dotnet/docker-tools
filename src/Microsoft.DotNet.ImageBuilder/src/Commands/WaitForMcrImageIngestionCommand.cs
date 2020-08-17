@@ -58,12 +58,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (image.Manifest?.Digest != null)
             {
-                yield return new DigestInfo(image.Manifest.Digest, repo, image.Manifest.SharedTags);
+                yield return new DigestInfo(DockerHelper.GetDigestSha(image.Manifest.Digest), repo, image.Manifest.SharedTags);
             }
 
             foreach (PlatformData platform in image.Platforms)
             {
-                yield return new DigestInfo(platform.Digest, repo, platform.SimpleTags);
+                yield return new DigestInfo(DockerHelper.GetDigestSha(platform.Digest), repo, platform.SimpleTags);
             }
         }
 

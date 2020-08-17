@@ -15,12 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GenerateTagsReadmeCommand : ManifestCommand<GenerateTagsReadmeOptions>
     {
         private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";
-        private readonly IGitService gitService;
+        private readonly IEnvironmentService _environmentService;
+        private readonly IGitService _gitService;
 
         [ImportingConstructor]
-        public GenerateTagsReadmeCommand(IGitService gitService) : base()
+        public GenerateTagsReadmeCommand(IEnvironmentService environmentService, IGitService gitService) : base()
         {
-            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
         public override Task ExecuteAsync()
@@ -33,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             RepoInfo repo = Manifest.FilteredRepos.First();
             string tagsMetadata = McrTagsMetadataGenerator.Execute(
-                this.gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch);
+                _gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch);
             string tagsListing = GenerateTagsListing(repo, tagsMetadata);
             UpdateReadme(repo, tagsListing);
 
@@ -94,21 +96,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Directory.Delete(tempDir, true);
             }
 
-            Logger.WriteSubheading($"Tags Documentation:");
-            Logger.WriteMessage(tagsDoc);
+            if (Options.IsVerbose)
+            {
+                Logger.WriteSubheading($"Tags Documentation:");
+                Logger.WriteMessage(tagsDoc);
+            }
 
             return tagsDoc;
         }
 
-        public static void UpdateReadme(RepoInfo repo, string tagsListing)
+        public void UpdateReadme(RepoInfo repo, string tagsListing)
         {
             Logger.WriteHeading("UPDATING README");
 
-            string readme = File.ReadAllText(repo.Model.ReadmePath);
-            readme = ReadmeHelper.UpdateTagsListing(readme, tagsListing);
-            File.WriteAllText(repo.Model.ReadmePath, readme);
+            string currentReadme = File.ReadAllText(repo.Model.ReadmePath);
+            string updatedReadme = ReadmeHelper.UpdateTagsListing(currentReadme, tagsListing);
 
-            Logger.WriteSubheading($"Updated '{repo.Model.ReadmePath}'");
+            if (currentReadme == updatedReadme)
+            {
+                Logger.WriteMessage($"The tag listing in '{repo.Model.ReadmePath}' is up-to-date.");
+            }
+            else if (Options.Validate)
+            {
+                Logger.WriteError($"The tag listing in '{repo.Model.ReadmePath}' is out of date.");
+                _environmentService.Exit(1);
+            }
+            else
+            {
+                File.WriteAllText(repo.Model.ReadmePath, updatedReadme);
+
+                Logger.WriteSubheading($"Updated the tag listing in '{repo.Model.ReadmePath}'");
+            }
+
             Logger.WriteMessage();
         }
     }

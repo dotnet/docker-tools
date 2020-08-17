@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task SuccessfulPublish()
         {
             DateTime baselineTime = DateTime.Now;
-            const string manifestDigest1 = "manifestDigest1";
+            const string manifestDigest1 = "repo@sha256:manifestDigest1";
             const string sharedTag1 = "sharedTag1";
             const string sharedTag2 = "sharedTag2";
             const string platformTag1 = "platformTag1";
@@ -35,8 +35,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string platformTag3 = "platformTag3";
             const string repo1 = "repo1";
             const string repo2 = "repo2";
-            const string platformDigest1 = "platformDigest1";
-            const string platformDigest2 = "platformDigest2";
+            const string platformDigest1 = "repo@sha256:platformDigest1";
+            const string platformDigest2 = "repo@sha256:platformDigest2";
 
             Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
 
@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
             {
                 {
-                    manifestDigest1,
+                    DockerHelper.GetDigestSha(manifestDigest1),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }.GetEnumerator()
                 },
                 {
-                    platformDigest1,
+                    DockerHelper.GetDigestSha(platformDigest1),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -161,7 +161,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }.GetEnumerator()
                 },
                 {
-                    platformDigest2,
+                    DockerHelper.GetDigestSha(platformDigest2),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -303,9 +303,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            statusClientMock.Verify(o => o.GetImageResultAsync(manifestDigest1), Times.Exactly(4));
-            statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest1), Times.Exactly(2));
-            statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest2), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1)), Times.Exactly(4));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest2)), Times.Exactly(2));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 
@@ -313,12 +313,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task PublishFailure()
         {
             DateTime baselineTime = DateTime.Now;
-            const string manifestDigest1 = "manifestDigest1";
+            const string manifestDigest1 = "repo@sha256:manifestDigest1";
             const string sharedTag1 = "sharedTag1";
             const string platformTag1 = "platformTag1";
             const string platformTag2 = "platformTag2";
             const string repo1 = "repo1";
-            const string platformDigest1 = "platformDigest1";
+            const string platformDigest1 = "repo@sha256:platformDigest1";
             const string onboardingRequestId1 = "onboardingRequestId1";
             const string onboardingRequestId2 = "onboardingRequestId2";
 
@@ -353,7 +353,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
             {
                 {
-                    manifestDigest1,
+                    DockerHelper.GetDigestSha(manifestDigest1),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -383,7 +383,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }.GetEnumerator()
                 },
                 {
-                    platformDigest1,
+                    DockerHelper.GetDigestSha(platformDigest1),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -422,7 +422,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetImageResultDetailedAsync(manifestDigest1, onboardingRequestId1))
+                .Setup(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(manifestDigest1), onboardingRequestId1))
                 .ReturnsAsync(new ImageResultDetailed
                 {
                     CommitDigest = manifestDigest1,
@@ -434,7 +434,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetImageResultDetailedAsync(platformDigest1, onboardingRequestId2))
+                .Setup(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), onboardingRequestId2))
                 .ReturnsAsync(new ImageResultDetailed
                 {
                     CommitDigest = platformDigest1,
@@ -523,11 +523,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            statusClientMock.Verify(o => o.GetImageResultAsync(manifestDigest1), Times.Exactly(3));
-            statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest1), Times.Exactly(2));
-            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(manifestDigest1, onboardingRequestId1), Times.Once);
-            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(platformDigest1, onboardingRequestId2), Times.Once);
-            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(platformDigest1, It.Is<string>(val => val != onboardingRequestId2)), Times.Never);
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1)), Times.Exactly(3));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(manifestDigest1), onboardingRequestId1), Times.Once);
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), onboardingRequestId2), Times.Once);
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), It.Is<string>(val => val != onboardingRequestId2)), Times.Never);
             environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
         }
 
@@ -541,7 +541,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime baselineTime = DateTime.Now;
             const string platformTag1 = "platformTag1";
             const string repo1 = "repo1";
-            const string platformDigest1 = "platformDigest1";
+            const string platformDigest1 = "repo@sha256:platformDigest1";
 
             Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
 
@@ -564,7 +564,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
             {
                 {
-                    platformDigest1,
+                    DockerHelper.GetDigestSha(platformDigest1),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -671,7 +671,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest1), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(2));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 
@@ -685,7 +685,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime baselineTime = DateTime.Now;
             const string platformTag1 = "platformTag1";
             const string repo1 = "repo1";
-            const string platformDigest1 = "platformDigest1";
+            const string platformDigest1 = "repo@sha256:platformDigest1";
             const string tag1aOnboardingRequestId = "onboard request1";
             const string tag1bOnboardingRequestId = "onboard request2";
 
@@ -712,7 +712,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
             {
                 {
-                    platformDigest1,
+                    DockerHelper.GetDigestSha(platformDigest1),
                     new List<ImageResult>
                     {
                         new ImageResult
@@ -760,7 +760,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetImageResultDetailedAsync(platformDigest1, tag1aOnboardingRequestId))
+                .Setup(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1aOnboardingRequestId))
                 .ReturnsAsync(new ImageResultDetailed
                 {
                     CommitDigest = platformDigest1,
@@ -772,7 +772,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             statusClientMock
-                .Setup(o => o.GetImageResultDetailedAsync(platformDigest1, tag1bOnboardingRequestId))
+                .Setup(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1bOnboardingRequestId))
                 .ReturnsAsync(new ImageResultDetailed
                 {
                     CommitDigest = platformDigest1,
@@ -852,9 +852,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            statusClientMock.Verify(o => o.GetImageResultAsync(platformDigest1), Times.Exactly(3));
-            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(platformDigest1, tag1aOnboardingRequestId), Times.Once);
-            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(platformDigest1, tag1bOnboardingRequestId), Times.Once);
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(3));
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1aOnboardingRequestId), Times.Once);
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1bOnboardingRequestId), Times.Once);
             environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
         }
 
@@ -867,7 +867,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime baselineTime = DateTime.Now;
             const string platformTag1 = "platformTag1";
             const string repo1 = "repo1";
-            const string platformDigest1 = "platformDigest1";
+            const string platformDigest1 = "repo@sha256:platformDigest1";
 
             Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
             statusClientMock

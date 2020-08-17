@@ -30,6 +30,11 @@ namespace Microsoft.DotNet.ImageBuilder
             ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
         }
 
+        public void CreateTag(string image, string tag, bool isDryRun)
+        {
+            DockerHelper.CreateTag(image, tag, isDryRun);
+        }
+
         public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun)
         {
             string tagArgs = $"-t {string.Join(" -t ", tags)}";

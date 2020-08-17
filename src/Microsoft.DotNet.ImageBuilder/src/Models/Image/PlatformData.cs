@@ -31,6 +31,15 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public string CommitUrl { get; set; }
 
+        /// <summary>
+        /// Gets or sets whether the image was retrieved as a cached image.
+        /// </summary>
+        /// <remarks>
+        /// Items with this state should only be used internally within a build. Such items
+        /// should be stripped out of the published image info content.
+        /// </remarks>
+        public bool IsCached { get; set; }
+
         [JsonIgnore]
         public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
 

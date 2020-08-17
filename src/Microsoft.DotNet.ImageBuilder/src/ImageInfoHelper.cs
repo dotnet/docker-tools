@@ -93,7 +93,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (PropertyInfo property in properties)
             {
-                if (property.PropertyType == typeof(string) || property.PropertyType == typeof(DateTime))
+                if (property.PropertyType == typeof(string) ||
+                    property.PropertyType == typeof(DateTime) ||
+                    property.PropertyType == typeof(bool))
                 {
                     property.SetValue(targetObj, property.GetValue(srcObj));
                 }

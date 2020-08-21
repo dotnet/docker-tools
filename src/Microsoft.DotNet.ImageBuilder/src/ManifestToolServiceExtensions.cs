@@ -9,7 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ManifestToolServiceExtensions
     {
-        public static string GetImageDigest(this IManifestToolService manifestToolService, string tag, bool isDryRun)
+        public static string GetManifestListDigest(this IManifestToolService manifestToolService, string tag, bool isDryRun)
         {
             JArray tagManifest = manifestToolService.Inspect(tag, isDryRun);
             return tagManifest?
@@ -17,8 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .First(manifestType =>
                 {
                     string mediaType = manifestType["MediaType"].Value<string>();
-                    return mediaType == ManifestToolService.ManifestListMediaType ||
-                        mediaType == ManifestToolService.ManifestMediaType;
+                    return mediaType == ManifestToolService.ManifestListMediaType;
                 })
                 ["Digest"].Value<string>();
         }

@@ -29,6 +29,11 @@ namespace Microsoft.DotNet.ImageBuilder
             while (!directory.GetDirectories(".git").Any())
             {
                 directory = directory.Parent;
+
+                if (directory is null)
+                {
+                    throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
+                }
             }
 
             filePath = Path.GetRelativePath(directory.FullName, filePath);

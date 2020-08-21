@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string ImageInfoOutputPath { get; set; }
         public string ImageInfoSourcePath { get; set; }
         public string SourceRepoUrl { get; set; }
-        public bool DisableCaching { get; set; }
+        public bool NoCache { get; set; }
 
         public BuildOptions() : base()
         {
@@ -53,9 +53,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
             SourceRepoUrl = sourceRepoUrl;
 
-            bool disableCaching = false;
-            syntax.DefineOption("disable-caching", ref disableCaching, "Disables build cache feature");
-            DisableCaching = disableCaching;
+            bool noCache = false;
+            syntax.DefineOption("no-cache", ref noCache, "Disables build cache feature");
+            NoCache = noCache;
         }
     }
 }

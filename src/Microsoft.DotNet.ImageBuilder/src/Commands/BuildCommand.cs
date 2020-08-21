@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
             IGitService gitService)
         {
-            this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
+            this.dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
@@ -210,7 +210,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         platformData.AllTags = allTags;
 
                         bool isCachedImage = false;
-                        if (!Options.DisableCaching && srcImageData != null)
+                        if (!Options.NoCache && srcImageData != null)
                         {
                             PlatformData srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
                             // If this Dockerfile has been built and published before
@@ -285,35 +285,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
-            string currentBaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
-
-            bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
-                DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
-
-            this.loggerService.WriteMessage();
-            this.loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
-            this.loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
-            this.loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
-
-            string currentCommitUrl = this.gitService.GetDockerfileCommitUrl(platform, Options.SourceRepoUrl);
-            bool commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl,StringComparison.OrdinalIgnoreCase);
-
-            this.loggerService.WriteMessage();
-            this.loggerService.WriteMessage($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
-            this.loggerService.WriteMessage($"Latest Dockerfile commit: {currentCommitUrl}");
-            this.loggerService.WriteMessage($"Dockerfile commits match: {commitShaMatches}");
-
-            // TODO: This check can be removed once all digests in the image info file have been updated to be fully-qualified
-            bool isFullyQualifiedSourceDigest = !srcPlatformData.Digest.StartsWith("sha256:");
-            this.loggerService.WriteMessage();
-            this.loggerService.WriteMessage($"Is source digest '{srcPlatformData.Digest}' fully qualified: {isFullyQualifiedSourceDigest}");
-
             // If the previously published image was based on an image that is still the latest version AND
             // the Dockerfile hasn't changed since it was last published
-            if (baseImageDigestMatches && commitShaMatches && isFullyQualifiedSourceDigest)
+            if (IsBaseImageDigestUpToDate(platform, srcPlatformData) &&
+                IsDockerfileUpToDate(platform, srcPlatformData) &&
+                IsFullyQualifiedDigest(srcPlatformData))
             {
                 this.loggerService.WriteMessage();
-                this.loggerService.WriteMessage("Cache hit");
+                this.loggerService.WriteMessage("CACHE HIT");
+                this.loggerService.WriteMessage();
 
                 // Pull the image instead of building it
                 this.dockerService.PullImage(srcPlatformData.Digest, Options.IsDryRun);
@@ -327,9 +307,44 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return true;
             }
 
-            this.loggerService.WriteMessage("Cache miss");
+            this.loggerService.WriteMessage("CACHE MISS");
+            this.loggerService.WriteMessage();
 
             return false;
+        }
+
+        // TODO: This check can be removed once all digests in the image info file have been updated to be fully-qualified
+        private bool IsFullyQualifiedDigest(PlatformData srcPlatformData)
+        {
+            bool isFullyQualifiedSourceDigest = !srcPlatformData.Digest.StartsWith("sha256:");
+            this.loggerService.WriteMessage();
+            this.loggerService.WriteMessage($"Is source digest '{srcPlatformData.Digest}' fully qualified: {isFullyQualifiedSourceDigest}");
+            return isFullyQualifiedSourceDigest;
+        }
+
+        private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
+        {
+            string currentCommitUrl = this.gitService.GetDockerfileCommitUrl(platform, Options.SourceRepoUrl);
+            bool commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
+
+            this.loggerService.WriteMessage();
+            this.loggerService.WriteMessage($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
+            this.loggerService.WriteMessage($"Latest Dockerfile commit: {currentCommitUrl}");
+            this.loggerService.WriteMessage($"Dockerfile commits match: {commitShaMatches}");
+            return commitShaMatches;
+        }
+
+        private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
+        {
+            string currentBaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+            bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
+                DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
+
+            this.loggerService.WriteMessage();
+            this.loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
+            this.loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
+            this.loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
+            return baseImageDigestMatches;
         }
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)

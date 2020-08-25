@@ -37,9 +37,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
+            const string aspnetRepo = "aspnet";
             string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
             string runtimeDigest = $"{runtimeRepo}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            string aspnetDigest = $"{aspnetRepo}@sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
             const string tag = "tag";
+            const string localTag = "localtag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
             string baseImageDigest = $"{baseImageRepo}@sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
@@ -57,6 +60,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Returns(runtimeDigest);
 
                 dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{aspnetRepo}:{tag}", false))
+                    .Returns(aspnetDigest);
+
+                dockerServiceMock
                     .Setup(o => o.GetImageDigest(baseImageTag, false))
                     .Returns(baseImageDigest);
 
@@ -68,12 +75,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock
                     .Setup(o => o.GetCreatedDate($"{runtimeRepo}:{tag}", false))
                     .Returns(createdDate);
+                dockerServiceMock
+                    .Setup(o => o.GetCreatedDate($"{aspnetRepo}:{tag}", false))
+                    .Returns(createdDate);
 
                 string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                     "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
 
                 string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                     "1.0/runtime/os", tempFolderContext, $"{runtimeDepsRepo}:{tag}");
+
+                string aspnetDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                    "1.0/aspnet/os", tempFolderContext, $"{runtimeRepo}:{localTag}");
 
                 const string dockerfileCommitSha = "mycommit";
                 Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -82,6 +95,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Returns(dockerfileCommitSha);
                 gitServiceMock
                     .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDockerfileRelativePath)), It.IsAny<bool>()))
+                    .Returns(dockerfileCommitSha);
+                gitServiceMock
+                    .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, aspnetDockerfileRelativePath)), It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
 
                 BuildCommand command = new BuildCommand(
@@ -95,6 +111,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
 
                 const string ProductVersion = "1.0.1";
+
+                Platform runtimePlatform = CreatePlatform(runtimeDockerfileRelativePath, new string[] { tag });
+                runtimePlatform.Tags.Add(localTag, new Tag
+                {
+                    IsLocal = true
+                });
 
                 Manifest manifest = CreateManifest(
                     CreateRepo(runtimeDepsRepo,
@@ -112,7 +134,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(runtimeDockerfileRelativePath, new string[] { tag })
+                                runtimePlatform
+                            },
+                            productVersion: ProductVersion)),
+                    CreateRepo(aspnetRepo,
+                        CreateImage(
+                            new Platform[]
+                            {
+                                CreatePlatform(aspnetDockerfileRelativePath, new string[] { tag })
                             },
                             productVersion: ProductVersion))
                 );
@@ -190,6 +219,35 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     }
                                 }
                             }
+                        },
+                        new RepoData
+                        {
+                            Repo = aspnetRepo,
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    ProductVersion = ProductVersion,
+                                    Platforms =
+                                    {
+                                        new PlatformData
+                                        {
+                                            Dockerfile = aspnetDockerfileRelativePath,
+                                            Architecture = "amd64",
+                                            OsType = "Linux",
+                                            OsVersion = "Ubuntu 19.04",
+                                            Digest = aspnetDigest,
+                                            BaseImageDigest = runtimeDigest,
+                                            Created = createdDate.ToUniversalTime(),
+                                            SimpleTags =
+                                            {
+                                                tag
+                                            },
+                                            CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{aspnetDockerfileRelativePath}"
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 };
@@ -209,6 +267,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string repoName = "runtime";
             const string tag = "tag";
+            const string localTag = "localtag";
             const string sharedTag = "shared";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
@@ -227,12 +286,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
+            Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag });
+            platform.Tags.Add(localTag, new Tag { IsLocal = true });
+
             Manifest manifest = CreateManifest(
                 CreateRepo(repoName,
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(dockerfileRelativePath, new string[] { tag })
+                            platform
                         },
                         new Dictionary<string, Tag>
                         {
@@ -252,6 +314,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[]
                     {
                         TagInfo.GetFullyQualifiedName(repoName, tag),
+                        TagInfo.GetFullyQualifiedName(repoName, localTag),
                         TagInfo.GetFullyQualifiedName(repoName, sharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
@@ -262,6 +325,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>()));
             dockerServiceMock.Verify(
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>()));
+            dockerServiceMock.Verify(
+                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, localTag), It.IsAny<bool>()), Times.Never);
         }
 
         /// <summary>

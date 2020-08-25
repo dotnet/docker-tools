@@ -69,26 +69,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<string, PlatformData> platformDataByTag = new Dictionary<string, PlatformData>();
             foreach (PlatformData platformData in GetBuiltPlatforms())
             {
-                foreach (string tag in platformData.FullyQualifiedSimpleTags)
+                foreach (TagInfo tag in platformData.PlatformInfo.Tags)
                 {
-                    platformDataByTag.Add(tag, platformData);
+                    platformDataByTag.Add(tag.FullyQualifiedName, platformData);
                 }
             }
 
-            foreach (var platform in GetBuiltPlatforms())
+            foreach (PlatformData platform in GetBuiltPlatforms())
             {
                 PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
                    .First(manifestPlatform => platform.Equals(manifestPlatform));
 
-                foreach (string tag in platform.FullyQualifiedSimpleTags)
+                foreach (TagInfo tag in GetPushTags(platform.PlatformInfo.Tags))
                 {
                     if (Options.IsPushEnabled)
                     {
-                        SetPlatformDataDigest(platform, manifestPlatform, tag);
-                        SetPlatformDataBaseDigest(platform, manifestPlatform, platformDataByTag);
+                        SetPlatformDataDigest(platform, manifestPlatform, tag.FullyQualifiedName);
+                        SetPlatformDataBaseDigest(platform, platformDataByTag);
                     }
 
-                    SetPlatformDataCreatedDate(platform, tag);
+                    SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
                     platform.CommitUrl = gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
                 }
             }
@@ -111,14 +111,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Created = createdDate;
         }
 
-        private static void SetPlatformDataBaseDigest(PlatformData platform, PlatformInfo manifestPlatform, Dictionary<string, PlatformData> platformDataByTag)
+        private static void SetPlatformDataBaseDigest(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
         {
-            if (platform.BaseImageDigest == null && manifestPlatform.FinalStageFromImage != null)
+            if (platform.BaseImageDigest == null && platform.PlatformInfo.FinalStageFromImage != null)
             {
-                if (!platformDataByTag.TryGetValue(manifestPlatform.FinalStageFromImage, out PlatformData basePlatformData))
+                platform.AllTags.FirstOrDefault(tag => tag.FullyQualifiedName == platform.PlatformInfo.FinalStageFromImage);
+                if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData basePlatformData))
                 {
                     throw new InvalidOperationException(
-                        $"Unable to find platform data for tag '{manifestPlatform.FinalStageFromImage}'. " +
+                        $"Unable to find platform data for tag '{platform.PlatformInfo.FinalStageFromImage}'. " +
                         "It's likely that the platforms are not ordered according to dependency.");
                 }
 
@@ -197,18 +198,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(tag => tag.FullyQualifiedName)
                             .ToList();
 
-                        PlatformData platformData = PlatformData.FromPlatformInfo(platform);
+                        PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
                         imageData.Platforms.Add(platformData);
 
                         platformData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
-                        platformData.FullyQualifiedSimpleTags = platformData.SimpleTags
-                            .Select(tag => TagInfo.GetFullyQualifiedName(repoInfo.QualifiedName, tag))
-                            .ToList();
-                        platformData.AllTags = allTags;
-
                         bool isCachedImage = false;
                         if (!Options.NoCache && srcImageData != null)
                         {
@@ -468,7 +464,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .SelectMany(repoData => repoData.Images)
             .SelectMany(imageData => imageData.Platforms);
 
-        private IEnumerable<string> GetBuiltTags() =>
+        private IEnumerable<TagInfo> GetBuiltTags() =>
             GetBuiltPlatforms().SelectMany(platform => platform.AllTags);
 
         private void PushImages()
@@ -479,9 +475,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ExecuteWithUser(() =>
                 {
-                    foreach (string tag in GetBuiltTags())
+                    foreach (TagInfo tag in GetPushTags(GetBuiltTags()))
                     {
-                        this.dockerService.PushImage(tag, Options.IsDryRun);
+                        this.dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
                     }
                 });
             }
@@ -528,13 +524,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteHeading("IMAGES BUILT");
 
-            IEnumerable<string> builtTags = GetBuiltTags();
+            IEnumerable<TagInfo> builtTags = GetBuiltTags();
 
             if (builtTags.Any())
             {
-                foreach (string tag in builtTags)
+                foreach (TagInfo tag in builtTags)
                 {
-                    this.loggerService.WriteMessage(tag);
+                    this.loggerService.WriteMessage(tag.FullyQualifiedName);
                 }
             }
             else

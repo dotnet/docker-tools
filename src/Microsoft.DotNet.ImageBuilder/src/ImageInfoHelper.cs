@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Name == repoData.Repo);
                 if (manifestRepo == null)
                 {
-                    Console.WriteLine($"Image info repo not loaded:  {repoData.Repo}");
+                    Console.WriteLine($"Image info repo not loaded: {repoData.Repo}");
                     continue;
                 }
                 foreach (ImageData imageData in repoData.Images)
@@ -40,6 +40,8 @@ namespace Microsoft.DotNet.ImageBuilder
                             if (matchingManifestPlatform != null)
                             {
                                 imageData.ManifestImage = manifestImage;
+                                platformData.PlatformInfo = matchingManifestPlatform;
+                                platformData.ImageInfo = manifestImage;
                                 break;
                             }
                         }

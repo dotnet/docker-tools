@@ -15,7 +15,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsRetryEnabled { get; set; }
         public bool IsSkipPullingEnabled { get; set; }
         public string ImageInfoOutputPath { get; set; }
+        public string ImageInfoSourcePath { get; set; }
         public string SourceRepoUrl { get; set; }
+        public bool NoCache { get; set; }
 
         public BuildOptions() : base()
         {
@@ -43,9 +45,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             syntax.DefineOption("image-info-output-path", ref imageInfoOutputPath, "Path to output image info");
             ImageInfoOutputPath = imageInfoOutputPath;
 
+            string imageInfoSourcePath = null;
+            syntax.DefineOption("image-info-source-path", ref imageInfoSourcePath, "Path to source image info");
+            ImageInfoSourcePath = imageInfoSourcePath;
+
             string sourceRepoUrl = null;
             syntax.DefineOption("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
             SourceRepoUrl = sourceRepoUrl;
+
+            bool noCache = false;
+            syntax.DefineOption("no-cache", ref noCache, "Disables build cache feature");
+            NoCache = noCache;
         }
     }
 }

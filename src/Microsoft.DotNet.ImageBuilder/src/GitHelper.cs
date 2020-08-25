@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -22,10 +23,27 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
+            // Don't make the assumption that the current working directory is a Git repository
+            // Find the Git repo that contains the file being checked.
+            DirectoryInfo directory = new FileInfo(filePath).Directory;
+            while (!directory.GetDirectories(".git").Any())
+            {
+                directory = directory.Parent;
+
+                if (directory is null)
+                {
+                    throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
+                }
+            }
+
+            filePath = Path.GetRelativePath(directory.FullName, filePath);
+
             string format = useFullHash ? "H" : "h";
             return ExecuteHelper.Execute(
-                "git",
-                $"log -1 --format=format:%{format} {filePath}",
+                new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}")
+                {
+                    WorkingDirectory = directory.FullName
+                },
                 false,
                 $"Unable to retrieve the latest commit SHA for {filePath}");
         }

@@ -11,6 +11,9 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IManifestToolService))]
     public class ManifestToolService : IManifestToolService
     {
+        public const string ManifestListMediaType = "application/vnd.docker.distribution.manifest.list.v2+json";
+        public const string ManifestMediaType = "application/vnd.docker.distribution.manifest.v2+json";
+
         public void PushFromSpec(string manifestFile, bool isDryRun)
         {
             // ExecuteWithRetry because the manifest-tool fails periodically while communicating

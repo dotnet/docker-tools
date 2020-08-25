@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 return new JArray(
                     new JObject
                     {
-                        { "MediaType", PublishManifestCommand.ManifestListMediaType },
+                        { "MediaType", ManifestToolService.ManifestListMediaType },
                         { "Digest", digest }
                     });
             }
@@ -56,6 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string dockerfile1 = CreateDockerfile("1.0/repo1/os", tempFolderContext);
             string dockerfile2 = CreateDockerfile("1.0/repo2/os", tempFolderContext);
+            string dockerfile3 = CreateDockerfile("1.0/repo3/os", tempFolderContext);
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
@@ -99,7 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     CreatePlatform(dockerfile2),
                                     new PlatformData
                                     {
-
+                                        IsCached = true
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -160,6 +161,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageArtifactDetails.Repos[0].Images[0].Manifest.Created = actualCreatedDate;
             imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "repo2@digest2";
             imageArtifactDetails.Repos[1].Images[0].Manifest.Created = actualCreatedDate;
+
+            // Remove cached platform
+            imageArtifactDetails.Repos[1].Images[0].Platforms.RemoveAt(1);
 
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
 

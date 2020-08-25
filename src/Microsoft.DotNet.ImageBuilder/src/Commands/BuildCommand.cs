@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
             IGitService gitService)
         {
-            this.dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
+            this.dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
@@ -134,9 +134,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void SetPlatformDataDigest(PlatformData platform, PlatformInfo manifestPlatform, string tag)
         {
-            // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR
-            // It is output in the form of <repo>@<sha> but we only want the sha because the repo portion is tied
-            // to the staging location being pushed to when we actually want the final MCR-qualified repo name.
+            // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
             string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
             digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
 
@@ -155,12 +153,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteHeading("BUILDING IMAGES");
 
+            ImageArtifactDetails srcImageArtifactDetails = null;
+            if (Options.ImageInfoSourcePath != null)
+            {
+                srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoSourcePath, Manifest);
+            }
+
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
                 RepoData repoData = new RepoData
                 {
                     Repo = repoInfo.Name
                 };
+
+                RepoData srcRepoData = srcImageArtifactDetails?.Repos.FirstOrDefault(srcRepo => srcRepo.Repo == repoInfo.Name);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
@@ -169,7 +175,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         ProductVersion = image.ProductVersion
                     };
 
-                 	if (image.SharedTags.Any())
+                    if (image.SharedTags.Any())
                     {
                         imageData.Manifest = new ManifestData
                         {
@@ -178,66 +184,49 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 .ToList()
                         };
                     }
-                    
+
                     repoData.Images.Add(imageData);
+
+                    ImageData srcImageData = srcRepoData?.Images.FirstOrDefault(srcImage => srcImage.ManifestImage == image);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
+                        // Tag the built images with the shared tags as well as the platform tags.
+                        // Some tests and image FROM instructions depend on these tags.
+                        IEnumerable<string> allTags = platform.Tags
+                            .Concat(image.SharedTags)
+                            .Select(tag => tag.FullyQualifiedName)
+                            .ToList();
+
                         PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
                         imageData.Platforms.Add(platformData);
-
-                        bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
-
-                        IEnumerable<string> allTags;
-
-                        try
-                        {
-                            InvokeBuildHook("pre-build", platform.BuildContextPath);
-
-                            // Tag the built images with the shared tags as well as the platform tags.
-                            // Some tests and image FROM instructions depend on these tags.
-                            allTags = platform.Tags
-                                .Concat(image.SharedTags)
-                                .Select(tag => tag.FullyQualifiedName)
-                                .ToList();
-
-                            string buildOutput = this.dockerService.BuildImage(
-                                dockerfilePath,
-                                platform.BuildContextPath,
-                                allTags,
-                                platform.BuildArgs,
-                                Options.IsRetryEnabled,
-                                Options.IsDryRun);
-
-                            if (!Options.IsSkipPullingEnabled && buildOutput.Contains("Pulling from"))
-                            {
-                                throw new InvalidOperationException(
-                                    "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +
-                                    "Any other image that's not accounted for means there's some kind of mistake in how things are " +
-                                    "configured or a bug in the code.");
-                            }
-
-                            if (!Options.IsDryRun)
-                            {
-                                EnsureArchitectureMatches(platform, allTags);
-                            }
-
-                            InvokeBuildHook("post-build", platform.BuildContextPath);
-                        }
-                        finally
-                        {
-                            if (createdPrivateDockerfile)
-                            {
-                                File.Delete(dockerfilePath);
-                            }
-                        }
-
-                        platformData.BaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
 
                         platformData.SimpleTags = GetPushTags(platform.Tags)
                             .Select(tag => tag.Name)
                             .OrderBy(name => name)
                             .ToList();
+                        bool isCachedImage = false;
+                        if (!Options.NoCache && srcImageData != null)
+                        {
+                            PlatformData srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
+                            // If this Dockerfile has been built and published before
+                            if (srcPlatformData != null)
+                            {
+                                isCachedImage = CheckForCachedImage(platform, srcPlatformData, allTags);
+                                platformData.IsCached = isCachedImage;
+                                if (isCachedImage)
+                                {
+                                    platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
+                                }
+                            }
+                        }
+
+                        if (!isCachedImage)
+                        {
+                            BuildImage(platform, allTags);
+
+                            platformData.BaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+                        }
                     }
                 }
 
@@ -246,6 +235,112 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     imageArtifactDetails.Repos.Add(repoData);
                 }
             }
+        }
+
+        private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags)
+        {
+            bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
+
+            try
+            {
+                InvokeBuildHook("pre-build", platform.BuildContextPath);
+
+                string buildOutput = this.dockerService.BuildImage(
+                    dockerfilePath,
+                    platform.BuildContextPath,
+                    allTags,
+                    platform.BuildArgs,
+                    Options.IsRetryEnabled,
+                    Options.IsDryRun);
+
+                if (!Options.IsSkipPullingEnabled && buildOutput.Contains("Pulling from"))
+                {
+                    throw new InvalidOperationException(
+                        "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +
+                        "Any other image that's not accounted for means there's some kind of mistake in how things are " +
+                        "configured or a bug in the code.");
+                }
+
+                if (!Options.IsDryRun)
+                {
+                    EnsureArchitectureMatches(platform, allTags);
+                }
+
+                InvokeBuildHook("post-build", platform.BuildContextPath);
+            }
+            finally
+            {
+                if (createdPrivateDockerfile)
+                {
+                    File.Delete(dockerfilePath);
+                }
+            }
+        }
+
+        private bool CheckForCachedImage(PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
+        {
+            this.loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
+
+            // If the previously published image was based on an image that is still the latest version AND
+            // the Dockerfile hasn't changed since it was last published
+            if (IsBaseImageDigestUpToDate(platform, srcPlatformData) &&
+                IsDockerfileUpToDate(platform, srcPlatformData) &&
+                IsFullyQualifiedDigest(srcPlatformData))
+            {
+                this.loggerService.WriteMessage();
+                this.loggerService.WriteMessage("CACHE HIT");
+                this.loggerService.WriteMessage();
+
+                // Pull the image instead of building it
+                this.dockerService.PullImage(srcPlatformData.Digest, Options.IsDryRun);
+
+                // Tag the image as if it were locally built so that subsequent built images can reference it
+                Parallel.ForEach(allTags, tag =>
+                {
+                    this.dockerService.CreateTag(srcPlatformData.Digest, tag, Options.IsDryRun);
+                });
+
+                return true;
+            }
+
+            this.loggerService.WriteMessage("CACHE MISS");
+            this.loggerService.WriteMessage();
+
+            return false;
+        }
+
+        // TODO: This check can be removed once all digests in the image info file have been updated to be fully-qualified
+        private bool IsFullyQualifiedDigest(PlatformData srcPlatformData)
+        {
+            bool isFullyQualifiedSourceDigest = !srcPlatformData.Digest.StartsWith("sha256:");
+            this.loggerService.WriteMessage();
+            this.loggerService.WriteMessage($"Is source digest '{srcPlatformData.Digest}' fully qualified: {isFullyQualifiedSourceDigest}");
+            return isFullyQualifiedSourceDigest;
+        }
+
+        private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
+        {
+            string currentCommitUrl = this.gitService.GetDockerfileCommitUrl(platform, Options.SourceRepoUrl);
+            bool commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
+
+            this.loggerService.WriteMessage();
+            this.loggerService.WriteMessage($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
+            this.loggerService.WriteMessage($"Latest Dockerfile commit: {currentCommitUrl}");
+            this.loggerService.WriteMessage($"Dockerfile commits match: {commitShaMatches}");
+            return commitShaMatches;
+        }
+
+        private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
+        {
+            string currentBaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+            bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
+                DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
+
+            this.loggerService.WriteMessage();
+            this.loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
+            this.loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
+            this.loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
+            return baseImageDigestMatches;
         }
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
@@ -321,7 +416,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Recreate the other tags so that they get the updated architecture value.
             Parallel.ForEach(secondaryTags, tag =>
             {
-                DockerHelper.CreateTag(primaryTag, tag, Options.IsDryRun);
+                this.dockerService.CreateTag(primaryTag, tag, Options.IsDryRun);
             });
         }
 

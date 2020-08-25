@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
@@ -12,6 +13,16 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class PlatformData : IComparable<PlatformData>
     {
+        public PlatformData()
+        {
+        }
+
+        public PlatformData(ImageInfo imageInfo, PlatformInfo platformInfo)
+        {
+            ImageInfo = imageInfo;
+            PlatformInfo = platformInfo;
+        }
+
         public string Dockerfile { get; set; }
 
         public List<string> SimpleTags { get; set; } = new List<string>();
@@ -32,10 +43,14 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         public string CommitUrl { get; set; }
 
         [JsonIgnore]
-        public IEnumerable<string> FullyQualifiedSimpleTags { get; set; }
+        public ImageInfo ImageInfo { get; set; }
 
         [JsonIgnore]
-        public IEnumerable<string> AllTags { get; set; }
+        public PlatformInfo PlatformInfo { get; set; }
+
+        [JsonIgnore]
+        public IEnumerable<TagInfo> AllTags =>
+            ImageInfo?.SharedTags.Union(PlatformInfo.Tags ?? Enumerable.Empty<TagInfo>()) ?? Enumerable.Empty<TagInfo>();
 
         public int CompareTo([AllowNull] PlatformData other)
         {
@@ -49,14 +64,14 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public bool Equals(PlatformInfo platformInfo)
         {
-            return GetIdentifier() == FromPlatformInfo(platformInfo).GetIdentifier();
+            return GetIdentifier() == FromPlatformInfo(platformInfo, null).GetIdentifier();
         }
 
         public string GetIdentifier() => $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}";
 
-        public static PlatformData FromPlatformInfo(PlatformInfo platform)
+        public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image)
         {
-            return new PlatformData
+            return new PlatformData(image, platform)
             {
                 Dockerfile = platform.DockerfilePathRelativeToManifest,
                 Architecture = platform.Model.Architecture.GetDisplayName(),

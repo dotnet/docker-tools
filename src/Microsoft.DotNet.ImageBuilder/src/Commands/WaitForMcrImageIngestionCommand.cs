@@ -75,7 +75,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<ImageResultInfo> failedResults = imageResultInfos
                 // Find any result where all of the statuses of a given tag have failed
-                .Where(result => result.ImageResult.Value
+                .Where(result =>  result.ImageResult.Value
+                    .Where(status => ShouldProcessImageStatus(status, result.DigestInfo))
                     .GroupBy(status => status.Tag)
                     .Any(statusGroup => statusGroup.All(status => status.OverallStatus == StageStatus.Failed)))
                 .OrderBy(result => result.DigestInfo.Repo)
@@ -187,6 +188,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string GetQualifiedDigest(string repo, string imageDigest) => $"{repo}@{imageDigest}";
 
+        private bool ShouldProcessImageStatus(ImageStatus imageStatus, DigestInfo digestInfo) =>
+            // Find the image statuses that are associated with the repo indicated in the image info. This filter is needed
+            // because MCR's webhook responds to all image pushes in the ACR, even those to staging locations. A queue time filter
+            // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
+            imageStatus.TargetRepository == digestInfo.Repo.Repo && imageStatus.QueueTime >= Options.MinimumQueueTime;
+
         private async Task<ImageResultInfo> ReportImageStatusAsync(IMcrStatusClient statusClient, DigestInfo digestInfo)
         {
             string qualifiedDigest = GetQualifiedDigest(digestInfo.Repo.Repo, digestInfo.Digest);
@@ -199,11 +206,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ImageResult imageResult = await statusClient.GetImageResultAsync(digestInfo.Digest);
 
-            // Find the image statuses that are associated with the repo indicated in the image info. This filter is needed
-            // because MCR's webhook responds to all image pushes in the ACR, even those to staging locations. A queue time filter
-            // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
             IEnumerable<ImageStatus> imageStatuses = imageResult.Value
-                .Where(status => status.TargetRepository == digestInfo.Repo.Repo && status.QueueTime >= Options.MinimumQueueTime);
+                .Where(status => ShouldProcessImageStatus(status, digestInfo));
 
             if (imageStatuses.Any())
             {

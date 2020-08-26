@@ -23,23 +23,57 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'public') }}:
       imageBuilderBuildArgs: $(imageBuilder.queueArgs)
     imageBuilderDockerRunExtraOptions: $(build.imageBuilderDockerRunExtraOptions)
+    versionsRepoPath: versions
   steps:
+  - checkout: self
+  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+    - checkout: VersionsRepo
+      path: s/$(versionsRepoPath)
+  - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+    - checkout: git://internal/dotnet-versions
+      path: s/$(versionsRepoPath)
+  - powershell: |
+      $pathSeparatorIndex = "$(Build.Repository.Name)".IndexOf("/")
+      if ($pathSeparatorIndex -ge 0) {
+        $buildRepoName = "$(Build.Repository.Name)".Substring($pathSeparatorIndex + 1)
+      }
+      else {
+        $buildRepoName = "$(Build.Repository.Name)"
+      }
+      
+      $engCommonPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engCommonRelativePath)"
+      $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
+      $testScriptPath = "$buildRepoName/$(testScriptPath)"
+
+      echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
+      echo "##vso[task.setvariable variable=engCommonPath]$engCommonPath"
+      echo "##vso[task.setvariable variable=engPath]$engPath"
+      echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"
+    displayName: Set Common Paths
   - template: ${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
   - ${{ parameters.customInitSteps }}
-  - script: echo "##vso[task.setvariable variable=imageBuilderImageInfoArg]--image-info-output-path $(artifactsPath)/$(legName)-image-info.json"
-    displayName: Set Image Info Arg for Image Builder
+  - powershell: |
+      $imageBuilderBuildArgs = "$(imageBuilderBuildArgs) --image-info-output-path $(artifactsPath)/$(legName)-image-info.json"
+
+      if ($env:NOCACHE -eq "true") {
+        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --no-cache"
+      }
+
+      echo "##vso[task.setvariable variable=imageBuilderBuildArgs]$imageBuilderBuildArgs"
+    displayName: Set Image Builder Build Args
+  - template: ../steps/set-image-info-path-var.yml
   - script: >
       $(runImageBuilderCmd) build
-      --manifest $(manifest)
+      --manifest $(buildRepoName)/$(manifest)
       $(imageBuilderPaths)
       $(osVersions)
       --os-type $(osType)
       --architecture $(architecture)
       --retry
       --source-repo $(publicGitRepoUri)
+      --image-info-source-path $(versionsRepoPath)/$(imageInfoVersionsPath)
       $(manifestVariables)
       $(imageBuilderBuildArgs)
-      $(imageBuilderImageInfoArg)
     displayName: Build Images
   - publish: $(Build.ArtifactStagingDirectory)/$(legName)-image-info.json
     artifact: $(legName)-image-info-$(System.JobAttempt)

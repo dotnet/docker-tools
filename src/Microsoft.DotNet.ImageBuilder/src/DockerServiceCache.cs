@@ -62,7 +62,12 @@ namespace Microsoft.DotNet.ImageBuilder
             if (!cache.TryGetValue(key, out TValue value))
             {
                 value = getValue();
-                cache.Add(key, value);
+
+                // Don't cache null values
+                if (value != null)
+                {
+                    cache.Add(key, value);
+                }
             }
 
             return value;

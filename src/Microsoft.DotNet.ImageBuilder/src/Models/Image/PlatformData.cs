@@ -49,6 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         /// Items with this state should only be used internally within a build. Such items
         /// should be stripped out of the published image info content.
         /// </remarks>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsCached { get; set; }
 
         [JsonIgnore]

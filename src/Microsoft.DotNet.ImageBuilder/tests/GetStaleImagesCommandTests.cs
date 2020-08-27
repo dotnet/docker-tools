@@ -71,10 +71,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1digest-diff"),
+                                                baseImageDigest: "base1@base1digest-diff"),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2digest")
+                                                baseImageDigest: "base2@base2digest")
                                         }
                                     }
                                 }
@@ -154,10 +154,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base2digest-diff"),
+                                                baseImageDigest: "base2@base2digest-diff"),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base3digest")
+                                                baseImageDigest: "base3@base3digest")
                                         }
                                     }
                                 }
@@ -431,7 +431,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1digest-diff")
+                                                baseImageDigest: "base1@base1digest-diff")
                                         }
                                     }
                                 }
@@ -447,7 +447,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2digest-diff")
+                                                baseImageDigest: "base2@base2digest-diff")
                                         }
                                     }
                                 }
@@ -481,7 +481,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1digest-diff")
+                                                baseImageDigest: "base1@base1digest-diff")
                                         }
                                     }
                                 }
@@ -497,7 +497,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2digest-diff")
+                                                baseImageDigest: "base2@base2digest-diff")
                                         }
                                     }
                                 }
@@ -513,7 +513,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile3Path,
-                                                baseImageDigest: "base3digest")
+                                                baseImageDigest: "base3@base3digest")
                                         }
                                     }
                                 }
@@ -656,11 +656,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 context.Verify(expectedPathsBySubscription);
 
-                // Verify the image was pulled only once
-                context.DockerServiceMock
-                    .Verify(o => o.PullImage(baseImage, false), Times.Once);
-                context.DockerServiceMock
-                    .Verify(o => o.GetImageDigest(baseImage, false), Times.Once);
+                context.ManifestToolServiceMock
+                    .Verify(o => o.Inspect(baseImage, false), Times.Once);
             }
         }
 
@@ -699,7 +696,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: baseImageDigest)
+                                                baseImageDigest: $"{baseImage}@{baseImageDigest}")
                                         }
                                     }
                                 }
@@ -797,7 +794,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 runtimeDepsDockerfilePath,
-                                                baseImageDigest: baseImageDigest + "-diff")
+                                                baseImageDigest: $"{baseImage}@{baseImageDigest}-diff")
                                         }
                                     }
                                 }
@@ -826,7 +823,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 otherDockerfilePath,
-                                                baseImageDigest: otherImageDigest)
+                                                baseImageDigest: $"{otherImage}@{otherImageDigest}")
                                         }
                                     }
                                 }
@@ -1007,10 +1004,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1digest-diff"),
+                                                baseImageDigest: "base1@base1digest-diff"),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2digest")
+                                                baseImageDigest: "base2@base2digest")
                                         }
                                     }
                                 }
@@ -1168,7 +1165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             CreatePlatform(dockerfile1Path),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base1digest")
+                                                baseImageDigest: "base1@base1digest")
                                         }
                                     }
                                 }
@@ -1358,7 +1355,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private const string VariableName = "my-var";
 
-            public Mock<IDockerService> DockerServiceMock { get; }
+            public Mock<IManifestToolService> ManifestToolServiceMock { get; }
 
             /// <summary>
             /// Initializes a new instance of <see cref="TestContext"/>.
@@ -1393,7 +1390,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.httpClientFactory = CreateHttpClientFactory(subscriptionInfos, dockerfileInfos);
                 this.gitHubClientFactory = CreateGitHubClientFactory(subscriptionInfos);
 
-                this.DockerServiceMock = this.CreateDockerServiceMock();
+                this.ManifestToolServiceMock = this.CreateManifestToolServiceMock();
                 this.command = this.CreateCommand();
             }
 
@@ -1444,7 +1441,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new GetStaleImagesCommand(
-                    this.DockerServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object, this.gitHubClientFactory);
+                    this.ManifestToolServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object, this.gitHubClientFactory);
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;
@@ -1582,13 +1579,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
             }
 
-            private Mock<IDockerService> CreateDockerServiceMock()
+            private Mock<IManifestToolService> CreateManifestToolServiceMock()
             {
-                Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigest(It.IsAny<string>(), false))
-                    .Returns((string image, bool isDryRun) => this.imageDigests[image]);
-                return dockerServiceMock;
+                Mock<IManifestToolService> manifestToolServiceMock = new Mock<IManifestToolService>();
+                manifestToolServiceMock
+                    .Setup(o => o.Inspect(It.IsAny<string>(), false))
+                    .Returns((string image, bool isDryRun) => CreateTagManifest(this.imageDigests[image]));
+                return manifestToolServiceMock;
+            }
+
+            private static JArray CreateTagManifest(string digest)
+            {
+                return new JArray(
+                    new JObject
+                    {
+                        { "MediaType", ManifestToolService.ManifestListMediaType },
+                        { "Digest", digest }
+                    });
             }
 
             /// <summary>

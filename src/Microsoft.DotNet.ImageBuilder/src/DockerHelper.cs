@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
@@ -37,18 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static string GetImageDigest(string image, bool isDryRun)
+        public static IEnumerable<string> GetImageDigests(string image, bool isDryRun)
         {
-            try
-            {
-                return ExecuteCommandWithFormat(
-                    "inspect", "index .RepoDigests 0", "Failed to retrieve image digest", image, isDryRun);
-            }
-            // A digest will not exist for images that have been built locally or have been manually installed
-            catch (InvalidOperationException e) when (e.Message.Contains("index out of range"))
-            {
-                return null;
-            }
+            string digests = ExecuteCommandWithFormat(
+                "inspect", "index .RepoDigests", "Failed to retrieve image digests", image, isDryRun);
+
+            return digests.TrimStart('[').TrimEnd(']').Split(' ');
         }
 
         public static long GetImageSize(string image, bool isDryRun)
@@ -60,7 +55,13 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetRepo(string image)
         {
-            return image.Substring(0, image.IndexOf(':'));
+            int tagSeparator = image.IndexOf(':');
+            if (tagSeparator >= 0)
+            {
+                return image.Substring(0, tagSeparator);
+            }
+
+            return image;
         }
 
         public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists(ManagementType.Image, tag, isDryRun);

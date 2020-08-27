@@ -96,7 +96,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 TagInfo sharedTag = image.Image.ManifestImage.SharedTags.First();
                 image.Image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.RepoName,
-                    this.manifestToolService.GetManifestListDigest(sharedTag.FullyQualifiedName, Options.IsDryRun));
+                    this.manifestToolService.GetManifestListDigest(sharedTag.FullyQualifiedName, Options.IsDryRun).DigestSha);
             });
 
             // Strip out any platforms that are the result of pulling a cached version

@@ -455,7 +455,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsSkipPullingEnabled)
             {
-                this.dockerService.PullBaseImages(Manifest, Options.IsDryRun);
+                Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+                IEnumerable<string> baseImages = Manifest.GetExternalFromImages().ToArray();
+                if (baseImages.Any())
+                {
+                    foreach (string fromImage in baseImages)
+                    {
+                        dockerService.PullImage(fromImage, Options.IsDryRun);
+
+                        // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
+                        // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
+                        // greater change the tag could be updated resulting in a different digest returned than what was
+                        // originally pulled.
+                        dockerService.GetImageDigest(fromImage, Options.IsDryRun);
+                    }
+                }
+                else
+                {
+                    Logger.WriteMessage("No external base images to pull");
+                }
             }
         }
 

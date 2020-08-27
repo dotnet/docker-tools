@@ -5,6 +5,7 @@ parameters:
   dockerClientOS: null
   buildJobTimeout: 60
   customInitSteps: []
+  noCache: false
 
 jobs:
 - job: ${{ parameters.name }}
@@ -17,61 +18,67 @@ jobs:
     matrix: $[ ${{ parameters.matrix }} ]
   timeoutInMinutes: ${{ parameters.buildJobTimeout }}
   variables:
-    osVersion: ${{ parameters.osVersion }}
-    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      imageBuilderBuildArgs: --registry-override $(acr.server) --repo-prefix $(stagingRepoPrefix) --push --username $(acr.userName) --password $(BotAccount-dotnet-docker-acr-bot-password) $(imageBuilder.queueArgs)
-    ${{ if eq(variables['System.TeamProject'], 'public') }}:
-      imageBuilderBuildArgs: $(imageBuilder.queueArgs)
     imageBuilderDockerRunExtraOptions: $(build.imageBuilderDockerRunExtraOptions)
     versionsRepoPath: versions
+    ${{ if eq(parameters.noCache, false) }}:
+      versionsBasePath: $(versionsRepoPath)/
+      pipelineDisabledCache: false
+    ${{ if eq(parameters.noCache, true) }}:
+      versionsBasePath: ""
+      pipelineDisabledCache: true
   steps:
   - checkout: self
-  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+  - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.noCache, false)) }}:
     - checkout: VersionsRepo
       path: s/$(versionsRepoPath)
-  - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+  - ${{ if and(eq(variables['System.TeamProject'], 'internal'), eq(parameters.noCache, false)) }}:
     - checkout: git://internal/dotnet-versions
       path: s/$(versionsRepoPath)
-  - powershell: |
-      $pathSeparatorIndex = "$(Build.Repository.Name)".IndexOf("/")
-      if ($pathSeparatorIndex -ge 0) {
-        $buildRepoName = "$(Build.Repository.Name)".Substring($pathSeparatorIndex + 1)
-      }
-      else {
-        $buildRepoName = "$(Build.Repository.Name)"
-      }
-      
-      $engCommonPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engCommonRelativePath)"
-      $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
-      $testScriptPath = "$buildRepoName/$(testScriptPath)"
+  - ${{ if eq(parameters.noCache, false) }}:
+    - powershell: |
+        $pathSeparatorIndex = "$(Build.Repository.Name)".IndexOf("/")
+        if ($pathSeparatorIndex -ge 0) {
+          $buildRepoName = "$(Build.Repository.Name)".Substring($pathSeparatorIndex + 1)
+        }
+        else {
+          $buildRepoName = "$(Build.Repository.Name)"
+        }
 
-      echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
-      echo "##vso[task.setvariable variable=engCommonPath]$engCommonPath"
-      echo "##vso[task.setvariable variable=engPath]$engPath"
-      echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"
-    displayName: Set Common Paths
+        $engCommonPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engCommonRelativePath)"
+        $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
+        $testScriptPath = "$buildRepoName/$(testScriptPath)"
+        $manifest = "$buildRepoName/$(manifest)"
+
+        echo "##vso[task.setvariable variable=manifest]$manifest"
+        echo "##vso[task.setvariable variable=engCommonPath]$engCommonPath"
+        echo "##vso[task.setvariable variable=engPath]$engPath"
+        echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"
+      displayName: Override Common Paths
   - template: ${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
   - ${{ parameters.customInitSteps }}
+  - template: ../steps/set-image-info-path-var.yml
   - powershell: |
-      $imageBuilderBuildArgs = "$(imageBuilderBuildArgs) --image-info-output-path $(artifactsPath)/$(legName)-image-info.json"
+      $imageBuilderBuildArgs = "$(imageBuilder.queueArgs) --image-info-output-path $(artifactsPath)/$(legName)-image-info.json"
+      if ($env:SYSTEM_TEAMPROJECT -eq "internal") {
+        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --registry-override $(acr.server) --repo-prefix $(stagingRepoPrefix) --push --username $(acr.userName) --password $(BotAccount-dotnet-docker-acr-bot-password)"
+      }
 
-      if ($env:NOCACHE -eq "true") {
-        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --no-cache"
+      # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache
+      if ("$(pipelineDisabledCache)" -ne "true" -and $env:NOCACHE -ne "true") {
+        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --image-info-source-path $(versionsBasePath)$(imageInfoVersionsPath)"
       }
 
       echo "##vso[task.setvariable variable=imageBuilderBuildArgs]$imageBuilderBuildArgs"
     displayName: Set Image Builder Build Args
-  - template: ../steps/set-image-info-path-var.yml
   - script: >
       $(runImageBuilderCmd) build
-      --manifest $(buildRepoName)/$(manifest)
+      --manifest $(manifest)
       $(imageBuilderPaths)
       $(osVersions)
       --os-type $(osType)
       --architecture $(architecture)
       --retry
       --source-repo $(publicGitRepoUri)
-      --image-info-source-path $(versionsRepoPath)/$(imageInfoVersionsPath)
       $(manifestVariables)
       $(imageBuilderBuildArgs)
     displayName: Build Images

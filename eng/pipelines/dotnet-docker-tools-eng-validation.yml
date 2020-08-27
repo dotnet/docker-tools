@@ -12,3 +12,5 @@ variables:
 
 stages:
 - template: ../common/templates/stages/build-test-publish-repo.yml
+  parameters:
+    noCache: true

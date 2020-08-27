@@ -16,3 +16,4 @@ stages:
 - template: ../common/templates/stages/build-test-publish-repo.yml
   parameters:
     buildMatrixType: platformVersionedOs
+    noCache: true

@@ -33,14 +33,14 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            ManifestDigest manifestDigest = this.manifestToolService.GetAnyManifestDigest(image, isDryRun);
+            string digestSha = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, image, isDryRun);
 
-            string digest = DockerHelper.GetDigestString(DockerHelper.GetRepo(image), manifestDigest.DigestSha);
+            string digest = DockerHelper.GetDigestString(DockerHelper.GetRepo(image), digestSha);
 
             if (!digests.Contains(digest))
             {
                 throw new InvalidOperationException(
-                    $"Found published digest '{manifestDigest}' for tag '{image}' but could not find a matching digest value from " +
+                    $"Found published digest '{digestSha}' for tag '{image}' but could not find a matching digest value from " +
                     $"the set of locally pulled digests for this tag: { String.Join(", ", digests) }. This most likely means that " +
                     "this tag has been updated since it was last pulled.");
             }

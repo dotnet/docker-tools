@@ -165,8 +165,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     currentDigest = LockHelper.DoubleCheckedLockLookup(this.imageDigestsLock, this.imageDigests, fromImage,
                         () =>
                         {
-                            ManifestDigest digest = this.manifestToolService.GetAnyManifestDigest(fromImage, Options.IsDryRun);
-                            return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest.DigestSha);
+                            string digest = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, fromImage, Options.IsDryRun);
+                            return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 
                     bool rebuildImage = platformData.BaseImageDigest != currentDigest;

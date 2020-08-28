@@ -11,25 +11,33 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ManifestToolServiceExtensions
     {
-        public static ManifestDigest GetManifestListDigest(this IManifestToolService manifestToolService, string tag, bool isDryRun)
+        public static string GetManifestDigestSha(
+            this IManifestToolService manifestToolService, ManifestMediaType mediaType, string tag, bool isDryRun)
         {
             IEnumerable<JObject> tagManifests = manifestToolService.Inspect(tag, isDryRun).OfType<JObject>();
-            return GetDigestOfMediaType(tag, tagManifests, ManifestToolService.ManifestListMediaType, throwIfNull: true);
-        }
+            string digest;
 
-        public static ManifestDigest GetAnyManifestDigest(this IManifestToolService manifestToolService, string tag, bool isDryRun)
-        {
-            IEnumerable<JObject> tagManifests = manifestToolService.Inspect(tag, isDryRun).OfType<JObject>();
-            ManifestDigest digest = GetDigestOfMediaType(tag, tagManifests, ManifestToolService.ManifestListMediaType, throwIfNull: false);
-            if (digest is null)
+            if (mediaType.HasFlag(ManifestMediaType.ManifestList))
             {
-                digest = GetDigestOfMediaType(tag, tagManifests, ManifestToolService.ManifestMediaType, throwIfNull: true);
+                digest = GetDigestOfMediaType(
+                    tag, tagManifests, ManifestToolService.ManifestListMediaType, throwIfNull: mediaType == ManifestMediaType.ManifestList);
+
+                if (digest != null)
+                {
+                    return digest;
+                }
+            }
+            
+            if (mediaType.HasFlag(ManifestMediaType.Manifest))
+            {
+                return GetDigestOfMediaType(
+                    tag, tagManifests, ManifestToolService.ManifestMediaType, throwIfNull: true);
             }
 
-            return digest;
+            throw new ArgumentException($"Unsupported media type: '{mediaType}'.", nameof(mediaType));
         }
 
-        private static ManifestDigest GetDigestOfMediaType(string tag, IEnumerable<JObject> tagManifests, string mediaType, bool throwIfNull)
+        private static string GetDigestOfMediaType(string tag, IEnumerable<JObject> tagManifests, string mediaType, bool throwIfNull)
         {
             string digest = tagManifests?
                 .FirstOrDefault(manifestType => manifestType["MediaType"].Value<string>() == mediaType)
@@ -43,7 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            return new ManifestDigest(digest, mediaType);
+            return digest;
         }
     }
 }

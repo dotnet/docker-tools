@@ -48,11 +48,13 @@ jobs:
         $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
         $testScriptPath = "$buildRepoName/$(testScriptPath)"
         $manifest = "$buildRepoName/$(manifest)"
+        $testResultsDirectory = "$buildRepoName/$testResultsDirectory"
 
         echo "##vso[task.setvariable variable=manifest]$manifest"
         echo "##vso[task.setvariable variable=engCommonPath]$engCommonPath"
         echo "##vso[task.setvariable variable=engPath]$engPath"
         echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"
+        echo "##vso[task.setvariable variable=testResultsDirectory]$testResultsDirectory"
       displayName: Override Common Paths
   - template: ${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
   - ${{ parameters.customInitSteps }}

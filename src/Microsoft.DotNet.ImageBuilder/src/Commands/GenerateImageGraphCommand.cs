@@ -124,7 +124,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GetImageDisplayName(string tag, bool trimParentRepos)
         {
-            string displayName = tag.TrimStart(Manifest.Registry).TrimStart('/');
+            string displayName = tag;
+
+            if (Manifest.Registry != null)
+            {
+                displayName = displayName.TrimStart(Manifest.Registry).TrimStart('/');
+            }
+
             if (trimParentRepos)
             {
                 // Strip off any parent product repos for brevity

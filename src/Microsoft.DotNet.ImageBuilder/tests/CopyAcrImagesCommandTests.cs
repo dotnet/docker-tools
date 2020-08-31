@@ -10,13 +10,11 @@ using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
 using Microsoft.Azure.Management.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Rest.Azure;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -36,14 +34,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IRegistriesOperations> registriesOperationsMock = CreateRegistriesOperationsMock();
-                IAzure azure = CreateAzureMock(registriesOperationsMock);
-                Mock<IAzureManagementFactory> azureManagementFactoryMock = CreateAzureManagementFactoryMock(subscriptionId, azure);
+                Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
+                IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
+                Mock<IAzureManagementFactory> azureManagementFactoryMock =
+                    AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
                 Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
                 CopyAcrImagesCommand command = new CopyAcrImagesCommand(
-                    azureManagementFactoryMock.Object, environmentServiceMock.Object, Mock.Of<ILoggerService>());
+                    azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), environmentServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -130,14 +129,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IRegistriesOperations> registriesOperationsMock = CreateRegistriesOperationsMock();
-                IAzure azure = CreateAzureMock(registriesOperationsMock);
-                Mock<IAzureManagementFactory> azureManagementFactoryMock = CreateAzureManagementFactoryMock(subscriptionId, azure);
+                Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
+                IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
+                Mock<IAzureManagementFactory> azureManagementFactoryMock =
+                    AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
                 Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
                 CopyAcrImagesCommand command = new CopyAcrImagesCommand(
-                    azureManagementFactoryMock.Object, environmentServiceMock.Object, Mock.Of<ILoggerService>());
+                    azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), environmentServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -224,32 +224,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             }
-        }
-
-        private static Mock<IAzureManagementFactory> CreateAzureManagementFactoryMock(string subscriptionId, IAzure azure)
-        {
-            Mock<IAzureManagementFactory> azureManagementFactoryMock = new Mock<IAzureManagementFactory>();
-            azureManagementFactoryMock
-                .Setup(o => o.CreateAzureManager(It.IsAny<AzureCredentials>(), subscriptionId))
-                .Returns(azure);
-            return azureManagementFactoryMock;
-        }
-
-        private static IAzure CreateAzureMock(Mock<IRegistriesOperations> registriesOperationsMock) =>
-            Mock.Of<IAzure>(o => o.ContainerRegistries.Inner == registriesOperationsMock.Object);
-
-        private static Mock<IRegistriesOperations> CreateRegistriesOperationsMock()
-        {
-            Mock<IRegistriesOperations> registriesOperationsMock = new Mock<IRegistriesOperations>();
-            registriesOperationsMock
-                .Setup(o => o.ImportImageWithHttpMessagesAsync(
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<ImportImageParametersInner>(),
-                    It.IsAny<Dictionary<string, List<string>>>(),
-                    It.IsAny<CancellationToken>()))
-                .ReturnsAsync(new AzureOperationResponse());
-            return registriesOperationsMock;
         }
 
         private static bool VerifyImportImageParameters(ImportImageParametersInner parameters, IList<string> expectedTags)

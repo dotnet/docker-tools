@@ -26,6 +26,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -50,12 +51,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -133,12 +134,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -223,13 +224,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1, osType: "windows"),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
+                                CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
                     new ImageArtifactDetails()
                 )
             };
@@ -289,13 +290,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1, osType: "windows"),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }, OS.Windows),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" }, OS.Linux),
+                                CreatePlatform(dockerfile3Path, new string[] { "tag3" }, OS.Windows)))),
                     new ImageArtifactDetails()
                 )
             };
@@ -347,12 +348,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails()
                 )
             };
@@ -411,11 +412,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1, 1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -457,15 +458,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ),
                 new SubscriptionInfo(
                     CreateSubscription(repo2, 2),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo2,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" }))),
-                        ManifestHelper.CreateRepo(
+                            CreateImage(
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" }))),
+                        CreateRepo(
                             repo3,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile3Path, new string[] { "tag3" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile3Path, new string[] { "tag3" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -587,12 +588,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -679,11 +680,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -761,27 +762,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription("repo1"),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             runtimeDepsRepo,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                            CreateImage(
+                                CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
+                        CreateRepo(
                             runtimeRepo,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                        CreateRepo(
                             sdkRepo,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(sdkDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                        CreateRepo(
                             aspnetRepo,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                        CreateRepo(
                             otherRepo,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
+                            CreateImage(
+                                CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -903,27 +904,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription("repo1"),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             runtimeDepsRepo,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                            CreateImage(
+                                CreatePlatform(runtimeDepsDockerfilePath, new string[] { "tag1" }))),
+                        CreateRepo(
                             runtimeRepo,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                        CreateRepo(
                             sdkRepo,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(sdkDockerfilePath, aspnetRepo, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                        CreateRepo(
                             aspnetRepo,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
-                        ManifestHelper.CreateRepo(
+                        CreateRepo(
                             otherRepo,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
+                            CreateImage(
+                                CreatePlatform(otherDockerfilePath, new string[] { "tag1" })))),
                     new ImageArtifactDetails
                     {
                     }
@@ -986,12 +987,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -1068,11 +1069,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -1145,13 +1146,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
+                            CreateImage(
                                 CreatePlatformWithRepoBuildArg(dockerfile1Path, $"{repo1}:tag2", new string[] { "tag1" })),
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                            CreateImage(
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -1218,12 +1219,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 new SubscriptionInfo(
                     CreateSubscription(repo1),
-                    ManifestHelper.CreateManifest(
-                        ManifestHelper.CreateRepo(
+                    CreateManifest(
+                        CreateRepo(
                             repo1,
-                            ManifestHelper.CreateImage(
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag1" }, osVersion: "alpine3.10"),
-                                ManifestHelper.CreatePlatform(dockerfile1Path, new string[] { "tag2" }, osVersion: "alpine3.11")))),
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }, osVersion: "alpine3.10"),
+                                CreatePlatform(dockerfile1Path, new string[] { "tag2" }, osVersion: "alpine3.11")))),
                     new ImageArtifactDetails
                     {
                         Repos =
@@ -1297,16 +1298,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private static string GetRepoOwner([CallerMemberName] string testMethodName = null, string suffix = null)
         {
             return testMethodName + suffix;
-        }
-
-        private static Platform CreatePlatformWithRepoBuildArg(string dockerfilePath, string repo, string[] tags, OS os = OS.Linux)
-        {
-            Platform platform = ManifestHelper.CreatePlatform(dockerfilePath, tags, os);
-            platform.BuildArgs = new Dictionary<string, string>
-            {
-                { "REPO", repo }
-            };
-            return platform;
         }
 
         private static Subscription CreateSubscription(

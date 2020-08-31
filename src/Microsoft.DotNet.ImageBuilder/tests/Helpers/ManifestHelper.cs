@@ -72,6 +72,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
+        public static Platform CreatePlatformWithRepoBuildArg(string dockerfilePath, string repo, string[] tags, OS os = OS.Linux)
+        {
+            Platform platform = ManifestHelper.CreatePlatform(dockerfilePath, tags, os);
+            platform.BuildArgs = new Dictionary<string, string>
+            {
+                { "REPO", repo }
+            };
+            return platform;
+        }
+
         public static void AddVariable(Manifest manifest, string name, string value)
         {
             if (manifest.Variables == null)

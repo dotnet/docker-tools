@@ -122,9 +122,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private decimal ConvertToMB(long bytes) => bytes / 1048576m;
 
-        private static string GetImageDisplayName(string tag, bool trimParentRepos)
+        private string GetImageDisplayName(string tag, bool trimParentRepos)
         {
-            string displayName = tag.TrimStart("mcr.microsoft.com/");
+            string displayName = tag.TrimStart(Manifest.Registry).TrimStart('/');
             if (trimParentRepos)
             {
                 // Strip off any parent product repos for brevity

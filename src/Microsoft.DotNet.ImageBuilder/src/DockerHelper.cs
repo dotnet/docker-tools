@@ -5,7 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -131,8 +133,19 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static string GetDigestSha(string digest) => digest?.Substring(digest.IndexOf("@") + 1);
-        
+
         public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
+
+        /// <remarks>
+        /// This method depends on the experimental Docker CLI `manifest` command.  As a result, this method
+        /// should only used for developer usage scenarios.
+        /// </remarks>
+        public static Docker.Manifest InspectManifest(string image, bool isDryRun)
+        {
+            string manifest = ExecuteCommand(
+                "manifest inspect", "Failed to inspect manifest", $"{image} --verbose", isDryRun);
+            return JsonConvert.DeserializeObject<Docker.Manifest>(manifest);
+        }
 
         private static OS GetOS()
         {

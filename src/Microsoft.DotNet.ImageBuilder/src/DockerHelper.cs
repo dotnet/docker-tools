@@ -5,9 +5,10 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
+using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -45,7 +46,13 @@ namespace Microsoft.DotNet.ImageBuilder
             string digests = ExecuteCommandWithFormat(
                 "inspect", "index .RepoDigests", "Failed to retrieve image digests", image, isDryRun);
 
-            return digests.TrimStart('[').TrimEnd(']').Split(' ');
+            string trimmedDigests = digests.TrimStart('[').TrimEnd(']');
+            if (trimmedDigests == String.Empty)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return trimmedDigests.Split(' ');
         }
 
         public static long GetImageSize(string image, bool isDryRun)

@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
@@ -28,23 +27,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ImageInfoTagOutput()
         {
-            static JArray createTagManifest(string digest)
-            {
-                return new JArray(
-                    new JObject
-                    {
-                        { "MediaType", ManifestToolService.ManifestListMediaType },
-                        { "Digest", digest }
-                    });
-            }
-
             Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
             manifestToolService
                 .Setup(o => o.Inspect("repo1:sharedtag2", false))
-                .Returns(createTagManifest("digest1"));
+                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest1"));
             manifestToolService
                 .Setup(o => o.Inspect("repo2:sharedtag3", false))
-                .Returns(createTagManifest("digest2"));
+                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
 
             PublishManifestCommand command = new PublishManifestCommand(manifestToolService.Object,
                 Mock.Of<IEnvironmentService>(), Mock.Of<ILoggerService>());

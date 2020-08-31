@@ -13,11 +13,39 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IDockerService))]
     internal class DockerService : IDockerService
     {
+        private readonly IManifestToolService manifestToolService;
+
         public Architecture Architecture => DockerHelper.Architecture;
+
+        [ImportingConstructor]
+        public DockerService(IManifestToolService manifestToolService)
+        {
+            this.manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
+        }
 
         public string GetImageDigest(string image, bool isDryRun)
         {
-            return DockerHelper.GetImageDigest(image, isDryRun);
+            IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
+
+            // A digest will not exist for images that have been built locally or have been manually installed
+            if (!digests.Any())
+            {
+                return null;
+            }
+
+            string digestSha = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, image, isDryRun);
+
+            string digest = DockerHelper.GetDigestString(DockerHelper.GetRepo(image), digestSha);
+
+            if (!digests.Contains(digest))
+            {
+                throw new InvalidOperationException(
+                    $"Found published digest '{digestSha}' for tag '{image}' but could not find a matching digest value from " +
+                    $"the set of locally pulled digests for this tag: { String.Join(", ", digests) }. This most likely means that " +
+                    "this tag has been updated since it was last pulled.");
+            }
+
+            return digest;
         }
 
         public void PullImage(string image, bool isDryRun)

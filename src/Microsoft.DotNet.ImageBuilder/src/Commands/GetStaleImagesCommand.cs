@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
@@ -28,19 +27,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
         private readonly SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
         private readonly object imageDigestsLock = new object();
-        private readonly IDockerService dockerService;
+        private readonly IManifestToolService manifestToolService;
         private readonly ILoggerService loggerService;
         private readonly IGitHubClientFactory gitHubClientFactory;
         private readonly HttpClient httpClient;
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
-            IDockerService dockerService,
+            IManifestToolService manifestToolService,
             IHttpClientProvider httpClientFactory,
             ILoggerService loggerService,
             IGitHubClientFactory gitHubClientFactory)
         {
-            this.dockerService = dockerService;
+            this.manifestToolService = manifestToolService;
             this.loggerService = loggerService;
             this.gitHubClientFactory = gitHubClientFactory;
             this.httpClient = httpClientFactory.GetClient();
@@ -166,8 +165,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     currentDigest = LockHelper.DoubleCheckedLockLookup(this.imageDigestsLock, this.imageDigests, fromImage,
                         () =>
                         {
-                            this.dockerService.PullImage(fromImage, Options.IsDryRun);
-                            return this.dockerService.GetImageDigest(fromImage, Options.IsDryRun);
+                            string digest = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, fromImage, Options.IsDryRun);
+                            return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 
                     bool rebuildImage = platformData.BaseImageDigest != currentDigest;

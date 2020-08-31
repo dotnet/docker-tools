@@ -17,7 +17,9 @@ namespace Microsoft.DotNet.ImageBuilder
             IEnumerable<JObject> tagManifests = manifestToolService.Inspect(tag, isDryRun).OfType<JObject>();
             string digest;
 
-            if (mediaType.HasFlag(ManifestMediaType.ManifestList))
+            bool hasSupportedMediaType = false;
+
+            if (hasSupportedMediaType |= mediaType.HasFlag(ManifestMediaType.ManifestList))
             {
                 digest = GetDigestOfMediaType(
                     tag, tagManifests, ManifestToolService.ManifestListMediaType, throwIfNull: mediaType == ManifestMediaType.ManifestList);
@@ -28,13 +30,18 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
             
-            if (mediaType.HasFlag(ManifestMediaType.Manifest))
+            if (hasSupportedMediaType |= mediaType.HasFlag(ManifestMediaType.Manifest))
             {
                 return GetDigestOfMediaType(
                     tag, tagManifests, ManifestToolService.ManifestMediaType, throwIfNull: true);
             }
 
-            throw new ArgumentException($"Unsupported media type: '{mediaType}'.", nameof(mediaType));
+            if (!hasSupportedMediaType)
+            {
+                throw new ArgumentException($"Unsupported media type: '{mediaType}'.", nameof(mediaType));
+            }
+
+            return null;
         }
 
         private static string GetDigestOfMediaType(string tag, IEnumerable<JObject> tagManifests, string mediaType, bool throwIfNull)

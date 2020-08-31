@@ -1584,18 +1584,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IManifestToolService> manifestToolServiceMock = new Mock<IManifestToolService>();
                 manifestToolServiceMock
                     .Setup(o => o.Inspect(It.IsAny<string>(), false))
-                    .Returns((string image, bool isDryRun) => CreateTagManifest(this.imageDigests[image]));
+                    .Returns((string image, bool isDryRun) =>
+                        ManifestToolServiceHelper.CreateTagManifest(
+                            ManifestToolService.ManifestListMediaType, this.imageDigests[image]));
                 return manifestToolServiceMock;
-            }
-
-            private static JArray CreateTagManifest(string digest)
-            {
-                return new JArray(
-                    new JObject
-                    {
-                        { "MediaType", ManifestToolService.ManifestListMediaType },
-                        { "Digest", digest }
-                    });
             }
 
             /// <summary>

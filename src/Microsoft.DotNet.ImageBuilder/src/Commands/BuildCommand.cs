@@ -41,14 +41,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override Task ExecuteAsync()
         {
             PullBaseImages();
-            BuildImages();
 
-            if (GetBuiltPlatforms().Any())
+            ExecuteWithUser(() =>
             {
-                PushImages();
-            }
+                BuildImages();
 
-            PublishImageInfo();
+                if (GetBuiltPlatforms().Any())
+                {
+                    PushImages();
+                }
+
+                PublishImageInfo();
+            });
+            
             WriteBuildSummary();
 
             return Task.CompletedTask;
@@ -499,13 +504,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 this.loggerService.WriteHeading("PUSHING IMAGES");
 
-                ExecuteWithUser(() =>
+                foreach (TagInfo tag in GetPushTags(GetBuiltTags()))
                 {
-                    foreach (TagInfo tag in GetPushTags(GetBuiltTags()))
-                    {
-                        this.dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
-                    }
-                });
+                    this.dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
+                }
             }
         }
 

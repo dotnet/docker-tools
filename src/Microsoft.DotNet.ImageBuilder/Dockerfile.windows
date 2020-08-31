@@ -1,3 +1,5 @@
+# escape=`
+
 # build Microsoft.DotNet.ImageBuilder
 FROM mcr.microsoft.com/dotnet/core/sdk:3.1 AS build-env
 WORKDIR /image-builder
@@ -11,6 +13,13 @@ RUN dotnet restore ./src/Microsoft.DotNet.ImageBuilder.csproj
 COPY . ./
 RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64
 
+RUN pwsh -Command `
+        $ErrorActionPreference = 'Stop'; `
+        $ProgressPreference = 'SilentlyContinue'; `
+        Invoke-WebRequest `
+            -UseBasicParsing `
+            -Uri "https://github.com/estesp/manifest-tool/releases/download/v1.0.2/manifest-tool-windows-amd64.exe" `
+            -OutFile out/manifest-tool.exe;
 
 # build runtime image
 FROM mcr.microsoft.com/windows/nanoserver:sac2016

@@ -17,6 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }
+        public string ImageInfoPath { get; set; }
+        public IDictionary<string, string> DockerfileTestCategories { get; set; } = new Dictionary<string, string>();
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -49,6 +51,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref productVersionComponents,
                 "Number of components of the product version considered to be significant");
             ProductVersionComponents = productVersionComponents;
+
+            string imageInfoPath = null;
+            syntax.DefineOption(
+                "image-info",
+                ref imageInfoPath,
+                "Path to image info file");
+            ImageInfoPath = imageInfoPath;
+
+            IReadOnlyList<string> dockerfileTestCategories = Array.Empty<string>();
+            syntax.DefineOptionList(
+                "dockerfile-test-category",
+                ref dockerfileTestCategories,
+                "Mapping of a test category to a Dockerfile path (syntax: <category>=<path>) (wildcards in path are supported)");
+            DockerfileTestCategories = dockerfileTestCategories
+                .Select(mapping => mapping.Split('='))
+                .ToDictionary(mapping => mapping[0], mapping => mapping[1]);
         }
     }
 }

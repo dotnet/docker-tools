@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -16,13 +17,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
     {
-        private readonly static char[] s_pathSeparators = { '/', '\\' };
-
         private const string VersionRegGroupName = "Version";
+
+        private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new Regex(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
+
+        private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public GenerateBuildMatrixCommand() : base()
         {
+            _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
+            {
+                if (Options.ImageInfoPath != null)
+                {
+                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+                }
+
+                return null;
+            });
         }
 
         public override Task ExecuteAsync()
@@ -40,8 +52,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             BuildMatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             // Pass 1: Find direct dependencies from the Dockerfile's FROM statement
-            IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
-                platform => GetPlatformDependencies(platform, platformGrouping));
+            IEnumerable<IEnumerable<SubgraphPlatform>> subgraphs = platformGrouping
+                .Select(platform => new SubgraphPlatform(platform, SubgraphType.Primary))
+                .GetCompleteSubgraphs(platform => GetPlatformDependencies(platform, platformGrouping));
 
             // Pass 2: Find dependencies amongst the subgraphs that result from custom leg groups
             // to produce a new set of subgraphs.
@@ -49,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(set => set.SelectMany(subgraph => subgraph))
                 .ToArray();
 
-            foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
+            foreach (IEnumerable<SubgraphPlatform> subgraph in subgraphs)
             {
                 string[] dockerfilePaths = GetDockerfilePaths(subgraph).ToArray();
 
@@ -64,15 +77,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<IEnumerable<PlatformInfo>> GetCustomLegGroupingDependencies(
-            IEnumerable<PlatformInfo> subgraph, IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
+        private IEnumerable<IEnumerable<SubgraphPlatform>> GetCustomLegGroupingDependencies(
+            IEnumerable<SubgraphPlatform> subgraph, IEnumerable<IEnumerable<SubgraphPlatform>> subgraphs)
         {
-            IEnumerable<IEnumerable<PlatformInfo>> dependencySubgraphs = subgraph
-                .Select(platform =>
+            IEnumerable<IEnumerable<SubgraphPlatform>> dependencySubgraphs = subgraph
+                .Select(subgraphPlatform =>
                 {
                     // Find the subgraphs of the platforms that are the custom leg dependencies of this platform
-                    IEnumerable<IEnumerable<PlatformInfo>> dependencySubgraphs =
-                        GetCustomLegGroupPlatforms(platform)
+                    IEnumerable<IEnumerable<SubgraphPlatform>> dependencySubgraphs =
+                        GetCustomLegGroupPlatforms(subgraphPlatform.Platform)
                             .Select(dependency =>
                                 subgraphs
                                     .Where(otherSubgraph => subgraph != otherSubgraph)
@@ -82,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (dependencySubgraphs.Count() > 1)
                     {
                         throw new NotSupportedException(
-                            $"Platform '{platform.DockerfilePathRelativeToManifest}' has a custom leg group dependency on more than one subgraphs.");
+                            $"Platform '{subgraphPlatform.Platform.DockerfilePathRelativeToManifest}' has a custom leg group dependency on more than one subgraphs.");
                     }
 
                     return dependencySubgraphs.FirstOrDefault();
@@ -94,14 +107,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return dependencySubgraphs;
         }
 
-        private static string[] GetDockerfilePaths(IEnumerable<PlatformInfo> platforms)
+        private static string[] GetDockerfilePaths(IEnumerable<SubgraphPlatform> platforms)
         {
             return platforms
-                .Select(platform => platform.Model.Dockerfile)
+                .Select(subgraphPlatform => subgraphPlatform.Platform.Model.Dockerfile)
                 .ToArray();
         }
 
-        private IEnumerable<PlatformInfo> GetCustomLegGroupPlatforms(PlatformInfo platform, CustomBuildLegDependencyType? dependencyType = null)
+        private IEnumerable<SubgraphPlatform> GetCustomLegGroupPlatforms(PlatformInfo platform, CustomBuildLegDependencyType? dependencyType = null)
         {
             return Options.CustomBuildLegGroups
                 .Select(groupName =>
@@ -112,13 +125,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Where(group => group != null && (!dependencyType.HasValue || group?.Type == dependencyType))
                 .SelectMany(group =>
                 {
-                    IEnumerable<PlatformInfo> dependencyPlatforms = group.Dependencies
-                        .Select(dependency => Manifest.GetPlatformByTag(dependency));
+                    IEnumerable<SubgraphPlatform> dependencyPlatforms = group.Dependencies
+                        .Select(dependency => new SubgraphPlatform(Manifest.GetPlatformByTag(dependency), ToSubgraphType(group.Type)));
                     return dependencyPlatforms
                         .Concat(dependencyPlatforms
                             .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
                 })
                 .Distinct();
+        }
+
+        private static SubgraphType ToSubgraphType(CustomBuildLegDependencyType dependencyType)
+        {
+            return dependencyType switch
+            {
+                CustomBuildLegDependencyType.Integral => SubgraphType.IntegralDependency,
+                CustomBuildLegDependencyType.Supplemental => SubgraphType.SupplementalDependency,
+                _ => throw new NotSupportedException($"Unexpected dependency type: {dependencyType}"),
+            };
         }
 
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, BuildLegInfo leg)
@@ -130,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private static void AddCommonVariables(
-            IGrouping<PlatformId, PlatformInfo> platformGrouping, IEnumerable<PlatformInfo> subgraph, BuildLegInfo leg)
+            IGrouping<PlatformId, PlatformInfo> platformGrouping, IEnumerable<SubgraphPlatform> subgraph, BuildLegInfo leg)
         {
             string fullyQualifiedLegName =
                 (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) +
@@ -142,10 +165,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
 
             string[] osVersions = subgraph
-                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.Model.OsVersion}")
+                .Select(subgraphPlatform => $"{ManifestFilterOptions.FormattedOsVersionOption} {subgraphPlatform.Platform.Model.OsVersion}")
                 .Distinct()
                 .ToArray();
-            leg.Variables.Add(("osVersions", String.Join(" ", osVersions)));
+            leg.Variables.Add(("osVersions", string.Join(" ", osVersions)));
         }
 
         private string GetProductVersion(ImageInfo image)
@@ -184,34 +207,77 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddVersionedOsLegs(BuildMatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
             // Get the set of subgraphs grouped by their FROM dependencies as well as any integral custom leg dependencies.
-            IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping
-                .GetCompleteSubgraphs(platform =>
-                    GetPlatformDependencies(platform, platformGrouping)
-                        .Union(GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Integral)));
+            IEnumerable<IEnumerable<SubgraphPlatform>> subgraphs = platformGrouping
+                .Select(platform => new SubgraphPlatform(platform, SubgraphType.Primary))
+                .GetCompleteSubgraphs(subgraphPlatform =>
+                    GetPlatformDependencies(subgraphPlatform, platformGrouping)
+                        .Union(
+                            GetCustomLegGroupPlatforms(subgraphPlatform.Platform, CustomBuildLegDependencyType.Integral)));
 
             // Append any supplemental custom leg dependencies to each subgraph
             subgraphs = subgraphs
-                .Select(subgraph => subgraph.Union(subgraph.SelectMany(platform => GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Supplemental))));
+                .Select(subgraph =>
+                    subgraph.Union(
+                        subgraph
+                            .SelectMany(subgraphPlatform =>
+                                GetCustomLegGroupPlatforms(subgraphPlatform.Platform, CustomBuildLegDependencyType.Supplemental))));
 
             // Append the parent graph of each platform to each respective subgraph
-            subgraphs = subgraphs.GetCompleteSubgraphs(
-                subgraph => subgraph.Select(platform => GetParents(platform, platformGrouping)))
+            subgraphs = subgraphs.GetCompleteSubgraphs(subgraph => subgraph.Select(subgraphPlatform => GetParents(subgraphPlatform, platformGrouping)))
                 .Select(set => set
                     .SelectMany(subgraph => subgraph)
                     .Distinct())
                 .ToArray();
 
-            foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
+            foreach (IEnumerable<SubgraphPlatform> subgraph in subgraphs)
             {
-                string osVariant = subgraph.First().BaseOsVersion;
-                string productVersion = GetProductVersion(Manifest.GetImageByPlatform(subgraph.First()));
+                IEnumerable<string> testCategories = GetTestCategories(subgraph);
+
+                string osVariant = subgraph.First().Platform.BaseOsVersion;
+                string productVersion = GetProductVersion(Manifest.GetImageByPlatform(subgraph.First().Platform));
                 BuildLegInfo leg = new BuildLegInfo() { Name = $"{productVersion}-{osVariant}" };
                 matrix.Legs.Add(leg);
 
                 AddCommonVariables(platformGrouping, subgraph, leg);
+
+                if (Options.DockerfileTestCategories.Any() && !testCategories.Any())
+                {
+                    throw new InvalidOperationException($"No test categories for build leg '{leg.Name}'");
+                }
+
                 leg.Variables.Add(("productVersion", productVersion));
                 leg.Variables.Add(("osVariant", osVariant));
+                leg.Variables.Add(("testCategories", string.Join(" ", testCategories.ToArray())));
                 AddImageBuilderPathsVariable(GetDockerfilePaths(subgraph).ToArray(), leg);
+            }
+        }
+
+        private IEnumerable<string> GetTestCategories(IEnumerable<SubgraphPlatform> subgraph)
+        {
+            if (_imageArtifactDetails.Value is null)
+            {
+                yield break;
+            }
+
+            IEnumerable<SubgraphPlatform> testablePlatforms = subgraph
+                .Where(subgraphPlatform => subgraphPlatform.Type == SubgraphType.Primary || subgraphPlatform.Type == SubgraphType.IntegralDependency);
+            foreach (SubgraphPlatform subgraphPlatform in testablePlatforms)
+            {
+                PlatformData platformData = _imageArtifactDetails.Value.Repos
+                    .SelectMany(repo => repo.Images)
+                    .SelectMany(image => image.Platforms)
+                    .FirstOrDefault(platform => platform.PlatformInfo == subgraphPlatform.Platform);
+
+                if (platformData != null)
+                {
+                    foreach (KeyValuePair<string, string> testCategoryMapping in Options.DockerfileTestCategories)
+                    {
+                        if (Regex.IsMatch(subgraphPlatform.Platform.DockerfilePath, ManifestFilter.GetFilterRegexPattern(testCategoryMapping.Value)))
+                        {
+                            yield return testCategoryMapping.Key;
+                        }
+                    }
+                }
             }
         }
 
@@ -264,12 +330,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
+        private IEnumerable<PlatformInfo> GetPlatforms()
+        {
+            if (_imageArtifactDetails.Value is null)
+            {
+                return Manifest.GetFilteredPlatforms();
+            }
+
+            IEnumerable<PlatformInfo> platforms = _imageArtifactDetails.Value.Repos?
+                .SelectMany(repo => repo.Images)
+                .SelectMany(image => image.Platforms)
+                .Where(platform => !platform.IsCached && platform.PlatformInfo != null)
+                .Select(platform => platform.PlatformInfo);
+
+            return platforms ?? Enumerable.Empty<PlatformInfo>();
+        }
+
         public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
         {
             List<BuildMatrixInfo> matrices = new List<BuildMatrixInfo>();
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
-            var platformGroups = Manifest.GetFilteredPlatforms()
+            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = GetPlatforms()
                 .GroupBy(platform => new PlatformId()
                 {
                     OS = platform.Model.OS,
@@ -282,7 +364,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ThenBy(platformGroup => platformGroup.Key.Architecture)
                 .ThenByDescending(platformGroup => platformGroup.Key.Variant);
 
-            foreach (var platformGrouping in platformGroups)
+            foreach (IGrouping<PlatformId, PlatformInfo> platformGrouping in platformGroups)
             {
                 string[] matrixNameParts =
                 {
@@ -315,10 +397,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return platformId.OS.GetDockerName();
         }
 
-        private IEnumerable<PlatformInfo> GetParents(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms)
+        private IEnumerable<SubgraphPlatform> GetParents(SubgraphPlatform subgraphPlatform, IEnumerable<PlatformInfo> availablePlatforms)
         {
-            List<PlatformInfo> parents = new List<PlatformInfo>();
-            foreach (PlatformInfo parent in GetPlatformDependencies(platform, availablePlatforms))
+            List<SubgraphPlatform> parents = new List<SubgraphPlatform>();
+            foreach (SubgraphPlatform parent in GetPlatformDependencies(subgraphPlatform, availablePlatforms))
             {
                 parents.Add(parent);
                 parents.AddRange(GetParents(parent, availablePlatforms));
@@ -327,10 +409,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return parents;
         }
 
-        private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
-            platform.InternalFromImages
+        private IEnumerable<SubgraphPlatform> GetPlatformDependencies(SubgraphPlatform subgraphPlatform, IEnumerable<PlatformInfo> availablePlatforms) =>
+            subgraphPlatform.Platform.InternalFromImages
                 .Select(fromImage => Manifest.GetPlatformByTag(fromImage))
-                .Intersect(availablePlatforms);
+                .Intersect(availablePlatforms)
+                .Select(platform => new SubgraphPlatform(platform, subgraphPlatform.Type));
 
         private static void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
         {
@@ -368,6 +451,40 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 return $"{Architecture}-{OS}-{OsVersion}-{Variant}".GetHashCode();
             }
+        }
+
+        private class SubgraphPlatform
+        {
+            public SubgraphPlatform(PlatformInfo platform, SubgraphType type)
+            {
+                Platform = platform;
+                Type = type;
+            }
+
+            public PlatformInfo Platform { get; }
+            public SubgraphType Type { get; }
+
+            public override bool Equals(object obj)
+            {
+                if (obj is SubgraphPlatform other)
+                {
+                    return Platform.Equals(other.Platform);
+                }
+
+                return base.Equals(obj);
+            }
+
+            public override int GetHashCode()
+            {
+                return Platform.GetHashCode();
+            }
+        }
+
+        private enum SubgraphType
+        {
+            Primary,
+            IntegralDependency,
+            SupplementalDependency
         }
     }
 }

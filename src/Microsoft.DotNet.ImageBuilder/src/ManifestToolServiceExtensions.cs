@@ -22,7 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder
             if (hasSupportedMediaType |= mediaType.HasFlag(ManifestMediaType.ManifestList))
             {
                 digest = GetDigestOfMediaType(
-                    tag, tagManifests, ManifestToolService.ManifestListMediaType, throwIfNull: mediaType == ManifestMediaType.ManifestList);
+                    tag, tagManifests, ManifestToolService.ManifestListMediaType,
+                    throwIfNull: mediaType == ManifestMediaType.ManifestList && !isDryRun);
 
                 if (digest != null)
                 {
@@ -33,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder
             if (hasSupportedMediaType |= mediaType.HasFlag(ManifestMediaType.Manifest))
             {
                 return GetDigestOfMediaType(
-                    tag, tagManifests, ManifestToolService.ManifestMediaType, throwIfNull: true);
+                    tag, tagManifests, ManifestToolService.ManifestMediaType, throwIfNull: !isDryRun);
             }
 
             if (!hasSupportedMediaType)

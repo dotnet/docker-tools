@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.ComponentModel.Composition;
@@ -27,6 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IEnvironmentService environmentService;
         private readonly IGitService gitService;
         private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
+        private readonly ConcurrentDictionary<string, string> imageDigestCache = new ConcurrentDictionary<string, string>();
 
         [ImportingConstructor]
         public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
@@ -140,7 +142,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void SetPlatformDataDigest(PlatformData platform, PlatformInfo manifestPlatform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
-            string digest = this.dockerService.GetImageDigest(tag, Options.IsDryRun);
+            string digest = GetImageDigest(tag);
             digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
 
             if (platform.Digest != null && platform.Digest != digest)
@@ -230,7 +232,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             BuildImage(platform, allTags);
 
-                            platformData.BaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+                            platformData.BaseImageDigest = GetImageDigest(platform.FinalStageFromImage);
                         }
                     }
                 }
@@ -303,6 +305,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Parallel.ForEach(allTags, tag =>
                 {
                     this.dockerService.CreateTag(srcPlatformData.Digest, tag, Options.IsDryRun);
+
+                    // Populate the digest cache with the known digest value for the tags assigned to the image.
+                    // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
+                    // because they haven't yet been pushed to staging by that time.
+                    this.imageDigestCache.AddOrUpdate(tag, srcPlatformData.Digest, (_, __) => srcPlatformData.Digest);
                 });
 
                 return true;
@@ -337,7 +344,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
-            string currentBaseImageDigest = this.dockerService.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+            string currentBaseImageDigest = GetImageDigest(platform.FinalStageFromImage);
             bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
                 DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
 
@@ -347,6 +354,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
             return baseImageDigestMatches;
         }
+
+        private string GetImageDigest(string tag) =>
+            imageDigestCache.GetOrAdd(tag, _ =>
+                this.dockerService.GetImageDigest(tag, Options.IsDryRun));
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
         {
@@ -480,7 +491,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
                         // greater change the tag could be updated resulting in a different digest returned than what was
                         // originally pulled.
-                        dockerService.GetImageDigest(fromImage, Options.IsDryRun);
+                        GetImageDigest(fromImage);
                     });
                 }
                 else

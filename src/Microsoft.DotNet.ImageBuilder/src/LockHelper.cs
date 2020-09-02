@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static TValue DoubleCheckedLockLookup<TKey, TValue>(
-            object lockObj, IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> getValue)
+            object lockObj, IDictionary<TKey, TValue> dictionary, TKey key, Func<TValue> getValue, Func<TValue, bool> addToDictionary = null)
         {
             if (!dictionary.TryGetValue(key, out TValue value))
             {
@@ -37,7 +37,10 @@ namespace Microsoft.DotNet.ImageBuilder
                     if (!dictionary.TryGetValue(key, out value))
                     {
                         value = getValue();
-                        dictionary.Add(key, value);
+                        if (addToDictionary is null || addToDictionary(value))
+                        {
+                            dictionary.Add(key, value);
+                        }
                     }
                 }
             }

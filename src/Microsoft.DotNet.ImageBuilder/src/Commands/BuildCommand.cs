@@ -150,7 +150,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 // Pushing the same image with different tags should result in the same digest being output
                 this.loggerService.WriteError(
-                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{platform.Digest}'.");
+                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value." +
+                    Environment.NewLine +
+                    $"Digest value from image info: {platform.Digest}{Environment.NewLine}" +
+                    $"Digest value retrieved from query: {digest}");
                 this.environmentService.Exit(1);
             }
 

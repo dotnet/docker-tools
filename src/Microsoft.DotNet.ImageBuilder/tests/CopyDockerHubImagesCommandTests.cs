@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            CopyDockerHubImagesCommand command = new CopyDockerHubImagesCommand(
+            CopyDockerHubBaseImagesCommand command = new CopyDockerHubBaseImagesCommand(
                 azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;

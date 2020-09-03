@@ -6,11 +6,9 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyAcrImagesOptions : CopyImagesOptions, IFilterableOptions
+    public class CopyAcrImagesOptions : CopyImagesOptions
     {
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
-
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         
         public string SourceRepoPrefix { get; set; }
         
@@ -23,8 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override void DefineOptions(ArgumentSyntax syntax)
         {
             base.DefineOptions(syntax);
-
-            FilterOptions.DefineOptions(syntax);
 
             string imageInfoPath = null;
             syntax.DefineOption("image-info", ref imageInfoPath, "Path to image info file");

@@ -6,12 +6,21 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class CopyImagesOptions : ManifestOptions
+    public abstract class CopyImagesOptions : ManifestOptions, IFilterableOptions
     {
+        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+
         public string ResourceGroup { get; set; }
         public string Subscription { get; set; }
 
         public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
+
+        public override void DefineOptions(ArgumentSyntax syntax)
+        {
+            base.DefineOptions(syntax);
+
+            FilterOptions.DefineOptions(syntax);
+        }
 
         public override void DefineParameters(ArgumentSyntax syntax)
         {

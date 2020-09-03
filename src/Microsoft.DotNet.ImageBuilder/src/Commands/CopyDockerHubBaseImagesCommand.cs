@@ -11,10 +11,10 @@ using Microsoft.DotNet.ImageBuilder.Services;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CopyDockerHubImagesCommand : CopyImagesCommand<CopyDockerHubImagesOptions>
+    public class CopyDockerHubBaseImagesCommand : CopyImagesCommand<CopyDockerHubBaseImagesOptions>
     {
         [ImportingConstructor]
-        public CopyDockerHubImagesCommand(
+        public CopyDockerHubBaseImagesCommand(
             IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
             : base(azureManagementFactory, loggerService)
         {
@@ -25,7 +25,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.LoggerService.WriteHeading("COPYING IMAGES");
 
             IEnumerable<Task> importTasks = Manifest.GetExternalFromImages()
-                .Select(fromImage => ImportImageAsync($"{ Options.RepoPrefix}{fromImage}", fromImage, srcRegistryName: "docker.io"));
+                .Where(fromImage => !fromImage.StartsWith(Manifest.Registry))
+                .Select(fromImage => ImportImageAsync($"{Options.RepoPrefix}{fromImage}", fromImage, srcRegistryName: "docker.io"));
 
             await Task.WhenAll(importTasks);
         }

@@ -6,15 +6,12 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyAcrImagesOptions : ManifestOptions, IFilterableOptions
+    public class CopyAcrImagesOptions : CopyImagesOptions
     {
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
-
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
-        public string ResourceGroup { get; set; }
+        
         public string SourceRepoPrefix { get; set; }
-        public string Subscription { get; set; }
-        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
+        
         public string ImageInfoPath { get; set; }
 
         public CopyAcrImagesOptions() : base()
@@ -24,8 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override void DefineOptions(ArgumentSyntax syntax)
         {
             base.DefineOptions(syntax);
-
-            FilterOptions.DefineOptions(syntax);
 
             string imageInfoPath = null;
             syntax.DefineOption("image-info", ref imageInfoPath, "Path to image info file");
@@ -39,16 +34,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string sourceRepoPrefix = null;
             syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");
             SourceRepoPrefix = sourceRepoPrefix;
-
-            ServicePrincipal.DefineParameters(syntax);
-
-            string subscription = null;
-            syntax.DefineParameter("subscription", ref subscription, "Azure subscription to operate on");
-            Subscription = subscription;
-
-            string resourceGroup = null;
-            syntax.DefineParameter("resource-group", ref resourceGroup, "Azure resource group to operate on");
-            ResourceGroup = resourceGroup;
         }
     }
 }

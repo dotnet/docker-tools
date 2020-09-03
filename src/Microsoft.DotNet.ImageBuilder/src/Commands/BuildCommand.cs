@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.ComponentModel.Composition;
@@ -25,19 +24,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
-        private readonly IEnvironmentService environmentService;
         private readonly IGitService gitService;
         private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
         private readonly ImageDigestCache imageDigestCache;
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
-            IGitService gitService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService)
         {
             this.imageDigestCache = new ImageDigestCache(dockerService);
             this.dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
@@ -111,9 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (platform.Created != default && platform.Created != createdDate)
             {
                 // All of the tags associated with the platform should have the same Created date
-                this.loggerService.WriteError(
+                throw new InvalidOperationException(
                     $"Tag '{tag}' has a Created date that differs from the corresponding image's Created date value of '{platform.Created}'.");
-                this.environmentService.Exit(1);
             }
 
             platform.Created = createdDate;
@@ -123,7 +118,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (platform.BaseImageDigest == null && platform.PlatformInfo.FinalStageFromImage != null)
             {
-                platform.AllTags.FirstOrDefault(tag => tag.FullyQualifiedName == platform.PlatformInfo.FinalStageFromImage);
                 if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData basePlatformData))
                 {
                     throw new InvalidOperationException(
@@ -144,17 +138,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
             string digest = imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
-            digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+            if (digest != null)
+            {
+                digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+            }
 
             if (platform.Digest != null && platform.Digest != digest)
             {
                 // Pushing the same image with different tags should result in the same digest being output
-                this.loggerService.WriteError(
+                throw new InvalidOperationException(
                     $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value." +
                     Environment.NewLine +
-                    $"Digest value from image info: {platform.Digest}{Environment.NewLine}" +
-                    $"Digest value retrieved from query: {digest}");
-                this.environmentService.Exit(1);
+                    $"\tDigest value from image info: {platform.Digest}{Environment.NewLine}" +
+                    $"\tDigest value retrieved from query: {digest}");
             }
 
             platform.Digest = digest;
@@ -265,7 +261,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
-                if (!Options.IsSkipPullingEnabled && buildOutput.Contains("Pulling from"))
+                if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput.Contains("Pulling from"))
                 {
                     throw new InvalidOperationException(
                         "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +

@@ -103,7 +103,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 BuildCommand command = new BuildCommand(
                     dockerServiceMock.Object,
                     Mock.Of<ILoggerService>(),
-                    Mock.Of<IEnvironmentService>(),
                     gitServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
@@ -275,8 +274,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
-                Mock.Of<IGitService>());
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -354,8 +352,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetCommitSha(dockerfileRelativePath, It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
-                    gitServiceMock.Object);
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.SourceRepoUrl = "https://source";
@@ -397,8 +394,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string fullDockerfilePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(fullDockerfilePath, $"FROM baserepo:basetag");
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IEnvironmentService>(),
-                Mock.Of<IGitService>());
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
@@ -549,7 +545,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
-                Mock.Of<IEnvironmentService>(),
                 gitServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");

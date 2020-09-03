@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.ComponentModel.Composition;
@@ -25,18 +24,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
-        private readonly IEnvironmentService environmentService;
         private readonly IGitService gitService;
         private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
-        private readonly ConcurrentDictionary<string, string> imageDigestCache = new ConcurrentDictionary<string, string>();
+        private readonly ImageDigestCache imageDigestCache;
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService,
-            IGitService gitService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService)
         {
+            this.imageDigestCache = new ImageDigestCache(dockerService);
             this.dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
 
@@ -110,9 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (platform.Created != default && platform.Created != createdDate)
             {
                 // All of the tags associated with the platform should have the same Created date
-                this.loggerService.WriteError(
+                throw new InvalidOperationException(
                     $"Tag '{tag}' has a Created date that differs from the corresponding image's Created date value of '{platform.Created}'.");
-                this.environmentService.Exit(1);
             }
 
             platform.Created = createdDate;
@@ -122,7 +118,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (platform.BaseImageDigest == null && platform.PlatformInfo.FinalStageFromImage != null)
             {
-                platform.AllTags.FirstOrDefault(tag => tag.FullyQualifiedName == platform.PlatformInfo.FinalStageFromImage);
                 if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData basePlatformData))
                 {
                     throw new InvalidOperationException(
@@ -142,15 +137,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void SetPlatformDataDigest(PlatformData platform, PlatformInfo manifestPlatform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
-            string digest = GetImageDigest(tag);
-            digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+            string digest = imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
+            if (digest != null)
+            {
+                digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+            }
 
             if (platform.Digest != null && platform.Digest != digest)
             {
                 // Pushing the same image with different tags should result in the same digest being output
-                this.loggerService.WriteError(
-                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value of '{platform.Digest}'.");
-                this.environmentService.Exit(1);
+                throw new InvalidOperationException(
+                    $"Tag '{tag}' was pushed with a resulting digest value that differs from the corresponding image's digest value." +
+                    Environment.NewLine +
+                    $"\tDigest value from image info: {platform.Digest}{Environment.NewLine}" +
+                    $"\tDigest value retrieved from query: {digest}");
             }
 
             platform.Digest = digest;
@@ -232,7 +232,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             BuildImage(platform, allTags);
 
-                            platformData.BaseImageDigest = GetImageDigest(platform.FinalStageFromImage);
+                            platformData.BaseImageDigest =
+                                imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
                         }
                     }
                 }
@@ -260,7 +261,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
-                if (!Options.IsSkipPullingEnabled && buildOutput.Contains("Pulling from"))
+                if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput.Contains("Pulling from"))
                 {
                     throw new InvalidOperationException(
                         "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +
@@ -309,7 +310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     // Populate the digest cache with the known digest value for the tags assigned to the image.
                     // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
                     // because they haven't yet been pushed to staging by that time.
-                    this.imageDigestCache.AddOrUpdate(tag, srcPlatformData.Digest, (_, __) => srcPlatformData.Digest);
+                    this.imageDigestCache.AddDigest(tag, srcPlatformData.Digest);
                 });
 
                 return true;
@@ -344,7 +345,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
-            string currentBaseImageDigest = GetImageDigest(platform.FinalStageFromImage);
+            string currentBaseImageDigest = imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
             bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
                 DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
 
@@ -354,10 +355,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             this.loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
             return baseImageDigestMatches;
         }
-
-        private string GetImageDigest(string tag) =>
-            imageDigestCache.GetOrAdd(tag, _ =>
-                this.dockerService.GetImageDigest(tag, Options.IsDryRun));
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
         {
@@ -491,7 +488,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
                         // greater change the tag could be updated resulting in a different digest returned than what was
                         // originally pulled.
-                        GetImageDigest(fromImage);
+                        imageDigestCache.GetImageDigest(fromImage, Options.IsDryRun);
                     });
                 }
                 else

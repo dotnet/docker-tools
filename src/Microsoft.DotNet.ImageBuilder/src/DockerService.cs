@@ -35,6 +35,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
             string digestSha = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, image, isDryRun);
 
+            if (digestSha is null)
+            {
+                return null;
+            }
+
             string digest = DockerHelper.GetDigestString(DockerHelper.GetRepo(image), digestSha);
 
             if (!digests.Contains(digest))
@@ -95,6 +100,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public DateTime GetCreatedDate(string image, bool isDryRun)
         {
+            if (isDryRun)
+            {
+                return default;
+            }
+
             return DateTime.Parse(DockerHelper.GetCreatedDate(image, isDryRun));
         }
     }

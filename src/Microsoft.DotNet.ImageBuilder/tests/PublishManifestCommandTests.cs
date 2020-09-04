@@ -86,11 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile2),
-                                    new PlatformData
-                                    {
-                                        IsCached = true
-                                    }
+                                    CreatePlatform(dockerfile2)
                                 },
                                 Manifest = new ManifestData
                                 {
@@ -150,9 +146,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageArtifactDetails.Repos[0].Images[0].Manifest.Created = actualCreatedDate;
             imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "repo2@digest2";
             imageArtifactDetails.Repos[1].Images[0].Manifest.Created = actualCreatedDate;
-
-            // Remove cached platform
-            imageArtifactDetails.Repos[1].Images[0].Platforms.RemoveAt(1);
 
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
 

@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<string> GetDestinationTagNames(RepoInfo repo, PlatformInfo platform)
         {
-            IEnumerable<string> destTagNames = null;
+            List<string> destTagNames = new List<string>();
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
@@ -77,30 +77,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .FirstOrDefault(platformData => platformData.Equals(platform));
                     if (platformData != null)
                     {
-                        destTagNames = platformData.SimpleTags
-                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag));
+                        destTagNames.AddRange(platformData.SimpleTags
+                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag)));
                     }
                     else
                     {
-                        this.LoggerService.WriteError($"Unable to find image info data for path '{platform.DockerfilePath}'.");
-                        this.environmentService.Exit(1);
+                        this.LoggerService.WriteMessage($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                     }
                 }
                 else
                 {
-                    this.LoggerService.WriteError($"Unable to find image info data for repo '{repo.Name}'.");
-                    this.environmentService.Exit(1);
+                    this.LoggerService.WriteMessage($"Unable to find image info data for repo '{repo.Name}'.");
                 }
             }
             else
             {
-                destTagNames = platform.Tags
-                    .Select(tag => tag.FullyQualifiedName);
+                destTagNames.AddRange(platform.Tags
+                    .Select(tag => tag.FullyQualifiedName));
             }
 
-            destTagNames = destTagNames
+            return destTagNames
                 .Select(tag => tag.TrimStart($"{Manifest.Registry}/"));
-            return destTagNames;
         }
     }
 }

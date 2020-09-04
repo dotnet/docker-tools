@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "Relative path to the MCR tags template YAML file that is used by " +
             "tooling to generate the tags section of the readme file."
             )]
-        public string McrTagsMetadataTemplatePath { get; set; }
+        public string McrTagsMetadataTemplate { get; set; }
 
         [Description(
             "The name of the Docker repository where the described images are to " +
@@ -43,7 +43,12 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "repository. This readme file documents the set of Docker images for " +
             "this repository."
             )]
-        public string ReadmePath { get; set; }
+        public string Readme { get; set; }
+
+        [Description(
+            "Relative path to the template the readme is generated from."
+            )]
+        public string ReadmeTemplate { get; set; }
 
         public Repo()
         {

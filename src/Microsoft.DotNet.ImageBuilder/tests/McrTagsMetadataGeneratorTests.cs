@@ -53,6 +53,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
             File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
 
+            string emptyFileName = "emptyFile.md";
+            string emptyFilePath = Path.Combine(tempFolderContext.Path, emptyFileName);
+            File.WriteAllText(emptyFilePath, string.Empty);
+
             // Create manifest
             Manifest manifest = ManifestHelper.CreateManifest(
                 ManifestHelper.CreateRepo(RepoName,
@@ -61,7 +65,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateImage(
                             ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { TagName }))
                     },
-                    mcrTagsMetadataTemplatePath: Path.GetFileName(tagsMetadataTemplatePath))
+                    readme: emptyFileName,
+                    readmeTemplate: emptyFileName,
+                    mcrTagsMetadataTemplate: Path.GetFileName(tagsMetadataTemplatePath))
             );
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
@@ -117,6 +123,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
             File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
 
+            string emptyFileName = "emptyFile.md";
+            string emptyFilePath = Path.Combine(tempFolderContext.Path, emptyFileName);
+            File.WriteAllText(emptyFilePath, string.Empty);
+
             Platform platform = ManifestHelper.CreatePlatform(
                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
                 Array.Empty<string>());
@@ -144,7 +154,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os2", tempFolderContext),
                                 new string[] { "tag1a", "tag1b" }))
                     },
-                    mcrTagsMetadataTemplatePath: Path.GetFileName(tagsMetadataTemplatePath))
+                    readme: emptyFileName,
+                    readmeTemplate: emptyFileName,
+                    mcrTagsMetadataTemplate: Path.GetFileName(tagsMetadataTemplatePath))
             );
 
             if (hasSharedTag)

@@ -13,10 +13,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string UpdateTagsListing(string readme, string tagsListing)
         {
-            tagsListing = $"{TagsSectionHeader}{Environment.NewLine}{Environment.NewLine}{tagsListing}{Environment.NewLine}{Environment.NewLine}";
-
             // Normalize the line endings to match the readme.
             tagsListing = tagsListing.NormalizeLineEndings(readme);
+
+            string targetLineEnding = readme.Contains("\r\n") ? "\r\n" : "\n";
+            tagsListing = $"{TagsSectionHeader}{targetLineEnding}{targetLineEnding}{tagsListing}{targetLineEnding}";
 
             // Regex to find the entire tags listing section including the header.
             Regex regex = new Regex($"^{TagsSectionHeader}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);

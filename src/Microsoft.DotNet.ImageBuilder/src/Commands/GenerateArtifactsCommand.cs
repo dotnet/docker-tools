@@ -1,0 +1,173 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Cottle;
+using Cottle.Exceptions;
+
+namespace Microsoft.DotNet.ImageBuilder.Commands
+{
+    public abstract class GenerateArtifactsCommand<TOptions> : ManifestCommand<TOptions>
+        where TOptions : GenerateArtifactsOptions, new()
+    {
+        private readonly DocumentConfiguration _config = new DocumentConfiguration
+        {
+            BlockBegin = "{{",
+            BlockContinue = "^",
+            BlockEnd = "}}",
+            Escape = '@',
+            Trimmer = DocumentConfiguration.TrimNothing
+        };
+
+        private readonly IEnvironmentService _environmentService;
+        private List<string> _invalidTemplates = new List<string>();
+        private List<string> _outOfSyncArtifacts = new List<string>();
+
+        protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
+        {
+            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+        }
+
+        protected async Task GenerateArtifactsAsync<TContext>(
+            IEnumerable<TContext> contexts,
+            Func<TContext, string> getTemplatePath,
+            Func<TContext, string> getArtifactPath,
+            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols,
+            string templatePropertyName,
+            string artifactName,
+            Func<string, TContext, string> postProcess = null)
+        {
+            foreach (TContext context in contexts)
+            {
+                string artifactPath = getArtifactPath(context);
+                if (artifactPath == null)
+                {
+                    continue;
+                }
+
+                string templatePath = getTemplatePath(context);
+                if (templatePath == null)
+                {
+                    if (Options.AllowOptionalTemplates)
+                    {
+                        continue;
+                    }
+
+                    throw new InvalidOperationException(
+                        $"The {artifactName} `{artifactPath}` does not have a {templatePropertyName} specified.");
+                }
+
+                await GenerateArtifactAsync(templatePath, artifactPath, context, getSymbols, artifactName, postProcess);
+            }
+        }
+
+        private async Task GenerateArtifactAsync<TContext>(
+            string templatePath,
+            string artifactPath,
+            TContext context,
+            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols,
+            string artifactName,
+            Func<string, TContext, string> postProcess)
+        {
+            Logger.WriteSubheading($"Generating '{artifactPath}' from '{templatePath}'");
+
+            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getSymbols);
+
+            if (generatedArtifact != null)
+            {
+                if (postProcess != null)
+                {
+                    generatedArtifact = postProcess(generatedArtifact, context);
+                }
+
+                string currentArtifact = File.Exists(artifactPath) ?
+                    await File.ReadAllTextAsync(artifactPath) : string.Empty;
+                if (currentArtifact == generatedArtifact)
+                {
+                    Logger.WriteMessage($"{artifactName} in sync with template");
+                }
+                else if (Options.Validate)
+                {
+                    int differIndex = StringExtensions.DiffersAtIndex(currentArtifact, generatedArtifact);
+                    Logger.WriteError($"{artifactName} out of sync with template{Environment.NewLine}"
+                        + $"Current:   '{GetSnippet(currentArtifact, differIndex)}'{Environment.NewLine}"
+                        + $"Generated: '{GetSnippet(generatedArtifact, differIndex)}'");
+                    _outOfSyncArtifacts.Add(artifactPath);
+                }
+                else if (!Options.IsDryRun)
+                {
+                    await File.WriteAllTextAsync(artifactPath, generatedArtifact);
+                    Logger.WriteMessage($"Updated '{artifactPath}'");
+                }
+            }
+        }
+
+        private static string GetSnippet(string source, int index) => source.Substring(index, Math.Min(100, source.Length - index));
+
+        protected Dictionary<Value, Value> GetSymbols()
+        {
+            return new Dictionary<Value, Value>
+            {
+                ["VARIABLES"] = Manifest.VariableHelper.GetVariables()
+                    .ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value)
+            };
+        }
+
+        protected async Task<string> RenderTemplateAsync<TContext>(
+            string templatePath,
+            TContext context,
+            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols)
+        {
+            string artifact = null;
+
+            string template = await File.ReadAllTextAsync(templatePath);
+            if (Options.IsVerbose)
+            {
+                Logger.WriteMessage($"Template:{Environment.NewLine}{template}");
+            }
+
+            try
+            {
+                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
+                artifact = document.Render(Context.CreateBuiltin(getSymbols(context)));
+
+                if (Options.IsVerbose)
+                {
+                    Logger.WriteMessage($"Generated:{Environment.NewLine}{artifact}");
+                }
+            }
+            catch (ParseException e)
+            {
+                Logger.WriteError($"Error: {e}{Environment.NewLine}Invalid Syntax:{Environment.NewLine}{template.Substring(e.LocationStart)}");
+                _invalidTemplates.Add(templatePath);
+            }
+
+            return artifact;
+        }
+
+        protected void ValidateArtifacts()
+        {
+            if (_outOfSyncArtifacts.Any() || _invalidTemplates.Any())
+            {
+                if (_outOfSyncArtifacts.Any())
+                {
+                    string artifacts = string.Join(Environment.NewLine, _outOfSyncArtifacts);
+                    Logger.WriteError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
+                }
+
+                if (_invalidTemplates.Any())
+                {
+                    string templateList = string.Join(Environment.NewLine, _invalidTemplates);
+                    Logger.WriteError($"Invalid Templates:{Environment.NewLine}{templateList}");
+                }
+
+                _environmentService.Exit(1);
+            }
+        }
+    }
+}

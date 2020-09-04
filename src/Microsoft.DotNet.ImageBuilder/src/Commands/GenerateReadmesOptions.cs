@@ -6,17 +6,16 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateTagsReadmeOptions : ManifestOptions
+    public class GenerateReadmesOptions : GenerateArtifactsOptions
     {
-        protected override string CommandHelp => "Generates and updates the readme tag listing section";
+        protected override string CommandHelp =>
+            "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
 
         public string SourceRepoUrl { get; set; }
 
         public string SourceRepoBranch { get; set; }
 
-        public bool Validate { get; set; }
-
-        public GenerateTagsReadmeOptions() : base()
+        public GenerateReadmesOptions() : base()
         {
         }
 
@@ -27,10 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string sourceRepoBranch = null;
             syntax.DefineOption("source-branch", ref sourceRepoBranch, "Repo branch of the Dockerfile sources (default is commit SHA)");
             SourceRepoBranch = sourceRepoBranch;
-
-            bool validate = false;
-            syntax.DefineOption("validate", ref validate, "Validates the Readmes' tag listings are up-to-date");
-            Validate = validate;
         }
 
         public override void DefineParameters(ArgumentSyntax syntax)

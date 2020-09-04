@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
@@ -31,6 +32,28 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             GetRepoById = getRepoById;
             Manifest = manifest;
             Options = options;
+        }
+
+        public IDictionary<string, string> GetVariables()
+        {
+            Dictionary<string, string> variables;
+
+            if (Manifest.Variables != null)
+            {
+                variables = new Dictionary<string, string>(Manifest.Variables);
+            }
+            else
+            {
+                variables = new Dictionary<string, string>();
+            }
+            
+            foreach(KeyValuePair<string, string> kvp in Options.Variables)
+            {
+                // Variables specified via the Options override modeled variables
+                variables[kvp.Key] = kvp.Value;
+            }
+
+            return variables;
         }
 
         public string SubstituteValues(string expression, Func<string, string, string> getContextBasedSystemValue = null)

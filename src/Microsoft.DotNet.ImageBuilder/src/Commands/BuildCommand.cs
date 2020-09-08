@@ -17,6 +17,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -25,8 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService dockerService;
         private readonly ILoggerService loggerService;
         private readonly IGitService gitService;
-        private readonly ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails();
         private readonly ImageDigestCache imageDigestCache;
+        private readonly List<TagInfo> builtTags = new List<TagInfo>();
+
+        private ImageArtifactDetails? imageArtifactDetails;
 
         [ImportingConstructor]
         public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService)
@@ -39,13 +42,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
+            if (Options.ImageInfoOutputPath != null)
+            {
+                imageArtifactDetails = new ImageArtifactDetails();
+            }
+
             PullBaseImages();
 
             ExecuteWithUser(() =>
             {
                 BuildImages();
 
-                if (GetBuiltPlatforms().Any())
+                if (builtTags.Any())
                 {
                     PushImages();
                 }
@@ -118,7 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (platform.BaseImageDigest == null && platform.PlatformInfo.FinalStageFromImage != null)
             {
-                if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData basePlatformData))
+                if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData? basePlatformData))
                 {
                     throw new InvalidOperationException(
                         $"Unable to find platform data for tag '{platform.PlatformInfo.FinalStageFromImage}'. " +
@@ -160,7 +168,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteHeading("BUILDING IMAGES");
 
-            ImageArtifactDetails srcImageArtifactDetails = null;
+            ImageArtifactDetails? srcImageArtifactDetails = null;
             if (Options.ImageInfoSourcePath != null)
             {
                 srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoSourcePath, Manifest);
@@ -168,62 +176,50 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
-                RepoData repoData = new RepoData
-                {
-                    Repo = repoInfo.Name
-                };
-
-                RepoData srcRepoData = srcImageArtifactDetails?.Repos.FirstOrDefault(srcRepo => srcRepo.Repo == repoInfo.Name);
+                RepoData? repoData = CreateRepoData(repoInfo);
+                RepoData? srcRepoData = srcImageArtifactDetails?.Repos.FirstOrDefault(srcRepo => srcRepo.Repo == repoInfo.Name);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
-                    ImageData imageData = new ImageData
-                    {
-                        ProductVersion = image.ProductVersion
-                    };
+                    ImageData? imageData = CreateImageData(image);
+                    repoData?.Images.Add(imageData);
 
-                    if (image.SharedTags.Any())
-                    {
-                        imageData.Manifest = new ManifestData
-                        {
-                            SharedTags = image.SharedTags
-                                .Select(tag => tag.Name)
-                                .ToList()
-                        };
-                    }
-
-                    repoData.Images.Add(imageData);
-
-                    ImageData srcImageData = srcRepoData?.Images.FirstOrDefault(srcImage => srcImage.ManifestImage == image);
+                    ImageData? srcImageData = srcRepoData?.Images.FirstOrDefault(srcImage => srcImage.ManifestImage == image);
 
                     foreach (PlatformInfo platform in image.FilteredPlatforms)
                     {
                         // Tag the built images with the shared tags as well as the platform tags.
                         // Some tests and image FROM instructions depend on these tags.
-                        IEnumerable<string> allTags = platform.Tags
+                        
+                        IEnumerable<TagInfo> allTagInfos = platform.Tags
                             .Concat(image.SharedTags)
+                            .ToList();
+
+                        builtTags.AddRange(allTagInfos);
+
+                        IEnumerable<string> allTags = allTagInfos
                             .Select(tag => tag.FullyQualifiedName)
                             .ToList();
 
-                        PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
-                        imageData.Platforms.Add(platformData);
+                        PlatformData? platformData = CreatePlatformData(image, platform);
+                        imageData?.Platforms.Add(platformData);
 
-                        platformData.SimpleTags = GetPushTags(platform.Tags)
-                            .Select(tag => tag.Name)
-                            .OrderBy(name => name)
-                            .ToList();
                         bool isCachedImage = false;
                         if (!Options.NoCache && srcImageData != null)
                         {
-                            PlatformData srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
+                            PlatformData? srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
                             // If this Dockerfile has been built and published before
                             if (srcPlatformData != null)
                             {
                                 isCachedImage = CheckForCachedImage(platform, srcPlatformData, allTags);
-                                platformData.IsCached = isCachedImage;
-                                if (isCachedImage)
+
+                                if (platformData != null)
                                 {
-                                    platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
+                                    platformData.IsCached = isCachedImage;
+                                    if (isCachedImage)
+                                    {
+                                        platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
+                                    }
                                 }
                             }
                         }
@@ -232,17 +228,64 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             BuildImage(platform, allTags);
 
-                            platformData.BaseImageDigest =
-                                imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+                            if (platformData != null)
+                            {
+                                platformData.BaseImageDigest =
+                                   imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+                            }
                         }
                     }
                 }
 
-                if (repoData.Images.Any())
+                if (repoData?.Images.Any() == true)
                 {
-                    imageArtifactDetails.Repos.Add(repoData);
+                    imageArtifactDetails?.Repos.Add(repoData);
                 }
             }
+        }
+
+        private RepoData? CreateRepoData(RepoInfo repoInfo) =>
+            Options.ImageInfoOutputPath is null ? null :
+                new RepoData
+                {
+                    Repo = repoInfo.Name
+                };
+
+        private PlatformData? CreatePlatformData(ImageInfo image, PlatformInfo platform)
+        {
+            if (Options.ImageInfoOutputPath is null)
+            {
+                return null;
+            }
+
+            PlatformData? platformData = PlatformData.FromPlatformInfo(platform, image);
+            platformData.SimpleTags = GetPushTags(platform.Tags)
+                .Select(tag => tag.Name)
+                .OrderBy(name => name)
+                .ToList();
+
+            return platformData;
+        }
+
+        private ImageData? CreateImageData(ImageInfo image)
+        {
+            ImageData? imageData = Options.ImageInfoOutputPath is null ? null :
+                new ImageData
+                {
+                    ProductVersion = image.ProductVersion
+                };
+
+            if (image.SharedTags.Any() && imageData != null)
+            {
+                imageData.Manifest = new ManifestData
+                {
+                    SharedTags = image.SharedTags
+                        .Select(tag => tag.Name)
+                        .ToList()
+                };
+            }
+
+            return imageData;
         }
 
         private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags)
@@ -498,13 +541,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<PlatformData> GetBuiltPlatforms() => this.imageArtifactDetails.Repos
+        private IEnumerable<PlatformData> GetBuiltPlatforms() => this.imageArtifactDetails?.Repos
             .Where(repoData => repoData.Images != null)
             .SelectMany(repoData => repoData.Images)
-            .SelectMany(imageData => imageData.Platforms);
-
-        private IEnumerable<TagInfo> GetBuiltTags() =>
-            GetBuiltPlatforms().SelectMany(platform => platform.AllTags);
+            .SelectMany(imageData => imageData.Platforms)
+            ?? Enumerable.Empty<PlatformData>();
 
         private void PushImages()
         {
@@ -512,7 +553,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 this.loggerService.WriteHeading("PUSHING IMAGES");
 
-                foreach (TagInfo tag in GetPushTags(GetBuiltTags()))
+                foreach (TagInfo tag in GetPushTags(builtTags))
                 {
                     this.dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
                 }
@@ -560,8 +601,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             this.loggerService.WriteHeading("IMAGES BUILT");
 
-            IEnumerable<TagInfo> builtTags = GetBuiltTags();
-
             if (builtTags.Any())
             {
                 foreach (TagInfo tag in builtTags)
@@ -578,3 +617,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable restore

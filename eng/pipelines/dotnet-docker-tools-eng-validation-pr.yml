@@ -7,6 +7,8 @@ pr:
     - eng/*
     - test/*
 
+trigger: none
+
 variables:
 - template: templates/variables/eng-validation.yml
 

@@ -100,42 +100,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun));
             });
 
-            // Strip out any platforms that are the result of pulling a cached version
-            RemoveCachedPlatforms(imageArtifactDetails);
-
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoPath, imageInfoString);
-        }
-
-        private void RemoveCachedPlatforms(ImageArtifactDetails imageArtifactDetails)
-        {
-            for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
-            {
-                RepoData repo = imageArtifactDetails.Repos[repoIndex];
-                for (int imageIndex = repo.Images.Count - 1; imageIndex >= 0; imageIndex--)
-                {
-                    ImageData image = repo.Images[imageIndex];
-                    for (int i = image.Platforms.Count - 1; i >= 0; i--)
-                    {
-                        PlatformData platform = image.Platforms[i];
-                        if (platform.IsCached)
-                        {
-                            this.loggerService.WriteMessage($"Removing cached platform '{platform.GetIdentifier()}'");
-                            image.Platforms.Remove(platform);
-                        }
-                    }
-
-                    if (!image.Platforms.Any())
-                    {
-                        repo.Images.Remove(image);
-                    }
-                }
-
-                if (!repo.Images.Any())
-                {
-                    imageArtifactDetails.Repos.Remove(repo);
-                }
-            }
         }
 
         private string GenerateManifest(ImageInfo image)

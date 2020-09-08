@@ -32,6 +32,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string csv = GetImageInfoCsv();
             this.loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{csv}");
 
+            if (String.IsNullOrEmpty(csv))
+            {
+                this.loggerService.WriteMessage("Skipping ingestion due to empty image info data.");
+                return;
+            }
+
             using MemoryStream stream = new MemoryStream();
             using StreamWriter writer = new StreamWriter(stream);
             writer.Write(csv);

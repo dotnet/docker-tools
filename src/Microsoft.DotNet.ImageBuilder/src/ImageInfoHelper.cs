@@ -58,9 +58,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return imageArtifactDetails;
         }
 
-        public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest)
+        public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest, bool skipManifestValidation = false)
         {
-            return LoadFromContent(File.ReadAllText(path), manifest);
+            return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation);
         }
 
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)

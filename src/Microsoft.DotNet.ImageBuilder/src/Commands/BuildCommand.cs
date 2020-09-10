@@ -171,7 +171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageArtifactDetails? srcImageArtifactDetails = null;
             if (Options.ImageInfoSourcePath != null)
             {
-                srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoSourcePath, Manifest);
+                srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoSourcePath, Manifest, skipManifestValidation: true);
             }
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)

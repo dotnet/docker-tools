@@ -36,6 +36,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return source;
         }
 
+        public static string GetLineEndingFormat(this string value) => value.Contains("\r\n") ? "\r\n" : "\n";
+
         public static string TrimStart(this string source, string trimString)
         {
             while (source.StartsWith(trimString))
@@ -53,8 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string NormalizeLineEndings(this string value, string targetFormat)
         {
-            string targetLineEnding = targetFormat.Contains("\r\n") ? "\r\n" : "\n";
-            string valueLineEnding = value.Contains("\r\n") ? "\r\n" : "\n";
+            string targetLineEnding = targetFormat.GetLineEndingFormat();
+            string valueLineEnding = value.GetLineEndingFormat();
             if (valueLineEnding != targetLineEnding)
             {
                 value = value.Replace(valueLineEnding, targetLineEnding);

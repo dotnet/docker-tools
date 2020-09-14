@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Normalize the line endings to match the readme.
             tagsListing = tagsListing.NormalizeLineEndings(readme);
 
-            string targetLineEnding = readme.Contains("\r\n") ? "\r\n" : "\n";
+            string targetLineEnding = readme.GetLineEndingFormat();
             tagsListing = $"{TagsSectionHeader}{targetLineEnding}{targetLineEnding}{tagsListing}{targetLineEnding}";
 
             // Regex to find the entire tags listing section including the header.

@@ -94,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 else if (Options.Validate)
                 {
                     int differIndex = StringExtensions.DiffersAtIndex(currentArtifact, generatedArtifact);
-                    Logger.WriteError($"{artifactName} out of sync with template{Environment.NewLine}"
+                    Logger.WriteError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
                         + $"Current:   '{GetSnippet(currentArtifact, differIndex)}'{Environment.NewLine}"
                         + $"Generated: '{GetSnippet(generatedArtifact, differIndex)}'");
                     _outOfSyncArtifacts.Add(artifactPath);

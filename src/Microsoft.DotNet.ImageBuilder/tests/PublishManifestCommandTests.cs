@@ -103,6 +103,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 }
                             }
                         }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo3",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(dockerfile3)
+                                }
+                            }
+                        }
                     }
                 }
             };
@@ -130,6 +144,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             { "sharedtag3", new Tag() },
                             { "sharedtag1", new Tag() }
+                        })),
+                CreateRepo("repo3",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfile3, new string[] { "tag3" })
                         })),
                 CreateRepo("unpublishedrepo",
                     CreateImage(

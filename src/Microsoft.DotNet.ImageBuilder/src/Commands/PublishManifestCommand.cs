@@ -76,7 +76,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteSubheading("SETTING TAG INFO");
 
             IEnumerable<ImageData> images = imageArtifactDetails.Repos
-                .SelectMany(repo => repo.Images);
+                .SelectMany(repo => repo.Images)
+                .Where(image => image.Manifest != null);
 
             Parallel.ForEach(images, image =>
             {

@@ -28,7 +28,7 @@ jobs:
     displayName: Set Publish Variables
   - script: >
       $(runImageBuilderCmd) trimCachedPlatforms
-      --image-info '$(artifactsPath)/image-info.json'
+      '$(artifactsPath)/image-info.json'
     displayName: Trim Cached Images
   - script: >
       $(runImageBuilderCmd) copyAcrImages

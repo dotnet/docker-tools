@@ -30,6 +30,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 foreach (ImageData imageData in repoData.Images)
                 {
+                    imageData.ManifestRepo = manifestRepo;
+
                     PlatformData platformData = imageData.Platforms.FirstOrDefault();
                     if (platformData != null)
                     {

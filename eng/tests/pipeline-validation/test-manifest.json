@@ -5,7 +5,8 @@
       "id": "test",
       "name": "dotnet/test",
       "readme": "README.placeholder.md",
-      "mcrTagsMetadataTemplate": "test-tags.yml",
+      "readmeTemplate": "templates/README.md",
+      "mcrTagsMetadataTemplate": "templates/test-tags.yml",
       "images": [
         {
           "platforms": [

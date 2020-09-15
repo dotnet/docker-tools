@@ -114,20 +114,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             List<GitObject> readmes = new List<GitObject>();
 
-            if (!string.IsNullOrEmpty(Manifest.Model.ReadmePath))
+            if (!string.IsNullOrEmpty(Manifest.ReadmePath))
             {
                 IEnumerable<string> productRepoNames = Manifest.FilteredRepos
                     .Select(repo => GetProductRepoName(repo))
                     .Distinct();
                 foreach (string productRepo in productRepoNames)
                 {
-                    readmes.Add(GetReadMeGitObject(productRepo, Manifest.Model.ReadmePath));
+                    readmes.Add(GetReadMeGitObject(productRepo, Manifest.ReadmePath));
                 }
             }
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), repo.Model.ReadmePath));
+                readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), repo.ReadmePath));
             }
 
             return readmes.ToArray();
@@ -135,10 +135,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private GitObject GetReadMeGitObject(string productRepoName, string readmePath)
         {
-            string fullPath = Path.Combine(Manifest.Directory, readmePath);
-            string updatedReadMe = File.ReadAllText(fullPath);
+            string updatedReadMe = File.ReadAllText(readmePath);
             updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-            return GetGitObject(productRepoName, fullPath, updatedReadMe);
+            return GetGitObject(productRepoName, readmePath, updatedReadMe);
         }
 
         private GitObject[] GetUpdatedTagsMetadata()
@@ -148,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
                 string updatedMetadata = McrTagsMetadataGenerator.Execute(this.gitService, Manifest, repo, Options.SourceRepoUrl);
-                string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplatePath);
+                string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
                 metadata.Add(GetGitObject(GetProductRepoName(repo), metadataFileName, updatedMetadata));
             }
 

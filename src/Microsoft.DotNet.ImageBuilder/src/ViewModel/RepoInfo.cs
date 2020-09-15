@@ -27,6 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string QualifiedName { get; private set; }
         public string Name => Model.Name;
         public Repo Model { get; private set; }
+        public string ReadmePath { get; private set; }
+        public string ReadmeTemplatePath { get; private set; }
 
         private RepoInfo()
         {
@@ -51,6 +53,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             registry = string.IsNullOrEmpty(registry) ? string.Empty : $"{registry}/";
             repoInfo.QualifiedName = registry + options.RepoPrefix + model.Name;
 
+            if (model.Readme != null)
+            {
+                repoInfo.ReadmePath = Path.Combine(baseDirectory, model.Readme);
+            }
+            if (model.ReadmeTemplate != null)
+            {
+                repoInfo.ReadmeTemplatePath = Path.Combine(baseDirectory, model.ReadmeTemplate);
+            }
+
             repoInfo.AllImages = model.Images
                 .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.QualifiedName, manifestFilter, variableHelper, baseDirectory))
                 .ToArray();
@@ -64,12 +75,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string GetReadmeContent()
         {
-            if (Model.ReadmePath == null)
+            if (ReadmePath == null)
             {
                 throw new InvalidOperationException("A readme path was not specified in the manifest");
             }
 
-            return File.ReadAllText(Model.ReadmePath);
+            return File.ReadAllText(ReadmePath);
         }
     }
 }

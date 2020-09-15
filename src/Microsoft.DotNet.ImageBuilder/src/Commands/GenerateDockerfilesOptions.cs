@@ -6,15 +6,11 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateDockerfilesOptions : ManifestOptions, IFilterableOptions
+    public class GenerateDockerfilesOptions : GenerateArtifactsOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
-        public bool AllowOptionalTemplates { get; set; }
-
-        public bool Validate { get; set; }
+        protected override string CommandHelp => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
 
         public GenerateDockerfilesOptions() : base()
         {
@@ -25,14 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.DefineOptions(syntax);
 
             FilterOptions.DefineOptions(syntax);
-
-            bool allowOptionalTemplates = false;
-            syntax.DefineOption("optional-templates", ref allowOptionalTemplates, "Do not require templates for each Dockerfile");
-            AllowOptionalTemplates = allowOptionalTemplates;
-
-            bool validate = false;
-            syntax.DefineOption("validate", ref validate, "Validates the Dockerfiles and templates are in sync");
-            Validate = validate;
         }
     }
 }

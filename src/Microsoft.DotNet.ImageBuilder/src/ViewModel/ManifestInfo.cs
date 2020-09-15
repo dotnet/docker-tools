@@ -31,6 +31,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         /// Gets the directory of the manifest file.
         /// </summary>
         public string Directory { get; private set; }
+        public string ReadmePath { get; private set; }
+        public string ReadmeTemplatePath { get; private set; }
 
         private ManifestInfo()
         {
@@ -76,6 +78,15 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     manifestInfo.VariableHelper,
                     manifestInfo.Directory))
                 .ToArray();
+
+            if (model.Readme != null)
+            {
+                manifestInfo.ReadmePath = Path.Combine(manifestInfo.Directory, model.Readme);
+            }
+            if (model.ReadmeTemplate != null)
+            {
+                manifestInfo.ReadmeTemplatePath = Path.Combine(manifestInfo.Directory, model.ReadmeTemplate);
+            }
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.QualifiedName).ToArray();
             foreach (PlatformInfo platform in manifestInfo.GetAllPlatforms())

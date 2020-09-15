@@ -23,16 +23,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
         public static Repo CreateRepo(string name, params Image[] images)
         {
-            return CreateRepo(name, images, mcrTagsMetadataTemplatePath: null);
+            return CreateRepo(name, images, readme: null);
         }
 
-        public static Repo CreateRepo(string name, Image[] images, string mcrTagsMetadataTemplatePath = null)
+        public static Repo CreateRepo(
+            string name,
+            Image[] images,
+            string readme = null,
+            string readmeTemplate = null,
+            string mcrTagsMetadataTemplate = null)
         {
             return new Repo
             {
                 Name = name,
                 Images = images,
-                McrTagsMetadataTemplatePath = mcrTagsMetadataTemplatePath
+                McrTagsMetadataTemplate = mcrTagsMetadataTemplate,
+                Readme = readme,
+                ReadmeTemplate = readmeTemplate
             };
         }
 

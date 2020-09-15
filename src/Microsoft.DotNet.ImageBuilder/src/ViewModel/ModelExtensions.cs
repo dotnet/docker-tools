@@ -87,7 +87,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 ValidateRepo(repo, manifestDirectory);
             }
 
-            ValidateFileReference(manifest.ReadmePath, manifestDirectory);
+            ValidateFileReference(manifest.Readme, manifestDirectory);
+            ValidateFileReference(manifest.ReadmeTemplate, manifestDirectory);
+
+            if (manifest.ReadmeTemplate != null && manifest.Readme == null)
+            {
+                throw new ValidationException("The manifest must specify a Readme since a ReadmeTemplate is specified");
+            }
         }
 
         public static string ResolveDockerfilePath(this Platform platform, string manifestDirectory)
@@ -126,8 +132,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private static void ValidateRepo(Repo repo, string manifestDirectory)
         {
             ValidateUniqueTags(repo);
-            ValidateFileReference(repo.ReadmePath, manifestDirectory);
-            ValidateFileReference(repo.McrTagsMetadataTemplatePath, manifestDirectory);
+            ValidateFileReference(repo.Readme, manifestDirectory);
+            ValidateFileReference(repo.ReadmeTemplate, manifestDirectory);
+            ValidateFileReference(repo.McrTagsMetadataTemplate, manifestDirectory);
+
+            if (repo.ReadmeTemplate != null && repo.Readme == null)
+            {
+                throw new ValidationException($"The repo '{repo.Name}' must specify a Readme since a ReadmeTemplate is specified");
+            }
+            if (repo.McrTagsMetadataTemplate != null && repo.ReadmeTemplate == null)
+            {
+                throw new ValidationException($"The repo '{repo.Name}' must specify a ReadmeTemplate since a McrTagsMetadataTemplate is specified");
+            }
 
             foreach (Image image in repo.Images)
             {

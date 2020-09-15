@@ -29,7 +29,7 @@ jobs:
   - script: >
       $(runImageBuilderCmd) trimCachedPlatforms
       --image-info '$(artifactsPath)/image-info.json'
-    display: Trim Cached Images
+    displayName: Trim Cached Images
   - script: >
       $(runImageBuilderCmd) copyAcrImages
       '$(acr.servicePrincipalName)'

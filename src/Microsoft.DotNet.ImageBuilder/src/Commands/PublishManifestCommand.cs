@@ -17,9 +17,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
     {
-        private readonly IManifestToolService manifestToolService;
-        private readonly IEnvironmentService environmentService;
-        private readonly ILoggerService loggerService;
+        private readonly IManifestToolService _manifestToolService;
+        private readonly IEnvironmentService _environmentService;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public PublishManifestCommand(
@@ -27,14 +27,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnvironmentService environmentService,
             ILoggerService loggerService)
         {
-            this.manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
+            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override Task ExecuteAsync()
         {
-            this.loggerService.WriteHeading("GENERATING MANIFESTS");
+            _loggerService.WriteHeading("GENERATING MANIFESTS");
+
+            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             ExecuteWithUser(() =>
             {
@@ -48,12 +50,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string manifest = GenerateManifest(image);
 
                     string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
-                    this.loggerService.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
+                    _loggerService.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
                     File.WriteAllText(manifestFilename, manifest);
 
                     try
                     {
-                        this.manifestToolService.PushFromSpec(manifestFilename, Options.IsDryRun);
+                        _manifestToolService.PushFromSpec(manifestFilename, Options.IsDryRun);
                     }
                     finally
                     {
@@ -61,42 +63,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 });
 
-                WriteManifestSummary(multiArchImages);
+                WriteManifestSummary(imageArtifactDetails);
 
-                SaveTagInfoToImageInfoFile(multiArchImages, createdDate);
+                SaveTagInfoToImageInfoFile(createdDate, imageArtifactDetails);
             });
 
             return Task.CompletedTask;
         }
 
-        private void SaveTagInfoToImageInfoFile(IEnumerable<ImageInfo> imageInfos, DateTime createdDate)
+        private void SaveTagInfoToImageInfoFile(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
         {
-            this.loggerService.WriteSubheading("SETTING TAG INFO");
+            _loggerService.WriteSubheading("SETTING TAG INFO");
 
-            ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+            IEnumerable<ImageData> images = imageArtifactDetails.Repos
+                .SelectMany(repo => repo.Images);
 
-            // Find the images from the image info file that correspond to the images that were published
-            IEnumerable<(ImageData Image, string RepoName)> imageDataList = imageArtifactDetails.Repos
-                .SelectMany(repo =>
-                    repo.Images
-                        .Select(image => (image, Manifest.AllRepos.First(manifestRepo => repo.Repo.Equals(manifestRepo.Name)).FullModelName)))
-                .Where(image => imageInfos.Contains(image.image.ManifestImage));
-
-            if (imageDataList.Count() != imageInfos.Count())
+            Parallel.ForEach(images, image =>
             {
-                this.loggerService.WriteError(
-                    $"There is a mismatch between the number of images being published and the number of images contained in the image info file ({imageInfos.Count()} vs {imageDataList.Count()}, respectively).");
-                this.environmentService.Exit(1);
-            }
+                image.Manifest.Created = createdDate;
 
-            Parallel.ForEach(imageDataList, image =>
-            {
-                image.Image.Manifest.Created = createdDate;
-
-                TagInfo sharedTag = image.Image.ManifestImage.SharedTags.First();
-                image.Image.Manifest.Digest = DockerHelper.GetDigestString(
-                    image.RepoName,
-                    this.manifestToolService.GetManifestDigestSha(
+                TagInfo sharedTag = image.ManifestImage.SharedTags.First();
+                image.Manifest.Digest = DockerHelper.GetDigestString(
+                    image.ManifestRepo.FullModelName,
+                    _manifestToolService.GetManifestDigestSha(
                         ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun));
             });
 
@@ -133,26 +122,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestYml.ToString();
         }
 
-        private void WriteManifestSummary(IEnumerable<ImageInfo> multiArchImages)
+        private void WriteManifestSummary(ImageArtifactDetails imageArtifactDetails)
         {
-            this.loggerService.WriteHeading("MANIFEST TAGS PUBLISHED");
+            _loggerService.WriteHeading("MANIFEST TAGS PUBLISHED");
 
-            IEnumerable<string> multiArchTags = multiArchImages.SelectMany(image => image.SharedTags)
+            IEnumerable<string> multiArchTags = imageArtifactDetails.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(image => image.ManifestImage.SharedTags)
                 .Select(tag => tag.FullyQualifiedName)
                 .ToArray();
             if (multiArchTags.Any())
             {
                 foreach (string tag in multiArchTags)
                 {
-                    this.loggerService.WriteMessage(tag);
+                    _loggerService.WriteMessage(tag);
                 }
             }
             else
             {
-                this.loggerService.WriteMessage("No manifests published");
+                _loggerService.WriteMessage("No manifests published");
             }
 
-            this.loggerService.WriteMessage();
+            _loggerService.WriteMessage();
         }
     }
 }

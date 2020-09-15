@@ -35,8 +35,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.Inspect("repo2:sharedtag3", false))
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
 
+            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            environmentServiceMock
+                .Setup(o => o.Exit(It.IsNotIn(new int[] { 0 })))
+                .Throws(new InvalidOperationException("Exit with non-zero exit code was invoked"));
+
             PublishManifestCommand command = new PublishManifestCommand(manifestToolService.Object,
-                Mock.Of<IEnvironmentService>(), Mock.Of<ILoggerService>());
+                environmentServiceMock.Object, Mock.Of<ILoggerService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -125,6 +130,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             { "sharedtag3", new Tag() },
                             { "sharedtag1", new Tag() }
+                        })),
+                CreateRepo("unpublishedrepo",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                CreateDockerfile("1.0/unpublishedrepo/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            { "sharedtag", new Tag() }
                         }))
             );
             File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));

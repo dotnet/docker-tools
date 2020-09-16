@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }
+        public string ImageInfoPath { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -49,6 +50,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ref productVersionComponents,
                 "Number of components of the product version considered to be significant");
             ProductVersionComponents = productVersionComponents;
+
+            string imageInfoPath = null;
+            syntax.DefineOption(
+                "image-info",
+                ref imageInfoPath,
+                "Path to image info file");
+            ImageInfoPath = imageInfoPath;
         }
     }
 }

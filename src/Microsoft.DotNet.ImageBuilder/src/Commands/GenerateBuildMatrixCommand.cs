@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -16,13 +17,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
     {
-        private readonly static char[] s_pathSeparators = { '/', '\\' };
-
         private const string VersionRegGroupName = "Version";
+
+        private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
+        private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new Regex(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
 
         public GenerateBuildMatrixCommand() : base()
         {
+            _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
+            {
+                if (Options.ImageInfoPath != null)
+                {
+                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+                }
+
+                return null;
+            });
         }
 
         public override Task ExecuteAsync()
@@ -145,7 +156,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.Model.OsVersion}")
                 .Distinct()
                 .ToArray();
-            leg.Variables.Add(("osVersions", String.Join(" ", osVersions)));
+            leg.Variables.Add(("osVersions", string.Join(" ", osVersions)));
         }
 
         private string GetProductVersion(ImageInfo image)
@@ -264,12 +275,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
+        private IEnumerable<PlatformInfo> GetPlatforms()
+        {
+            if (_imageArtifactDetails.Value is null)
+            {
+                return Manifest.GetFilteredPlatforms();
+            }
+
+            IEnumerable<PlatformInfo> platforms = _imageArtifactDetails.Value.Repos?
+                .SelectMany(repo => repo.Images)
+                .SelectMany(image => image.Platforms)
+                .Where(platform => !platform.IsCached && platform.PlatformInfo != null)
+                .Select(platform => platform.PlatformInfo);
+
+            return platforms ?? Enumerable.Empty<PlatformInfo>();
+        }
+
         public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
         {
             List<BuildMatrixInfo> matrices = new List<BuildMatrixInfo>();
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
-            var platformGroups = Manifest.GetFilteredPlatforms()
+            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = GetPlatforms()
                 .GroupBy(platform => new PlatformId()
                 {
                     OS = platform.Model.OS,
@@ -282,7 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ThenBy(platformGroup => platformGroup.Key.Architecture)
                 .ThenByDescending(platformGroup => platformGroup.Key.Variant);
 
-            foreach (var platformGrouping in platformGroups)
+            foreach (IGrouping<PlatformId, PlatformInfo> platformGrouping in platformGroups)
             {
                 string[] matrixNameParts =
                 {

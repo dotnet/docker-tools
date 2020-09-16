@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Newtonsoft.Json;
@@ -516,6 +517,140 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(
                 "--path 1.0/repo3/os/Dockerfile --path 1.0/repo4/os/Dockerfile",
                 imageBuilderPaths);
+        }
+
+        /// <summary>
+        /// Verifies the matrix produced by the platformVersionedOs matrix type for a scenario
+        /// where the platforms in the image info are a result of cached images.
+        /// </summary>
+        [Theory]
+        [InlineData(false, false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [InlineData(true, false, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [InlineData(true, true, false, "--path 1.0/sdk/os/Dockerfile")]
+        [InlineData(true, true, true, null)]
+        public void PlatformVersionedOs_Cached(bool isRuntimeCached, bool isAspnetCached, bool isSdkCached, string expectedPaths)
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
+            command.Options.ProductVersionComponents = 2;
+
+            string runtimeDockerfilePath;
+            string aspnetDockerfilePath;
+            string sdkDockerfilePath;
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("aspnet",
+                    CreateImage(
+                        new Platform[]
+                        {
+                              CreatePlatform(
+                                  aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
+                                  new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("sdk",
+                    CreateImage(
+                        new Platform[]
+                        {
+                              CreatePlatform(
+                                  sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
+                                  new string[] { "tag" })
+                        },
+                        productVersion: "1.0"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(runtimeDockerfilePath, isCached: isRuntimeCached)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "aspnet",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(aspnetDockerfilePath, isCached: isAspnetCached)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "sdk",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(sdkDockerfilePath, isCached: isSdkCached)
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+
+            if (isRuntimeCached && isAspnetCached && isSdkCached)
+            {
+                Assert.Empty(matrixInfos);
+            }
+            else
+            {
+                Assert.Single(matrixInfos);
+                Assert.Single(matrixInfos.First().Legs);
+
+                BuildLegInfo buildLeg = matrixInfos.First().Legs.First();
+                string imageBuilderPaths = buildLeg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+
+                Assert.Equal(expectedPaths, imageBuilderPaths);
+            }
+        }
+
+        private static PlatformData CreateSimplePlatformData(string dockerfilePath, bool isCached = false)
+        {
+            PlatformData platform = Helpers.ImageInfoHelper.CreatePlatform(
+                PathHelper.NormalizePath(dockerfilePath),
+                simpleTags: new List<string>
+                {
+                    "tag"
+                });
+            platform.IsCached = isCached;
+            return platform;
         }
     }
 }

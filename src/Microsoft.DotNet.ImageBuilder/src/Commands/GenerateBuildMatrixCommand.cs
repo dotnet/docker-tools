@@ -64,11 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string[] dockerfilePaths = GetDockerfilePaths(subgraph).ToArray();
 
-                BuildLegInfo leg = new BuildLegInfo()
-                {
-                    Name = GetDockerfilePathLegName(dockerfilePaths, matrixNameParts)
-                };
-                matrix.Legs.Add(leg);
+                BuildLegInfo leg = AddPlatformDependencyGraphLeg(dockerfilePaths, matrixNameParts, matrix);
 
                 AddImageBuilderPathsVariable(dockerfilePaths, leg);
                 AddCommonVariables(platformGrouping, subgraph, leg);
@@ -250,7 +246,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// are in common with the containing matrix name are trimmed. The resulting leg name uses '-' characters as word
         /// separators.
         /// </summary>
-        private static string GetDockerfilePathLegName(IEnumerable<string> dockerfilePath, IEnumerable<string> matrixNameParts)
+        private static BuildLegInfo AddPlatformDependencyGraphLeg(IEnumerable<string> dockerfilePath, IEnumerable<string> matrixNameParts, BuildMatrixInfo matrix)
         {
             string legName = dockerfilePath.First().Split(s_pathSeparators)
                 .Where(subPart => 
@@ -262,7 +258,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 legName += "-graph";
             }
 
-            return legName;
+            legName = StringHelper.GetUniqueString(legName, matrix.Legs.Select(leg => leg.Name).ToList(), "-");
+
+            BuildLegInfo leg = new BuildLegInfo
+            {
+                Name = legName
+            };
+            matrix.Legs.Add(leg);
+            return leg;
         }
 
         /// <summary>

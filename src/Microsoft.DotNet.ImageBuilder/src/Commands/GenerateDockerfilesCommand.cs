@@ -47,10 +47,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             symbols["ARCH_TAG_SUFFIX"] = platform.Model.Architecture != Architecture.AMD64 ? $"-{versionedArch}" : string.Empty;
             symbols["OS_VERSION"] = platform.Model.OsVersion;
             symbols["OS_VERSION_BASE"] = platform.BaseOsVersion;
-            symbols["OS_VERSION_NUMBER"] = Regex.Match(platform.Model.OsVersion, @"\d+.\d+").Value;
+            symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);
             symbols["OS_ARCH_HYPHENATED"] = GetOsArchHyphenatedName(platform);
 
             return symbols;
+        }
+
+        private static string GetOsVersionNumber(PlatformInfo platform)
+        {
+            const string PrefixGroup = "Prefix";
+            const string VersionGroup = "Version";
+            Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{PrefixGroup}>\w*))?(?<{VersionGroup}>\d+.\d+)");
+
+            string versionNumber = string.Empty;
+            if (match.Groups[PrefixGroup].Success)
+            {
+                versionNumber = match.Groups[PrefixGroup].Value;
+            }
+
+            versionNumber += match.Groups[VersionGroup].Value;
+            return versionNumber;
         }
 
         private static string GetOsArchHyphenatedName(PlatformInfo platform)
@@ -60,6 +76,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string version = platform.BaseOsVersion.Split('-')[1];
                 osName = $"NanoServer-{version}";
+            }
+            else if (platform.BaseOsVersion.Contains("windowsservercore"))
+            {
+                string version = platform.BaseOsVersion.Split('-')[1];
+                osName = $"WindowsServerCore-{version}";
             }
             else
             {

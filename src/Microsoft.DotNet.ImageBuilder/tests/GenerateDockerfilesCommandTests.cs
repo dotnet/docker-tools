@@ -76,7 +76,7 @@ ENV TEST2 Value1";
         public async Task GenerateDockerfilesCommand_Validate_UpToDate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, dockerfile:ExpectedDockerfile, validate: true);
+            GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, dockerfile: ExpectedDockerfile, validate: true);
 
             await command.ExecuteAsync();
 
@@ -102,15 +102,25 @@ ENV TEST2 Value1";
         [InlineData("repo1:tag1", "ARCH_NUPKG", "arm32")]
         [InlineData("repo1:tag1", "ARCH_VERSIONED", "arm32v7")]
         [InlineData("repo1:tag2", "ARCH_VERSIONED", "amd64")]
+        [InlineData("repo1:tag3", "ARCH_VERSIONED", "amd64")]
         [InlineData("repo1:tag1", "ARCH_TAG_SUFFIX", "-arm32v7")]
         [InlineData("repo1:tag2", "ARCH_TAG_SUFFIX", "")]
+        [InlineData("repo1:tag3", "ARCH_TAG_SUFFIX", "")]
         [InlineData("repo1:tag1", "OS_VERSION", "buster-slim")]
+        [InlineData("repo1:tag2", "OS_VERSION", "nanoserver-1903")]
+        [InlineData("repo1:tag3", "OS_VERSION", "windowsservercore-1903")]
+        [InlineData("repo1:tag4", "OS_VERSION", "windowsservercore-ltsc2019")]
         [InlineData("repo1:tag1", "OS_VERSION_BASE", "buster")]
         [InlineData("repo1:tag1", "OS_VERSION_NUMBER", "")]
-        [InlineData("repo1:tag3", "OS_VERSION_NUMBER", "3.12")]
+        [InlineData("repo1:tag2", "OS_VERSION_NUMBER", "1903")]
+        [InlineData("repo1:tag3", "OS_VERSION_NUMBER", "1903")]
+        [InlineData("repo1:tag4", "OS_VERSION_NUMBER", "ltsc2019")]
+        [InlineData("repo1:tag5", "OS_VERSION_NUMBER", "3.12")]
         [InlineData("repo1:tag1", "OS_ARCH_HYPHENATED", "Debian-10-arm32")]
         [InlineData("repo1:tag2", "OS_ARCH_HYPHENATED", "NanoServer-1903")]
-        [InlineData("repo1:tag3", "OS_ARCH_HYPHENATED", "Alpine-3.12")]
+        [InlineData("repo1:tag3", "OS_ARCH_HYPHENATED", "WindowsServerCore-1903")]
+        [InlineData("repo1:tag4", "OS_ARCH_HYPHENATED", "WindowsServerCore-ltsc2019")]
+        [InlineData("repo1:tag5", "OS_ARCH_HYPHENATED", "Alpine-3.12")]
         [InlineData("repo1:tag1", "Variable1", "Value1", true)]
         public void GenerateDockerfilesCommand_SupportedSymbols(string tag, string symbol, string expectedValue, bool isVariable = false)
         {
@@ -167,6 +177,16 @@ ENV TEST2 Value1";
                         CreatePlatform(
                             DockerfilePath,
                             new string[] { "tag3" },
+                            OS.Windows,
+                            "windowsservercore-1903"),
+                        CreatePlatform(
+                            DockerfilePath,
+                            new string[] { "tag4" },
+                            OS.Windows,
+                            "windowsservercore-ltsc2019"),
+                        CreatePlatform(
+                            DockerfilePath,
+                            new string[] { "tag5" },
                             OS.Linux,
                             "alpine3.12")))
             );

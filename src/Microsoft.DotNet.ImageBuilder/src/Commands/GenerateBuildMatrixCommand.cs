@@ -47,6 +47,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
+        private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphsWithCommonRootDockerfile(
+            IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
+        {
+            List<List<PlatformInfo>> subGraphsList = subgraphs.Select(subgraph => subgraph.ToList()).ToList();
+            Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = new Dictionary<string, List<PlatformInfo>>();
+            List<List<PlatformInfo>> subgraphsToDelete = new List<List<PlatformInfo>>();
+
+            foreach (List<PlatformInfo> subgraph in subGraphsList)
+            {
+                PlatformInfo rootPlatform = subgraph.First();
+
+                if (subgraphsByRootDockerfilePath.TryGetValue(rootPlatform.DockerfilePath, out List<PlatformInfo> commonSubgraph))
+                {
+                    commonSubgraph.AddRange(subgraph);
+                    subgraphsToDelete.Add(subgraph);
+                }
+                else
+                {
+                    subgraphsByRootDockerfilePath.Add(rootPlatform.DockerfilePath, subgraph);
+                }
+            }
+
+            subgraphsToDelete.ForEach(subgraph => subGraphsList.Remove(subgraph));
+
+            return subGraphsList;
+        }
+
         private void AddDockerfilePathLegs(
             BuildMatrixInfo matrix, IEnumerable<string> matrixNameParts, IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
@@ -54,7 +81,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
                 platform => GetPlatformDependencies(platform, platformGrouping));
 
-            // Pass 2: Find dependencies amongst the subgraphs that result from custom leg groups
+            // Pass 2: Combine subgraphs that have a common Dockerfile path for the root image
+            subgraphs = ConsolidateSubgraphsWithCommonRootDockerfile(subgraphs);
+
+            // Pass 3: Find dependencies amongst the subgraphs that result from custom leg groups
             // to produce a new set of subgraphs.
             subgraphs = subgraphs.GetCompleteSubgraphs(subgraph => GetCustomLegGroupingDependencies(subgraph, subgraphs))
                 .Select(set => set.SelectMany(subgraph => subgraph))
@@ -135,6 +165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static void AddImageBuilderPathsVariable(string[] dockerfilePaths, BuildLegInfo leg)
         {
             string pathArgs = dockerfilePaths
+                .Distinct()
                 .Select(path => $"{ManifestFilterOptions.FormattedPathOption} {path}")
                 .Aggregate((working, next) => $"{working} {next}");
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
@@ -253,7 +284,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static string GetDockerfilePathLegName(IEnumerable<string> dockerfilePath, IEnumerable<string> matrixNameParts)
         {
             string legName = dockerfilePath.First().Split(s_pathSeparators)
-                .Where(subPart => 
+                .Where(subPart =>
                     !matrixNameParts.Any(matrixPart => matrixPart.StartsWith(subPart, StringComparison.OrdinalIgnoreCase)))
                 .Aggregate((working, next) => $"{working}-{next}");
 

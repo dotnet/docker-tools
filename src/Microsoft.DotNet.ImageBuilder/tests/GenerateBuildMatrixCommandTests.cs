@@ -641,6 +641,121 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
+        [Fact]
+        public void PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_SingleDockerfile()
+        {
+            TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ProductVersionComponents = 2;
+
+            const string runtimeDepsRelativeDir = "3.1/runtime-deps/os";
+            DirectoryInfo runtimeDepsDir = Directory.CreateDirectory(
+                Path.Combine(tempFolderContext.Path, runtimeDepsRelativeDir));
+            string dockerfileRuntimeDepsFullPath = Path.Combine(runtimeDepsDir.FullName, "Dockerfile");
+            File.WriteAllText(dockerfileRuntimeDepsFullPath, "FROM base");
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("core/runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
+                        },
+                        productVersion: "3.1")),
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
+                        },
+                        productVersion: "5.0")),
+                CreateRepo("new/runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
+                        },
+                        productVersion: "5.1"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            Assert.Single(matrixInfo.Legs);
+
+            Assert.Equal("3.1-runtime-deps-os-graph", matrixInfo.Legs[0].Name);
+            string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal($"--path {runtimeDepsRelativeDir}", imageBuilderPaths);
+        }
+
+        [Fact]
+        public void PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_ImageGraph()
+        {
+            TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ProductVersionComponents = 2;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("core/runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "3.1")),
+                CreateRepo("core/runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext, "core/runtime-deps:tag"),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "3.1")),
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                "3.1/runtime-deps/os/Dockerfile",
+                                new string[] { "tag" })
+                        },
+                        productVersion: "5.0")),
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("5.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "5.0"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            Assert.Single(matrixInfo.Legs);
+
+            Assert.Equal("3.1-runtime-deps-os-Dockerfile-graph", matrixInfo.Legs[0].Name);
+            string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
+        }
+
         private static PlatformData CreateSimplePlatformData(string dockerfilePath, bool isCached = false)
         {
             PlatformData platform = Helpers.ImageInfoHelper.CreatePlatform(

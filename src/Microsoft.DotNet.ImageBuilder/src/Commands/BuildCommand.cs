@@ -29,6 +29,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _builtTags = new List<TagInfo>();
 
+        // Metadata about Dockerfiles whose images have been retrieved from the cache
+        private readonly Dictionary<string, BuildCacheInfo> _cachedDockerfilePaths = new Dictionary<string, BuildCacheInfo>();
+
         private ImageArtifactDetails? _imageArtifactDetails;
 
         [ImportingConstructor]
@@ -89,19 +92,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (PlatformData platform in GetBuiltPlatforms())
             {
-                PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
-                   .First(manifestPlatform => platform.Equals(manifestPlatform));
-
                 foreach (TagInfo tag in GetPushTags(platform.PlatformInfo.Tags))
                 {
                     if (Options.IsPushEnabled)
                     {
-                        SetPlatformDataDigest(platform, manifestPlatform, tag.FullyQualifiedName);
+                        SetPlatformDataDigest(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
-                    platform.CommitUrl = _gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
+                    platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
                 }
             }
 
@@ -142,13 +142,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void SetPlatformDataDigest(PlatformData platform, PlatformInfo manifestPlatform, string tag)
+        private void SetPlatformDataDigest(PlatformData platform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
             string digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
             if (digest != null)
             {
-                digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+                digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
             }
 
             if (platform.Digest != null && platform.Digest != digest)
@@ -204,25 +204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData? platformData = CreatePlatformData(image, platform);
                         imageData?.Platforms.Add(platformData);
 
-                        bool isCachedImage = false;
-                        if (!Options.NoCache && srcImageData != null)
-                        {
-                            PlatformData? srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
-                            // If this Dockerfile has been built and published before
-                            if (srcPlatformData != null)
-                            {
-                                isCachedImage = CheckForCachedImage(platform, srcPlatformData, allTags);
-
-                                if (platformData != null)
-                                {
-                                    platformData.IsCached = isCachedImage;
-                                    if (isCachedImage)
-                                    {
-                                        platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
-                                    }
-                                }
-                            }
-                        }
+                        bool isCachedImage = !Options.NoCache && CheckForCachedImage(srcImageData, platform, allTags, platformData);
 
                         if (!isCachedImage)
                         {
@@ -242,6 +224,44 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     _imageArtifactDetails?.Repos.Add(repoData);
                 }
             }
+        }
+
+        private bool CheckForCachedImage(
+            ImageData? srcImageData, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
+        {
+            if (platformData != null && _cachedDockerfilePaths.TryGetValue(GetBuildCacheKey(platform), out BuildCacheInfo? cacheInfo))
+            {
+                OnCacheHit(allTags, pullImage: false, cacheInfo.Digest);
+                platformData.BaseImageDigest = cacheInfo.BaseImageDigest;
+                platformData.IsCached = true;
+                return true;
+            }
+
+            bool isCachedImage = false;
+
+            if (srcImageData != null)
+            {
+                PlatformData? srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
+                // If this Dockerfile has been built and published before
+                if (srcPlatformData != null)
+                {
+                    isCachedImage = CheckForCachedImageFromImageInfo(platform, srcPlatformData, allTags);
+
+                    if (platformData != null)
+                    {
+                        platformData.IsCached = isCachedImage;
+                        if (isCachedImage)
+                        {
+                            platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
+
+                            _cachedDockerfilePaths[GetBuildCacheKey(srcPlatformData.PlatformInfo)] =
+                                new BuildCacheInfo(srcPlatformData.Digest, platformData.BaseImageDigest);
+                        }
+                    }
+                }
+            }
+
+            return isCachedImage;
         }
 
         private RepoData? CreateRepoData(RepoInfo repoInfo) =>
@@ -328,7 +348,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private bool CheckForCachedImage(PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
+        private bool CheckForCachedImageFromImageInfo(PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
         {
             _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
@@ -338,24 +358,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IsDockerfileUpToDate(platform, srcPlatformData) &&
                 IsFullyQualifiedDigest(srcPlatformData))
             {
-                _loggerService.WriteMessage();
-                _loggerService.WriteMessage("CACHE HIT");
-                _loggerService.WriteMessage();
-
-                // Pull the image instead of building it
-                _dockerService.PullImage(srcPlatformData.Digest, Options.IsDryRun);
-
-                // Tag the image as if it were locally built so that subsequent built images can reference it
-                Parallel.ForEach(allTags, tag =>
-                {
-                    _dockerService.CreateTag(srcPlatformData.Digest, tag, Options.IsDryRun);
-
-                    // Populate the digest cache with the known digest value for the tags assigned to the image.
-                    // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
-                    // because they haven't yet been pushed to staging by that time.
-                    _imageDigestCache.AddDigest(tag, srcPlatformData.Digest);
-                });
-
+                OnCacheHit(allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
                 return true;
             }
 
@@ -363,6 +366,37 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteMessage();
 
             return false;
+        }
+
+        private void OnCacheHit(IEnumerable<string> allTags, bool pullImage, string sourceDigest)
+        {
+            _loggerService.WriteMessage();
+            _loggerService.WriteMessage("CACHE HIT");
+            _loggerService.WriteMessage();
+
+            // Pull the image instead of building it
+            if (pullImage)
+            {
+                _dockerService.PullImage(sourceDigest, Options.IsDryRun);
+            }
+
+            // Tag the image as if it were locally built so that subsequent built images can reference it
+            Parallel.ForEach(allTags, tag =>
+            {
+                _dockerService.CreateTag(sourceDigest, tag, Options.IsDryRun);
+
+                // Rewrite the digest to match the repo of the tags being associated with it. This is necessary
+                // in order to handle scenarios where shared Dockerfiles are being used across different repositories.
+                // In that scenario, the digest that is retrieved will be based on the repo of the first repository
+                // encountered. For subsequent cache hits on different repositories, we need to prepopulate the digest
+                // cache with a digest value that would correspond to that repository, not the original repository.
+                sourceDigest = DockerHelper.ReplaceRepo(sourceDigest, DockerHelper.GetRepo(tag));
+
+                // Populate the digest cache with the known digest value for the tags assigned to the image.
+                // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
+                // because they haven't yet been pushed to staging by that time.
+                _imageDigestCache.AddDigest(tag, sourceDigest);
+            });
         }
 
         // TODO: This check can be removed once all digests in the image info file have been updated to be fully-qualified
@@ -614,6 +648,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             _loggerService.WriteMessage();
+        }
+
+        private static string GetBuildCacheKey(PlatformInfo platform) =>
+            $"{platform.DockerfilePathRelativeToManifest}-" +
+            string.Join('-', platform.BuildArgs.Select(kvp => $"{kvp.Key}={kvp.Value}").ToArray());
+
+        private class BuildCacheInfo
+        {
+            public BuildCacheInfo(string digest, string baseImageDigest)
+            {
+                Digest = digest;
+                BaseImageDigest = baseImageDigest;
+            }
+
+            public string Digest { get; }
+            public string BaseImageDigest { get; }
         }
     }
 }

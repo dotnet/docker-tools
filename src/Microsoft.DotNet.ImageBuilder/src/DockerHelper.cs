@@ -64,7 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetRepo(string image)
         {
-            int tagSeparator = image.IndexOf(':');
+            int tagSeparator = GetTagOrDigestSeparatorIndex(image);
             if (tagSeparator >= 0)
             {
                 return image.Substring(0, tagSeparator);
@@ -109,10 +109,8 @@ namespace Microsoft.DotNet.ImageBuilder
             ExecuteHelper.ExecuteWithRetry("docker", $"pull {image}", isDryRun);
         }
 
-        public static string ReplaceRepo(string image, string newRepo)
-        {
-            return newRepo + image.Substring(image.IndexOf(':'));
-        }
+        public static string ReplaceRepo(string image, string newRepo) =>
+            newRepo + image.Substring(GetTagOrDigestSeparatorIndex(image));
 
         public static string GetImageArch(string image, bool isDryRun)
         {
@@ -154,6 +152,17 @@ namespace Microsoft.DotNet.ImageBuilder
             string manifest = ExecuteCommand(
                 "manifest inspect", "Failed to inspect manifest", $"{image} --verbose", isDryRun);
             return JsonConvert.DeserializeObject<Docker.Manifest>(manifest);
+        }
+
+        private static int GetTagOrDigestSeparatorIndex(string imageName)
+        {
+            int separatorPosition = imageName.IndexOf('@');
+            if (separatorPosition < 0)
+            {
+                separatorPosition = imageName.IndexOf(':');
+            }
+
+            return separatorPosition;
         }
 
         private static OS GetOS()

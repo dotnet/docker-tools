@@ -22,11 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class BuildCommandTests
     {
-        private readonly ITestOutputHelper outputHelper;
+        private readonly ITestOutputHelper _outputHelper;
 
         public BuildCommandTests(ITestOutputHelper outputHelper)
         {
-            this.outputHelper = outputHelper;
+            _outputHelper = outputHelper;
         }
 
         /// <summary>
@@ -492,7 +492,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             bool isRuntimeDepsCached,
             bool isRuntimeCached)
         {
-            this.outputHelper.WriteLine($"Running scenario '{scenario}'");
+            _outputHelper.WriteLine($"Running scenario '{scenario}'");
 
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
@@ -753,6 +753,694 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{runtimeRepo}:{tag}", false), expectedTimes);
         }
 
+        /// <summary>
+        /// Tests a caching scenario where two platforms are defined that share the same Dockerfile. Only one of the platforms
+        /// has an entry defined in the source image info file. It's configured so the first platform should be a cache hit and
+        /// and the second platform should also be a cache hit even though it doesn't have an entry in the source image info file.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_Caching_SharedDockerfile_MissingSourceImageInfoEntry()
+        {
+            const string runtimeDepsRepo = "runtime-deps";
+            const string runtimeDeps2Repo = "runtime-deps2";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha";
+            const string currentRuntimeDepsCommitSha = "commit-sha";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false))
+                .Returns(runtimeDepsDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false))
+                .Returns(runtimeDeps2Digest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest(baseImageTag, false))
+                .Returns(runtimeDepsBaseImageDigest);
+
+            DateTime createdDate = DateTime.Now;
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Returns(createdDate);
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Returns(createdDate);
+
+            string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
+
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
+                .Returns(currentRuntimeDepsCommitSha);
+
+            BuildCommand command = new BuildCommand(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
+            command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+
+            const string ProductVersion = "1.0.1";
+
+            List<RepoData> sourceRepos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = runtimeDepsRepo,
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = ProductVersion,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = runtimeDepsDockerfileRelativePath,
+                                    Architecture = "amd64",
+                                    OsType = "Linux",
+                                    OsVersion = "Ubuntu 19.04",
+                                    Digest = runtimeDepsDigest,
+                                    BaseImageDigest = runtimeDepsBaseImageDigest,
+                                    Created = createdDate.ToUniversalTime(),
+                                    SimpleTags =
+                                    {
+                                        tag
+                                    },
+                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+          
+            ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = sourceRepos.ToList()
+            };
+
+            string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
+            File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(runtimeDepsRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
+                        },
+                        productVersion: ProductVersion)),
+                CreateRepo(runtimeDeps2Repo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
+                        },
+                        productVersion: ProductVersion))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = new List<RepoData>
+                {
+                    new RepoData
+                    {
+                        Repo = runtimeDepsRepo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDepsDigest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        IsCached = true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = runtimeDeps2Repo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDeps2Digest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        IsCached = true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
+
+            Assert.Equal(expectedOutput, actualOutput);
+
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o =>
+                o.BuildImage(
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<bool>(), It.IsAny<bool>()),
+                Times.Never);
+        }
+
+        /// <summary>
+        /// Tests a caching scenario where multiple platforms are defined that share the same Dockerfile. One of the platforms
+        /// uses build args and has an entry defined in the source image info file which triggers a cache hit. Another platform
+        /// has the same build args but does not have an entry in the image info file. But because it shares the same Dockerfile,
+        /// it too should be a cache hit. The last platform again has no entry in the image info file and shares the same Dockerfile
+        /// but it uses different build args so it should be a cache miss.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_Caching_SharedDockerfile_MissingSourceImageInfoEntry_DiffBuildArgs()
+        {
+            const string runtimeDepsRepo = "runtime-deps";
+            const string runtimeDeps2Repo = "runtime-deps2";
+            const string runtimeDeps3Repo = "runtime-deps3";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
+            string runtimeDeps3Digest = $"{runtimeDeps3Repo}@sha2";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha-base";
+            const string currentRuntimeDepsCommitSha = "commit-sha";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false))
+                .Returns(runtimeDepsDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false))
+                .Returns(runtimeDeps2Digest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDeps3Repo}:{tag}", false))
+                .Returns(runtimeDeps3Digest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest(baseImageTag, false))
+                .Returns(runtimeDepsBaseImageDigest);
+
+            DateTime createdDate = DateTime.Now;
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Returns(createdDate);
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Returns(createdDate);
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps3Repo}:{tag}", false))
+                .Returns(createdDate);
+
+            string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
+
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
+                .Returns(currentRuntimeDepsCommitSha);
+
+            BuildCommand command = new BuildCommand(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
+            command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+
+            const string ProductVersion = "1.0.1";
+
+            List<RepoData> sourceRepos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = runtimeDepsRepo,
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = ProductVersion,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = runtimeDepsDockerfileRelativePath,
+                                    Architecture = "amd64",
+                                    OsType = "Linux",
+                                    OsVersion = "Ubuntu 19.04",
+                                    Digest = runtimeDepsDigest,
+                                    BaseImageDigest = runtimeDepsBaseImageDigest,
+                                    Created = createdDate.ToUniversalTime(),
+                                    SimpleTags =
+                                    {
+                                        tag
+                                    },
+                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = sourceRepos.ToList()
+            };
+
+            string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
+            File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
+
+            Platform runtimeDeps1Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag });
+            runtimeDeps1Platform.BuildArgs = new Dictionary<string, string>
+            {
+                { "ARG1", "val1" },
+                { "ARG2", "val2" }
+            };
+
+            Platform runtimeDeps2Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag });
+            runtimeDeps2Platform.BuildArgs = runtimeDeps1Platform.BuildArgs;
+
+            Platform runtimeDeps3Platform = CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag });
+            runtimeDeps3Platform.BuildArgs = new Dictionary<string, string>
+            {
+                { "ARG1", "val1" },
+                { "ARG2", "val2a" }
+            };
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(runtimeDepsRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            runtimeDeps1Platform
+                        },
+                        productVersion: ProductVersion)),
+                CreateRepo(runtimeDeps2Repo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            runtimeDeps2Platform
+                        },
+                        productVersion: ProductVersion)),
+                CreateRepo(runtimeDeps3Repo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            runtimeDeps3Platform
+                        },
+                        productVersion: ProductVersion))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = new List<RepoData>
+                {
+                    new RepoData
+                    {
+                        Repo = runtimeDepsRepo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDepsDigest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        IsCached = true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = runtimeDeps2Repo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDeps2Digest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        IsCached = true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = runtimeDeps3Repo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDeps3Digest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
+
+            Assert.Equal(expectedOutput, actualOutput);
+
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false));
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false));
+            dockerServiceMock.Verify(o =>
+                o.BuildImage(
+                    PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)),
+                    It.IsAny<string>(),
+                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>()));
+
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.GetImageDigest(It.IsAny<string>(), false));
+            dockerServiceMock.Verify(o => o.Architecture);
+            dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+
+            dockerServiceMock.VerifyNoOtherCalls();
+        }
+
+        /// <summary>
+        /// Tests a caching scenario where two platforms are defined that share the same Dockerfile and neither of them
+        /// have a entry in the source image info file.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_Caching_SharedDockerfile_NoExistingImageInfoEntries()
+        {
+            const string runtimeDepsRepo = "runtime-deps";
+            const string runtimeDeps2Repo = "runtime-deps2";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha";
+            const string currentRuntimeDepsCommitSha = "commit-sha";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false))
+                .Returns(runtimeDepsDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false))
+                .Returns(runtimeDepsDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest(baseImageTag, false))
+                .Returns(runtimeDepsBaseImageDigest);
+
+            DateTime createdDate = DateTime.Now;
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Returns(createdDate);
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Returns(createdDate);
+
+            string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
+
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
+                .Returns(currentRuntimeDepsCommitSha);
+
+            BuildCommand command = new BuildCommand(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
+            command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+
+            const string ProductVersion = "1.0.1";
+
+            List<RepoData> sourceRepos = new List<RepoData>();
+
+            ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = sourceRepos.ToList()
+            };
+
+            string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
+            File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(runtimeDepsRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                             CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
+                        },
+                        productVersion: ProductVersion)),
+                CreateRepo(runtimeDeps2Repo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
+                        },
+                        productVersion: ProductVersion))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = new List<RepoData>
+                {
+                    new RepoData
+                    {
+                        Repo = runtimeDepsRepo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDepsDigest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = runtimeDeps2Repo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Digest = runtimeDeps2Digest,
+                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            tag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
+
+            Assert.Equal(expectedOutput, actualOutput);
+
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
+
+            string[] expectedTags = new string[]
+            {
+                $"{runtimeDepsRepo}:{tag}",
+                $"{runtimeDeps2Repo}:{tag}"
+            };
+
+            foreach (string expectedTag in expectedTags)
+            {
+                dockerServiceMock.Verify(o => o.PushImage(expectedTag, false));
+
+                dockerServiceMock.Verify(o =>
+                    o.BuildImage(
+                        PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)),
+                        It.IsAny<string>(),
+                        new string[] { expectedTag },
+                        It.IsAny<IDictionary<string, string>>(),
+                        It.IsAny<bool>(),
+                        It.IsAny<bool>()),
+                    Times.Once);
+            }
+        }
+
         private static Mock<IDockerService> CreateDockerServiceMock(string buildOutput = null)
         {
             Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
@@ -769,7 +1457,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<IDictionary<string, string>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()))
-                .Returns(buildOutput ?? String.Empty);
+                .Returns(buildOutput ?? string.Empty);
 
             return dockerServiceMock;
         }

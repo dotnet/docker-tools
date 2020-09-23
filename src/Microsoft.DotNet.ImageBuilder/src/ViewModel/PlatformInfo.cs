@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
 
         private List<string> _overriddenFromImages;
-        private IEnumerable<string> internalRepos;
+        private IEnumerable<string> _internalRepos;
 
         public string BaseOsVersion { get; private set; }
         public IDictionary<string, string> BuildArgs { get; private set; }
@@ -72,11 +72,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public void Initialize(IEnumerable<string> internalRepos, string registry)
         {
-            this.internalRepos = internalRepos;
+            _internalRepos = internalRepos;
             InitializeBuildArgs();
             InitializeFromImages();
 
-            CustomLegGroups = this.Model.CustomBuildLegGroups
+            CustomLegGroups = Model.CustomBuildLegGroups
                 .Select(group =>
                     new CustomBuildLegGroup
                     {
@@ -133,7 +133,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public bool IsInternalFromImage(string fromImage)
         {
-            return this.internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
+            return _internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
         }
 
         public string GetOSDisplayName()

@@ -14,26 +14,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions>
     {
-        private readonly ILoggerService loggerService;
-        private readonly IMcrStatusClientFactory mcrStatusClientFactory;
-        private readonly IEnvironmentService environmentService;
+        private readonly ILoggerService _loggerService;
+        private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
+        private readonly IEnvironmentService _environmentService;
 
         [ImportingConstructor]
         public WaitForMcrDocIngestionCommand(
             ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
         {
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
+            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
         public override async Task ExecuteAsync()
         {
-            this.loggerService.WriteHeading("QUERYING COMMIT RESULT");
+            _loggerService.WriteHeading("QUERYING COMMIT RESULT");
 
-            if (!this.Options.IsDryRun)
+            if (!Options.IsDryRun)
             {
-                IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
+                IMcrStatusClient statusClient = _mcrStatusClientFactory.Create(
                 Options.ServicePrincipal.Tenant, Options.ServicePrincipal.ClientId, Options.ServicePrincipal.Secret);
 
                 CommitResult result = await WaitForIngestionAsync(statusClient);
@@ -41,9 +41,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 LogSuccessfulResults(result);
             }
 
-            this.loggerService.WriteMessage();
+            _loggerService.WriteMessage();
 
-            this.loggerService.WriteMessage("Doc ingestion successfully completed!");
+            _loggerService.WriteMessage("Doc ingestion successfully completed!");
         }
 
         private async Task<CommitResult> WaitForIngestionAsync(IMcrStatusClient statusClient)
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (CommitStatus commitStatus in commitResult.Value)
                 {
-                    this.loggerService.WriteMessage(
+                    _loggerService.WriteMessage(
                         $"Readme status results for commit digest '{Options.CommitDigest}' with request ID '{commitStatus.OnboardingRequestId}': {commitStatus.OverallStatus}");
 
                     switch (commitStatus.OverallStatus)
@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             await Task.Delay(Options.RequeryDelay);
                             break;
                         case StageStatus.Failed:
-                            this.loggerService.WriteError(await GetFailureResultsAsync(statusClient, commitStatus));
+                            _loggerService.WriteError(await GetFailureResultsAsync(statusClient, commitStatus));
                             break;
                         case StageStatus.Succeeded:
                             isComplete = true;
@@ -82,8 +82,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (commitResult.Value.All(status => status.OverallStatus == StageStatus.Failed))
                 {
-                    this.loggerService.WriteError("Doc ingestion failed.");
-                    this.environmentService.Exit(1);
+                    _loggerService.WriteError("Doc ingestion failed.");
+                    _environmentService.Exit(1);
                 }
 
                 if (DateTime.Now - startTime >= Options.WaitTimeout)
@@ -97,11 +97,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void LogSuccessfulResults(CommitResult commitResult)
         {
-            this.loggerService.WriteMessage("Commit info:");
-            this.loggerService.WriteMessage($"\tCommit digest: {commitResult.CommitDigest}");
-            this.loggerService.WriteMessage($"\tBranch: {commitResult.Branch}");
-            this.loggerService.WriteMessage("\tFiles updated:");
-            commitResult.ContentFiles.ForEach(file => this.loggerService.WriteMessage($"\t\t{file}"));
+            _loggerService.WriteMessage("Commit info:");
+            _loggerService.WriteMessage($"\tCommit digest: {commitResult.CommitDigest}");
+            _loggerService.WriteMessage($"\tBranch: {commitResult.Branch}");
+            _loggerService.WriteMessage("\tFiles updated:");
+            commitResult.ContentFiles.ForEach(file => _loggerService.WriteMessage($"\t\t{file}"));
         }
 
         private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus)

@@ -12,26 +12,26 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class BuildHttpClientWrapper : IBuildHttpClient
     {
-        private readonly BuildHttpClient inner;
+        private readonly BuildHttpClient _inner;
 
         public BuildHttpClientWrapper(BuildHttpClient inner)
         {
-            this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
 
         public void Dispose()
         {
-            this.inner.Dispose();
+            _inner.Dispose();
         }
 
         public Task<IPagedList<Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, BuildStatus? statusFilter = null)
         {
-            return this.inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter);
+            return _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter);
         }
 
         public Task QueueBuildAsync(Build build)
         {
-            return this.inner.QueueBuildAsync(build);
+            return _inner.QueueBuildAsync(build);
         }
     }
 }

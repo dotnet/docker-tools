@@ -31,10 +31,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public static ImageInfo Create(
             Image model, string fullRepoModelName, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper, string baseDirectory)
         {
-            ImageInfo imageInfo = new ImageInfo();
-            imageInfo.Model = model;
-
-            imageInfo.ProductVersion = variableHelper.SubstituteValues(model.ProductVersion);
+            ImageInfo imageInfo = new ImageInfo
+            {
+                Model = model,
+                ProductVersion = variableHelper.SubstituteValues(model.ProductVersion)
+            };
 
             if (model.SharedTags == null)
             {

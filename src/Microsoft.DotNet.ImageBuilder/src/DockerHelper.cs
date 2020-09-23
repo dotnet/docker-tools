@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 "inspect", "index .RepoDigests", "Failed to retrieve image digests", image, isDryRun);
 
             string trimmedDigests = digests.TrimStart('[').TrimEnd(']');
-            if (trimmedDigests == String.Empty)
+            if (trimmedDigests == string.Empty)
             {
                 return Enumerable.Empty<string>();
             }
@@ -81,8 +81,10 @@ namespace Microsoft.DotNet.ImageBuilder
             if (clientVersion >= new Version(17, 7))
             {
                 ProcessStartInfo startInfo = new ProcessStartInfo(
-                    "docker", $"login -u {username} --password-stdin {server}");
-                startInfo.RedirectStandardInput = true;
+                    "docker", $"login -u {username} --password-stdin {server}")
+                {
+                    RedirectStandardInput = true
+                };
                 ExecuteHelper.ExecuteWithRetry(
                     startInfo,
                     process =>

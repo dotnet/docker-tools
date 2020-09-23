@@ -36,13 +36,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             TimeSpan waitTimeout = TimeSpan.FromMinutes(5);
             syntax.DefineOption("timeout", ref waitTimeout,
-                val => String.IsNullOrEmpty(val) ? waitTimeout : TimeSpan.Parse(val),
+                val => string.IsNullOrEmpty(val) ? waitTimeout : TimeSpan.Parse(val),
                 $"Maximum time to wait for doc ingestion (default: {waitTimeout})");
             WaitTimeout = waitTimeout;
 
             TimeSpan requeryDelay = TimeSpan.FromSeconds(10);
             syntax.DefineOption("requery-delay", ref requeryDelay,
-                val => String.IsNullOrEmpty(val) ? requeryDelay : TimeSpan.Parse(val),
+                val => string.IsNullOrEmpty(val) ? requeryDelay : TimeSpan.Parse(val),
                 $"Amount of time to wait before requerying the status of the commit (default: {requeryDelay})");
             RequeryDelay = requeryDelay;
         }

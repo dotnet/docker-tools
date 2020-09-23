@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static string GetHelpTextOptions<T>(T defaultValue)
             where T : Enum
         {
-            string nonDefaultValueOptions = String.Join(", ",
+            string nonDefaultValueOptions = string.Join(", ",
                 Enum.GetValues(typeof(T))
                     .Cast<T>()
                     .Where(enumVal => !enumVal.Equals(defaultValue))

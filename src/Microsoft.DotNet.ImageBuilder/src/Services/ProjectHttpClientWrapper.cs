@@ -10,21 +10,21 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class ProjectHttpClientWrapper : IProjectHttpClient
     {
-        private readonly ProjectHttpClient inner;
+        private readonly ProjectHttpClient _inner;
 
         public ProjectHttpClientWrapper(ProjectHttpClient inner)
         {
-            this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
 
         public void Dispose()
         {
-            this.inner.Dispose();
+            _inner.Dispose();
         }
 
         public Task<TeamProject> GetProjectAsync(string projectId)
         {
-            return this.inner.GetProject(projectId);
+            return _inner.GetProject(projectId);
         }
     }
 }

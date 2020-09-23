@@ -9,9 +9,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyAcrImagesOptions : CopyImagesOptions
     {
         protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
-        
+
         public string SourceRepoPrefix { get; set; }
-        
+
         public string ImageInfoPath { get; set; }
 
         public CopyAcrImagesOptions() : base()

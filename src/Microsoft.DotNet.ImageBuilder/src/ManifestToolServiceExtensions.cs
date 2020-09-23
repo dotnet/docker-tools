@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string digest = tagManifests?
                 .FirstOrDefault(manifestType => manifestType["MediaType"].Value<string>() == mediaType)
                 ?["Digest"].Value<string>();
-            if (String.IsNullOrEmpty(digest))
+            if (string.IsNullOrEmpty(digest))
             {
                 if (throwIfNull)
                 {

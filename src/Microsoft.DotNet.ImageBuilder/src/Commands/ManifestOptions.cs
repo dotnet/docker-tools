@@ -29,9 +29,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IncludeRepos = Repos,
             };
 
-            if (this is IFilterableOptions)
+            if (this is IFilterableOptions options)
             {
-                ManifestFilterOptions filterOptions = ((IFilterableOptions)this).FilterOptions;
+                ManifestFilterOptions filterOptions = options.FilterOptions;
                 filter.IncludeArchitecture = filterOptions.Architecture;
                 filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersions = filterOptions.OsVersions;

@@ -25,8 +25,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         };
 
         private readonly IEnvironmentService _environmentService;
-        private List<string> _invalidTemplates = new List<string>();
-        private List<string> _outOfSyncArtifacts = new List<string>();
+        private readonly List<string> _invalidTemplates = new List<string>();
+        private readonly List<string> _outOfSyncArtifacts = new List<string>();
 
         protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
         {

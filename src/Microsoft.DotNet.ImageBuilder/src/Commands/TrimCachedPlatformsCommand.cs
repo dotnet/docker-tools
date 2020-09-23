@@ -15,17 +15,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class TrimCachedPlatformsCommand : Command<TrimCachedPlatformsOptions>
     {
-        private readonly ILoggerService loggerService;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public TrimCachedPlatformsCommand(ILoggerService loggerService)
         {
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override async Task ExecuteAsync()
         {
-            this.loggerService.WriteHeading("TRIMMING CACHED PLATFORMS");
+            _loggerService.WriteHeading("TRIMMING CACHED PLATFORMS");
 
             string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData platform = image.Platforms[i];
                         if (platform.IsCached)
                         {
-                            this.loggerService.WriteMessage($"Removing cached platform '{platform.GetIdentifier()}'");
+                            _loggerService.WriteMessage($"Removing cached platform '{platform.GetIdentifier()}'");
                             image.Platforms.Remove(platform);
                         }
                     }

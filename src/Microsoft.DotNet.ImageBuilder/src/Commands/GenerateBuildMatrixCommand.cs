@@ -214,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return version.ToString(componentCount);
             }
 
-            return null;            
+            return null;
         }
 
         private static string GetNormalizedOsVersion(string osVersion) =>

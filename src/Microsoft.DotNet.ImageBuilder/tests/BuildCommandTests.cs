@@ -769,7 +769,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<IDictionary<string, string>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()))
-                .Returns(buildOutput ?? String.Empty);
+                .Returns(buildOutput ?? string.Empty);
 
             return dockerServiceMock;
         }

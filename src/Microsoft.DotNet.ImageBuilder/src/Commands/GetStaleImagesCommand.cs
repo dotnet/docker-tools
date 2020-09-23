@@ -23,14 +23,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions>, IDisposable
     {
-        private readonly Dictionary<string, string> gitRepoIdToPathMapping = new Dictionary<string, string>();
-        private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
-        private readonly SemaphoreSlim gitRepoPathSemaphore = new SemaphoreSlim(1);
-        private readonly object imageDigestsLock = new object();
-        private readonly IManifestToolService manifestToolService;
-        private readonly ILoggerService loggerService;
-        private readonly IGitHubClientFactory gitHubClientFactory;
-        private readonly HttpClient httpClient;
+        private readonly Dictionary<string, string> _gitRepoIdToPathMapping = new Dictionary<string, string>();
+        private readonly Dictionary<string, string> _imageDigests = new Dictionary<string, string>();
+        private readonly SemaphoreSlim _gitRepoPathSemaphore = new SemaphoreSlim(1);
+        private readonly object _imageDigestsLock = new object();
+        private readonly IManifestToolService _manifestToolService;
+        private readonly ILoggerService _loggerService;
+        private readonly IGitHubClientFactory _gitHubClientFactory;
+        private readonly HttpClient _httpClient;
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
@@ -39,10 +39,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ILoggerService loggerService,
             IGitHubClientFactory gitHubClientFactory)
         {
-            this.manifestToolService = manifestToolService;
-            this.loggerService = loggerService;
-            this.gitHubClientFactory = gitHubClientFactory;
-            this.httpClient = httpClientFactory.GetClient();
+            _manifestToolService = manifestToolService;
+            _loggerService = loggerService;
+            _gitHubClientFactory = gitHubClientFactory;
+            _httpClient = httpClientFactory.GetClient();
         }
 
         public override async Task ExecuteAsync()
@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                var results = await Task.WhenAll(
+                SubscriptionImagePaths[] results = await Task.WhenAll(
                     subscriptions.Select(async s => new SubscriptionImagePaths
                     {
                         SubscriptionId = s.Id,
@@ -66,17 +66,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 string outputString = JsonConvert.SerializeObject(results);
 
-                this.loggerService.WriteMessage(
+                _loggerService.WriteMessage(
                     PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
                         .Replace("\"", "\\\"")); // Escape all quotes
 
                 string formattedResults = JsonConvert.SerializeObject(results, Formatting.Indented);
-                this.loggerService.WriteMessage(
+                _loggerService.WriteMessage(
                     $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
             }
             finally
             {
-                foreach (string repoPath in gitRepoIdToPathMapping.Values)
+                foreach (string repoPath in _gitRepoIdToPathMapping.Values)
                 {
                     // The path to the repo is stored inside a zip extraction folder so be sure to delete that
                     // zip extraction folder, not just the inner repo folder.
@@ -90,13 +90,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
             // then there are no images that need to be inspected.
             string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(Options.FilterOptions.OsType);
-            if (!String.IsNullOrEmpty(subscription.OsType) &&
+            if (!string.IsNullOrEmpty(subscription.OsType) &&
                 !Regex.IsMatch(subscription.OsType, osTypeRegexPattern, RegexOptions.IgnoreCase))
             {
                 return Enumerable.Empty<string>();
             }
 
-            this.loggerService.WriteMessage($"Processing subscription:  {subscription.Id}");
+            _loggerService.WriteMessage($"Processing subscription:  {subscription.Id}");
 
             string repoPath = await GetGitRepoPath(subscription);
 
@@ -140,7 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             void processPlatformWithMissingImageInfo(PlatformInfo platform)
             {
-                this.loggerService.WriteMessage(
+                _loggerService.WriteMessage(
                     $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
                 IEnumerable<PlatformInfo> dependentPlatforms = platform.GetDependencyGraph(allPlatforms);
                 pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));
@@ -162,16 +162,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string fromImage = platform.FinalStageFromImage;
                     string currentDigest;
 
-                    currentDigest = LockHelper.DoubleCheckedLockLookup(this.imageDigestsLock, this.imageDigests, fromImage,
+                    currentDigest = LockHelper.DoubleCheckedLockLookup(_imageDigestsLock, _imageDigests, fromImage,
                         () =>
                         {
-                            string digest = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, fromImage, Options.IsDryRun);
+                            string digest = _manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, fromImage, Options.IsDryRun);
                             return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 
                     bool rebuildImage = platformData.BaseImageDigest != currentDigest;
 
-                    this.loggerService.WriteMessage(
+                    _loggerService.WriteMessage(
                         $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
                         + $"\tLast build digest:    {platformData.BaseImageDigest}{Environment.NewLine}"
                         + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
@@ -198,7 +198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Subscription subscription, ManifestInfo manifest)
         {
             string imageDataJson;
-            using (IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
+            using (IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
             {
                 GitHubProject project = new GitHubProject(subscription.ImageInfo.Repo, subscription.ImageInfo.Owner);
                 GitHubBranch branch = new GitHubBranch(subscription.ImageInfo.Branch, project);
@@ -214,14 +214,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.Repo}-{sub.Manifest.Branch}";
 
-            return gitRepoPathSemaphore.DoubleCheckedLockLookupAsync(this.gitRepoIdToPathMapping, uniqueName,
-                () => GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, sub.Manifest));
+            return _gitRepoPathSemaphore.DoubleCheckedLockLookupAsync(_gitRepoIdToPathMapping, uniqueName,
+                () => GitHelper.DownloadAndExtractGitRepoArchiveAsync(_httpClient, sub.Manifest));
         }
 
         public void Dispose()
         {
-            this.httpClient.Dispose();
-            this.gitRepoPathSemaphore.Dispose();
+            _httpClient.Dispose();
+            _gitRepoPathSemaphore.Dispose();
         }
 
         private class TempManifestOptions : ManifestOptions, IFilterableOptions

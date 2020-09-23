@@ -5,7 +5,6 @@
 using System;
 using System.ComponentModel.Composition;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Kusto.Data;
 using Kusto.Data.Common;

@@ -17,40 +17,40 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
     {
-        private readonly IAcrClientFactory acrClientFactory;
-        private readonly ILoggerService loggerService;
-        private Regex repoNameFilterRegex;
+        private readonly IAcrClientFactory _acrClientFactory;
+        private readonly ILoggerService _loggerService;
+        private Regex _repoNameFilterRegex;
 
         [ImportingConstructor]
         public CleanAcrImagesCommand(IAcrClientFactory acrClientFactory, ILoggerService loggerService)
         {
-            this.acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override async Task ExecuteAsync()
         {
-            this.repoNameFilterRegex = new Regex(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
+            _repoNameFilterRegex = new Regex(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
-            this.loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
+            _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
 
-            this.loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
-            using IAcrClient acrClient = await this.acrClientFactory.CreateAsync(
+            _loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
+            using IAcrClient acrClient = await _acrClientFactory.CreateAsync(
                 Options.RegistryName,
                 Options.ServicePrincipal.Tenant,
                 Options.ServicePrincipal.ClientId,
                 Options.ServicePrincipal.Secret);
 
-            this.loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
+            _loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
             Catalog catalog = await acrClient.GetCatalogAsync();
 
-            this.loggerService.WriteHeading("DELETING IMAGES");
+            _loggerService.WriteHeading("DELETING IMAGES");
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
 
             IEnumerable<Task> cleanupTasks = catalog.RepositoryNames
-                .Where(repoName => this.repoNameFilterRegex.IsMatch(repoName))
+                .Where(repoName => _repoNameFilterRegex.IsMatch(repoName))
                 .Select(repoName => acrClient.GetRepositoryAsync(repoName))
                 .Select(getRepoTask => ProcessRepoAsync(acrClient, getRepoTask, deletedRepos, deletedImages))
                 .ToArray();
@@ -88,35 +88,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task LogSummaryAsync(IAcrClient acrClient, List<string> deletedRepos, List<string> deletedImages)
         {
-            this.loggerService.WriteHeading("SUMMARY");
+            _loggerService.WriteHeading("SUMMARY");
 
-            this.loggerService.WriteSubheading("Deleted repositories:");
+            _loggerService.WriteSubheading("Deleted repositories:");
             foreach (string deletedRepo in deletedRepos)
             {
-                this.loggerService.WriteMessage($"\t{deletedRepo}");
+                _loggerService.WriteMessage($"\t{deletedRepo}");
             }
 
-            this.loggerService.WriteMessage();
+            _loggerService.WriteMessage();
 
-            this.loggerService.WriteSubheading("Deleted images:");
+            _loggerService.WriteSubheading("Deleted images:");
             foreach (string deletedImage in deletedImages)
             {
-                this.loggerService.WriteMessage($"\t{deletedImage}");
+                _loggerService.WriteMessage($"\t{deletedImage}");
             }
 
-            this.loggerService.WriteMessage();
+            _loggerService.WriteMessage();
 
-            this.loggerService.WriteSubheading("DELETED DATA");
-            this.loggerService.WriteMessage($"Total images deleted: {deletedImages.Count}");
-            this.loggerService.WriteMessage($"Total repos deleted: {deletedRepos.Count}");
-            this.loggerService.WriteMessage();
+            _loggerService.WriteSubheading("DELETED DATA");
+            _loggerService.WriteMessage($"Total images deleted: {deletedImages.Count}");
+            _loggerService.WriteMessage($"Total repos deleted: {deletedRepos.Count}");
+            _loggerService.WriteMessage();
 
-            this.loggerService.WriteMessage("<Querying remaining data...>");
+            _loggerService.WriteMessage("<Querying remaining data...>");
 
             // Requery the catalog to get the latest info after things have been deleted
             Catalog catalog = await acrClient.GetCatalogAsync();
 
-            this.loggerService.WriteSubheading($"Total repos remaining: {catalog.RepositoryNames.Count}");
+            _loggerService.WriteSubheading($"Total repos remaining: {catalog.RepositoryNames.Count}");
 
         }
 
@@ -124,9 +124,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrClient acrClient, List<string> deletedImages, List<string> deletedRepos, Repository repository,
             Func<ManifestAttributes, bool> canDeleteManifest)
         {
-            this.loggerService.WriteMessage($"Querying manifests for repo '{repository.Name}'");
+            _loggerService.WriteMessage($"Querying manifests for repo '{repository.Name}'");
             RepositoryManifests repoManifests = await acrClient.GetRepositoryManifestsAsync(repository.Name);
-            this.loggerService.WriteMessage($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {repoManifests.Manifests.Count}");
+            _loggerService.WriteMessage($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {repoManifests.Manifests.Count}");
 
             if (!repoManifests.Manifests.Any())
             {
@@ -171,7 +171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string imageId = $"{repository.Name}@{manifest.Digest}";
 
-            this.loggerService.WriteMessage($"Deleted image '{imageId}'");
+            _loggerService.WriteMessage($"Deleted image '{imageId}'");
 
             lock (deletedImages)
             {
@@ -219,7 +219,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 messageBuilder.AppendLine($"\t{tag}");
             }
 
-            this.loggerService.WriteMessage(messageBuilder.ToString());
+            _loggerService.WriteMessage(messageBuilder.ToString());
 
             lock (deletedRepos)
             {

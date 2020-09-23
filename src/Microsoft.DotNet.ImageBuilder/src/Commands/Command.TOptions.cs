@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public TOptions Options { get; private set; }
 
-        Options ICommand.Options => this.Options;
+        Options ICommand.Options => Options;
 
         public Command()
         {

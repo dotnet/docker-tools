@@ -13,13 +13,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class UpdateImageSizeBaselineCommand : ImageSizeCommand<UpdateImageSizeBaselineOptions>
     {
-        private readonly ILoggerService loggerService;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public UpdateImageSizeBaselineCommand(IDockerService dockerService, ILoggerService loggerService)
             : base(dockerService)
         {
-            this.loggerService = loggerService;
+            _loggerService = loggerService;
         }
 
         public override Task ExecuteAsync()
@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void UpdateBaseline()
         {
-            loggerService.WriteHeading("UPDATING IMAGE SIZE BASELINE");
+            _loggerService.WriteHeading("UPDATING IMAGE SIZE BASELINE");
 
             Dictionary<string, ImageSizeInfo> imageData = null;
             if (!Options.AllBaselineData)
@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             void processImage(string repoId, string imageId, string imageTag)
             {
-                loggerService.WriteMessage($"Processing '{imageId}'");
+                _loggerService.WriteMessage($"Processing '{imageId}'");
 
                 long imageSize = GetImageSize(imageTag);
 
@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (imageSizeInfo.WithinAllowedVariance)
                     {
-                        loggerService.WriteMessage(
+                        _loggerService.WriteMessage(
                             $"Skipping '{imageId}' because its image size ({imageSize}) is within the allowed range ({imageSizeInfo.MinVariance}-{imageSizeInfo.MaxVariance})");
                         imageSize = imageSizeInfo.BaselineSize.Value;
                     }
@@ -71,17 +71,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 repo.Add(imageId, new JValue(imageSize));
             }
 
-            loggerService.WriteSubheading($"Processing images");
+            _loggerService.WriteSubheading($"Processing images");
             ProcessImages(processImage);
 
-            loggerService.WriteSubheading($"Updating `{Options.BaselinePath}`");
+            _loggerService.WriteSubheading($"Updating `{Options.BaselinePath}`");
             string formattedJson = json.ToString();
             if (File.Exists(Options.BaselinePath))
             {
                 formattedJson = formattedJson.NormalizeLineEndings(File.ReadAllText(Options.BaselinePath));
             }
 
-            loggerService.WriteMessage(formattedJson);
+            _loggerService.WriteMessage(formattedJson);
             File.WriteAllText(Options.BaselinePath, formattedJson);
         }
     }

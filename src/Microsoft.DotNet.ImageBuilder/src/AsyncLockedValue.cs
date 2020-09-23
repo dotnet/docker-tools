@@ -10,56 +10,56 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public class AsyncLockedValue<T> : IDisposable
     {
-        private readonly SemaphoreSlim semaphore;
-        private readonly bool disposeSemaphore;
-        private T value;
+        private readonly SemaphoreSlim _semaphore;
+        private readonly bool _disposeSemaphore;
+        private T _value;
 
         public AsyncLockedValue(T value = default, SemaphoreSlim semaphore = null)
         {
-            this.value = value;
+            _value = value;
 
             if (semaphore is null)
             {
-                this.semaphore = new SemaphoreSlim(1);
-                disposeSemaphore = true;
+                _semaphore = new SemaphoreSlim(1);
+                _disposeSemaphore = true;
             }
             else
             {
-                this.semaphore = semaphore;
+                _semaphore = semaphore;
             }
         }
 
         public void Dispose()
         {
-            if (this.disposeSemaphore)
+            if (_disposeSemaphore)
             {
-                this.semaphore.Dispose();
+                _semaphore.Dispose();
             }
         }
 
         public async Task<T> GetValueAsync(Func<Task<T>> valueInitializer)
         {
-            return await this.semaphore.DoubleCheckedLockAsync<T>(
-                () => this.value,
+            return await _semaphore.DoubleCheckedLockAsync<T>(
+                () => _value,
                 val => val is null,
-                async () => this.value = await valueInitializer());
+                async () => _value = await valueInitializer());
         }
 
         public async Task<T> ResetValueAsync(Func<Task<T>> valueInitializer = null)
         {
-            await this.semaphore.LockAsync(async () =>
+            await _semaphore.LockAsync(async () =>
             {
                 if (valueInitializer is null)
                 {
-                    this.value = default;
+                    _value = default;
                 }
                 else
                 {
-                    this.value = await valueInitializer();
+                    _value = await valueInitializer();
                 }
             });
 
-            return this.value;
+            return _value;
         }
     }
 }

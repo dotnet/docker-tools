@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Publishes the readmes to MCR";
 
         public GitOptions GitOptions { get; } = new GitOptions("Microsoft", "mcrdocs", "master", "teams");
-        
+
         public string SourceRepoUrl { get; set; }
 
         public PublishMcrDocsOptions() : base()

@@ -21,16 +21,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class QueueBuildCommand : Command<QueueBuildOptions>
     {
-        private readonly IVssConnectionFactory connectionFactory;
-        private readonly ILoggerService loggerService;
+        private readonly IVssConnectionFactory _connectionFactory;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public QueueBuildCommand(
             IVssConnectionFactory connectionFactory,
             ILoggerService loggerService)
         {
-            this.connectionFactory = connectionFactory;
-            this.loggerService = loggerService;
+            _connectionFactory = connectionFactory;
+            _loggerService = loggerService;
         }
 
         public override async Task ExecuteAsync()
@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                this.loggerService.WriteMessage(
+                _loggerService.WriteMessage(
                     $"None of the subscriptions have base images that are out-of-date. No rebuild necessary.");
             }
         }
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!pathsToRebuild.Any())
             {
-                this.loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
+                _loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
                 return;
             }
 
@@ -86,16 +86,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedPathsToRebuild + "\"}";
 
-            this.loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
+            _loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
 
             if (Options.IsDryRun)
             {
                 return;
             }
 
-            using (IVssConnection connection = this.connectionFactory.Create(
+            using (IVssConnection connection = _connectionFactory.Create(
                 new Uri($"https://dev.azure.com/{Options.BuildOrganization}"),
-                new VssBasicCredential(String.Empty, Options.BuildPersonalAccessToken)))
+                new VssBasicCredential(string.Empty, Options.BuildPersonalAccessToken)))
             using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
             using (IBuildHttpClient client = connection.GetBuildHttpClient())
             {
@@ -111,8 +111,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
                 {
-                    this.loggerService.WriteMessage(
-                        $"An in-progress build was detected on the pipeline for subscription '{subscription.ToString()}'. Queueing the build will be skipped.");
+                    _loggerService.WriteMessage(
+                        $"An in-progress build was detected on the pipeline for subscription '{subscription}'. Queueing the build will be skipped.");
                     return;
                 }
 

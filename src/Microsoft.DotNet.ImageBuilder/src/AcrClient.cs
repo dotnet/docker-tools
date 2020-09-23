@@ -21,9 +21,9 @@ namespace Microsoft.DotNet.ImageBuilder
         private const int MaxPagedResults = 500;
         private const string LinkUrlGroup = "LinkUrl";
         private const string RelationshipTypeGroup = "RelationshipType";
-        private static readonly Regex linkHeaderRegex =
+        private static readonly Regex s_linkHeaderRegex =
             new Regex($"<(?<{LinkUrlGroup}>.+)>;\\s*rel=\"(?<{RelationshipTypeGroup}>.+)\"");
-        private static readonly string[] scopes = new string[]
+        private static readonly string[] s_scopes = new string[]
         {
             "registry:catalog:*",
             "repository:*:metadata_read",
@@ -31,34 +31,32 @@ namespace Microsoft.DotNet.ImageBuilder
             "repository:*:pull"
         };
 
-        private readonly HttpClient httpClient;
-        private readonly string acrName;
-        private readonly ILoggerService loggerService;
-        private readonly string baseUrl;
-        private readonly string acrV1BaseUrl;
-        private readonly string acrV2BaseUrl;
-        private readonly AsyncLockedValue<string> acrRefreshToken;
-        private readonly AsyncLockedValue<string> acrAccessToken;
-        private readonly SemaphoreSlim sharedSemaphore = new SemaphoreSlim(1);
-        private readonly string tenant;
-        private readonly string aadAccessToken;
-        private readonly AsyncPolicy<HttpResponseMessage> httpPolicy;
+        private readonly HttpClient _httpClient;
+        private readonly string _acrName;
+        private readonly string _baseUrl;
+        private readonly string _acrV1BaseUrl;
+        private readonly string _acrV2BaseUrl;
+        private readonly AsyncLockedValue<string> _acrRefreshToken;
+        private readonly AsyncLockedValue<string> _acrAccessToken;
+        private readonly SemaphoreSlim _sharedSemaphore = new SemaphoreSlim(1);
+        private readonly string _tenant;
+        private readonly string _aadAccessToken;
+        private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
 
         private AcrClient(HttpClient httpClient, string acrName, string tenant, string aadAccessToken, ILoggerService loggerService)
         {
-            this.httpClient = httpClient;
-            this.acrName = acrName;
-            this.tenant = tenant;
-            this.aadAccessToken = aadAccessToken;
-            this.loggerService = loggerService;
-            this.baseUrl = $"https://{acrName}";
-            this.acrV1BaseUrl = $"{baseUrl}/acr/v1";
-            this.acrV2BaseUrl = $"{baseUrl}/v2";
+            _httpClient = httpClient;
+            _acrName = acrName;
+            _tenant = tenant;
+            _aadAccessToken = aadAccessToken;
+            _baseUrl = $"https://{acrName}";
+            _acrV1BaseUrl = $"{_baseUrl}/acr/v1";
+            _acrV2BaseUrl = $"{_baseUrl}/v2";
 
-            this.acrRefreshToken = new AsyncLockedValue<string>(semaphore: this.sharedSemaphore);
-            this.acrAccessToken = new AsyncLockedValue<string>(semaphore: this.sharedSemaphore);
+            _acrRefreshToken = new AsyncLockedValue<string>(semaphore: _sharedSemaphore);
+            _acrAccessToken = new AsyncLockedValue<string>(semaphore: _sharedSemaphore);
 
-            this.httpPolicy = HttpPolicyBuilder.Create()
+            _httpPolicy = HttpPolicyBuilder.Create()
                 .WithMeteredRetryPolicy(loggerService)
                 .WithRefreshAccessTokenPolicy(GetAcrRefreshTokenAsync, loggerService)
                 .Build();
@@ -68,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             Catalog result = null;
             await GetPagedResponseAsync<Catalog>(
-                $"{this.acrV1BaseUrl}/_catalog?n={MaxPagedResults}",
+                $"{_acrV1BaseUrl}/_catalog?n={MaxPagedResults}",
                 pagedCatalog =>
                 {
                     if (result is null)
@@ -86,13 +84,13 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Task<Repository> GetRepositoryAsync(string name)
         {
-            return SendGetRequestAsync<Repository>($"{this.acrV1BaseUrl}/{name}");
+            return SendGetRequestAsync<Repository>($"{_acrV1BaseUrl}/{name}");
         }
 
         public async Task<DeleteRepositoryResponse> DeleteRepositoryAsync(string name)
         {
             HttpResponseMessage response = await SendRequestAsync(
-                () => new HttpRequestMessage(HttpMethod.Delete, $"{this.acrV1BaseUrl}/{name}"));
+                () => new HttpRequestMessage(HttpMethod.Delete, $"{_acrV1BaseUrl}/{name}"));
             return JsonConvert.DeserializeObject<DeleteRepositoryResponse>(await response.Content.ReadAsStringAsync());
         }
 
@@ -100,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             RepositoryManifests result = null;
             await GetPagedResponseAsync<RepositoryManifests>(
-                $"{this.acrV1BaseUrl}/{repositoryName}/_manifests?n={MaxPagedResults}",
+                $"{_acrV1BaseUrl}/{repositoryName}/_manifests?n={MaxPagedResults}",
                 pagedRepoManifests =>
             {
                 if (result is null)
@@ -120,7 +118,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             return SendRequestAsync(
                 () => new HttpRequestMessage(
-                    HttpMethod.Delete, $"{this.acrV2BaseUrl}/{repositoryName}/manifests/{digest}"));
+                    HttpMethod.Delete, $"{_acrV2BaseUrl}/{repositoryName}/manifests/{digest}"));
         }
 
         public static async Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password,
@@ -146,16 +144,16 @@ namespace Microsoft.DotNet.ImageBuilder
                 if (response.Headers.TryGetValues("Link", out IEnumerable<string> linkValues))
                 {
                     Match nextLinkMatch = linkValues
-                        .Select(linkValue => linkHeaderRegex.Match(linkValue))
+                        .Select(linkValue => s_linkHeaderRegex.Match(linkValue))
                         .FirstOrDefault(match => match.Success && match.Groups[RelationshipTypeGroup].Value == "next");
 
                     if (nextLinkMatch == null)
                     {
                         throw new InvalidOperationException(
-                            $"Unable to parse link header '{String.Join(", ", linkValues.ToArray())}'");
+                            $"Unable to parse link header '{string.Join(", ", linkValues.ToArray())}'");
                     }
 
-                    currentUrl = $"{baseUrl}{nextLinkMatch.Groups[LinkUrlGroup].Value}";
+                    currentUrl = $"{_baseUrl}{nextLinkMatch.Groups[LinkUrlGroup].Value}";
                 }
                 else
                 {
@@ -172,19 +170,19 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private Task<HttpResponseMessage> SendRequestAsync(Func<HttpRequestMessage> createMessage) =>
-            this.httpClient.SendRequestAsync(createMessage, () => GetAcrAccessTokenAsync(), this.httpPolicy);
+            _httpClient.SendRequestAsync(createMessage, () => GetAcrAccessTokenAsync(), _httpPolicy);
 
         private Task<string> GetAcrRefreshTokenAsync()
         {
-            return this.acrRefreshToken.GetValueAsync(async () =>
+            return _acrRefreshToken.GetValueAsync(async () =>
             {
                 StringContent oauthExchangeBody = new StringContent(
-                    $"grant_type=access_token&service={acrName}&tenant={tenant}&access_token={aadAccessToken}",
+                    $"grant_type=access_token&service={_acrName}&tenant={_tenant}&access_token={_aadAccessToken}",
                     Encoding.UTF8,
                     "application/x-www-form-urlencoded");
 
-                HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync(
-                    $"https://{acrName}/oauth2/exchange", oauthExchangeBody);
+                HttpResponseMessage tokenExchangeResponse = await _httpClient.PostAsync(
+                    $"https://{_acrName}/oauth2/exchange", oauthExchangeBody);
                 tokenExchangeResponse.EnsureSuccessStatusCode();
                 OAuthExchangeResult acrRefreshTokenResult = JsonConvert.DeserializeObject<OAuthExchangeResult>(
                     await tokenExchangeResponse.Content.ReadAsStringAsync());
@@ -197,14 +195,14 @@ namespace Microsoft.DotNet.ImageBuilder
             string refreshToken = await GetAcrRefreshTokenAsync();
             async Task<string> valueInitializer()
             {
-                string scopesArgs = String.Join('&', scopes
+                string scopesArgs = string.Join('&', s_scopes
                     .Select(scope => $"scope={scope}")
                     .ToArray());
                 StringContent oauthTokenBody = new StringContent(
-                    $"grant_type=refresh_token&service={acrName}&{scopesArgs}&refresh_token={refreshToken}",
+                    $"grant_type=refresh_token&service={_acrName}&{scopesArgs}&refresh_token={refreshToken}",
                     Encoding.UTF8,
                     "application/x-www-form-urlencoded");
-                HttpResponseMessage tokenResponse = await httpClient.PostAsync($"https://{acrName}/oauth2/token", oauthTokenBody);
+                HttpResponseMessage tokenResponse = await _httpClient.PostAsync($"https://{_acrName}/oauth2/token", oauthTokenBody);
                 tokenResponse.EnsureSuccessStatusCode();
                 OAuthTokenResult acrAccessTokenResult = JsonConvert.DeserializeObject<OAuthTokenResult>(
                     await tokenResponse.Content.ReadAsStringAsync());
@@ -212,14 +210,14 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return refresh ?
-                await this.acrAccessToken.ResetValueAsync(valueInitializer) :
-                await this.acrAccessToken.GetValueAsync(valueInitializer);
+                await _acrAccessToken.ResetValueAsync(valueInitializer) :
+                await _acrAccessToken.GetValueAsync(valueInitializer);
         }
 
         public void Dispose()
         {
-            this.httpClient.Dispose();
-            this.sharedSemaphore.Dispose();
+            _httpClient.Dispose();
+            _sharedSemaphore.Dispose();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public class HttpPolicyBuilder
     {
-        private List<AsyncPolicy<HttpResponseMessage>> policies = new List<AsyncPolicy<HttpResponseMessage>>();
+        private readonly List<AsyncPolicy<HttpResponseMessage>> _policies = new List<AsyncPolicy<HttpResponseMessage>>();
 
         public static HttpPolicyBuilder Create()
         {
@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public HttpPolicyBuilder WithMeteredRetryPolicy(ILoggerService loggerService)
         {
-            policies.Add(Policy
+            _policies.Add(Policy
                 .HandleResult<HttpResponseMessage>(response => response?.StatusCode == HttpStatusCode.TooManyRequests)
                 .Or<TaskCanceledException>(exception =>
                     exception.InnerException is IOException ioException &&
@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILoggerService loggerService)
         {
-            policies.Add(Policy
+            _policies.Add(Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
                 .RetryAsync(1, async (result, retryCount, context) =>
                 {
@@ -55,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder
             IEnumerable<TimeSpan> sleepDurations = Enumerable
                 .Repeat(retryFrequency.TotalSeconds, (int)(timeout.TotalSeconds / retryFrequency.TotalSeconds))
                 .Select(val => TimeSpan.FromSeconds(val));
-            policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
+            _policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
                 .WaitAndRetryAsync(sleepDurations, (result, duration) =>
                 {
                     loggerService.WriteMessage(
@@ -66,15 +66,15 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public AsyncPolicy<HttpResponseMessage> Build()
         {
-            if (!this.policies.Any())
+            if (!_policies.Any())
             {
                 return null;
             }
 
-            AsyncPolicy<HttpResponseMessage> policy = this.policies[0];
-            for (int i = 1; i < this.policies.Count; i++)
+            AsyncPolicy<HttpResponseMessage> policy = _policies[0];
+            for (int i = 1; i < _policies.Count; i++)
             {
-                policy = policy.WrapAsync(this.policies[i]);
+                policy = policy.WrapAsync(_policies[i]);
             }
 
             return policy;

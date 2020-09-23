@@ -763,7 +763,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
@@ -780,7 +781,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             dockerServiceMock
                 .Setup(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false))
-                .Returns(runtimeDepsDigest);
+                .Returns(runtimeDeps2Digest);
 
             dockerServiceMock
                 .Setup(o => o.GetImageDigest(baseImageTag, false))
@@ -929,7 +930,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
-                                        Digest = runtimeDepsDigest,
+                                        Digest = runtimeDeps2Digest,
                                         BaseImageDigest = runtimeDepsBaseImageDigest,
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =
@@ -972,7 +973,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
@@ -1106,7 +1108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
-                                        Digest = runtimeDepsDigest,
+                                        Digest = runtimeDeps2Digest,
                                         BaseImageDigest = runtimeDepsBaseImageDigest,
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =

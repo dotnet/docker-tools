@@ -92,19 +92,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (PlatformData platform in GetBuiltPlatforms())
             {
-                PlatformInfo manifestPlatform = Manifest.GetFilteredPlatforms()
-                   .First(manifestPlatform => platform.Equals(manifestPlatform));
-
                 foreach (TagInfo tag in GetPushTags(platform.PlatformInfo.Tags))
                 {
                     if (Options.IsPushEnabled)
                     {
-                        SetPlatformDataDigest(platform, manifestPlatform, tag.FullyQualifiedName);
+                        SetPlatformDataDigest(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
-                    platform.CommitUrl = _gitService.GetDockerfileCommitUrl(manifestPlatform, Options.SourceRepoUrl);
+                    platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
                 }
             }
 
@@ -145,13 +142,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void SetPlatformDataDigest(PlatformData platform, PlatformInfo manifestPlatform, string tag)
+        private void SetPlatformDataDigest(PlatformData platform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
             string digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
             if (digest != null)
             {
-                digest = DockerHelper.GetDigestString(manifestPlatform.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+                digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
             }
 
             if (platform.Digest != null && platform.Digest != digest)
@@ -387,6 +384,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Parallel.ForEach(allTags, tag =>
             {
                 _dockerService.CreateTag(sourceDigest, tag, Options.IsDryRun);
+
+                // Rewrite the digest to match the repo of the tags being associated with it. This is necessary
+                // in order to handle scenarios where shared Dockerfiles are being used across different repositories.
+                // In that scenario, the digest that is retrieved will be based on the repo of the first repository
+                // encountered. For subsequent cache hits on different repositories, we need to prepopulate the digest
+                // cache with a digest value that would correspond to that repository, not the original repository.
+                sourceDigest = DockerHelper.ReplaceRepo(sourceDigest, DockerHelper.GetRepo(tag));
 
                 // Populate the digest cache with the known digest value for the tags assigned to the image.
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags

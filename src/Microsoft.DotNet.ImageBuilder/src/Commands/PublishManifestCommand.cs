@@ -18,17 +18,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
     {
         private readonly IManifestToolService _manifestToolService;
-        private readonly IEnvironmentService _environmentService;
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public PublishManifestCommand(
             IManifestToolService manifestToolService,
-            IEnvironmentService environmentService,
             ILoggerService loggerService)
         {
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
-            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 

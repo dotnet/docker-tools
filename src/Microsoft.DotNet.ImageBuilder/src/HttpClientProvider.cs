@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IHttpClientProvider))]
     internal class HttpClientProvider : IHttpClientProvider
     {
-        private readonly Lazy<HttpClient> httpClient;
+        private readonly Lazy<HttpClient> _httpClient;
 
         [ImportingConstructor]
         public HttpClientProvider(ILoggerService loggerService)
@@ -22,27 +22,27 @@ namespace Microsoft.DotNet.ImageBuilder
                 throw new ArgumentNullException(nameof(loggerService));
             }
 
-            httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(loggerService)));
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(loggerService)));
         }
 
         public HttpClient GetClient()
         {
-            return httpClient.Value;
+            return _httpClient.Value;
         }
 
         private class LoggingHandler : MessageProcessingHandler
         {
-            private readonly ILoggerService loggerService;
+            private readonly ILoggerService _loggerService;
 
             public LoggingHandler(ILoggerService loggerService)
             {
-                this.loggerService = loggerService;
+                _loggerService = loggerService;
                 InnerHandler = new HttpClientHandler();
             }
 
             protected override HttpRequestMessage ProcessRequest(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                loggerService.WriteMessage($"Sending HTTP request: {request.RequestUri}");
+                _loggerService.WriteMessage($"Sending HTTP request: {request.RequestUri}");
                 return request;
             }
 

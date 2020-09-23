@@ -22,8 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class GenerateImageGraphCommand : ManifestCommand<GenerateImageGraphOptions>
     {
-        private Dictionary<string, Manifest> _imageManifestCache = new Dictionary<string, Manifest>();
-        private Dictionary<string, DotNode> _nodeCache = new Dictionary<string, DotNode>();
+        private readonly Dictionary<string, Manifest> _imageManifestCache = new Dictionary<string, Manifest>();
+        private readonly Dictionary<string, DotNode> _nodeCache = new Dictionary<string, DotNode>();
 
         public GenerateImageGraphCommand() : base()
         {

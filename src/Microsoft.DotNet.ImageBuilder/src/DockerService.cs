@@ -13,14 +13,14 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IDockerService))]
     internal class DockerService : IDockerService
     {
-        private readonly IManifestToolService manifestToolService;
+        private readonly IManifestToolService _manifestToolService;
 
         public Architecture Architecture => DockerHelper.Architecture;
 
         [ImportingConstructor]
         public DockerService(IManifestToolService manifestToolService)
         {
-            this.manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
+            _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
         }
 
         public string GetImageDigest(string image, bool isDryRun)
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string digestSha = this.manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, image, isDryRun);
+            string digestSha = _manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, image, isDryRun);
 
             if (digestSha is null)
             {
@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 throw new InvalidOperationException(
                     $"Found published digest '{digestSha}' for tag '{image}' but could not find a matching digest value from " +
-                    $"the set of locally pulled digests for this tag: { String.Join(", ", digests) }. This most likely means that " +
+                    $"the set of locally pulled digests for this tag: { string.Join(", ", digests) }. This most likely means that " +
                     "this tag has been updated since it was last pulled.");
             }
 
@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             IEnumerable<string> buildArgList = buildArgs
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
-            string buildArgsString = String.Join(string.Empty, buildArgList);
+            string buildArgsString = string.Join(string.Empty, buildArgList);
 
             string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
 

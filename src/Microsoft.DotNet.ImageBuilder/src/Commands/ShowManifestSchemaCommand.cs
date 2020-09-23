@@ -14,23 +14,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class ShowManifestSchemaCommand : Command<ShowManifestSchemaOptions>
     {
-        private readonly ILoggerService loggerService;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public ShowManifestSchemaCommand(ILoggerService loggerService)
         {
-            this.loggerService = loggerService;
+            _loggerService = loggerService;
         }
 
         public override Task ExecuteAsync()
         {
-            JSchemaGenerator generator = new JSchemaGenerator();
-            generator.DefaultRequired = Required.DisallowNull;
+            JSchemaGenerator generator = new JSchemaGenerator
+            {
+                DefaultRequired = Required.DisallowNull
+            };
             generator.GenerationProviders.Add(new StringEnumGenerationProvider());
 
             JSchema schema = generator.Generate(typeof(Manifest));
 
-            this.loggerService.WriteMessage(schema.ToString());
+            _loggerService.WriteMessage(schema.ToString());
 
             return Task.CompletedTask;
         }

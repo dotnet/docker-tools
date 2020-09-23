@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.CommandLine;
 using Microsoft.DotNet.VersionTools.Automation;
 
@@ -24,10 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptions(string defaultOwner, string defaultRepo, string defaultBranch, string defaultPath)
         {
-            this.Owner = defaultOwner;
-            this.Repo = defaultRepo;
-            this.Branch = defaultBranch;
-            this.Path = defaultPath;
+            Owner = defaultOwner;
+            Repo = defaultRepo;
+            Branch = defaultBranch;
+            Path = defaultPath;
         }
 
         public void DefineOptions

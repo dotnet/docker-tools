@@ -19,17 +19,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public abstract class CopyImagesCommand<TOptions> : ManifestCommand<TOptions>
         where TOptions : CopyImagesOptions, new()
     {
-        private readonly Lazy<string> registryName;
+        private readonly Lazy<string> _registryName;
 
         public CopyImagesCommand(IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
         {
-            this.AzureManagementFactory = azureManagementFactory;
-            this.LoggerService = loggerService;
+            AzureManagementFactory = azureManagementFactory;
+            LoggerService = loggerService;
 
-            this.registryName = new Lazy<string>(() => Manifest.Registry.TrimEnd(".azurecr.io"));
+            _registryName = new Lazy<string>(() => Manifest.Registry.TrimEnd(".azurecr.io"));
         }
 
-        public string RegistryName => this.registryName.Value;
+        public string RegistryName => _registryName.Value;
 
         public IAzureManagementFactory AzureManagementFactory { get; }
         public ILoggerService LoggerService { get; }
@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.ServicePrincipal.Secret,
                 Options.ServicePrincipal.Tenant,
                 AzureEnvironment.AzureGlobalCloud);
-            IAzure azure = this.AzureManagementFactory.CreateAzureManager(credentials, Options.Subscription);
+            IAzure azure = AzureManagementFactory.CreateAzureManager(credentials, Options.Subscription);
 
             ImportImageParametersInner importParams = new ImportImageParametersInner()
             {
@@ -53,24 +53,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 TargetTags = new string[] { destTagName }
             };
 
-            this.LoggerService.WriteMessage($"Importing '{destTagName}' from '{srcTagName}'");
+            LoggerService.WriteMessage($"Importing '{destTagName}' from '{srcTagName}'");
 
             if (!Options.IsDryRun)
             {
                 try
                 {
                     AsyncPolicy<HttpResponseMessage> policy = HttpPolicyBuilder.Create()
-                        .WithMeteredRetryPolicy(this.LoggerService)
+                        .WithMeteredRetryPolicy(LoggerService)
                         .Build();
                     await policy.ExecuteAsync(async () =>
                     {
-                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, this.RegistryName, importParams);
+                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, RegistryName, importParams);
                         return null;
                     });
                 }
                 catch (Exception e)
                 {
-                    this.LoggerService.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
+                    LoggerService.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
                     throw;
                 }
             }

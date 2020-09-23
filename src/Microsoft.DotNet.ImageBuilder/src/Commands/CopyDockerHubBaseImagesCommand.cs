@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            this.LoggerService.WriteHeading("COPYING IMAGES");
+            LoggerService.WriteHeading("COPYING IMAGES");
 
             IEnumerable<Task> importTasks = Manifest.GetExternalFromImages()
                 .Where(fromImage => !fromImage.StartsWith(Manifest.Registry))

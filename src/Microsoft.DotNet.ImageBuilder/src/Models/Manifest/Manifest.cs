@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.ComponentModel;
-using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {

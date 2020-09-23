@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ExecuteHelper
     {
-        private static readonly ILoggerService loggerService = new LoggerService();
+        private static readonly ILoggerService s_loggerService = new LoggerService();
 
         public static string Execute(
             string fileName,
@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 executeMessageOverride = $"{info.FileName} {info.Arguments}";
             }
 
-            loggerService.WriteSubheading($"EXECUTING: {executeMessageOverride}");
+            s_loggerService.WriteSubheading($"EXECUTING: {executeMessageOverride}");
             if (!isDryRun)
             {
                 Stopwatch stopwatch = new Stopwatch();
@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 processResult = executor(info);
 
                 stopwatch.Stop();
-                loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+                s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
 
                 if (processResult.Process.ExitCode != 0)
                 {
@@ -149,7 +149,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
                 .WaitAndRetry(
                     Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
-                    RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, loggerService))
+                    RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, s_loggerService))
                 .Execute(() => executor(info));
 
             return processResult;

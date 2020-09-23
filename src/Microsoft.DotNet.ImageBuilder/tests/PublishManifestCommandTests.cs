@@ -35,13 +35,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.Inspect("repo2:sharedtag3", false))
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
-            environmentServiceMock
-                .Setup(o => o.Exit(It.IsNotIn(new int[] { 0 })))
-                .Throws(new InvalidOperationException("Exit with non-zero exit code was invoked"));
-
-            PublishManifestCommand command = new PublishManifestCommand(manifestToolService.Object,
-                environmentServiceMock.Object, Mock.Of<ILoggerService>());
+            PublishManifestCommand command = new PublishManifestCommand(
+                manifestToolService.Object, Mock.Of<ILoggerService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 

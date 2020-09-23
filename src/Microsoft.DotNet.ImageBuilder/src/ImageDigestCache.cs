@@ -2,35 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class ImageDigestCache
     {
-        private readonly IDockerService dockerService;
-        private readonly Dictionary<string, string> digestCache = new Dictionary<string, string>();
+        private readonly IDockerService _dockerService;
+        private readonly Dictionary<string, string> _digestCache = new Dictionary<string, string>();
 
         public ImageDigestCache(IDockerService dockerService)
         {
-            this.dockerService = dockerService;
+            _dockerService = dockerService;
         }
 
         public void AddDigest(string tag, string digest)
         {
-            lock(digestCache)
+            lock(_digestCache)
             {
-                digestCache[tag] = digest;
+                _digestCache[tag] = digest;
             }
         }
 
         public string GetImageDigest(string tag, bool isDryRun) =>
-            LockHelper.DoubleCheckedLockLookup(digestCache, digestCache, tag,
-                () => dockerService.GetImageDigest(tag, isDryRun),
+            LockHelper.DoubleCheckedLockLookup(_digestCache, _digestCache, tag,
+                () => _dockerService.GetImageDigest(tag, isDryRun),
                 // Don't allow null digests to be cached. A locally built image won't have a digest until
                 // it is pushed so if its digest is retrieved before pushing, we don't want that 
                 // null to be cached.
-                val => !String.IsNullOrEmpty(val));
+                val => !string.IsNullOrEmpty(val));
     }
 }

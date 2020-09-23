@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public override Task ExecuteAsync()
         {
-            var imageInfoFiles = Directory.EnumerateFiles(
+            IEnumerable<string> imageInfoFiles = Directory.EnumerateFiles(
                 Options.SourceImageInfoFolderPath,
                 "*.json",
                 SearchOption.AllDirectories);

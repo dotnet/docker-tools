@@ -14,17 +14,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     {
         public static string GetDisplayName(this Architecture architecture, string variant = null)
         {
-            string displayName;
-
-            switch (architecture)
+            string displayName = architecture switch
             {
-                case Architecture.ARM:
-                    displayName = "arm32";
-                    break;
-                default:
-                    displayName = architecture.ToString().ToLowerInvariant();
-                    break;
-            }
+                Architecture.ARM => "arm32",
+                _ => architecture.ToString().ToLowerInvariant(),
+            };
 
             if (variant != null)
             {
@@ -36,39 +30,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static string GetShortName(this Architecture architecture)
         {
-            string shortName;
-
-            switch (architecture)
+            return architecture switch
             {
-                case Architecture.AMD64:
-                    shortName = "x64";
-                    break;
-                default:
-                    shortName = architecture.ToString().ToLowerInvariant();
-                    break;
-            }
-
-            return shortName;
+                Architecture.AMD64 => "x64",
+                _ => architecture.ToString().ToLowerInvariant(),
+            };
         }
 
         public static string GetNupkgName(this Architecture architecture)
         {
-            string nupkgName;
-
-            switch (architecture)
+            return architecture switch
             {
-                case Architecture.AMD64:
-                    nupkgName = "x64";
-                    break;
-                case Architecture.ARM:
-                    nupkgName = "arm32";
-                    break;
-                default:
-                    nupkgName = architecture.ToString().ToLowerInvariant();
-                    break;
-            }
-
-            return nupkgName;
+                Architecture.AMD64 => "x64",
+                Architecture.ARM => "arm32",
+                _ => architecture.ToString().ToLowerInvariant(),
+            };
         }
 
         public static string GetDockerName(this Architecture architecture) => architecture.ToString().ToLowerInvariant();

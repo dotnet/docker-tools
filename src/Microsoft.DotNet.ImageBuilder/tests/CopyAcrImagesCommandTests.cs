@@ -39,10 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IAzureManagementFactory> azureManagementFactoryMock =
                     AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-                Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
-
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(
-                    azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), environmentServiceMock.Object);
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -114,8 +111,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             It.IsAny<Dictionary<string, List<string>>>(),
                             It.IsAny<CancellationToken>()));
                 }
-
-                environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             }
         }
 
@@ -136,8 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(
-                    azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), environmentServiceMock.Object);
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -221,8 +215,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             It.IsAny<Dictionary<string, List<string>>>(),
                             It.IsAny<CancellationToken>()));
                 }
-
-                environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             }
         }
 

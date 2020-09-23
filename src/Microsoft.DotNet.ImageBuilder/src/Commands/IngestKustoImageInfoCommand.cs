@@ -15,26 +15,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions>
     {
-        private readonly IKustoClient kustoClient;
-        private readonly ILoggerService loggerService;
+        private readonly IKustoClient _kustoClient;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public IngestKustoImageInfoCommand(ILoggerService loggerService, IKustoClient kustoClient)
         {
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
         }
 
         public override async Task ExecuteAsync()
         {
-            this.loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
+            _loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
 
             string csv = GetImageInfoCsv();
-            this.loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{csv}");
+            _loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{csv}");
 
-            if (String.IsNullOrEmpty(csv))
+            if (string.IsNullOrEmpty(csv))
             {
-                this.loggerService.WriteMessage("Skipping ingestion due to empty image info data.");
+                _loggerService.WriteMessage("Skipping ingestion due to empty image info data.");
                 return;
             }
 
@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                await kustoClient.IngestFromCsvStreamAsync(stream, Options);
+                await _kustoClient.IngestFromCsvStreamAsync(stream, Options);
             }
         }
 

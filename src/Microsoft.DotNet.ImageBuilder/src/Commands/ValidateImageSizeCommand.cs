@@ -14,15 +14,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions>
     {
-        private readonly ILoggerService loggerService;
-        private readonly IEnvironmentService environmentService;
+        private readonly ILoggerService _loggerService;
+        private readonly IEnvironmentService _environmentService;
 
         [ImportingConstructor]
         public ValidateImageSizeCommand(IDockerService dockerService, ILoggerService loggerService, IEnvironmentService environmentService)
             : base(dockerService)
         {
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
         public ImageSizeValidationResults ValidationResults { get; private set; }
@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private ImageSizeValidationResults ValidateImages()
         {
-            loggerService.WriteHeading("VALIDATING IMAGE SIZES");
+            _loggerService.WriteHeading("VALIDATING IMAGE SIZES");
 
             Dictionary<string, ImageSizeInfo> imageData = LoadBaseline();
 
@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     currentSize = GetImageSize(tagName);
                 }
-                
+
                 // If the image is found in the generated set of ImageSizeInfos, it means we have
                 // baseline data for it and just need to update its CurrentSize.
                 if (imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void LogResults(ImageSizeValidationResults results)
         {
-            loggerService.WriteHeading("VALIDATION RESULTS");
+            _loggerService.WriteHeading("VALIDATION RESULTS");
             LogResults(results.ImagesWithNoSizeChange, "Images with no size change:");
             LogResults(results.ImagesWithAllowedSizeChange, "Images with allowed size change:");
             LogResults(results.ImagesWithDisallowedSizeChange, "Images exceeding size variance:");
@@ -122,10 +122,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 results.ImagesWithMissingBaseline.Any() ||
                 results.ImagesWithExtraneousBaseline.Any())
             {
-                loggerService.WriteError("Image size validation failed");
-                loggerService.WriteMessage("The baseline file can be updated by running the updateImageSizeBaseline command.");
+                _loggerService.WriteError("Image size validation failed");
+                _loggerService.WriteMessage("The baseline file can be updated by running the updateImageSizeBaseline command.");
 
-                this.environmentService.Exit(1);
+                _environmentService.Exit(1);
             }
         }
 
@@ -133,7 +133,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (imageData.Any())
             {
-                loggerService.WriteSubheading(header);
+                _loggerService.WriteSubheading(header);
 
                 string indent = new string(' ', 4);
 
@@ -162,10 +162,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         msg.AppendLine($"{indent}Variation Allowed: {info.MinVariance:N0} - {info.MaxVariance:N0}");
                     }
 
-                    loggerService.WriteMessage(msg.ToString());
+                    _loggerService.WriteMessage(msg.ToString());
                 }
 
-                loggerService.WriteMessage("----------------------------------------------------");
+                _loggerService.WriteMessage("----------------------------------------------------");
             }
         }
     }

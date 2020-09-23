@@ -16,18 +16,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions>
     {
-        private readonly Lazy<ImageArtifactDetails> imageArtifactDetails;
-        private readonly IEnvironmentService environmentService;
+        private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         [ImportingConstructor]
         public CopyAcrImagesCommand(
-            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService, IEnvironmentService environmentService)
+            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
             : base(azureManagementFactory, loggerService)
         {
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-            this.imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
+            _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
-                if (!String.IsNullOrEmpty(Options.ImageInfoPath))
+                if (!string.IsNullOrEmpty(Options.ImageInfoPath))
                 {
                     return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
                 }
@@ -38,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            this.LoggerService.WriteHeading("COPYING IMAGES");
+            LoggerService.WriteHeading("COPYING IMAGES");
 
             string resourceId =
                 $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
@@ -67,9 +65,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
             // of the tag for the image that was actually built rather than just generating new tag values when parsing
             // the manifest.
-            if (imageArtifactDetails.Value != null)
+            if (_imageArtifactDetails.Value != null)
             {
-                RepoData repoData = imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
+                RepoData repoData = _imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
                 if (repoData != null)
                 {
                     PlatformData platformData = repoData.Images
@@ -82,12 +80,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        this.LoggerService.WriteMessage($"Unable to find image info data for path '{platform.DockerfilePath}'.");
+                        LoggerService.WriteMessage($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                     }
                 }
                 else
                 {
-                    this.LoggerService.WriteMessage($"Unable to find image info data for repo '{repo.Name}'.");
+                    LoggerService.WriteMessage($"Unable to find image info data for repo '{repo.Name}'.");
                 }
             }
             else

@@ -11,26 +11,26 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class VssConnectionWrapper : IVssConnection
     {
-        private readonly VssConnection inner;
+        private readonly VssConnection _inner;
 
         public VssConnectionWrapper(VssConnection inner)
         {
-            this.inner = inner ?? throw new ArgumentNullException(nameof(inner));
+            _inner = inner ?? throw new ArgumentNullException(nameof(inner));
         }
 
         public void Dispose()
         {
-            this.inner.Dispose();
+            _inner.Dispose();
         }
 
         public IProjectHttpClient GetProjectHttpClient()
         {
-            return new ProjectHttpClientWrapper(this.inner.GetClient<ProjectHttpClient>());
+            return new ProjectHttpClientWrapper(_inner.GetClient<ProjectHttpClient>());
         }
 
         public IBuildHttpClient GetBuildHttpClient()
         {
-            return new BuildHttpClientWrapper(this.inner.GetClient<BuildHttpClient>());
+            return new BuildHttpClientWrapper(_inner.GetClient<BuildHttpClient>());
         }
     }
 }

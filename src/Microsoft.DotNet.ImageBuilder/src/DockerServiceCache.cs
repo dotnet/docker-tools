@@ -14,49 +14,49 @@ namespace Microsoft.DotNet.ImageBuilder
     /// </summary>
     internal class DockerServiceCache : IDockerService
     {
-        private readonly IDockerService inner;
-        private readonly ConcurrentDictionary<string, DateTime> createdDateCache = new ConcurrentDictionary<string, DateTime>();
-        private readonly ImageDigestCache imageDigestCache;
-        private readonly ConcurrentDictionary<string, long> imageSizeCache = new ConcurrentDictionary<string, long>();
-        private readonly ConcurrentDictionary<string, bool> localImageExistsCache = new ConcurrentDictionary<string, bool>();
-        private readonly ConcurrentDictionary<string, bool> pulledImages = new ConcurrentDictionary<string, bool>();
+        private readonly IDockerService _inner;
+        private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new ConcurrentDictionary<string, DateTime>();
+        private readonly ImageDigestCache _imageDigestCache;
+        private readonly ConcurrentDictionary<string, long> _imageSizeCache = new ConcurrentDictionary<string, long>();
+        private readonly ConcurrentDictionary<string, bool> _localImageExistsCache = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, bool> _pulledImages = new ConcurrentDictionary<string, bool>();
 
         public DockerServiceCache(IDockerService inner)
         {
-            this.inner = inner;
-            this.imageDigestCache = new ImageDigestCache(inner);
+            _inner = inner;
+            _imageDigestCache = new ImageDigestCache(inner);
         }
 
-        public Architecture Architecture => inner.Architecture;
+        public Architecture Architecture => _inner.Architecture;
 
         public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun) =>
-            inner.BuildImage(dockerfilePath, buildContextPath, tags, buildArgs, isRetryEnabled, isDryRun);
+            _inner.BuildImage(dockerfilePath, buildContextPath, tags, buildArgs, isRetryEnabled, isDryRun);
 
         public void CreateTag(string image, string tag, bool isDryRun) =>
-            inner.CreateTag(image, tag, isDryRun);
+            _inner.CreateTag(image, tag, isDryRun);
 
         public DateTime GetCreatedDate(string image, bool isDryRun) =>
-            createdDateCache.GetOrAdd(image, _ => inner.GetCreatedDate(image, isDryRun));
+            _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun));
 
         public string GetImageDigest(string image, bool isDryRun) =>
-            imageDigestCache.GetImageDigest(image, isDryRun);
+            _imageDigestCache.GetImageDigest(image, isDryRun);
 
         public long GetImageSize(string image, bool isDryRun) =>
-            imageSizeCache.GetOrAdd(image, _ => inner.GetImageSize(image, isDryRun));
+            _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));
         
         public bool LocalImageExists(string tag, bool isDryRun) =>
-            localImageExistsCache.GetOrAdd(tag, _ => inner.LocalImageExists(tag, isDryRun));
+            _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
         
         public void PullImage(string image, bool isDryRun)
         {
-            pulledImages.GetOrAdd(image, _ =>
+            _pulledImages.GetOrAdd(image, _ =>
             {
-                inner.PullImage(image, isDryRun);
+                _inner.PullImage(image, isDryRun);
                 return true;
             });
         }
 
         public void PushImage(string tag, bool isDryRun) =>
-            inner.PushImage(tag, isDryRun);
+            _inner.PushImage(tag, isDryRun);
     }
 }

@@ -14,20 +14,20 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageBuilder
     {
-        private static CompositionContainer container;
+        private static CompositionContainer s_container;
 
         public static CompositionContainer Container
         {
             get
             {
-                if (container == null)
+                if (s_container == null)
                 {
                     string dllLocation = Assembly.GetExecutingAssembly().Location;
                     DirectoryCatalog catalog = new DirectoryCatalog(Path.GetDirectoryName(dllLocation), Path.GetFileName(dllLocation));
-                    container = new CompositionContainer(catalog);
+                    s_container = new CompositionContainer(catalog);
                 }
 
-                return container;
+                return s_container;
             }
         }
 

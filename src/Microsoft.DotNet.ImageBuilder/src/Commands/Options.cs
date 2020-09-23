@@ -6,7 +6,6 @@ using System;
 using System.CommandLine;
 using System.Linq;
 using System.Reflection;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {

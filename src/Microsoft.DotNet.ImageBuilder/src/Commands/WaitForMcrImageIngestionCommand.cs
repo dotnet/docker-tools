@@ -16,38 +16,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions>
     {
-        private readonly ILoggerService loggerService;
-        private readonly IMcrStatusClientFactory mcrStatusClientFactory;
-        private readonly IEnvironmentService environmentService;
+        private readonly ILoggerService _loggerService;
+        private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
+        private readonly IEnvironmentService _environmentService;
 
         [ImportingConstructor]
         public WaitForMcrImageIngestionCommand(
             ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
         {
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
-            this.environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
+            _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
         public override async Task ExecuteAsync()
         {
-            loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
+            _loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
 
             if (!Options.IsDryRun)
             {
-                IMcrStatusClient statusClient = this.mcrStatusClientFactory.Create(
+                IMcrStatusClient statusClient = _mcrStatusClientFactory.Create(
                     Options.ServicePrincipal.Tenant,
                     Options.ServicePrincipal.ClientId,
                     Options.ServicePrincipal.Secret);
 
-                IEnumerable<ImageResultInfo> imageResultInfos = await this.WaitForImageIngestionAsync(statusClient);
+                IEnumerable<ImageResultInfo> imageResultInfos = await WaitForImageIngestionAsync(statusClient);
 
-                loggerService.WriteMessage();
+                _loggerService.WriteMessage();
 
-                await this.LogResults(statusClient, imageResultInfos);
+                await LogResults(statusClient, imageResultInfos);
             }
 
-            loggerService.WriteMessage("Image ingestion complete!");
+            _loggerService.WriteMessage("Image ingestion complete!");
         }
 
         private static IEnumerable<DigestInfo> GetImageDigestInfos(ImageArtifactDetails imageArtifactDetails) =>
@@ -69,13 +69,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task LogResults(IMcrStatusClient statusClient, IEnumerable<ImageResultInfo> imageResultInfos)
         {
-            this.loggerService.WriteHeading("IMAGE RESULTS");
+            _loggerService.WriteHeading("IMAGE RESULTS");
 
             List<Task<string>> failedStatusTasks = new List<Task<string>>();
 
             IEnumerable<ImageResultInfo> failedResults = imageResultInfos
                 // Find any result where all of the statuses of a given tag have failed
-                .Where(result =>  result.ImageResult.Value
+                .Where(result => result.ImageResult.Value
                     .Where(status => ShouldProcessImageStatus(status, result.DigestInfo))
                     .GroupBy(status => status.Tag)
                     .Any(statusGroup => statusGroup.All(status => status.OverallStatus == StageStatus.Failed)))
@@ -100,39 +100,39 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (failedStatusTasks.Any())
             {
-                this.loggerService.WriteMessage();
-                this.loggerService.WriteMessage("Querying details of failed results...");
-                this.loggerService.WriteMessage();
+                _loggerService.WriteMessage();
+                _loggerService.WriteMessage("Querying details of failed results...");
+                _loggerService.WriteMessage();
 
                 await Task.WhenAll(failedStatusTasks);
             }
 
             if (successfulResults.Any())
             {
-                this.loggerService.WriteSubheading("Successful results");
+                _loggerService.WriteSubheading("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
                 {
-                    this.loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo.Repo, imageResult.DigestInfo.Digest));
-                    string tags = String.Join(", ",
+                    _loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo.Repo, imageResult.DigestInfo.Digest));
+                    string tags = string.Join(", ",
                         imageResult.ImageResult.Value
                             .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
                             .Select(imageStatus => imageStatus.Tag));
-                    this.loggerService.WriteMessage($"\tTags: {tags}");
-                    this.loggerService.WriteMessage();
+                    _loggerService.WriteMessage($"\tTags: {tags}");
+                    _loggerService.WriteMessage();
                 }
             }
 
             if (failedStatusTasks.Any())
             {
-                this.loggerService.WriteSubheading("Failed results");
+                _loggerService.WriteSubheading("Failed results");
 
                 foreach (Task<string> failedStatusTask in failedStatusTasks)
                 {
-                    this.loggerService.WriteError(failedStatusTask.Result);
-                    this.loggerService.WriteMessage();
+                    _loggerService.WriteError(failedStatusTask.Result);
+                    _loggerService.WriteMessage();
                 }
 
-                this.environmentService.Exit(1);
+                _environmentService.Exit(1);
             }
         }
 
@@ -202,7 +202,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             stringBuilder.AppendLine($"Querying image status for '{qualifiedDigest}'");
             stringBuilder.AppendLine("Remaining tags:");
             digestInfo.RemainingTags.ForEach(tag => stringBuilder.AppendLine(tag));
-            this.loggerService.WriteMessage(stringBuilder.ToString());
+            _loggerService.WriteMessage(stringBuilder.ToString());
 
             ImageResult imageResult = await statusClient.GetImageResultAsync(digestInfo.Digest);
 
@@ -215,7 +215,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 stringBuilder.AppendLine();
                 stringBuilder.AppendLine($"Image status results for '{qualifiedDigest}':");
 
-                var statusesByTag = imageStatuses.GroupBy(status => status.Tag);
+                IEnumerable<IGrouping<string, ImageStatus>> statusesByTag = imageStatuses.GroupBy(status => status.Tag);
 
                 foreach (IGrouping<string, ImageStatus> tagImageStatuses in statusesByTag)
                 {
@@ -248,7 +248,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 }
 
-                this.loggerService.WriteMessage(stringBuilder.ToString());
+                _loggerService.WriteMessage(stringBuilder.ToString());
             }
 
             return new ImageResultInfo

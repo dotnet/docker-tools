@@ -15,12 +15,12 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private const string McrStatusResource = "https://microsoft.onmicrosoft.com/a4f1cc9d-1767-4c82-a9a9-8a808b66b527";
         private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v1";
-        private readonly HttpClient httpClient;
-        private readonly string tenant;
-        private readonly string clientId;
-        private readonly string clientSecret;
-        private readonly AsyncLockedValue<string> accessToken = new AsyncLockedValue<string>();
-        private readonly AsyncPolicy<HttpResponseMessage> httpPolicy;
+        private readonly HttpClient _httpClient;
+        private readonly string _tenant;
+        private readonly string _clientId;
+        private readonly string _clientSecret;
+        private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
+        private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
 
         public McrStatusClient(HttpClient httpClient, string tenant, string clientId, string clientSecret, ILoggerService loggerService)
         {
@@ -29,13 +29,13 @@ namespace Microsoft.DotNet.ImageBuilder
                 throw new ArgumentNullException(nameof(loggerService));
             }
 
-            this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            this.tenant = tenant ?? throw new ArgumentNullException(nameof(tenant));
-            this.clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
-            this.clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
-            this.httpPolicy = HttpPolicyBuilder.Create()
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _tenant = tenant ?? throw new ArgumentNullException(nameof(tenant));
+            _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
+            _clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
+            _httpPolicy = HttpPolicyBuilder.Create()
                 .WithMeteredRetryPolicy(loggerService)
-                .WithRefreshAccessTokenPolicy(this.RefreshAccessTokenAsync, loggerService)
+                .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, loggerService)
                 .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), loggerService)
                 .Build();
         }
@@ -66,16 +66,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private async Task<T> SendRequestAsync<T>(Func<HttpRequestMessage> message)
         {
-            HttpResponseMessage response = await this.httpClient.SendRequestAsync(message, GetAccessTokenAsync, this.httpPolicy);
+            HttpResponseMessage response = await _httpClient.SendRequestAsync(message, GetAccessTokenAsync, _httpPolicy);
             return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
         }
 
         private Task<string> GetAccessTokenAsync() =>
-            this.accessToken.GetValueAsync(
-                () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, this.tenant, this.clientId, this.clientSecret));
+            _accessToken.GetValueAsync(
+                () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, _tenant, _clientId, _clientSecret));
 
         private Task RefreshAccessTokenAsync() =>
-            this.accessToken.ResetValueAsync(
-                () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, this.tenant, this.clientId, this.clientSecret));
+            _accessToken.ResetValueAsync(
+                () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, _tenant, _clientId, _clientSecret));
     }
 }

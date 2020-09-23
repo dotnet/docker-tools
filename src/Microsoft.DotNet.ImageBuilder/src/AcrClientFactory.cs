@@ -11,19 +11,19 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IAcrClientFactory))]
     public class AcrClientFactory : IAcrClientFactory
     {
-        private readonly ILoggerService loggerService;
-        private readonly IHttpClientProvider httpClientProvider;
+        private readonly ILoggerService _loggerService;
+        private readonly IHttpClientProvider _httpClientProvider;
 
         [ImportingConstructor]
         public AcrClientFactory(ILoggerService loggerService, IHttpClientProvider httpClientProvider)
         {
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            this.httpClientProvider = httpClientProvider;
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _httpClientProvider = httpClientProvider;
         }
 
         public Task<IAcrClient> CreateAsync(string acrName, string tenant, string username, string password)
         {
-            return AcrClient.CreateAsync(acrName, tenant, username, password, loggerService, httpClientProvider);
+            return AcrClient.CreateAsync(acrName, tenant, username, password, _loggerService, _httpClientProvider);
         }
     }
 }

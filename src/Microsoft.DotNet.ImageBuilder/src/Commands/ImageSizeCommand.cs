@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public ImageSizeCommand(IDockerService dockerService)
         {
-            this.DockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
+            DockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }
 
         protected IDockerService DockerService { get; }
@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 IEnumerable<PlatformInfo> platforms = repo.FilteredImages
                     .SelectMany(image => image.FilteredPlatforms);
-                
+
                 foreach (PlatformInfo platform in platforms)
                 {
                     string tagName = platform.Tags.First().FullyQualifiedName;

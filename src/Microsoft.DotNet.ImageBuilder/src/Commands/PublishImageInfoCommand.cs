@@ -18,9 +18,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
     {
-        private readonly IGitHubClientFactory gitHubClientFactory;
-        private readonly ILoggerService loggerService;
-        private readonly HttpClient httpClient;
+        private readonly IGitHubClientFactory _gitHubClientFactory;
+        private readonly ILoggerService _loggerService;
+        private readonly HttpClient _httpClient;
 
         [ImportingConstructor]
         public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientProvider httpClientFactory)
@@ -30,10 +30,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 throw new ArgumentNullException(nameof(httpClientFactory));
             }
 
-            this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
 
-            this.httpClient = httpClientFactory.GetClient();
+            _httpClient = httpClientFactory.GetClient();
         }
 
         public override async Task ExecuteAsync()
@@ -43,17 +43,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (imageInfoGitObject is null)
             {
-                loggerService.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
+                _loggerService.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
                 return;
             }
 
-            loggerService.WriteMessage(
+            _loggerService.WriteMessage(
                 $"The '{imageInfoPathIdentifier}' file has been updated with the following content:" +
                     Environment.NewLine + imageInfoGitObject.Content + Environment.NewLine);
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
                     GitReference gitRef = await GitHelper.PushChangesAsync(
@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         branch => Task.FromResult<IEnumerable<GitObject>>(new GitObject[] { imageInfoGitObject }));
 
                     Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
-                    loggerService.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
+                    _loggerService.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
                 });
             }
         }
@@ -70,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, Options.GitOptions);
+            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(_httpClient, Options.GitOptions);
             try
             {
                 string repoImageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
             {
                 RepoData repoData = imageArtifactDetails.Repos[repoIndex];
-                
+
                 // Since the registry name is not represented in the image info, make sure to compare the repo name with the
                 // manifest's repo model name which isn't registry-qualified.
                 RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
@@ -153,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         repoData.Images.Remove(imageData);
                         continue;
                     }
-                    
+
                     for (int platformIndex = imageData.Platforms.Count - 1; platformIndex >= 0; platformIndex--)
                     {
                         PlatformData platformData = imageData.Platforms[platformIndex];

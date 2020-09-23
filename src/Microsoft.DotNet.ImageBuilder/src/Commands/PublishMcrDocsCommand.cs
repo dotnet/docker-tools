@@ -19,22 +19,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
     {
         private const string McrTagsPlaceholder = "Tags go here.";
-        private readonly IGitService gitService;
-        private readonly IGitHubClientFactory gitHubClientFactory;
-        private readonly ILoggerService loggerService;
+        private readonly IGitService _gitService;
+        private readonly IGitHubClientFactory _gitHubClientFactory;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
             ILoggerService loggerService) : base()
         {
-            this.gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-            this.gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override async Task ExecuteAsync()
         {
-            loggerService.WriteHeading("PUBLISHING MCR DOCS");
+            _loggerService.WriteHeading("PUBLISHING MCR DOCS");
 
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
@@ -45,13 +45,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (GitObject gitObject in gitObjects)
             {
-                this.loggerService.WriteMessage(
+                _loggerService.WriteMessage(
                     $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
             }
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = this.gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
 
                 await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
                 {
@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (gitRef != null)
                     {
-                        this.loggerService.WriteMessage(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                        _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
                 });
             }
@@ -77,11 +77,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
                 if (currentContent == gitObject.Content)
                 {
-                    this.loggerService.WriteMessage($"File '{gitObject.Path}' has not changed.");
+                    _loggerService.WriteMessage($"File '{gitObject.Path}' has not changed.");
                 }
                 else
                 {
-                    this.loggerService.WriteMessage($"File '{gitObject.Path}' has changed.");
+                    _loggerService.WriteMessage($"File '{gitObject.Path}' has changed.");
                     updatedGitObjects.Add(gitObject);
                 }
             }
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                string updatedMetadata = McrTagsMetadataGenerator.Execute(this.gitService, Manifest, repo, Options.SourceRepoUrl);
+                string updatedMetadata = McrTagsMetadataGenerator.Execute(_gitService, Manifest, repo, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
                 metadata.Add(GetGitObject(GetProductRepoName(repo), metadataFileName, updatedMetadata));
             }

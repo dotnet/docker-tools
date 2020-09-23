@@ -10,17 +10,17 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IMcrStatusClientFactory))]
     public class McrStatusClientFactory : IMcrStatusClientFactory
     {
-        private readonly IHttpClientProvider httpClientProvider;
-        private readonly ILoggerService loggerService;
+        private readonly IHttpClientProvider _httpClientProvider;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public McrStatusClientFactory(IHttpClientProvider httpClientProvider, ILoggerService loggerService)
         {
-            this.httpClientProvider = httpClientProvider ?? throw new ArgumentNullException(nameof(httpClientProvider));
-            this.loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _httpClientProvider = httpClientProvider ?? throw new ArgumentNullException(nameof(httpClientProvider));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public IMcrStatusClient Create(string tenant, string clientId, string clientSecret) =>
-            new McrStatusClient(this.httpClientProvider.GetClient(), tenant, clientId, clientSecret, this.loggerService);
+            new McrStatusClient(_httpClientProvider.GetClient(), tenant, clientId, clientSecret, _loggerService);
     }
 }

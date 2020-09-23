@@ -110,19 +110,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public IEnumerable<PlatformInfo> GetAllPlatforms() => GetAllImages().SelectMany(image => image.AllPlatforms);
 
-        private IEnumerable<TagInfo> GetAllTags()
-        {
-            IEnumerable<ImageInfo> images = GetAllImages()
-                .ToArray();
-            IEnumerable<TagInfo> sharedTags = images
-                .SelectMany(image => image.SharedTags);
-            IEnumerable<TagInfo> platformTags = images
-                .SelectMany(image => image.AllPlatforms)
-                .SelectMany(platform => platform.Tags);
-            return sharedTags
-                .Concat(platformTags);
-        }
-
         public IEnumerable<string> GetExternalFromImages()
         {
             return GetFilteredImages()

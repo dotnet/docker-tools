@@ -28,12 +28,12 @@ namespace Microsoft.DotNet.ImageBuilder
                     Console.WriteLine($"Image info repo not loaded: {repoData.Repo}");
                     continue;
                 }
+
                 foreach (ImageData imageData in repoData.Images)
                 {
                     imageData.ManifestRepo = manifestRepo;
 
-                    PlatformData platformData = imageData.Platforms.FirstOrDefault();
-                    if (platformData != null)
+                    foreach (PlatformData platformData in imageData.Platforms)
                     {
                         foreach (ImageInfo manifestImage in manifestRepo.AllImages)
                         {
@@ -41,18 +41,23 @@ namespace Microsoft.DotNet.ImageBuilder
                                 .FirstOrDefault(platform => platformData.Equals(platform));
                             if (matchingManifestPlatform != null)
                             {
-                                imageData.ManifestImage = manifestImage;
+                                if (imageData.ManifestImage is null)
+                                {
+                                    imageData.ManifestImage = manifestImage;
+                                }
+                                
                                 platformData.PlatformInfo = matchingManifestPlatform;
                                 platformData.ImageInfo = manifestImage;
                                 break;
                             }
                         }
+                    }
 
-                        if (!skipManifestValidation && imageData.ManifestImage == null)
-                        {
-                            throw new InvalidOperationException(
-                                $"Unable to find matching platform in manifest for platform '{platformData.GetIdentifier()}'.");
-                        }
+                    PlatformData representativePlatform = imageData.Platforms.FirstOrDefault();
+                    if (!skipManifestValidation && imageData.ManifestImage == null && representativePlatform != null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unable to find matching platform in manifest for platform '{representativePlatform.GetIdentifier()}'.");
                     }
                 }
             }

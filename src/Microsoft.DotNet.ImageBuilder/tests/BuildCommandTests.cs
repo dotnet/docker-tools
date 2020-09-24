@@ -763,12 +763,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
-            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
-            const string tag = "tag";
-            const string baseImageRepo = "baserepo";
-            string baseImageTag = $"{baseImageRepo}:basetag";
-            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha";
+            string runtimeDepsLinuxDigest = $"{runtimeDepsRepo}@sha1-linux";
+            string runtimeDepsWindowsDigest = $"{runtimeDepsRepo}@sha1-windows";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1-linux";
+            const string linuxTag = "linux-tag";
+            const string windowsTag = "windows-tag";
+            const string linuxBaseImageRepo = "linux-baserepo";
+            const string windowsBaseImageRepo = "windows-baserepo";
+            string linuxBaseImageTag = $"{linuxBaseImageRepo}:basetag";
+            string windowsBaseImageTag = $"{windowsBaseImageRepo}:basetag";
+            string runtimeDepsLinuxBaseImageDigest = $"{linuxBaseImageRepo}@sha";
+            string runtimeDepsWindowsBaseImageDigest = $"{windowsBaseImageRepo}@sha";
             const string currentRuntimeDepsCommitSha = "commit-sha";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -776,33 +781,51 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false))
-                .Returns(runtimeDepsDigest);
+                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{linuxTag}", false))
+                .Returns(runtimeDepsLinuxDigest);
 
             dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false))
+                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{windowsTag}", false))
+                .Returns(runtimeDepsWindowsDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeDeps2Repo}:{linuxTag}", false))
                 .Returns(runtimeDeps2Digest);
 
             dockerServiceMock
-                .Setup(o => o.GetImageDigest(baseImageTag, false))
-                .Returns(runtimeDepsBaseImageDigest);
+                .Setup(o => o.GetImageDigest(linuxBaseImageTag, false))
+                .Returns(runtimeDepsLinuxBaseImageDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest(windowsBaseImageTag, false))
+                .Returns(runtimeDepsWindowsBaseImageDigest);
 
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{linuxTag}", false))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+               .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{windowsTag}", false))
+               .Returns(createdDate);
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{linuxTag}", false))
                 .Returns(createdDate);
 
-            string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-                "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
+            string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime-deps/linux", tempFolderContext, linuxBaseImageTag);
+
+            string runtimeDepsWindowsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime-deps/windows", tempFolderContext, windowsBaseImageTag);
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
             gitServiceMock
-                .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
+                .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
+                .Returns(currentRuntimeDepsCommitSha);
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsWindowsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
             BuildCommand command = new BuildCommand(
@@ -831,18 +854,40 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 new PlatformData
                                 {
-                                    Dockerfile = runtimeDepsDockerfileRelativePath,
+                                    Dockerfile = runtimeDepsLinuxDockerfileRelativePath,
                                     Architecture = "amd64",
                                     OsType = "Linux",
                                     OsVersion = "Ubuntu 19.04",
-                                    Digest = runtimeDepsDigest,
-                                    BaseImageDigest = runtimeDepsBaseImageDigest,
+                                    Digest = runtimeDepsLinuxDigest,
+                                    BaseImageDigest = runtimeDepsLinuxBaseImageDigest,
                                     Created = createdDate.ToUniversalTime(),
                                     SimpleTags =
                                     {
-                                        tag
+                                        linuxTag
                                     },
-                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}"
+                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsLinuxDockerfileRelativePath}"
+                                },
+                                new PlatformData
+                                {
+                                    Dockerfile = runtimeDepsWindowsDockerfileRelativePath,
+                                    Architecture = "amd64",
+                                    OsType = "Windows",
+                                    OsVersion = "Windows Server, version 2004",
+                                    Digest = runtimeDepsWindowsDigest,
+                                    BaseImageDigest = runtimeDepsWindowsBaseImageDigest,
+                                    Created = createdDate.ToUniversalTime(),
+                                    SimpleTags =
+                                    {
+                                        linuxTag
+                                    },
+                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsWindowsDockerfileRelativePath}"
+                                }
+                            },
+                            Manifest = new ManifestData
+                            {
+                                SharedTags = new List<string>
+                                {
+                                    "shared"
                                 }
                             }
                         }
@@ -863,14 +908,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
+                            CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { linuxTag }),
+                            CreatePlatform(
+                                runtimeDepsWindowsDockerfileRelativePath,
+                                new string[] { windowsTag },
+                                OS.Windows,
+                                "nanoserver-2004")
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            { "shared", new Tag() }
                         },
                         productVersion: ProductVersion)),
                 CreateRepo(runtimeDeps2Repo,
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
+                            CreatePlatform(runtimeDepsLinuxDockerfileRelativePath, new string[] { linuxTag })
                         },
                         productVersion: ProductVersion))
             );
@@ -896,19 +950,42 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Dockerfile = runtimeDepsLinuxDockerfileRelativePath,
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
-                                        Digest = runtimeDepsDigest,
-                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        Digest = runtimeDepsLinuxDigest,
+                                        BaseImageDigest = runtimeDepsLinuxBaseImageDigest,
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =
                                         {
-                                            tag
+                                            linuxTag
                                         },
-                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsLinuxDockerfileRelativePath}",
                                         IsCached = true
+                                    },
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsWindowsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Windows",
+                                        OsVersion = "Windows Server, version 2004",
+                                        Digest = runtimeDepsWindowsDigest,
+                                        BaseImageDigest = runtimeDepsWindowsBaseImageDigest,
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags =
+                                        {
+                                            windowsTag
+                                        },
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsWindowsDockerfileRelativePath}",
+                                        IsCached = true
+                                    },
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = new List<string>
+                                    {
+                                        "shared"
                                     }
                                 }
                             }
@@ -926,18 +1003,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Dockerfile = runtimeDepsLinuxDockerfileRelativePath,
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
                                         Digest = runtimeDeps2Digest,
-                                        BaseImageDigest = runtimeDepsBaseImageDigest,
+                                        BaseImageDigest = runtimeDepsLinuxBaseImageDigest,
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =
                                         {
-                                            tag
+                                            linuxTag
                                         },
-                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsLinuxDockerfileRelativePath}",
                                         IsCached = true
                                     }
                                 }
@@ -952,11 +1029,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsWindowsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{linuxTag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{windowsTag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{linuxTag}", false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),

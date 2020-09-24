@@ -229,7 +229,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private bool CheckForCachedImage(
             ImageData? srcImageData, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
         {
-            if (platformData != null && _cachedDockerfilePaths.TryGetValue(GetBuildCacheKey(platform), out BuildCacheInfo? cacheInfo))
+            string cacheKey = GetBuildCacheKey(platform);
+            if (platformData != null && _cachedDockerfilePaths.TryGetValue(cacheKey, out BuildCacheInfo? cacheInfo))
             {
                 OnCacheHit(allTags, pullImage: false, cacheInfo.Digest);
                 platformData.BaseImageDigest = cacheInfo.BaseImageDigest;
@@ -254,7 +255,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
 
-                            _cachedDockerfilePaths[GetBuildCacheKey(srcPlatformData.PlatformInfo)] =
+                            _cachedDockerfilePaths[cacheKey] =
                                 new BuildCacheInfo(srcPlatformData.Digest, platformData.BaseImageDigest);
                         }
                     }

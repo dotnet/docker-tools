@@ -391,13 +391,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // In that scenario, the digest that is retrieved will be based on the repo of the first repository
                 // encountered. For subsequent cache hits on different repositories, we need to prepopulate the digest
                 // cache with a digest value that would correspond to that repository, not the original repository.
-                sourceDigest = DockerHelper.GetImageName(
+                string newDigest = DockerHelper.GetImageName(
                     Manifest.Model.Registry, repo.Model.Name, digest: DockerHelper.GetDigestSha(sourceDigest));
 
                 // Populate the digest cache with the known digest value for the tags assigned to the image.
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
                 // because they haven't yet been pushed to staging by that time.
-                _imageDigestCache.AddDigest(tag, sourceDigest);
+                _imageDigestCache.AddDigest(tag, newDigest);
             });
         }
 

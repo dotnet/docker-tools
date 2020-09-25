@@ -494,10 +494,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             _outputHelper.WriteLine($"Running scenario '{scenario}'");
 
+            const string registry = "mcr.microsoft.com";
+            const string registryOverride = "new-registry.azurecr.io";
+            const string repoPrefixOverride = "test/";
+            string overridePrefix = $"{registryOverride}/{repoPrefixOverride}";
+
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@{currentRuntimeDepsImageSha}";
-            string runtimeDigest = $"{runtimeRepo}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            string runtimeDepsRepoQualified = $"{registry}/{runtimeDepsRepo}";
+            string runtimeRepoQualified = $"{registry}/{runtimeRepo}";
+            string runtimeDepsDigest = $"{runtimeDepsRepoQualified}@{currentRuntimeDepsImageSha}";
+            string runtimeDigest = $"{runtimeRepoQualified}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
@@ -508,12 +515,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetImageDigest($"{runtimeDepsRepoQualified}:{tag}", false))
                 .Returns(runtimeDepsDigest);
 
             dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{runtimeRepo}:{tag}", false))
+                .Setup(o => o.GetImageDigest($"{overridePrefix}{runtimeDepsRepo}:{tag}", false))
+                .Returns(runtimeDepsDigest);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{runtimeRepoQualified}:{tag}", false))
                 .Returns(runtimeDigest);
+
+            dockerServiceMock
+               .Setup(o => o.GetImageDigest($"{overridePrefix}{runtimeRepo}:{tag}", false))
+               .Returns(runtimeDigest);
 
             dockerServiceMock
                 .Setup(o => o.GetImageDigest(baseImageTag, false))
@@ -522,17 +537,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false))
                 .Returns(createdDate);
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeRepo}:{tag}", false))
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
 
             string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-                "1.0/runtime/os", tempFolderContext, $"{runtimeDepsRepo}:{tag}");
+                "1.0/runtime/os", tempFolderContext, $"{runtimeDepsRepoQualified}:{tag}");
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
             gitServiceMock
@@ -551,6 +566,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.RegistryOverride = registryOverride;
+            command.Options.RepoPrefix = repoPrefixOverride; ;
 
             const string ProductVersion = "1.0.1";
 
@@ -616,7 +633,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 19.04",
                                         Digest = runtimeDigest,
-                                        BaseImageDigest = $"{runtimeDepsRepo}@{sourceRuntimeDepsImageSha}",
+                                        BaseImageDigest = $"{runtimeDepsRepoQualified}@{sourceRuntimeDepsImageSha}",
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =
                                         {
@@ -658,6 +675,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         productVersion: ProductVersion))
             );
+            manifest.Registry = registry;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -745,12 +763,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Times expectedTimes = isRuntimeDepsCached ? Times.Once() : Times.Never();
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{overridePrefix}{runtimeDepsRepo}:shared", false), expectedTimes);
 
             expectedTimes = isRuntimeCached ? Times.Once() : Times.Never();
             dockerServiceMock.Verify(o => o.PullImage(runtimeDigest, false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{runtimeRepo}:{tag}", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
         }
 
         /// <summary>

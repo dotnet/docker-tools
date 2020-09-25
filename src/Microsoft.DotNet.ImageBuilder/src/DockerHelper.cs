@@ -143,6 +143,26 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
 
+        public static string GetImageName(string registry, string repo, string tag = null, string digest = null)
+        {
+            if (tag != null && digest != null)
+            {
+                throw new InvalidOperationException($"Invalid to provide both the {nameof(tag)} and {nameof(digest)} arguments.");
+            }
+
+            string imageName = $"{registry}/{repo}";
+            if (tag != null)
+            {
+                return $"{imageName}:{tag}";
+            }
+            else if (digest != null)
+            {
+                return $"{imageName}@{digest}";
+            }
+
+            return imageName;
+        }
+
         /// <remarks>
         /// This method depends on the experimental Docker CLI `manifest` command.  As a result, this method
         /// should only used for developer usage scenarios.

@@ -204,7 +204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData? platformData = CreatePlatformData(image, platform);
                         imageData?.Platforms.Add(platformData);
 
-                        bool isCachedImage = !Options.NoCache && CheckForCachedImage(srcImageData, platform, allTags, platformData);
+                        bool isCachedImage = !Options.NoCache && CheckForCachedImage(srcImageData, repoInfo, platform, allTags, platformData);
 
                         if (!isCachedImage)
                         {
@@ -227,12 +227,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private bool CheckForCachedImage(
-            ImageData? srcImageData, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
+            ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
         {
             string cacheKey = GetBuildCacheKey(platform);
             if (platformData != null && _cachedDockerfilePaths.TryGetValue(cacheKey, out BuildCacheInfo? cacheInfo))
             {
-                OnCacheHit(allTags, pullImage: false, cacheInfo.Digest);
+                OnCacheHit(repo, allTags, pullImage: false, cacheInfo.Digest);
                 platformData.BaseImageDigest = cacheInfo.BaseImageDigest;
                 platformData.IsCached = true;
                 return true;
@@ -246,7 +246,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // If this Dockerfile has been built and published before
                 if (srcPlatformData != null)
                 {
-                    isCachedImage = CheckForCachedImageFromImageInfo(platform, srcPlatformData, allTags);
+                    isCachedImage = CheckForCachedImageFromImageInfo(repo, platform, srcPlatformData, allTags);
 
                     if (platformData != null)
                     {
@@ -349,7 +349,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private bool CheckForCachedImageFromImageInfo(PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
+        private bool CheckForCachedImageFromImageInfo(RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
         {
             _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
@@ -359,7 +359,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IsDockerfileUpToDate(platform, srcPlatformData) &&
                 IsFullyQualifiedDigest(srcPlatformData))
             {
-                OnCacheHit(allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
+                OnCacheHit(repo, allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
                 return true;
             }
 
@@ -369,7 +369,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return false;
         }
 
-        private void OnCacheHit(IEnumerable<string> allTags, bool pullImage, string sourceDigest)
+        private void OnCacheHit(RepoInfo repo, IEnumerable<string> allTags, bool pullImage, string sourceDigest)
         {
             _loggerService.WriteMessage();
             _loggerService.WriteMessage("CACHE HIT");
@@ -391,7 +391,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // In that scenario, the digest that is retrieved will be based on the repo of the first repository
                 // encountered. For subsequent cache hits on different repositories, we need to prepopulate the digest
                 // cache with a digest value that would correspond to that repository, not the original repository.
-                sourceDigest = DockerHelper.ReplaceRepo(sourceDigest, DockerHelper.GetRepo(tag));
+                sourceDigest = DockerHelper.GetImageName(
+                    Manifest.Model.Registry, repo.Model.Name, digest: DockerHelper.GetDigestSha(sourceDigest));
 
                 // Populate the digest cache with the known digest value for the tags assigned to the image.
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags

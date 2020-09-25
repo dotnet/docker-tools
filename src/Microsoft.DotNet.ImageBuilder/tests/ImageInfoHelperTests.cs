@@ -104,6 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Same(expectedImage, image.ManifestImage);
             Assert.Same(expectedRepo, image.ManifestRepo);
 
+            Assert.Same(expectedImage, image.Platforms.First().ImageInfo);
             Assert.Same(expectedImage.AllPlatforms.First(), image.Platforms.First().PlatformInfo);
             Assert.Same(expectedImage.AllPlatforms.Last(), image.Platforms.Last().PlatformInfo);
         }

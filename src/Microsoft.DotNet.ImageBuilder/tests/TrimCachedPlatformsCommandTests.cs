@@ -38,14 +38,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 Platforms = new List<PlatformData>
                                 {
                                     new PlatformData(),
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { ExcludeFromPublish = true },
                                 }
                             },
                             new ImageData
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { ExcludeFromPublish = true },
                                 }
                             },
                             new ImageData
@@ -67,14 +67,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { ExcludeFromPublish = true },
                                 }
                             },
                             new ImageData
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { ExcludeFromPublish = true },
                                 }
                             }
                         }

@@ -229,41 +229,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private bool CheckForCachedImage(
             ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
         {
+            PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
+
             string cacheKey = GetBuildCacheKey(platform);
             if (platformData != null && _cachedDockerfilePaths.TryGetValue(cacheKey, out BuildCacheInfo? cacheInfo))
             {
                 OnCacheHit(repo, allTags, pullImage: false, cacheInfo.Digest);
                 platformData.BaseImageDigest = cacheInfo.BaseImageDigest;
-                platformData.IsCached = true;
+                platformData.ExcludeFromPublish = srcPlatformData != null &&
+                    CachedPlatformHasAllTagsPublished(srcPlatformData);
                 return true;
             }
 
             bool isCachedImage = false;
 
-            if (srcImageData != null)
+            // If this Dockerfile has been built and published before
+            if (srcPlatformData != null)
             {
-                PlatformData? srcPlatformData = srcImageData.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
-                // If this Dockerfile has been built and published before
-                if (srcPlatformData != null)
+                isCachedImage = CheckForCachedImageFromImageInfo(repo, platform, srcPlatformData, allTags);
+
+                if (platformData != null)
                 {
-                    isCachedImage = CheckForCachedImageFromImageInfo(repo, platform, srcPlatformData, allTags);
-
-                    if (platformData != null)
+                    platformData.ExcludeFromPublish = isCachedImage &&
+                        CachedPlatformHasAllTagsPublished(srcPlatformData);
+                    if (isCachedImage)
                     {
-                        platformData.IsCached = isCachedImage;
-                        if (isCachedImage)
-                        {
-                            platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
+                        platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
 
-                            _cachedDockerfilePaths[cacheKey] =
-                                new BuildCacheInfo(srcPlatformData.Digest, platformData.BaseImageDigest);
-                        }
+                        _cachedDockerfilePaths[cacheKey] =
+                            new BuildCacheInfo(srcPlatformData.Digest, platformData.BaseImageDigest);
                     }
                 }
             }
 
             return isCachedImage;
         }
+
+        private bool CachedPlatformHasAllTagsPublished(PlatformData srcPlatformData) =>
+            srcPlatformData.PlatformInfo.Tags
+                .Where(tag => !tag.Model.IsLocal)
+                .Select(tag => tag.Name)
+                .AreEquivalent(srcPlatformData.SimpleTags);
 
         private RepoData? CreateRepoData(RepoInfo repoInfo) =>
             Options.ImageInfoOutputPath is null ? null :

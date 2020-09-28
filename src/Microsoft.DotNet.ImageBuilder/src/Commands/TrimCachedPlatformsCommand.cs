@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     for (int i = image.Platforms.Count - 1; i >= 0; i--)
                     {
                         PlatformData platform = image.Platforms[i];
-                        if (platform.IsCached)
+                        if (platform.ExcludeFromPublish)
                         {
                             _loggerService.WriteMessage($"Removing cached platform '{platform.GetIdentifier()}'");
                             image.Platforms.Remove(platform);

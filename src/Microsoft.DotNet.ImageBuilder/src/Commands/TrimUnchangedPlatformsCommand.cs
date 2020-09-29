@@ -13,23 +13,23 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class TrimCachedPlatformsCommand : Command<TrimCachedPlatformsOptions>
+    public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
     {
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
-        public TrimCachedPlatformsCommand(ILoggerService loggerService)
+        public TrimUnchangedPlatformsCommand(ILoggerService loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("TRIMMING CACHED PLATFORMS");
+            _loggerService.WriteHeading("TRIMMING UNCHANGED PLATFORMS");
 
             string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
-            RemoveCachedPlatforms(imageArtifactDetails);
+            RemoveUnchangedPlatforms(imageArtifactDetails);
             imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
 
             if (!Options.IsDryRun)
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void RemoveCachedPlatforms(ImageArtifactDetails imageArtifactDetails)
+        private void RemoveUnchangedPlatforms(ImageArtifactDetails imageArtifactDetails)
         {
             for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
             {
@@ -49,9 +49,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     for (int i = image.Platforms.Count - 1; i >= 0; i--)
                     {
                         PlatformData platform = image.Platforms[i];
-                        if (platform.IsCached)
+                        if (platform.IsUnchanged)
                         {
-                            _loggerService.WriteMessage($"Removing cached platform '{platform.GetIdentifier()}'");
+                            _loggerService.WriteMessage($"Removing unchanged platform '{platform.GetIdentifier()}'");
                             image.Platforms.Remove(platform);
                         }
                     }

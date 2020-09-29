@@ -13,7 +13,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class TrimCachedPlatformsCommandTests
+    public class TrimUnchangedPlatformsCommandTests
     {
         [Fact]
         public async Task NoPlatforms()
@@ -38,14 +38,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 Platforms = new List<PlatformData>
                                 {
                                     new PlatformData(),
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { IsUnchanged = true },
                                 }
                             },
                             new ImageData
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { IsUnchanged = true },
                                 }
                             },
                             new ImageData
@@ -67,14 +67,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { IsUnchanged = true },
                                 }
                             },
                             new ImageData
                             {
                                 Platforms = new List<PlatformData>
                                 {
-                                    new PlatformData { IsCached = true },
+                                    new PlatformData { IsUnchanged = true },
                                 }
                             }
                         }
@@ -238,7 +238,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
-            TrimCachedPlatformsCommand command = new TrimCachedPlatformsCommand(Mock.Of<ILoggerService>());
+            TrimUnchangedPlatformsCommand command = new TrimUnchangedPlatformsCommand(Mock.Of<ILoggerService>());
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
 
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(input));

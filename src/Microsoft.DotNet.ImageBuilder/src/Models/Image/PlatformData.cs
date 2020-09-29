@@ -43,14 +43,14 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         public string CommitUrl { get; set; }
 
         /// <summary>
-        /// Gets or sets whether the image was retrieved as a cached image.
+        /// Gets or sets whether the image or its associated tag names have changed since it was last published.
         /// </summary>
         /// <remarks>
         /// Items with this state should only be used internally within a build. Such items
         /// should be stripped out of the published image info content.
         /// </remarks>
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
-        public bool IsCached { get; set; }
+        public bool IsUnchanged { get; set; }
 
         [JsonIgnore]
         public ImageInfo ImageInfo { get; set; }

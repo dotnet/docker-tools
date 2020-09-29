@@ -764,7 +764,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     "tag"
                 });
-            platform.IsCached = isCached;
+            platform.IsUnchanged = isCached;
             return platform;
         }
     }

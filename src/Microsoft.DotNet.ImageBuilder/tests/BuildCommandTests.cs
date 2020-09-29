@@ -710,7 +710,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                        ExcludeFromPublish = isRuntimeDepsCached
+                                        IsUnchanged = isRuntimeDepsCached
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -747,7 +747,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
-                                        ExcludeFromPublish = isRuntimeCached
+                                        IsUnchanged = isRuntimeCached
                                     }
                                 }
                             }
@@ -980,7 +980,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             linuxTag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsLinuxDockerfileRelativePath}",
-                                        ExcludeFromPublish = true
+                                        IsUnchanged = true
                                     },
                                     new PlatformData
                                     {
@@ -996,7 +996,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             windowsTag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsWindowsDockerfileRelativePath}",
-                                        ExcludeFromPublish = true
+                                        IsUnchanged = true
                                     },
                                 },
                                 Manifest = new ManifestData
@@ -1262,7 +1262,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                        ExcludeFromPublish = true
+                                        IsUnchanged = true
                                     }
                                 }
                             }
@@ -1920,7 +1920,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsLinuxDockerfileRelativePath}",
-                                        ExcludeFromPublish = true
+                                        IsUnchanged = true
                                     }
                                 },
                                 Manifest = new ManifestData

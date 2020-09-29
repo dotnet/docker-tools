@@ -236,7 +236,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 OnCacheHit(repo, allTags, pullImage: false, cacheInfo.Digest);
                 platformData.BaseImageDigest = cacheInfo.BaseImageDigest;
-                platformData.ExcludeFromPublish = srcPlatformData != null &&
+                platformData.IsUnchanged = srcPlatformData != null &&
                     CachedPlatformHasAllTagsPublished(srcPlatformData);
                 return true;
             }
@@ -250,7 +250,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (platformData != null)
                 {
-                    platformData.ExcludeFromPublish = isCachedImage &&
+                    platformData.IsUnchanged = isCachedImage &&
                         CachedPlatformHasAllTagsPublished(srcPlatformData);
                     if (isCachedImage)
                     {

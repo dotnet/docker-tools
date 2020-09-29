@@ -6,9 +6,9 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class TrimCachedPlatformsOptions : Options
+    public class TrimUnchangedPlatformsOptions : Options
     {
-        protected override string CommandHelp => "Trims platforms marked as cached from the image info file";
+        protected override string CommandHelp => "Trims platforms marked as unchanged from the image info file";
 
         public string ImageInfoPath { get; set; }
 

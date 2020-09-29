@@ -316,7 +316,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<PlatformInfo> platforms = _imageArtifactDetails.Value.Repos?
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
-                .Where(platform => !platform.ExcludeFromPublish && platform.PlatformInfo != null)
+                .Where(platform => !platform.IsUnchanged && platform.PlatformInfo != null)
                 .Select(platform => platform.PlatformInfo);
 
             return platforms ?? Enumerable.Empty<PlatformInfo>();

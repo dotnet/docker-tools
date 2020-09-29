@@ -104,8 +104,8 @@ ENV TEST2 Value1";
         [InlineData("repo1:tag2", "ARCH_VERSIONED", "amd64")]
         [InlineData("repo1:tag3", "ARCH_VERSIONED", "amd64")]
         [InlineData("repo1:tag1", "ARCH_TAG_SUFFIX", "-arm32v7")]
-        [InlineData("repo1:tag2", "ARCH_TAG_SUFFIX", "")]
-        [InlineData("repo1:tag3", "ARCH_TAG_SUFFIX", "")]
+        [InlineData("repo1:tag2", "ARCH_TAG_SUFFIX", "", false, Architecture.AMD64)]
+        [InlineData("repo1:tag3", "ARCH_TAG_SUFFIX", "-amd64")]
         [InlineData("repo1:tag1", "OS_VERSION", "buster-slim")]
         [InlineData("repo1:tag2", "OS_VERSION", "nanoserver-1903")]
         [InlineData("repo1:tag3", "OS_VERSION", "windowsservercore-1903")]
@@ -122,10 +122,11 @@ ENV TEST2 Value1";
         [InlineData("repo1:tag4", "OS_ARCH_HYPHENATED", "WindowsServerCore-ltsc2019")]
         [InlineData("repo1:tag5", "OS_ARCH_HYPHENATED", "Alpine-3.12")]
         [InlineData("repo1:tag1", "Variable1", "Value1", true)]
-        public void GenerateDockerfilesCommand_SupportedSymbols(string tag, string symbol, string expectedValue, bool isVariable = false)
+        public void GenerateDockerfilesCommand_SupportedSymbols(string tag, string symbol, string expectedValue, bool isVariable = false,
+            Architecture? archTagSuffixExclusion = null)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext);
+            GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext, archTagSuffixExclusion: archTagSuffixExclusion);
 
             IReadOnlyDictionary<Value, Value> symbols = command.GetSymbols(command.Manifest.GetPlatformByTag(tag));
 
@@ -147,7 +148,8 @@ ENV TEST2 Value1";
             string dockerfileTemplate = DefaultDockerfileTemplate,
             string dockerfile = DefaultDockerfile,
             bool allowOptionalTemplates = true,
-            bool validate = false)
+            bool validate = false,
+            Architecture? archTagSuffixExclusion = null)
         {
             DockerfileHelper.CreateFile(DockerfilePath, tempFolderContext, dockerfile);
 
@@ -204,6 +206,7 @@ ENV TEST2 Value1";
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;
+            command.Options.ArchTagSuffixExclusion = archTagSuffixExclusion;
             command.LoadManifest();
 
             return command;

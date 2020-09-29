@@ -44,18 +44,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;
+            symbols["ARCH_TAG_SUFFIX"] = $"-{versionedArch}";
             symbols["OS_VERSION"] = platform.Model.OsVersion;
             symbols["OS_VERSION_BASE"] = platform.BaseOsVersion;
             symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);
             symbols["OS_ARCH_HYPHENATED"] = GetOsArchHyphenatedName(platform);
-
-            string archTagSuffix = $"-{versionedArch}";
-            if (Options.ArchTagSuffixExclusion != null)
-            {
-                archTagSuffix = platform.Model.Architecture != Options.ArchTagSuffixExclusion ? archTagSuffix : string.Empty;
-            }
-
-            symbols["ARCH_TAG_SUFFIX"] = archTagSuffix;
 
             return symbols;
         }

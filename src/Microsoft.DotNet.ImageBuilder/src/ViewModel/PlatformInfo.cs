@@ -210,6 +210,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return displayName;
         }
 
+        public static bool AreMatchingPlatforms(ImageInfo image1, PlatformInfo platform1, ImageInfo image2, PlatformInfo platform2) =>
+            platform1.DockerfilePath == platform2.DockerfilePath &&
+            platform1.Model.OsVersion == platform2.Model.OsVersion &&
+            platform1.Model.Architecture == platform2.Model.Architecture &&
+            image1.ProductVersion == image2.ProductVersion;
+
         private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
         {
             bool isStageReference = false;

@@ -37,14 +37,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ExecuteWithUser(() =>
             {
-                IEnumerable<ImageInfo> multiArchImages = Manifest.GetFilteredImages()
-                    .Where(image => image.SharedTags.Any())
+                IEnumerable<(RepoInfo Repo, ImageInfo Image)> multiArchRepoImages = Manifest.FilteredRepos
+                    .SelectMany(repo =>
+                        repo.FilteredImages
+                            .Where(image => image.SharedTags.Any())
+                            .Select(image => (repo, image)))
                     .ToList();
 
                 DateTime createdDate = DateTime.Now.ToUniversalTime();
-                Parallel.ForEach(multiArchImages, image =>
+                Parallel.ForEach(multiArchRepoImages, repoImage =>
                 {
-                    string manifest = GenerateManifest(image);
+                    string manifest = GenerateManifest(repoImage.Repo, repoImage.Image);
 
                     string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
                     _loggerService.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
@@ -91,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             File.WriteAllText(Options.ImageInfoPath, imageInfoString);
         }
 
-        private string GenerateManifest(ImageInfo image)
+        private string GenerateManifest(RepoInfo repo, ImageInfo image)
         {
             StringBuilder manifestYml = new StringBuilder();
             manifestYml.AppendLine($"image: {image.SharedTags.First().FullyQualifiedName}");
@@ -107,7 +110,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             manifestYml.AppendLine("manifests:");
             foreach (PlatformInfo platform in image.AllPlatforms)
             {
-                manifestYml.AppendLine($"- image: {platform.Tags.First().FullyQualifiedName}");
+                string imageTag;
+                if (platform.Tags.Any())
+                {
+                    imageTag = platform.Tags.First().FullyQualifiedName;
+                }
+                else
+                {
+                    (ImageInfo Image, PlatformInfo Platform) matchingImagePlatform = repo.AllImages
+                        .SelectMany(image =>
+                            image.AllPlatforms
+                                .Select(p => (Image: image, Platform: p))
+                                .Where(imagePlatform => platform != imagePlatform.Platform &&
+                                    PlatformInfo.AreMatchingPlatforms(image, platform, imagePlatform.Image, imagePlatform.Platform) &&
+                                    imagePlatform.Platform.Tags.Any()))
+                        .FirstOrDefault();
+
+                    if (matchingImagePlatform.Platform is null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
+                    }
+
+                    imageTag = matchingImagePlatform.Platform.Tags.First().FullyQualifiedName;
+                }
+
+                manifestYml.AppendLine($"- image: {imageTag}");
                 manifestYml.AppendLine($"  platform:");
                 manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
                 manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");

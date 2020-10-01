@@ -183,5 +183,152 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
         }
+
+        /// <summary>
+        /// Verifies a correct manifest is generated when there are duplicate platforms defined, with some not containing
+        /// concrete tags.
+        /// </summary>
+        [Fact]
+        public async Task DuplicatePlatform()
+        {
+            string expectedManifest1 =
+@"image: repo1:sharedtag2
+tags: [sharedtag1]
+manifests:
+- image: repo1:tag1
+  platform:
+    architecture: amd64
+    os: linux
+";
+
+            string expectedManifest2 =
+@"image: repo1:sharedtag3
+manifests:
+- image: repo1:tag1
+  platform:
+    architecture: amd64
+    os: linux
+";
+
+            bool manifest1Found = false;
+            bool manifest2Found = false;
+
+            Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
+            manifestToolService
+                .Setup(o => o.PushFromSpec(It.IsAny<string>(), false))
+                .Callback((string manifestFile, bool isDryRun) =>
+                {
+                    string manifestContents = File.ReadAllText(manifestFile);
+
+                    if (manifestContents == expectedManifest1)
+                    {
+                        manifest1Found = true;
+                    }
+                    else if (manifestContents == expectedManifest2)
+                    {
+                        manifest2Found = true;
+                    }
+                });
+
+            manifestToolService
+                .Setup(o => o.Inspect(It.IsAny<string>(), false))
+                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
+
+            PublishManifestCommand command = new PublishManifestCommand(
+                manifestToolService.Object, Mock.Of<ILoggerService>());
+
+            using TempFolderContext tempFolderContext = new TempFolderContext();
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+
+            string dockerfile = CreateDockerfile("1.0/repo1/os", tempFolderContext);
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(dockerfile,
+                                        simpleTags: new List<string>
+                                        {
+                                            "tag1",
+                                            "tag2"
+                                        })
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    {
+                                        "sharedtag1",
+                                        "sharedtag2"
+                                    }
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(dockerfile)
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    {
+                                        "sharedtag3"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfile,
+                                new string[]
+                                {
+                                    "tag1",
+                                    "tag2"
+                                })
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            { "sharedtag2", new Tag() },
+                            { "sharedtag1", new Tag() }
+                        }),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfile, Array.Empty<string>())
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            { "sharedtag3", new Tag() }
+                        }))
+            );
+            File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            Assert.True(manifest1Found);
+            Assert.True(manifest2Found);
+            manifestToolService
+                .Verify(o => o.PushFromSpec(It.IsAny<string>(), false), Times.Exactly(2));
+        }
     }
 }

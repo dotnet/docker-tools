@@ -88,15 +88,34 @@ namespace Microsoft.DotNet.ImageBuilder
             return yaml.ToString();
         }
 
-        private string GetTagGroupYaml(ImageDocumentationInfo info)
+        private string GetTagGroupYaml(IEnumerable<ImageDocumentationInfo> infos)
         {
-            string dockerfilePath = _gitService.GetDockerfileCommitUrl(info.Platform, _sourceRepoUrl, _sourceBranch);
+            ImageDocumentationInfo firstInfo = infos.First();
+
+            string dockerfilePath = _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch);
+
+            // Generate a list of tags that have this sorting convention:
+            // <concrete tags>, <shared tags of platforms that have no concrete tags>, <shared tags of platforms that have concrete tags>
+            // This convention should produce a list of tags that are listed from most specificity to least.
+
+            IEnumerable<string> formattedPlatformTags = infos
+                .SelectMany(info => info.DocumentedPlatformTags.Select(tag => tag.Name));
+
+            IEnumerable<string> formattedSharedTags = infos
+                .Where(info => !info.DocumentedPlatformTags.Any())
+                .SelectMany(info => info.DocumentedSharedTags.Select(tag => tag.Name));
+
+            formattedSharedTags = formattedSharedTags.Concat(infos
+                .Where(info => info.DocumentedPlatformTags.Any())
+                .SelectMany(info => info.DocumentedSharedTags.Select(tag => tag.Name)));
+
+            string formattedTags = string.Join(", ", formattedPlatformTags.Concat(formattedSharedTags));
 
             StringBuilder yaml = new StringBuilder();
-            yaml.AppendLine($"  - tags: [ {info.FormattedDocumentedTags} ]");
-            yaml.AppendLine($"    architecture: {info.Platform.Model.Architecture.GetDisplayName()}");
-            yaml.AppendLine($"    os: {info.Platform.Model.OS.GetDockerName()}");
-            yaml.AppendLine($"    osVersion: {info.Platform.GetOSDisplayName()}");
+            yaml.AppendLine($"  - tags: [ {formattedTags} ]");
+            yaml.AppendLine($"    architecture: {firstInfo.Platform.Model.Architecture.GetDisplayName()}");
+            yaml.AppendLine($"    os: {firstInfo.Platform.Model.OS.GetDockerName()}");
+            yaml.AppendLine($"    osVersion: {firstInfo.Platform.GetOSDisplayName()}");
             yaml.Append($"    dockerfile: {dockerfilePath}");
 
             return yaml.ToString();
@@ -117,8 +136,23 @@ namespace Microsoft.DotNet.ImageBuilder
                     .FirstOrDefault(idi => idi.DocumentedTags.Any(tag => tag.Name == variableName));
                 if (info != null)
                 {
-                    _imageDocInfos.Remove(info);
-                    variableValue = GetTagGroupYaml(info);
+                    // Find all other doc infos that match this one. This accounts for scenarios where a platform is
+                    // duplicated in another image in order to associate it within a distinct set of shared tags.
+                    IEnumerable<ImageDocumentationInfo> matchingDocInfos = _imageDocInfos
+                        .Where(docInfo => docInfo != info &&
+                            docInfo.Platform.DockerfilePath == info.Platform.DockerfilePath &&
+                            docInfo.Platform.Model.OsVersion == info.Platform.Model.OsVersion &&
+                            docInfo.Platform.Model.Architecture == info.Platform.Model.Architecture &&
+                            docInfo.Image.ProductVersion == info.Image.ProductVersion)
+                        .Prepend(info)
+                        .ToArray();
+
+                    foreach (ImageDocumentationInfo docInfo in matchingDocInfos)
+                    {
+                        _imageDocInfos.Remove(docInfo);
+                    }
+                    
+                    variableValue = GetTagGroupYaml(matchingDocInfos);
                 }
             }
 
@@ -130,13 +164,18 @@ namespace Microsoft.DotNet.ImageBuilder
             public IEnumerable<TagInfo> DocumentedTags { get; }
             public string FormattedDocumentedTags { get; }
             public PlatformInfo Platform { get; }
+            public ImageInfo Image { get; }
+            public IEnumerable<TagInfo> DocumentedPlatformTags { get; }
+            public IEnumerable<TagInfo> DocumentedSharedTags { get; }
 
             private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
             {
+                Image = image;
                 Platform = platform;
-                IEnumerable<TagInfo> documentedPlatformTags = GetDocumentedTags(Platform.Tags, documentationGroup).ToArray();
-                DocumentedTags = documentedPlatformTags
-                    .Concat(GetDocumentedTags(image.SharedTags, documentationGroup, documentedPlatformTags))
+                DocumentedPlatformTags = GetDocumentedTags(Platform.Tags, documentationGroup).ToArray();
+                DocumentedSharedTags = GetDocumentedTags(image.SharedTags, documentationGroup, DocumentedPlatformTags);
+                DocumentedTags = DocumentedPlatformTags
+                    .Concat(DocumentedSharedTags)
                     .ToArray();
                 FormattedDocumentedTags = string.Join(
                     ", ",

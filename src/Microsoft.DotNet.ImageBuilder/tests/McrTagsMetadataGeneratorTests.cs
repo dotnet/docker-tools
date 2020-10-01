@@ -208,5 +208,100 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedTags, tagsMetadata.Repos[0].TagGroups[0].Tags);
         }
+
+        /// <summary>
+        /// Verifies that <see cref="McrTagsMetadataGenerator"/> can be run against a platform that is defined
+        /// multiple times in different images within the manifest and have the tags combined into one entry.
+        /// </summary>
+        [Fact]
+        public void DuplicatedPlatform()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            const string SourceRepoUrl = "https://www.github.com/dotnet/dotnet-docker";
+            const string RepoName = "repo";
+            const string SourceBranch = "branch";
+
+            // Create MCR tags metadata template file
+            StringBuilder tagsMetadataTemplateBuilder = new StringBuilder();
+            tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:{RepoName})");
+            tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlTagGroup:concreteTagA)");
+            string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, "tags.yaml");
+            File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
+
+            string emptyFileName = "emptyFile.md";
+            string emptyFilePath = Path.Combine(tempFolderContext.Path, emptyFileName);
+            File.WriteAllText(emptyFilePath, string.Empty);
+
+            // Create manifest
+            Manifest manifest = ManifestHelper.CreateManifest(
+                ManifestHelper.CreateRepo(RepoName,
+                    new Image[]
+                    {
+                        ManifestHelper.CreateImage(
+                            new Platform[]
+                            {
+                                ManifestHelper.CreatePlatform(
+                                    DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
+                                    new string[] { "concreteTagZ", "concreteTagA" })
+                            },
+                            sharedTags: new Dictionary<string, Tag>
+                            {
+                                { "shared1", new Tag() },
+                                { "latest", new Tag() },
+                            }),
+                        ManifestHelper.CreateImage(
+                            new Platform[]
+                            {
+                                ManifestHelper.CreatePlatform(
+                                    DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
+                                    Array.Empty<string>())
+                            },
+                            sharedTags: new Dictionary<string, Tag>
+                            {
+                                { "shared2", new Tag() }
+                            })
+                    },
+                    readme: emptyFileName,
+                    readmeTemplate: emptyFileName,
+                    mcrTagsMetadataTemplate: Path.GetFileName(tagsMetadataTemplatePath))
+            );
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
+
+            // Load manifest
+            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            RepoInfo repo = manifestInfo.AllRepos.First();
+
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+
+            // Execute generator
+            string result = McrTagsMetadataGenerator.Execute(
+                gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, SourceBranch);
+
+            TagsMetadata tagsMetadata = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build()
+                .Deserialize<TagsMetadata>(result);
+
+            // Verify the output only contains the platform with the documented tag
+            Assert.Single(tagsMetadata.Repos[0].TagGroups);
+            Assert.Equal(
+                $"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os/Dockerfile",
+                tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
+
+            List<string> expectedTags = new List<string>
+            {
+                "concreteTagZ",
+                "concreteTagA",
+                "shared2",
+                "shared1",
+                "latest"
+            };
+
+            Assert.Equal(expectedTags, tagsMetadata.Repos[0].TagGroups[0].Tags);
+        }
     }
 }

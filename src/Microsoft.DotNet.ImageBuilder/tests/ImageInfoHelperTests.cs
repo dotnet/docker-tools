@@ -41,14 +41,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
                                         OsVersion = "Ubuntu 20.04",
-                                        Architecture = "amd64"
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "linux" }
                                     },
                                     new PlatformData
                                     {
                                         Dockerfile = "1.0/runtime/windows/Dockerfile",
                                         OsType = "Windows",
                                         OsVersion = "Windows Server, version 2004",
-                                        Architecture = "amd64"
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "windows" }
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -666,6 +668,105 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             CompareImageArtifactDetails(expected, targetImageArtifactDetails);
+        }
+
+        [Fact]
+        public void Merge_DuplicatedPlatforms()
+        {
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ManifestImage = CreateImageInfo(),
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ManifestImage = CreateImageInfo(),
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        SimpleTags = new List<string>
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1"
+                                    }
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        SimpleTags = new List<string>
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    }
+                }
+            };
+
+            ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
+            CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
         }
 
         public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)

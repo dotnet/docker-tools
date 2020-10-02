@@ -178,15 +178,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateRepo("repo1"),
                     CreateRepo("repo2",
                         CreateImage(
-                            CreatePlatform(repo2Image1Dockerfile, new string[0])),
+                            CreatePlatform(repo2Image1Dockerfile, new string[] { "tag1" })),
                         CreateImage(
-                            CreatePlatform(repo2Image2Dockerfile, new string[0]))),
+                            CreatePlatform(repo2Image2Dockerfile, new string[] { "tag2" }))),
                     CreateRepo("repo3"),
                     CreateRepo("repo4",
                         CreateImage(
-                            CreatePlatform(repo4Image2Dockerfile, new string[0])),
+                            CreatePlatform(repo4Image2Dockerfile, new string[] { "tag1" })),
                         CreateImage(
-                            CreatePlatform(repo4Image3Dockerfile, new string[0])))
+                            CreatePlatform(repo4Image3Dockerfile, new string[] { "tag2" })))
                 );
                 File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -456,12 +456,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = CreateManifest(
                     CreateRepo("repo1",
                         CreateImage(
-                            CreatePlatform(dockerfile1, new string[0], osVersion: Os1, architecture: Architecture.ARM),
-                            CreatePlatform(dockerfile1, new string[0], osVersion: Os1, architecture: Architecture.ARM64)),
+                            CreatePlatform(dockerfile1, new string[] { "tag1" }, osVersion: Os1, architecture: Architecture.ARM),
+                            CreatePlatform(dockerfile1, new string[] { "tag2" }, osVersion: Os1, architecture: Architecture.ARM64)),
                         CreateImage(
-                            CreatePlatform(dockerfile1, new string[0], osVersion: Os2, architecture: Architecture.ARM)),
+                            CreatePlatform(dockerfile1, new string[] { "tag3" }, osVersion: Os2, architecture: Architecture.ARM)),
                         CreateImage(
-                            CreatePlatform(dockerfile2, new string[0], osVersion: Os1)))
+                            CreatePlatform(dockerfile2, new string[] { "tag4" }, osVersion: Os1)))
                 );
                 File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 

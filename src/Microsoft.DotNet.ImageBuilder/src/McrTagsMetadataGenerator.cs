@@ -140,10 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     // duplicated in another image in order to associate it within a distinct set of shared tags.
                     IEnumerable<ImageDocumentationInfo> matchingDocInfos = _imageDocInfos
                         .Where(docInfo => docInfo != info &&
-                            docInfo.Platform.DockerfilePath == info.Platform.DockerfilePath &&
-                            docInfo.Platform.Model.OsVersion == info.Platform.Model.OsVersion &&
-                            docInfo.Platform.Model.Architecture == info.Platform.Model.Architecture &&
-                            docInfo.Image.ProductVersion == info.Image.ProductVersion)
+                            PlatformInfo.AreMatchingPlatforms(docInfo.Image, docInfo.Platform, info.Image, info.Platform))
                         .Prepend(info)
                         .ToArray();
 

@@ -47,10 +47,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = CreateManifest(
                     CreateRepo("repo1",
                         CreateImage(
-                            CreatePlatform(repo1Image1DockerfilePath, new string[0]))),
+                            CreatePlatform(repo1Image1DockerfilePath, new string[] { "tag1" }))),
                     CreateRepo("repo2",
                         CreateImage(
-                            CreatePlatform(repo2Image2DockerfilePath, new string[0])))
+                            CreatePlatform(repo2Image2DockerfilePath, new string[] { "tag1" })))
                 );
 
                 RepoData repo2;

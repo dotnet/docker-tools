@@ -101,8 +101,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
-                    platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
                 }
+
+                platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
             }
 
             string imageInfoString = JsonHelper.SerializeObject(_imageArtifactDetails);

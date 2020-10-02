@@ -69,25 +69,29 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 1;
             }
 
+            // If either of the platforms has no simple tags while the other does have simple tags, they are not equal
+            if ((SimpleTags?.Count == 0 && other.SimpleTags?.Count > 0) ||
+                (SimpleTags?.Count > 0 && other.SimpleTags?.Count == 0))
+            {
+                return 1;
+            }
+
             return GetIdentifier().CompareTo(other.GetIdentifier());
         }
 
-        public bool Equals(PlatformInfo platformInfo)
-        {
-            return GetIdentifier() == FromPlatformInfo(platformInfo, null).GetIdentifier();
-        }
+        public bool Equals(PlatformInfo platformInfo) =>
+            CompareTo(FromPlatformInfo(platformInfo, null)) == 0;
 
         public string GetIdentifier() => $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}";
 
-        public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image)
-        {
-            return new PlatformData(image, platform)
+        public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image) =>
+            new PlatformData(image, platform)
             {
                 Dockerfile = platform.DockerfilePathRelativeToManifest,
                 Architecture = platform.Model.Architecture.GetDisplayName(),
                 OsType = platform.Model.OS.ToString(),
-                OsVersion = platform.GetOSDisplayName()
+                OsVersion = platform.GetOSDisplayName(),
+                SimpleTags = platform.Tags.Select(tag => tag.Name).ToList()
             };
-        }
     }
 }

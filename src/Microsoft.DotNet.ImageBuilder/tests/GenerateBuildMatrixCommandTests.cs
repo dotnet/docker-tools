@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -694,13 +695,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal($"--path {runtimeDepsRelativeDir}", imageBuilderPaths);
         }
 
-        [Fact]
-        public void PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_ImageGraph()
+        [Theory]
+        [InlineData(MatrixType.PlatformVersionedOs)]
+        [InlineData(MatrixType.PlatformDependencyGraph)]
+        public void CrossReferencedDockerfileFromMultipleRepos_ImageGraph(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.MatrixType = matrixType;
             command.Options.ProductVersionComponents = 2;
 
             Manifest manifest = CreateManifest(
@@ -747,13 +750,84 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
             Assert.Single(matrixInfos);
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+
+            if (matrixType == MatrixType.PlatformDependencyGraph)
+            {
+                Assert.Single(matrixInfo.Legs);
+
+                Assert.Equal("3.1-runtime-deps-os-Dockerfile-graph", matrixInfo.Legs[0].Name);
+                string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
+            }
+            else
+            {
+                Assert.Equal(2, matrixInfo.Legs.Count);
+
+                Assert.Equal("3.1-disco", matrixInfo.Legs[0].Name);
+                string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
+
+                Assert.Equal("5.0-disco", matrixInfo.Legs[1].Name);
+                imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
+            }
+        }
+
+        [Theory]
+        [InlineData(MatrixType.PlatformVersionedOs)]
+        [InlineData(MatrixType.PlatformDependencyGraph)]
+        public void DuplicatedPlatforms(MatrixType matrixType)
+        {
+            TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = matrixType;
+            command.Options.ProductVersionComponents = 2;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "3.1"),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
+                                Array.Empty<string>())
+                        },
+                        productVersion: "3.1")));
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
+
             Assert.Single(matrixInfo.Legs);
 
-            Assert.Equal("3.1-runtime-deps-os-Dockerfile-graph", matrixInfo.Legs[0].Name);
+            string expectedLegName;
+            if (matrixType == MatrixType.PlatformDependencyGraph)
+            {
+                expectedLegName = "3.1-runtime-os-Dockerfile-graph";
+            }
+            else
+            {
+                expectedLegName = "3.1-disco";
+            }
+
+            Assert.Equal(expectedLegName, matrixInfo.Legs[0].Name);
+
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
+            Assert.Equal($"--path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
         }
 
         private static PlatformData CreateSimplePlatformData(string dockerfilePath, bool isCached = false)

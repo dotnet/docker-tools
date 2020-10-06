@@ -211,10 +211,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public static bool AreMatchingPlatforms(ImageInfo image1, PlatformInfo platform1, ImageInfo image2, PlatformInfo platform2) =>
-            platform1.DockerfilePath == platform2.DockerfilePath &&
-            platform1.Model.OsVersion == platform2.Model.OsVersion &&
-            platform1.Model.Architecture == platform2.Model.Architecture &&
-            image1.ProductVersion == image2.ProductVersion;
+            platform1.GetUniqueKey(image1) == platform2.GetUniqueKey(image2);
+
+        public string GetUniqueKey(ImageInfo parentImageInfo) =>
+            $"{DockerfilePathRelativeToManifest}-{Model.OS}-{Model.OsVersion}-{Model.Architecture}-{parentImageInfo.ProductVersion}";
 
         private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
         {

@@ -47,8 +47,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphsWithCommonRootDockerfile(
-            IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
+        private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphsWithCommonRoot(
+            IEnumerable<IEnumerable<PlatformInfo>> subgraphs, Func<PlatformInfo, string> getKey)
         {
             List<List<PlatformInfo>> subGraphsList = subgraphs.Select(subgraph => subgraph.ToList()).ToList();
             Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = new Dictionary<string, List<PlatformInfo>>();
@@ -57,15 +57,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (List<PlatformInfo> subgraph in subGraphsList)
             {
                 PlatformInfo rootPlatform = subgraph.First();
+                string key = getKey(rootPlatform);
 
-                if (subgraphsByRootDockerfilePath.TryGetValue(rootPlatform.DockerfilePath, out List<PlatformInfo> commonSubgraph))
+                if (subgraphsByRootDockerfilePath.TryGetValue(key, out List<PlatformInfo> commonSubgraph))
                 {
                     commonSubgraph.AddRange(subgraph);
                     subgraphsToDelete.Add(subgraph);
                 }
                 else
                 {
-                    subgraphsByRootDockerfilePath.Add(rootPlatform.DockerfilePath, subgraph);
+                    subgraphsByRootDockerfilePath.Add(key, subgraph);
                 }
             }
 
@@ -82,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 platform => GetPlatformDependencies(platform, platformGrouping));
 
             // Pass 2: Combine subgraphs that have a common Dockerfile path for the root image
-            subgraphs = ConsolidateSubgraphsWithCommonRootDockerfile(subgraphs);
+            subgraphs = ConsolidateSubgraphsWithCommonRoot(subgraphs, platform => platform.DockerfilePath);
 
             // Pass 3: Find dependencies amongst the subgraphs that result from custom leg groups
             // to produce a new set of subgraphs.
@@ -223,19 +224,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Replace("windowsservercore", "windows")
                 .Replace("ltsc2019", "1809");
 
-        private void AddVersionedOsLegs(BuildMatrixInfo matrix, IGrouping<PlatformId, PlatformInfo> platformGrouping)
+        private void AddVersionedOsLegs(BuildMatrixInfo matrix,
+            IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
-            // Get the set of subgraphs grouped by their FROM dependencies as well as any integral custom leg dependencies.
+            // Pass 1: Get the set of subgraphs grouped by their FROM dependencies as well as any integral custom leg dependencies.
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping
                 .GetCompleteSubgraphs(platform =>
                     GetPlatformDependencies(platform, platformGrouping)
                         .Union(GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Integral)));
 
-            // Append any supplemental custom leg dependencies to each subgraph
+            // Pass 2: Combine subgraphs that have matching roots. This combines any duplicated platforms into a single subgraph.
+            subgraphs = ConsolidateSubgraphsWithCommonRoot(subgraphs,
+                platform => platform.GetUniqueKey(Manifest.GetImageByPlatform(platform)));
+
+            // Pass 3: Append any supplemental custom leg dependencies to each subgraph
             subgraphs = subgraphs
                 .Select(subgraph => subgraph.Union(subgraph.SelectMany(platform => GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Supplemental))));
 
-            // Append the parent graph of each platform to each respective subgraph
+            // Pass 4: Append the parent graph of each platform to each respective subgraph
             subgraphs = subgraphs.GetCompleteSubgraphs(
                 subgraph => subgraph.Select(platform => GetParents(platform, platformGrouping)))
                 .Select(set => set
@@ -331,7 +337,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => new PlatformId()
                 {
                     OS = platform.Model.OS,
-                    OsVersion = platform.Model.OS == OS.Linux ? null : GetNormalizedOsVersion(platform.BaseOsVersion),
+                    OsVersion = platform.Model.OS == OS.Linux ?
+                        null : GetNormalizedOsVersion(platform.BaseOsVersion),
                     Architecture = platform.Model.Architecture,
                     Variant = platform.Model.Variant
                 })

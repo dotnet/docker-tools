@@ -80,6 +80,24 @@ namespace Microsoft.DotNet.ImageBuilder
             MergeData(src, target, options);
         }
 
+        private static void MergePropertyData(object srcObj, object targetObj, PropertyInfo property, ImageInfoMergeOptions options)
+        {
+            object srcResult = property.GetValue(srcObj);
+            object targetResult = property.GetValue(targetObj);
+            if (srcResult is null && targetResult != null)
+            {
+                property.SetValue(targetObj, null);
+            }
+            else if (srcResult != null && targetResult is null)
+            {
+                property.SetValue(targetObj, srcResult);
+            }
+            else
+            {
+                MergeData(srcResult, targetResult, options);
+            }
+        }
+
         private static void MergeData(object srcObj, object targetObj, ImageInfoMergeOptions options)
         {
             if (!((srcObj is null && targetObj is null) || (!(srcObj is null) && !(targetObj is null))))
@@ -152,7 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(ManifestData).IsAssignableFrom(property.PropertyType))
                 {
-                    MergeData(property.GetValue(srcObj), property.GetValue(targetObj), options);
+                    MergePropertyData(srcObj, targetObj, property, options);
                 }
                 else
                 {

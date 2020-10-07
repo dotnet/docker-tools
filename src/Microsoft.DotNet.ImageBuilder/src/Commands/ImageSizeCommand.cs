@@ -28,7 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (RepoInfo repo in Manifest.FilteredRepos.Where(platform => platform.FilteredImages.Any()))
             {
                 IEnumerable<PlatformInfo> platforms = repo.FilteredImages
-                    .SelectMany(image => image.FilteredPlatforms);
+                    .SelectMany(image => image.FilteredPlatforms)
+                    .Where(platform => platform.Tags.Any());
 
                 foreach (PlatformInfo platform in platforms)
                 {

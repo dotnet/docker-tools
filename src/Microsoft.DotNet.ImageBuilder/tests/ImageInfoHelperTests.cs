@@ -769,6 +769,146 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
         }
 
+        /// <summary>
+        /// Tests the scenario where a source image defines a manifest that the target doesn't have.
+        /// </summary>
+        [Fact]
+        public void ImageInfoHelper_MergeRepos_NewManifest()
+        {
+            ImageInfo imageInfo1 = CreateImageInfo();
+
+            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ManifestImage = imageInfo1,
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = new List<string>
+                                    {
+                                        "shared"
+                                    }
+                                },
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        Digest = "digest"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ManifestImage = imageInfo1,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+            CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+        }
+
+        /// <summary>
+        /// Tests the scenario where a target image defines a manifest that the source doesn't have.
+        /// </summary>
+        [Fact]
+        public void ImageInfoHelper_MergeRepos_RemovedManifest()
+        {
+            ImageInfo imageInfo1 = CreateImageInfo();
+
+            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ManifestImage = imageInfo1,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1",
+                                        Digest = "digest"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ManifestImage = imageInfo1,
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = new List<string>
+                                    {
+                                        "shared"
+                                    }
+                                },
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "image1"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+            CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
+        }
+
         public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
         {
             Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));

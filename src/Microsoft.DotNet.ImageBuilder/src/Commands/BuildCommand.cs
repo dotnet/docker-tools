@@ -90,9 +90,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
-            foreach (PlatformData platform in GetBuiltPlatforms())
+            IEnumerable<PlatformData> builtPlatforms = GetBuiltPlatforms();
+            List<PlatformData> platformsWithNoPushTags = new List<PlatformData>();
+
+            foreach (PlatformData platform in builtPlatforms)
             {
-                foreach (TagInfo tag in GetPushTags(platform.PlatformInfo.Tags))
+                IEnumerable<TagInfo> pushTags = GetPushTags(platform.PlatformInfo.Tags);
+
+                foreach (TagInfo tag in pushTags)
                 {
                     if (Options.IsPushEnabled)
                     {
@@ -103,7 +108,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
                 }
 
+                if (!pushTags.Any())
+                {
+                    platformsWithNoPushTags.Add(platform);
+                }
+
                 platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
+            }
+
+            // Some platforms do not have concrete tags. In such cases, they must be duplicates of a platform in a different
+            // image which does have a concrete tag. For these platforms that do not have concrete tags, we are unable to
+            // lookup digest/created info based on their tag. Instead, we find the matching platform which does have that info
+            // set (as a result of having a concrete tag) and copy its values.
+            foreach (PlatformData platform in platformsWithNoPushTags)
+            {
+                PlatformData matchingBuiltPlatform = builtPlatforms.First(builtPlatform =>
+                    builtPlatform.Digest != null &&
+                    PlatformInfo.AreMatchingPlatforms(platform.ImageInfo, platform.PlatformInfo, builtPlatform.ImageInfo, builtPlatform.PlatformInfo));
+
+                platform.Digest = matchingBuiltPlatform.Digest;
+                platform.Created = matchingBuiltPlatform.Created;
             }
 
             string imageInfoString = JsonHelper.SerializeObject(_imageArtifactDetails);

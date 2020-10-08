@@ -123,7 +123,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (PlatformData platform in platformsWithNoPushTags)
             {
                 PlatformData matchingBuiltPlatform = builtPlatforms.First(builtPlatform =>
-                    builtPlatform.Digest != null &&
+                    GetPushTags(builtPlatform.PlatformInfo.Tags).Any() &&
                     PlatformInfo.AreMatchingPlatforms(platform.ImageInfo, platform.PlatformInfo, builtPlatform.ImageInfo, builtPlatform.PlatformInfo));
 
                 platform.Digest = matchingBuiltPlatform.Digest;

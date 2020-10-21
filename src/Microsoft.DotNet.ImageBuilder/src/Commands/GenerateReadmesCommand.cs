@@ -139,14 +139,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         $"run --name {renderingToolId} {renderingToolId} {tagsMetadataFileName}",
                         Options.IsDryRun);
 
-                    string outputPath = Path.Combine(tempDir, "output.md");
-                    ExecuteHelper.Execute(
-                        "docker",
-                        $"cp {renderingToolId}:/tableapp/files/{repo.Name.Replace('/', '-')}.md {outputPath}",
-                        Options.IsDryRun
-                    );
+                    try
+                    {
+                        string outputPath = Path.Combine(tempDir, "output.md");
+                        ExecuteHelper.Execute(
+                            "docker",
+                            $"cp {renderingToolId}:/tableapp/files/{repo.Name.Replace('/', '-')}.md {outputPath}",
+                            Options.IsDryRun
+                        );
 
-                    tagsDoc = File.ReadAllText(outputPath);
+                        tagsDoc = File.ReadAllText(outputPath);
+                    }
+                    finally
+                    {
+                        ExecuteHelper.Execute("docker", $"container rm -f {renderingToolId}", Options.IsDryRun);
+                    }
                 }
                 finally
                 {

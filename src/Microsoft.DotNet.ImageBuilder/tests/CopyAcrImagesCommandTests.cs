@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = ManifestHelper.CreateManifest(
                     ManifestHelper.CreateRepo("runtime",
                         ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "runtime" })))
+                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
                 );
                 manifest.Registry = "mcr.microsoft.com";
 
@@ -215,6 +215,109 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             It.IsAny<Dictionary<string, List<string>>>(),
                             It.IsAny<CancellationToken>()));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that image tags can be syndicated to another repo.
+        /// </summary>
+        [Fact]
+        public async Task SyndicatedTags()
+        {
+            const string subscriptionId = "my subscription";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
+            IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
+            Mock<IAzureManagementFactory> azureManagementFactoryMock =
+                AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
+
+            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.Subscription = subscriptionId;
+            command.Options.ResourceGroup = "my resource group";
+            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.ImageInfoPath = "image-info.json";
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
+
+            Manifest manifest = ManifestHelper.CreateManifest(
+                ManifestHelper.CreateRepo("runtime",
+                    ManifestHelper.CreateImage(
+                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2", "tag3" })))
+            );
+            manifest.Registry = "mcr.microsoft.com";
+
+            const string syndicatedRepo2 = "runtime2";
+            const string syndicatedRepo3 = "runtime3";
+
+            Platform platform = manifest.Repos.First().Images.First().Platforms.First();
+            platform.Tags["tag2"].SyndicatedRepo = syndicatedRepo2;
+            platform.Tags["tag3"].SyndicatedRepo = syndicatedRepo3;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            RepoData runtimeRepo;
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    {
+                        runtimeRepo = new RepoData
+                        {
+                            Repo = "runtime",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            PathHelper.NormalizePath(dockerfileRelativePath),
+                                            simpleTags: new List<string>
+                                            {
+                                                "tag1",
+                                                "tag2",
+                                                "tag3"
+                                            })
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            List<string> expectedTags = new List<string>
+            {
+                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag1",
+                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2",
+                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag3",
+                $"{command.Options.RepoPrefix}{syndicatedRepo2}:tag2",
+                $"{command.Options.RepoPrefix}{syndicatedRepo3}:tag3"
+            };
+
+            foreach (string expectedTag in expectedTags)
+            {
+                registriesOperationsMock
+                    .Verify(o => o.ImportImageWithHttpMessagesAsync(
+                        command.Options.ResourceGroup,
+                        manifest.Registry,
+                        It.Is<ImportImageParametersInner>(parameters =>
+                            VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
+                        It.IsAny<Dictionary<string, List<string>>>(),
+                        It.IsAny<CancellationToken>()));
             }
         }
 

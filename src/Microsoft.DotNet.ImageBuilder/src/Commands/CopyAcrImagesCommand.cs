@@ -46,20 +46,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(repo =>
                     repo.FilteredImages
                         .SelectMany(image => image.FilteredPlatforms)
-                        .SelectMany(platform => GetDestinationTagNames(repo, platform))
-                        .Select(tag =>
-                        {
-                            string srcTagName = tag.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
-                            return ImportImageAsync(tag, srcTagName, srcResourceId: resourceId);
-                        }))
+                        .SelectMany(platform => GetTagInfos(repo, platform))
+                        .Select(tagInfo =>
+                            ImportImageAsync(
+                                TrimRegistry(tagInfo.DestinationTag),
+                                TrimRegistry(tagInfo.SourceTag),
+                                srcResourceId: resourceId)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
         }
 
-        private IEnumerable<string> GetDestinationTagNames(RepoInfo repo, PlatformInfo platform)
+        private IEnumerable<(string SourceTag, string DestinationTag)> GetTagInfos(RepoInfo repo, PlatformInfo platform)
         {
-            List<string> destTagNames = new List<string>();
+            List<(string SourceTag, string DestinationTag)> tags =
+                new List<(string SourceTag, string DestinationTag)>();
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
@@ -75,8 +76,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .FirstOrDefault(platformData => platformData.Equals(platform));
                     if (platformData != null)
                     {
-                        destTagNames.AddRange(platformData.SimpleTags
-                            .Select(tag => TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag)));
+                        foreach (string tag in platformData.SimpleTags)
+                        {
+                            string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag);
+                            string sourceTag = GetSourceTag(destinationTag);
+                            tags.Add((sourceTag, destinationTag));
+
+                            TagInfo tagInfo = platformData.PlatformInfo.Tags.First(tagInfo => tagInfo.Name == tag);
+                            if (tagInfo.SyndicatedRepo != null)
+                            {
+                                destinationTag = TagInfo.GetFullyQualifiedName(
+                                    $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
+                                    tag);
+                                tags.Add((sourceTag, destinationTag));
+                            }
+                        }
                     }
                     else
                     {
@@ -90,12 +104,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                destTagNames.AddRange(platform.Tags
-                    .Select(tag => tag.FullyQualifiedName));
+                tags.AddRange(platform.Tags
+                    .Select(tag => (GetSourceTag(tag.FullyQualifiedName), tag.FullyQualifiedName)));
             }
 
-            return destTagNames
-                .Select(tag => tag.TrimStart($"{Manifest.Registry}/"));
+            return tags;
         }
+
+        private string TrimRegistry(string tag) => tag.TrimStart($"{Manifest.Registry}/");
+
+        private string GetSourceTag(string destinationTag) =>
+            destinationTag.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
     }
 }

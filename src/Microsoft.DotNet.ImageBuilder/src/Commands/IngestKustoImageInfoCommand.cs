@@ -3,12 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -61,11 +64,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformData platform in image.Platforms)
                     {
                         string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
-                        builder.AppendLine(FormatCsv(DockerHelper.GetDigestSha(platform.Digest), platform, image, repo, timestamp));
+                        string sha = DockerHelper.GetDigestSha(platform.Digest);
+                        builder.AppendLine(FormatCsv(sha, platform, image, repo.Repo, timestamp));
 
-                        foreach (string tag in platform.SimpleTags)
+                        IEnumerable<TagInfo> tagInfos = platform.PlatformInfo.Tags
+                            .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name))
+                            .ToList();
+
+                        IEnumerable<string> syndicatedRepos = tagInfos
+                            .Select(tag => tag.SyndicatedRepo)
+                            .Where(repo => repo != null)
+                            .Distinct();
+
+                        foreach (string syndicatedRepo in syndicatedRepos)
                         {
-                            builder.AppendLine(FormatCsv(tag, platform, image, repo, timestamp));
+                            builder.AppendLine(
+                                FormatCsv(sha, platform, image, syndicatedRepo, timestamp));
+                        }
+
+                        foreach (TagInfo tag in tagInfos)
+                        {
+                            builder.AppendLine(FormatCsv(tag.Name, platform, image, repo.Repo, timestamp));
+
+                            if (tag.SyndicatedRepo != null)
+                            {
+                                builder.AppendLine(
+                                    FormatCsv(tag.Name, platform, image, tag.SyndicatedRepo, timestamp));
+                            }
                         }
                     }
                 }
@@ -75,8 +100,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return builder.ToString().TrimEnd(Environment.NewLine);
         }
 
-        private string FormatCsv(string imageId, PlatformData platform, ImageData image, RepoData repo, string timestamp) =>
+        private string FormatCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
             $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.OsVersion}\","
-                + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo.Repo}\",\"{timestamp}\"";
+                + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo}\",\"{timestamp}\"";
     }
 }

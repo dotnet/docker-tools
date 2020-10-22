@@ -584,6 +584,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ProductVersion = "1.0",
                                 Platforms =
                                 {
                                     CreateSimplePlatformData(runtimeDockerfilePath, isCached: isRuntimeCached)
@@ -598,6 +599,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ProductVersion = "1.0",
                                 Platforms =
                                 {
                                     CreateSimplePlatformData(aspnetDockerfilePath, isCached: isAspnetCached)
@@ -612,6 +614,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
+                                ProductVersion = "1.0",
                                 Platforms =
                                 {
                                     CreateSimplePlatformData(sdkDockerfilePath, isCached: isSdkCached)

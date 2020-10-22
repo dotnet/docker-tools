@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string FullyQualifiedName { get; private set; }
         public Tag Model { get; private set; }
         public string Name { get; private set; }
+        public string SyndicatedRepo { get; private set; }
 
         private TagInfo()
         {
@@ -32,6 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             };
             tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetVariableValue);
             tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
+            tagInfo.SyndicatedRepo = variableHelper.SubstituteValues(model.SyndicatedRepo);
 
             return tagInfo;
         }

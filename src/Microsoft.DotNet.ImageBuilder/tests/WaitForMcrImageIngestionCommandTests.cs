@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -203,7 +204,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object);
+                environmentServiceMock.Object,
+                Mock.Of<IDockerService>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -216,15 +218,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(dockerfile1Path, new string[] { platformTag1, platformTag2 })
-                        },
-                        productVersion: "1.0")),
+                        })),
                 CreateRepo(repo2,
                     CreateImage(
                         new Platform[]
                         {
                             CreatePlatform(dockerfile2Path, new string[] { platformTag3 })
-                        },
-                        productVersion: "1.0"))
+                        }))
             );
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -454,7 +454,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object);
+                environmentServiceMock.Object,
+                Mock.Of<IDockerService>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -466,8 +467,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(dockerfile1Path, new string[] { platformTag1, platformTag2 })
-                        },
-                        productVersion: "1.0"))
+                        }))
             );
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -611,7 +611,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object);
+                environmentServiceMock.Object,
+                Mock.Of<IDockerService>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -623,8 +624,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(dockerfile1Path, new string[] { platformTag1 })
-                        },
-                        productVersion: "1.0"))
+                        }))
             );
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -792,7 +792,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object);
+                environmentServiceMock.Object,
+                Mock.Of<IDockerService>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -804,8 +805,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(dockerfile1Path, new string[] { platformTag1 })
-                        },
-                        productVersion: "1.0"))
+                        }))
             );
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -897,7 +897,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object);
+                environmentServiceMock.Object,
+                Mock.Of<IDockerService>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -909,8 +910,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(dockerfile1Path, new string[] { platformTag1 })
-                        },
-                        productVersion: "1.0"))
+                        }))
             );
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -956,6 +956,215 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
 
             await Assert.ThrowsAsync<TimeoutException>(() => command.ExecuteAsync());
+        }
+
+        [Fact]
+        public async Task SyndicatedTags()
+        {
+            DateTime baselineTime = DateTime.Now;
+            const string repo1ManifestDigest1 = "repo1@sha256:manifestDigest1";
+            const string repo2ManifestDigest1 = "repo2@sha256:manifestDigest1";
+            const string sharedTag1 = "sharedTag1";
+            const string platformTag1 = "platformTag1";
+            const string repo1 = "repo1";
+            const string repo2 = "repo2";
+            const string repo1PlatformDigest1 = "repo1@sha256:platformDigest1";
+            const string repo2PlatformDigest1 = "repo2@sha256:platformDigest1";
+
+            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+
+            ImageStatus repo1SharedTag1ImageStatus = new ImageStatus
+            {
+                Tag = sharedTag1,
+                TargetRepository = repo1,
+                QueueTime = baselineTime.AddHours(1),
+                OverallStatus = StageStatus.Succeeded
+            };
+
+            ImageStatus repo2SharedTag1ImageStatus = new ImageStatus
+            {
+                Tag = sharedTag1,
+                TargetRepository = repo2,
+                QueueTime = baselineTime.AddHours(1),
+                OverallStatus = StageStatus.Succeeded
+            };
+
+            ImageStatus repo1PlatformTag1ImageStatus = new ImageStatus
+            {
+                Tag = platformTag1,
+                TargetRepository = repo1,
+                QueueTime = baselineTime.AddHours(1),
+                OverallStatus = StageStatus.Succeeded
+            };
+
+            ImageStatus repo2PlatformTag1ImageStatus = new ImageStatus
+            {
+                Tag = platformTag1,
+                TargetRepository = repo2,
+                QueueTime = baselineTime.AddHours(1),
+                OverallStatus = StageStatus.Succeeded
+            };
+
+            Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
+            {
+                {
+                    DockerHelper.GetDigestSha(repo1ManifestDigest1),
+                    new List<ImageResult>
+                    {
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo1SharedTag1ImageStatus
+                            }
+                        },
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo2SharedTag1ImageStatus
+                            }
+                        }
+                    }.GetEnumerator()
+                },
+                {
+                    DockerHelper.GetDigestSha(repo1PlatformDigest1),
+                    new List<ImageResult>
+                    {
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo1PlatformTag1ImageStatus
+                            }
+                        },
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo2PlatformTag1ImageStatus
+                            }
+                        }
+                    }.GetEnumerator()
+                }
+            };
+
+            statusClientMock
+                .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
+                .ReturnsAsync((string digest) =>
+                {
+                    IEnumerator<ImageResult> enumerator = imageResultMapping[digest];
+                    if (enumerator.MoveNext())
+                    {
+                        return enumerator.Current;
+                    }
+
+                    return null;
+                });
+
+            const string tenant = "my tenant";
+            const string clientId = "my id";
+            const string clientSecret = "very secret";
+
+            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+
+            Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest("repo1:sharedTag1", false))
+                .Returns(repo1ManifestDigest1);
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest("repo2:sharedTag1", false))
+                .Returns(repo2ManifestDigest1);
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest("repo1:platformTag1", false))
+                .Returns(repo1PlatformDigest1);
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest("repo2:platformTag1", false))
+                .Returns(repo2PlatformDigest1);
+
+            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<ILoggerService>(),
+                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                environmentServiceMock.Object,
+                dockerServiceMock.Object);
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string dockerfile1Path = CreateDockerfile("1.0/repo1/os", tempFolderContext);
+
+            const string syndicatedRepo = "repo2";
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repo1,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfile1Path, new string[] { platformTag1 })
+                        },
+                        sharedTags: new Dictionary<string, Tag>
+                        {
+                            { sharedTag1, new Tag { SyndicatedRepo = syndicatedRepo } }
+                        }))
+            );
+
+            Platform platform = manifest.Repos.First().Images.First().Platforms.First();
+            platform.Tags[platformTag1].SyndicatedRepo = syndicatedRepo;
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    {
+                        new RepoData
+                        {
+                            Repo = repo1,
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Manifest = new ManifestData
+                                    {
+                                        Digest = repo1ManifestDigest1,
+                                        SharedTags = new List<string>
+                                        {
+                                            sharedTag1
+                                        }
+                                    },
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            PathHelper.NormalizePath(dockerfile1Path),
+                                            simpleTags: new List<string>
+                                            {
+                                                platformTag1
+                                            },
+                                            digest: repo1PlatformDigest1)
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.ServicePrincipal.Tenant = tenant;
+            command.Options.ServicePrincipal.ClientId = clientId;
+            command.Options.ServicePrincipal.Secret = clientSecret;
+            command.Options.MinimumQueueTime = baselineTime;
+            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+            command.LoadManifest();
+
+            await command.ExecuteAsync();
+
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1ManifestDigest1)), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1PlatformDigest1)), Times.Exactly(2));
+            environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 
         private static ImageStatus Clone(ImageStatus status, StageStatus? newOverallStatusValue) =>

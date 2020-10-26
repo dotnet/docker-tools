@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Manifest.Registry != null)
             {
-                displayName = displayName.TrimStart(Manifest.Registry).TrimStart('/');
+                displayName = DockerHelper.TrimRegistry(displayName, Manifest.Registry);
             }
 
             if (trimParentRepos)

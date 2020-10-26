@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -19,14 +20,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
         private readonly IEnvironmentService _environmentService;
+        private readonly IDockerService _dockerService;
 
         [ImportingConstructor]
         public WaitForMcrImageIngestionCommand(
-            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
+            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService,
+            IDockerService dockerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }
 
         public override async Task ExecuteAsync()
@@ -50,20 +54,57 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteMessage("Image ingestion complete!");
         }
 
-        private static IEnumerable<DigestInfo> GetImageDigestInfos(ImageArtifactDetails imageArtifactDetails) =>
+        private IEnumerable<DigestInfo> GetImageDigestInfos(ImageArtifactDetails imageArtifactDetails) =>
             imageArtifactDetails.Repos
                 .SelectMany(repo => repo.Images.SelectMany(image => GetImageDigestInfos(image, repo)));
 
-        private static IEnumerable<DigestInfo> GetImageDigestInfos(ImageData image, RepoData repo)
+        private IEnumerable<DigestInfo> GetImageDigestInfos(ImageData image, RepoData repo)
         {
             if (image.Manifest?.Digest != null)
             {
-                yield return new DigestInfo(DockerHelper.GetDigestSha(image.Manifest.Digest), repo, image.Manifest.SharedTags);
+                yield return new DigestInfo(DockerHelper.GetDigestSha(image.Manifest.Digest), repo.Repo, image.Manifest.SharedTags);
+
+                // Find all syndicated shared tags grouped by their syndicated repo
+                IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.ManifestImage.SharedTags
+                    .Where(tag => image.Manifest.SharedTags.Contains(tag.Name) && tag.SyndicatedRepo != null)
+                    .GroupBy(tag => tag.SyndicatedRepo);
+
+                foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
+                {
+                    string syndicatedRepo = syndicatedTags.Key;
+
+                    string tag = syndicatedTags.First().FullyQualifiedName;
+                    tag = tag.Replace(
+                        DockerHelper.GetRepo(tag),
+                        Options.RepoPrefix + syndicatedRepo);
+                    string digest = _dockerService.GetImageDigest(tag, Options.IsDryRun);
+
+                    yield return new DigestInfo(
+                        DockerHelper.GetDigestSha(digest),
+                        Options.RepoPrefix + syndicatedRepo,
+                        syndicatedTags.Select(tag => tag.Name));
+                }
             }
 
             foreach (PlatformData platform in image.Platforms)
             {
-                yield return new DigestInfo(DockerHelper.GetDigestSha(platform.Digest), repo, platform.SimpleTags);
+                string sha = DockerHelper.GetDigestSha(platform.Digest);
+
+                yield return new DigestInfo(sha, repo.Repo, platform.SimpleTags);
+
+                // Find all syndicated simple tags grouped by their syndicated repo
+                IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = platform.PlatformInfo.Tags
+                    .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name) && tagInfo.SyndicatedRepo != null)
+                    .GroupBy(tagInfo => tagInfo.SyndicatedRepo);
+
+                foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
+                {
+                    string syndicatedRepo = syndicatedTags.Key;
+                    yield return new DigestInfo(
+                        sha,
+                        Options.RepoPrefix + syndicatedRepo,
+                        syndicatedTags.Select(tag => tag.Name));
+                }
             }
         }
 
@@ -112,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _loggerService.WriteSubheading("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
                 {
-                    _loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo.Repo, imageResult.DigestInfo.Digest));
+                    _loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
                     string tags = string.Join(", ",
                         imageResult.ImageResult.Value
                             .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
@@ -192,11 +233,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Find the image statuses that are associated with the repo indicated in the image info. This filter is needed
             // because MCR's webhook responds to all image pushes in the ACR, even those to staging locations. A queue time filter
             // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
-            imageStatus.TargetRepository == digestInfo.Repo.Repo && imageStatus.QueueTime >= Options.MinimumQueueTime;
+            imageStatus.TargetRepository == digestInfo.Repo && imageStatus.QueueTime >= Options.MinimumQueueTime;
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(IMcrStatusClient statusClient, DigestInfo digestInfo)
         {
-            string qualifiedDigest = GetQualifiedDigest(digestInfo.Repo.Repo, digestInfo.Digest);
+            string qualifiedDigest = GetQualifiedDigest(digestInfo.Repo, digestInfo.Digest);
 
             StringBuilder stringBuilder = new StringBuilder();
             stringBuilder.AppendLine($"Querying image status for '{qualifiedDigest}'");
@@ -266,7 +307,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private class DigestInfo
         {
-            public DigestInfo(string digest, RepoData repo, IEnumerable<string> tags)
+            public DigestInfo(string digest, string repo, IEnumerable<string> tags)
             {
                 Digest = digest;
                 Repo = repo;
@@ -275,7 +316,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             public string Digest { get; }
 
-            public RepoData Repo { get; }
+            public string Repo { get; }
 
             /// <summary>
             /// List of tags that need to still be awaited.

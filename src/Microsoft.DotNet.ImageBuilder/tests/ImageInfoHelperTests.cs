@@ -769,6 +769,154 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
         }
 
+        [Fact]
+        public void Merge_SharedDockerfile_DistinctPlatform()
+        {
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                ManifestImage = CreateImageInfo(),
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Architecture = "amd64",
+                                        Dockerfile = "1.0/runtime/os/Dockerfile",
+                                        SimpleTags = new List<string>
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails targetImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "2.0",
+                                ManifestImage = CreateImageInfo(),
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Architecture = "amd64",
+                                        Dockerfile = "1.0/runtime/os/Dockerfile",
+                                        SimpleTags = new List<string>
+                                        {
+                                            "tag2"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Architecture = "amd64",
+                                        Dockerfile = "1.0/runtime/os/Dockerfile",
+                                        SimpleTags = new List<string>
+                                        {
+                                            "tag1"
+                                        }
+                                    }
+                                }
+                            },
+                            new ImageData
+                            {
+                                ProductVersion = "2.0",
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 19.04",
+                                        Architecture = "amd64",
+                                        Dockerfile = "1.0/runtime/os/Dockerfile",
+                                        SimpleTags = new List<string>
+                                        {
+                                            "tag2"
+                                        }
+                                    }
+                                }
+                            },
+                        }
+                    }
+                }
+            };
+
+            using TempFolderContext tempFolderContext = new TempFolderContext();
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag1" })
+                        },
+                        productVersion: "1.0"),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(CreateDockerfile("1.0/runtime/os", tempFolderContext), new string[] { "tag2" })
+                        },
+                        productVersion: "2.0")));
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+
+            ImageArtifactDetails source = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(imageArtifactDetails), manifestInfo);
+            ImageArtifactDetails target = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(targetImageArtifactDetails), manifestInfo);
+
+            ImageInfoHelper.MergeImageArtifactDetails(source, target);
+            CompareImageArtifactDetails(expectedImageArtifactDetails, target);
+        }
+
         /// <summary>
         /// Tests the scenario where a source image defines a manifest that the target doesn't have.
         /// </summary>

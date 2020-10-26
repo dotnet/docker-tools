@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -320,6 +321,134 @@ manifests:
                             { "sharedtag3", new Tag() }
                         }))
             );
+            File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            Assert.True(manifest1Found);
+            Assert.True(manifest2Found);
+            manifestToolService
+                .Verify(o => o.PushFromSpec(It.IsAny<string>(), false), Times.Exactly(2));
+        }
+
+        /// <summary>
+        /// Verifies a correct manifest is generated when syndicating tags to another repo.
+        /// </summary>
+        [Fact]
+        public async Task SyndicatedTag()
+        {
+            string expectedManifest1 =
+@"image: mcr.microsoft.com/repo:sharedtag2
+tags: [sharedtag1]
+manifests:
+- image: mcr.microsoft.com/repo:tag1
+  platform:
+    architecture: amd64
+    os: linux
+";
+
+            string expectedManifest2 =
+@"image: mcr.microsoft.com/repo2:sharedtag2
+manifests:
+- image: mcr.microsoft.com/repo2:tag1
+  platform:
+    architecture: amd64
+    os: linux
+";
+
+            bool manifest1Found = false;
+            bool manifest2Found = false;
+
+            Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
+            manifestToolService
+                .Setup(o => o.PushFromSpec(It.IsAny<string>(), false))
+                .Callback((string manifestFile, bool isDryRun) =>
+                {
+                    string manifestContents = File.ReadAllText(manifestFile);
+
+                    if (manifestContents == expectedManifest1)
+                    {
+                        manifest1Found = true;
+                    }
+                    else if (manifestContents == expectedManifest2)
+                    {
+                        manifest2Found = true;
+                    }
+                });
+
+            manifestToolService
+                .Setup(o => o.Inspect(It.IsAny<string>(), false))
+                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
+
+            PublishManifestCommand command = new PublishManifestCommand(
+                manifestToolService.Object, Mock.Of<ILoggerService>());
+
+            using TempFolderContext tempFolderContext = new TempFolderContext();
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+
+            string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(dockerfile,
+                                        simpleTags: new List<string>
+                                        {
+                                            "tag1",
+                                            "tag2"
+                                        })
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    {
+                                        "sharedtag1",
+                                        "sharedtag2"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            const string syndicatedRepo2 = "repo2";
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfile,
+                                new string[]
+                                {
+                                    "tag1",
+                                    "tag2"
+                                })
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            { "sharedtag2", new Tag { SyndicatedRepo = syndicatedRepo2 } },
+                            { "sharedtag1", new Tag() }
+                        }))
+            );
+
+            manifest.Registry = "mcr.microsoft.com";
+
             File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
 
             command.LoadManifest();

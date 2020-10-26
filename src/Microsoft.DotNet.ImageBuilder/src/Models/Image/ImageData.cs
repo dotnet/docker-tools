@@ -58,6 +58,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 0;
             }
 
+            if (ManifestImage.ProductVersion != other.ProductVersion)
+            {
+                return ManifestImage.ProductVersion?.CompareTo(other.ProductVersion) ?? 1;
+            }
+
             // If we're comparing two different image items, compare them by the first Platform to
             // provide deterministic ordering.
             PlatformData thisFirstPlatform = Platforms

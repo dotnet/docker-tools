@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
+        private List<string> _publishedManifestTags = new List<string>();
 
         [ImportingConstructor]
         public PublishManifestCommand(
@@ -37,18 +38,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ExecuteWithUser(() =>
             {
-                IEnumerable<(RepoInfo Repo, ImageInfo Image)> multiArchRepoImages = Manifest.FilteredRepos
+                IEnumerable<string> manifests = Manifest.FilteredRepos
                     .SelectMany(repo =>
                         repo.FilteredImages
                             .Where(image => image.SharedTags.Any())
                             .Select(image => (repo, image)))
+                    .SelectMany(repoImage => GenerateManifests(repoImage.repo, repoImage.image))
                     .ToList();
 
                 DateTime createdDate = DateTime.Now.ToUniversalTime();
-                Parallel.ForEach(multiArchRepoImages, repoImage =>
+                Parallel.ForEach(manifests, manifest =>
                 {
-                    string manifest = GenerateManifest(repoImage.Repo, repoImage.Image);
-
                     string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
                     _loggerService.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
                     File.WriteAllText(manifestFilename, manifest);
@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                 });
 
-                WriteManifestSummary(imageArtifactDetails);
+                WriteManifestSummary();
 
                 SaveTagInfoToImageInfoFile(createdDate, imageArtifactDetails);
             });
@@ -94,26 +94,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             File.WriteAllText(Options.ImageInfoPath, imageInfoString);
         }
 
-        private string GenerateManifest(RepoInfo repo, ImageInfo image)
+        private IEnumerable<string> GenerateManifests(RepoInfo repo, ImageInfo image)
         {
-            StringBuilder manifestYml = new StringBuilder();
-            manifestYml.AppendLine($"image: {image.SharedTags.First().FullyQualifiedName}");
+            yield return GenerateManifest(repo, image, image.SharedTags, tag => tag.FullyQualifiedName);
 
-            IEnumerable<string> additionalTags = image.SharedTags
-                .Select(tag => tag.Name)
-                .Skip(1);
+            IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
+                .Where(tag => tag.SyndicatedRepo != null)
+                .GroupBy(tag => tag.SyndicatedRepo);
+
+            foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
+            {
+                string syndicatedRepo = syndicatedTags.Key;
+                yield return GenerateManifest(repo, image, syndicatedTags,
+                    tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag.Name));
+            }
+        }
+
+        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<TagInfo> tags, Func<TagInfo, string> getImageName)
+        {
+            string imageName = getImageName(tags.First());
+            StringBuilder manifestYml = new StringBuilder();
+            manifestYml.AppendLine($"image: {imageName}");
+            _publishedManifestTags.Add(imageName);
+
+            string repoName = DockerHelper.GetRepo(imageName);
+
+            IEnumerable<TagInfo> additionalTags = tags.Skip(1);
+
             if (additionalTags.Any())
             {
-                manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags)}]");
+                manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags.Select(tag => tag.Name))}]");
             }
+
+            _publishedManifestTags.AddRange(additionalTags.Select(tag => $"{repoName}:{tag.Name}"));
 
             manifestYml.AppendLine("manifests:");
             foreach (PlatformInfo platform in image.AllPlatforms)
             {
-                string imageTag;
+                TagInfo imageTag;
                 if (platform.Tags.Any())
                 {
-                    imageTag = platform.Tags.First().FullyQualifiedName;
+                    imageTag = platform.Tags.First();
                 }
                 else
                 {
@@ -132,10 +153,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
                     }
 
-                    imageTag = matchingImagePlatform.Platform.Tags.First().FullyQualifiedName;
+                    imageTag = matchingImagePlatform.Platform.Tags.First();
                 }
 
-                manifestYml.AppendLine($"- image: {imageTag}");
+                manifestYml.AppendLine($"- image: {getImageName(imageTag)}");
                 manifestYml.AppendLine($"  platform:");
                 manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
                 manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");
@@ -148,18 +169,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestYml.ToString();
         }
 
-        private void WriteManifestSummary(ImageArtifactDetails imageArtifactDetails)
+        private void WriteManifestSummary()
         {
             _loggerService.WriteHeading("MANIFEST TAGS PUBLISHED");
 
-            IEnumerable<string> multiArchTags = imageArtifactDetails.Repos
-                .SelectMany(repo => repo.Images)
-                .SelectMany(image => image.ManifestImage.SharedTags)
-                .Select(tag => tag.FullyQualifiedName)
-                .ToArray();
-            if (multiArchTags.Any())
+            if (_publishedManifestTags.Any())
             {
-                foreach (string tag in multiArchTags)
+                foreach (string tag in _publishedManifestTags)
                 {
                     _loggerService.WriteMessage(tag);
                 }

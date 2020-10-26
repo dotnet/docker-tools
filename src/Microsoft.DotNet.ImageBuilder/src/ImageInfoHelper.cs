@@ -38,7 +38,9 @@ namespace Microsoft.DotNet.ImageBuilder
                         foreach (ImageInfo manifestImage in manifestRepo.AllImages)
                         {
                             PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms
-                                .FirstOrDefault(platform => platformData.Equals(platform));
+                                .FirstOrDefault(platform =>
+                                    platformData.Equals(platform) &&
+                                    imageData.ProductVersion == manifestImage.ProductVersion);
                             if (matchingManifestPlatform != null)
                             {
                                 if (imageData.ManifestImage is null)

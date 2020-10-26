@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     // Find all other doc infos that match this one. This accounts for scenarios where a platform is
                     // duplicated in another image in order to associate it within a distinct set of shared tags.
                     IEnumerable<ImageDocumentationInfo> matchingDocInfos = _imageDocInfos
-                        .Where(docInfo => docInfo != info &&
+                        .Where(docInfo => docInfo.Platform != info.Platform &&
                             PlatformInfo.AreMatchingPlatforms(docInfo.Image, docInfo.Platform, info.Image, info.Platform))
                         .Prepend(info)
                         .ToArray();

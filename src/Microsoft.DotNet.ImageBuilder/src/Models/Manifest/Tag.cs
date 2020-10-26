@@ -34,6 +34,10 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         [DefaultValue(TagDocumentationType.Documented)]
         public TagDocumentationType DocType { get; set; }
 
+        [Description(
+            "Name of repository that the tag will be syndicated to.")]
+        public string SyndicatedRepo { get; set; }
+
         public Tag()
         {
         }

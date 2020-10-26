@@ -163,6 +163,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return imageName;
         }
 
+        public static string TrimRegistry(string tag, string registry) => tag.TrimStart($"{registry}/");
+
         /// <remarks>
         /// This method depends on the experimental Docker CLI `manifest` command.  As a result, this method
         /// should only used for developer usage scenarios.

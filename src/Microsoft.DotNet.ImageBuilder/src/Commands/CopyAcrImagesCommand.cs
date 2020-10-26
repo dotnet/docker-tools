@@ -49,8 +49,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .SelectMany(platform => GetTagInfos(repo, platform))
                         .Select(tagInfo =>
                             ImportImageAsync(
-                                TrimRegistry(tagInfo.DestinationTag),
-                                TrimRegistry(tagInfo.SourceTag),
+                                DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
+                                DockerHelper.TrimRegistry(tagInfo.SourceTag, Manifest.Registry),
                                 srcResourceId: resourceId)))
                 .SelectMany(tasks => tasks);
 
@@ -110,8 +110,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return tags;
         }
-
-        private string TrimRegistry(string tag) => tag.TrimStart($"{Manifest.Registry}/");
 
         private string GetSourceTag(string destinationTag) =>
             destinationTag.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);

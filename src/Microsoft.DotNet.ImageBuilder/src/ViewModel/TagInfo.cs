@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
@@ -14,6 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public Tag Model { get; private set; }
         public string Name { get; private set; }
         public string SyndicatedRepo { get; private set; }
+        public string[] SyndicatedDestinationTags { get; private set; }
 
         private TagInfo()
         {
@@ -33,7 +35,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             };
             tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetVariableValue);
             tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
-            tagInfo.SyndicatedRepo = variableHelper.SubstituteValues(model.SyndicatedRepo);
+
+            if (model.Syndication != null)
+            {
+                tagInfo.SyndicatedRepo = variableHelper.SubstituteValues(model.Syndication.Repo);
+                tagInfo.SyndicatedDestinationTags = model.Syndication.DestinationTags?
+                    .Select(tag => variableHelper.SubstituteValues(tag))
+                    .ToArray();
+                if (tagInfo.SyndicatedDestinationTags is null || !tagInfo.SyndicatedDestinationTags.Any())
+                {
+                    tagInfo.SyndicatedDestinationTags = new string[] { tagInfo.Name };
+                }
+            }
 
             return tagInfo;
         }

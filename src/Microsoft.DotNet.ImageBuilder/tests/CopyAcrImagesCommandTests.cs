@@ -257,8 +257,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string syndicatedRepo3 = "runtime3";
 
             Platform platform = manifest.Repos.First().Images.First().Platforms.First();
-            platform.Tags["tag2"].SyndicatedRepo = syndicatedRepo2;
-            platform.Tags["tag3"].SyndicatedRepo = syndicatedRepo3;
+            platform.Tags["tag2"].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepo2,
+            };
+            platform.Tags["tag3"].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepo3,
+                DestinationTags = new string[]
+                {
+                    "tag3a",
+                    "tag3b"
+                }
+            };
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -305,7 +316,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag2",
                 $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:tag3",
                 $"{command.Options.RepoPrefix}{syndicatedRepo2}:tag2",
-                $"{command.Options.RepoPrefix}{syndicatedRepo3}:tag3"
+                $"{command.Options.RepoPrefix}{syndicatedRepo3}:tag3a",
+                $"{command.Options.RepoPrefix}{syndicatedRepo3}:tag3b"
             };
 
             foreach (string expectedTag in expectedTags)

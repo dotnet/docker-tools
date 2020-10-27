@@ -96,7 +96,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<string> GenerateManifests(RepoInfo repo, ImageInfo image)
         {
-            yield return GenerateManifest(repo, image, image.SharedTags, tag => tag.FullyQualifiedName);
+            yield return GenerateManifest(repo, image, image.SharedTags.Select(tag => tag.Name),
+                tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + repo.Name, tag));
 
             IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
                 .Where(tag => tag.SyndicatedRepo != null)
@@ -105,12 +106,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
             {
                 string syndicatedRepo = syndicatedTags.Key;
-                yield return GenerateManifest(repo, image, syndicatedTags,
-                    tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag.Name));
+                IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
+
+                yield return GenerateManifest(repo, image, destinationTags,
+                    tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag));
             }
         }
 
-        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<TagInfo> tags, Func<TagInfo, string> getImageName)
+        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName)
         {
             string imageName = getImageName(tags.First());
             StringBuilder manifestYml = new StringBuilder();
@@ -119,14 +122,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string repoName = DockerHelper.GetRepo(imageName);
 
-            IEnumerable<TagInfo> additionalTags = tags.Skip(1);
+            IEnumerable<string> additionalTags = tags.Skip(1);
 
             if (additionalTags.Any())
             {
-                manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags.Select(tag => tag.Name))}]");
+                manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags)}]");
             }
 
-            _publishedManifestTags.AddRange(additionalTags.Select(tag => $"{repoName}:{tag.Name}"));
+            _publishedManifestTags.AddRange(additionalTags.Select(tag => $"{repoName}:{tag}"));
 
             manifestYml.AppendLine("manifests:");
             foreach (PlatformInfo platform in image.AllPlatforms)
@@ -156,7 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     imageTag = matchingImagePlatform.Platform.Tags.First();
                 }
 
-                manifestYml.AppendLine($"- image: {getImageName(imageTag)}");
+                manifestYml.AppendLine($"- image: {getImageName(imageTag.Name)}");
                 manifestYml.AppendLine($"  platform:");
                 manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
                 manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");

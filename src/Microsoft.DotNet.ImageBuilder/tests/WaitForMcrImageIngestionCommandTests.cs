@@ -962,14 +962,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task SyndicatedTags()
         {
             DateTime baselineTime = DateTime.Now;
-            const string repo1ManifestDigest1 = "repo1@sha256:manifestDigest1";
-            const string repo2ManifestDigest1 = "repo2@sha256:manifestDigest1";
+            const string registry = "mcr.microsoft.com";
+            string repo1ManifestDigest1 = $"{registry}/repo1@sha256:manifestDigest1";
+            string repo2ManifestDigest1 = $"{registry}/repo2@sha256:manifestDigest1";
             const string sharedTag1 = "sharedTag1";
             const string platformTag1 = "platformTag1";
             const string repo1 = "repo1";
             const string repo2 = "repo2";
-            const string repo1PlatformDigest1 = "repo1@sha256:platformDigest1";
-            const string repo2PlatformDigest1 = "repo2@sha256:platformDigest1";
+            string repo1PlatformDigest1 = $"{registry}repo1@sha256:platformDigest1";
+            string repo2PlatformDigest1 = $"{registry}repo2@sha256:platformDigest1";
 
             Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
 
@@ -997,9 +998,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Succeeded
             };
 
-            ImageStatus repo2PlatformTag1ImageStatus = new ImageStatus
+            ImageStatus repo2PlatformTag1aImageStatus = new ImageStatus
             {
-                Tag = platformTag1,
+                Tag = $"{platformTag1}a",
+                TargetRepository = repo2,
+                QueueTime = baselineTime.AddHours(1),
+                OverallStatus = StageStatus.Succeeded
+            };
+
+            ImageStatus repo2PlatformTag1bImageStatus = new ImageStatus
+            {
+                Tag = $"{platformTag1}b",
                 TargetRepository = repo2,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Succeeded
@@ -1042,7 +1051,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             Value = new List<ImageStatus>
                             {
-                                repo2PlatformTag1ImageStatus
+                                repo2PlatformTag1aImageStatus
+                            }
+                        },
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo2PlatformTag1bImageStatus
                             }
                         }
                     }.GetEnumerator()
@@ -1070,16 +1086,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
             dockerServiceMock
-                .Setup(o => o.GetImageDigest("repo1:sharedTag1", false))
+                .Setup(o => o.GetImageDigest($"{registry}/repo1:sharedTag1", false))
                 .Returns(repo1ManifestDigest1);
             dockerServiceMock
-                .Setup(o => o.GetImageDigest("repo2:sharedTag1", false))
+                .Setup(o => o.GetImageDigest($"{registry}/repo2:sharedTag1", false))
                 .Returns(repo2ManifestDigest1);
             dockerServiceMock
-                .Setup(o => o.GetImageDigest("repo1:platformTag1", false))
+                .Setup(o => o.GetImageDigest($"{registry}/repo1:platformTag1", false))
                 .Returns(repo1PlatformDigest1);
             dockerServiceMock
-                .Setup(o => o.GetImageDigest("repo2:platformTag1", false))
+                .Setup(o => o.GetImageDigest($"{registry}/repo2:platformTag1a", false))
                 .Returns(repo2PlatformDigest1);
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
@@ -1103,12 +1119,31 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         sharedTags: new Dictionary<string, Tag>
                         {
-                            { sharedTag1, new Tag { SyndicatedRepo = syndicatedRepo } }
+                            {
+                                sharedTag1,
+                                new Tag
+                                {
+                                    Syndication = new TagSyndication
+                                    {
+                                        Repo = syndicatedRepo,
+                                        DestinationTags = new string[0]
+                                    }
+                                }
+                            }
                         }))
             );
+            manifest.Registry = registry;
 
             Platform platform = manifest.Repos.First().Images.First().Platforms.First();
-            platform.Tags[platformTag1].SyndicatedRepo = syndicatedRepo;
+            platform.Tags[platformTag1].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepo,
+                DestinationTags = new string[]
+                {
+                    $"{platformTag1}a",
+                    $"{platformTag1}b"
+                }
+            };
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
@@ -1163,7 +1198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync();
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1ManifestDigest1)), Times.Exactly(2));
-            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1PlatformDigest1)), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1PlatformDigest1)), Times.Exactly(3));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 

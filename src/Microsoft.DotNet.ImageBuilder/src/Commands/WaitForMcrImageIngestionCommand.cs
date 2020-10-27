@@ -20,17 +20,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
         private readonly IEnvironmentService _environmentService;
-        private readonly IDockerService _dockerService;
 
         [ImportingConstructor]
         public WaitForMcrImageIngestionCommand(
-            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService,
-            IDockerService dockerService)
+            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-            _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }
 
         public override async Task ExecuteAsync()
@@ -62,7 +59,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (image.Manifest?.Digest != null)
             {
-                yield return new DigestInfo(DockerHelper.GetDigestSha(image.Manifest.Digest), repo.Repo, image.Manifest.SharedTags);
+                string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
+                yield return new DigestInfo(digestSha, repo.Repo, image.Manifest.SharedTags);
 
                 // Find all syndicated shared tags grouped by their syndicated repo
                 IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.ManifestImage.SharedTags
@@ -71,15 +69,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
                 {
-                    string syndicatedRepo = syndicatedTags.Key;
+                    string syndicatedRepo = Options.RepoPrefix + syndicatedTags.Key;
 
                     string tag = syndicatedTags.First().SyndicatedDestinationTags.First();
-                    tag = DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag);
-                    string digest = _dockerService.GetImageDigest(tag, Options.IsDryRun);
+                    tag = DockerHelper.GetImageName(Manifest.Registry, syndicatedRepo, tag);
 
                     yield return new DigestInfo(
-                        DockerHelper.GetDigestSha(digest),
-                        Options.RepoPrefix + syndicatedRepo,
+                        digestSha,
+                        syndicatedRepo,
                         syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
                 }
             }

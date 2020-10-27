@@ -85,10 +85,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             TagInfo tagInfo = platformData.PlatformInfo.Tags.First(tagInfo => tagInfo.Name == tag);
                             if (tagInfo.SyndicatedRepo != null)
                             {
-                                destinationTag = TagInfo.GetFullyQualifiedName(
-                                    $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
-                                    tag);
-                                tags.Add((sourceTag, destinationTag));
+                                foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
+                                {
+                                    destinationTag = TagInfo.GetFullyQualifiedName(
+                                        $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
+                                        syndicatedDestinationTagName);
+                                    tags.Add((sourceTag, destinationTag));
+                                }
                             }
                         }
                     }

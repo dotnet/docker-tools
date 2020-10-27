@@ -196,8 +196,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             const string syndicatedRepository = "repo2";
             Platform platform = manifest.Repos.First().Images.First().Platforms.First();
-            platform.Tags["t1"].SyndicatedRepo = syndicatedRepository;
-            platform.Tags["t2"].SyndicatedRepo = syndicatedRepository;
+            platform.Tags["t1"].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepository
+            };
+            platform.Tags["t2"].Syndication = new TagSyndication
+            {
+                Repo = syndicatedRepository,
+                DestinationTags = new string[]
+                {
+                    "t2a",
+                    "t2b"
+                }
+            };
 
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
@@ -239,7 +250,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 ""t1"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
 ""t1"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t2"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
-""t2"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
+""t2a"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
+""t2b"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t3"",""amd64"",""Linux"",""Ubuntu 19.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""";
             expectedData = expectedData.NormalizeLineEndings(Environment.NewLine).Trim();
 

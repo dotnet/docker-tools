@@ -73,16 +73,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string syndicatedRepo = syndicatedTags.Key;
 
-                    string tag = syndicatedTags.First().FullyQualifiedName;
-                    tag = tag.Replace(
-                        DockerHelper.GetRepo(tag),
-                        Options.RepoPrefix + syndicatedRepo);
+                    string tag = syndicatedTags.First().SyndicatedDestinationTags.First();
+                    tag = DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag);
                     string digest = _dockerService.GetImageDigest(tag, Options.IsDryRun);
 
                     yield return new DigestInfo(
                         DockerHelper.GetDigestSha(digest),
                         Options.RepoPrefix + syndicatedRepo,
-                        syndicatedTags.Select(tag => tag.Name));
+                        syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
                 }
             }
 
@@ -103,7 +101,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     yield return new DigestInfo(
                         sha,
                         Options.RepoPrefix + syndicatedRepo,
-                        syndicatedTags.Select(tag => tag.Name));
+                        syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
                 }
             }
         }

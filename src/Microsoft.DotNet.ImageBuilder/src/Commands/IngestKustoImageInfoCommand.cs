@@ -88,8 +88,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                             if (tag.SyndicatedRepo != null)
                             {
-                                builder.AppendLine(
-                                    FormatCsv(tag.Name, platform, image, tag.SyndicatedRepo, timestamp));
+                                foreach (string destinationTag in tag.SyndicatedDestinationTags)
+                                {
+                                    builder.AppendLine(
+                                       FormatCsv(destinationTag, platform, image, tag.SyndicatedRepo, timestamp));
+                                }
                             }
                         }
                     }

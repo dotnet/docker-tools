@@ -193,19 +193,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task DuplicatePlatform()
         {
             string expectedManifest1 =
-@"image: repo1:sharedtag2
+@"image: mcr.microsoft.com/repo1:sharedtag2
 tags: [sharedtag1]
 manifests:
-- image: repo1:tag1
+- image: mcr.microsoft.com/repo1:tag1
   platform:
     architecture: amd64
     os: linux
 ";
 
             string expectedManifest2 =
-@"image: repo1:sharedtag3
+@"image: mcr.microsoft.com/repo1:sharedtag3
 manifests:
-- image: repo1:tag1
+- image: mcr.microsoft.com/repo1:tag1
   platform:
     architecture: amd64
     os: linux
@@ -321,6 +321,7 @@ manifests:
                             { "sharedtag3", new Tag() }
                         }))
             );
+            manifest.Registry = "mcr.microsoft.com";
             File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
 
             command.LoadManifest();
@@ -349,7 +350,8 @@ manifests:
 ";
 
             string expectedManifest2 =
-@"image: mcr.microsoft.com/repo2:sharedtag2
+@"image: mcr.microsoft.com/repo2:sharedtag2a
+tags: [sharedtag2b]
 manifests:
 - image: mcr.microsoft.com/repo2:tag1
   platform:
@@ -442,7 +444,21 @@ manifests:
                         },
                         new Dictionary<string, Tag>
                         {
-                            { "sharedtag2", new Tag { SyndicatedRepo = syndicatedRepo2 } },
+                            {
+                                "sharedtag2",
+                                new Tag
+                                {
+                                    Syndication = new TagSyndication
+                                    {
+                                        Repo = syndicatedRepo2,
+                                        DestinationTags = new string[]
+                                        {
+                                            "sharedtag2a",
+                                            "sharedtag2b"
+                                        }
+                                    }
+                                }
+                            },
                             { "sharedtag1", new Tag() }
                         }))
             );

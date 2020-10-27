@@ -204,8 +204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object,
-                Mock.Of<IDockerService>());
+                environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -454,8 +453,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object,
-                Mock.Of<IDockerService>());
+                environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -611,8 +609,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object,
-                Mock.Of<IDockerService>());
+                environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -792,8 +789,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object,
-                Mock.Of<IDockerService>());
+                environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -897,8 +893,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object,
-                Mock.Of<IDockerService>());
+                environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -1084,25 +1079,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
-            dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{registry}/repo1:sharedTag1", false))
-                .Returns(repo1ManifestDigest1);
-            dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{registry}/repo2:sharedTag1", false))
-                .Returns(repo2ManifestDigest1);
-            dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{registry}/repo1:platformTag1", false))
-                .Returns(repo1PlatformDigest1);
-            dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{registry}/repo2:platformTag1a", false))
-                .Returns(repo2PlatformDigest1);
-
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
-                environmentServiceMock.Object,
-                dockerServiceMock.Object);
+                environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 

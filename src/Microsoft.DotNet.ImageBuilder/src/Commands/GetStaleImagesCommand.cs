@@ -12,6 +12,7 @@ using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -169,7 +170,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         () =>
                         {
                             string digest = _manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, fromImage, Options.IsDryRun);
-                            return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
+                            ImageName fromImageName = ImageName.Parse(fromImage);
+                            return new ImageName(fromImageName.Repository, fromImageName.Registry, digest: digest).ToString();
                         });
 
                     bool rebuildImage = platformData.BaseImageDigest != currentDigest;

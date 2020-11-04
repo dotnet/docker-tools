@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -330,7 +331,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        private static string GetTag(string repo, string tag) => TagInfo.GetFullyQualifiedName(repo, tag);
+        private static string GetTag(string repo, string tag) => new ImageName(repo, tag: tag).ToString();
 
         private static void CreateBaselineFile(string path, IEnumerable<ImageSizeData> imageSizes)
         {

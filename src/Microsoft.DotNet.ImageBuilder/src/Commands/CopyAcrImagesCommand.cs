@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -73,6 +74,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 RepoData repoData = _imageArtifactDetails.Value.Repos.FirstOrDefault(repoData => repoData.Repo == repo.Name);
                 if (repoData != null)
                 {
+                    ImageName repoQualifiedName = ImageName.Parse(repo.QualifiedName);
+
                     PlatformData platformData = repoData.Images
                         .SelectMany(image => image.Platforms)
                         .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
@@ -80,7 +83,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         foreach (string tag in platformData.SimpleTags)
                         {
-                            string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, tag);
+                            string destinationTag = new ImageName(
+                                repoQualifiedName.Repository,
+                                repoQualifiedName.Registry,
+                                tag: tag).ToString();
                             string sourceTag = GetSourceTag(destinationTag);
                             tags.Add((sourceTag, destinationTag));
 
@@ -92,9 +98,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             {
                                 foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
                                 {
-                                    destinationTag = TagInfo.GetFullyQualifiedName(
-                                        $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
-                                        syndicatedDestinationTagName);
+                                    destinationTag = new ImageName(
+                                        Options.RepoPrefix + tagInfo.SyndicatedRepo,
+                                        Manifest.Registry,
+                                        tag: syndicatedDestinationTagName).ToString();
                                     tags.Add((sourceTag, destinationTag));
                                 }
                             }

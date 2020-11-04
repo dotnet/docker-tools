@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
@@ -46,7 +47,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Platform platform = CreatePlatform("runtime/2.1", new string[] { "runtime" }, os: os, osVersion: osVersion);
             VariableHelper variableHelper = new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
-            PlatformInfo platformInfo = PlatformInfo.Create(platform, "", "runtime", variableHelper, "./");
+            PlatformInfo platformInfo = PlatformInfo.Create(
+                platform, "runtime", "runtime", variableHelper, "./");
 
             Assert.Equal(expectedDisplayName, platformInfo.GetOSDisplayName());
         }

@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -85,11 +86,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 image.Manifest.Created = createdDate;
 
+                ImageName repoName = ImageName.Parse(image.ManifestRepo.FullModelName);
                 TagInfo sharedTag = image.ManifestImage.SharedTags.First();
-                image.Manifest.Digest = DockerHelper.GetDigestString(
-                    image.ManifestRepo.FullModelName,
-                    _manifestToolService.GetManifestDigestSha(
-                        ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun));
+                image.Manifest.Digest = new ImageName(
+                    repoName.Repository,
+                    repoName.Registry,
+                    digest: _manifestToolService.GetManifestDigestSha(
+                        ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun)).ToString();
             });
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
@@ -99,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<string> GenerateManifests(RepoInfo repo, ImageInfo image)
         {
             yield return GenerateManifest(repo, image, image.SharedTags.Select(tag => tag.Name),
-                tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + repo.Name, tag),
+                tag => new ImageName(Options.RepoPrefix + repo.Name, Manifest.Registry, tag: tag),
                 platform => platform.Tags.First());
 
             IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
@@ -112,20 +115,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
 
                 yield return GenerateManifest(repo, image, destinationTags,
-                    tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag),
+                    tag => new ImageName(Options.RepoPrefix + syndicatedRepo, Manifest.Registry, tag: tag),
                     platform => platform.Tags.First(tag => tag.SyndicatedRepo == syndicatedRepo));
             }
         }
 
-        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName,
+        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, ImageName> getImageName,
             Func<PlatformInfo, TagInfo> getTagRepresentative)
         {
-            string imageName = getImageName(tags.First());
+            ImageName imageName = getImageName(tags.First());
             StringBuilder manifestYml = new StringBuilder();
             manifestYml.AppendLine($"image: {imageName}");
-            _publishedManifestTags.Add(imageName);
+            _publishedManifestTags.Add(imageName.ToString());
 
-            string repoName = DockerHelper.GetRepo(imageName);
 
             IEnumerable<string> additionalTags = tags.Skip(1);
 
@@ -134,7 +136,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags)}]");
             }
 
-            _publishedManifestTags.AddRange(additionalTags.Select(tag => $"{repoName}:{tag}"));
+            _publishedManifestTags.AddRange(
+                additionalTags
+                    .Select(tag => new ImageName(imageName.Repository, imageName.Registry, tag).ToString()));
 
             manifestYml.AppendLine("manifests:");
             foreach (PlatformInfo platform in image.AllPlatforms)

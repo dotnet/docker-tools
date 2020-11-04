@@ -153,30 +153,6 @@ namespace Microsoft.DotNet.ImageBuilder
                 "inspect", ".Created", "Failed to retrieve created date", image, isDryRun);
         }
 
-        public static string GetDigestSha(string digest) => digest?.Substring(digest.IndexOf("@") + 1);
-
-        public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
-
-        public static string GetImageName(string registry, string repo, string tag = null, string digest = null)
-        {
-            if (tag != null && digest != null)
-            {
-                throw new InvalidOperationException($"Invalid to provide both the {nameof(tag)} and {nameof(digest)} arguments.");
-            }
-
-            string imageName = $"{registry}/{repo}";
-            if (tag != null)
-            {
-                return $"{imageName}:{tag}";
-            }
-            else if (digest != null)
-            {
-                return $"{imageName}@{digest}";
-            }
-
-            return imageName;
-        }
-
         public static string TrimRegistry(string tag, string registry) => tag.TrimStart($"{registry}/");
 
         /// <remarks>

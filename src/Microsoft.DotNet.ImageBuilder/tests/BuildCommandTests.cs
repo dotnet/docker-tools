@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -470,26 +471,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
+            string[] tags = new string[]
+            {
+                new ImageName(repoName, tag: tag).ToString(),
+                new ImageName(repoName, tag: localTag).ToString(),
+                new ImageName(repoName, tag: sharedTag).ToString()
+            };
+
             dockerServiceMock.Verify(
                 o => o.BuildImage(
                     dockerfileAbsolutePath,
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeRelativeDir)),
-                    new string[]
-                    {
-                        TagInfo.GetFullyQualifiedName(repoName, tag),
-                        TagInfo.GetFullyQualifiedName(repoName, localTag),
-                        TagInfo.GetFullyQualifiedName(repoName, sharedTag)
-                    },
+                    tags,
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, tag), It.IsAny<bool>()));
+                o => o.PushImage(tags[0], It.IsAny<bool>()));
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>()));
+                o => o.PushImage(tags[2], It.IsAny<bool>()));
             dockerServiceMock.Verify(
-                o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, localTag), It.IsAny<bool>()), Times.Never);
+                o => o.PushImage(tags[1], It.IsAny<bool>()), Times.Never);
         }
 
         /// <summary>
@@ -597,52 +600,52 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Theory]
         [InlineData(
             "All images cached",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-1",
-            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
-            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
-            "runtimeCommitSha-1", "runtimeCommitSha-1",
+            "sha256:baseImageSha1", "sha256:baseImageSha1",
+            "sha256:runtimeDepsImageSha1", "sha256:runtimeDepsImageSha1",
+            "runtimeDepsCommitSha1", "runtimeDepsCommitSha1",
+            "runtimeCommitSha1", "runtimeCommitSha1",
             true, true)]
         [InlineData(
             "All previously published, diffs for all image digests and commit SHAs",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-2",
-            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
-            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
-            "runtimeCommitSha-1", "runtimeCommitSha-2",
+            "sha256:baseImageSha1", "sha256:baseImageSha2",
+            "sha256:runtimeDepsImageSha1", "sha256:runtimeDepsImageSha2",
+            "runtimeDepsCommitSha1", "runtimeDepsCommitSha2",
+            "runtimeCommitSha1", "runtimeCommitSha2",
             false, false)]
         [InlineData(
             "All previously published, diff for runtimeDeps image digest",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-1",
-            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
-            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
-            "runtimeCommitSha-1", "runtimeCommitSha-1",
+            "sha256:baseImageSha1", "sha256:baseImageSha1",
+            "sha256:runtimeDepsImageSha1", "sha256:runtimeDepsImageSha2",
+            "runtimeDepsCommitSha1", "runtimeDepsCommitSha1",
+            "runtimeCommitSha1", "runtimeCommitSha1",
             true, false)]
         [InlineData(
             "All previously published, diff for runtime commit SHA",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-1",
-            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
-            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
-            "runtimeCommitSha-1", "runtimeCommitSha-2",
+            "sha256:baseImageSha1", "sha256:baseImageSha1",
+            "sha256:runtimeDepsImageSha1", "sha256:runtimeDepsImageSha1",
+            "runtimeDepsCommitSha1", "runtimeDepsCommitSha1",
+            "runtimeCommitSha1", "runtimeCommitSha2",
             true, false)]
         [InlineData(
             "All previously published, diff for base image digest",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-2",
-            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
-            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
-            "runtimeCommitSha-1", "runtimeCommitSha-1",
+            "sha256:baseImageSha1", "sha256:baseImageSha2",
+            "sha256:runtimeDepsImageSha1", "sha256:runtimeDepsImageSha2",
+            "runtimeDepsCommitSha1", "runtimeDepsCommitSha1",
+            "runtimeCommitSha1", "runtimeCommitSha1",
             false, false)]
         [InlineData(
             "Runtime not previously published",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-1",
-            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
-            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
-            null, "runtimeCommitSha-1",
+            "sha256:baseImageSha1", "sha256:baseImageSha1",
+            "sha256:runtimeDepsImageSha1", "sha256:runtimeDepsImageSha1",
+            "runtimeDepsCommitSha1", "runtimeDepsCommitSha1",
+            null, "runtimeCommitSha1",
             true, false)]
         [InlineData(
             "No images previously published",
-            "sha256:baseImageSha-1", "sha256:baseImageSha-1",
-            null, "sha256:runtimeDepsImageSha-1",
-            null, "runtimeDepsCommitSha-1",
-            null, "runtimeCommitSha-1",
+            "sha256:baseImageSha1", "sha256:baseImageSha1",
+            null, "sha256:runtimeDepsImageSha1",
+            null, "runtimeDepsCommitSha1",
+            null, "runtimeCommitSha1",
             false, false)]
         public async Task BuildCommand_Caching(
             string scenario,
@@ -946,17 +949,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
-            string runtimeDepsLinuxDigest = $"{runtimeDepsRepo}@sha1-linux";
-            string runtimeDepsWindowsDigest = $"{runtimeDepsRepo}@sha1-windows";
-            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1-linux";
+            string runtimeDepsLinuxDigest = $"{runtimeDepsRepo}@sha256:123";
+            string runtimeDepsWindowsDigest = $"{runtimeDepsRepo}@sha256:456";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha256:123";
             const string linuxTag = "linux-tag";
             const string windowsTag = "windows-tag";
             const string linuxBaseImageRepo = "linux-baserepo";
             const string windowsBaseImageRepo = "windows-baserepo";
             string linuxBaseImageTag = $"{linuxBaseImageRepo}:basetag";
             string windowsBaseImageTag = $"{windowsBaseImageRepo}:basetag";
-            string runtimeDepsLinuxBaseImageDigest = $"{linuxBaseImageRepo}@sha";
-            string runtimeDepsWindowsBaseImageDigest = $"{windowsBaseImageRepo}@sha";
+            string runtimeDepsLinuxBaseImageDigest = $"{linuxBaseImageRepo}@sha256:abc";
+            string runtimeDepsWindowsBaseImageDigest = $"{windowsBaseImageRepo}@sha256:abc";
             const string currentRuntimeDepsCommitSha = "commit-sha";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1252,13 +1255,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
             const string runtimeDeps3Repo = "runtime-deps3";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
-            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
-            string runtimeDeps3Digest = $"{runtimeDeps3Repo}@sha2";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:123";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha256:123";
+            string runtimeDeps3Digest = $"{runtimeDeps3Repo}@sha256:123";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
-            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha-base";
+            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha256:123";
             const string currentRuntimeDepsCommitSha = "commit-sha";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1537,12 +1540,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
-            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:123";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha256:123";
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
-            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha";
+            string runtimeDepsBaseImageDigest = $"{baseImageRepo}@sha256:123";
             const string currentRuntimeDepsCommitSha = "commit-sha";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1738,12 +1741,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public async Task BuildCommand_Caching_TagUpdate()
         {
             const string runtimeDepsRepo = "runtime-deps";
-            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha1";
+            string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:123";
             const string tag = "tag";
             const string newTag = "new-tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
-            string runtimeDepsLinuxBaseImageDigest = $"{baseImageRepo}@sha";
+            string runtimeDepsLinuxBaseImageDigest = $"{baseImageRepo}@sha256:123";
             const string currentRuntimeDepsCommitSha = "commit-sha";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1935,13 +1938,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeDeps2Repo = "runtime-deps2";
-            string runtimeDepsLinuxDigest = $"{runtimeDepsRepo}@sha1";
-            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1";
+            string runtimeDepsLinuxDigest = $"{runtimeDepsRepo}@sha256:123";
+            string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha256:123";
             const string tag = "tag";
             const string newTag = "new-tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";
-            string runtimeDepsLinuxBaseImageDigest = $"{baseImageRepo}@sha";
+            string runtimeDepsLinuxBaseImageDigest = $"{baseImageRepo}@sha256:123";
             const string currentRuntimeDepsCommitSha = "commit-sha";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

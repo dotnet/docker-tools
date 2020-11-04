@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Helpers.ImageInfoHelper.CreatePlatform(
                                             repo1Image1DockerfilePath,
                                             created: new DateTime(2020, 4, 20, 21, 56, 50, DateTimeKind.Utc),
-                                            digest: "def",
+                                            digest: "repo@sha256:123",
                                             simpleTags: new List<string>
                                             {
                                                 "t1"
@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Helpers.ImageInfoHelper.CreatePlatform(
                                             repo1Image2DockerfilePath,
                                             created: new DateTime(2020, 4, 20, 21, 56, 56, DateTimeKind.Utc),
-                                            digest: "ghi",
+                                            digest: "repo@sha256:456",
                                             simpleTags: new List<string>
                                             {
                                                 "t2"
@@ -132,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Helpers.ImageInfoHelper.CreatePlatform(
                                         repo2Image2DockerfilePath,
                                         created: new DateTime(2020, 4, 20, 21, 56, 58, DateTimeKind.Utc),
-                                        digest: "jkl",
+                                        digest: "repo@sha256:789",
                                         simpleTags: new List<string>
                                         {
                                             "t3"
@@ -150,19 +150,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             string expectedImageData =
-@"""def"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
+@"""sha256:123"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
 ""t1"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
-""ghi"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
+""sha256:456"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
 ""t2"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
-""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""
+""sha256:789"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""
 ""t3"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""";
             expectedImageData = expectedImageData.NormalizeLineEndings(Environment.NewLine).Trim();
 
             string expectedLayerData =
-@"""qwe"",""0"",""2"",""def"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
-""asd"",""0"",""1"",""def"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
-""qwe"",""0"",""1"",""ghi"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
-""zxc"",""0"",""1"",""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""";
+@"""qwe"",""0"",""2"",""sha256:123"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
+""asd"",""0"",""1"",""sha256:123"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
+""qwe"",""0"",""1"",""sha256:456"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
+""zxc"",""0"",""1"",""sha256:789"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""";
             expectedLayerData = expectedLayerData.NormalizeLineEndings(Environment.NewLine).Trim();
 
             await ValidateExecuteAsync(tempFolderContext, manifestPath, srcImageArtifactDetails, expectedImageData, expectedLayerData);
@@ -222,7 +222,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Helpers.ImageInfoHelper.CreatePlatform(
                                         repo1Image1DockerfilePath,
                                         created: new DateTime(2020, 4, 20, 21, 56, 58, DateTimeKind.Utc),
-                                        digest: "jkl",
+                                        digest: "repo@sha256:123",
                                         simpleTags: new List<string>
                                         {
                                             "t1",
@@ -242,8 +242,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             string expectedImageData =
-@"""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
-""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
+@"""sha256:123"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
+""sha256:123"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t1"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
 ""t1"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t2"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
@@ -253,7 +253,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             expectedImageData = expectedImageData.NormalizeLineEndings(Environment.NewLine).Trim();
 
             string expectedLayerData =
-@"""zxc"",""0"",""1"",""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""";
+@"""zxc"",""0"",""1"",""sha256:123"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""";
             expectedLayerData = expectedLayerData.NormalizeLineEndings(Environment.NewLine).Trim();
 
             await ValidateExecuteAsync(tempFolderContext, manifestPath, srcImageArtifactDetails, expectedImageData, expectedLayerData);

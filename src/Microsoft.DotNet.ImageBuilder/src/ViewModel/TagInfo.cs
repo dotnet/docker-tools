@@ -4,6 +4,7 @@
 
 using System;
 using System.Linq;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
@@ -34,7 +35,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 BuildContextPath = buildContextPath
             };
             tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetVariableValue);
-            tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
+            
+            ImageName imageName = ImageName.Parse(repoName);
+            imageName.Tag = tagInfo.Name;
+            tagInfo.FullyQualifiedName = imageName.ToString();
 
             if (model.Syndication != null)
             {
@@ -49,11 +53,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             return tagInfo;
-        }
-
-        public static string GetFullyQualifiedName(string repoName, string tagName)
-        {
-            return $"{repoName}:{tagName}";
         }
 
         private string GetVariableValue(string variableType, string variableName)

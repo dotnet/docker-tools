@@ -4,6 +4,7 @@
 
 using System.IO;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -130,7 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(expectedBaseline.ToString(), actualBaselineText);
         }
 
-        private static string GetTag(string repo, string tag) => TagInfo.GetFullyQualifiedName(repo, tag);
+        private static string GetTag(string repo, string tag) => new ImageName(repo, tag: tag).ToString();
 
         private static JObject CreateBaselineJson(long runtimeDepsSize, long runtimeSize, long sdkSize)
         {

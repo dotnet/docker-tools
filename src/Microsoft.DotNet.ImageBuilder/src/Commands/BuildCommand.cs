@@ -9,8 +9,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
@@ -183,7 +183,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
             if (digest != null)
             {
-                digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
+                ImageName imageName = ImageName.Parse(platform.PlatformInfo.FullRepoModelName);
+                imageName.Digest = ImageName.Parse(digest).Digest;
+                digest = imageName.ToString();
             }
 
             if (platform.Digest != null && platform.Digest != digest)
@@ -432,8 +434,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // In that scenario, the digest that is retrieved will be based on the repo of the first repository
                 // encountered. For subsequent cache hits on different repositories, we need to prepopulate the digest
                 // cache with a digest value that would correspond to that repository, not the original repository.
-                string newDigest = DockerHelper.GetImageName(
-                    Manifest.Model.Registry, repo.Model.Name, digest: DockerHelper.GetDigestSha(sourceDigest));
+                string newDigest = new ImageName(
+                    repo.Model.Name, Manifest.Model.Registry, digest: ImageName.Parse(sourceDigest).Digest).ToString();
 
                 // Populate the digest cache with the known digest value for the tags assigned to the image.
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
@@ -465,9 +467,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
-            string currentBaseImageDigest = _imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
-            bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
-                DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
+            string currentBaseImageDigest = _imageDigestCache.GetImageDigest(platform.FinalStageFromImage.ToString(), Options.IsDryRun);
+            bool baseImageDigestMatches = ImageName.Parse(srcPlatformData.BaseImageDigest).Digest?.Equals(
+                ImageName.Parse(currentBaseImageDigest).Digest, StringComparison.OrdinalIgnoreCase) == true;
 
             _loggerService.WriteMessage();
             _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
@@ -648,16 +650,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // If a repo override has been specified, update the FROM commands.
             if (platform.OverriddenFromImages.Any())
             {
-                string dockerfileContents = File.ReadAllText(dockerfilePath);
+                Dockerfile dockerfile = Dockerfile.Parse(dockerfilePath);
 
                 foreach (string fromImage in platform.OverriddenFromImages)
                 {
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.QualifiedName);
+
                     _loggerService.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
-                    Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\S\r\n]*");
-                    dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
+
+                    IEnumerable<FromInstruction> fromInstructions = dockerfile.Items
+                        .Cast<FromInstruction>()
+                        .Where(from => from.ImageName == fromImage);
+
+                    foreach (FromInstruction fromInstruction in fromInstructions)
+                    {
+                        fromInstruction.ImageName = newFromImage;
+                    }
                     updateDockerfile = true;
                 }
 
@@ -666,6 +676,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     // Don't overwrite the original dockerfile - write it to a new path.
                     dockerfilePath += ".temp";
                     _loggerService.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
+                    string dockerfileContents = dockerfile.ToString();
                     _loggerService.WriteMessage(dockerfileContents);
                     File.WriteAllText(dockerfilePath, dockerfileContents);
                 }

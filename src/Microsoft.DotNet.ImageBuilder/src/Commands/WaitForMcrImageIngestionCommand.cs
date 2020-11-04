@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -61,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (image.Manifest?.Digest != null)
             {
-                string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
+                string digestSha = ImageName.Parse(image.Manifest.Digest).Digest;
                 yield return new DigestInfo(digestSha, repo.Repo, image.Manifest.SharedTags);
 
                 // Find all syndicated shared tags grouped by their syndicated repo
@@ -74,7 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string syndicatedRepo = Options.RepoPrefix + syndicatedTags.Key;
 
                     string tag = syndicatedTags.First().SyndicatedDestinationTags.First();
-                    tag = DockerHelper.GetImageName(Manifest.Registry, syndicatedRepo, tag);
+                    tag = new ImageName(syndicatedRepo, registry: Manifest.Registry, tag: tag).ToString();
 
                     yield return new DigestInfo(
                         digestSha,
@@ -85,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (PlatformData platform in image.Platforms)
             {
-                string sha = DockerHelper.GetDigestSha(platform.Digest);
+                string sha = ImageName.Parse(platform.Digest).Digest;
 
                 yield return new DigestInfo(sha, repo.Repo, platform.SimpleTags);
 

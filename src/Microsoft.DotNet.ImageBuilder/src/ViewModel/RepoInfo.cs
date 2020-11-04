@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
@@ -46,12 +47,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             RepoInfo repoInfo = new RepoInfo
             {
                 Model = model,
-                FullModelName = (string.IsNullOrEmpty(modelRegistryName) ? string.Empty : $"{modelRegistryName}/") + model.Name,
+                FullModelName = ImageName.Parse(
+                    (string.IsNullOrEmpty(modelRegistryName) ? string.Empty : $"{modelRegistryName}/") + model.Name).ToString(),
                 Id = model.Id ?? model.Name
             };
 
-            registry = string.IsNullOrEmpty(registry) ? string.Empty : $"{registry}/";
-            repoInfo.QualifiedName = registry + options.RepoPrefix + model.Name;
+            repoInfo.QualifiedName = new ImageName(options.RepoPrefix + model.Name, registry).ToString();
 
             if (model.Readme != null)
             {

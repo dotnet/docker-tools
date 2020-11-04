@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -40,7 +41,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string digest = DockerHelper.GetDigestString(DockerHelper.GetRepo(image), digestSha);
+            ImageName imageName = ImageName.Parse(image);
+
+            string digest = new ImageName(imageName.Repository, imageName.Registry, digest: digestSha).ToString();
 
             if (!digests.Contains(digest))
             {

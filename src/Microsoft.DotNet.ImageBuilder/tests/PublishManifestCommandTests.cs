@@ -31,10 +31,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
             manifestToolService
                 .Setup(o => o.Inspect("repo1:sharedtag2", false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest1"));
+                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "sha256:123"));
             manifestToolService
                 .Setup(o => o.Inspect("repo2:sharedtag3", false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
+                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "sha256:456"));
 
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestToolService.Object, Mock.Of<ILoggerService>());
@@ -175,9 +175,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.True(actualCreatedDate > (DateTime.Now.ToUniversalTime() - TimeSpan.FromMinutes(1)));
             Assert.True(actualCreatedDate < (DateTime.Now.ToUniversalTime() + TimeSpan.FromMinutes(1)));
 
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "repo1@digest1";
+            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "repo1@sha256:123";
             imageArtifactDetails.Repos[0].Images[0].Manifest.Created = actualCreatedDate;
-            imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "repo2@digest2";
+            imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "repo2@sha256:456";
             imageArtifactDetails.Repos[1].Images[0].Manifest.Created = actualCreatedDate;
 
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);

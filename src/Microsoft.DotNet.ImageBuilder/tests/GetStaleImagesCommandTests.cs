@@ -72,10 +72,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff"),
+                                                baseImageDigest: "base1@sha256:123a"),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest")
+                                                baseImageDigest: "base2@sha256:456")
                                         }
                                     }
                                 }
@@ -92,8 +92,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
-                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest"))
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "sha256:123")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "sha256:456"))
                     }
                 }
             };
@@ -155,10 +155,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base2@base2digest-diff"),
+                                                baseImageDigest: "base2@sha256:456a"),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base3@base3digest")
+                                                baseImageDigest: "base3@sha256:789")
                                         }
                                     }
                                 }
@@ -177,12 +177,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         new DockerfileInfo(
                             dockerfile1Path, 
-                            new FromImageInfo("base1", "base1digest"),
-                            new FromImageInfo("base2", "base2digest")),
+                            new FromImageInfo("base1", "sha256:123"),
+                            new FromImageInfo("base2", "sha256:456")),
                         new DockerfileInfo(
                             dockerfile2Path, 
-                            new FromImageInfo("base2", "base2digest"), 
-                            new FromImageInfo("base3", "base3digest"))
+                            new FromImageInfo("base2", "sha256:456"), 
+                            new FromImageInfo("base3", "sha256:789"))
                     }
                 }
             };
@@ -432,7 +432,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff")
+                                                baseImageDigest: "base1@sha256:123a")
                                         }
                                     }
                                 }
@@ -448,7 +448,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest-diff")
+                                                baseImageDigest: "base2@sha256:456a")
                                         }
                                     }
                                 }
@@ -482,7 +482,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff")
+                                                baseImageDigest: "base1@sha256:123a")
                                         }
                                     }
                                 }
@@ -498,7 +498,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest-diff")
+                                                baseImageDigest: "base2@sha256:456a")
                                         }
                                     }
                                 }
@@ -514,7 +514,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile3Path,
-                                                baseImageDigest: "base3@base3digest")
+                                                baseImageDigest: "base3@sha256:789")
                                         }
                                     }
                                 }
@@ -531,15 +531,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest"))
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "sha256:123"))
                     }
                 },
                 {
                     subscriptionInfos[1].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest")),
-                        new DockerfileInfo(dockerfile3Path, new FromImageInfo("base3", "base3digest"))
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "sha256:456")),
+                        new DockerfileInfo(dockerfile3Path, new FromImageInfo("base3", "sha256:789"))
                     }
                 }
             };
@@ -671,7 +671,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string baseImage = "base1";
-            const string baseImageDigest = "base1digest";
+            const string baseImageDigest = "sha256:123";
 
             SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
@@ -751,9 +751,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string aspnetDockerfilePath = "aspnet/Dockerfile";
             const string otherDockerfilePath = "other/Dockerfile";
             const string baseImage = "base1";
-            const string baseImageDigest = "base1digest";
+            const string baseImageDigest = "sha256:123";
             const string otherImage = "other";
-            const string otherImageDigest = "otherDigest";
+            const string otherImageDigest = "sha256:456";
 
             SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
@@ -795,7 +795,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 runtimeDepsDockerfilePath,
-                                                baseImageDigest: $"{baseImage}@{baseImageDigest}-diff")
+                                                baseImageDigest: $"{baseImage}@{baseImageDigest}abc")
                                         }
                                     }
                                 }
@@ -893,9 +893,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string aspnetDockerfilePath = "aspnet/Dockerfile";
             const string otherDockerfilePath = "other/Dockerfile";
             const string baseImage = "base1";
-            const string baseImageDigest = "base1digest";
+            const string baseImageDigest = "sha256:123";
             const string otherImage = "other";
-            const string otherImageDigest = "otherDigest";
+            const string otherImageDigest = "sha256:456";
 
             SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
@@ -1005,10 +1005,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff"),
+                                                baseImageDigest: "base1@sha256:123abc"),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest")
+                                                baseImageDigest: "base2@sha256:123")
                                         }
                                     }
                                 }
@@ -1025,8 +1025,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
-                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest"))
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "sha256:123")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "sha256:123"))
                     }
                 }
             };
@@ -1166,7 +1166,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             CreatePlatform(dockerfile1Path),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base1@base1digest")
+                                                baseImageDigest: "base1@sha256:123")
                                         }
                                     }
                                 }
@@ -1183,8 +1183,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, new FromImageInfo(null, null, isInternal: true)),
-                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base1", "base1digest"))
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("internal", "sha256:123", isInternal: true)),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base1", "sha256:123"))
                     }
                 }
             };

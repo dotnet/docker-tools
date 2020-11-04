@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Valleysoft.DockerfileModel;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -66,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     foreach (PlatformData platform in image.Platforms)
                     {
                         string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
-                        string sha = DockerHelper.GetDigestSha(platform.Digest);
+                        string sha = ImageName.Parse(platform.Digest).Digest!;
                         imageInfo.AppendLine(FormatImageCsv(sha, platform, image, repo.Repo, timestamp));
 
                         IEnumerable<TagInfo> tagInfos = platform.PlatformInfo.Tags

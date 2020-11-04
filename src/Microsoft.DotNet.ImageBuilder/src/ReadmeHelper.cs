@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder
             tagsListing = $"{TagsSectionHeader}{targetLineEnding}{targetLineEnding}{tagsListing}{targetLineEnding}";
 
             // Regex to find the entire tags listing section including the header.
-            Regex regex = new Regex($"^{TagsSectionHeader}\\s*(^(?!# ).*\\s)*", RegexOptions.Multiline);
+            Regex regex = new Regex($"^{TagsSectionHeader}\\s*", RegexOptions.Multiline);
             return regex.Replace(readme, tagsListing);
         }
     }

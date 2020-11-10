@@ -121,22 +121,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Distinct();
                 foreach (string productRepo in productRepoNames)
                 {
-                    readmes.Add(GetReadMeGitObject(productRepo, Manifest.ReadmePath));
+                    readmes.Add(GetReadMeGitObject(productRepo, Manifest.ReadmePath, containsTagListing: false));
                 }
             }
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), repo.ReadmePath));
+                readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), repo.ReadmePath, containsTagListing: true));
             }
 
             return readmes.ToArray();
         }
 
-        private GitObject GetReadMeGitObject(string productRepoName, string readmePath)
+        private GitObject GetReadMeGitObject(string productRepoName, string readmePath, bool containsTagListing)
         {
             string updatedReadMe = File.ReadAllText(readmePath);
-            updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
+            if (containsTagListing)
+            {
+                updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
+            }
+            
             return GetGitObject(productRepoName, readmePath, updatedReadMe);
         }
 

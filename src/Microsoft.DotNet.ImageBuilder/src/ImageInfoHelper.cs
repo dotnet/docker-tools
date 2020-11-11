@@ -82,10 +82,19 @@ namespace Microsoft.DotNet.ImageBuilder
             MergeData(src, target, options);
         }
 
-        private static bool AreProductVersionsEquivalent(string productVersion1, string productVersion2) =>
+        private static bool AreProductVersionsEquivalent(string productVersion1, string productVersion2)
+        {
+            if (productVersion1 == productVersion2)
+            {
+                return true;
+            }
+
             // Product versions are considered equivalent if the major and minor segments are the same
             // See https://github.com/dotnet/docker-tools/issues/688
-            new Version(productVersion1).ToString(2) == new Version(productVersion2).ToString(2);
+            return Version.TryParse(productVersion1, out Version version1) &&
+                Version.TryParse(productVersion2, out Version version2) &&
+                version1.ToString(2) == version2.ToString(2);
+        }
 
         private static void MergePropertyData(object srcObj, object targetObj, PropertyInfo property, ImageInfoMergeOptions options)
         {

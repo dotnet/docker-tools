@@ -82,8 +82,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             string sourceTag = GetSourceTag(destinationTag);
                             tags.Add((sourceTag, destinationTag));
 
-                            TagInfo tagInfo = platformData.PlatformInfo.Tags.First(tagInfo => tagInfo.Name == tag);
-                            if (tagInfo.SyndicatedRepo != null)
+                            TagInfo tagInfo = platformData.PlatformInfo.Tags.FirstOrDefault(tagInfo => tagInfo.Name == tag);
+                            // There may not be a matching tag due to dynamic tag names. For now, we'll say that
+                            // syndication is not supported for dynamically named tags.
+                            // See https://github.com/dotnet/docker-tools/issues/686
+                            if (tagInfo?.SyndicatedRepo != null)
                             {
                                 foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
                                 {

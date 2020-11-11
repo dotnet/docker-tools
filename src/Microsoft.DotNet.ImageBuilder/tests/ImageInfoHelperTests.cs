@@ -112,6 +112,75 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Fact]
+        public void LoadFromContent_ImagesDifferByPatchVersion()
+        {
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0.0",
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                        OsType = "Linux",
+                                        OsVersion = "Ubuntu 20.04",
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "linux" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            using TempFolderContext tempFolderContext = new TempFolderContext();
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                CreateDockerfile("1.0/runtime/linux", tempFolderContext),
+                                new string[] { "linux" },
+                                OS.Linux,
+                                "focal")
+                        },
+                        productVersion: "1.0.1"))
+            );
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+            string expected = JsonHelper.SerializeObject(imageArtifactDetails);
+
+            ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
+
+            Assert.Equal(expected, JsonHelper.SerializeObject(result));
+            RepoData repo = result.Repos.First();
+            ImageData image = repo.Images.First();
+            RepoInfo expectedRepo = manifestInfo.AllRepos.First();
+            ImageInfo expectedImage = expectedRepo.AllImages.First();
+            Assert.Same(expectedImage, image.ManifestImage);
+            Assert.Same(expectedRepo, image.ManifestRepo);
+
+            Assert.Same(expectedImage, image.Platforms.First().ImageInfo);
+            Assert.Same(expectedImage.AllPlatforms.First(), image.Platforms.First().PlatformInfo);
+            Assert.Same(expectedImage.AllPlatforms.Last(), image.Platforms.Last().PlatformInfo);
+        }
+
+        [Fact]
         public void ImageInfoHelper_MergeRepos_ImageDigest()
         {
             ImageInfo imageInfo1 = CreateImageInfo();

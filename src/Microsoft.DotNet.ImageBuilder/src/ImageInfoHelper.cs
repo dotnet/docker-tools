@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder
                             PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms
                                 .FirstOrDefault(platform =>
                                     platformData.Equals(platform) &&
-                                    imageData.ProductVersion == manifestImage.ProductVersion);
+                                    AreProductVersionsEquivalent(imageData.ProductVersion, manifestImage.ProductVersion));
                             if (matchingManifestPlatform != null)
                             {
                                 if (imageData.ManifestImage is null)
@@ -80,6 +80,20 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             MergeData(src, target, options);
+        }
+
+        private static bool AreProductVersionsEquivalent(string productVersion1, string productVersion2)
+        {
+            if (productVersion1 == productVersion2)
+            {
+                return true;
+            }
+
+            // Product versions are considered equivalent if the major and minor segments are the same
+            // See https://github.com/dotnet/docker-tools/issues/688
+            return Version.TryParse(productVersion1, out Version version1) &&
+                Version.TryParse(productVersion2, out Version version2) &&
+                version1.ToString(2) == version2.ToString(2);
         }
 
         private static void MergePropertyData(object srcObj, object targetObj, PropertyInfo property, ImageInfoMergeOptions options)

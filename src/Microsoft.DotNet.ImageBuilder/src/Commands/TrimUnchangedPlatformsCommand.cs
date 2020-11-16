@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
-            RemoveUnchangedPlatforms(imageArtifactDetails);
+            RemoveUnchangedPlatformsAndSort(imageArtifactDetails);
             imageInfoContents = JsonHelper.SerializeObject(imageArtifactDetails);
 
             if (!Options.IsDryRun)
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void RemoveUnchangedPlatforms(ImageArtifactDetails imageArtifactDetails)
+        private void RemoveUnchangedPlatformsAndSort(ImageArtifactDetails imageArtifactDetails)
         {
             for (int repoIndex = imageArtifactDetails.Repos.Count - 1; repoIndex >= 0; repoIndex--)
             {
@@ -54,11 +54,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             _loggerService.WriteMessage($"Removing unchanged platform '{platform.GetIdentifier()}'");
                             image.Platforms.Remove(platform);
                         }
+                        else
+                        {
+                            platform.SimpleTags.Sort();
+                        }
                     }
 
                     if (!image.Platforms.Any())
                     {
                         repo.Images.Remove(image);
+                    }
+                    else
+                    {
+                        image.Platforms.Sort();
                     }
                 }
 
@@ -66,7 +74,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     imageArtifactDetails.Repos.Remove(repo);
                 }
+                else
+                {
+                    repo.Images.Sort();
+                }
             }
+
+            imageArtifactDetails.Repos.Sort();
         }
     }
 }

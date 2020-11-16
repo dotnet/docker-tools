@@ -138,23 +138,30 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string GetOSDisplayName()
         {
-            string displayName;
+            string displayName = null;
             string os = BaseOsVersion;
 
             if (Model.OS == OS.Windows)
             {
-                if (os.Contains("2016"))
+                string version = os.Split('-')[1];
+                if (os.StartsWith("nanoserver"))
                 {
-                    displayName = "Windows Server 2016";
+                    displayName = $"Windows Nano Server, version {version}";
                 }
-                else if (os.Contains("2019") || os.Contains("1809"))
+                else if (os.StartsWith("windowsservercore"))
                 {
-                    displayName = "Windows Server 2019";
-                }
-                else
-                {
-                    string version = os.Split('-')[1];
-                    displayName = $"Windows Server, version {version}";
+                    if (version == "ltsc2016")
+                    {
+                        displayName = "Windows Server Core 2016";
+                    }
+                    else if (version == "ltsc2019")
+                    {
+                        displayName = "Windows Server Core 2019";
+                    }
+                    else
+                    {
+                        displayName = $"Windows Server Core, version {version}";
+                    }
                 }
             }
             else
@@ -201,10 +208,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
                     displayName = os.FirstCharToUpper();
                 }
-                else
-                {
-                    throw new InvalidOperationException($"The OS version '{os}' is not supported.");
-                }
+            }
+
+            if (displayName is null)
+            {
+                throw new NotSupportedException($"The OS version '{os}' is not supported.");
             }
 
             return displayName;

@@ -234,7 +234,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
                 string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                Assert.Equal("--os-version disco --os-version buster --os-version buster-slim", osVersions);
+                Assert.Equal("--os-version focal --os-version buster --os-version buster-slim", osVersions);
 
                 if (dependencyType == CustomBuildLegDependencyType.Integral)
                 {
@@ -767,11 +767,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Assert.Equal(2, matrixInfo.Legs.Count);
 
-                Assert.Equal("3.1-disco", matrixInfo.Legs[0].Name);
+                Assert.Equal("3.1-focal", matrixInfo.Legs[0].Name);
                 string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
 
-                Assert.Equal("5.0-disco", matrixInfo.Legs[1].Name);
+                Assert.Equal("5.0-focal", matrixInfo.Legs[1].Name);
                 imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
             }
@@ -824,7 +824,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                expectedLegName = "3.1-disco";
+                expectedLegName = "3.1-focal";
             }
 
             Assert.Equal(expectedLegName, matrixInfo.Legs[0].Name);

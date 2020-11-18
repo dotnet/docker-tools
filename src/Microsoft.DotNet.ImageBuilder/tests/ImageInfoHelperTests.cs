@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "Ubuntu 20.04",
+                                        OsVersion = "focal",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string> { "linux" }
                                     },
@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/windows/Dockerfile",
                                         OsType = "Windows",
-                                        OsVersion = "Windows Server, version 2004",
+                                        OsVersion = "nanoserver-2004",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string> { "windows" }
                                     }
@@ -132,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "Ubuntu 20.04",
+                                        OsVersion = "focal",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string> { "linux" }
                                     }
@@ -859,7 +859,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "Ubuntu 19.04",
+                                        OsVersion = "focal",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>
@@ -892,7 +892,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "Ubuntu 19.04",
+                                        OsVersion = "focal",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>
@@ -924,7 +924,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "Ubuntu 19.04",
+                                        OsVersion = "focal",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>
@@ -942,7 +942,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "Ubuntu 19.04",
+                                        OsVersion = "focal",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>

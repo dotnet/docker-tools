@@ -286,8 +286,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string OsType = "Linux";
             const string Os1 = "bionic";
             const string Os2 = "focal";
-            const string Os1DisplayName = "Ubuntu 18.04";
-            const string Os2DisplayName = "Ubuntu 20.04";
 
             using (TempFolderContext context = TestHelper.UseTempFolder())
             {
@@ -312,7 +310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             new PlatformData
                                             {
                                                 Architecture = "arm32",
-                                                OsVersion = Os1DisplayName,
+                                                OsVersion = Os1,
                                                 OsType = OsType,
                                                 Digest = "digest1",
                                                 Dockerfile = dockerfile1,
@@ -325,7 +323,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             new PlatformData
                                             {
                                                 Architecture = "arm64",
-                                                OsVersion = Os1DisplayName,
+                                                OsVersion = Os1,
                                                 OsType = OsType,
                                                 Digest = "digest2",
                                                 Dockerfile = dockerfile1,
@@ -343,7 +341,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             new PlatformData
                                             {
                                                 Architecture = "arm32",
-                                                OsVersion = Os2DisplayName,
+                                                OsVersion = Os2,
                                                 OsType = OsType,
                                                 Digest = "digest4",
                                                 Dockerfile = dockerfile1,
@@ -374,7 +372,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             new PlatformData
                                             {
                                                 Architecture = "arm64",
-                                                OsVersion = Os1DisplayName,
+                                                OsVersion = Os1,
                                                 OsType = OsType,
                                                 Digest = "digest2-new",
                                                 Dockerfile = dockerfile1,
@@ -407,7 +405,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 Architecture = "amd64",
                                                 Digest = "digest3",
-                                                OsVersion = Os1DisplayName,
+                                                OsVersion = Os1,
                                                 OsType = OsType,
                                                 Dockerfile = dockerfile2,
                                                 SimpleTags =
@@ -424,7 +422,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             new PlatformData
                                             {
                                                 Architecture = "arm32",
-                                                OsVersion = Os2DisplayName,
+                                                OsVersion = Os2,
                                                 OsType = OsType,
                                                 Digest = "digest4-new",
                                                 Dockerfile = dockerfile1,
@@ -487,7 +485,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         new PlatformData
                                         {
                                             Architecture = "arm32",
-                                            OsVersion = Os1DisplayName,
+                                            OsVersion = Os1,
                                             OsType = OsType,
                                             Digest = "digest1",
                                             Dockerfile = dockerfile1,
@@ -500,7 +498,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         new PlatformData
                                         {
                                             Architecture = "arm64",
-                                            OsVersion = Os1DisplayName,
+                                            OsVersion = Os1,
                                             OsType = OsType,
                                             Digest = "digest2-new",
                                             Dockerfile = dockerfile1,
@@ -519,7 +517,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         new PlatformData
                                         {
                                             Architecture = "arm32",
-                                            OsVersion = Os2DisplayName,
+                                            OsVersion = Os2,
                                             OsType = OsType,
                                             Digest = "digest4-new",
                                             Dockerfile = dockerfile1,
@@ -539,7 +537,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             Architecture = "amd64",
                                             Digest = "digest3",
-                                            OsVersion = Os1DisplayName,
+                                            OsVersion = Os1,
                                             OsType = OsType,
                                             Dockerfile = dockerfile2,
                                             SimpleTags =

@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string dockerfilePath, 
             string[] tags, 
             OS os = OS.Linux, 
-            string osVersion = "disco",
+            string osVersion = "focal",
             Architecture architecture = Architecture.AMD64,
             string variant = null,
             CustomBuildLegGroup[] customBuildLegGroups = null,

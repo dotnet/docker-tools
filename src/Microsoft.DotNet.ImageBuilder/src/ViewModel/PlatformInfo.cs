@@ -143,18 +143,29 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (Model.OS == OS.Windows)
             {
-                if (os.Contains("2016"))
+                string version = os.Split('-')[1];
+                if (os.StartsWith("nanoserver"))
                 {
-                    displayName = "Windows Server 2016";
+                    displayName = $"Nano Server, version {version}";
                 }
-                else if (os.Contains("2019") || os.Contains("1809"))
+                else if (os.StartsWith("windowsservercore"))
                 {
-                    displayName = "Windows Server 2019";
+                    if (version == "ltsc2016")
+                    {
+                        displayName = "Windows Server Core 2016";
+                    }
+                    else if (version == "ltsc2019")
+                    {
+                        displayName = "Windows Server Core 2019";
+                    }
+                    else
+                    {
+                        displayName = $"Windows Server Core, version {version}";
+                    }
                 }
                 else
                 {
-                    string version = os.Split('-')[1];
-                    displayName = $"Windows Server, version {version}";
+                    throw new NotSupportedException($"The OS version '{os}' is not supported.");
                 }
             }
             else
@@ -203,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else
                 {
-                    throw new InvalidOperationException($"The OS version '{os}' is not supported.");
+                    throw new NotSupportedException($"The OS version '{os}' is not supported.");
                 }
             }
 

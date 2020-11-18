@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 Dockerfile = platform.DockerfilePathRelativeToManifest,
                 Architecture = platform.Model.Architecture.GetDisplayName(),
                 OsType = platform.Model.OS.ToString(),
-                OsVersion = platform.GetOSDisplayName(),
+                OsVersion = platform.Model.OsVersion,
                 SimpleTags = platform.Tags.Select(tag => tag.Name).ToList()
             };
     }

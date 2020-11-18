@@ -176,14 +176,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tag1a",
                                                     "tag1b"
                                                 },
-                                                osVersion: "Alpine 3.10"),
+                                                osVersion: "alpine3.10"),
                                             CreatePlatform(
                                                 PathHelper.NormalizePath(dockerfileRelativePath),
                                                 simpleTags: new List<string>
                                                 {
                                                     "tag2a"
                                                 },
-                                                osVersion: "Alpine 3.11")
+                                                osVersion: "alpine3.11")
                                         }
                                     }
                                 }

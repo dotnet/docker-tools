@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string digest = null,
             string architecture = "amd64",
             string osType = "Linux",
-            string osVersion = "Ubuntu 19.04",
+            string osVersion = "focal",
             List<string> simpleTags = null,
             string baseImageDigest = null,
             DateTime? created = null)

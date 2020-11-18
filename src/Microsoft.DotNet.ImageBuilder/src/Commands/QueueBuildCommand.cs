@@ -93,13 +93,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            using (IVssConnection connection = _connectionFactory.Create(
-                new Uri($"https://dev.azure.com/{Options.BuildOrganization}"),
-                new VssBasicCredential(string.Empty, Options.BuildPersonalAccessToken)))
+            (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
+
+            using (IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
             using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
             using (IBuildHttpClient client = connection.GetBuildHttpClient())
             {
-                TeamProject project = await projectHttpClient.GetProjectAsync(Options.BuildProject);
+                TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project);
 
                 Build build = new Build
                 {

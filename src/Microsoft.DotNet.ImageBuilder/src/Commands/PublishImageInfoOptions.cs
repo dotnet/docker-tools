@@ -11,12 +11,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string CommandHelp => "Publishes a build's merged image info.";
 
         public GitOptions GitOptions { get; set; } = new GitOptions();
+        public AzdoOptions AzdoOptions { get; set; } = new AzdoOptions();
 
         public override void DefineOptions(ArgumentSyntax syntax)
         {
             base.DefineOptions(syntax);
 
             GitOptions.DefineOptions(syntax);
+            AzdoOptions.DefineOptions(syntax);
         }
 
         public override void DefineParameters(ArgumentSyntax syntax)
@@ -24,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.DefineParameters(syntax);
 
             GitOptions.DefineParameters(syntax);
+            AzdoOptions.DefineParameters(syntax);
         }
     }
 }

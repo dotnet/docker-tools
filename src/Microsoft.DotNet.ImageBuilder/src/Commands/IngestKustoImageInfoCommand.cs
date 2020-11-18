@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private string FormatCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
-            $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.OsVersion}\","
+            $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.PlatformInfo.GetOSDisplayName()}\","
                 + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo}\",\"{timestamp}\"";
     }
 }

@@ -34,9 +34,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Theory]
         [InlineData("windowsservercore-ltsc2016", "Windows Server Core 2016")]
         [InlineData("windowsservercore-ltsc2019", "Windows Server Core 2019")]
-        [InlineData("nanoserver-1809", "Windows Nano Server, version 1809")]
+        [InlineData("nanoserver-1809", "Nano Server, version 1809")]
         [InlineData("windowsservercore-1903", "Windows Server Core, version 1903")]
-        [InlineData("nanoserver-1903", "Windows Nano Server, version 1903")]
+        [InlineData("nanoserver-1903", "Nano Server, version 1903")]
         public void GetOSDisplayName_Windows(string osVersion, string expectedDisplayName)
         {
             ValidateGetOSDisplayName(OS.Windows, osVersion, expectedDisplayName);

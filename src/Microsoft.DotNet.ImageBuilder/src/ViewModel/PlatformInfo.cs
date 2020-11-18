@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string GetOSDisplayName()
         {
-            string displayName = null;
+            string displayName;
             string os = BaseOsVersion;
 
             if (Model.OS == OS.Windows)
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 string version = os.Split('-')[1];
                 if (os.StartsWith("nanoserver"))
                 {
-                    displayName = $"Windows Nano Server, version {version}";
+                    displayName = $"Nano Server, version {version}";
                 }
                 else if (os.StartsWith("windowsservercore"))
                 {
@@ -162,6 +162,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     {
                         displayName = $"Windows Server Core, version {version}";
                     }
+                }
+                else
+                {
+                    throw new NotSupportedException($"The OS version '{os}' is not supported.");
                 }
             }
             else
@@ -208,11 +212,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
                     displayName = os.FirstCharToUpper();
                 }
-            }
-
-            if (displayName is null)
-            {
-                throw new NotSupportedException($"The OS version '{os}' is not supported.");
+                else
+                {
+                    throw new NotSupportedException($"The OS version '{os}' is not supported.");
+                }
             }
 
             return displayName;

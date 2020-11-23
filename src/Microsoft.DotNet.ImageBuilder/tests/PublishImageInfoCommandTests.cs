@@ -6,15 +6,20 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
+using Microsoft.TeamFoundation.SourceControl.WebApi;
+using Microsoft.VisualStudio.Services.Common;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -135,6 +140,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
                     .Returns(gitHubClientMock.Object);
 
+                AzdoOptions azdoOptions = new AzdoOptions
+                {
+                    AccessToken = "azdo-token",
+                    Branch = "testBranch",
+                    Repo = "testRepo",
+                    Organization = "azdo-org",
+                    Project = "azdo-project",
+                    Path = "imageinfo.json"
+                };
+
+                Mock<IAzdoGitHttpClient> azdoGitHttpClientMock = GetAzdoGitHttpClient(azdoOptions);
+
+                Mock<IAzdoGitHttpClientFactory> azdoGitHttpClientFactoryMock = new Mock<IAzdoGitHttpClientFactory>();
+                azdoGitHttpClientFactoryMock
+                    .Setup(o => o.GetClient(It.IsAny<Uri>(), It.IsAny<VssCredentials>()))
+                    .Returns(azdoGitHttpClientMock.Object);
+
                 GitOptions gitOptions = new GitOptions
                 {
                     AuthToken = "token",
@@ -145,9 +167,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 PublishImageInfoCommand command = new PublishImageInfoCommand(
                     gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>(),
-                    CreateHttpClientFactory(gitOptions, targetImageArtifactDetails));
+                    CreateHttpClientFactory(gitOptions, targetImageArtifactDetails), azdoGitHttpClientFactoryMock.Object);
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions = gitOptions;
+                command.Options.AzdoOptions = azdoOptions;
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -181,18 +204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                Func<GitObject[], bool> verifyGitObjects = (gitObjects) =>
-                {
-                    if (gitObjects.Length != 1)
-                    {
-                        return false;
-                    }
-
-                    return gitObjects[0].Content.Trim() == JsonHelper.SerializeObject(expectedImageArtifactDetails).Trim();
-                };
-
-                gitHubClientMock.Verify(
-                    o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.Is<GitObject[]>(gitObjects => verifyGitObjects(gitObjects))));
+                VerifyMocks(gitHubClientMock, azdoGitHttpClientMock, expectedImageArtifactDetails);
             }
         }
 
@@ -308,11 +320,29 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Branch = "branch"
                 };
 
+                AzdoOptions azdoOptions = new AzdoOptions
+                {
+                    AccessToken = "azdo-token",
+                    Branch = "testBranch",
+                    Repo = "testRepo",
+                    Organization = "azdo-org",
+                    Project = "azdo-project",
+                    Path = "imageinfo.json"
+                };
+
+                Mock<IAzdoGitHttpClient> azdoGitHttpClientMock = GetAzdoGitHttpClient(azdoOptions);
+
+                Mock<IAzdoGitHttpClientFactory> azdoGitHttpClientFactoryMock = new Mock<IAzdoGitHttpClientFactory>();
+                azdoGitHttpClientFactoryMock
+                    .Setup(o => o.GetClient(It.IsAny<Uri>(), It.IsAny<VssCredentials>()))
+                    .Returns(azdoGitHttpClientMock.Object);
+
                 PublishImageInfoCommand command = new PublishImageInfoCommand(
                     gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>(),
-                    CreateHttpClientFactory(gitOptions, targetImageArtifactDetails));
+                    CreateHttpClientFactory(gitOptions, targetImageArtifactDetails), azdoGitHttpClientFactoryMock.Object);
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions = gitOptions;
+                command.Options.AzdoOptions = azdoOptions;
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -342,19 +372,85 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                Func<GitObject[], bool> verifyGitObjects = (gitObjects) =>
-                {
-                    if (gitObjects.Length != 1)
-                    {
-                        return false;
-                    }
-
-                    return gitObjects[0].Content.Trim() == JsonHelper.SerializeObject(expectedImageArtifactDetails).Trim();
-                };
-
-                gitHubClientMock.Verify(
-                    o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.Is<GitObject[]>(gitObjects => verifyGitObjects(gitObjects))));
+                VerifyMocks(gitHubClientMock, azdoGitHttpClientMock, expectedImageArtifactDetails);
             }
+        }
+
+        private static void VerifyMocks(Mock<IGitHubClient> gitHubClientMock, Mock<IAzdoGitHttpClient> azdoGitHttpClientMock, ImageArtifactDetails expectedImageArtifactDetails)
+        {
+            Func<VersionTools.Automation.GitHubApi.GitObject[], bool> verifyGitHubObjects = (gitHubObjects) =>
+            {
+                Assert.Single(gitHubObjects);
+                Assert.Equal(
+                    JsonHelper.SerializeObject(expectedImageArtifactDetails).Trim(),
+                    gitHubObjects[0].Content.Trim());
+                return true;
+            };
+
+            gitHubClientMock.Verify(
+                o => o.PostTreeAsync(
+                    It.IsAny<GitHubProject>(),
+                    It.IsAny<string>(),
+                    It.Is<VersionTools.Automation.GitHubApi.GitObject[]>(gitHubObjects => verifyGitHubObjects(gitHubObjects))));
+
+            Func<GitPush, bool> verifyGitPush = push =>
+            {
+                Assert.Single(push.Commits);
+                Assert.Single(push.Commits.First().Changes);
+                GitChange change = push.Commits.First().Changes.First();
+                Assert.Equal("imageinfo.json", change.Item.Path);
+                Assert.Equal(
+                    JsonHelper.SerializeObject(expectedImageArtifactDetails).Trim(),
+                    Encoding.UTF8.GetString(Convert.FromBase64String(change.NewContent.Content)).Trim());
+
+                return true;
+            };
+
+            azdoGitHttpClientMock.Verify(
+                o => o.CreatePushAsync(It.Is<GitPush>(push => verifyGitPush(push)), It.IsAny<Guid>()));
+        }
+
+        private static Mock<IAzdoGitHttpClient> GetAzdoGitHttpClient(AzdoOptions azdoOptions)
+        {
+            Guid repoId = Guid.NewGuid();
+            const string commitId = "my-commit";
+
+            Mock<IAzdoGitHttpClient> azdoGitHttpClientMock = new Mock<IAzdoGitHttpClient>();
+            azdoGitHttpClientMock
+                .Setup(o => o.GetRepositoriesAsync())
+                .ReturnsAsync(new List<GitRepository>
+                {
+                        new GitRepository
+                        {
+                            Name = azdoOptions.Repo,
+                            Id = repoId
+                        }
+                });
+            azdoGitHttpClientMock
+                .Setup(o => o.GetBranchRefsAsync(repoId))
+                .ReturnsAsync(new List<GitRef>
+                {
+                        new GitRef
+                        {
+                            Name = $"refs/heads/{azdoOptions.Branch}"
+                        }
+                });
+            azdoGitHttpClientMock
+                .Setup(o => o.CreatePushAsync(It.IsAny<GitPush>(), repoId))
+                .ReturnsAsync(new GitPush
+                {
+                    Commits = new GitCommitRef[]
+                    {
+                            new GitCommitRef
+                            {
+                                CommitId = commitId
+                            }
+                    }
+                });
+            azdoGitHttpClientMock
+                .Setup(o => o.GetCommitAsync(commitId, repoId))
+                .ReturnsAsync(new TeamFoundation.SourceControl.WebApi.GitCommit());
+            return azdoGitHttpClientMock;
         }
 
         private static Mock<IGitHubClient> GetGitHubClientMock()
@@ -369,10 +465,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 });
 
             gitHubClientMock
-                .Setup(o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<GitObject[]>()))
+                .Setup(o => o.PostTreeAsync(
+                    It.IsAny<GitHubProject>(),
+                    It.IsAny<string>(),
+                    It.IsAny<VersionTools.Automation.GitHubApi.GitObject[]>()))
                 .ReturnsAsync(new GitTree());
 
-            GitCommit commit = new GitCommit
+            VersionTools.Automation.GitHubApi.GitCommit commit = new VersionTools.Automation.GitHubApi.GitCommit
             {
                 Sha = "sha"
             };

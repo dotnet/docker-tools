@@ -10,9 +10,13 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
+using Microsoft.TeamFoundation.SourceControl.WebApi;
+using Microsoft.VisualStudio.Services.Common;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -20,28 +24,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IGitHubClientFactory _gitHubClientFactory;
         private readonly ILoggerService _loggerService;
+        private readonly IAzdoGitHttpClientFactory _azdoGitHttpClientFactory;
         private readonly HttpClient _httpClient;
+        private const string CommitMessage = "Merging Docker image info updates from build";
 
         [ImportingConstructor]
-        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientProvider httpClientFactory)
+        public PublishImageInfoCommand(IGitHubClientFactory gitHubClientFactory, ILoggerService loggerService, IHttpClientProvider httpClientProvider,
+            IAzdoGitHttpClientFactory azdoGitHttpClientFactory)
         {
-            if (httpClientFactory is null)
+            if (httpClientProvider is null)
             {
-                throw new ArgumentNullException(nameof(httpClientFactory));
+                throw new ArgumentNullException(nameof(httpClientProvider));
             }
 
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _azdoGitHttpClientFactory = azdoGitHttpClientFactory ?? throw new ArgumentNullException(nameof(azdoGitHttpClientFactory));
 
-            _httpClient = httpClientFactory.GetClient();
+            _httpClient = httpClientProvider.GetClient();
         }
 
         public override async Task ExecuteAsync()
         {
             Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
-            GitObject imageInfoGitObject = await GetUpdatedImageInfoGitObjectAsync();
 
-            if (imageInfoGitObject is null)
+            string? imageInfoContent = await GetUpdatedImageInfoAsync();
+
+            if (imageInfoContent is null)
             {
                 _loggerService.WriteMessage($"No changes to the '{imageInfoPathIdentifier}' file were needed.");
                 return;
@@ -49,24 +58,61 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             _loggerService.WriteMessage(
                 $"The '{imageInfoPathIdentifier}' file has been updated with the following content:" +
-                    Environment.NewLine + imageInfoGitObject.Content + Environment.NewLine);
+                    Environment.NewLine + imageInfoContent + Environment.NewLine);
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
-                await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
-                {
-                    GitReference gitRef = await GitHelper.PushChangesAsync(
-                        gitHubClient, Options, "Merging image info updates from build.",
-                        branch => Task.FromResult<IEnumerable<GitObject>>(new GitObject[] { imageInfoGitObject }));
-
-                    Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
-                    _loggerService.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
-                });
+                await UpdateGitHubAsync(imageInfoContent, imageInfoPathIdentifier);
+                await UpdateAzdoAsync(imageInfoContent, imageInfoPathIdentifier);
             }
         }
 
-        private async Task<GitObject> GetUpdatedImageInfoGitObjectAsync()
+        private async Task UpdateAzdoAsync(string imageInfoContent, Uri imageInfoPathIdentifier)
+        {
+            (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
+
+            using IAzdoGitHttpClient gitHttpClient = _azdoGitHttpClientFactory.GetClient(baseUrl, credentials);
+
+            GitRepository repo = (await gitHttpClient.GetRepositoriesAsync())
+                .First(repo => repo.Name == Options.AzdoOptions.Repo);
+            GitRef branchRef = (await gitHttpClient.GetBranchRefsAsync(repo.Id))
+                .First(branch => branch.Name == $"refs/heads/{Options.AzdoOptions.Branch}");
+
+            GitPush push = await gitHttpClient.PushChangesAsync(CommitMessage, repo.Id, branchRef, new Dictionary<string, string>
+            {
+                { Options.AzdoOptions.Path, imageInfoContent }
+            });
+
+            TeamFoundation.SourceControl.WebApi.GitCommit commit =
+                await gitHttpClient.GetCommitAsync(push.Commits.First().CommitId, repo.Id);
+
+            _loggerService.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commit.RemoteUrl}).");
+        }
+
+        private async Task UpdateGitHubAsync(string imageInfoContent, Uri imageInfoPathIdentifier)
+        {
+            IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+            await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
+            {
+                VersionTools.Automation.GitHubApi.GitObject imageInfoGitObject = new VersionTools.Automation.GitHubApi.GitObject
+                {
+                    Path = Options.GitOptions.Path,
+                    Type = VersionTools.Automation.GitHubApi.GitObject.TypeBlob,
+                    Mode = VersionTools.Automation.GitHubApi.GitObject.ModeFile,
+                    Content = imageInfoContent
+                };
+
+                GitReference gitRef = await GitHelper.PushChangesAsync(
+                    gitHubClient, Options, CommitMessage,
+                    branch => Task.FromResult<IEnumerable<VersionTools.Automation.GitHubApi.GitObject>>(
+                        new VersionTools.Automation.GitHubApi.GitObject[] { imageInfoGitObject }));
+
+                Uri commitUrl = GitHelper.GetCommitUrl(Options.GitOptions, gitRef.Object.Sha);
+                _loggerService.WriteMessage($"The '{imageInfoPathIdentifier}' file was updated ({commitUrl}).");
+            });
+        }
+
+        private async Task<string?> GetUpdatedImageInfoAsync()
         {
             ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
@@ -106,13 +152,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (originalTargetImageInfoContents != newTargetImageInfoContents)
                 {
-                    return new GitObject
-                    {
-                        Path = Options.GitOptions.Path,
-                        Type = GitObject.TypeBlob,
-                        Mode = GitObject.ModeFile,
-                        Content = newTargetImageInfoContents
-                    };
+                    return newTargetImageInfoContents;
                 }
                 else
                 {
@@ -178,3 +218,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

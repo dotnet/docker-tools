@@ -4,7 +4,7 @@
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public interface IGitBranchRef : IGitRepoRef
+    public interface IGitHubBranchRef : IGitHubRepoRef
     {
         public string Branch { get; set; }
     }

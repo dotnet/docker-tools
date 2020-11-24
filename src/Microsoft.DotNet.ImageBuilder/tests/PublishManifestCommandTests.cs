@@ -353,7 +353,7 @@ manifests:
 @"image: mcr.microsoft.com/repo2:sharedtag2a
 tags: [sharedtag2b]
 manifests:
-- image: mcr.microsoft.com/repo2:tag1
+- image: mcr.microsoft.com/repo2:tag2
   platform:
     architecture: amd64
     os: linux
@@ -430,17 +430,14 @@ manifests:
 
             const string syndicatedRepo2 = "repo2";
 
+            Platform platform;
+
             Manifest manifest = CreateManifest(
                 CreateRepo("repo",
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(dockerfile,
-                                new string[]
-                                {
-                                    "tag1",
-                                    "tag2"
-                                })
+                            platform = CreatePlatform(dockerfile, Array.Empty<string>())
                         },
                         new Dictionary<string, Tag>
                         {
@@ -464,6 +461,22 @@ manifests:
             );
 
             manifest.Registry = "mcr.microsoft.com";
+            platform.Tags = new Dictionary<string, Tag>
+            {
+                { "tag1", new Tag() },
+                { "tag2", new Tag
+                    {
+                        Syndication = new TagSyndication
+                        {
+                            Repo = syndicatedRepo2,
+                            DestinationTags = new string[]
+                            {
+                                "tag2"
+                            }
+                        }
+                    }
+                },
+            };
 
             File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
 

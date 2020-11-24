@@ -97,7 +97,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<string> GenerateManifests(RepoInfo repo, ImageInfo image)
         {
             yield return GenerateManifest(repo, image, image.SharedTags.Select(tag => tag.Name),
-                tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + repo.Name, tag));
+                tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + repo.Name, tag),
+                platform => platform.Tags.First());
 
             IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
                 .Where(tag => tag.SyndicatedRepo != null)
@@ -109,11 +110,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
 
                 yield return GenerateManifest(repo, image, destinationTags,
-                    tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag));
+                    tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag),
+                    platform => platform.Tags.First(tag => tag.SyndicatedRepo == syndicatedRepo));
             }
         }
 
-        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName)
+        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName,
+            Func<PlatformInfo, TagInfo> getTagRepresentative)
         {
             string imageName = getImageName(tags.First());
             StringBuilder manifestYml = new StringBuilder();
@@ -137,7 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 TagInfo imageTag;
                 if (platform.Tags.Any())
                 {
-                    imageTag = platform.Tags.First();
+                    imageTag = getTagRepresentative(platform);
                 }
                 else
                 {
@@ -156,7 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
                     }
 
-                    imageTag = matchingImagePlatform.Platform.Tags.First();
+                    imageTag = getTagRepresentative(matchingImagePlatform.Platform);
                 }
 
                 manifestYml.AppendLine($"- image: {getImageName(imageTag.Name)}");

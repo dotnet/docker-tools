@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (!Options.IsDryRun)
             {
                 await UpdateGitHubAsync(imageInfoContent, imageInfoPathIdentifier);
-                await UpdateAzdoAsync(imageInfoContent, imageInfoPathIdentifier);
+                //await UpdateAzdoAsync(imageInfoContent, imageInfoPathIdentifier);
             }
         }
 

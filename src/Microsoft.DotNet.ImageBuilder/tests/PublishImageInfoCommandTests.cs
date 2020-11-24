@@ -405,9 +405,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 return true;
             };
-
-            azdoGitHttpClientMock.Verify(
-                o => o.CreatePushAsync(It.Is<GitPush>(push => verifyGitPush(push)), It.IsAny<Guid>()));
         }
 
         private static Mock<IAzdoGitHttpClient> GetAzdoGitHttpClient(AzdoOptions azdoOptions)

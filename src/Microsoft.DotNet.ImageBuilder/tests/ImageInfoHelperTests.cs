@@ -181,6 +181,88 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Fact]
+        public void LoadFromContent_DuplicatedPlatforms()
+        {
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "linux" }
+                                    }
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "1.0/runtime/linux/Dockerfile",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string>()
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            using TempFolderContext tempFolderContext = new TempFolderContext();
+
+            string dockerfile = CreateDockerfile("1.0/runtime/linux", tempFolderContext);
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                dockerfile,
+                                new string[] { "linux" },
+                                OS.Linux,
+                                "focal")
+                        }),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                dockerfile,
+                                new string[0],
+                                OS.Linux,
+                                "focal")
+                        }))
+            );
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
+
+            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+            string expected = JsonHelper.SerializeObject(imageArtifactDetails);
+
+            ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
+
+            Assert.Same(manifestInfo.AllRepos.First().AllImages.First(), result.Repos[0].Images[0].ManifestImage);
+            Assert.Same(manifestInfo.AllRepos.First().AllImages.ElementAt(1), result.Repos[0].Images[1].ManifestImage);
+        }
+
+        [Fact]
         public void ImageInfoHelper_MergeRepos_ImageDigest()
         {
             ImageInfo imageInfo1 = CreateImageInfo();
@@ -768,6 +850,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public void Merge_DuplicatedPlatforms()
         {
+            ImageInfo imageInfo1 = CreateImageInfo();
+            ImageInfo imageInfo2 = CreateImageInfo();
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -779,7 +864,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                ManifestImage = CreateImageInfo(),
+                                ManifestImage = imageInfo1,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -804,7 +889,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             new ImageData
                             {
-                                ManifestImage = CreateImageInfo(),
+                                ManifestImage = imageInfo2,
                                 Platforms =
                                 {
                                     new PlatformData
@@ -862,6 +947,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
             CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
+
+            Assert.Same(imageInfo1, targetImageArtifactDetails.Repos[0].Images[0].ManifestImage);
+            Assert.Same(imageInfo2, targetImageArtifactDetails.Repos[0].Images[1].ManifestImage);
         }
 
         [Fact]

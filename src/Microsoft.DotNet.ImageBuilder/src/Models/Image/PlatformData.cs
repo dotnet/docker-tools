@@ -69,9 +69,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 1;
             }
 
-            // If either of the platforms has no simple tags while the other does have simple tags, they are not equal
-            if ((SimpleTags?.Count == 0 && other.SimpleTags?.Count > 0) ||
-                (SimpleTags?.Count > 0 && other.SimpleTags?.Count == 0))
+            
+            if (HasDifferentTagState(other))
             {
                 return 1;
             }
@@ -83,6 +82,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         // See https://github.com/dotnet/docker-tools/issues/688
         public string GetIdentifier(bool excludeProductVersion = false) =>
             $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}{(excludeProductVersion ? "" : "-" + GetMajorMinorVersion())}";
+
+        public bool HasDifferentTagState(PlatformData other) =>
+            // If either of the platforms has no simple tags while the other does have simple tags, they are not equal
+            (SimpleTags?.Count == 0 && other.SimpleTags?.Count > 0) ||
+            (SimpleTags?.Count > 0 && other.SimpleTags?.Count == 0);
 
         public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image) =>
             new PlatformData(image, platform)
@@ -96,6 +100,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         private string GetMajorMinorVersion()
         {
+            if (ImageInfo is null)
+            {
+                return null;
+            }
+
             string fullVersion = ImageInfo.ProductVersion;
 
             // Remove any version suffix (like "-preview")

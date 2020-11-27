@@ -107,6 +107,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
             string fullVersion = ImageInfo.ProductVersion;
 
+            if (string.IsNullOrEmpty(fullVersion))
+            {
+                return null;
+            }
+
             // Remove any version suffix (like "-preview")
             int separatorIndex = fullVersion.IndexOf("-");
             if (separatorIndex >= 0)

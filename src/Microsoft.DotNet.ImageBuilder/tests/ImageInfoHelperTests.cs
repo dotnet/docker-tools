@@ -202,9 +202,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        Digest = "digest"
+                                        Digest = "digest",
+                                        ImageInfo = imageInfo1
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -227,9 +229,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Dockerfile = "image1"
+                                        Dockerfile = "image1",
+                                        ImageInfo = imageInfo1
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -310,16 +314,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             Dockerfile = "image1",
                                             BaseImageDigest = "base1digest-NEW",
-                                            Created = newCreatedDate
+                                            Created = newCreatedDate,
+                                            ImageInfo = imageInfo1
                                         }
                                     },
                                     {
                                         repo2Image3  = new PlatformData
                                         {
-                                            Dockerfile = "image3"
+                                            Dockerfile = "image3",
+                                            ImageInfo = imageInfo1
                                         }
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     },
@@ -336,10 +343,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         repo3Image1 = new PlatformData
                                         {
-                                            Dockerfile = "image1"
+                                            Dockerfile = "image1",
+                                            ImageInfo = imageInfo2
                                         }
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     },
@@ -372,16 +381,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "image1",
                                         BaseImageDigest = "base1digest",
-                                        Created = oldCreatedDate
+                                        Created = oldCreatedDate,
+                                        ImageInfo = imageInfo1
                                     },
                                     {
                                         repo2Image2 = new PlatformData
                                         {
                                             Dockerfile = "image2",
-                                            BaseImageDigest = "base2digest"
+                                            BaseImageDigest = "base2digest",
+                                            ImageInfo = imageInfo1
                                         }
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     },
@@ -414,7 +426,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     repo2Image1,
                                     repo2Image2,
                                     repo2Image3
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     },
@@ -428,7 +441,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 Platforms =
                                 {
                                     repo3Image1
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     },
@@ -475,7 +489,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "tag1",
                                                 "tag3"
-                                            }
+                                            },
+                                            ImageInfo = imageInfo1
                                         }
                                     }
                                 },
@@ -486,7 +501,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         "shared1",
                                         "shared2"
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -515,7 +531,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             "tag1",
                                             "tag2",
                                             "tag4"
-                                        }
+                                        },
+                                        ImageInfo = imageInfo1
                                     },
                                     {
                                         targetImage2 = new PlatformData
@@ -524,7 +541,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             SimpleTags =
                                             {
                                                 "a"
-                                            }
+                                            },
+                                            ImageInfo = imageInfo1
                                         }
                                     }
                                 },
@@ -535,7 +553,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         "shared2",
                                         "shared3"
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -578,7 +597,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         "shared2",
                                         "shared3"
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -623,7 +643,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "tag3",
                                                 "tag1"
-                                            }
+                                            },
+                                            ImageInfo = imageInfo1
                                         }
                                     }
                                 },
@@ -634,7 +655,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         "sharedtag1b",
                                         "sharedtag1a",
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -664,7 +686,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "tag1",
                                                 "tag2",
                                                 "tag4"
-                                            }
+                                            },
+                                            ImageInfo = imageInfo1
                                         }
                                     },
                                     {
@@ -674,7 +697,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             SimpleTags =
                                             {
                                                 "a"
-                                            }
+                                            },
+                                            ImageInfo = imageInfo1
                                         }
                                     }
                                 },
@@ -684,7 +708,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         "sharedtag2",
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -729,7 +754,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         "sharedtag1a",
                                         "sharedtag1b",
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -1018,9 +1044,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        Digest = "digest"
+                                        Digest = "digest",
+                                        ImageInfo = imageInfo1
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -1043,9 +1071,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Dockerfile = "image1"
+                                        Dockerfile = "image1",
+                                        ImageInfo = imageInfo1
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -1081,9 +1111,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         Dockerfile = "image1",
-                                        Digest = "digest"
+                                        Digest = "digest",
+                                        ImageInfo = imageInfo1
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -1113,9 +1145,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     new PlatformData
                                     {
-                                        Dockerfile = "image1"
+                                        Dockerfile = "image1",
+                                        ImageInfo = imageInfo1
                                     }
-                                }
+                                },
+                                ProductVersion = "1.0"
                             }
                         }
                     }
@@ -1131,19 +1165,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));
         }
 
-        private static ImageInfo CreateImageInfo()
-        {
-            return ImageInfo.Create(
+        private static ImageInfo CreateImageInfo() =>
+            ImageInfo.Create(
                 new Image
                 {
-                    Platforms = Array.Empty<Platform>()
+                    Platforms = Array.Empty<Platform>(),
+                    ProductVersion = "1.0"
                 },
                 "fullrepo",
                 "repo",
                 new ManifestFilter(),
                 new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
                 "base");
-        }
 
         private class FakeManifestOptions : IManifestOptionsInfo
         {

@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     PlatformData platformData = repoData.Images
                         .SelectMany(image => image.Platforms)
-                        .FirstOrDefault(platformData => platformData.Equals(platform));
+                        .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
                     if (platformData != null)
                     {
                         foreach (string tag in platformData.SimpleTags)

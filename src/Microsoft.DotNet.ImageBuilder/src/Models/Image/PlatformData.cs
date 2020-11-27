@@ -79,10 +79,10 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
             return GetIdentifier().CompareTo(other.GetIdentifier());
         }
 
-        public bool Equals(PlatformInfo platformInfo) =>
-            CompareTo(FromPlatformInfo(platformInfo, null)) == 0;
-
-        public string GetIdentifier() => $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}";
+        // Product versions are considered equivalent if the major and minor segments are the same
+        // See https://github.com/dotnet/docker-tools/issues/688
+        public string GetIdentifier(bool excludeProductVersion = false) =>
+            $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}{(excludeProductVersion ? "" : "-" + new Version(ImageInfo.ProductVersion).ToString(2))}";
 
         public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image) =>
             new PlatformData(image, platform)

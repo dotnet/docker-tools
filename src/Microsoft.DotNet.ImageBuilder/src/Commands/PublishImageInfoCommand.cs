@@ -198,7 +198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         PlatformData platformData = imageData.Platforms[platformIndex];
                         PlatformInfo manifestPlatform = manifestImage.AllPlatforms
-                            .FirstOrDefault(manifestPlatform => platformData.Equals(manifestPlatform));
+                            .FirstOrDefault(manifestPlatform => platformData.PlatformInfo == manifestPlatform);
 
                         // If there doesn't exist a matching platform in the manifest, remove it from the image info
                         if (manifestPlatform is null)

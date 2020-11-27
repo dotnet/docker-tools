@@ -254,7 +254,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private bool CheckForCachedImage(
             ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
         {
-            PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.Equals(platform));
+            PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platform);
 
             string cacheKey = GetBuildCacheKey(platform);
             if (platformData != null && _cachedDockerfilePaths.TryGetValue(cacheKey, out BuildCacheInfo? cacheInfo))

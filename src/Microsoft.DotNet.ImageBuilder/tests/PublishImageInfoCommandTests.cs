@@ -52,10 +52,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = CreateManifest(
                     CreateRepo("repo1",
                         CreateImage(
-                            CreatePlatform(repo1Image1DockerfilePath, new string[] { "tag1" }))),
+                            new Platform[]
+                            {
+                                CreatePlatform(repo1Image1DockerfilePath, new string[] { "tag1" })
+                            },
+                            productVersion: "1.0")),
                     CreateRepo("repo2",
                         CreateImage(
-                            CreatePlatform(repo2Image2DockerfilePath, new string[] { "tag1" })))
+                            new Platform[]
+                            {
+                                CreatePlatform(repo2Image2DockerfilePath, new string[] { "tag1" })
+                            },
+                            productVersion: "2.0"))
                 );
 
                 RepoData repo2;
@@ -78,7 +86,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             "newtag"
                                         })
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         },
@@ -97,7 +106,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "tag1"
                                             })
-                                        }
+                                        },
+                                        ProductVersion = "2.0"
                                     }
                                 }
                             }
@@ -126,7 +136,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "oldtag"
                                             })
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         }
@@ -196,7 +207,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "newtag"
                                             })
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         },
@@ -222,10 +234,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = CreateManifest(
                     CreateRepo("repo1",
                         CreateImage(
-                            CreatePlatform(repo1Image1DockerfilePath, new string[0]))),
+                            new Platform[]
+                            {
+                                CreatePlatform(repo1Image1DockerfilePath, new string[0])
+                            },
+                            productVersion: "1.0")),
                     CreateRepo("repo2",
                         CreateImage(
-                            CreatePlatform(repo2Image2DockerfilePath, new string[0])))
+                            new Platform[]
+                            {
+                                CreatePlatform(repo2Image2DockerfilePath, new string[0])
+                            },
+                            productVersion: "2.0"))
                 );
                 manifest.Registry = "mcr.microsoft.com";
 
@@ -245,7 +265,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath)
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         },
@@ -260,7 +281,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Platforms =
                                         {
                                             Helpers.ImageInfoHelper.CreatePlatform(repo2Image2DockerfilePath)
-                                        }
+                                        },
+                                        ProductVersion = "2.0"
                                     }
                                 }
                             }
@@ -285,7 +307,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath)
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 },
                                 new ImageData
                                 {
@@ -293,7 +316,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(
                                             DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext))
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         },
@@ -364,7 +388,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath)
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         },

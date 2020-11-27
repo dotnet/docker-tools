@@ -155,7 +155,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (ImageData imageData in repoData.Images)
             {
                 PlatformData platformData = imageData.Platforms
-                    .FirstOrDefault(platformData => platformData.Equals(platform));
+                    .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
                 if (platformData != null)
                 {
                     foundImageInfo = true;

@@ -55,14 +55,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 {
                                                     "tag3"
                                                 })
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     },
                                     new ImageData
                                     {
                                         Platforms =
                                         {
                                             CreatePlatform(repo2Image2Dockerfile)
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             },
@@ -81,7 +83,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 {
                                                     "tag1"
                                                 })
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             }
@@ -107,7 +110,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tag1"
                                                 },
                                                 baseImageDigest: "base1hash")
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     },
                                     new ImageData
                                     {
@@ -119,7 +123,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 {
                                                     "tag2"
                                                 })
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             },
@@ -142,7 +147,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 {
                                                     "tag2"
                                                 })
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     },
                                     new ImageData
                                     {
@@ -154,7 +160,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 {
                                                     "tag1"
                                                 })
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             }
@@ -178,15 +185,31 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateRepo("repo1"),
                     CreateRepo("repo2",
                         CreateImage(
-                            CreatePlatform(repo2Image1Dockerfile, new string[] { "tag1" })),
+                            new Platform[]
+                            {
+                                CreatePlatform(repo2Image1Dockerfile, new string[] { "tag1" })
+                            },
+                            productVersion: "1.0"),
                         CreateImage(
-                            CreatePlatform(repo2Image2Dockerfile, new string[] { "tag2" }))),
+                            new Platform[]
+                            {
+                                CreatePlatform(repo2Image2Dockerfile, new string[] { "tag2" })
+                            },
+                            productVersion: "1.0")),
                     CreateRepo("repo3"),
                     CreateRepo("repo4",
                         CreateImage(
-                            CreatePlatform(repo4Image2Dockerfile, new string[] { "tag1" })),
+                            new Platform[]
+                            {
+                                CreatePlatform(repo4Image2Dockerfile, new string[] { "tag1" })
+                            },
+                            productVersion: "1.0"),
                         CreateImage(
-                            CreatePlatform(repo4Image3Dockerfile, new string[] { "tag2" })))
+                            new Platform[]
+                            {
+                                CreatePlatform(repo4Image3Dockerfile, new string[] { "tag2" })
+                            },
+                            productVersion: "1.0"))
                 );
                 File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -221,7 +244,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "tag3"
                                             },
                                             baseImageDigest: "base1hash")
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 },
                                 new ImageData
                                 {
@@ -233,7 +257,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "tag2"
                                             })
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         },
@@ -257,7 +282,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "tag1",
                                                 "tag2"
                                             })
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 },
                                 new ImageData
                                 {
@@ -269,7 +295,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "tag1"
                                             })
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         }
@@ -332,7 +359,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tag2"
                                                 }
                                             }
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     },
                                     new ImageData
                                     {
@@ -350,7 +378,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tagA"
                                                 }
                                             }
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             }
@@ -382,7 +411,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tag2"
                                                 }
                                             }
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             }
@@ -413,7 +443,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tag1"
                                                 }
                                             }
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     },
                                     new ImageData
                                     {
@@ -431,7 +462,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                     "tagB"
                                                 }
                                             }
-                                        }
+                                        },
+                                        ProductVersion = "1.0"
                                     }
                                 }
                             }
@@ -454,12 +486,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Manifest manifest = CreateManifest(
                     CreateRepo("repo1",
                         CreateImage(
-                            CreatePlatform(dockerfile1, new string[] { "tag1" }, osVersion: Os1, architecture: Architecture.ARM),
-                            CreatePlatform(dockerfile1, new string[] { "tag2" }, osVersion: Os1, architecture: Architecture.ARM64)),
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfile1, new string[] { "tag1" }, osVersion: Os1, architecture: Architecture.ARM),
+                                CreatePlatform(dockerfile1, new string[] { "tag2" }, osVersion: Os1, architecture: Architecture.ARM64)
+                            },
+                            productVersion: "1.0"),
                         CreateImage(
-                            CreatePlatform(dockerfile1, new string[] { "tag3" }, osVersion: Os2, architecture: Architecture.ARM)),
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfile1, new string[] { "tag3" }, osVersion: Os2, architecture: Architecture.ARM)
+                            },
+                            productVersion: "1.0"),
                         CreateImage(
-                            CreatePlatform(dockerfile2, new string[] { "tag4" }, osVersion: Os1)))
+                            new Platform[]
+                            {
+                                CreatePlatform(dockerfile2, new string[] { "tag4" }, osVersion: Os1)
+                            },
+                            productVersion: "1.0"))
                 );
                 File.WriteAllText(Path.Combine(context.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -508,7 +552,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "tag3"
                                             }
                                         }
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 },
                                 new ImageData
                                 {
@@ -527,7 +572,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "tagB"
                                             }
                                         }
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 },
                                 new ImageData
                                 {
@@ -545,7 +591,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "tag1"
                                             }
                                         }
-                                    }
+                                    },
+                                    ProductVersion = "1.0"
                                 }
                             }
                         }

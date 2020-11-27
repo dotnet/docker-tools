@@ -19,6 +19,7 @@ using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -215,6 +216,120 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             It.IsAny<Dictionary<string, List<string>>>(),
                             It.IsAny<CancellationToken>()));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Verifies that image tags associated with a runtime-deps Dockerfiles that is shared by multiple versions.
+        /// </summary>
+        [Fact]
+        public async Task CopyAcrImagesCommand_RuntimeDepsSharing()
+        {
+            const string subscriptionId = "my subscription";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
+            IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
+            Mock<IAzureManagementFactory> azureManagementFactoryMock =
+                AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
+
+            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.Subscription = subscriptionId;
+            command.Options.ResourceGroup = "my resource group";
+            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.ImageInfoPath = "image-info.json";
+
+            string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRelativePath, new string[] { "3.1" }, osVersion: "focal")
+                        },
+                        productVersion: "3.1"),
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRelativePath, new string[] { "5.0" }, osVersion: "focal")
+                        },
+                        productVersion: "5.0"))
+            );
+            manifest.Registry = "mcr.microsoft.com";
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            RepoData runtimeRepo;
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    {
+                        runtimeRepo = new RepoData
+                        {
+                            Repo = "runtime-deps",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            PathHelper.NormalizePath(dockerfileRelativePath),
+                                            simpleTags: new List<string>
+                                            {
+                                                "3.1"
+                                            },
+                                            osVersion: "focal")
+                                    },
+                                    ProductVersion = "3.1"
+                                },
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(
+                                            PathHelper.NormalizePath(dockerfileRelativePath),
+                                            simpleTags: new List<string>
+                                            {
+                                                "5.0"
+                                            },
+                                            osVersion: "focal")
+                                    },
+                                    ProductVersion = "5.0"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            List<string> expectedTags = new List<string>
+            {
+                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:3.1",
+                $"{command.Options.RepoPrefix}{runtimeRepo.Repo}:5.0"
+            };
+
+            foreach (string expectedTag in expectedTags)
+            {
+                registriesOperationsMock
+                    .Verify(o => o.ImportImageWithHttpMessagesAsync(
+                        command.Options.ResourceGroup,
+                        manifest.Registry,
+                        It.Is<ImportImageParametersInner>(parameters =>
+                            VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
+                        It.IsAny<Dictionary<string, List<string>>>(),
+                        It.IsAny<CancellationToken>()));
             }
         }
 

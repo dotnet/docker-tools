@@ -80,12 +80,15 @@ namespace Microsoft.DotNet.ImageBuilder
             MergeData(src, target, options);
         }
 
-        private static bool ArePlatformsEqual(PlatformData platformData, ImageData imageData, PlatformInfo platform, ImageInfo manifestImage) =>
+        private static bool ArePlatformsEqual(PlatformData platformData, ImageData imageData, PlatformInfo platform, ImageInfo manifestImage)
+        {
+            PlatformData otherPlatform = PlatformData.FromPlatformInfo(platform, manifestImage);
             // We can't use PlatformData.CompareTo here because it relies on having its PlatformInfo and ImageInfo values fully populated
             // which is what this class is trying to make happen.
-            platformData.GetIdentifier(excludeProductVersion: true) ==
-                PlatformData.FromPlatformInfo(platform, manifestImage).GetIdentifier(excludeProductVersion: true) &&
-            AreProductVersionsEquivalent(imageData.ProductVersion, manifestImage.ProductVersion);
+            return !platformData.HasDifferentTagState(otherPlatform) &&
+                platformData.GetIdentifier(excludeProductVersion: true) == otherPlatform.GetIdentifier(excludeProductVersion: true) &&
+                AreProductVersionsEquivalent(imageData.ProductVersion, manifestImage.ProductVersion);
+        }
 
         private static bool AreProductVersionsEquivalent(string productVersion1, string productVersion2)
         {

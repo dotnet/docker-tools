@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         // Product versions are considered equivalent if the major and minor segments are the same
         // See https://github.com/dotnet/docker-tools/issues/688
         public string GetIdentifier(bool excludeProductVersion = false) =>
-            $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}{(excludeProductVersion ? "" : "-" + new Version(ImageInfo.ProductVersion).ToString(2))}";
+            $"{Dockerfile}-{Architecture}-{OsType}-{OsVersion}{(excludeProductVersion ? "" : "-" + GetMajorMinorVersion())}";
 
         public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image) =>
             new PlatformData(image, platform)
@@ -93,5 +93,19 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 OsVersion = platform.Model.OsVersion,
                 SimpleTags = platform.Tags.Select(tag => tag.Name).ToList()
             };
+
+        private string GetMajorMinorVersion()
+        {
+            string fullVersion = ImageInfo.ProductVersion;
+
+            // Remove any version suffix (like "-preview")
+            int separatorIndex = fullVersion.IndexOf("-");
+            if (separatorIndex >= 0)
+            {
+                fullVersion = fullVersion.Substring(0, separatorIndex);
+            }
+
+            return new Version(fullVersion).ToString(2);
+        }
     }
 }

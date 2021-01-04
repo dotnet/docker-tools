@@ -1,7 +1,7 @@
 # escape=`
 
 # build Microsoft.DotNet.ImageBuilder
-FROM mcr.microsoft.com/dotnet/core/sdk:5.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding

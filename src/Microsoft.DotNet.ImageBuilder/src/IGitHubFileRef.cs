@@ -4,10 +4,8 @@
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public interface IGitRepoRef
+    public interface IGitHubFileRef : IGitHubBranchRef
     {
-        public string Owner { get; set; }
-
-        public string Repo { get; set; }
+        string Path { get; }
     }
 }

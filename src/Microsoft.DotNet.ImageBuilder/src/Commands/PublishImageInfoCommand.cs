@@ -77,7 +77,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             finally
             {
-                FileHelper.ForceDeleteDirectory(repoPath);
+                if (Directory.Exists(repoPath))
+                {
+                    FileHelper.ForceDeleteDirectory(repoPath);
+                }
             }
 
             return Task.CompletedTask;
@@ -180,7 +183,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 // Since the registry name is not represented in the image info, make sure to compare the repo name with the
                 // manifest's repo model name which isn't registry-qualified.
-                RepoInfo manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
+                RepoInfo? manifestRepo = Manifest.AllRepos.FirstOrDefault(manifestRepo => manifestRepo.Name == repoData.Repo);
 
                 // If there doesn't exist a matching repo in the manifest, remove it from the image info
                 if (manifestRepo is null)
@@ -204,7 +207,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     for (int platformIndex = imageData.Platforms.Count - 1; platformIndex >= 0; platformIndex--)
                     {
                         PlatformData platformData = imageData.Platforms[platformIndex];
-                        PlatformInfo manifestPlatform = manifestImage.AllPlatforms
+                        PlatformInfo? manifestPlatform = manifestImage.AllPlatforms
                             .FirstOrDefault(manifestPlatform => platformData.PlatformInfo == manifestPlatform);
 
                         // If there doesn't exist a matching platform in the manifest, remove it from the image info

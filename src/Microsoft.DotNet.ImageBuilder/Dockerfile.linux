@@ -14,11 +14,11 @@ WORKDIR /image-builder
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore ./src/Microsoft.DotNet.ImageBuilder.csproj
+RUN dotnet restore -r alpine.3.9-$RID_ARCH ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-$RID_ARCH /p:ShowLinkerSizeComparison=true
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r alpine.3.9-$RID_ARCH --no-restore /p:ShowLinkerSizeComparison=true
 
 
 # build runtime image

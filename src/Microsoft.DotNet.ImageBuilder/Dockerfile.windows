@@ -7,11 +7,11 @@ WORKDIR /image-builder
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore ./src/Microsoft.DotNet.ImageBuilder.csproj
+RUN dotnet restore -r win7-x64 ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64 --no-restore
 
 RUN pwsh -Command `
         $ErrorActionPreference = 'Stop'; `

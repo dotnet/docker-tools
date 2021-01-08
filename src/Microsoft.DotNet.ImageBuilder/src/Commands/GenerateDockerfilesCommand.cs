@@ -39,12 +39,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public Dictionary<Value, Value> GetSymbols(PlatformInfo platform)
         {
             string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
+            ImageInfo image = Manifest.GetImageByPlatform(platform);
 
             Dictionary<Value, Value> symbols = GetSymbols();
             symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;
             symbols["ARCH_TAG_SUFFIX"] = $"-{versionedArch}";
+            symbols["PRODUCT_VERSION"] = image.Model.ProductVersion;
             symbols["OS_VERSION"] = platform.Model.OsVersion;
             symbols["OS_VERSION_BASE"] = platform.BaseOsVersion;
             symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);

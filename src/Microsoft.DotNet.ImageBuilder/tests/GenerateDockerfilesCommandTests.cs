@@ -106,6 +106,7 @@ ENV TEST2 Value1";
         [InlineData("repo1:tag1", "ARCH_TAG_SUFFIX", "-arm32v7")]
         [InlineData("repo1:tag2", "ARCH_TAG_SUFFIX", "-amd64")]
         [InlineData("repo1:tag3", "ARCH_TAG_SUFFIX", "-amd64")]
+        [InlineData("repo1:tag1", "PRODUCT_VERSION", "1.2.3")]
         [InlineData("repo1:tag1", "OS_VERSION", "buster-slim")]
         [InlineData("repo1:tag2", "OS_VERSION", "nanoserver-1903")]
         [InlineData("repo1:tag3", "OS_VERSION", "windowsservercore-1903")]
@@ -161,34 +162,40 @@ ENV TEST2 Value1";
             Manifest manifest = CreateManifest(
                 CreateRepo("repo1",
                     CreateImage(
-                        CreatePlatform(
-                            DockerfilePath,
-                            new string[] { "tag1" },
-                            OS.Linux,
-                            "buster-slim",
-                            Architecture.ARM,
-                            "v7",
-                            dockerfileTemplatePath: templatePath),
-                        CreatePlatform(
-                            DockerfilePath,
-                            new string[] { "tag2" },
-                            OS.Windows,
-                            "nanoserver-1903"),
-                        CreatePlatform(
-                            DockerfilePath,
-                            new string[] { "tag3" },
-                            OS.Windows,
-                            "windowsservercore-1903"),
-                        CreatePlatform(
-                            DockerfilePath,
-                            new string[] { "tag4" },
-                            OS.Windows,
-                            "windowsservercore-ltsc2019"),
-                        CreatePlatform(
-                            DockerfilePath,
-                            new string[] { "tag5" },
-                            OS.Linux,
-                            "alpine3.12")))
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag1" },
+                                OS.Linux,
+                                "buster-slim",
+                                Architecture.ARM,
+                                "v7",
+                                dockerfileTemplatePath: templatePath),
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag2" },
+                                OS.Windows,
+                                "nanoserver-1903"),
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag3" },
+                                OS.Windows,
+                                "windowsservercore-1903"),
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag4" },
+                                OS.Windows,
+                                "windowsservercore-ltsc2019"),
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag5" },
+                                OS.Linux,
+                                "alpine3.12")
+                        },
+                        productVersion: "1.2.3"
+                    )
+                )
             );
             AddVariable(manifest, "Variable1", "Value1");
 

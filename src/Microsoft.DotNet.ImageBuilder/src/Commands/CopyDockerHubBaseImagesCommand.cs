@@ -11,7 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Services;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CopyDockerHubBaseImagesCommand : CopyImagesCommand<CopyDockerHubBaseImagesOptions>
+    public class CopyDockerHubBaseImagesCommand : CopyImagesCommand<CopyImagesOptions, CopyImagesSymbolsBuilder>
     {
         [ImportingConstructor]
         public CopyDockerHubBaseImagesCommand(
@@ -19,6 +19,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             : base(azureManagementFactory, loggerService)
         {
         }
+
+        protected override string Description => "Copies external base images from Docker Hub to ACR";
 
         public override async Task ExecuteAsync()
         {

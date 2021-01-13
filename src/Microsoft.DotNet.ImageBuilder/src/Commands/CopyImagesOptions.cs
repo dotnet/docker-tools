@@ -2,39 +2,37 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class CopyImagesOptions : ManifestOptions, IFilterableOptions
+    public class CopyImagesOptions : ManifestOptions, IFilterableOptions
     {
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
-        public string ResourceGroup { get; set; }
-        public string Subscription { get; set; }
+        public string ResourceGroup { get; set; } = string.Empty;
+        public string Subscription { get; set; } = string.Empty;
 
         public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class CopyImagesSymbolsBuilder : ManifestSymbolsBuilder
+    {
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());
 
-            FilterOptions.DefineOptions(syntax);
-        }
-
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            ServicePrincipal.DefineParameters(syntax);
-
-            string subscription = null;
-            syntax.DefineParameter("subscription", ref subscription, "Azure subscription to operate on");
-            Subscription = subscription;
-
-            string resourceGroup = null;
-            syntax.DefineParameter("resource-group", ref resourceGroup, "Azure resource group to operate on");
-            ResourceGroup = resourceGroup;
-        }
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(ServicePrincipalOptions.GetCliArguments())
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(CopyImagesOptions.Subscription), "Azure subscription to operate on"),
+                        new Argument<string>(nameof(CopyImagesOptions.ResourceGroup), "Azure resource group to operate on"),
+                    });
     }
 }
+#nullable disable

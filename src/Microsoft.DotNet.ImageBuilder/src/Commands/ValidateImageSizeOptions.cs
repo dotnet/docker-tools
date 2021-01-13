@@ -3,30 +3,38 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ValidateImageSizeOptions : ImageSizeOptions
     {
-        protected override string CommandHelp => "Validates the size of the images against a baseline";
-
         public ImageSizeValidationMode Mode { get; set; }
 
         public ValidateImageSizeOptions() : base()
         {
         }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class ValidateImageSizeSymbolsBuilder : ImageSizeSymbolsBuilder
+    {
+        private const ImageSizeValidationMode DefaultValidationMode = ImageSizeValidationMode.All;
 
-            ImageSizeValidationMode mode = ImageSizeValidationMode.All;
-            syntax.DefineOption("mode", ref mode,
-                value => (ImageSizeValidationMode)Enum.Parse(typeof(ImageSizeValidationMode), value, true),
-                $"Mode of validation. {EnumHelper.GetHelpTextOptions(mode)}");
-            Mode = mode;
-        }
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<ImageSizeValidationMode>("--mode", () => DefaultValidationMode,
+                            $"Mode of validation. {EnumHelper.GetHelpTextOptions(DefaultValidationMode)}")
+                        {
+                            Name = nameof(ValidateImageSizeOptions.Mode)
+                        }
+                    }
+                );
     }
 
     [Flags]
@@ -37,3 +45,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         Integrity = 2
     }
 }
+#nullable disable

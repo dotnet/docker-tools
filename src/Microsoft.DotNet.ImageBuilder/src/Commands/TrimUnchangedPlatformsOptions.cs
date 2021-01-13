@@ -2,23 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class TrimUnchangedPlatformsOptions : Options
     {
-        protected override string CommandHelp => "Trims platforms marked as unchanged from the image info file";
+        public string ImageInfoPath { get; set; } = string.Empty;
+    }
 
-        public string ImageInfoPath { get; set; }
-
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            string imageInfoPath = null;
-            syntax.DefineParameter("image-info", ref imageInfoPath, "Path to image info file");
-            ImageInfoPath = imageInfoPath;
-        }
+    public class TrimUnchangedPlatformsSymbolsBuilder : CliSymbolsBuilder
+    {
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(TrimUnchangedPlatformsOptions.ImageInfoPath), "Path to image info file")
+                    }
+                );
     }
 }
+#nullable disable

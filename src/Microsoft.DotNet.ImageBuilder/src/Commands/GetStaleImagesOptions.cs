@@ -2,49 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetStaleImagesOptions : Options, IFilterableOptions, IGitOptionsHost
     {
-        protected override string CommandHelp => "Gets paths to images whose base images are out-of-date";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
         public GitOptions GitOptions { get; } = new GitOptions();
 
-        public string SubscriptionsPath { get; set; }
-        public string VariableName { get; set; }
+        public string SubscriptionsPath { get; set; } = string.Empty;
+        public string VariableName { get; set; } = string.Empty;
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class GetStaleImagesSymbolsBuilder : CliSymbolsBuilder
+    {
+        private const string DefaultSubscriptionsPath = "subscriptions.json";
 
-            const string DefaultSubscriptionsPath = "subscriptions.json";
-            string subscriptionsPath = DefaultSubscriptionsPath;
-            syntax.DefineOption(
-                "subscriptions-path",
-                ref subscriptionsPath,
-                $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').");
-            SubscriptionsPath = subscriptionsPath;
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<string>("--subscriptions-path", () => DefaultSubscriptionsPath,
+                            $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').")
+                        {
+                            Name = nameof(GetStaleImagesOptions.SubscriptionsPath)
+                        }
+                    })
+                .Concat(ManifestFilterOptions.GetCliOptions())
+                .Concat(GitOptions.GetCliOptions());
 
-            FilterOptions.DefineOptions(syntax);
-            GitOptions.DefineOptions(syntax);
-        }
-
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            GitOptions.DefineParameters(syntax);
-
-            string variableName = null;
-            syntax.DefineParameter(
-                "image-paths-variable",
-                ref variableName,
-                "The Azure Pipeline variable name to assign the image paths to");
-            VariableName = variableName;
-        }
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(GitOptions.GetCliArguments())
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(GetStaleImagesOptions.VariableName),
+                            "The Azure Pipeline variable name to assign the image paths to")
+                    });
     }
 }
+#nullable disable

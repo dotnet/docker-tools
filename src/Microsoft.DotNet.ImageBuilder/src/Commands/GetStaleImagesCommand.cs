@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
@@ -21,7 +22,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GetStaleImagesCommand : Command<GetStaleImagesOptions>, IDisposable
+    public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesSymbolsBuilder>, IDisposable
     {
         private readonly Dictionary<string, string> _gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly Dictionary<string, string> _imageDigests = new Dictionary<string, string>();
@@ -44,6 +45,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _gitHubClientFactory = gitHubClientFactory;
             _httpClient = httpClientFactory.GetClient();
         }
+
+        protected override string Description => "Gets paths to images whose base images are out-of-date";
 
         public override async Task ExecuteAsync()
         {
@@ -232,8 +235,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             public ManifestFilterOptions FilterOptions { get; }
-
-            protected override string CommandHelp => throw new NotImplementedException();
         }
     }
 }

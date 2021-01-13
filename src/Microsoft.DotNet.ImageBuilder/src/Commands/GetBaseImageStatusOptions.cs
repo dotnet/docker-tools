@@ -3,35 +3,44 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Displays the status of the referenced external base images";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
         public bool ContinuousMode { get; set; }
 
         public TimeSpan ContinuousModeDelay { get; set; }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class GetBaseImageStatusSymbolsBuilder : ManifestSymbolsBuilder
+    {
+        private static readonly TimeSpan ContinuousModeDelayDefault = TimeSpan.FromSeconds(10);
 
-            FilterOptions.DefineOptions(syntax);
-
-            bool continuousMode = false;
-            syntax.DefineOption("continuous", ref continuousMode, "Runs the status check continuously");
-            ContinuousMode = continuousMode;
-
-            const int ContinuousModeDelayDefault = 10;
-            int continuousModeDelay = ContinuousModeDelayDefault;
-            syntax.DefineOption("continuous-delay", ref continuousModeDelay,
-                $"Delay before running next status check (default {ContinuousModeDelayDefault} secs)");
-            ContinuousModeDelay = TimeSpan.FromSeconds(continuousModeDelay);
-        }
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(ManifestFilterOptions.GetCliOptions())
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<bool>("--continuous", "Runs the status check continuously")
+                        {
+                            Name = nameof(GetBaseImageStatusOptions.ContinuousMode)
+                        },
+                        new Option<TimeSpan>("--continuous-delay",
+                            description: $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
+                            parseArgument: resultArg => TimeSpan.FromSeconds(int.Parse(resultArg.Tokens.First().Value)))
+                        {
+                            Argument = new Argument<TimeSpan>(() => ContinuousModeDelayDefault),
+                            Name = nameof(GetBaseImageStatusOptions.ContinuousModeDelay)
+                        }
+                    });
     }
 }
+#nullable disable

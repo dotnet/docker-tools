@@ -2,38 +2,38 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PublishMcrDocsOptions : ManifestOptions, IGitOptionsHost
     {
-        protected override string CommandHelp => "Publishes the readmes to MCR";
+        public GitOptions GitOptions { get; } = new GitOptions();
 
-        public GitOptions GitOptions { get; } = new GitOptions("Microsoft", "mcrdocs", "master", "teams");
-
-        public string SourceRepoUrl { get; set; }
+        public string SourceRepoUrl { get; set; } = string.Empty;
 
         public PublishMcrDocsOptions() : base()
         {
         }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class PublishMcrDocsSymbolsBuilder : ManifestSymbolsBuilder
+    {
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions().Concat(GitOptions.GetCliOptions("Microsoft", "mcrdocs", "master", "teams"));
 
-            GitOptions.DefineOptions(syntax);
-        }
-
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            GitOptions.DefineParameters(syntax);
-
-            string sourceRepoUrl = null;
-            syntax.DefineParameter("source-repo", ref sourceRepoUrl, "Repo URL of the Dockerfile sources");
-            SourceRepoUrl = sourceRepoUrl;
-        }
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(GitOptions.GetCliArguments())
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(PublishMcrDocsOptions.SourceRepoUrl), "Repo URL of the Dockerfile sources")
+                    }
+                );
     }
 }
+#nullable disable

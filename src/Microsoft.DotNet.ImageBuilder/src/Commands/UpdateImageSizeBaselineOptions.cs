@@ -2,23 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class UpdateImageSizeBaselineOptions : ImageSizeOptions
     {
-        protected override string CommandHelp => "Updates an image size baseline file with current image sizes";
-
         public bool AllBaselineData { get; set; }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
-
-            bool allBaselineData = false;
-            syntax.DefineOption("all", ref allBaselineData, "Updates baseline for all images regardless of size variance");
-            AllBaselineData = allBaselineData;
-        }
+    public class UpdateImageSizeBaselineSymbolsBuilder : ImageSizeSymbolsBuilder
+    {
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<bool>("--all", "Updates baseline for all images regardless of size variance")
+                        {
+                            Name = nameof(UpdateImageSizeBaselineOptions.AllBaselineData)
+                        }
+                    });
     }
 }
+#nullable disable
+

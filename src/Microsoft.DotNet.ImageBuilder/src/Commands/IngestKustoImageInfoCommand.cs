@@ -16,7 +16,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions>
+    public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions, IngestKustoImageInfoSymbolsBuilder>
     {
         private readonly IKustoClient _kustoClient;
         private readonly ILoggerService _loggerService;
@@ -27,6 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
         }
+
+        protected override string Description => "Ingests image info data into Kusto";
 
         public override async Task ExecuteAsync()
         {

@@ -12,8 +12,9 @@ using Cottle.Exceptions;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class GenerateArtifactsCommand<TOptions> : ManifestCommand<TOptions>
+    public abstract class GenerateArtifactsCommand<TOptions, TSymbolsBuilder> : ManifestCommand<TOptions, TSymbolsBuilder>
         where TOptions : GenerateArtifactsOptions, new()
+        where TSymbolsBuilder : GenerateArtifactsSymbolsBuilder, new()
     {
         private readonly DocumentConfiguration _config = new DocumentConfiguration
         {

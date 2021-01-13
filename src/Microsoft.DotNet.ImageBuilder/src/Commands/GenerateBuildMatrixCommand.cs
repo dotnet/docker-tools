@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
+    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixSymbolsBuilder>
     {
         private const string VersionRegGroupName = "Version";
 
@@ -35,6 +35,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return null;
             });
         }
+
+        protected override string Description => "Generate the Azure DevOps build matrix for building the images";
 
         public override Task ExecuteAsync()
         {

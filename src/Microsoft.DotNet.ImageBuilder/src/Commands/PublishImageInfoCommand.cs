@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
+    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoSymbolsBuilder>
     {
         private readonly IGitService _gitService;
         private readonly ILoggerService _loggerService;
@@ -27,6 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
+
+        protected override string Description => "Publishes a build's merged image info.";
 
         public override Task ExecuteAsync()
         {

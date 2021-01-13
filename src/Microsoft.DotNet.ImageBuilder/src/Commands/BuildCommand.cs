@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
@@ -21,7 +20,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class BuildCommand : DockerRegistryCommand<BuildOptions>
+    public class BuildCommand : DockerRegistryCommand<BuildOptions, BuildSymbolsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
@@ -42,6 +41,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
+
+        protected override string Description => "Builds Dockerfiles";
 
         public override Task ExecuteAsync()
         {

@@ -7,56 +7,50 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Generate the Azure DevOps build matrix for building the images";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }
-        public string ImageInfoPath { get; set; }
+        public string? ImageInfoPath { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
         }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class GenerateBuildMatrixSymbolsBuilder : ManifestSymbolsBuilder
+    {
+        private const MatrixType DefaultMatrixType = MatrixType.PlatformDependencyGraph;
 
-            FilterOptions.DefineOptions(syntax);
-
-            MatrixType matrixType = MatrixType.PlatformDependencyGraph;
-            syntax.DefineOption(
-                "type",
-                ref matrixType,
-                value => (MatrixType)Enum.Parse(typeof(MatrixType), value, true),
-                $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(matrixType)}");
-            MatrixType = matrixType;
-
-            IReadOnlyList<string> customBuildLegGroups = Array.Empty<string>();
-            syntax.DefineOptionList(
-                "custom-build-leg-group",
-                ref customBuildLegGroups,
-                "Name of custom build leg group to use.");
-            CustomBuildLegGroups = customBuildLegGroups;
-
-            int productVersionComponents = 2;
-            syntax.DefineOption(
-                "product-version-components",
-                ref productVersionComponents,
-                "Number of components of the product version considered to be significant");
-            ProductVersionComponents = productVersionComponents;
-
-            string imageInfoPath = null;
-            syntax.DefineOption(
-                "image-info",
-                ref imageInfoPath,
-                "Path to image info file");
-            ImageInfoPath = imageInfoPath;
-        }
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(ManifestFilterOptions.GetCliOptions())
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<MatrixType>("--type", () => DefaultMatrixType,
+                            $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(DefaultMatrixType)}")
+                        {
+                            Name = nameof(MatrixType)
+                        },
+                        new Option<string[]>("--custom-build-leg-group", () => Array.Empty<string>(), "Name of custom build leg group to use.")
+                        {
+                            Name = nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups)
+                        },
+                        new Option<int>("--product-version-components", () => 2, "Number of components of the product version considered to be significant")
+                        {
+                            Name = nameof(GenerateBuildMatrixOptions.ProductVersionComponents)
+                        },
+                        new Option<string?>("--image-info", "Path to image info file")
+                        {
+                            Name = nameof(GenerateBuildMatrixOptions.ImageInfoPath)
+                        }
+                    });
     }
 }
+#nullable disable

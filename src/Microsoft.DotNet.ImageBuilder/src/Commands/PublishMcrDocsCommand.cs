@@ -16,7 +16,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
+    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions, PublishMcrDocsSymbolsBuilder>
     {
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService _gitService;
@@ -31,6 +31,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
+
+        protected override string Description => "Publishes the readmes to MCR";
 
         public override async Task ExecuteAsync()
         {

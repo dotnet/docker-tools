@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
@@ -11,7 +12,7 @@ using System.Threading.Tasks;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions>
+    public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusSymbolsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
@@ -22,6 +23,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
+
+        protected override string Description => "Displays the status of the referenced external base images";
 
         public override async Task ExecuteAsync()
         {

@@ -3,48 +3,61 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMcrDocIngestionOptions : Options
     {
-        protected override string CommandHelp => "Waits for docs to complete ingestion into Docker Hub";
-
-        public string CommitDigest { get; set; }
+        public string CommitDigest { get; set; } = string.Empty;
 
         public TimeSpan WaitTimeout { get; set; }
 
         public TimeSpan RequeryDelay { get; set; }
 
         public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
+    }
 
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
+    public class WaitForMcrDocIngestionSymbolsBuilder : CliSymbolsBuilder
+    {
+        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
-            string commitDigest = null;
-            syntax.DefineParameter("commit-digest", ref commitDigest, "Git commit digest of the readme changes");
-            CommitDigest = commitDigest;
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(WaitForMcrDocIngestionOptions.CommitDigest),
+                            "Git commit digest of the readme changes")
+                    }
+                )
+                .Concat(ServicePrincipalOptions.GetCliArguments());
 
-            ServicePrincipal.DefineParameters(syntax);
-        }
-
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
-
-            TimeSpan waitTimeout = TimeSpan.FromMinutes(5);
-            syntax.DefineOption("timeout", ref waitTimeout,
-                val => string.IsNullOrEmpty(val) ? waitTimeout : TimeSpan.Parse(val),
-                $"Maximum time to wait for doc ingestion (default: {waitTimeout})");
-            WaitTimeout = waitTimeout;
-
-            TimeSpan requeryDelay = TimeSpan.FromSeconds(10);
-            syntax.DefineOption("requery-delay", ref requeryDelay,
-                val => string.IsNullOrEmpty(val) ? requeryDelay : TimeSpan.Parse(val),
-                $"Amount of time to wait before requerying the status of the commit (default: {requeryDelay})");
-            RequeryDelay = requeryDelay;
-        }
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<TimeSpan>("--timeout",
+                            description: $"Maximum time to wait for doc ingestion (default: {DefaultTimeout})",
+                            parseArgument: argResult => TimeSpan.Parse(argResult.Tokens.First().Value))
+                        {
+                            Argument = new Argument<TimeSpan>(() => DefaultTimeout),
+                            Name = nameof(WaitForMcrDocIngestionOptions.WaitTimeout)
+                        },
+                        new Option<TimeSpan>("--requery-delay",
+                            description: $"Amount of time to wait before requerying the status of the commit (default: {DefaultRequeryDelay})",
+                            parseArgument: argResult => TimeSpan.Parse(argResult.Tokens.First().Value))
+                        {
+                            Argument = new Argument<TimeSpan>(() => DefaultRequeryDelay),
+                            Name = nameof(WaitForMcrDocIngestionOptions.RequeryDelay)
+                        }
+                    }
+                );
     }
 }
+#nullable disable

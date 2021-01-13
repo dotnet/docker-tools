@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class GenerateArtifactsOptions : ManifestOptions
@@ -15,18 +18,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected GenerateArtifactsOptions() : base()
         {
         }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
-
-            bool allowOptionalTemplates = false;
-            syntax.DefineOption("optional-templates", ref allowOptionalTemplates, "Do not require templates");
-            AllowOptionalTemplates = allowOptionalTemplates;
-
-            bool validate = false;
-            syntax.DefineOption("validate", ref validate, "Validates the generated artifacts and templates are in sync");
-            Validate = validate;
-        }
+    public abstract class GenerateArtifactsSymbolsBuilder : ManifestSymbolsBuilder
+    {
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(
+                    new Option[]
+                    {
+                        new Option<bool>("--optional-templates", "Do not require templates")
+                        {
+                            Name = nameof(GenerateArtifactsOptions.AllowOptionalTemplates)
+                        },
+                        new Option<bool>("--validate", "Validates the generated artifacts and templates are in sync")
+                        {
+                            Name = nameof(GenerateArtifactsOptions.Validate)
+                        }
+                    }
+                );
     }
 }
+#nullable disable

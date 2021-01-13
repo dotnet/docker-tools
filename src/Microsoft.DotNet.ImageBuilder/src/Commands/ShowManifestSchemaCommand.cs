@@ -12,7 +12,7 @@ using Newtonsoft.Json.Schema.Generation;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ShowManifestSchemaCommand : Command<ShowManifestSchemaOptions>
+    public class ShowManifestSchemaCommand : Command<Options, CliSymbolsBuilder>
     {
         private readonly ILoggerService _loggerService;
 
@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService = loggerService;
         }
+
+        protected override string Description => "Outputs manifest file schema";
 
         public override Task ExecuteAsync()
         {

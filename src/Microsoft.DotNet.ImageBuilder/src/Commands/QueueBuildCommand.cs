@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class QueueBuildCommand : Command<QueueBuildOptions>
+    public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildSymbolsBuilder>
     {
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly ILoggerService _loggerService;
@@ -32,6 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _connectionFactory = connectionFactory;
             _loggerService = loggerService;
         }
+
+        protected override string Description => "Queues builds to update images";
 
         public override async Task ExecuteAsync()
         {

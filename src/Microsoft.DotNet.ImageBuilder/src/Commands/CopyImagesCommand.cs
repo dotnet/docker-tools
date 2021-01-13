@@ -16,8 +16,9 @@ using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class CopyImagesCommand<TOptions> : ManifestCommand<TOptions>
+    public abstract class CopyImagesCommand<TOptions, TSymbolsBuilder> : ManifestCommand<TOptions, TSymbolsBuilder>
         where TOptions : CopyImagesOptions, new()
+        where TSymbolsBuilder : CopyImagesSymbolsBuilder, new()
     {
         private readonly Lazy<string> _registryName;
 

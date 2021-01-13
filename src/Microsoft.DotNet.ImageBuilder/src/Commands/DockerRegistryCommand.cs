@@ -6,8 +6,9 @@ using System;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class DockerRegistryCommand<TOptions> : ManifestCommand<TOptions>
+    public abstract class DockerRegistryCommand<TOptions, TSymbolsBuilder> : ManifestCommand<TOptions, TSymbolsBuilder>
         where TOptions : DockerRegistryOptions, new()
+        where TSymbolsBuilder : DockerRegistrySymbolsBuilder, new()
     {
         protected void ExecuteWithUser(Action action)
         {

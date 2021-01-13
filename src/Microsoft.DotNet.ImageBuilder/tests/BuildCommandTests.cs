@@ -41,6 +41,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
             string runtimeDigest = $"{runtimeRepo}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
             string aspnetDigest = $"{aspnetRepo}@sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+            IEnumerable<string> runtimeDepsLayers = new [] { 
+                "sha256:777b2c648970480f50f5b4d0af8f9a8ea798eea43dbcf40ce4a8c7118736bdcf",
+                "sha256:b9dfc8eed8d66f1eae8ffe46be9a26fe047a7f6554e9dbc2df9da211e59b4786" };
+            IEnumerable<string> runtimeLayers = 
+                runtimeDepsLayers.Concat(new [] { "sha256:466982335a8bacfe63b8f75a2e8c6484dfa7f7e92197550643b3c1457fa445b4" });
+            IEnumerable<string> aspnetLayers = 
+                runtimeLayers.Concat(new [] { "sha256:d305fbfc4bd0d9f38662e979dced9831e3b5e4d85442397a8ec0a0e7bcf5458b"});
             const string tag = "tag";
             const string localTag = "localtag";
             const string baseImageRepo = "baserepo";
@@ -66,6 +73,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock
                     .Setup(o => o.GetImageDigest(baseImageTag, false))
                     .Returns(baseImageDigest);
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageLayers(runtimeDepsDigest, false))
+                    .Returns(runtimeDepsLayers);
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageLayers(runtimeDigest, false))
+                    .Returns(runtimeLayers);
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageLayers(aspnetDigest, false))
+                    .Returns(aspnetLayers);
 
                 DateTime createdDate = DateTime.Now;
 
@@ -172,6 +191,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             OsVersion = "focal",
                                             Digest = runtimeDepsDigest,
                                             BaseImageDigest = baseImageDigest,
+                                            Layers = runtimeDepsLayers.ToList(),
                                             Created = createdDate.ToUniversalTime(),
                                             SimpleTags =
                                             {
@@ -208,6 +228,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             OsVersion = "focal",
                                             Digest = runtimeDigest,
                                             BaseImageDigest = runtimeDepsDigest,
+                                            Layers = runtimeLayers.ToList(),
                                             Created = createdDate.ToUniversalTime(),
                                             SimpleTags =
                                             {
@@ -237,6 +258,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             OsVersion = "focal",
                                             Digest = aspnetDigest,
                                             BaseImageDigest = runtimeDigest,
+                                            Layers = aspnetLayers.ToList(),
                                             Created = createdDate.ToUniversalTime(),
                                             SimpleTags =
                                             {
@@ -1200,6 +1222,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDepsLinuxDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDepsWindowsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDeps2Digest, false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{linuxTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{windowsTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{linuxTag}", false));
@@ -1480,6 +1505,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDepsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDeps2Digest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDeps3Digest, false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false));
@@ -1694,6 +1722,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDepsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDeps2Digest, false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -1880,6 +1910,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDepsDigest, false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{newTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
@@ -2121,6 +2152,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{newTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDepsLinuxDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageLayers(runtimeDeps2Digest, false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{newTag}", false));

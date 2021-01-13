@@ -42,6 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public string CommitUrl { get; set; }
 
+        public List<string> Layers { get; set; } = new List<string>();
+
         /// <summary>
         /// Gets or sets whether the image or its associated tag names have changed since it was last published.
         /// </summary>

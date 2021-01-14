@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateOption("timeout", nameof(WaitForMcrImageIngestionOptions.WaitTimeout),
                             $"Maximum time to wait for image ingestion (default: {DefaultWaitTimeout})",
                             val => TimeSpan.Parse(val), DefaultWaitTimeout),
-                        CreateOption("--requery-delay", nameof(WaitForMcrImageIngestionOptions.RequeryDelay),
+                        CreateOption("requery-delay", nameof(WaitForMcrImageIngestionOptions.RequeryDelay),
                             $"Amount of time to wait before requerying the status of an image (default: {DefaultRequeryDelay})",
                             val => TimeSpan.Parse(val), DefaultRequeryDelay)
                     });

@@ -39,11 +39,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Skip explicitly pulling the base images of the Dockerfiles"),
                         CreateOption<string?>("image-info-output-path", nameof(BuildOptions.ImageInfoOutputPath),
                             "Path to output image info"),
-                        CreateOption<string?>("--image-info-source-path", nameof(BuildOptions.ImageInfoSourcePath),
+                        CreateOption<string?>("image-info-source-path", nameof(BuildOptions.ImageInfoSourcePath),
                             "Path to source image info"),
-                        CreateOption<string?>("--source-repo", nameof(BuildOptions.SourceRepoUrl),
+                        CreateOption<string?>("source-repo", nameof(BuildOptions.SourceRepoUrl),
                             "Repo URL of the Dockerfile sources"),
-                        CreateOption<bool>("--no-cache", nameof(BuildOptions.NoCache),
+                        CreateOption<bool>("no-cache", nameof(BuildOptions.NoCache),
                             "Disables build cache feature")
                     });
     }

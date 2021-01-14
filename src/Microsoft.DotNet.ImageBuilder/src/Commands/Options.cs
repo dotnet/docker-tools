@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 using System.Reflection;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -41,14 +42,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public virtual IEnumerable<Option> GetCliOptions() =>
             new Option[]
             {
-                new Option<bool>("--dry-run", "Dry run of what images get built and order they would get built in")
-                {
-                    Name = nameof(Options.IsDryRun)
-                },
-                new Option<bool>("--verbose", "Show details about the tasks run")
-                {
-                    Name = nameof(Options.IsVerbose)
-                }
+                CreateOption<bool>("dry-run", nameof(Options.IsDryRun),
+                    "Dry run of what images get built and order they would get built in"),
+                CreateOption<bool>("verbose", nameof(Options.IsVerbose),
+                    "Show details about the tasks run")
             };
     }
 }

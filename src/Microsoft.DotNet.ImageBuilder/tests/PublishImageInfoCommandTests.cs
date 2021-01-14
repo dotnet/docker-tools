@@ -152,11 +152,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AzdoOptions azdoOptions = new AzdoOptions
                 {
                     AccessToken = "azdo-token",
-                    Branch = "testBranch",
-                    Repo = "testRepo",
+                    AzdoBranch = "testBranch",
+                    AzdoRepo = "testRepo",
                     Organization = "azdo-org",
                     Project = "azdo-project",
-                    Path = "imageinfo.json"
+                    AzdoPath = "imageinfo.json"
                 };
 
                 Mock<IRepository> repositoryMock = GetRepositoryMock();
@@ -326,11 +326,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AzdoOptions azdoOptions = new AzdoOptions
                 {
                     AccessToken = "azdo-token",
-                    Branch = "testBranch",
-                    Repo = "testRepo",
+                    AzdoBranch = "testBranch",
+                    AzdoRepo = "testRepo",
                     Organization = "azdo-org",
                     Project = "azdo-project",
-                    Path = "imageinfo.json"
+                    AzdoPath = "imageinfo.json"
                 };
 
                 Mock<IRepository> repositoryMock = GetRepositoryMock();

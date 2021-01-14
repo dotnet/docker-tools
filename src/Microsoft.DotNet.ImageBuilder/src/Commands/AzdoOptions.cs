@@ -18,11 +18,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string Project { get; set; } = string.Empty;
 
-        public string? Repo { get; set; }
+        public string? AzdoRepo { get; set; }
 
-        public string? Branch { get; set; }
+        public string? AzdoBranch { get; set; }
 
-        public string? Path { get; set; }
+        public string? AzdoPath { get; set; }
 
         public static IEnumerable<Argument> GetCliArguments() =>
             new Argument[]
@@ -35,9 +35,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public static IEnumerable<Option> GetCliOptions() =>
             new Option[]
             {
-                CreateOption<string?>("azdo-repo", nameof(Repo), "Azure DevOps repo"),
-                CreateOption<string?>("azdo-branch", nameof(Branch), "Azure DevOps branch (default: master)", "master"),
-                CreateOption<string?>("azdo-path", nameof(Path), "Azure DevOps path"),
+                CreateOption<string?>("azdo-repo", nameof(AzdoRepo), "Azure DevOps repo"),
+                CreateOption<string?>("azdo-branch", nameof(AzdoBranch), "Azure DevOps branch (default: master)", "master"),
+                CreateOption<string?>("azdo-path", nameof(AzdoPath), "Azure DevOps path"),
             };
 
         public (Uri BaseUrl, VssCredentials Credentials) GetConnectionDetails() =>

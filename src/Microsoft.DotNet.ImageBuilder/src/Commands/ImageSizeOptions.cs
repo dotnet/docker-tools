@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -27,15 +28,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<int>("--variance", () => AllowedVarianceDefault,
-                            $"Allowed percent variance in size (default is `{AllowedVarianceDefault}`")
-                        {
-                            Name = nameof(ImageSizeOptions.AllowedVariance)
-                        },
-                        new Option<bool>("--pull", "Pull the images vs using local images")
-                        {
-                            Name = nameof(ImageSizeOptions.IsPullEnabled)
-                        }
+                        CreateOption("variance", nameof(ImageSizeOptions.AllowedVariance),
+                            $"Allowed percent variance in size (default is `{AllowedVarianceDefault}`", AllowedVarianceDefault),
+                        CreateOption<bool>("pull", nameof(ImageSizeOptions.IsPullEnabled),
+                            "Pull the images vs using local images")
                     }
                 );
 

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -27,10 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<string?>("--source-branch", "Repo branch of the Dockerfile sources (default is commit SHA)")
-                        {
-                            Name = nameof(GenerateReadmesOptions.SourceRepoBranch)
-                        }
+                        CreateOption<string?>("source-branch", nameof(GenerateReadmesOptions.SourceRepoBranch),
+                            "Repo branch of the Dockerfile sources (default is commit SHA)")
                     }
                 );
 
@@ -39,7 +38,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(GenerateReadmesOptions.SourceRepoUrl), "Repo URL of the Dockerfile sources")
+                        new Argument<string>(nameof(GenerateReadmesOptions.SourceRepoUrl),
+                            "Repo URL of the Dockerfile sources")
                     }
                 );
     }

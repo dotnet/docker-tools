@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -23,10 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<string?>("--image-info", "Path to image info file")
-                        {
-                            Name = nameof(CopyAcrImagesOptions.ImageInfoPath)
-                        }
+                        CreateOption<string?>("image-info", nameof(CopyAcrImagesOptions.ImageInfoPath),
+                            "Path to image info file")
                     });
 
         public override IEnumerable<Argument> GetCliArguments() =>

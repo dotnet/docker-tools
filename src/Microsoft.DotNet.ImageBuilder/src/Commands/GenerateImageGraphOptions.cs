@@ -26,7 +26,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .Concat(
                 new Argument[]
                 {
-                    new Argument<string>(nameof(GenerateImageGraphOptions.OutputPath), "The path to write the graph to")
+                    new Argument<string>(nameof(GenerateImageGraphOptions.OutputPath),
+                        "The path to write the graph to")
                 });
     }
 }

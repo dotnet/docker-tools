@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -33,23 +33,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<MatrixType>("--type", () => DefaultMatrixType,
-                            $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(DefaultMatrixType)}")
-                        {
-                            Name = nameof(MatrixType)
-                        },
-                        new Option<string[]>("--custom-build-leg-group", () => Array.Empty<string>(), "Name of custom build leg group to use.")
-                        {
-                            Name = nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups)
-                        },
-                        new Option<int>("--product-version-components", () => 2, "Number of components of the product version considered to be significant")
-                        {
-                            Name = nameof(GenerateBuildMatrixOptions.ProductVersionComponents)
-                        },
-                        new Option<string?>("--image-info", "Path to image info file")
-                        {
-                            Name = nameof(GenerateBuildMatrixOptions.ImageInfoPath)
-                        }
+                        CreateOption("type", nameof(GenerateBuildMatrixOptions.MatrixType),
+                            $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(DefaultMatrixType)}", DefaultMatrixType),
+                        CreateMultiOption<string>("custom-build-leg-group", nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups),
+                            "Name of custom build leg group to use."),
+                        CreateOption("product-version-components", nameof(GenerateBuildMatrixOptions.ProductVersionComponents),
+                            "Number of components of the product version considered to be significant", 2),
+                        CreateOption<string?>("image-info", nameof(GenerateBuildMatrixOptions.ImageInfoPath),
+                            "Path to image info file")
                     });
     }
 }

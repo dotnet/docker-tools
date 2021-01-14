@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -21,10 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<bool>("--all", "Updates baseline for all images regardless of size variance")
-                        {
-                            Name = nameof(UpdateImageSizeBaselineOptions.AllBaselineData)
-                        }
+                        CreateOption<bool>("all", nameof(UpdateImageSizeBaselineOptions.AllBaselineData),
+                            "Updates baseline for all images regardless of size variance")
                     });
     }
 }

@@ -2,11 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -45,33 +45,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.GetCliOptions().Concat(
                 new Option[]
                 {
-                    new Option<string>("--manifest", () => "manifest.json", "Path to json file which describes the repo")
-                    {
-                        Name = nameof(ManifestOptions.Manifest)
-                    },
-                    new Option<string?>("--registry-override", "Alternative registry which overrides the manifest")
-                    {
-                        Name = nameof(ManifestOptions.RegistryOverride)
-                    },
-                    new Option<string[]>("--repo", () => Array.Empty<string>(), "Repos to operate on (Default is all)")
-                    {
-                        Name = nameof(ManifestOptions.Repos)
-                    },
-                    new Option<string?>("--repo-prefix", "Prefix to add to the repo names specified in the manifest")
-                    {
-                        Name = nameof(ManifestOptions.RepoPrefix)
-                    },
-                    new Option<Dictionary<string, string>>("--var", description: "Named variables to substitute into the manifest (<name>=<value>)",
-                        parseArgument: argResult =>
-                        {
-                            return argResult.Tokens
-                                .ToList()
-                                .Select(token => token.Value.Split(new char[] { '=' }, 2))
-                                .ToDictionary(split => split[0], split => split[1]);
-                        })
-                    {
-                        Name = nameof(ManifestOptions.Variables)
-                    },
+                    CreateOption("manifest", nameof(ManifestOptions.Manifest),
+                        "Path to json file which describes the repo", "manifest.json"),
+                    CreateOption<string?>("registry-override", nameof(ManifestOptions.RegistryOverride),
+                        "Alternative registry which overrides the manifest"),
+                    CreateMultiOption<string>("repo", nameof(ManifestOptions.Repos),
+                        "Repos to operate on (Default is all)"),
+                    CreateOption<string?>("repo-prefix", nameof(ManifestOptions.RepoPrefix),
+                        "Prefix to add to the repo names specified in the manifest"),
+                    CreateDictionaryOption("var", nameof(ManifestOptions.Variables),
+                        "Named variables to substitute into the manifest (<name>=<value>)")
                 });
     }
 }

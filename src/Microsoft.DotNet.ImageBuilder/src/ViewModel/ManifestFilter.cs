@@ -33,14 +33,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             IEnumerable<Platform> platforms = image.Platforms;
 
-            if (IncludeArchitecture != null)
+            if (!string.IsNullOrEmpty(IncludeArchitecture))
             {
                 string archRegexPattern = GetFilterRegexPattern(IncludeArchitecture);
                 platforms = platforms.Where(platform =>
                     Regex.IsMatch(platform.Architecture.GetDockerName(), archRegexPattern, RegexOptions.IgnoreCase));
             }
 
-            if (IncludeOsType != null)
+            if (!string.IsNullOrEmpty(IncludeOsType))
             {
                 string osTypeRegexPattern = GetFilterRegexPattern(IncludeOsType);
                 platforms = platforms.Where(platform =>

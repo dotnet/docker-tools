@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.DotNet.VersionTools.Automation;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -23,22 +24,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string? defaultOwner = null, string? defaultRepo = null, string? defaultBranch = null, string? defaultPath = null) =>
             new Option[]
             {
-                new Option<string?>("--git-branch", () => defaultBranch, $"GitHub branch to write to (defaults to '{defaultBranch}')")
-                {
-                    Name = nameof(Branch)
-                },
-                new Option<string?>("--git-owner", () => defaultOwner, $"Owner of the GitHub repo to write to (defaults to '{defaultOwner}')")
-                {
-                    Name = nameof(Owner)
-                },
-                new Option<string?>("--git-path", () => defaultPath, $"Path within the GitHub repo to write to (defaults to '{defaultPath}')")
-                {
-                    Name = nameof(Path)
-                },
-                new Option<string?>("--git-repo", () => defaultRepo, $"GitHub repo to write to (defaults to '{defaultRepo}')")
-                {
-                    Name = nameof(Repo)
-                },
+                CreateOption("git-branch", nameof(Branch),
+                    $"GitHub branch to write to (defaults to '{defaultBranch}')", defaultBranch),
+                CreateOption("git-owner", nameof(Owner),
+                    $"Owner of the GitHub repo to write to (defaults to '{defaultOwner}')", defaultOwner),
+                CreateOption("git-path", nameof(Path),
+                    $"Path within the GitHub repo to write to (defaults to '{defaultPath}')", defaultPath),
+                CreateOption("git-repo", nameof(Repo),
+                    $"GitHub repo to write to (defaults to '{defaultRepo}')", defaultRepo)
             };
 
         public static IEnumerable<Argument> GetCliArguments() =>

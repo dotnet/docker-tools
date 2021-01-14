@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -29,27 +30,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(CleanAcrImagesOptions.RepoName), "Name of repo to target (wildcard chars * and ? supported)"),
+                        new Argument<string>(nameof(CleanAcrImagesOptions.RepoName),
+                            "Name of repo to target (wildcard chars * and ? supported)"),
                     })
                 .Concat(ServicePrincipalOptions.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(CleanAcrImagesOptions.Subscription), "Azure subscription to operate on"),
-                        new Argument<string>(nameof(CleanAcrImagesOptions.ResourceGroup), "Azure resource group to operate on"),
-                        new Argument<string>(nameof(CleanAcrImagesOptions.RegistryName), "Name of the registry"),
+                        new Argument<string>(nameof(CleanAcrImagesOptions.Subscription),
+                            "Azure subscription to operate on"),
+                        new Argument<string>(nameof(CleanAcrImagesOptions.ResourceGroup),
+                            "Azure resource group to operate on"),
+                        new Argument<string>(nameof(CleanAcrImagesOptions.RegistryName),
+                            "Name of the registry"),
                     });
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(
                 new Option[]
                 {
-                    new Option<CleanAcrImagesAction>("action", () => DefaultCleanAcrImagesAction,
-                        EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction))
-                    {
-                        Name = nameof(CleanAcrImagesOptions.Action)
-                    },
-                    new Option<int>("age", () => DefaultAge, $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})")
+                    CreateOption("action", nameof(CleanAcrImagesOptions.Action),
+                        EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction), DefaultCleanAcrImagesAction),
+                    CreateOption("age", nameof(CleanAcrImagesOptions.Age),
+                        $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})", DefaultAge)
                 });
     }
 

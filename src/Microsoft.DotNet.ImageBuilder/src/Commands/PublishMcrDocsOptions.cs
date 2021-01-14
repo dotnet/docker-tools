@@ -23,7 +23,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishMcrDocsSymbolsBuilder : ManifestSymbolsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions().Concat(GitOptions.GetCliOptions("Microsoft", "mcrdocs", "master", "teams"));
+            base.GetCliOptions()
+                .Concat(GitOptions.GetCliOptions("Microsoft", "mcrdocs", "master", "teams"));
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
@@ -31,7 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(PublishMcrDocsOptions.SourceRepoUrl), "Repo URL of the Dockerfile sources")
+                        new Argument<string>(nameof(PublishMcrDocsOptions.SourceRepoUrl),
+                            "Repo URL of the Dockerfile sources")
                     }
                 );
     }

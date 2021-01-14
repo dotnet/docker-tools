@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -29,17 +30,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<bool>("--continuous", "Runs the status check continuously")
-                        {
-                            Name = nameof(GetBaseImageStatusOptions.ContinuousMode)
-                        },
-                        new Option<TimeSpan>("--continuous-delay",
-                            description: $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
-                            parseArgument: resultArg => TimeSpan.FromSeconds(int.Parse(resultArg.Tokens.First().Value)))
-                        {
-                            Argument = new Argument<TimeSpan>(() => ContinuousModeDelayDefault),
-                            Name = nameof(GetBaseImageStatusOptions.ContinuousModeDelay)
-                        }
+                        CreateOption<bool>("continuous", nameof(GetBaseImageStatusOptions.ContinuousMode),
+                            "Runs the status check continuously"),
+                        CreateOption("continuous-delay", nameof(GetBaseImageStatusOptions.ContinuousModeDelay),
+                            $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
+                            val => TimeSpan.FromSeconds(int.Parse(val)), ContinuousModeDelayDefault)
                     });
     }
 }

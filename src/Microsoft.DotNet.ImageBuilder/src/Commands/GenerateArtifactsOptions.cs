@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -27,14 +28,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<bool>("--optional-templates", "Do not require templates")
-                        {
-                            Name = nameof(GenerateArtifactsOptions.AllowOptionalTemplates)
-                        },
-                        new Option<bool>("--validate", "Validates the generated artifacts and templates are in sync")
-                        {
-                            Name = nameof(GenerateArtifactsOptions.Validate)
-                        }
+                        CreateOption<bool>("optional-templates", nameof(GenerateArtifactsOptions.AllowOptionalTemplates),
+                            "Do not require templates"),
+                        CreateOption<bool>("validate", nameof(GenerateArtifactsOptions.Validate),
+                            "Validates the generated artifacts and templates are in sync")
                     }
                 );
     }

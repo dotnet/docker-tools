@@ -30,8 +30,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(CopyImagesOptions.Subscription), "Azure subscription to operate on"),
-                        new Argument<string>(nameof(CopyImagesOptions.ResourceGroup), "Azure resource group to operate on"),
+                        new Argument<string>(nameof(CopyImagesOptions.Subscription),
+                            "Azure subscription to operate on"),
+                        new Argument<string>(nameof(CopyImagesOptions.ResourceGroup),
+                            "Azure resource group to operate on"),
                     });
     }
 }

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -13,39 +14,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class ManifestFilterOptions
     {
         public const string PathOptionName = "path";
-        public const string FormattedPathOption = "--" + PathOptionName;
-
         public const string OsVersionOptionName = "os-version";
-        public const string FormattedOsVersionOption = "--" + OsVersionOptionName;
 
-        public string? Architecture { get; set; }
-        public string? OsType { get; set; }
+        public string Architecture { get; set; } = string.Empty;
+        public string OsType { get; set; } = string.Empty;
         public IEnumerable<string> OsVersions { get; set; } = Array.Empty<string>();
         public IEnumerable<string> Paths { get; set; } = Array.Empty<string>();
 
         public static IEnumerable<Option> GetCliOptions() =>
             new Option[]
             {
-                new Option<string?>("--architecture", () => DockerHelper.Architecture.GetDockerName(),
-                    "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)")
-                {
-                    Name = nameof(Architecture)
-                },
-                new Option<string?>("--os-type", () => DockerHelper.OS.GetDockerName(),
-                    "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)")
-                {
-                    Name = nameof(OsType)
-                },
-                new Option<string[]>(FormattedOsVersionOption, () => Array.Empty<string>(),
-                    "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)")
-                {
-                    Name = nameof(OsVersions)
-                },
-                new Option<string[]>(FormattedPathOption, () => Array.Empty<string>(),
+                CreateOption("architecture", nameof(Architecture),
+                    "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)",
+                    DockerHelper.Architecture.GetDockerName()),
+                CreateOption("os-type", nameof(OsType),
+                    "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)",
+                    DockerHelper.OS.GetDockerName()),
+                CreateMultiOption<string>(OsVersionOptionName, nameof(OsVersions),
+                    "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)"),
+                CreateMultiOption<string>(PathOptionName, nameof(Paths),
                     "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)")
-                {
-                    Name = nameof(Paths)
-                }
             };
     }
 }

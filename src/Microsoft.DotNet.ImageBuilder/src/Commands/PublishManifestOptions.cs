@@ -30,7 +30,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(PublishImageInfoOptions.ImageInfoPath), "Image info file path")
+                        new Argument<string>(nameof(PublishImageInfoOptions.ImageInfoPath),
+                            "Image info file path")
                     });
     }
 }

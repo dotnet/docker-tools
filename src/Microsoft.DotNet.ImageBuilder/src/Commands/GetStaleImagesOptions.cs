@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -28,11 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<string>("--subscriptions-path", () => DefaultSubscriptionsPath,
-                            $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').")
-                        {
-                            Name = nameof(GetStaleImagesOptions.SubscriptionsPath)
-                        }
+                        CreateOption("subscriptions-path", nameof(GetStaleImagesOptions.SubscriptionsPath),
+                            $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').", DefaultSubscriptionsPath)
                     })
                 .Concat(ManifestFilterOptions.GetCliOptions())
                 .Concat(GitOptions.GetCliOptions());

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -28,11 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<ImageSizeValidationMode>("--mode", () => DefaultValidationMode,
-                            $"Mode of validation. {EnumHelper.GetHelpTextOptions(DefaultValidationMode)}")
-                        {
-                            Name = nameof(ValidateImageSizeOptions.Mode)
-                        }
+                        CreateOption("mode", nameof(ValidateImageSizeOptions.Mode),
+                            $"Mode of validation. {EnumHelper.GetHelpTextOptions(DefaultValidationMode)}", DefaultValidationMode)
                     }
                 );
     }

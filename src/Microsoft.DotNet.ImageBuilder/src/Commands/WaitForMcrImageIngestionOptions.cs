@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -33,7 +34,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(WaitForMcrImageIngestionOptions.ImageInfoPath), "Path to image info file")
+                        new Argument<string>(nameof(WaitForMcrImageIngestionOptions.ImageInfoPath),
+                            "Path to image info file")
                     }
                 )
                 .Concat(ServicePrincipalOptions.GetCliArguments());
@@ -43,27 +45,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<DateTime>("--min-queue-time",
-                            description: "Minimum queue time an image must have to be awaited",
-                            parseArgument: resultArg => DateTime.Parse(resultArg.Tokens.First().Value).ToUniversalTime())
-                        {
-                            Argument = new Argument<DateTime>(() => DateTime.MinValue),
-                            Name = nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime)
-                        },
-                        new Option<TimeSpan>("--timeout",
-                            description: $"Maximum time to wait for image ingestion (default: {DefaultWaitTimeout})",
-                            parseArgument: resultArg => TimeSpan.Parse(resultArg.Tokens.First().Value))
-                        {
-                            Argument = new Argument<TimeSpan>(() => DefaultWaitTimeout),
-                            Name = nameof(WaitForMcrImageIngestionOptions.WaitTimeout)
-                        },
-                        new Option<TimeSpan>("--requery-delay",
-                            description: $"Amount of time to wait before requerying the status of an image (default: {DefaultRequeryDelay})",
-                            parseArgument: resultArg => TimeSpan.Parse(resultArg.Tokens.First().Value))
-                        {
-                            Argument = new Argument<TimeSpan>(() => DefaultRequeryDelay),
-                            Name = nameof(WaitForMcrImageIngestionOptions.RequeryDelay)
-                        }
+                        CreateOption("min-queue-time", nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime),
+                            "Minimum queue time an image must have to be awaited",
+                            val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue),
+                        CreateOption("timeout", nameof(WaitForMcrImageIngestionOptions.WaitTimeout),
+                            $"Maximum time to wait for image ingestion (default: {DefaultWaitTimeout})",
+                            val => TimeSpan.Parse(val), DefaultWaitTimeout),
+                        CreateOption("--requery-delay", nameof(WaitForMcrImageIngestionOptions.RequeryDelay),
+                            $"Amount of time to wait before requerying the status of an image (default: {DefaultRequeryDelay})",
+                            val => TimeSpan.Parse(val), DefaultRequeryDelay)
                     });
     }
 }

@@ -5,8 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.CommandLine.Parsing;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -26,34 +26,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return base.GetCliOptions().Concat(
                 new Option[]
                 {
-                    (passwordOption = new Option<string?>("--password", description: "Password for the Docker Registry the images are pushed to",
-                        parseArgument: resultArg =>
+                    (passwordOption = CreateOption<string?>("password", nameof(DockerRegistryOptions.Password),
+                        "Password for the Docker Registry the images are pushed to",
+                        resultArg =>
                         {
-                            string? password = GetTokenValue(resultArg);
-                            ValidateUsernameAndPassword(
-                                GetTokenValue(resultArg.FindResultFor(usernameOption ?? throw new InvalidOperationException("username option not set yet"))),
-                                password);
+                            string password = resultArg.GetTokenValue();
+                            string? username = resultArg.FindResultFor(
+                                usernameOption ?? throw new InvalidOperationException("username option not set yet"))?.GetTokenValue();
+                            ValidateUsernameAndPassword(username, password);
                             return password;
-                        })
-                    {
-                        Name = nameof(DockerRegistryOptions.Password)
-                    }),
-                    new Option<string?>("--username", description: "Username for the Docker Registry the images are pushed to",
-                        parseArgument: resultArg =>
-                            {
-                                string? username = GetTokenValue(resultArg);
-                                ValidateUsernameAndPassword(
-                                    username,
-                                    GetTokenValue(resultArg.FindResultFor(passwordOption ?? throw new InvalidOperationException("password option not set yet"))));
-                                return username;
-                            })
-                    {
-                        Name = nameof(DockerRegistryOptions.Username)
-                    },
+                        })),
+                    (usernameOption = CreateOption<string?>("username", nameof(DockerRegistryOptions.Username),
+                        "Username for the Docker Registry the images are pushed to",
+                        resultArg =>
+                        {
+                            string username = resultArg.GetTokenValue();
+                            string? password = resultArg.FindResultFor(
+                                passwordOption ?? throw new InvalidOperationException("password option not set yet"))?.GetTokenValue();
+                            ValidateUsernameAndPassword(username, password);
+                            return username;
+                        }))
                 });
         }
-
-        private static string? GetTokenValue(SymbolResult? symbolResult) => symbolResult?.Tokens.First().Value;
 
         private static void ValidateUsernameAndPassword(string? username, string? password)
         {

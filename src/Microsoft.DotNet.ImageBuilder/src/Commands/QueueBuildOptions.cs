@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -26,16 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<string>("--subscriptions-path", () => DefaultSubscriptionsPath,
-                            $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').")
-                        {
-                            Name = nameof(QueueBuildOptions.SubscriptionsPath)
-                        },
-                        new Option<string[]>("--image-paths", () => Array.Empty<string>(),
+                        CreateOption("subscriptions-path", nameof(QueueBuildOptions.SubscriptionsPath),
+                            $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').", DefaultSubscriptionsPath),
+                        CreateMultiOption<string>("image-paths", nameof(QueueBuildOptions.AllSubscriptionImagePaths),
                             "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)")
-                        {
-                            Name = nameof(QueueBuildOptions.AllSubscriptionImagePaths)
-                        }
                     }
                 );
 

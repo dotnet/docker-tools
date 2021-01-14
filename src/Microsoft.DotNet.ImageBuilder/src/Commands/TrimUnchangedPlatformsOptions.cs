@@ -21,7 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(TrimUnchangedPlatformsOptions.ImageInfoPath), "Path to image info file")
+                        new Argument<string>(nameof(TrimUnchangedPlatformsOptions.ImageInfoPath),
+                            "Path to image info file")
                     }
                 );
     }

@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -30,34 +31,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<bool>("--push", "Push built images to Docker registry")
-                        {
-                            Name = nameof(BuildOptions.IsPushEnabled)
-                        },
-                        new Option<bool>("--retry", "Retry building images upon failure")
-                        {
-                            Name = nameof(BuildOptions.IsRetryEnabled)
-                        },
-                        new Option<bool>("--skip-pulling", "Skip explicitly pulling the base images of the Dockerfiles")
-                        {
-                            Name = nameof(BuildOptions.IsSkipPullingEnabled)
-                        },
-                        new Option<string?>("--image-info-output-path", "Path to output image info")
-                        {
-                            Name = nameof(BuildOptions.ImageInfoOutputPath)
-                        },
-                        new Option<string?>("--image-info-source-path", "Path to source image info")
-                        {
-                            Name = nameof(BuildOptions.ImageInfoSourcePath)
-                        },
-                        new Option<string?>("--source-repo", "Repo URL of the Dockerfile sources")
-                        {
-                            Name = nameof(BuildOptions.SourceRepoUrl)
-                        },
-                        new Option<bool>("--no-cache", "Disables build cache feature")
-                        {
-                            Name = nameof(BuildOptions.NoCache)
-                        }
+                        CreateOption<bool>("push", nameof(BuildOptions.IsPushEnabled),
+                            "Push built images to Docker registry"),
+                        CreateOption<bool>("retry", nameof(BuildOptions.IsRetryEnabled),
+                            "Retry building images upon failure"),
+                        CreateOption<bool>("skip-pulling", nameof(BuildOptions.IsSkipPullingEnabled),
+                            "Skip explicitly pulling the base images of the Dockerfiles"),
+                        CreateOption<string?>("image-info-output-path", nameof(BuildOptions.ImageInfoOutputPath),
+                            "Path to output image info"),
+                        CreateOption<string?>("--image-info-source-path", nameof(BuildOptions.ImageInfoSourcePath),
+                            "Path to source image info"),
+                        CreateOption<string?>("--source-repo", nameof(BuildOptions.SourceRepoUrl),
+                            "Repo URL of the Dockerfile sources"),
+                        CreateOption<bool>("--no-cache", nameof(BuildOptions.NoCache),
+                            "Disables build cache feature")
                     });
     }
 }

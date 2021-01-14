@@ -21,7 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class ShowImageStatsSymbolsBuilder : ManifestSymbolsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
-           base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());
+            base.GetCliOptions()
+                .Concat(ManifestFilterOptions.GetCliOptions());
     }
 }
 #nullable disable

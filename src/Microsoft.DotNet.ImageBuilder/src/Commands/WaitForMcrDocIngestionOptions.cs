@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -42,20 +43,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        new Option<TimeSpan>("--timeout",
-                            description: $"Maximum time to wait for doc ingestion (default: {DefaultTimeout})",
-                            parseArgument: argResult => TimeSpan.Parse(argResult.Tokens.First().Value))
-                        {
-                            Argument = new Argument<TimeSpan>(() => DefaultTimeout),
-                            Name = nameof(WaitForMcrDocIngestionOptions.WaitTimeout)
-                        },
-                        new Option<TimeSpan>("--requery-delay",
-                            description: $"Amount of time to wait before requerying the status of the commit (default: {DefaultRequeryDelay})",
-                            parseArgument: argResult => TimeSpan.Parse(argResult.Tokens.First().Value))
-                        {
-                            Argument = new Argument<TimeSpan>(() => DefaultRequeryDelay),
-                            Name = nameof(WaitForMcrDocIngestionOptions.RequeryDelay)
-                        }
+                        CreateOption("timeout", nameof(WaitForMcrDocIngestionOptions.WaitTimeout),
+                            $"Maximum time to wait for doc ingestion (default: {DefaultTimeout})",
+                            val => TimeSpan.Parse(val), DefaultTimeout),
+                        CreateOption("requery-delay", nameof(WaitForMcrDocIngestionOptions.RequeryDelay),
+                            $"Amount of time to wait before requerying the status of the commit (default: {DefaultRequeryDelay})",
+                            val => TimeSpan.Parse(val), DefaultRequeryDelay)
                     }
                 );
     }

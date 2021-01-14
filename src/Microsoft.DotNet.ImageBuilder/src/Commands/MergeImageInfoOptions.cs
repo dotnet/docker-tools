@@ -23,8 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(MergeImageInfoOptions.SourceImageInfoFolderPath), "Folder path containing image info files"),
-                        new Argument<string>(nameof(MergeImageInfoOptions.DestinationImageInfoPath), "Path to store the merged image info content"),
+                        new Argument<string>(nameof(MergeImageInfoOptions.SourceImageInfoFolderPath),
+                            "Folder path containing image info files"),
+                        new Argument<string>(nameof(MergeImageInfoOptions.DestinationImageInfoPath),
+                            "Path to store the merged image info content"),
                     }
                 );
     }

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.VisualStudio.Services.Common;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -34,9 +35,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public static IEnumerable<Option> GetCliOptions() =>
             new Option[]
             {
-                new Option<string?>("--azdo-repo", "Azure DevOps repo"),
-                new Option<string?>("--azdo-branch", () => "master", "Azure DevOps branch (default: master)"),
-                new Option<string?>("--azdo-path", "Azure DevOps path"),
+                CreateOption<string?>("azdo-repo", nameof(Repo), "Azure DevOps repo"),
+                CreateOption<string?>("azdo-branch", nameof(Branch), "Azure DevOps branch (default: master)", "master"),
+                CreateOption<string?>("azdo-path", nameof(Path), "Azure DevOps path"),
             };
 
         public (Uri BaseUrl, VssCredentials Credentials) GetConnectionDetails() =>

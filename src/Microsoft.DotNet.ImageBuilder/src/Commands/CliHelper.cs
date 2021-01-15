@@ -12,8 +12,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public static class CliHelper
     {
-        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, T defaultValue = default) =>
-            new Option<T>(FormatAlias(alias), () => defaultValue!, description)
+        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, T defaultValue = default!) =>
+            CreateOption(alias, propertyName, description, () => defaultValue);
+
+        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, Func<T> defaultValue) =>
+            new Option<T>(FormatAlias(alias), defaultValue!, description)
             {
                 Name = propertyName
             };
@@ -25,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
 
         public static Option<T> CreateOption<T>(string alias, string propertyName, string description, Func<string, T> convert,
-            T defaultValue = default) =>
+            T defaultValue = default!) =>
             new Option<T>(FormatAlias(alias), description: description,
                 parseArgument: resultArg => convert(GetTokenValue(resultArg)))
             {

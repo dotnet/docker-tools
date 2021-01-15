@@ -53,16 +53,19 @@ namespace Microsoft.DotNet.ImageBuilder
                 Parser parser = new CommandLineBuilder(rootCliCommand)
                     .UseMiddleware(context =>
                     {
+                        if (context.ParseResult.CommandResult.Command != rootCliCommand)
+                        {
+                            // Capture the Docker version and info in the output.
+                            ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
+                            ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
+                        }
+                    })
+                    .UseMiddleware(context =>
+                    {
                         context.BindingContext.AddModelBinder(new ModelBinder<AzdoOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<GitOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<ManifestFilterOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<ServicePrincipalOptions>());
-                    })
-                    .UseMiddleware(context =>
-                    {
-                        // Capture the Docker version and info in the output.
-                        ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
-                        ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
                     })
                     .Build();
                 return parser.Invoke(args);

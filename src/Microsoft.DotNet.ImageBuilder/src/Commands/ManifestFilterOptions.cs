@@ -26,10 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 CreateOption("architecture", nameof(Architecture),
                     "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)",
-                    DockerHelper.Architecture.GetDockerName()),
+                    () => DockerHelper.Architecture.GetDockerName()),
                 CreateOption("os-type", nameof(OsType),
                     "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)",
-                    DockerHelper.OS.GetDockerName()),
+                    () => DockerHelper.OS.GetDockerName()),
                 CreateMultiOption<string>(OsVersionOptionName, nameof(OsVersions),
                     "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)"),
                 CreateMultiOption<string>(PathOptionName, nameof(Paths),

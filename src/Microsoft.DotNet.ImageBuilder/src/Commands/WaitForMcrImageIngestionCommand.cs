@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionSymbolsBuilder>
+    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IMcrStatusClientFactory _mcrStatusClientFactory;

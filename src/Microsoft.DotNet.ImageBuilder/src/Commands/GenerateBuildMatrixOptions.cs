@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class GenerateBuildMatrixSymbolsBuilder : ManifestSymbolsBuilder
+    public class GenerateBuildMatrixOptionsBuilder : ManifestOptionsBuilder
     {
         private const MatrixType DefaultMatrixType = MatrixType.PlatformDependencyGraph;
 

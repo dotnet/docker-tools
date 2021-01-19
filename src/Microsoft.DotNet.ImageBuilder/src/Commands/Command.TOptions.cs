@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class Command<TOptions, TSymbolsBuilder> : ICommand
+    public abstract class Command<TOptions, TOptionsBuilder> : ICommand
         where TOptions : Options, new()
-        where TSymbolsBuilder : CliSymbolsBuilder, new()
+        where TOptionsBuilder : CliOptionsBuilder, new()
     {
         public TOptions Options { get; private set; }
 
@@ -28,14 +28,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Command cmd = new Command(this.GetCommandName(), Description);
 
-            TSymbolsBuilder symbolsBuilder = new TSymbolsBuilder();
+            TOptionsBuilder OptionsBuilder = new TOptionsBuilder();
 
-            foreach (Argument argument in symbolsBuilder.GetCliArguments())
+            foreach (Argument argument in OptionsBuilder.GetCliArguments())
             {
                 cmd.AddArgument(argument);
             }
 
-            foreach (Option option in symbolsBuilder.GetCliOptions())
+            foreach (Option option in OptionsBuilder.GetCliOptions())
             {
                 cmd.AddOption(option);
             }

@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestSymbolsBuilder>
+    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;

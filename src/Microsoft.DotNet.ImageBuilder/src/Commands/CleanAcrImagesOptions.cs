@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string RegistryName { get; set; }
     }
 
-    public class CleanAcrImagesSymbolsBuilder : CliSymbolsBuilder
+    public class CleanAcrImagesOptionsBuilder : CliOptionsBuilder
     {
         private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
         private const int DefaultAge = 30;

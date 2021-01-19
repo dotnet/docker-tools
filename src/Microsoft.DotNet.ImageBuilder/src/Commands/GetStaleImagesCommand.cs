@@ -22,7 +22,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesSymbolsBuilder>, IDisposable
+    public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>, IDisposable
     {
         private readonly Dictionary<string, string> _gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly Dictionary<string, string> _imageDigests = new Dictionary<string, string>();

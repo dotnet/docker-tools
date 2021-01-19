@@ -11,7 +11,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class UpdateImageSizeBaselineCommand : ImageSizeCommand<UpdateImageSizeBaselineOptions, UpdateImageSizeBaselineSymbolsBuilder>
+    public class UpdateImageSizeBaselineCommand : ImageSizeCommand<UpdateImageSizeBaselineOptions, UpdateImageSizeBaselineOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
 

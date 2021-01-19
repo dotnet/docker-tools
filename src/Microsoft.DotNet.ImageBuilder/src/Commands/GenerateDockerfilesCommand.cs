@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesSymbolsBuilder>
+    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesOptionsBuilder>
     {
 
         [ImportingConstructor]

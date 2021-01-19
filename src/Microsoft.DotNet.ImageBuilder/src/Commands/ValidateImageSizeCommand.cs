@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions, ValidateImageSizeSymbolsBuilder>
+    public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions, ValidateImageSizeOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IEnvironmentService _environmentService;

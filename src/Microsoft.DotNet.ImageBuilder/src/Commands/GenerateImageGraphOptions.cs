@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string OutputPath { get; set; } = string.Empty;
     }
 
-    public class GenerateImageGraphSymbolsBuilder : ManifestSymbolsBuilder
+    public class GenerateImageGraphOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());

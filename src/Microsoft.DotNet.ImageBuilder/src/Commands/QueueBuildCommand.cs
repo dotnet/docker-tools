@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildSymbolsBuilder>
+    public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildOptionsBuilder>
     {
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly ILoggerService _loggerService;

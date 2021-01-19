@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class CliSymbolsBuilder
+    public class CliOptionsBuilder
     {
         public virtual IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
         public virtual IEnumerable<Option> GetCliOptions() =>

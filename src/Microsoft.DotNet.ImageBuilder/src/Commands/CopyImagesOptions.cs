@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
     }
 
-    public class CopyImagesSymbolsBuilder : ManifestSymbolsBuilder
+    public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());

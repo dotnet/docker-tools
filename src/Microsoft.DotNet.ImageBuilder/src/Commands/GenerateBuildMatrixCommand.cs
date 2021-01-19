@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixSymbolsBuilder>
+    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixOptionsBuilder>
     {
         private const string VersionRegGroupName = "Version";
 

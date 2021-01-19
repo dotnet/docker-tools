@@ -6,9 +6,9 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class ManifestCommand<TOptions, TSymbolsBuilder> : Command<TOptions, TSymbolsBuilder>, IManifestCommand
+    public abstract class ManifestCommand<TOptions, TOptionsBuilder> : Command<TOptions, TOptionsBuilder>, IManifestCommand
         where TOptions : ManifestOptions, new()
-        where TSymbolsBuilder : ManifestSymbolsBuilder, new()
+        where TOptionsBuilder : ManifestOptionsBuilder, new()
     {
         public ManifestInfo Manifest { get; private set; }
 

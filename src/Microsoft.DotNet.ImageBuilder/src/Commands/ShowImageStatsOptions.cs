@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class ShowImageStatsSymbolsBuilder : ManifestSymbolsBuilder
+    public class ShowImageStatsOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

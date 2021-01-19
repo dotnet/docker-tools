@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoSymbolsBuilder>
+    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoOptionsBuilder>
     {
         private readonly IGitService _gitService;
         private readonly ILoggerService _loggerService;

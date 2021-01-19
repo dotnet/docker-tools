@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsPullEnabled { get; set; }
     }
 
-    public abstract class ImageSizeSymbolsBuilder : ManifestSymbolsBuilder
+    public abstract class ImageSizeOptionsBuilder : ManifestOptionsBuilder
     {
         private const int AllowedVarianceDefault = 5;
 

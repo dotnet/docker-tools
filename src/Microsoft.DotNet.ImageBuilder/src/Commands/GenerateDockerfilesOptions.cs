@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class GenerateDockerfilesSymbolsBuilder : GenerateArtifactsSymbolsBuilder
+    public class GenerateDockerfilesOptionsBuilder : GenerateArtifactsOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());

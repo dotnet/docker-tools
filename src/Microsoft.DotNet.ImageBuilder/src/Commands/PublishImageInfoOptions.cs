@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public AzdoOptions AzdoOptions { get; set; } = new AzdoOptions();
     }
 
-    public class PublishImageInfoSymbolsBuilder : ImageInfoSymbolsBuilder
+    public class PublishImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

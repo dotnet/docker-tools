@@ -20,7 +20,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateImageGraphCommand : ManifestCommand<GenerateImageGraphOptions, GenerateImageGraphSymbolsBuilder>
+    public class GenerateImageGraphCommand : ManifestCommand<GenerateImageGraphOptions, GenerateImageGraphOptionsBuilder>
     {
         private readonly Dictionary<string, Manifest> _imageManifestCache = new Dictionary<string, Manifest>();
         private readonly Dictionary<string, DotNode> _nodeCache = new Dictionary<string, DotNode>();

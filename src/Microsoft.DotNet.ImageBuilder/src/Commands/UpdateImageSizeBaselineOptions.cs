@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool AllBaselineData { get; set; }
     }
 
-    public class UpdateImageSizeBaselineSymbolsBuilder : ImageSizeSymbolsBuilder
+    public class UpdateImageSizeBaselineOptionsBuilder : ImageSizeOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

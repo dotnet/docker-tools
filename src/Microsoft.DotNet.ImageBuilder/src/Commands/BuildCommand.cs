@@ -20,7 +20,7 @@ using Newtonsoft.Json.Linq;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class BuildCommand : DockerRegistryCommand<BuildOptions, BuildSymbolsBuilder>
+    public class BuildCommand : DockerRegistryCommand<BuildOptions, BuildOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;

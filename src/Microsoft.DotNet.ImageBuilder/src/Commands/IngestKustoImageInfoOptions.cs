@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Table { get; set; } = string.Empty;
     }
 
-    public class IngestKustoImageInfoSymbolsBuilder : ImageInfoSymbolsBuilder
+    public class IngestKustoImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());

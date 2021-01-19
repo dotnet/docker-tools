@@ -12,7 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionSymbolsBuilder>
+    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IMcrStatusClientFactory _mcrStatusClientFactory;

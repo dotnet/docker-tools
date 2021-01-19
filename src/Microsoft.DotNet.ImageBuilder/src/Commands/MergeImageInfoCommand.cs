@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoSymbolsBuilder>
+    public class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>
     {
         protected override string Description => "Merges the content of multiple image info files into one file";
 

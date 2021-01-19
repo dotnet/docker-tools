@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class PublishManifestSymbolsBuilder : DockerRegistrySymbolsBuilder
+    public class PublishManifestOptionsBuilder : DockerRegistryOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());

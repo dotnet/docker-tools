@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string ImageInfoPath { get; set; } = string.Empty;
     }
 
-    public class TrimUnchangedPlatformsSymbolsBuilder : CliSymbolsBuilder
+    public class TrimUnchangedPlatformsOptionsBuilder : CliOptionsBuilder
     {
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()

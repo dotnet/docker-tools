@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
     }
 
-    public class WaitForMcrImageIngestionSymbolsBuilder : ManifestSymbolsBuilder
+    public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder
     {
         private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
         private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);

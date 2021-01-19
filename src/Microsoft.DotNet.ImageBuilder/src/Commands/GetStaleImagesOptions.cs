@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string VariableName { get; set; } = string.Empty;
     }
 
-    public class GetStaleImagesSymbolsBuilder : CliSymbolsBuilder
+    public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
     {
         private const string DefaultSubscriptionsPath = "subscriptions.json";
 

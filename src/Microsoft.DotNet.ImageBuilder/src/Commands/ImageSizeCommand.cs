@@ -13,9 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public delegate void ImageHandler(string repoId, string imageId, string imageTag);
 
-    public abstract class ImageSizeCommand<TOptions, TSymbolsBuilder> : ManifestCommand<TOptions, TSymbolsBuilder>
+    public abstract class ImageSizeCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
         where TOptions : ImageSizeOptions, new()
-        where TSymbolsBuilder : ImageSizeSymbolsBuilder, new()
+        where TOptionsBuilder : ImageSizeOptionsBuilder, new()
     {
         public ImageSizeCommand(IDockerService dockerService)
         {

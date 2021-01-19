@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public TimeSpan ContinuousModeDelay { get; set; }
     }
 
-    public class GetBaseImageStatusSymbolsBuilder : ManifestSymbolsBuilder
+    public class GetBaseImageStatusOptionsBuilder : ManifestOptionsBuilder
     {
         private static readonly TimeSpan ContinuousModeDelayDefault = TimeSpan.FromSeconds(10);
 

@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public abstract class ImageInfoSymbolsBuilder : ManifestSymbolsBuilder
+    public abstract class ImageInfoOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()

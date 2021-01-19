@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsSymbolsBuilder>
+    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>
     {
         public ShowImageStatsCommand() : base()
         {

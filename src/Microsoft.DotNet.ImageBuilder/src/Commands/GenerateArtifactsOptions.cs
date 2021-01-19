@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public abstract class GenerateArtifactsSymbolsBuilder : ManifestSymbolsBuilder
+    public abstract class GenerateArtifactsOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

@@ -11,7 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Services;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CopyDockerHubBaseImagesCommand : CopyImagesCommand<CopyImagesOptions, CopyImagesSymbolsBuilder>
+    public class CopyDockerHubBaseImagesCommand : CopyImagesCommand<CopyImagesOptions, CopyImagesOptionsBuilder>
     {
         [ImportingConstructor]
         public CopyDockerHubBaseImagesCommand(

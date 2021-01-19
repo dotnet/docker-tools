@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? ImageInfoPath { get; set; }
     }
 
-    public class CopyAcrImagesSymbolsBuilder : CopyImagesSymbolsBuilder
+    public class CopyAcrImagesOptionsBuilder : CopyImagesOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

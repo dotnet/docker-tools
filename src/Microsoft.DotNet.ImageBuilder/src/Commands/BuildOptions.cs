@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool NoCache { get; set; }
     }
 
-    public class BuildSymbolsBuilder : DockerRegistrySymbolsBuilder
+    public class BuildOptionsBuilder : DockerRegistryOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

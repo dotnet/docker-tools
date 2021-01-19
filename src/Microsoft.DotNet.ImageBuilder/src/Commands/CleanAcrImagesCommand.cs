@@ -16,7 +16,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions, CleanAcrImagesSymbolsBuilder>
+    public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions, CleanAcrImagesOptionsBuilder>
     {
         private readonly IAcrClientFactory _acrClientFactory;
         private readonly ILoggerService _loggerService;

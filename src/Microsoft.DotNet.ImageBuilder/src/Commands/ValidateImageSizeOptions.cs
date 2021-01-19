@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class ValidateImageSizeSymbolsBuilder : ImageSizeSymbolsBuilder
+    public class ValidateImageSizeOptionsBuilder : ImageSizeOptionsBuilder
     {
         private const ImageSizeValidationMode DefaultValidationMode = ImageSizeValidationMode.All;
 

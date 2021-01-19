@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public IEnumerable<string> AllSubscriptionImagePaths { get; set; } = Enumerable.Empty<string>();
     }
 
-    public class QueueBuildSymbolsBuilder : CliSymbolsBuilder
+    public class QueueBuildOptionsBuilder : CliOptionsBuilder
     {
         private const string DefaultSubscriptionsPath = "subscriptions.json";
         public override IEnumerable<Option> GetCliOptions() =>

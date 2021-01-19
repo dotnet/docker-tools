@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public abstract class ManifestSymbolsBuilder : CliSymbolsBuilder
+    public abstract class ManifestOptionsBuilder : CliOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions().Concat(

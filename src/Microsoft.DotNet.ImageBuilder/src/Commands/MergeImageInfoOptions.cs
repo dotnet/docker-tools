@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string DestinationImageInfoPath { get; set; } = string.Empty;
     }
 
-    public class MergeImageInfoSymbolsBuilder : ManifestSymbolsBuilder
+    public class MergeImageInfoOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()

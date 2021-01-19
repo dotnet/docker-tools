@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class PublishMcrDocsSymbolsBuilder : ManifestSymbolsBuilder
+    public class PublishMcrDocsOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

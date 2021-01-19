@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class GenerateReadmesSymbolsBuilder : GenerateArtifactsSymbolsBuilder
+    public class GenerateReadmesOptionsBuilder : GenerateArtifactsOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

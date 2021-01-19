@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? Username { get; set; }
     }
 
-    public abstract class DockerRegistrySymbolsBuilder : ManifestSymbolsBuilder
+    public abstract class DockerRegistryOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Option> GetCliOptions()
         {

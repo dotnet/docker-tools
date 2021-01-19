@@ -20,9 +20,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class ShowImageStatsOptionsBuilder : ManifestOptionsBuilder
     {
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(ManifestFilterOptions.GetCliOptions());
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

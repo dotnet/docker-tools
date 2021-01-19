@@ -22,9 +22,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const int AllowedVarianceDefault = 5;
 
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(ManifestFilterOptions.GetCliOptions())
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -37,6 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {

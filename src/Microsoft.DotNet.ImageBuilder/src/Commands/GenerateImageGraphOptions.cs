@@ -18,17 +18,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class GenerateImageGraphOptionsBuilder : ManifestOptionsBuilder
     {
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions().Concat(ManifestFilterOptions.GetCliOptions());
+            base.GetCliOptions()
+            .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
-            .Concat(
-                new Argument[]
-                {
-                    new Argument<string>(nameof(GenerateImageGraphOptions.OutputPath),
-                        "The path to write the graph to")
-                });
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(GenerateImageGraphOptions.OutputPath),
+                            "The path to write the graph to")
+                    });
     }
 }
 #nullable disable

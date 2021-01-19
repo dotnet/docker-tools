@@ -22,13 +22,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class PublishMcrDocsOptionsBuilder : ManifestOptionsBuilder
     {
+        private readonly GitOptionsBuilder _gitOptionsBuilder = new GitOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(GitOptions.GetCliOptions("Microsoft", "mcrdocs", "master", "teams"));
+                .Concat(_gitOptionsBuilder.GetCliOptions("Microsoft", "mcrdocs", "master", "teams"));
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
-                .Concat(GitOptions.GetCliArguments())
+                .Concat(_gitOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {

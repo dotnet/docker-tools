@@ -27,9 +27,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const MatrixType DefaultMatrixType = MatrixType.PlatformDependencyGraph;
 
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(ManifestFilterOptions.GetCliOptions())
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -42,6 +45,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateOption<string?>("image-info", nameof(GenerateBuildMatrixOptions.ImageInfoPath),
                             "Path to image info file")
                     });
+
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

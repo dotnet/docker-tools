@@ -17,15 +17,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class PublishImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
+        private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new AzdoOptionsBuilder();
+        private readonly GitOptionsBuilder _gitOptionsBuilder = new GitOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(GitOptions.GetCliOptions())
-                .Concat(AzdoOptions.GetCliOptions());
+                .Concat(_gitOptionsBuilder.GetCliOptions())
+                .Concat(_azdoOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
-                .Concat(GitOptions.GetCliArguments())
-                .Concat(AzdoOptions.GetCliArguments());
+                .Concat(_gitOptionsBuilder.GetCliArguments())
+                .Concat(_azdoOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

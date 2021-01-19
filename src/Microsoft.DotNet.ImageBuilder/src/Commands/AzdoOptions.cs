@@ -24,24 +24,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? AzdoPath { get; set; }
 
-        public static IEnumerable<Argument> GetCliArguments() =>
-            new Argument[]
-            {
-                new Argument<string>(nameof(AccessToken), "Azure DevOps PAT"),
-                new Argument<string>(nameof(Organization), "Azure DevOps organization"),
-                new Argument<string>(nameof(Project), "Azure DevOps project")
-            };
-
-        public static IEnumerable<Option> GetCliOptions() =>
-            new Option[]
-            {
-                CreateOption<string?>("azdo-repo", nameof(AzdoRepo), "Azure DevOps repo"),
-                CreateOption<string?>("azdo-branch", nameof(AzdoBranch), "Azure DevOps branch (default: master)", "master"),
-                CreateOption<string?>("azdo-path", nameof(AzdoPath), "Azure DevOps path"),
-            };
-
         public (Uri BaseUrl, VssCredentials Credentials) GetConnectionDetails() =>
             (new Uri($"https://dev.azure.com/{Organization}"), new VssBasicCredential(string.Empty, AccessToken));
+    }
+
+    public class AzdoOptionsBuilder
+    {
+        public IEnumerable<Argument> GetCliArguments() =>
+            new Argument[]
+            {
+                new Argument<string>(nameof(AzdoOptions.AccessToken), "Azure DevOps PAT"),
+                new Argument<string>(nameof(AzdoOptions.Organization), "Azure DevOps organization"),
+                new Argument<string>(nameof(AzdoOptions.Project), "Azure DevOps project")
+            };
+
+        public IEnumerable<Option> GetCliOptions() =>
+            new Option[]
+            {
+                CreateOption<string?>("azdo-repo", nameof(AzdoOptions.AzdoRepo), "Azure DevOps repo"),
+                CreateOption<string?>("azdo-branch", nameof(AzdoOptions.AzdoBranch), "Azure DevOps branch (default: master)", "master"),
+                CreateOption<string?>("azdo-path", nameof(AzdoOptions.AzdoPath), "Azure DevOps path"),
+            };
     }
 }
 #nullable disable

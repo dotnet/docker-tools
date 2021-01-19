@@ -24,9 +24,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private static readonly TimeSpan ContinuousModeDelayDefault = TimeSpan.FromSeconds(10);
 
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(ManifestFilterOptions.GetCliOptions())
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -36,6 +39,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
                             val => TimeSpan.FromSeconds(int.Parse(val)), ContinuousModeDelayDefault)
                     });
+
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

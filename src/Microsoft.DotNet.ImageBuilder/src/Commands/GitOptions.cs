@@ -20,32 +20,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Repo { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
 
-        public static IEnumerable<Option> GetCliOptions(
-            string? defaultOwner = null, string? defaultRepo = null, string? defaultBranch = null, string? defaultPath = null) =>
-            new Option[]
-            {
-                CreateOption("git-branch", nameof(Branch),
-                    $"GitHub branch to write to (defaults to '{defaultBranch}')", defaultBranch),
-                CreateOption("git-owner", nameof(Owner),
-                    $"Owner of the GitHub repo to write to (defaults to '{defaultOwner}')", defaultOwner),
-                CreateOption("git-path", nameof(Path),
-                    $"Path within the GitHub repo to write to (defaults to '{defaultPath}')", defaultPath),
-                CreateOption("git-repo", nameof(Repo),
-                    $"GitHub repo to write to (defaults to '{defaultRepo}')", defaultRepo)
-            };
-
-        public static IEnumerable<Argument> GetCliArguments() =>
-            new Argument[]
-            {
-                new Argument<string>(nameof(Username), "GitHub username"),
-                new Argument<string>(nameof(Email), "GitHub email"),
-                new Argument<string>(nameof(AuthToken), "GitHub authentication token")
-            };
-
         public GitHubAuth ToGitHubAuth()
         {
             return new GitHubAuth(AuthToken, Username, Email);
         }
+    }
+
+    public class GitOptionsBuilder
+    {
+        public IEnumerable<Option> GetCliOptions(
+            string? defaultOwner = null, string? defaultRepo = null, string? defaultBranch = null, string? defaultPath = null) =>
+            new Option[]
+            {
+                CreateOption("git-branch", nameof(GitOptions.Branch),
+                    $"GitHub branch to write to (defaults to '{defaultBranch}')", defaultBranch),
+                CreateOption("git-owner", nameof(GitOptions.Owner),
+                    $"Owner of the GitHub repo to write to (defaults to '{defaultOwner}')", defaultOwner),
+                CreateOption("git-path", nameof(GitOptions.Path),
+                    $"Path within the GitHub repo to write to (defaults to '{defaultPath}')", defaultPath),
+                CreateOption("git-repo", nameof(GitOptions.Repo),
+                    $"GitHub repo to write to (defaults to '{defaultRepo}')", defaultRepo)
+            };
+
+        public IEnumerable<Argument> GetCliArguments() =>
+            new Argument[]
+            {
+                new Argument<string>(nameof(GitOptions.Username), "GitHub username"),
+                new Argument<string>(nameof(GitOptions.Email), "GitHub email"),
+                new Argument<string>(nameof(GitOptions.AuthToken), "GitHub authentication token")
+            };
     }
 }
 #nullable disable

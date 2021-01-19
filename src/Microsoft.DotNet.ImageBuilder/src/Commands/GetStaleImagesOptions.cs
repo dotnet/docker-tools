@@ -24,6 +24,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const string DefaultSubscriptionsPath = "subscriptions.json";
 
+        private readonly GitOptionsBuilder _gitOptionsBuilder = new GitOptionsBuilder();
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(
@@ -32,12 +36,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateOption("subscriptions-path", nameof(GetStaleImagesOptions.SubscriptionsPath),
                             $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').", DefaultSubscriptionsPath)
                     })
-                .Concat(ManifestFilterOptions.GetCliOptions())
-                .Concat(GitOptions.GetCliOptions());
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(_gitOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
-                .Concat(GitOptions.GetCliArguments())
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
+                .Concat(_gitOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {

@@ -19,10 +19,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class QueueBuildOptionsBuilder : CliOptionsBuilder
     {
+        private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new AzdoOptionsBuilder();
+
         private const string DefaultSubscriptionsPath = "subscriptions.json";
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(AzdoOptions.GetCliOptions())
+                .Concat(_azdoOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -34,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 );
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments().Concat(AzdoOptions.GetCliArguments());
+            base.GetCliArguments().Concat(_azdoOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

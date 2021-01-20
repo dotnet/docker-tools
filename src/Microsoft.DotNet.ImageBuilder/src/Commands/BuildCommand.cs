@@ -104,6 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         SetPlatformDataDigest(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
+                        SetPlatformDataLayers(platform);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
@@ -165,6 +166,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 platform.BaseImageDigest = basePlatformData.Digest;
+            }
+        }
+
+        private void SetPlatformDataLayers(PlatformData platform)
+        {
+            if (platform.Layers == null || !platform.Layers.Any())
+            {
+                if (platform.Digest == null)
+                {
+                    throw new InvalidOperationException($"Digest for platform '{platform.GetIdentifier()}' has not been calculated yet.");
+                }
+
+                platform.Layers = _dockerService.GetImageLayers(platform.Digest, Options.IsDryRun).ToList();
             }
         }
 

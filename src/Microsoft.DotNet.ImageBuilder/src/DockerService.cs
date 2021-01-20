@@ -53,22 +53,21 @@ namespace Microsoft.DotNet.ImageBuilder
             return digest;
         }
 
-        public void PullImage(string image, bool isDryRun)
-        {
-            DockerHelper.PullImage(image, isDryRun);
-        }
+        public IEnumerable<string> GetImageLayers(string image, bool isDryRun) => DockerHelper.GetImageLayers(image, isDryRun);
 
-        public void PushImage(string tag, bool isDryRun)
-        {
-            ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
-        }
+        public void PullImage(string image, bool isDryRun) => DockerHelper.PullImage(image, isDryRun);
 
-        public void CreateTag(string image, string tag, bool isDryRun)
-        {
-            DockerHelper.CreateTag(image, tag, isDryRun);
-        }
+        public void PushImage(string tag, bool isDryRun) => ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
 
-        public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun)
+        public void CreateTag(string image, string tag, bool isDryRun) => DockerHelper.CreateTag(image, tag, isDryRun);
+
+        public string BuildImage(
+            string dockerfilePath,
+            string buildContextPath,
+            IEnumerable<string> tags,
+            IDictionary<string, string> buildArgs,
+            bool isRetryEnabled,
+            bool isDryRun)
         {
             string tagArgs = $"-t {string.Join(" -t ", tags)}";
 
@@ -88,15 +87,9 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public bool LocalImageExists(string tag, bool isDryRun)
-        {
-            return DockerHelper.LocalImageExists(tag, isDryRun);
-        }
+        public bool LocalImageExists(string tag, bool isDryRun) => DockerHelper.LocalImageExists(tag, isDryRun);
 
-        public long GetImageSize(string image, bool isDryRun)
-        {
-            return DockerHelper.GetImageSize(image, isDryRun);
-        }
+        public long GetImageSize(string image, bool isDryRun) => DockerHelper.GetImageSize(image, isDryRun);
 
         public DateTime GetCreatedDate(string image, bool isDryRun)
         {

@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IDockerService _inner;
         private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new ConcurrentDictionary<string, DateTime>();
         private readonly ImageDigestCache _imageDigestCache;
+        private readonly ConcurrentDictionary<string, IEnumerable<string>> _imageLayersCache = new ConcurrentDictionary<string, IEnumerable<string>>();
         private readonly ConcurrentDictionary<string, long> _imageSizeCache = new ConcurrentDictionary<string, long>();
         private readonly ConcurrentDictionary<string, bool> _localImageExistsCache = new ConcurrentDictionary<string, bool>();
         private readonly ConcurrentDictionary<string, bool> _pulledImages = new ConcurrentDictionary<string, bool>();
@@ -40,6 +41,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public string GetImageDigest(string image, bool isDryRun) =>
             _imageDigestCache.GetImageDigest(image, isDryRun);
+
+        public IEnumerable<string> GetImageLayers(string image, bool isDryRun) =>
+            _imageLayersCache.GetOrAdd(image, _ => _inner.GetImageLayers(image, isDryRun));
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));

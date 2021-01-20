@@ -104,10 +104,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         SetPlatformDataDigest(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
-                        SetPlatformDataLayers(platform);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
+                    SetPlatformDataLayers(platform, tag.FullyQualifiedName);
                 }
 
                 if (!pushTags.Any())
@@ -169,16 +169,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void SetPlatformDataLayers(PlatformData platform)
+        private void SetPlatformDataLayers(PlatformData platform, string tag)
         {
             if (platform.Layers == null || !platform.Layers.Any())
             {
-                if (platform.Digest == null)
-                {
-                    throw new InvalidOperationException($"Digest for platform '{platform.GetIdentifier()}' has not been calculated yet.");
-                }
-
-                platform.Layers = _dockerService.GetImageLayers(platform.Digest, Options.IsDryRun).ToList();
+                platform.Layers = _dockerService.GetImageLayers(tag, Options.IsDryRun).ToList();
             }
         }
 

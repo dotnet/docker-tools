@@ -51,6 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
 
                 Parser parser = new CommandLineBuilder(rootCliCommand)
+                    .UseDefaults()
                     .UseMiddleware(context =>
                     {
                         if (context.ParseResult.CommandResult.Command != rootCliCommand)

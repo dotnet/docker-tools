@@ -12,7 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions>
+    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
@@ -26,6 +26,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
+
+        protected override string Description => "Waits for docs to complete ingestion into Docker Hub";
 
         public override async Task ExecuteAsync()
         {

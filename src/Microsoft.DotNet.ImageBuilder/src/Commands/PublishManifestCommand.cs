@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions>
+    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
+
+        protected override string Description => "Creates and publishes the manifest to the Docker Registry";
 
         public override Task ExecuteAsync()
         {

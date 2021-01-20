@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions>
+    public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions, ValidateImageSizeOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IEnvironmentService _environmentService;
@@ -24,6 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
+
+        protected override string Description => "Validates the size of the images against a baseline";
 
         public ImageSizeValidationResults ValidationResults { get; private set; }
 

@@ -3,35 +3,46 @@
 // See the LICENSE file in the project root for more information
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Displays the status of the referenced external base images";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
         public bool ContinuousMode { get; set; }
 
         public TimeSpan ContinuousModeDelay { get; set; }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class GetBaseImageStatusOptionsBuilder : ManifestOptionsBuilder
+    {
+        private static readonly TimeSpan ContinuousModeDelayDefault = TimeSpan.FromSeconds(10);
 
-            FilterOptions.DefineOptions(syntax);
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
 
-            bool continuousMode = false;
-            syntax.DefineOption("continuous", ref continuousMode, "Runs the status check continuously");
-            ContinuousMode = continuousMode;
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(
+                    new Option[]
+                    {
+                        CreateOption<bool>("continuous", nameof(GetBaseImageStatusOptions.ContinuousMode),
+                            "Runs the status check continuously"),
+                        CreateOption("continuous-delay", nameof(GetBaseImageStatusOptions.ContinuousModeDelay),
+                            $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
+                            val => TimeSpan.FromSeconds(int.Parse(val)), ContinuousModeDelayDefault)
+                    });
 
-            const int ContinuousModeDelayDefault = 10;
-            int continuousModeDelay = ContinuousModeDelayDefault;
-            syntax.DefineOption("continuous-delay", ref continuousModeDelay,
-                $"Delay before running next status check (default {ContinuousModeDelayDefault} secs)");
-            ContinuousModeDelay = TimeSpan.FromSeconds(continuousModeDelay);
-        }
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
+#nullable disable

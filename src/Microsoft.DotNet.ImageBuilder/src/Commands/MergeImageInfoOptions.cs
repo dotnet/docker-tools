@@ -2,35 +2,33 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class MergeImageInfoOptions : ManifestOptions
     {
-        protected override string CommandHelp => "Merges the content of multiple image info files into one file";
+        public string SourceImageInfoFolderPath { get; set; } = string.Empty;
 
-        public string SourceImageInfoFolderPath { get; set; }
+        public string DestinationImageInfoPath { get; set; } = string.Empty;
+    }
 
-        public string DestinationImageInfoPath { get; set; }
-
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            string sourceImageInfoFolderPath = null;
-            syntax.DefineParameter(
-                "source-path",
-                ref sourceImageInfoFolderPath,
-                "Folder path containing image info files");
-            SourceImageInfoFolderPath = sourceImageInfoFolderPath;
-
-            string destinationPath = null;
-            syntax.DefineParameter(
-                "destination-path",
-                ref destinationPath,
-                "Path to store the merged image info content");
-            DestinationImageInfoPath = destinationPath;
-        }
+    public class MergeImageInfoOptionsBuilder : ManifestOptionsBuilder
+    {
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(MergeImageInfoOptions.SourceImageInfoFolderPath),
+                            "Folder path containing image info files"),
+                        new Argument<string>(nameof(MergeImageInfoOptions.DestinationImageInfoPath),
+                            "Path to store the merged image info content"),
+                    }
+                );
     }
 }
+#nullable disable

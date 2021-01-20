@@ -4,11 +4,15 @@
 
 using System;
 using System.CommandLine;
+using System.CommandLine.Binding;
+using System.CommandLine.Builder;
+using System.CommandLine.Parsing;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -39,38 +43,32 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 ICommand[] commands = Container.GetExportedValues<ICommand>().ToArray();
 
-                ArgumentSyntax argSyntax = ArgumentSyntax.Parse(args, syntax =>
-                {
-                    foreach (ICommand command in commands)
-                    {
-                        command.Options.ParseCommandLine(syntax);
-                    }
-                });
+                RootCommand rootCliCommand = new RootCommand();
 
-                // Workaround for https://github.com/dotnet/corefxlab/issues/1689
-                foreach (Argument arg in argSyntax.GetActiveArguments())
+                foreach (ICommand command in commands)
                 {
-                    if (arg.IsParameter && !arg.IsSpecified)
-                    {
-                        Logger.WriteError($"error: `{arg.Name}` must be specified.");
-                        Environment.Exit(1);
-                    }
+                    rootCliCommand.AddCommand(command.GetCliCommand());
                 }
 
-                if (argSyntax.ActiveCommand != null)
-                {
-                    // Capture the Docker version and info in the output.
-                    ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
-                    ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
-
-                    ICommand command = commands.Single(c => c.Options == argSyntax.ActiveCommand.Value);
-                    if (command is IManifestCommand manifestCommand)
+                Parser parser = new CommandLineBuilder(rootCliCommand)
+                    .UseMiddleware(context =>
                     {
-                        manifestCommand.LoadManifest();
-                    }
-                    
-                    command.ExecuteAsync().Wait();
-                }
+                        if (context.ParseResult.CommandResult.Command != rootCliCommand)
+                        {
+                            // Capture the Docker version and info in the output.
+                            ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
+                            ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
+                        }
+                    })
+                    .UseMiddleware(context =>
+                    {
+                        context.BindingContext.AddModelBinder(new ModelBinder<AzdoOptions>());
+                        context.BindingContext.AddModelBinder(new ModelBinder<GitOptions>());
+                        context.BindingContext.AddModelBinder(new ModelBinder<ManifestFilterOptions>());
+                        context.BindingContext.AddModelBinder(new ModelBinder<ServicePrincipalOptions>());
+                    })
+                    .Build();
+                return parser.Invoke(args);
             }
             catch (Exception e)
             {

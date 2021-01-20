@@ -2,61 +2,53 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Generate the Azure DevOps build matrix for building the images";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }
-        public string ImageInfoPath { get; set; }
+        public string? ImageInfoPath { get; set; }
 
         public GenerateBuildMatrixOptions() : base()
         {
         }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class GenerateBuildMatrixOptionsBuilder : ManifestOptionsBuilder
+    {
+        private const MatrixType DefaultMatrixType = MatrixType.PlatformDependencyGraph;
 
-            FilterOptions.DefineOptions(syntax);
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
 
-            MatrixType matrixType = MatrixType.PlatformDependencyGraph;
-            syntax.DefineOption(
-                "type",
-                ref matrixType,
-                value => (MatrixType)Enum.Parse(typeof(MatrixType), value, true),
-                $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(matrixType)}");
-            MatrixType = matrixType;
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(
+                    new Option[]
+                    {
+                        CreateOption("type", nameof(GenerateBuildMatrixOptions.MatrixType),
+                            $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(DefaultMatrixType)}", DefaultMatrixType),
+                        CreateMultiOption<string>("custom-build-leg-group", nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups),
+                            "Name of custom build leg group to use."),
+                        CreateOption("product-version-components", nameof(GenerateBuildMatrixOptions.ProductVersionComponents),
+                            "Number of components of the product version considered to be significant", 2),
+                        CreateOption<string?>("image-info", nameof(GenerateBuildMatrixOptions.ImageInfoPath),
+                            "Path to image info file")
+                    });
 
-            IReadOnlyList<string> customBuildLegGroups = Array.Empty<string>();
-            syntax.DefineOptionList(
-                "custom-build-leg-group",
-                ref customBuildLegGroups,
-                "Name of custom build leg group to use.");
-            CustomBuildLegGroups = customBuildLegGroups;
-
-            int productVersionComponents = 2;
-            syntax.DefineOption(
-                "product-version-components",
-                ref productVersionComponents,
-                "Number of components of the product version considered to be significant");
-            ProductVersionComponents = productVersionComponents;
-
-            string imageInfoPath = null;
-            syntax.DefineOption(
-                "image-info",
-                ref imageInfoPath,
-                "Path to image info file");
-            ImageInfoPath = imageInfoPath;
-        }
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
+#nullable disable

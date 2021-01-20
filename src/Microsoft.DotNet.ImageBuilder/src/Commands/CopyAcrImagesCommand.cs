@@ -14,7 +14,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions>
+    public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions, CopyAcrImagesOptionsBuilder>
     {
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
@@ -33,6 +33,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return null;
             });
         }
+
+        protected override string Description => "Copies the platform images as specified in the manifest between repositories of an ACR";
 
         public override async Task ExecuteAsync()
         {

@@ -13,13 +13,15 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions>
+    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesOptionsBuilder>
     {
 
         [ImportingConstructor]
         public GenerateDockerfilesCommand(IEnvironmentService environmentService) : base(environmentService)
         {
         }
+
+        protected override string Description => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
 
         public override async Task ExecuteAsync()
         {

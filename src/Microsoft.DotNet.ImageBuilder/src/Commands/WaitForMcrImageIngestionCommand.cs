@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions>
+    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
+
+        protected override string Description => "Waits for images to complete ingestion into MCR";
 
         public override async Task ExecuteAsync()
         {

@@ -2,25 +2,31 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class ImageInfoOptions : ManifestOptions
     {
-        public string ImageInfoPath { get; set; }
+        public string ImageInfoPath { get; set; } = string.Empty;
 
         protected ImageInfoOptions()
         {
         }
+    }
 
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            string imageInfoPath = null;
-            syntax.DefineParameter("image-info-path", ref imageInfoPath, "Image info file path");
-            ImageInfoPath = imageInfoPath;
-        }
+    public abstract class ImageInfoOptionsBuilder : ManifestOptionsBuilder
+    {
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(ImageInfoOptions.ImageInfoPath), "Image info file path")
+                    });
     }
 }
+#nullable disable

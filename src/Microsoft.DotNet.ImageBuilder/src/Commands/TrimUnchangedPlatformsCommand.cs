@@ -13,7 +13,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
+    public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions, TrimUnchangedPlatformsOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
 
@@ -22,6 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
+
+        protected override string Description => "Trims platforms marked as unchanged from the image info file";
 
         public override async Task ExecuteAsync()
         {

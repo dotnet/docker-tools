@@ -13,11 +13,13 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions>
+    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>
     {
         public ShowImageStatsCommand() : base()
         {
         }
+
+        protected override string Description => "Displays statistics about the number of images";
 
         public override Task ExecuteAsync()
         {

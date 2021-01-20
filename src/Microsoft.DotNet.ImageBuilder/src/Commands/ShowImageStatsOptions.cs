@@ -2,25 +2,34 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ShowImageStatsOptions : ManifestOptions, IFilterableOptions
     {
-        protected override string CommandHelp => "Displays statistics about the number of images";
-
         public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
 
         public ShowImageStatsOptions() : base()
         {
         }
+    }
 
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
+    public class ShowImageStatsOptionsBuilder : ManifestOptionsBuilder
+    {
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
+            new ManifestFilterOptionsBuilder();
 
-            FilterOptions.DefineOptions(syntax);
-        }
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
+#nullable disable

@@ -4,8 +4,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using Cottle;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -13,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateReadmesCommand : GenerateArtifactsCommand<GenerateReadmesOptions>
+    public class GenerateReadmesCommand : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>
     {
         private const string ArtifactName = "Readme";
         private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";
@@ -25,6 +27,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
+
+        protected override string Description =>
+            "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
 
         public override async Task ExecuteAsync()
         {
@@ -110,7 +115,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string tagsDoc;
 
-            string tempDir = $"{Options.GetCommandName()}-{DateTime.Now.ToFileTime()}";
+            string tempDir = $"{this.GetCommandName()}-{DateTime.Now.ToFileTime()}";
             Directory.CreateDirectory(tempDir);
 
             try

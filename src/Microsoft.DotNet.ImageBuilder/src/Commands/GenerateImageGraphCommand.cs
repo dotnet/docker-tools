@@ -20,7 +20,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateImageGraphCommand : ManifestCommand<GenerateImageGraphOptions>
+    public class GenerateImageGraphCommand : ManifestCommand<GenerateImageGraphOptions, GenerateImageGraphOptionsBuilder>
     {
         private readonly Dictionary<string, Manifest> _imageManifestCache = new Dictionary<string, Manifest>();
         private readonly Dictionary<string, DotNode> _nodeCache = new Dictionary<string, DotNode>();
@@ -28,6 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public GenerateImageGraphCommand() : base()
         {
         }
+
+        protected override string Description => "Generate a DOT (graph description language) file illustrating the image and layer hierarchy";
 
         public override Task ExecuteAsync()
         {

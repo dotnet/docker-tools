@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
+    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoOptionsBuilder>
     {
         private readonly IGitService _gitService;
         private readonly ILoggerService _loggerService;
@@ -28,12 +28,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
+        protected override string Description => "Publishes a build's merged image info.";
+
         public override Task ExecuteAsync()
         {
-            if (Options.AzdoOptions.Path != Options.GitOptions.Path)
+            if (Options.AzdoOptions.AzdoPath != Options.GitOptions.Path)
             {
                 throw new InvalidOperationException(
-                    $"The file path for GitHub '{Options.GitOptions.Path}' must be equal to the file path for AzDO '{Options.AzdoOptions.Path}'.");
+                    $"The file path for GitHub '{Options.GitOptions.Path}' must be equal to the file path for AzDO '{Options.AzdoOptions.AzdoPath}'.");
             }
 
             _loggerService.WriteHeading("PUBLISHING IMAGE INFO");
@@ -89,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void UpdateGitRepos(string imageInfoContent, string repoPath, IRepository repo)
         {
             Remote azdoRemote = repo.Network.Remotes.Add("azdo",
-                $"https://dev.azure.com/{Options.AzdoOptions.Organization}/{Options.AzdoOptions.Project}/_git/{Options.AzdoOptions.Repo}");
+                $"https://dev.azure.com/{Options.AzdoOptions.Organization}/{Options.AzdoOptions.Project}/_git/{Options.AzdoOptions.AzdoRepo}");
 
             string imageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
             File.WriteAllText(imageInfoPath, imageInfoContent);
@@ -126,8 +128,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
 
             string azdoUrl =
-                $"https://dev.azure.com/{Options.AzdoOptions.Organization}/{Options.AzdoOptions.Project}/_git/{Options.AzdoOptions.Repo}/commit/{commit.Sha}";
-            _loggerService.WriteMessage($"The '{Options.AzdoOptions.Path}' file was updated: {azdoUrl}");
+                $"https://dev.azure.com/{Options.AzdoOptions.Organization}/{Options.AzdoOptions.Project}/_git/{Options.AzdoOptions.AzdoRepo}/commit/{commit.Sha}";
+            _loggerService.WriteMessage($"The '{Options.AzdoOptions.AzdoPath}' file was updated: {azdoUrl}");
         }
 
         private string? GetUpdatedImageInfo(string repoPath)

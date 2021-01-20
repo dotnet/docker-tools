@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
+    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixOptionsBuilder>
     {
         private const string VersionRegGroupName = "Version";
 
@@ -35,6 +35,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return null;
             });
         }
+
+        protected override string Description => "Generate the Azure DevOps build matrix for building the images";
 
         public override Task ExecuteAsync()
         {
@@ -167,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string pathArgs = dockerfilePaths
                 .Distinct()
-                .Select(path => $"{ManifestFilterOptions.FormattedPathOption} {path}")
+                .Select(path => $"{CliHelper.FormatAlias(ManifestFilterOptionsBuilder.PathOptionName)} {path}")
                 .Aggregate((working, next) => $"{working} {next}");
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
@@ -185,7 +187,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
 
             string[] osVersions = subgraph
-                .Select(platform => $"{ManifestFilterOptions.FormattedOsVersionOption} {platform.Model.OsVersion}")
+                .Select(platform => $"{CliHelper.FormatAlias(ManifestFilterOptionsBuilder.OsVersionOptionName)} {platform.Model.OsVersion}")
                 .Distinct()
                 .ToArray();
             leg.Variables.Add(("osVersions", string.Join(" ", osVersions)));

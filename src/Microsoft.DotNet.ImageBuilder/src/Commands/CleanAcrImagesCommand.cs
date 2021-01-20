@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
@@ -15,7 +16,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
+    public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions, CleanAcrImagesOptionsBuilder>
     {
         private readonly IAcrClientFactory _acrClientFactory;
         private readonly ILoggerService _loggerService;
@@ -27,6 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
+
+        protected override string Description => "Removes unnecessary images from an ACR";
 
         public override async Task ExecuteAsync()
         {

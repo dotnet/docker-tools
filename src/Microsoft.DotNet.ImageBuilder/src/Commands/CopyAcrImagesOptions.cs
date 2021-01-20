@@ -2,38 +2,40 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyAcrImagesOptions : CopyImagesOptions
     {
-        protected override string CommandHelp => "Copies the platform images as specified in the manifest between repositories of an ACR";
+        public string SourceRepoPrefix { get; set; } = string.Empty;
 
-        public string SourceRepoPrefix { get; set; }
+        public string? ImageInfoPath { get; set; }
+    }
 
-        public string ImageInfoPath { get; set; }
+    public class CopyAcrImagesOptionsBuilder : CopyImagesOptionsBuilder
+    {
+        public override IEnumerable<Option> GetCliOptions() =>
+            base.GetCliOptions()
+                .Concat(
+                    new Option[]
+                    {
+                        CreateOption<string?>("image-info", nameof(CopyAcrImagesOptions.ImageInfoPath),
+                            "Path to image info file")
+                    });
 
-        public CopyAcrImagesOptions() : base()
-        {
-        }
-
-        public override void DefineOptions(ArgumentSyntax syntax)
-        {
-            base.DefineOptions(syntax);
-
-            string imageInfoPath = null;
-            syntax.DefineOption("image-info", ref imageInfoPath, "Path to image info file");
-            ImageInfoPath = imageInfoPath;
-        }
-
-        public override void DefineParameters(ArgumentSyntax syntax)
-        {
-            base.DefineParameters(syntax);
-
-            string sourceRepoPrefix = null;
-            syntax.DefineParameter("source-repo-prefix", ref sourceRepoPrefix, "Prefix of the source ACR repository to copy images from");
-            SourceRepoPrefix = sourceRepoPrefix;
-        }
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments()
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(CopyAcrImagesOptions.SourceRepoPrefix),
+                            "Prefix of the source ACR repository to copy images from")
+                    });
     }
 }
+#nullable disable

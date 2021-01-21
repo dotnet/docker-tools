@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class ImageSizeOptions : ManifestOptions, IFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
 
         public int AllowedVariance { get; set; }
         public string BaselinePath { get; set; }

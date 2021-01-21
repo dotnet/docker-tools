@@ -12,9 +12,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetStaleImagesOptions : Options, IFilterableOptions, IGitOptionsHost
     {
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
 
-        public GitOptions GitOptions { get; } = new GitOptions();
+        public GitOptions GitOptions { get; set; } = new GitOptions();
 
         public string SubscriptionsPath { get; set; } = string.Empty;
         public string VariableName { get; set; } = string.Empty;

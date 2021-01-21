@@ -11,11 +11,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class IngestKustoImageInfoOptions : ImageInfoOptions, IFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
 
         public string Cluster { get; set; } = string.Empty;
         public string Database { get; set; } = string.Empty;
-        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
         public string Table { get; set; } = string.Empty;
     }
 

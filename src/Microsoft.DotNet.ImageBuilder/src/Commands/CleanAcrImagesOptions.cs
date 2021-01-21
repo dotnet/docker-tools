@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }
         public int Age { get; set; }
-        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
         public string Subscription { get; set; }
         public string ResourceGroup { get; set; }
         public string RegistryName { get; set; }

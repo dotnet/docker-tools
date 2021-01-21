@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
 
         public bool ContinuousMode { get; set; }
 

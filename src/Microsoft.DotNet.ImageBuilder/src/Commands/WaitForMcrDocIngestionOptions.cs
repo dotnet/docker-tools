@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public TimeSpan RequeryDelay { get; set; }
 
-        public ServicePrincipalOptions ServicePrincipal { get; } = new ServicePrincipalOptions();
+        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
     }
 
     public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder

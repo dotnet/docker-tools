@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
         public MatrixType MatrixType { get; set; }
         public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }

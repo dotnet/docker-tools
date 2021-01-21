@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PublishMcrDocsOptions : ManifestOptions, IGitOptionsHost
     {
-        public GitOptions GitOptions { get; } = new GitOptions();
+        public GitOptions GitOptions { get; set; } = new GitOptions();
 
         public string SourceRepoUrl { get; set; } = string.Empty;
 

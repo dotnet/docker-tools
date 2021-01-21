@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ShowImageStatsOptions : ManifestOptions, IFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
 
         public ShowImageStatsOptions() : base()
         {

@@ -4,6 +4,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.CommandLine;
+using System.CommandLine.Invocation;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -21,14 +23,25 @@ namespace FilePusher
     {
         private static Options Options { get; } = new Options();
 
-        public static async Task Main(string[] args)
+        public static Task Main(string[] args)
+        {
+            RootCommand command = new RootCommand();
+            foreach (Symbol symbol in Options.GetCliOptions())
+            {
+                command.Add(symbol);
+            }
+
+            command.Handler = CommandHandler.Create<Options>(ExecuteAsync);
+
+            return command.InvokeAsync(args);
+        }
+
+        private static async Task ExecuteAsync(Options options)
         {
             // TODO:  Add support for delete file scenarios
 
             // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
-
-            Options.Parse(args);
 
             string configJson = File.ReadAllText(Options.ConfigPath);
             Config config = JsonConvert.DeserializeObject<Config>(configJson);

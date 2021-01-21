@@ -21,8 +21,6 @@ namespace FilePusher
 {
     public class FilePusher
     {
-        private static Options Options { get; } = new Options();
-
         public static Task Main(string[] args)
         {
             RootCommand command = new RootCommand();
@@ -43,16 +41,16 @@ namespace FilePusher
             // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            string configJson = File.ReadAllText(Options.ConfigPath);
+            string configJson = File.ReadAllText(options.ConfigPath);
             Config config = JsonConvert.DeserializeObject<Config>(configJson);
 
-            foreach (GitRepo repo in GetFilteredRepos(config))
+            foreach (GitRepo repo in GetFilteredRepos(config, options))
             {
                 Console.WriteLine($"Processing {repo.Name}/{repo.Branch}");
 
-                await ExecuteGitOperationsWithRetryAsync(Options, async client =>
+                await ExecuteGitOperationsWithRetryAsync(options, async client =>
                 {
-                    await CreatePullRequestAsync(client, repo, config);
+                    await CreatePullRequestAsync(client, repo, config, options);
                 });
             }
         }
@@ -102,12 +100,12 @@ namespace FilePusher
             }
         }
 
-        private static IEnumerable<GitRepo> GetFilteredRepos(Config config)
+        private static IEnumerable<GitRepo> GetFilteredRepos(Config config, Options options)
         {
             IEnumerable<GitRepo> activeRepos = config.Repos;
-            if (Options.Filters?.Any() ?? false)
+            if (options.Filters?.Any() ?? false)
             {
-                string pathsRegexPattern = GetFilterRegexPattern(Options.Filters.ToArray());
+                string pathsRegexPattern = GetFilterRegexPattern(options.Filters.ToArray());
                 activeRepos = activeRepos.Where(repo =>
                     Regex.IsMatch(repo.ToString(), pathsRegexPattern, RegexOptions.IgnoreCase));
             }
@@ -121,10 +119,10 @@ namespace FilePusher
             return activeRepos;
         }
 
-        private static async Task CreatePullRequestAsync(GitHubClient client, GitRepo gitRepo, Config config)
+        private static async Task CreatePullRequestAsync(GitHubClient client, GitRepo gitRepo, Config config, Options options)
         {
             GitHubProject project = new GitHubProject(gitRepo.Name, gitRepo.Owner);
-            GitHubProject forkedProject = new GitHubProject(gitRepo.Name, Options.GitUser);
+            GitHubProject forkedProject = new GitHubProject(gitRepo.Name, options.GitUser);
             GitHubBranch baseBranch = new GitHubBranch(gitRepo.Branch, project);
             GitHubBranch headBranch = new GitHubBranch(
                 $"{gitRepo.Name}-{gitRepo.Branch}{config.WorkingBranchSuffix}",

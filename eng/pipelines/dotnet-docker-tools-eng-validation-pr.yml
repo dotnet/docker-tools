@@ -1,6 +1,7 @@
 pr:
   branches:
     include:
+    - main
     - master
   paths:
     include:

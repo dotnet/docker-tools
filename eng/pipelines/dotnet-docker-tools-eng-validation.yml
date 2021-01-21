@@ -3,6 +3,7 @@ pr: none
 trigger:
   branches:
     include:
+    - main
     - master
   paths:
     include:

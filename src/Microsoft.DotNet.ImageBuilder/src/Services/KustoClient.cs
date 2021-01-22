@@ -16,22 +16,23 @@ namespace Microsoft.DotNet.ImageBuilder.Services
     [Export(typeof(IKustoClient))]
     internal class KustoClientWrapper : IKustoClient
     {
-        public async Task IngestFromCsvStreamAsync(Stream csv, IngestKustoImageInfoOptions options)
+        public async Task IngestFromCsvStreamAsync(
+            Stream csv, ServicePrincipalOptions servicePrincipal, string cluster, string database, string table, bool isDryRun)
         {
             KustoConnectionStringBuilder connectionBuilder =
-                new KustoConnectionStringBuilder($"https://{options.Cluster}.kusto.windows.net")
+                new KustoConnectionStringBuilder($"https://{cluster}.kusto.windows.net")
                     .WithAadApplicationKeyAuthentication(
-                        options.ServicePrincipal.ClientId,
-                        options.ServicePrincipal.Secret,
-                        options.ServicePrincipal.Tenant);
+                        servicePrincipal.ClientId,
+                        servicePrincipal.Secret,
+                        servicePrincipal.Tenant);
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {
                 KustoIngestionProperties properties =
-                    new KustoIngestionProperties(options.Database, options.Table) { Format = DataSourceFormat.csv };
-                StreamSourceOptions sourceOptions = new StreamSourceOptions { SourceId = Guid.NewGuid() };
+                    new(database, table) { Format = DataSourceFormat.csv };
+                StreamSourceOptions sourceOptions = new() { SourceId = Guid.NewGuid() };
 
-                if (!options.IsDryRun)
+                if (!isDryRun)
                 {
                     IKustoIngestionResult result = await client.IngestFromStreamAsync(csv, properties, sourceOptions);
 

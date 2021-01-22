@@ -13,6 +13,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -34,30 +35,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
 
-            string csv = GetImageInfoCsv();
+            (string imageInfo, string layerInfo) csv = GetImageInfoCsv();
             _loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{csv}");
 
-            if (string.IsNullOrEmpty(csv))
+            if (string.IsNullOrEmpty(csv.imageInfo))
             {
+                if (!string.IsNullOrEmpty(csv.layerInfo))
+                {
+                    throw new InvalidOperationException("Unexpected layer info when image info is empty.");
+                }
+
                 _loggerService.WriteMessage("Skipping ingestion due to empty image info data.");
                 return;
             }
 
-            using MemoryStream stream = new MemoryStream();
-            using StreamWriter writer = new StreamWriter(stream);
-            writer.Write(csv);
-            writer.Flush();
-            stream.Seek(0, SeekOrigin.Begin);
-
-            if (!Options.IsDryRun)
-            {
-                await _kustoClient.IngestFromCsvStreamAsync(stream, Options);
-            }
+            await IngestInfoAsync(csv.imageInfo, Options.ImageTable);
+            await IngestInfoAsync(csv.layerInfo, Options.LayerTable);
         }
 
-        private string GetImageInfoCsv()
+        private (string imageInfo, string layerInfo) GetImageInfoCsv()
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder imageInfo = new();
+            StringBuilder layerInfo = new();
 
             foreach (RepoData repo in ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest).Repos)
             {
@@ -67,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         string timestamp = platform.Created.ToUniversalTime().ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss");
                         string sha = DockerHelper.GetDigestSha(platform.Digest);
-                        builder.AppendLine(FormatCsv(sha, platform, image, repo.Repo, timestamp));
+                        imageInfo.AppendLine(FormatImageCsv(sha, platform, image, repo.Repo, timestamp));
 
                         IEnumerable<TagInfo> tagInfos = platform.PlatformInfo.Tags
                             .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name))
@@ -80,33 +79,65 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                         foreach (string syndicatedRepo in syndicatedRepos)
                         {
-                            builder.AppendLine(
-                                FormatCsv(sha, platform, image, syndicatedRepo, timestamp));
+                            imageInfo.AppendLine(
+                                FormatImageCsv(sha, platform, image, syndicatedRepo, timestamp));
                         }
 
                         foreach (TagInfo tag in tagInfos)
                         {
-                            builder.AppendLine(FormatCsv(tag.Name, platform, image, repo.Repo, timestamp));
+                            imageInfo.AppendLine(FormatImageCsv(tag.Name, platform, image, repo.Repo, timestamp));
 
                             if (tag.SyndicatedRepo != null)
                             {
                                 foreach (string destinationTag in tag.SyndicatedDestinationTags)
                                 {
-                                    builder.AppendLine(
-                                       FormatCsv(destinationTag, platform, image, tag.SyndicatedRepo, timestamp));
+                                    imageInfo.AppendLine(
+                                       FormatImageCsv(destinationTag, platform, image, tag.SyndicatedRepo, timestamp));
                                 }
                             }
+                        }
+
+                        for (int i = 0; i < platform.Layers.Count; i++)
+                        {
+                            layerInfo.AppendLine(FormatLayerCsv(
+                                platform.Layers[i], 0, platform.Layers.Count - i, sha, platform, image, repo.Repo, timestamp));
                         }
                     }
                 }
             }
 
             // Kusto ingest API does not handle an empty line, therefore the last line must be trimmed.
-            return builder.ToString().TrimEnd(Environment.NewLine);
+            return (imageInfo.ToString().TrimEnd(Environment.NewLine), layerInfo.ToString().TrimEnd(Environment.NewLine));
         }
 
-        private string FormatCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
+        private static string FormatImageCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
             $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.PlatformInfo.GetOSDisplayName()}\","
                 + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo}\",\"{timestamp}\"";
+
+        private static string FormatLayerCsv(
+            string layerDigest,
+            int size,
+            int ordinal,
+            string imageDigest,
+            PlatformData platform,
+            ImageData image,
+            string repo,
+            string timestamp) =>
+                $"\"{layerDigest}\",\"{size}\",\"{ordinal}\",{FormatImageCsv(imageDigest, platform, image, repo, timestamp)}";
+
+        private async Task IngestInfoAsync(string info, string table)
+        {
+            using MemoryStream stream = new();
+            using StreamWriter writer = new(stream);
+            writer.Write(info);
+            writer.Flush();
+            stream.Seek(0, SeekOrigin.Begin);
+
+            if (!Options.IsDryRun)
+            {
+                await _kustoClient.IngestFromCsvStreamAsync(stream, Options.ServicePrincipal, Options.Cluster, Options.Database, table, Options.IsDryRun);
+            }
+        }
     }
 }
+#nullable disable

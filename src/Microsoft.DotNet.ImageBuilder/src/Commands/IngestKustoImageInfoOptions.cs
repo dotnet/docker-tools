@@ -11,18 +11,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class IngestKustoImageInfoOptions : ImageInfoOptions, IFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
+        public ManifestFilterOptions FilterOptions { get; set; } = new();
 
         public string Cluster { get; set; } = string.Empty;
         public string Database { get; set; } = string.Empty;
-        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
-        public string Table { get; set; } = string.Empty;
+        public ServicePrincipalOptions ServicePrincipal { get; set; } = new();
+        public string ImageTable { get; set; } = string.Empty;
+        public string LayerTable { get; set; } = string.Empty;
     }
 
     public class IngestKustoImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
-            new ManifestFilterOptionsBuilder();
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
@@ -36,7 +36,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         new Argument<string>(nameof(IngestKustoImageInfoOptions.Cluster), "The cluster to ingest the data to"),
                         new Argument<string>(nameof(IngestKustoImageInfoOptions.Database), "The database to ingest the data to"),
-                        new Argument<string>(nameof(IngestKustoImageInfoOptions.Table), "The table to ingest the data to"),
+                        new Argument<string>(nameof(IngestKustoImageInfoOptions.ImageTable), "The image table to ingest the data to"),
+                        new Argument<string>(nameof(IngestKustoImageInfoOptions.LayerTable), "The layer table to ingest the data to"),
                     }
                 )
                 .Concat(ServicePrincipalOptions.GetCliArguments());

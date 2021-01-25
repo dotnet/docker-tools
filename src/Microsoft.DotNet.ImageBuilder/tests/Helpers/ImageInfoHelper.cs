@@ -18,9 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string osVersion = "focal",
             List<string> simpleTags = null,
             string baseImageDigest = null,
-            DateTime? created = null)
+            DateTime? created = null,
+            List<string> layers = null)
         {
-            PlatformData platform = new PlatformData
+            PlatformData platform = new()
             {
                 Dockerfile = dockerfile,
                 Digest = digest,
@@ -34,6 +35,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             if (created.HasValue)
             {
                 platform.Created = created.Value;
+            }
+
+            if (layers != null)
+            {
+                platform.Layers = layers;
             }
 
             return platform;

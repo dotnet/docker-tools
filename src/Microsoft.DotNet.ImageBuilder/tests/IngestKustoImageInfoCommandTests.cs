@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class IngestKustoImageInfoCommandTests
     {
-        private ITestOutputHelper _outputHelper;
+        private readonly ITestOutputHelper _outputHelper;
 
         public IngestKustoImageInfoCommandTests(ITestOutputHelper outputHelper)
         {
@@ -64,7 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+            ImageArtifactDetails srcImageArtifactDetails = new()
             {
                 Repos =
                 {
@@ -94,6 +94,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             simpleTags: new List<string>
                                             {
                                                 "t1"
+                                            },
+                                            layers: new List<string>
+                                            {
+                                                "qwe",
+                                                "asd"
                                             })
                                     },
                                     {
@@ -104,6 +109,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             simpleTags: new List<string>
                                             {
                                                 "t2"
+                                            },
+                                            layers: new List<string>
+                                            {
+                                                "qwe"
                                             })
                                     }
                                 },
@@ -127,6 +136,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         simpleTags: new List<string>
                                         {
                                             "t3"
+                                        },
+                                        layers: new List<string>
+                                        {
+                                            "zxc"
                                         })
                                 },
                                 ProductVersion = "2.0.5"
@@ -136,41 +149,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            string expectedData =
+            string expectedImageData =
 @"""def"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
 ""t1"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
 ""ghi"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
 ""t2"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
 ""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""
 ""t3"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""";
-            expectedData = expectedData.NormalizeLineEndings(Environment.NewLine).Trim();
+            expectedImageData = expectedImageData.NormalizeLineEndings(Environment.NewLine).Trim();
 
-            string imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-            File.WriteAllText(imageInfoPath, JsonHelper.SerializeObject(srcImageArtifactDetails));
+            string expectedLayerData =
+@"""qwe"",""0"",""2"",""def"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
+""asd"",""0"",""1"",""def"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os/Dockerfile"",""r1"",""2020-04-20 21:56:50""
+""qwe"",""0"",""1"",""ghi"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.2"",""1.0/sdk/os2/Dockerfile"",""r1"",""2020-04-20 21:56:56""
+""zxc"",""0"",""1"",""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""2.0.5"",""2.0/sdk/os/Dockerfile"",""r2"",""2020-04-20 21:56:58""";
+            expectedLayerData = expectedLayerData.NormalizeLineEndings(Environment.NewLine).Trim();
 
-            string ingestedData = null;
-
-            Mock<IKustoClient> kustoClientMock = new Mock<IKustoClient>();
-            kustoClientMock
-                .Setup(o => o.IngestFromCsvStreamAsync(It.IsAny<Stream>(), It.IsAny<IngestKustoImageInfoOptions>()))
-                .Callback<Stream, IngestKustoImageInfoOptions>((s, o) =>
-                {
-                    StreamReader reader = new StreamReader(s);
-                    ingestedData = reader.ReadToEnd();
-                });
-            IngestKustoImageInfoCommand command = new IngestKustoImageInfoCommand(
-                Mock.Of<ILoggerService>(), kustoClientMock.Object);
-            command.Options.ImageInfoPath = imageInfoPath;
-            command.Options.Manifest = manifestPath;
-
-            command.LoadManifest();
-            await command.ExecuteAsync();
-
-            _outputHelper.WriteLine($"Expected Data: {Environment.NewLine}{expectedData}");
-            _outputHelper.WriteLine($"Actual Data: {Environment.NewLine}{ingestedData}");
-
-            kustoClientMock.Verify(o => o.IngestFromCsvStreamAsync(It.IsAny<Stream>(), It.IsAny<IngestKustoImageInfoOptions>()));
-            Assert.Equal(expectedData, ingestedData);
+            await ValidateExecuteAsync(tempFolderContext, manifestPath, srcImageArtifactDetails, expectedImageData, expectedLayerData);
         }
 
         /// <summary>
@@ -211,7 +206,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            ImageArtifactDetails srcImageArtifactDetails = new ImageArtifactDetails
+            ImageArtifactDetails srcImageArtifactDetails = new()
             {
                 Repos =
                 {
@@ -233,6 +228,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             "t1",
                                             "t2",
                                             "t3"
+                                        },
+                                        layers: new List<string>
+                                        {
+                                            "zxc"
                                         })
                                 },
                                 ProductVersion = "1.0.5"
@@ -242,7 +241,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            string expectedData =
+            string expectedImageData =
 @"""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
 ""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t1"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""
@@ -251,34 +250,56 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 ""t2a"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t2b"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo2"",""2020-04-20 21:56:58""
 ""t3"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""";
-            expectedData = expectedData.NormalizeLineEndings(Environment.NewLine).Trim();
+            expectedImageData = expectedImageData.NormalizeLineEndings(Environment.NewLine).Trim();
 
+            string expectedLayerData =
+@"""zxc"",""0"",""1"",""jkl"",""amd64"",""Linux"",""Ubuntu 20.04"",""1.0.5"",""1.0/sdk/os/Dockerfile"",""repo1"",""2020-04-20 21:56:58""";
+            expectedLayerData = expectedLayerData.NormalizeLineEndings(Environment.NewLine).Trim();
+
+            await ValidateExecuteAsync(tempFolderContext, manifestPath, srcImageArtifactDetails, expectedImageData, expectedLayerData);
+        }
+
+        private async Task ValidateExecuteAsync(
+            TempFolderContext tempFolderContext,
+            string manifestPath,
+            ImageArtifactDetails srcImageArtifactDetails,
+            string expectedImageData,
+            string expectedLayerData)
+        {
             string imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             File.WriteAllText(imageInfoPath, JsonHelper.SerializeObject(srcImageArtifactDetails));
 
-            string ingestedData = null;
+            Dictionary<string, string> ingestedData = new();
 
-            Mock<IKustoClient> kustoClientMock = new Mock<IKustoClient>();
+            Mock<IKustoClient> kustoClientMock = new();
             kustoClientMock
-                .Setup(o => o.IngestFromCsvStreamAsync(It.IsAny<Stream>(), It.IsAny<IngestKustoImageInfoOptions>()))
-                .Callback<Stream, IngestKustoImageInfoOptions>((s, o) =>
-                {
-                    StreamReader reader = new StreamReader(s);
-                    ingestedData = reader.ReadToEnd();
-                });
-            IngestKustoImageInfoCommand command = new IngestKustoImageInfoCommand(
-                Mock.Of<ILoggerService>(), kustoClientMock.Object);
+                .Setup(o => o.IngestFromCsvStreamAsync(
+                    It.IsAny<Stream>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .Callback<Stream, ServicePrincipalOptions, string, string, string, bool>(
+                    (stream, servicePrincipal, cluster, database, table, isDryRun) =>
+                    {
+                        StreamReader reader = new(stream);
+                        ingestedData.Add(table, reader.ReadToEnd());
+                    });
+            IngestKustoImageInfoCommand command = new(Mock.Of<ILoggerService>(), kustoClientMock.Object);
             command.Options.ImageInfoPath = imageInfoPath;
             command.Options.Manifest = manifestPath;
+            command.Options.ImageTable = "ImageInfo";
+            command.Options.LayerTable = "LayerInfo";
 
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            _outputHelper.WriteLine($"Expected Data: {Environment.NewLine}{expectedData}");
-            _outputHelper.WriteLine($"Actual Data: {Environment.NewLine}{ingestedData}");
+            _outputHelper.WriteLine($"Expected Image Data: {Environment.NewLine}{expectedImageData}");
+            _outputHelper.WriteLine($"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
 
-            kustoClientMock.Verify(o => o.IngestFromCsvStreamAsync(It.IsAny<Stream>(), It.IsAny<IngestKustoImageInfoOptions>()));
-            Assert.Equal(expectedData, ingestedData);
+            _outputHelper.WriteLine($"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
+            _outputHelper.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
+
+            kustoClientMock.Verify(o => o.IngestFromCsvStreamAsync(
+                It.IsAny<Stream>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
+            Assert.Equal(expectedImageData, ingestedData[command.Options.ImageTable]);
+            Assert.Equal(expectedLayerData, ingestedData[command.Options.LayerTable]);
         }
     }
 }

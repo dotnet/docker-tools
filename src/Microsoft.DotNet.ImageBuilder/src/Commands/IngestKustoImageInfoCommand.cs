@@ -99,6 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                         for (int i = 0; i < platform.Layers.Count; i++)
                         {
+                            // TODO: Track layer size (currently set to 0) https://github.com/dotnet/docker-tools/issues/745
                             layerInfo.AppendLine(FormatLayerCsv(
                                 platform.Layers[i], 0, platform.Layers.Count - i, sha, platform, image, repo.Repo, timestamp));
                         }

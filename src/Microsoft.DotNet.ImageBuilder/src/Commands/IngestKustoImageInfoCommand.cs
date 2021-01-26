@@ -35,12 +35,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
 
-            (string imageInfo, string layerInfo) csv = GetImageInfoCsv();
-            _loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{csv}");
+            (string imageInfo, string layerInfo) = GetImageInfoCsv();
+            _loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
+            _loggerService.WriteMessage($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
 
-            if (string.IsNullOrEmpty(csv.imageInfo))
+            if (string.IsNullOrEmpty(imageInfo))
             {
-                if (!string.IsNullOrEmpty(csv.layerInfo))
+                if (!string.IsNullOrEmpty(layerInfo))
                 {
                     throw new InvalidOperationException("Unexpected layer info when image info is empty.");
                 }
@@ -49,8 +50,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            await IngestInfoAsync(csv.imageInfo, Options.ImageTable);
-            await IngestInfoAsync(csv.layerInfo, Options.LayerTable);
+            await IngestInfoAsync(imageInfo, Options.ImageTable);
+            await IngestInfoAsync(layerInfo, Options.LayerTable);
         }
 
         private (string imageInfo, string layerInfo) GetImageInfoCsv()

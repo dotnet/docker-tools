@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Displays the status of the referenced external base images";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             if (Options.ContinuousMode)
             {

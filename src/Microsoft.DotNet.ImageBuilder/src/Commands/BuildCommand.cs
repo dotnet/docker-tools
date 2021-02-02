@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Builds Dockerfiles";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             if (Options.ImageInfoOutputPath != null)
             {

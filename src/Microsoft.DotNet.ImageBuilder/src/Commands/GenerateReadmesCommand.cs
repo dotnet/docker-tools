@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             Logger.WriteHeading("GENERATING READMES");
 

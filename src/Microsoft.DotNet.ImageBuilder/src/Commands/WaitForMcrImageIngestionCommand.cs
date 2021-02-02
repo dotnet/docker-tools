@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Waits for images to complete ingestion into MCR";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
 

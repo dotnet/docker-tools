@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             Logger.WriteHeading("GENERATING DOCKERFILES");
 

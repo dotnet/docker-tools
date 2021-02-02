@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Outputs manifest file schema";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             JSchemaGenerator generator = new JSchemaGenerator
             {

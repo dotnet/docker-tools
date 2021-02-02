@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);

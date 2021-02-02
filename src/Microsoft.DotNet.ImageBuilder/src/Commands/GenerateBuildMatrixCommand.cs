@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             Logger.WriteHeading("GENERATING BUILD MATRIX");
 

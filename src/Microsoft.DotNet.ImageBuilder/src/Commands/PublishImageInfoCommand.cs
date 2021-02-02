@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Publishes a build's merged image info.";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             if (Options.AzdoOptions.AzdoPath != Options.GitOptions.Path)
             {

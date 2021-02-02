@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected override string Description => "Merges the content of multiple image info files into one file";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             IEnumerable<string> imageInfoFiles = Directory.EnumerateFiles(
                 Options.SourceImageInfoFolderPath,

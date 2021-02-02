@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Waits for docs to complete ingestion into Docker Hub";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("QUERYING COMMIT RESULT");
 

@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Queues builds to update images";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);

@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Displays statistics about the number of images";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             Logger.WriteHeading("IMAGE STATISTICS");
 

@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Generate a DOT (graph description language) file illustrating the image and layer hierarchy";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             Logger.WriteHeading("GENERATING IMAGE GRAPH");
 

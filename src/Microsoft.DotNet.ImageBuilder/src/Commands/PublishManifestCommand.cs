@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("GENERATING MANIFESTS");
 

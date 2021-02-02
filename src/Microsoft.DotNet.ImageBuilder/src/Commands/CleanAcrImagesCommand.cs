@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Removes unnecessary images from an ACR";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _repoNameFilterRegex = new Regex(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 

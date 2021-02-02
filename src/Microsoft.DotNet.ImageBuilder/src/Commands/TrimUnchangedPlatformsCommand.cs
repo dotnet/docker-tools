@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Trims platforms marked as unchanged from the image info file";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("TRIMMING UNCHANGED PLATFORMS");
 

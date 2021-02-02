@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Ingests image info data into Kusto";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
 

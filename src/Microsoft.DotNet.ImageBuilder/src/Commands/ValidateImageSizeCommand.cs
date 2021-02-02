@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public ImageSizeValidationResults ValidationResults { get; private set; }
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             ValidationResults = ValidateImages();
             LogResults(ValidationResults);

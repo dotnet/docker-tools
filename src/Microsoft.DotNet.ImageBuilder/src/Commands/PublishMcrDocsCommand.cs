@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Publishes the readmes to MCR";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("PUBLISHING MCR DOCS");
 

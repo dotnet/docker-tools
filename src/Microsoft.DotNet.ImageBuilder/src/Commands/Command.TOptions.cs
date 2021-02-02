@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             cmd.Handler = CommandHandler.Create<TOptions>(options =>
             {
                 Initialize(options);
-                return ExecuteAsync();
+                return ExecuteCoreAsync();
             });
 
             return cmd;
@@ -54,7 +54,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Options = options;
         }
 
-        public abstract Task ExecuteAsync();
+        public Task ExecuteAsync() => ExecuteCoreAsync();
+
+        protected abstract Task ExecuteCoreAsync();
     }
 }
 #nullable disable

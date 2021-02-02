@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Copies the platform images as specified in the manifest between repositories of an ACR";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 

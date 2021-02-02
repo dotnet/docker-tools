@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Updates an image size baseline file with current image sizes";
 
-        public override Task ExecuteAsync()
+        protected override Task ExecuteCoreAsync()
         {
             UpdateBaseline();
             return Task.CompletedTask;

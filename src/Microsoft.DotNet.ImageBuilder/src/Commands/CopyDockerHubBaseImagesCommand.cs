@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Copies external base images from Docker Hub to ACR";
 
-        public override async Task ExecuteAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 

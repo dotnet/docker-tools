@@ -23,7 +23,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new Regex(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
 
-        public GenerateBuildMatrixCommand() : base()
+        [ImportingConstructor]
+        public GenerateBuildMatrixCommand(IDockerService dockerService)
+            : base(dockerService)
         {
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {

@@ -25,7 +25,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Dictionary<string, Manifest> _imageManifestCache = new Dictionary<string, Manifest>();
         private readonly Dictionary<string, DotNode> _nodeCache = new Dictionary<string, DotNode>();
 
-        public GenerateImageGraphCommand() : base()
+        [ImportingConstructor]
+        public GenerateImageGraphCommand(IDockerService dockerService)
+            : base(dockerService)
         {
         }
 

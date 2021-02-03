@@ -17,7 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
-        public ShowManifestSchemaCommand(ILoggerService loggerService)
+        public ShowManifestSchemaCommand(IDockerService dockerService, ILoggerService loggerService)
+            : base(dockerService)
         {
             _loggerService = loggerService;
         }

@@ -162,7 +162,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IRepository> repositoryMock = GetRepositoryMock();
                 Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path, targetImageArtifactDetails);
 
-                PublishImageInfoCommand command = new PublishImageInfoCommand(gitServiceMock.Object, Mock.Of<ILoggerService>());
+                PublishImageInfoCommand command = new PublishImageInfoCommand(
+                    Mock.Of<IDockerService>(), gitServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions = gitOptions;
                 command.Options.AzdoOptions = azdoOptions;
@@ -337,7 +338,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path, targetImageArtifactDetails);
 
 
-                PublishImageInfoCommand command = new PublishImageInfoCommand(gitServiceMock.Object, Mock.Of<ILoggerService>());
+                PublishImageInfoCommand command = new PublishImageInfoCommand(
+                    Mock.Of<IDockerService>(), gitServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions = gitOptions;
                 command.Options.AzdoOptions = azdoOptions;

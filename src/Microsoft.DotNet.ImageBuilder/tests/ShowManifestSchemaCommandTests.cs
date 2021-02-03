@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
 
-            ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(loggerServiceMock.Object);
+            ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(Mock.Of<IDockerService>(), loggerServiceMock.Object);
 
             await command.ExecuteAsync();
 

@@ -1235,6 +1235,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
+            dockerServiceMock.VerifySet(o => o.IsAnonymousAccessAllowed = false);
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -1524,6 +1525,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageDigest(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.Architecture);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.VerifySet(o => o.IsAnonymousAccessAllowed = false);
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -1725,6 +1727,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.VerifySet(o => o.IsAnonymousAccessAllowed = false);
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -1922,6 +1925,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
+            dockerServiceMock.VerifySet(o => o.IsAnonymousAccessAllowed = false);
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -2166,6 +2170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.VerifySet(o => o.IsAnonymousAccessAllowed = false);
 
             dockerServiceMock.VerifyNoOtherCalls();
         }

@@ -14,13 +14,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusOptionsBuilder>
     {
-        private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public GetBaseImageStatusCommand(IDockerService dockerService, ILoggerService loggerService)
+            : base(dockerService)
         {
-            _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
@@ -60,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteHeading("PULLING LATEST BASE IMAGES");
             foreach (string imageTag in imageTags)
             {
-                _dockerService.PullImage(imageTag, Options.IsDryRun);
+                DockerService.PullImage(imageTag, Options.IsDryRun);
             }
 
             _loggerService.WriteHeading("QUERYING STATUS");
@@ -68,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(tag => new
                 {
                     Tag = tag,
-                    DateCreated = _dockerService.GetCreatedDate(tag, Options.IsDryRun)
+                    DateCreated = DockerService.GetCreatedDate(tag, Options.IsDryRun)
                 })
                 .ToList();
 

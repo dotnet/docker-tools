@@ -15,8 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         [ImportingConstructor]
         public CopyDockerHubBaseImagesCommand(
-            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
-            : base(azureManagementFactory, loggerService)
+            IDockerService dockerService, IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
+            : base(dockerService, azureManagementFactory, loggerService)
         {
         }
 

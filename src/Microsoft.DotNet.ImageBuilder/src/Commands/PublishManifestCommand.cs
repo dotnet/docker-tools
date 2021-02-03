@@ -23,8 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public PublishManifestCommand(
+            IDockerService dockerService,
             IManifestToolService manifestToolService,
             ILoggerService loggerService)
+            : base(dockerService)
         {
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -32,13 +34,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
 
-        protected override Task ExecuteCoreAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             _loggerService.WriteHeading("GENERATING MANIFESTS");
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            ExecuteWithUser(() =>
+            await ExecuteWithUserAsync(() =>
             {
                 IEnumerable<string> manifests = Manifest.FilteredRepos
                     .SelectMany(repo =>
@@ -68,9 +70,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 WriteManifestSummary();
 
                 SaveTagInfoToImageInfoFile(createdDate, imageArtifactDetails);
-            });
 
-            return Task.CompletedTask;
+                return Task.CompletedTask;
+            });
         }
 
         private void SaveTagInfoToImageInfoFile(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)

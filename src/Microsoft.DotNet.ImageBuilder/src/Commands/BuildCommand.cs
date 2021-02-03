@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class BuildCommand : DockerRegistryCommand<BuildOptions, BuildOptionsBuilder>
     {
-        private readonly IDockerService _dockerService;
+        private readonly DockerServiceCache _dockerServiceCache;
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
         private readonly ImageDigestCache _imageDigestCache;
@@ -35,16 +35,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService)
+            : base(dockerService)
         {
-            _imageDigestCache = new ImageDigestCache(dockerService);
-            _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _imageDigestCache = new ImageDigestCache(DockerService);
+            _dockerServiceCache = new DockerServiceCache(DockerService);
         }
 
         protected override string Description => "Builds Dockerfiles";
 
-        protected override Task ExecuteCoreAsync()
+        protected override async Task ExecuteCoreAsync()
         {
             if (Options.ImageInfoOutputPath != null)
             {
@@ -53,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             PullBaseImages();
 
-            ExecuteWithUser(() =>
+            await ExecuteWithUserAsync(() =>
             {
                 BuildImages();
 
@@ -63,11 +64,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 PublishImageInfo();
+
+                return Task.CompletedTask;
             });
             
             WriteBuildSummary();
-
-            return Task.CompletedTask;
         }
 
         private void PublishImageInfo()
@@ -138,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void SetPlatformDataCreatedDate(PlatformData platform, string tag)
         {
-            DateTime createdDate = _dockerService.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
+            DateTime createdDate = _dockerServiceCache.GetCreatedDate(tag, Options.IsDryRun).ToUniversalTime();
             if (platform.Created != default && platform.Created != createdDate)
             {
                 // All of the tags associated with the platform should have the same Created date
@@ -173,7 +174,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (platform.Layers == null || !platform.Layers.Any())
             {
-                platform.Layers = _dockerService.GetImageLayers(tag, Options.IsDryRun).ToList();
+                platform.Layers = _dockerServiceCache.GetImageLayers(tag, Options.IsDryRun).ToList();
             }
         }
 
@@ -358,7 +359,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 InvokeBuildHook("pre-build", platform.BuildContextPath);
 
-                string buildOutput = _dockerService.BuildImage(
+                string buildOutput = _dockerServiceCache.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
                     allTags,
@@ -419,13 +420,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Pull the image instead of building it
             if (pullImage)
             {
-                _dockerService.PullImage(sourceDigest, Options.IsDryRun);
+                _dockerServiceCache.PullImage(sourceDigest, Options.IsDryRun);
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it
             Parallel.ForEach(allTags, tag =>
             {
-                _dockerService.CreateTag(sourceDigest, tag, Options.IsDryRun);
+                _dockerServiceCache.CreateTag(sourceDigest, tag, Options.IsDryRun);
 
                 // Rewrite the digest to match the repo of the tags being associated with it. This is necessary
                 // in order to handle scenarios where shared Dockerfiles are being used across different repositories.
@@ -478,7 +479,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
         {
-            if (platform.Model.Architecture == _dockerService.Architecture)
+            if (platform.Model.Architecture == _dockerServiceCache.Architecture)
             {
                 return;
             }
@@ -549,7 +550,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Recreate the other tags so that they get the updated architecture value.
             Parallel.ForEach(secondaryTags, tag =>
             {
-                _dockerService.CreateTag(primaryTag, tag, Options.IsDryRun);
+                _dockerServiceCache.CreateTag(primaryTag, tag, Options.IsDryRun);
             });
         }
 
@@ -594,7 +595,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     foreach (string fromImage in baseImages)
                     {
-                        _dockerService.PullImage(fromImage, Options.IsDryRun);
+                        _dockerServiceCache.PullImage(fromImage, Options.IsDryRun);
                     }
 
                     IEnumerable<string> finalStageExternalFromImages = Manifest.GetFilteredPlatforms()
@@ -632,7 +633,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (TagInfo tag in GetPushTags(_builtTags))
                 {
-                    _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
+                    _dockerServiceCache.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
                 }
             }
         }

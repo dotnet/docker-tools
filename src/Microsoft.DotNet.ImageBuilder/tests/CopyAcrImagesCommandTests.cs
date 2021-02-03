@@ -40,7 +40,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IAzureManagementFactory> azureManagementFactoryMock =
                     AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+                    Mock.Of<IDockerService>(), azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -132,7 +133,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+                    Mock.Of<IDockerService>(), azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -235,7 +237,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+                Mock.Of<IDockerService>(), azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -349,7 +352,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(
+                Mock.Of<IDockerService>(), azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";

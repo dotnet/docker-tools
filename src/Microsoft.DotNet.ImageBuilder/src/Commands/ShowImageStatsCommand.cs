@@ -15,7 +15,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>
     {
-        public ShowImageStatsCommand() : base()
+        [ImportingConstructor]
+        public ShowImageStatsCommand(IDockerService dockerService)
+            : base(dockerService)
         {
         }
 

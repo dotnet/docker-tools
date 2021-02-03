@@ -10,6 +10,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         where TOptions : ManifestOptions, new()
         where TOptionsBuilder : ManifestOptionsBuilder, new()
     {
+        public ManifestCommand(IDockerService dockerService)
+            : base(dockerService)
+        {
+        }
+
         public ManifestInfo Manifest { get; private set; }
 
         public void LoadManifest()

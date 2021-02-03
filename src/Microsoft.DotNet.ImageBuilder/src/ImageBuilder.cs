@@ -67,6 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         context.BindingContext.AddModelBinder(new ModelBinder<GitOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<ManifestFilterOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<ServicePrincipalOptions>());
+                        context.BindingContext.AddModelBinder(new ModelBinder<DockerCredsOptions>());
                     })
                     .Build();
                 return parser.Invoke(args);

@@ -180,7 +180,8 @@ Referenced Template Content";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object, gitServiceMock.Object);
+            GenerateReadmesCommand command = new GenerateReadmesCommand(
+                Mock.Of<IDockerService>(), _environmentServiceMock.Object, gitServiceMock.Object);
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

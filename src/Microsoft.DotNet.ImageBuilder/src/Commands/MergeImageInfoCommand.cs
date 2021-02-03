@@ -17,6 +17,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected override string Description => "Merges the content of multiple image info files into one file";
 
+        [ImportingConstructor]
+        public MergeImageInfoCommand(IDockerService dockerService)
+            : base(dockerService)
+        {
+        }
+
         protected override Task ExecuteCoreAsync()
         {
             IEnumerable<string> imageInfoFiles = Directory.EnumerateFiles(

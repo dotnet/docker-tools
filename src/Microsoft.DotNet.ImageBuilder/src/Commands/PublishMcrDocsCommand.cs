@@ -24,8 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
-        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
-            ILoggerService loggerService) : base()
+        public PublishMcrDocsCommand(IDockerService dockerService, IGitService gitService, IGitHubClientFactory gitHubClientFactory,
+            ILoggerService loggerService)
+            : base(dockerService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));

@@ -26,8 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public QueueBuildCommand(
+            IDockerService dockerService,
             IVssConnectionFactory connectionFactory,
             ILoggerService loggerService)
+            : base(dockerService)
         {
             _connectionFactory = connectionFactory;
             _loggerService = loggerService;

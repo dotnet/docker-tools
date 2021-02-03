@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
@@ -35,10 +34,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
+            IDockerService dockerService,
             IManifestToolService manifestToolService,
             IHttpClientProvider httpClientFactory,
             ILoggerService loggerService,
             IGitHubClientFactory gitHubClientFactory)
+            : base(dockerService)
         {
             _manifestToolService = manifestToolService;
             _loggerService = loggerService;

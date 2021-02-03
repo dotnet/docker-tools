@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     /// <summary>
@@ -30,6 +31,12 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Architecture Architecture => _inner.Architecture;
 
+        public bool IsAnonymousAccessAllowed
+        {
+            get => _inner.IsAnonymousAccessAllowed;
+            set => _inner.IsAnonymousAccessAllowed = value;
+        }
+
         public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun) =>
             _inner.BuildImage(dockerfilePath, buildContextPath, tags, buildArgs, isRetryEnabled, isDryRun);
 
@@ -50,7 +57,13 @@ namespace Microsoft.DotNet.ImageBuilder
         
         public bool LocalImageExists(string tag, bool isDryRun) =>
             _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
-        
+
+        public void Login(string username, string password, string? server, bool isDryRun) =>
+            _inner.Login(username, password, server, isDryRun);
+
+        public void Logout(string? server, bool isDryRun) =>
+            _inner.Logout(server, isDryRun);
+
         public void PullImage(string image, bool isDryRun)
         {
             _pulledImages.GetOrAdd(image, _ =>
@@ -64,3 +77,4 @@ namespace Microsoft.DotNet.ImageBuilder
             _inner.PushImage(tag, isDryRun);
     }
 }
+#nullable disable

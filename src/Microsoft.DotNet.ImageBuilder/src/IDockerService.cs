@@ -6,15 +6,18 @@ using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IDockerService
     {
         Architecture Architecture { get; }
 
+        bool IsAnonymousAccessAllowed { get; set; }
+
         void PullImage(string image, bool isDryRun);
 
-        string GetImageDigest(string image, bool isDryRun);
+        string? GetImageDigest(string image, bool isDryRun);
 
         IEnumerable<string> GetImageLayers(string image, bool isDryRun);
 
@@ -35,5 +38,10 @@ namespace Microsoft.DotNet.ImageBuilder
         long GetImageSize(string image, bool isDryRun);
 
         DateTime GetCreatedDate(string image, bool isDryRun);
+
+        void Login(string username, string password, string? server, bool isDryRun);
+
+        void Logout(string? server, bool isDryRun);
     }
 }
+#nullable disable

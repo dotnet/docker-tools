@@ -18,7 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
-        public TrimUnchangedPlatformsCommand(ILoggerService loggerService)
+        public TrimUnchangedPlatformsCommand(IDockerService dockerService, ILoggerService loggerService)
+            : base(dockerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }

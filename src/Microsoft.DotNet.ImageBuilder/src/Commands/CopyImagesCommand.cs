@@ -22,7 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly Lazy<string> _registryName;
 
-        public CopyImagesCommand(IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
+        public CopyImagesCommand(IDockerService dockerService, IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
+            : base(dockerService)
         {
             AzureManagementFactory = azureManagementFactory;
             LoggerService = loggerService;

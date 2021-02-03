@@ -23,7 +23,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private Regex _repoNameFilterRegex;
 
         [ImportingConstructor]
-        public CleanAcrImagesCommand(IAcrClientFactory acrClientFactory, ILoggerService loggerService)
+        public CleanAcrImagesCommand(IDockerService dockerService, IAcrClientFactory acrClientFactory, ILoggerService loggerService)
+            : base(dockerService)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

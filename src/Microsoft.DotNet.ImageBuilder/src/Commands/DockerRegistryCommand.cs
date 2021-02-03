@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -10,9 +11,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         where TOptions : DockerRegistryOptions, new()
         where TOptionsBuilder : DockerRegistryOptionsBuilder, new()
     {
-        protected void ExecuteWithUser(Action action)
+        public DockerRegistryCommand(IDockerService dockerService)
+            : base(dockerService)
         {
-            DockerHelper.ExecuteWithUser(action, Options.Username, Options.Password, Manifest.Registry, Options.IsDryRun);
         }
+
+        protected Task ExecuteWithUserAsync(Func<Task> action) =>
+            DockerService.ExecuteWithUserAsync(action, Options.Username, Options.Password, Manifest.Registry, Options.IsDryRun);
     }
 }

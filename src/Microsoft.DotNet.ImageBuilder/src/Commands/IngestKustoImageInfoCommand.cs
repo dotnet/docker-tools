@@ -23,7 +23,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
-        public IngestKustoImageInfoCommand(ILoggerService loggerService, IKustoClient kustoClient)
+        public IngestKustoImageInfoCommand(IDockerService dockerService, ILoggerService loggerService, IKustoClient kustoClient)
+            : base(dockerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));

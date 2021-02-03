@@ -396,7 +396,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
 
-                QueueBuildCommand command = new QueueBuildCommand(connectionFactoryMock.Object, loggerServiceMock.Object);
+                QueueBuildCommand command = new QueueBuildCommand(
+                    Mock.Of<IDockerService>(), connectionFactoryMock.Object, loggerServiceMock.Object);
                 command.Options.AzdoOptions.Organization = BuildOrganization;
                 command.Options.AzdoOptions.AccessToken = "testToken";
                 command.Options.SubscriptionsPath = this.subscriptionsPath;

@@ -202,6 +202,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -451,6 +452,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -607,6 +609,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -787,6 +790,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -891,6 +895,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -1080,6 +1085,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);

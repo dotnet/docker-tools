@@ -23,7 +23,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitService _gitService;
 
         [ImportingConstructor]
-        public GenerateReadmesCommand(IEnvironmentService environmentService, IGitService gitService) : base(environmentService)
+        public GenerateReadmesCommand(IDockerService dockerService, IEnvironmentService environmentService, IGitService gitService)
+            : base(dockerService, environmentService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
         }
@@ -131,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"FROM {McrTagsRenderingToolTag}{Environment.NewLine}COPY {tagsMetadataFileName} /tableapp/files/ ");
 
                 string renderingToolId = $"renderingtool-{DateTime.Now.ToFileTime()}";
-                DockerHelper.PullImage(McrTagsRenderingToolTag, Options.IsDryRun);
+                DockerService.PullImage(McrTagsRenderingToolTag, Options.IsDryRun);
                 ExecuteHelper.Execute(
                     "docker",
                     $"build -t {renderingToolId} -f {dockerfilePath} {tempDir}",

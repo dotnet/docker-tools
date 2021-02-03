@@ -17,7 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
 
         [ImportingConstructor]
-        public GenerateDockerfilesCommand(IEnvironmentService environmentService) : base(environmentService)
+        public GenerateDockerfilesCommand(IDockerService dockerService, IEnvironmentService environmentService)
+            : base(dockerService, environmentService)
         {
         }
 

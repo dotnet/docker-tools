@@ -10,6 +10,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
@@ -32,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 command.Options.ProductVersionComponents = 3;
@@ -100,7 +101,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
                 if (filterPaths != null)
@@ -167,7 +168,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
                 const string customBuildLegGroup = "custom";
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 command.Options.ProductVersionComponents = 2;
@@ -264,7 +265,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             const string customBuildLegGroup = "custom";
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
@@ -353,7 +354,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGroup()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
@@ -424,7 +425,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             const string customBuildLegGroup1 = "custom1";
             const string customBuildLegGroup2 = "custom2";
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
@@ -532,7 +533,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void PlatformVersionedOs_Cached(bool isRuntimeCached, bool isAspnetCached, bool isSdkCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -649,7 +650,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_SingleDockerfile()
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
@@ -704,7 +705,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void CrossReferencedDockerfileFromMultipleRepos_ImageGraph(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = matrixType;
             command.Options.ProductVersionComponents = 2;
@@ -783,7 +784,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void DuplicatedPlatforms(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand(Mock.Of<IDockerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = matrixType;
             command.Options.ProductVersionComponents = 2;

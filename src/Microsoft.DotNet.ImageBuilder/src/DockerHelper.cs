@@ -20,27 +20,6 @@ namespace Microsoft.DotNet.ImageBuilder
         public static Architecture Architecture => s_architecture.Value;
         public static OS OS => s_os.Value;
 
-        public static void ExecuteWithUser(Action action, string username, string password, string server, bool isDryRun)
-        {
-            bool userSpecified = username != null;
-            if (userSpecified)
-            {
-                DockerHelper.Login(username, password, server, isDryRun);
-            }
-
-            try
-            {
-                action();
-            }
-            finally
-            {
-                if (userSpecified)
-                {
-                    DockerHelper.Logout(server, isDryRun);
-                }
-            }
-        }
-
         public static IEnumerable<string> GetImageDigests(string image, bool isDryRun)
         {
             string digests = ExecuteCommandWithFormat(
@@ -88,40 +67,6 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists(ManagementType.Image, tag, isDryRun);
-
-        public static void Login(string username, string password, string server, bool isDryRun)
-        {
-            Version clientVersion = GetClientVersion();
-            if (clientVersion >= new Version(17, 7))
-            {
-                ProcessStartInfo startInfo = new ProcessStartInfo(
-                    "docker", $"login -u {username} --password-stdin {server}")
-                {
-                    RedirectStandardInput = true
-                };
-                ExecuteHelper.ExecuteWithRetry(
-                    startInfo,
-                    process =>
-                    {
-                        process.StandardInput.WriteLine(password);
-                        process.StandardInput.Close();
-                    },
-                    isDryRun);
-            }
-            else
-            {
-                ExecuteHelper.ExecuteWithRetry(
-                    "docker",
-                    $"login -u {username} -p {password} {server}",
-                    isDryRun,
-                    executeMessageOverride: $"login -u {username} -p ******** {server}");
-            }
-        }
-
-        public static void PullImage(string image, bool isDryRun)
-        {
-            ExecuteHelper.ExecuteWithRetry("docker", $"pull {image}", isDryRun);
-        }
 
         public static string ReplaceRepo(string image, string newRepo) =>
             newRepo + image.Substring(GetTagOrDigestSeparatorIndex(image));
@@ -177,6 +122,17 @@ namespace Microsoft.DotNet.ImageBuilder
             return imageName;
         }
 
+        public static string GetRegistry(string imageName)
+        {
+            string firstSegment = imageName.Substring(0, imageName.IndexOf("/"));
+            if (firstSegment.Contains("."))
+            {
+                return firstSegment;
+            }
+
+            return null;
+        }
+
         public static string TrimRegistry(string tag, string registry) => tag.TrimStart($"{registry}/");
 
         /// <remarks>
@@ -188,6 +144,20 @@ namespace Microsoft.DotNet.ImageBuilder
             string manifest = ExecuteCommand(
                 "manifest inspect", "Failed to inspect manifest", $"{image} --verbose", isDryRun);
             return JsonConvert.DeserializeObject<Docker.Manifest>(manifest);
+        }
+
+        public static Version GetClientVersion()
+        {
+            // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
+            string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
+
+            if (versionString.Contains('-'))
+            {
+                // Trim off the '-ce' or '-ee' suffix
+                versionString = versionString.Substring(0, versionString.IndexOf('-'));
+            }
+
+            return Version.TryParse(versionString, out Version version) ? version : null;
         }
 
         private static int GetTagOrDigestSeparatorIndex(string imageName)
@@ -210,25 +180,6 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return os;
-        }
-
-        private static Version GetClientVersion()
-        {
-            // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
-            string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
-
-            if (versionString.Contains('-'))
-            {
-                // Trim off the '-ce' or '-ee' suffix
-                versionString = versionString.Substring(0, versionString.IndexOf('-'));
-            }
-
-            return Version.TryParse(versionString, out Version version) ? version : null;
-        }
-
-        private static void Logout(string server, bool isDryRun)
-        {
-            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
         }
 
         private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)

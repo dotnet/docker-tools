@@ -29,7 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly List<string> _invalidTemplates = new List<string>();
         private readonly List<string> _outOfSyncArtifacts = new List<string>();
 
-        protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
+        protected GenerateArtifactsCommand(IDockerService dockerService, IEnvironmentService environmentService)
+            : base(dockerService)
         {
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }

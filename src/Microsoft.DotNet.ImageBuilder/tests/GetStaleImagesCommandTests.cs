@@ -1432,7 +1432,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new GetStaleImagesCommand(
-                    this.ManifestToolServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object, this.gitHubClientFactory);
+                    Mock.Of<IDockerService>(), this.ManifestToolServiceMock.Object, this.httpClientFactory,
+                    this.loggerServiceMock.Object, this.gitHubClientFactory);
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;

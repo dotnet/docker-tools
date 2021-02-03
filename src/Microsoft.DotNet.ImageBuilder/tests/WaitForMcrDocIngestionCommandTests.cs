@@ -84,6 +84,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 statusClientFactory,
                 environmentServiceMock.Object);
@@ -179,6 +180,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Throws(exitException);
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 statusClientFactory,
                 environmentServiceMock.Object);
@@ -285,6 +287,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 statusClientFactory,
                 environmentServiceMock.Object);
@@ -382,6 +385,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Throws(exitException);
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 statusClientFactory,
                 environmentServiceMock.Object);
@@ -429,6 +433,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
+                Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 statusClientFactory,
                 environmentServiceMock.Object);

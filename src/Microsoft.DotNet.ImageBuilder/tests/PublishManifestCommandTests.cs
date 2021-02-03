@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), manifestToolService.Object, Mock.Of<ILoggerService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -236,7 +236,7 @@ manifests:
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), manifestToolService.Object, Mock.Of<ILoggerService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -384,7 +384,7 @@ manifests:
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), manifestToolService.Object, Mock.Of<ILoggerService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 

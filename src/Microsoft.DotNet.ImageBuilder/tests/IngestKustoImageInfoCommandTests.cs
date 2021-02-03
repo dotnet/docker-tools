@@ -281,7 +281,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         StreamReader reader = new(stream);
                         ingestedData.Add(table, reader.ReadToEnd());
                     });
-            IngestKustoImageInfoCommand command = new(Mock.Of<ILoggerService>(), kustoClientMock.Object);
+            IngestKustoImageInfoCommand command = new(Mock.Of<IDockerService>(), Mock.Of<ILoggerService>(), kustoClientMock.Object);
             command.Options.ImageInfoPath = imageInfoPath;
             command.Options.Manifest = manifestPath;
             command.Options.ImageTable = "ImageInfo";

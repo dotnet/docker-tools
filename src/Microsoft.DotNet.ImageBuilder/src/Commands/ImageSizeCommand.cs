@@ -18,11 +18,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         where TOptionsBuilder : ImageSizeOptionsBuilder, new()
     {
         public ImageSizeCommand(IDockerService dockerService)
+            : base(dockerService)
         {
-            DockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         }
-
-        protected IDockerService DockerService { get; }
 
         protected void ProcessImages(ImageHandler processImage)
         {

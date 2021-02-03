@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
             command.Options.ServicePrincipal.Secret = password;
             command.Options.ServicePrincipal.ClientId = username;
@@ -239,7 +239,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
             command.Options.ServicePrincipal.Secret = password;
             command.Options.ServicePrincipal.ClientId = username;
@@ -333,7 +333,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
             command.Options.ServicePrincipal.Secret = password;
             command.Options.ServicePrincipal.ClientId = username;
@@ -419,7 +419,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
             command.Options.ServicePrincipal.Secret = password;
             command.Options.ServicePrincipal.ClientId = username;
@@ -523,7 +523,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
+                Mock.Of<IDockerService>(), acrClientFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Subscription = subscription;
             command.Options.ServicePrincipal.Secret = password;
             command.Options.ServicePrincipal.ClientId = username;

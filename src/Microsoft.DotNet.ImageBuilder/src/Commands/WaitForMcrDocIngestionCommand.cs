@@ -20,7 +20,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public WaitForMcrDocIngestionCommand(
-            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
+            IDockerService dockerService, ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory,
+            IEnvironmentService environmentService)
+            : base(dockerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));

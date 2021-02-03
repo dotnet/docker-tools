@@ -207,7 +207,8 @@ ENV TEST2 Value1";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(_environmentServiceMock.Object);
+            GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(
+                Mock.Of<IDockerService>(), _environmentServiceMock.Object);
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

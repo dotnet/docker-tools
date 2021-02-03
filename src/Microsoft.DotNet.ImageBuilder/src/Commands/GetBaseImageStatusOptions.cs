@@ -11,9 +11,11 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
+    public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions, IDockerCredsOptionsHost
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
+
+        public DockerCredsOptions DockerCredsOptions { get; set; } = new DockerCredsOptions();
 
         public bool ContinuousMode { get; set; }
 
@@ -27,9 +29,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
             new ManifestFilterOptionsBuilder();
 
+        private readonly DockerCredsOptionsBuilder _dockerCredsOptionsBuilder =
+            new DockerCredsOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(_dockerCredsOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -42,7 +48,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
+                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
+                .Concat(_dockerCredsOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

@@ -14,6 +14,7 @@ using Microsoft.DotNet.ImageBuilder.Services;
 using Polly;
 using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
@@ -35,7 +36,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public IAzureManagementFactory AzureManagementFactory { get; }
         public ILoggerService LoggerService { get; }
 
-        protected async Task ImportImageAsync(string destTagName, string srcTagName, string srcRegistryName = null, string srcResourceId = null)
+        protected async Task ImportImageAsync(string destTagName, string srcTagName, string? srcRegistryName = null, string? srcResourceId = null,
+            ImportSourceCredentials? sourceCredentials = null)
         {
             AzureCredentials credentials = SdkContext.AzureCredentialsFactory.FromServicePrincipal(
                 Options.ServicePrincipal.ClientId,
@@ -50,7 +52,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Source = new ImportSource(
                     srcTagName,
                     srcResourceId,
-                    srcRegistryName),
+                    srcRegistryName,
+                    sourceCredentials),
                 TargetTags = new string[] { destTagName }
             };
 
@@ -60,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 try
                 {
-                    AsyncPolicy<HttpResponseMessage> policy = HttpPolicyBuilder.Create()
+                    AsyncPolicy<HttpResponseMessage?> policy = HttpPolicyBuilder.Create()
                         .WithMeteredRetryPolicy(LoggerService)
                         .Build();
                     await policy.ExecuteAsync(async () =>
@@ -78,3 +81,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

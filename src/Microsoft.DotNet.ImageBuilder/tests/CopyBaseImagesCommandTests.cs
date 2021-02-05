@@ -22,7 +22,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class CopyDockerHubImagesCommandTests
+    public class CopyBaseImagesCommandTests
     {
         [Fact]
         public async Task MultipleBaseTags()
@@ -37,12 +37,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
-            CopyDockerHubBaseImagesCommand command = new CopyDockerHubBaseImagesCommand(
+            CopyBaseImagesCommand command = new CopyBaseImagesCommand(
                 azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
             command.Options.RepoPrefix = "custom-repo/";
+            command.Options.SourceCredentials.Add("docker.io", new ImportSourceCredentials("pass", "user"));
 
             const string runtimeRelativeDir = "1.0/runtime/os";
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -92,6 +93,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         manifest.Registry,
                         It.Is<ImportImageParametersInner>(parameters =>
                             parameters.Source.RegistryUri == "docker.io" &&
+                            parameters.Source.Credentials.Password == "pass" &&
+                            parameters.Source.Credentials.Username == "user" &&
                             parameters.Source.SourceImage == expectedTagInfo.SourceImage &&
                             TestHelper.CompareLists(new List<string> { expectedTagInfo.TargetTag }, parameters.TargetTags)),
                         It.IsAny<Dictionary<string, List<string>>>(),

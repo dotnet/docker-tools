@@ -190,6 +190,17 @@ namespace Microsoft.DotNet.ImageBuilder
             return JsonConvert.DeserializeObject<Docker.Manifest>(manifest);
         }
 
+        public static string GetRegistry(string imageName)
+        {
+            string firstSegment = imageName.Substring(0, imageName.IndexOf("/"));
+            if (firstSegment.Contains("."))
+            {
+                return firstSegment;
+            }
+
+            return null;
+        }
+
         private static int GetTagOrDigestSeparatorIndex(string imageName)
         {
             int separatorPosition = imageName.IndexOf('@');

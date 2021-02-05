@@ -6,21 +6,23 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
 using Microsoft.DotNet.ImageBuilder.Services;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class CopyDockerHubBaseImagesCommand : CopyImagesCommand<CopyImagesOptions, CopyImagesOptionsBuilder>
+    public class CopyBaseImagesCommand : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>
     {
         [ImportingConstructor]
-        public CopyDockerHubBaseImagesCommand(
+        public CopyBaseImagesCommand(
             IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
             : base(azureManagementFactory, loggerService)
         {
         }
 
-        protected override string Description => "Copies external base images from Docker Hub to ACR";
+        protected override string Description => "Copies external base images from their source registry to ACR";
 
         public override async Task ExecuteAsync()
         {
@@ -28,9 +30,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task> importTasks = Manifest.GetExternalFromImages()
                 .Where(fromImage => !fromImage.StartsWith(Manifest.Registry))
-                .Select(fromImage => ImportImageAsync($"{Options.RepoPrefix}{fromImage}", fromImage, srcRegistryName: "docker.io"));
+                .Select(fromImage =>
+                {
+                    string registry = DockerHelper.GetRegistry(fromImage) ?? "docker.io";
+                    fromImage = DockerHelper.TrimRegistry(fromImage, registry);
+
+                    Options.SourceCredentials.TryGetValue(registry, out ImportSourceCredentials? sourceCreds);
+
+                    return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", fromImage, srcRegistryName: registry,
+                        sourceCredentials: sourceCreds);
+                });
 
             await Task.WhenAll(importTasks);
         }
     }
 }
+#nullable disable

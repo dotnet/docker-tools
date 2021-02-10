@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,12 +9,12 @@ using System.Linq;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class DockerRegistryOptions : ManifestOptions
+    public class CopyBaseImagesOptions : CopyImagesOptions
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
     }
 
-    public abstract class DockerRegistryOptionsBuilder : ManifestOptionsBuilder
+    public class CopyBaseImagesOptionsBuilder : CopyImagesOptionsBuilder
     {
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder =
             new RegistryCredentialsOptionsBuilder();

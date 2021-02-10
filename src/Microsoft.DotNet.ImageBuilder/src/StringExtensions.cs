@@ -70,5 +70,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
             return value;
         }
+
+        public static (string Key, string Value) ParseKeyValuePair(this string value, char delimiter)
+        {
+            int firstEqualIndex = value.IndexOf(delimiter);
+            return (value.Substring(0, firstEqualIndex), value.Substring(firstEqualIndex + 1));
+        }
     }
 }

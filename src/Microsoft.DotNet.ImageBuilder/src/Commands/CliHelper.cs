@@ -44,16 +44,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
 
         public static Option<Dictionary<string, string>> CreateDictionaryOption(string alias, string propertyName, string description) =>
-            new Option<Dictionary<string, string>>(FormatAlias(alias), description: description,
+            CreateDictionaryOption(alias, propertyName, description, val => val);
+
+        public static Option<Dictionary<string, TValue>> CreateDictionaryOption<TValue>(string alias, string propertyName, string description,
+            Func<string, TValue> getValue) =>
+            new Option<Dictionary<string, TValue>>(FormatAlias(alias), description: description,
                 parseArgument: argResult =>
                 {
                     return argResult.Tokens
                         .ToList()
-                        .Select(token => token.Value.Split(new char[] { '=' }, 2))
-                        .ToDictionary(split => split[0], split => split[1]);
+                        .Select(token => token.Value.ParseKeyValuePair('='))
+                        .ToDictionary(kvp => kvp.Key, kvp => getValue(kvp.Value));
                 })
             {
-                Name = nameof(ManifestOptions.Variables),
+                Name = propertyName,
                 AllowMultipleArgumentsPerToken = false
             };
 

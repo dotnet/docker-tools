@@ -5,32 +5,25 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesOptions : CopyImagesOptions
     {
-        public IDictionary<string, ImportSourceCredentials> SourceCredentials { get; set; } =
-            new Dictionary<string, ImportSourceCredentials>();
+        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
     }
 
     public class CopyBaseImagesOptionsBuilder : CopyImagesOptionsBuilder
     {
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder =
+            new RegistryCredentialsOptionsBuilder();
+
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(new Option[]
-                {
-                    CreateDictionaryOption("source-creds", nameof(CopyBaseImagesOptions.SourceCredentials),
-                        "Named credentials that map to a source registry ((<registry>=<username>;<password>)",
-                        val =>
-                            {
-                                (string username, string password) = val.ParseKeyValuePair(';');
-                                return new ImportSourceCredentials(password, username);
-                            })
-                });
+            base.GetCliOptions().Concat(_registryCredentialsOptionsBuilder.GetCliOptions());
+
+        public override IEnumerable<Argument> GetCliArguments() =>
+            base.GetCliArguments().Concat(_registryCredentialsOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

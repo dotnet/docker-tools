@@ -35,10 +35,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string registry = DockerHelper.GetRegistry(fromImage) ?? "docker.io";
                     fromImage = DockerHelper.TrimRegistry(fromImage, registry);
 
-                    Options.SourceCredentials.TryGetValue(registry, out ImportSourceCredentials? sourceCreds);
+                    ImportSourceCredentials? importSourceCreds = null;
+                    if (Options.CredentialsOptions.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))
+                    {
+                        importSourceCreds = new ImportSourceCredentials(registryCreds.Password, registryCreds.Username);
+                    }
 
                     return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", fromImage, srcRegistryName: registry,
-                        sourceCredentials: sourceCreds);
+                        sourceCredentials: importSourceCreds);
                 });
 
             await Task.WhenAll(importTasks);

@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
             command.Options.RepoPrefix = "custom-repo/";
-            command.Options.SourceCredentials.Add("docker.io", new ImportSourceCredentials("pass", "user"));
+            command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
 
             const string runtimeRelativeDir = "1.0/runtime/os";
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));

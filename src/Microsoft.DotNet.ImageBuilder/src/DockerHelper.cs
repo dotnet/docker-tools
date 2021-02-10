@@ -193,7 +193,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static string GetRegistry(string imageName)
         {
             string firstSegment = imageName.Substring(0, imageName.IndexOf("/"));
-            if (firstSegment.Contains("."))
+            if (firstSegment.Contains(".") || firstSegment.Contains(":"))
             {
                 return firstSegment;
             }

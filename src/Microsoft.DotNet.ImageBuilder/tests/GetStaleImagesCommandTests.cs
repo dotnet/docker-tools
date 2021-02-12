@@ -1433,7 +1433,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 GetStaleImagesCommand command = new GetStaleImagesCommand(
                     this.ManifestToolServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object, this.gitHubClientFactory);
-                command.Options.SubscriptionsPath = this.subscriptionsPath;
+                command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;
                 command.Options.GitOptions.Email = "test";

@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             CopyBaseImagesCommand command = new CopyBaseImagesCommand(
-                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IHttpClientProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";

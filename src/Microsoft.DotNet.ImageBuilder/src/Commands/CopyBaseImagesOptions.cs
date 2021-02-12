@@ -12,18 +12,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyBaseImagesOptions : CopyImagesOptions
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
+
+        public SubscriptionOptions SubscriptionOptions { get; set; } = new SubscriptionOptions();
     }
 
     public class CopyBaseImagesOptionsBuilder : CopyImagesOptionsBuilder
     {
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder =
             new RegistryCredentialsOptionsBuilder();
+        private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new SubscriptionOptionsBuilder();
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions().Concat(_registryCredentialsOptionsBuilder.GetCliOptions());
+            base.GetCliOptions()
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
+                .Concat(_subscriptionOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments().Concat(_registryCredentialsOptionsBuilder.GetCliArguments());
+            base.GetCliArguments()
+                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
+                .Concat(_subscriptionOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

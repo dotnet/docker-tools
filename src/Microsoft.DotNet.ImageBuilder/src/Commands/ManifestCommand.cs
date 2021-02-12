@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public ManifestInfo Manifest { get; private set; }
 
-        public void LoadManifest()
+        public virtual void LoadManifest()
         {
             if (Manifest is null)
             {

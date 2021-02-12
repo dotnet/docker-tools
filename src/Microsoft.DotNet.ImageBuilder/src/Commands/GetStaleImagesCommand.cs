@@ -4,13 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
@@ -24,9 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>, IDisposable
     {
-        private readonly Dictionary<string, string> _gitRepoIdToPathMapping = new Dictionary<string, string>();
         private readonly Dictionary<string, string> _imageDigests = new Dictionary<string, string>();
-        private readonly SemaphoreSlim _gitRepoPathSemaphore = new SemaphoreSlim(1);
         private readonly object _imageDigestsLock = new object();
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
@@ -36,80 +31,55 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [ImportingConstructor]
         public GetStaleImagesCommand(
             IManifestToolService manifestToolService,
-            IHttpClientProvider httpClientFactory,
+            IHttpClientProvider httpClientProvider,
             ILoggerService loggerService,
             IGitHubClientFactory gitHubClientFactory)
         {
             _manifestToolService = manifestToolService;
             _loggerService = loggerService;
             _gitHubClientFactory = gitHubClientFactory;
-            _httpClient = httpClientFactory.GetClient();
+            _httpClient = httpClientProvider.GetClient();
         }
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";
 
         public override async Task ExecuteAsync()
         {
-            string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
+            string subscriptionsJson = File.ReadAllText(Options.SubscriptionOptions.SubscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
 
-            try
-            {
-                SubscriptionImagePaths[] results = await Task.WhenAll(
-                    subscriptions.Select(async s => new SubscriptionImagePaths
+            IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
+                (await SubscriptionHelper.GetSubscriptionManifestsAsync(
+                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient))
+                .Select(async subscriptionManifest =>
+                    new SubscriptionImagePaths
                     {
-                        SubscriptionId = s.Id,
-                        ImagePaths = (await GetPathsToRebuildAsync(s)).ToArray()
-                    }));
+                        SubscriptionId = subscriptionManifest.Subscription.Id,
+                        ImagePaths =
+                            (await GetPathsToRebuildAsync(subscriptionManifest.Subscription, subscriptionManifest.Manifest))
+                            .ToArray()
+                    });
 
-                // Filter out any results that don't have any images to rebuild
-                results = results
-                    .Where(result => result.ImagePaths.Any())
-                    .ToArray();
+            SubscriptionImagePaths[] results = await Task.WhenAll(getPathResults);
 
-                string outputString = JsonConvert.SerializeObject(results);
+            // Filter out any results that don't have any images to rebuild
+            results = results
+                .Where(result => result.ImagePaths.Any())
+                .ToArray();
 
-                _loggerService.WriteMessage(
-                    PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
-                        .Replace("\"", "\\\"")); // Escape all quotes
+            string outputString = JsonConvert.SerializeObject(results);
 
-                string formattedResults = JsonConvert.SerializeObject(results, Formatting.Indented);
-                _loggerService.WriteMessage(
-                    $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
-            }
-            finally
-            {
-                foreach (string repoPath in _gitRepoIdToPathMapping.Values)
-                {
-                    // The path to the repo is stored inside a zip extraction folder so be sure to delete that
-                    // zip extraction folder, not just the inner repo folder.
-                    Directory.Delete(new DirectoryInfo(repoPath).Parent.FullName, true);
-                }
-            }
+            _loggerService.WriteMessage(
+                PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
+                    .Replace("\"", "\\\"")); // Escape all quotes
+
+            string formattedResults = JsonConvert.SerializeObject(results, Formatting.Indented);
+            _loggerService.WriteMessage(
+                $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
         }
 
-        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription)
+        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription, ManifestInfo manifest)
         {
-            // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
-            // then there are no images that need to be inspected.
-            string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(Options.FilterOptions.OsType);
-            if (!string.IsNullOrEmpty(subscription.OsType) &&
-                !Regex.IsMatch(subscription.OsType, osTypeRegexPattern, RegexOptions.IgnoreCase))
-            {
-                return Enumerable.Empty<string>();
-            }
-
-            _loggerService.WriteMessage($"Processing subscription:  {subscription.Id}");
-
-            string repoPath = await GetGitRepoPath(subscription);
-
-            TempManifestOptions manifestOptions = new TempManifestOptions(Options.FilterOptions)
-            {
-                Manifest = Path.Combine(repoPath, subscription.Manifest.Path)
-            };
-
-            ManifestInfo manifest = ManifestInfo.Load(manifestOptions);
-
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
             List<string> pathsToRebuild = new List<string>();
@@ -213,28 +183,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
         }
 
-        private Task<string> GetGitRepoPath(Subscription sub)
-        {
-            string uniqueName = $"{sub.Manifest.Owner}-{sub.Manifest.Repo}-{sub.Manifest.Branch}";
-
-            return _gitRepoPathSemaphore.DoubleCheckedLockLookupAsync(_gitRepoIdToPathMapping, uniqueName,
-                () => GitHelper.DownloadAndExtractGitRepoArchiveAsync(_httpClient, sub.Manifest));
-        }
-
         public void Dispose()
         {
             _httpClient.Dispose();
-            _gitRepoPathSemaphore.Dispose();
-        }
-
-        private class TempManifestOptions : ManifestOptions, IFilterableOptions
-        {
-            public TempManifestOptions(ManifestFilterOptions filterOptions)
-            {
-                FilterOptions = filterOptions;
-            }
-
-            public ManifestFilterOptions FilterOptions { get; }
         }
     }
 }

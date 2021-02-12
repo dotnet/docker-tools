@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -16,31 +15,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptions GitOptions { get; set; } = new GitOptions();
 
-        public string SubscriptionsPath { get; set; } = string.Empty;
+        public SubscriptionOptions SubscriptionOptions { get; set; } = new SubscriptionOptions();
+
         public string VariableName { get; set; } = string.Empty;
     }
 
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
     {
-        private const string DefaultSubscriptionsPath = "subscriptions.json";
-
         private readonly GitOptionsBuilder _gitOptionsBuilder = new GitOptionsBuilder();
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
             new ManifestFilterOptionsBuilder();
+        private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new SubscriptionOptionsBuilder();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(
-                    new Option[]
-                    {
-                        CreateOption("subscriptions-path", nameof(GetStaleImagesOptions.SubscriptionsPath),
-                            $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').", DefaultSubscriptionsPath)
-                    })
+                .Concat(_subscriptionOptionsBuilder.GetCliOptions())
                 .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(_gitOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
+                .Concat(_subscriptionOptionsBuilder.GetCliArguments())
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
                 .Concat(_gitOptionsBuilder.GetCliArguments())
                 .Concat(

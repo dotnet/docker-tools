@@ -11,6 +11,7 @@ using Microsoft.Azure.Management.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.Rest.Azure;
 using Polly;
 using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
 
@@ -21,23 +22,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         where TOptions : CopyImagesOptions, new()
         where TOptionsBuilder : CopyImagesOptionsBuilder, new()
     {
-        private readonly Lazy<string> _registryName;
-
         public CopyImagesCommand(IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
         {
             AzureManagementFactory = azureManagementFactory;
             LoggerService = loggerService;
-
-            _registryName = new Lazy<string>(() => Manifest.Registry.TrimEnd(".azurecr.io"));
         }
-
-        public string RegistryName => _registryName.Value;
 
         public IAzureManagementFactory AzureManagementFactory { get; }
         public ILoggerService LoggerService { get; }
 
-        protected async Task ImportImageAsync(string destTagName, string srcTagName, string? srcRegistryName = null, string? srcResourceId = null,
-            ImportSourceCredentials? sourceCredentials = null)
+        protected string GetBaseRegistryName(string registry) => registry.TrimEnd(".azurecr.io");
+
+        protected async Task ImportImageAsync(string destTagName, string destRegistryName, string srcTagName,
+            string? srcRegistryName = null, string? srcResourceId = null, ImportSourceCredentials? sourceCredentials = null)
         {
             AzureCredentials credentials = SdkContext.AzureCredentialsFactory.FromServicePrincipal(
                 Options.ServicePrincipal.ClientId,
@@ -68,13 +65,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Build();
                     await policy.ExecuteAsync(async () =>
                     {
-                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, RegistryName, importParams);
+                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, destRegistryName, importParams);
                         return null;
                     });
                 }
                 catch (Exception e)
                 {
-                    LoggerService.WriteMessage($"Importing Failure: {destTagName}{Environment.NewLine}{e}");
+                    string errorMsg = $"Importing Failure: {destTagName}";
+                    if (e is CloudException cloudException)
+                    {
+                        errorMsg += Environment.NewLine + cloudException.Body.Message;
+                    }
+
+                    errorMsg += Environment.NewLine + e.ToString();
+
+                    LoggerService.WriteMessage(errorMsg);
+
                     throw;
                 }
             }

@@ -47,9 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             LoggerService.WriteHeading("COPYING IMAGES");
 
             IEnumerable<ManifestInfo> manifests;
+            string fullRegistryName;
             if (Options.SubscriptionOptions.SubscriptionsPath is null)
             {
                 manifests = new ManifestInfo[] { Manifest };
+                fullRegistryName = Manifest.Registry;
             }
             else
             {
@@ -63,12 +65,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient,
                         options => options.RegistryOverride = Options.RegistryOverride))
                     .Select(subscriptionManifest => subscriptionManifest.Manifest);
+                fullRegistryName = Options.RegistryOverride;
             }
 
             IEnumerable<Task> copyImageTasks = manifests
                 .SelectMany(manifest => GetFromImages(manifest))
                 .Distinct()
-                .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(Manifest.Registry)));
+                .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(fullRegistryName)));
 
             await Task.WhenAll(copyImageTasks);
         }

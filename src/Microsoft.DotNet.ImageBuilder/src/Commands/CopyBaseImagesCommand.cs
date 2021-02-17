@@ -46,11 +46,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 
-            IEnumerable<Task> copyImageTasks;
+            IEnumerable<ManifestInfo> manifests;
             if (Options.SubscriptionOptions.SubscriptionsPath is null)
             {
-                copyImageTasks = GetFromImages(Manifest)
-                    .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(Manifest.Registry)));
+                manifests = new ManifestInfo[] { Manifest };
             }
             else
             {
@@ -59,15 +58,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     throw new InvalidOperationException($"{Options.RegistryOverride} must be set.");
                 }
 
-                IEnumerable<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests =
-                    await SubscriptionHelper.GetSubscriptionManifestsAsync(
+                manifests =
+                    (await SubscriptionHelper.GetSubscriptionManifestsAsync(
                         Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient,
-                        options => options.RegistryOverride = Options.RegistryOverride);
-                copyImageTasks = subscriptionManifests
-                    .SelectMany(subscriptionManifest => GetFromImages(subscriptionManifest.Manifest))
-                    .Distinct()
-                    .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(Options.RegistryOverride)));
+                        options => options.RegistryOverride = Options.RegistryOverride))
+                    .Select(subscriptionManifest => subscriptionManifest.Manifest);
             }
+
+            IEnumerable<Task> copyImageTasks = manifests
+                .SelectMany(manifest => GetFromImages(manifest))
+                .Distinct()
+                .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(Manifest.Registry)));
 
             await Task.WhenAll(copyImageTasks);
         }

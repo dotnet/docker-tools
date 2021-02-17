@@ -9,6 +9,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
+using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -58,10 +59,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     throw new InvalidOperationException($"{Options.RegistryOverride} must be set.");
                 }
 
-                copyImageTasks =
-                    (await SubscriptionHelper.GetSubscriptionManifestsAsync(
+                IEnumerable<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests =
+                    await SubscriptionHelper.GetSubscriptionManifestsAsync(
                         Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient,
-                        options => options.RegistryOverride = Options.RegistryOverride))
+                        options => options.RegistryOverride = Options.RegistryOverride);
+                copyImageTasks = subscriptionManifests
                     .SelectMany(subscriptionManifest => GetFromImages(subscriptionManifest.Manifest))
                     .Distinct()
                     .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(Options.RegistryOverride)));

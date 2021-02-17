@@ -36,5 +36,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
             return true;
         }
+
+        public static bool IsSubsetOf<T>(this IEnumerable<T> source, IEnumerable<T> items) =>
+            !source.Except(items).Any();
     }
 }

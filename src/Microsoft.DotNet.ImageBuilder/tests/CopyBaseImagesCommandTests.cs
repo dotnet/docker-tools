@@ -44,6 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ResourceGroup = "my resource group";
             command.Options.RepoPrefix = "custom-repo/";
             command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
+            command.Options.CredentialsOptions.Credentials.Add("my-registry.com", new RegistryCredentials("me", "secret"));
 
             const string runtimeRelativeDir = "1.0/runtime/os";
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -70,6 +71,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreatePlatformWithRepoBuildArg(
                             CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext, "$REPO:amd64"),
                             $"{registry}/{command.Options.RepoPrefix}aspnet",
+                            new string[] { "amd64" }))),
+                CreateRepo("test",
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/test/os/amd64", tempFolderContext, "my-registry.com/repo:tag"),
                             new string[] { "amd64" })))
             );
             manifest.Registry = registry;
@@ -79,10 +85,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            var expectedTagInfos = new (string SourceImage, string TargetTag)[]
+            var expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
             {
-                ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag" ),
-                ( "amd64/base:tag", $"{command.Options.RepoPrefix}amd64/base:tag" )
+                ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag", "docker.io", "user", "pass" ),
+                ( "amd64/base:tag", $"{command.Options.RepoPrefix}amd64/base:tag", "docker.io", "user", "pass" ),
+                ( "my-registry.com/repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
             };
 
             foreach (var expectedTagInfo in expectedTagInfos)
@@ -92,9 +99,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         command.Options.ResourceGroup,
                         manifest.Registry,
                         It.Is<ImportImageParametersInner>(parameters =>
-                            parameters.Source.RegistryUri == "docker.io" &&
-                            parameters.Source.Credentials.Password == "pass" &&
-                            parameters.Source.Credentials.Username == "user" &&
+                            parameters.Source.RegistryUri == expectedTagInfo.Registry &&
+                            parameters.Source.Credentials.Password == expectedTagInfo.Password &&
+                            parameters.Source.Credentials.Username == expectedTagInfo.Username &&
                             parameters.Source.SourceImage == expectedTagInfo.SourceImage &&
                             TestHelper.CompareLists(new List<string> { expectedTagInfo.TargetTag }, parameters.TargetTags)),
                         It.IsAny<Dictionary<string, List<string>>>(),

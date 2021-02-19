@@ -83,7 +83,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private Task CopyImageAsync(string fromImage, string destinationRegistryName)
         {
             string registry = DockerHelper.GetRegistry(fromImage) ?? "docker.io";
-            fromImage = DockerHelper.TrimRegistry(fromImage, registry);
 
             ImportSourceCredentials? importSourceCreds = null;
             if (Options.CredentialsOptions.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))

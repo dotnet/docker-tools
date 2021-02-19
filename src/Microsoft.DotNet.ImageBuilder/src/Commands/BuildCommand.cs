@@ -624,12 +624,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </remarks>
         private string GetFromImageTag(string fromImage, string? registry)
         {
-            if (DockerHelper.IsInRegistry(fromImage, registry) || Options.SourceRepoPrefix is null)
+            if (DockerHelper.IsInRegistry(fromImage, registry) ||
+                DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
+                || Options.SourceRepoPrefix is null)
             {
                 return fromImage;
             }
 
-            return $"{Manifest.Registry}/{Options.SourceRepoPrefix}{DockerHelper.TrimRegistry(fromImage)}";
+            return $"{Manifest.Registry}/{Options.SourceRepoPrefix}{TrimInternallyOwnedRegistry(fromImage)}";
         }
 
         /// <summary>
@@ -643,16 +645,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </remarks>
         private string GetFromImagePublicTag(string fromImage)
         {
-            if (DockerHelper.IsInRegistry(fromImage, Manifest.Registry) ||
-                DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry))
+            string trimmed = TrimInternallyOwnedRegistry(fromImage);
+            if (trimmed == fromImage)
             {
-                return $"{Manifest.Model.Registry}/{DockerHelper.TrimRegistry(fromImage)}";
+                return trimmed;
             }
             else
             {
-                return fromImage;
+                return $"{Manifest.Model.Registry}/{trimmed}";
             }
         }
+
+        private string TrimInternallyOwnedRegistry(string imageTag) =>
+            IsInInternallyOwnedRegistry(imageTag) ?
+                DockerHelper.TrimRegistry(imageTag) :
+                imageTag;
+
+        private bool IsInInternallyOwnedRegistry(string imageTag) =>
+            DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
+            DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
 
         private void PullBaseImages()
         {

@@ -2535,32 +2535,42 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Scenario simulates one of the .NET sample images whose base image is considered external even though it's mcr.microsoft.com.
+        /// Tests the logic of image mirroring when the base image is considered to be external from a graph perspective.
         /// </summary>
-        [Fact]
-        public async Task BuildCommand_MirroredImages_Sample()
+        [Theory]
+        [InlineData("mcr.microsoft.com", "mcr.microsoft.com")]
+        [InlineData("other-registry.com", "mcr.microsoft.com")]
+        public async Task BuildCommand_MirroredImages_External(string baseImageRegistry, string manifestRegistry)
         {
-            const string Registry = "mcr.microsoft.com";
             const string RegistryOverride = "dotnetdocker.azurecr.io";
             const string RuntimeRepo = "runtime";
             const string SamplesRepo = "samples";
             const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
             const string SampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
             const string Tag = "tag";
+            const string SourceRepoPrefix = "mirror/";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
+            bool isExternallyOwnedBaseImage = baseImageRegistry != manifestRegistry;
+
+            string baseImageRepoPrefix = $"{baseImageRegistry}";
+            if (isExternallyOwnedBaseImage)
+            {
+                baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{baseImageRegistry}";
+            }
+
             dockerServiceMock
-                .Setup(o => o.GetImageDigest($"{Registry}/{RuntimeRepo}:{Tag}", false))
-                .Returns($"{Registry}/{RuntimeRepo}@{RuntimeDigest}");
+                .Setup(o => o.GetImageDigest($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false))
+                .Returns($"{baseImageRepoPrefix}/{RuntimeRepo}@{RuntimeDigest}");
 
             dockerServiceMock
                 .Setup(o => o.GetImageDigest($"{RegistryOverride}/{SamplesRepo}:{Tag}", false))
                 .Returns($"{RegistryOverride}/{SamplesRepo}@{SampleDigest}");
 
             string sampleDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-                "1.0/samples/os", tempFolderContext, $"{Registry}/{RuntimeRepo}:{Tag}");
+                "1.0/samples/os", tempFolderContext, $"{baseImageRegistry}/{RuntimeRepo}:{Tag}");
 
             const string dockerfileCommitSha = "mycommit";
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -2577,6 +2587,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = RegistryOverride;
+            command.Options.SourceRepoPrefix = SourceRepoPrefix;
 
             const string ProductVersion = "1.0.1";
 
@@ -2591,7 +2602,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         productVersion: ProductVersion))
             );
-            manifest.Registry = Registry;
+            manifest.Registry = manifestRegistry;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -2608,12 +2619,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>()));
             dockerServiceMock.Verify(o => o.Architecture);
 
-            dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageDigest($"{Registry}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageDigest($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+
+            if (isExternallyOwnedBaseImage)
+            {
+                dockerServiceMock.Verify(o =>
+                    o.CreateTag($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRegistry}/{RuntimeRepo}:{Tag}", false));
+            }
 
             dockerServiceMock.VerifyNoOtherCalls();
         }

@@ -177,7 +177,11 @@ namespace Microsoft.DotNet.ImageBuilder
             return imageName;
         }
 
+        public static string TrimRegistry(string tag) => TrimRegistry(tag, GetRegistry(tag));
+
         public static string TrimRegistry(string tag, string registry) => tag.TrimStart($"{registry}/");
+
+        public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
 
         /// <remarks>
         /// This method depends on the experimental Docker CLI `manifest` command.  As a result, this method
@@ -192,11 +196,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetRegistry(string imageName)
         {
-            string firstSegment = imageName.Substring(0, imageName.IndexOf("/"));
-            if (firstSegment.Contains(".") || firstSegment.Contains(":"))
+            int separatorIndex = imageName.IndexOf("/");
+            if (separatorIndex >= 0)
             {
-                return firstSegment;
+                string firstSegment = imageName.Substring(0, separatorIndex);
+                if (firstSegment.Contains(".") || firstSegment.Contains(":"))
+                {
+                    return firstSegment;
+                }
             }
+            
 
             return null;
         }

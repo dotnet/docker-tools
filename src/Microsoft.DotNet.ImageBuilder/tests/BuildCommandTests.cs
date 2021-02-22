@@ -944,8 +944,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task BuildCommand_Caching_SharedDockerfile_MissingSourceImageInfoEntry()
         {
-            const string runtimeDepsRepo = "runtime-deps";
-            const string runtimeDeps2Repo = "runtime-deps2";
+            string runtimeDepsRepo = $"runtime-deps";
+            string runtimeDeps2Repo = $"runtime-deps2";
             string runtimeDepsLinuxDigest = $"{runtimeDepsRepo}@sha1-linux";
             string runtimeDepsWindowsDigest = $"{runtimeDepsRepo}@sha1-windows";
             string runtimeDeps2Digest = $"{runtimeDeps2Repo}@sha1-linux";
@@ -2166,6 +2166,471 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+
+            dockerServiceMock.VerifyNoOtherCalls();
+        }
+
+        /// <summary>
+        /// Verifies the command pulls base images from a mirror location.
+        /// </summary>
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task BuildCommand_MirroredImages(bool hasCachedImage)
+        {
+            const string Registry = "mcr.microsoft.com";
+            const string RegistryOverride = "dotnetdocker.azurecr.io";
+            const string RuntimeDepsRepo = "runtime-deps";
+            const string RuntimeRepo = "runtime";
+            const string AspnetRepo = "aspnet";
+            const string RuntimeDepsDigest = "sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
+            const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            const string AspnetDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+            const string Tag = "tag";
+            const string BaseImageRepo = "baserepo";
+            string baseImageTag = $"{BaseImageRepo}:basetag";
+
+            const string SourceRepoPrefix = "my-mirror/";
+            string mirrorBaseTag = $"{RegistryOverride}/{SourceRepoPrefix}{baseImageTag}";
+            string baseImageDigest =
+                $"{BaseImageRepo}@sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
+            string mirrorBaseImageDigest =
+                $"{RegistryOverride}/{SourceRepoPrefix}{baseImageDigest}";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            if (hasCachedImage)
+            {
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{Registry}/{RuntimeDepsRepo}:{Tag}", false))
+                    .Returns($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}");
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{Registry}/{RuntimeRepo}:{Tag}", false))
+                    .Returns($"{Registry}/{RuntimeRepo}@{RuntimeDigest}");
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{Registry}/{AspnetRepo}:{Tag}", false))
+                    .Returns($"{Registry}/{AspnetRepo}@{AspnetDigest}");
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false))
+                    .Returns($"{RegistryOverride}/{RuntimeDepsRepo}@{RuntimeDepsDigest}");
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false))
+                    .Returns($"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}");
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{AspnetRepo}:{Tag}", false))
+                    .Returns($"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}");
+            }
+            else
+            {
+                // Locally built images will not have a digest until they get pushed. So don't return a digest until
+                // the appropriate request.
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false))
+                    .Returns(callCount => callCount > 2 ? $"{RegistryOverride}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false))
+                    .Returns(callCount => callCount > 1 ? $"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}" : null);
+
+                dockerServiceMock
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{AspnetRepo}:{Tag}", false))
+                    .Returns(callCount => callCount > 0 ? $"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}" : null);
+            }
+            
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest(mirrorBaseTag, false))
+                .Returns(mirrorBaseImageDigest);
+
+            DateTime createdDate = DateTime.Now.ToUniversalTime();
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate(It.IsAny<string>(), false))
+                .Returns(createdDate);
+
+            string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
+
+            string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/runtime/os", tempFolderContext, $"$REPO:{Tag}");
+
+            string aspnetDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/aspnet/os", tempFolderContext, $"$REPO:{Tag}");
+
+            const string dockerfileCommitSha = "mycommit";
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(dockerfileCommitSha);
+
+            BuildCommand command = new BuildCommand(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+            command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.SourceRepoPrefix = SourceRepoPrefix;
+            command.Options.RegistryOverride = RegistryOverride;
+
+            const string ProductVersion = "1.0.1";
+
+            List<RepoData> sourceRepos = new List<RepoData>
+            {
+                new RepoData
+                {
+                    Repo = RuntimeDepsRepo,
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = ProductVersion,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = runtimeDepsDockerfileRelativePath,
+                                    Architecture = "amd64",
+                                    OsType = "Linux",
+                                    OsVersion = "focal",
+                                    Digest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                                    BaseImageDigest = hasCachedImage ? mirrorBaseImageDigest : mirrorBaseImageDigest + "b",
+                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                    SimpleTags = new List<string>
+                                    {
+                                        Tag
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                new RepoData
+                {
+                    Repo = RuntimeRepo,
+                    Images =
+                    {
+                        new ImageData
+                        {
+                            ProductVersion = ProductVersion,
+                            Platforms =
+                            {
+                                new PlatformData
+                                {
+                                    Dockerfile = runtimeDockerfileRelativePath,
+                                    Architecture = "amd64",
+                                    OsType = "Linux",
+                                    OsVersion = "focal",
+                                    Digest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
+                                    BaseImageDigest = hasCachedImage ?
+                                        $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" :
+                                        $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" + "b",
+                                    CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
+                                    SimpleTags = new List<string>
+                                    {
+                                        Tag
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = sourceRepos.ToList()
+            };
+
+            string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
+            File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(RuntimeDepsRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { Tag })
+                        },
+                        productVersion: ProductVersion)),
+                CreateRepo(RuntimeRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatformWithRepoBuildArg(
+                                runtimeDockerfileRelativePath,
+                                $"{RegistryOverride}/{RuntimeDepsRepo}",
+                                new string[] { Tag })
+                        },
+                        productVersion: ProductVersion)),
+                CreateRepo(AspnetRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatformWithRepoBuildArg(
+                                aspnetDockerfileRelativePath,
+                                $"{RegistryOverride}/{RuntimeRepo}",
+                                new string[] { Tag })
+                        },
+                        productVersion: ProductVersion))
+            );
+            manifest.Registry = Registry;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos = new List<RepoData>
+                {
+                    new RepoData
+                    {
+                        Repo = RuntimeDepsRepo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDepsDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Digest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                                        BaseImageDigest = baseImageDigest,
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                        Created = createdDate,
+                                        IsUnchanged = hasCachedImage,
+                                        SimpleTags = new List<string>
+                                        {
+                                            Tag
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = RuntimeRepo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = runtimeDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Digest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
+                                        BaseImageDigest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDockerfileRelativePath}",
+                                        Created = createdDate,
+                                        IsUnchanged = hasCachedImage,
+                                        SimpleTags = new List<string>
+                                        {
+                                            Tag
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = AspnetRepo,
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = ProductVersion,
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = aspnetDockerfileRelativePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Digest = $"{Registry}/{AspnetRepo}@{AspnetDigest}",
+                                        BaseImageDigest = $"{Registry}/{RuntimeRepo}@{RuntimeDigest}",
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{aspnetDockerfileRelativePath}",
+                                        Created = createdDate,
+                                        SimpleTags = new List<string>
+                                        {
+                                            Tag
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
+
+            Assert.Equal(expectedOutput, actualOutput);
+
+            dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, false));
+            dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, baseImageTag, false));
+
+            dockerServiceMock.Verify(
+                o => o.BuildImage(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>()));
+            dockerServiceMock.Verify(o => o.Architecture);
+
+            if (hasCachedImage)
+            {
+                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", false));
+                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+
+                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", false));
+                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+            }
+            else
+            {
+                dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+            }
+
+            dockerServiceMock.Verify(o => o.GetImageDigest(mirrorBaseTag, false));
+            
+            dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+
+            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+
+            dockerServiceMock.VerifyNoOtherCalls();
+        }
+
+        /// <summary>
+        /// Tests the logic of image mirroring when the base image is considered to be external from a graph perspective.
+        /// </summary>
+        [Theory]
+        [InlineData("mcr.microsoft.com", "mcr.microsoft.com")]
+        [InlineData("other-registry.com", "mcr.microsoft.com")]
+        public async Task BuildCommand_MirroredImages_External(string baseImageRegistry, string manifestRegistry)
+        {
+            const string RegistryOverride = "dotnetdocker.azurecr.io";
+            const string RuntimeRepo = "runtime";
+            const string SamplesRepo = "samples";
+            const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            const string SampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+            const string Tag = "tag";
+            const string SourceRepoPrefix = "mirror/";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            bool isExternallyOwnedBaseImage = baseImageRegistry != manifestRegistry;
+
+            string baseImageRepoPrefix = $"{baseImageRegistry}";
+            if (isExternallyOwnedBaseImage)
+            {
+                baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{baseImageRegistry}";
+            }
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false))
+                .Returns($"{baseImageRepoPrefix}/{RuntimeRepo}@{RuntimeDigest}");
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigest($"{RegistryOverride}/{SamplesRepo}:{Tag}", false))
+                .Returns($"{RegistryOverride}/{SamplesRepo}@{SampleDigest}");
+
+            string sampleDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
+                "1.0/samples/os", tempFolderContext, $"{baseImageRegistry}/{RuntimeRepo}:{Tag}");
+
+            const string dockerfileCommitSha = "mycommit";
+            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(dockerfileCommitSha);
+
+            BuildCommand command = new BuildCommand(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.RegistryOverride = RegistryOverride;
+            command.Options.SourceRepoPrefix = SourceRepoPrefix;
+
+            const string ProductVersion = "1.0.1";
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(SamplesRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                sampleDockerfileRelativePath,
+                                new string[] { Tag })
+                        },
+                        productVersion: ProductVersion))
+            );
+            manifest.Registry = manifestRegistry;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            dockerServiceMock.Verify(
+                o => o.BuildImage(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>()));
+            dockerServiceMock.Verify(o => o.Architecture);
+
+            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageDigest($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+
+            if (isExternallyOwnedBaseImage)
+            {
+                dockerServiceMock.Verify(o =>
+                    o.CreateTag($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRegistry}/{RuntimeRepo}:{Tag}", false));
+            }
 
             dockerServiceMock.VerifyNoOtherCalls();
         }

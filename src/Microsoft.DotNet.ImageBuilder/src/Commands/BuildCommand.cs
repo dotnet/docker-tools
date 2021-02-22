@@ -51,10 +51,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            PullBaseImages();
-
             ExecuteWithUser(() =>
             {
+                PullBaseImages();
+
                 BuildImages();
 
                 if (_builtTags.Any())
@@ -149,9 +149,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Created = createdDate;
         }
 
-        private static void SetPlatformDataBaseDigest(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
+        private void SetPlatformDataBaseDigest(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
         {
-            if (platform.BaseImageDigest == null && platform.PlatformInfo.FinalStageFromImage != null)
+            string baseImageDigest = platform.BaseImageDigest;
+            if (platform.BaseImageDigest is null && platform.PlatformInfo.FinalStageFromImage is not null)
             {
                 if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData? basePlatformData))
                 {
@@ -165,8 +166,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     throw new InvalidOperationException($"Digest for platform '{basePlatformData.GetIdentifier()}' has not been calculated yet.");
                 }
 
-                platform.BaseImageDigest = basePlatformData.Digest;
+                baseImageDigest = basePlatformData.Digest;
             }
+
+            if (platform.PlatformInfo.FinalStageFromImage is not null)
+            {
+                baseImageDigest = DockerHelper.GetDigestString(
+                    DockerHelper.GetRepo(GetFromImagePublicTag(platform.PlatformInfo.FinalStageFromImage)),
+                    DockerHelper.GetDigestSha(baseImageDigest));
+            }
+
+            platform.BaseImageDigest = baseImageDigest;
         }
 
         private void SetPlatformDataLayers(PlatformData platform, string tag)
@@ -248,7 +258,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             if (platformData != null)
                             {
                                 platformData.BaseImageDigest =
-                                   _imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+                                   _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
                             }
                         }
                     }
@@ -465,7 +475,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
-            string currentBaseImageDigest = _imageDigestCache.GetImageDigest(platform.FinalStageFromImage, Options.IsDryRun);
+            string currentBaseImageDigest = _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
             bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
                 DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
 
@@ -584,6 +594,77 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 
+        /// <summary>
+        /// Returns the tag to use for pulling the image of a FROM instruction.
+        /// </summary>
+        /// <param name="fromImage">Tag of the FROM image.</param>
+        private string GetFromImagePullTag(string fromImage) =>
+            // Provides the raw registry value from the manifest (e.g. mcr.microsoft.com). This accounts for images that
+            // are classified as external within the model but they are owned internally and not mirrored. An example of
+            // this is sample images. By comparing their base image tag to that raw registry value from the manifest, we
+            // can know that these are owned internally and not to attempt to pull them from the mirror location.
+            GetFromImageTag(fromImage, Manifest.Model.Registry);
+
+        /// <summary>
+        /// Returns the tag to use for interacting with the image of a FROM instruction that has been pulled or built locally.
+        /// </summary>
+        /// <param name="fromImage">Tag of the FROM image.</param>
+        private string GetFromImageLocalTag(string fromImage) =>
+            // Provides the overridable value of the registry (e.g. dotnetdocker.azurecr.io) because that is the registry that
+            // would be used for tags that exist locally.
+            GetFromImageTag(fromImage, Manifest.Registry);
+
+        /// <summary>
+        /// Gets the tag to use for the image of a FROM instruction.
+        /// </summary>
+        /// <param name="fromImage">Tag of the FROM image.</param>
+        /// <param name="registry">Registry to use for comparing against the tag to determine if it's owned internally or external.</param>
+        /// <remarks>
+        /// This is meant to provide support for external images that need to be pulled from the mirror location.
+        /// </remarks>
+        private string GetFromImageTag(string fromImage, string? registry)
+        {
+            if (DockerHelper.IsInRegistry(fromImage, registry) ||
+                DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
+                || Options.SourceRepoPrefix is null)
+            {
+                return fromImage;
+            }
+
+            return $"{Manifest.Registry}/{Options.SourceRepoPrefix}{TrimInternallyOwnedRegistry(fromImage)}";
+        }
+
+        /// <summary>
+        /// Returns the tag that represents the publicly available tag of a FROM instruction.
+        /// </summary>
+        /// <param name="fromImage">Tag of the FROM image.</param>
+        /// <remarks>
+        /// This compares the registry of the image tag to determine if it's internally owned. If so, it returns
+        /// the tag using the raw (non-overriden) registry from the manifest (e.g. mcr.microsoft.com). Otherwise,
+        /// it returns the image tag unchanged.
+        /// </remarks>
+        private string GetFromImagePublicTag(string fromImage)
+        {
+            string trimmed = TrimInternallyOwnedRegistry(fromImage);
+            if (trimmed == fromImage)
+            {
+                return trimmed;
+            }
+            else
+            {
+                return $"{Manifest.Model.Registry}/{trimmed}";
+            }
+        }
+
+        private string TrimInternallyOwnedRegistry(string imageTag) =>
+            IsInInternallyOwnedRegistry(imageTag) ?
+                DockerHelper.TrimRegistry(imageTag) :
+                imageTag;
+
+        private bool IsInInternallyOwnedRegistry(string imageTag) =>
+            DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
+            DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
+
         private void PullBaseImages()
         {
             if (!Options.IsSkipPullingEnabled)
@@ -592,23 +673,43 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> baseImages = Manifest.GetExternalFromImages().ToArray();
                 if (baseImages.Any())
                 {
-                    foreach (string fromImage in baseImages)
+                    List<string> pulledTags = new List<string>();
+                    foreach (string pullTag in baseImages.Select(tag => GetFromImagePullTag(tag)))
                     {
-                        _dockerService.PullImage(fromImage, Options.IsDryRun);
+                        pulledTags.Add(pullTag);
+                        _dockerService.PullImage(pullTag, Options.IsDryRun);
                     }
 
                     IEnumerable<string> finalStageExternalFromImages = Manifest.GetFilteredPlatforms()
                         .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage))
-                        .Select(platform => platform.FinalStageFromImage)
+                        .Select(platform => GetFromImagePullTag(platform.FinalStageFromImage))
                         .Distinct();
+
+                    if (!finalStageExternalFromImages.IsSubsetOf(pulledTags))
+                    {
+                        throw new InvalidOperationException(
+                            "The following tags are identified as final stage tags but were not pulled:" +
+                            Environment.NewLine +
+                            string.Join(", ", finalStageExternalFromImages.Except(pulledTags).ToArray()));
+                    }
 
                     Parallel.ForEach(finalStageExternalFromImages, fromImage =>
                     {
                         // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
                         // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
-                        // greater change the tag could be updated resulting in a different digest returned than what was
+                        // greater chance the tag could be updated resulting in a different digest returned than what was
                         // originally pulled.
                         _imageDigestCache.GetImageDigest(fromImage, Options.IsDryRun);
+                    });
+
+                    // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles
+                    Parallel.ForEach(baseImages, fromImage =>
+                    {
+                        string pullTag = GetFromImagePullTag(fromImage);
+                        if (pullTag != fromImage)
+                        {
+                            _dockerService.CreateTag(pullTag, fromImage, Options.IsDryRun);
+                        }
                     });
                 }
                 else

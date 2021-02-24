@@ -12,17 +12,17 @@
     {
       "owner": "dotnet",
       "name": "dotnet-docker",
-      "branch": "master"
+      "branch": "main"
     },
     {
       "owner": "dotnet",
       "name": "dotnet-buildtools-prereqs-docker",
-      "branch": "master"
+      "branch": "main"
     },
     {
       "owner": "microsoft",
       "name": "dotnet-framework-docker",
-      "branch": "master"
+      "branch": "main"
     }
   ]
 }

@@ -292,7 +292,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     Owner = "dotnetOwner",
                     Repo = "versionsRepo",
-                    Branch = "masterBranch",
+                    Branch = "mainBranch",
                     Path = "docker/image-info.json"
                 }
             };

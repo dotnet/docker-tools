@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             new Option[]
             {
                 CreateOption<string?>("azdo-repo", nameof(AzdoOptions.AzdoRepo), "Azure DevOps repo"),
-                CreateOption<string?>("azdo-branch", nameof(AzdoOptions.AzdoBranch), "Azure DevOps branch (default: master)", "master"),
+                CreateOption<string?>("azdo-branch", nameof(AzdoOptions.AzdoBranch), "Azure DevOps branch (default: main)", "main"),
                 CreateOption<string?>("azdo-path", nameof(AzdoOptions.AzdoPath), "Azure DevOps path"),
             };
     }

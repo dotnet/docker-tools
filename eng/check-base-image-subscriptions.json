@@ -3,14 +3,14 @@
     "manifest": {
       "owner": "dotnet",
       "repo": "dotnet-docker",
-      "branch": "master",
+      "branch": "main",
       "path": "manifest.json"
     },
     "imageInfo": {
       "owner": "dotnet",
       "repo": "versions",
       "branch": "master",
-      "path": "build-info/docker/image-info.dotnet-dotnet-docker-master.json"
+      "path": "build-info/docker/image-info.dotnet-dotnet-docker-main.json"
     },
     "pipelineTrigger": {
       "id": 373,
@@ -41,14 +41,14 @@
     "manifest": {
       "owner": "dotnet",
       "repo": "dotnet-docker",
-      "branch": "master",
+      "branch": "main",
       "path": "manifest.samples.json"
     },
     "imageInfo": {
       "owner": "dotnet",
       "repo": "versions",
       "branch": "master",
-      "path": "build-info/docker/image-info.dotnet-dotnet-docker-master-samples.json"
+      "path": "build-info/docker/image-info.dotnet-dotnet-docker-main-samples.json"
     },
     "pipelineTrigger": {
       "id": 376,
@@ -59,14 +59,14 @@
     "manifest": {
       "owner": "Microsoft",
       "repo": "dotnet-framework-docker",
-      "branch": "master",
+      "branch": "main",
       "path": "manifest.samples.json"
     },
     "imageInfo": {
       "owner": "dotnet",
       "repo": "versions",
       "branch": "master",
-      "path": "build-info/docker/image-info.microsoft-dotnet-framework-docker-master-samples.json"
+      "path": "build-info/docker/image-info.microsoft-dotnet-framework-docker-main-samples.json"
     },
     "pipelineTrigger": {
       "id": 374,

@@ -104,10 +104,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         SetPlatformDataDigest(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
+                        SetPlatformDataLayers(platform, tag.FullyQualifiedName);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
-                    SetPlatformDataLayers(platform, tag.FullyQualifiedName);
                 }
 
                 if (!pushTags.Any())

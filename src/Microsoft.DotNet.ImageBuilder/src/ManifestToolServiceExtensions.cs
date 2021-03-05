@@ -11,6 +11,20 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ManifestToolServiceExtensions
     {
+        public static IEnumerable<string> GetImageLayers(this IManifestToolService manifestToolService, string tag, bool isDryRun)
+        {
+            IEnumerable<JObject> tagManifests = manifestToolService.Inspect(tag, isDryRun).OfType<JObject>();
+
+            int manifestCount = tagManifests.Count();
+            if (manifestCount != 1)
+            {
+                throw new InvalidOperationException(
+                    $"'{tag}' is expected to be a concrete tag with 1 manifest. It has '{manifestCount}' manifests.");
+            }
+
+            return tagManifests.First()["Layers"].ToObject<List<string>>();
+        }
+
         public static string GetManifestDigestSha(
             this IManifestToolService manifestToolService, ManifestMediaType mediaType, string tag, bool isDryRun)
         {

@@ -55,20 +55,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return trimmedDigests.Split(' ');
         }
 
-        public static IEnumerable<string> GetImageLayers(string image, bool isDryRun)
-        {
-            string layersBlob = ExecuteCommandWithFormat(
-                "inspect", "index .RootFS.Layers", "Failed to retrieve image layers", image, isDryRun);
-            IEnumerable<string> layers = layersBlob.TrimStart('[').TrimEnd(']').Split(' ');
-
-            if (!isDryRun && !layers.Any())
-            {
-                throw new InvalidOperationException($"No layers were found for the image '{image}'");
-            }
-
-            return layers;
-        }
-
         public static long GetImageSize(string image, bool isDryRun)
         {
             string size = ExecuteCommandWithFormat(

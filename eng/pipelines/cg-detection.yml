@@ -1,0 +1,11 @@
+trigger:
+  branches:
+    include:
+    - main
+pr: none
+
+variables:
+- template: ../common/templates/variables/common.yml
+
+jobs:
+- template: ../common/templates/jobs/cg-detection.yml

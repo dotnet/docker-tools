@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         string GetImageDigest(string image, bool isDryRun);
 
-        IEnumerable<string> GetImageLayers(string image, bool isDryRun);
+        IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun);
 
         void PushImage(string tag, bool isDryRun);
 

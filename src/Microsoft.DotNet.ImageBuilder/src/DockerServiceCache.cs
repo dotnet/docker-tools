@@ -42,8 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder
         public string GetImageDigest(string image, bool isDryRun) =>
             _imageDigestCache.GetImageDigest(image, isDryRun);
 
-        public IEnumerable<string> GetImageLayers(string image, bool isDryRun) =>
-            _imageLayersCache.GetOrAdd(image, _ => _inner.GetImageLayers(image, isDryRun));
+        public IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun) =>
+            _imageLayersCache.GetOrAdd(image, _ => _inner.GetImageManifestLayers(image, isDryRun));
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));

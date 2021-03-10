@@ -104,10 +104,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         SetPlatformDataDigest(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
+                        SetPlatformDataLayers(platform, tag.FullyQualifiedName);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
-                    SetPlatformDataLayers(platform, tag.FullyQualifiedName);
                 }
 
                 if (!pushTags.Any())
@@ -183,7 +183,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (platform.Layers == null || !platform.Layers.Any())
             {
-                platform.Layers = _dockerService.GetImageLayers(tag, Options.IsDryRun).ToList();
+                platform.Layers = _dockerService.GetImageManifestLayers(tag, Options.IsDryRun).ToList();
             }
         }
 

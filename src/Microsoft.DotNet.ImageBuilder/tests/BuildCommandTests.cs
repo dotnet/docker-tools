@@ -75,15 +75,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Returns(baseImageDigest);
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageLayers($"{runtimeDepsRepo}:{tag}", false))
+                    .Setup(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false))
                     .Returns(runtimeDepsLayers);
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageLayers($"{runtimeRepo}:{tag}", false))
+                    .Setup(o => o.GetImageManifestLayers($"{runtimeRepo}:{tag}", false))
                     .Returns(runtimeLayers);
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageLayers($"{aspnetRepo}:{tag}", false))
+                    .Setup(o => o.GetImageManifestLayers($"{aspnetRepo}:{tag}", false))
                     .Returns(aspnetLayers);
 
                 DateTime createdDate = DateTime.Now;
@@ -1222,9 +1222,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{linuxTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{windowsTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{linuxTag}", false));
@@ -1505,9 +1505,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps3Repo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps3Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false));
@@ -1722,8 +1722,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -1910,8 +1910,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{newTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
@@ -2153,9 +2153,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{newTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{runtimeDeps2Repo}:{newTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{newTag}", false));
@@ -2527,9 +2527,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
 
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -2624,7 +2624,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageLayers($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
 
             if (isExternallyOwnedBaseImage)
             {

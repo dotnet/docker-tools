@@ -175,6 +175,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
                         ReplaceValue(property, srcObj, targetObj);
                     }
+                    else if (srcObj is PlatformData && property.Name == nameof(PlatformData.Layers))
+                    {
+                        // Layers are always unique and should never get merged
+                        ReplaceValue(property, srcObj, targetObj);
+                    }
                     else
                     {
                         MergeStringLists(property, srcObj, targetObj);

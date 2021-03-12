@@ -81,5 +81,3 @@ steps:
   continueOnError: true
 - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
   - template: cleanup-docker-linux.yml
-- task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
-  displayName: Component Detection

@@ -1,1 +1,1 @@
-FROM ubuntu:focal
+FROM amd64/ubuntu:focal

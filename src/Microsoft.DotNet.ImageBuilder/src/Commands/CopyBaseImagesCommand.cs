@@ -82,7 +82,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private Task CopyImageAsync(string fromImage, string destinationRegistryName)
         {
-            string registry = DockerHelper.GetRegistry(fromImage) ?? "docker.io";
+            fromImage = DockerHelper.NormalizeRepo(fromImage);
+
+            string registry = DockerHelper.GetRegistry(fromImage) ?? DockerHelper.DockerHubRegistry;
+            string srcImage = DockerHelper.TrimRegistry(fromImage, registry);
 
             ImportSourceCredentials? importSourceCreds = null;
             if (Options.CredentialsOptions.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))
@@ -90,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 importSourceCreds = new ImportSourceCredentials(registryCreds.Password, registryCreds.Username);
             }
 
-            return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", destinationRegistryName, fromImage,
+            return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", destinationRegistryName, srcImage,
                 srcRegistryName: registry, sourceCredentials: importSourceCreds);
         }
     }

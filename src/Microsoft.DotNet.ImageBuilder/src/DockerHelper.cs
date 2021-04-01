@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder
         public static Architecture Architecture => s_architecture.Value;
         public static OS OS => s_os.Value;
 
+        public const string DockerHubRegistry = "docker.io";
+
         public static void ExecuteWithUser(Action action, string username, string password, string server, bool isDryRun)
         {
             bool userSpecified = username != null;
@@ -161,6 +163,24 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return imageName;
+        }
+
+        public static string NormalizeRepo(string image)
+        {
+            string registry = GetRegistry(image);
+            string repoAndTag = TrimRegistry(image, registry);
+
+            if ((registry is null || registry == DockerHubRegistry) && !repoAndTag.Contains('/'))
+            {
+                repoAndTag = $"library/{repoAndTag}";
+            }
+
+            if (registry is null)
+            {
+                return repoAndTag;
+            }
+
+            return $"{registry}/{repoAndTag}";
         }
 
         public static string TrimRegistry(string tag) => TrimRegistry(tag, GetRegistry(tag));

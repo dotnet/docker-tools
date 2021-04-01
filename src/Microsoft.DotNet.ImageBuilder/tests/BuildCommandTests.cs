@@ -2174,9 +2174,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the command pulls base images from a mirror location.
         /// </summary>
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task BuildCommand_MirroredImages(bool hasCachedImage)
+        [InlineData(false, "library/baserepo", "baserepo")]
+        [InlineData(false, "library/baserepo", "library/baserepo")]
+        [InlineData(true, "library/baserepo", "baserepo")]
+        [InlineData(true, "library/baserepo", "library/baserepo")]
+        public async Task BuildCommand_MirroredImages(bool hasCachedImage, string srcBaseImageRepo, string referencedBaseImageRepo)
         {
             const string Registry = "mcr.microsoft.com";
             const string RegistryOverride = "dotnetdocker.azurecr.io";
@@ -2187,15 +2189,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
             const string AspnetDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
             const string Tag = "tag";
-            const string BaseImageRepo = "baserepo";
-            string baseImageTag = $"{BaseImageRepo}:basetag";
+            string srcBaseImageTag = $"{srcBaseImageRepo}:basetag";
+            string referencedBaseImageTag = $"{referencedBaseImageRepo}:basetag";
 
             const string SourceRepoPrefix = "my-mirror/";
-            string mirrorBaseTag = $"{RegistryOverride}/{SourceRepoPrefix}{baseImageTag}";
-            string baseImageDigest =
-                $"{BaseImageRepo}@sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
+            string mirrorBaseTag = $"{RegistryOverride}/{SourceRepoPrefix}{srcBaseImageTag}";
+            string srcBaseImageDigest =
+                $"{srcBaseImageRepo}@sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
+            string expectedImageInfoBaseImageDigest =
+                $"{referencedBaseImageRepo}@sha256:d21234a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd1349";
             string mirrorBaseImageDigest =
-                $"{RegistryOverride}/{SourceRepoPrefix}{baseImageDigest}";
+                $"{RegistryOverride}/{SourceRepoPrefix}{srcBaseImageDigest}";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -2253,7 +2257,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns(createdDate);
 
             string runtimeDepsDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
-                "1.0/runtime-deps/os", tempFolderContext, baseImageTag);
+                "1.0/runtime-deps/os", tempFolderContext, referencedBaseImageTag);
 
             string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime/os", tempFolderContext, $"$REPO:{Tag}");
@@ -2408,7 +2412,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         OsType = "Linux",
                                         OsVersion = "focal",
                                         Digest = $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}",
-                                        BaseImageDigest = baseImageDigest,
+                                        BaseImageDigest = expectedImageInfoBaseImageDigest,
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/{runtimeDepsDockerfileRelativePath}",
                                         Created = createdDate,
                                         IsUnchanged = hasCachedImage,
@@ -2489,7 +2493,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(expectedOutput, actualOutput);
 
             dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, false));
-            dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, baseImageTag, false));
+            dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, referencedBaseImageTag, false));
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(

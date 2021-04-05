@@ -631,7 +631,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return fromImage;
             }
 
-            return $"{Manifest.Registry}/{Options.SourceRepoPrefix}{TrimInternallyOwnedRegistry(fromImage)}";
+            string srcImage = TrimInternallyOwnedRegistry(DockerHelper.NormalizeRepo(fromImage));
+            return $"{Manifest.Registry}/{Options.SourceRepoPrefix}{srcImage}";
         }
 
         /// <summary>

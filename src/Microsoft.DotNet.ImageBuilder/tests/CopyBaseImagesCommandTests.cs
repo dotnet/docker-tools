@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateDockerfile("1.0/runtime/os/arm32v7", tempFolderContext, "arm32v7/base:tag"),
                             new string[] { "arm32v7" }),
                         CreatePlatform(
-                            CreateDockerfile("1.0/runtime/os/amd64", tempFolderContext, "amd64/base:tag"),
+                            CreateDockerfile("1.0/runtime/os/amd64", tempFolderContext, "base:tag"),
                             new string[] { "amd64" }))),
                 CreateRepo("aspnet",
                     CreateImage(
@@ -88,8 +88,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
             {
                 ( "arm32v7/base:tag", $"{command.Options.RepoPrefix}arm32v7/base:tag", "docker.io", "user", "pass" ),
-                ( "amd64/base:tag", $"{command.Options.RepoPrefix}amd64/base:tag", "docker.io", "user", "pass" ),
-                ( "my-registry.com/repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
+                ( "library/base:tag", $"{command.Options.RepoPrefix}library/base:tag", "docker.io", "user", "pass" ),
+                ( "repo:tag", $"{command.Options.RepoPrefix}my-registry.com/repo:tag", "my-registry.com", "me", "secret" )
             };
 
             foreach (var expectedTagInfo in expectedTagInfos)

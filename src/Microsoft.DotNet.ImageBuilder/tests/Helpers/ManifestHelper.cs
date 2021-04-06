@@ -36,6 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             return new Repo
             {
                 Name = name,
+                Id = name,
                 Images = images,
                 McrTagsMetadataTemplate = mcrTagsMetadataTemplate,
                 Readme = readme,

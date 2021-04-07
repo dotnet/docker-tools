@@ -631,7 +631,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return fromImage;
             }
 
-            string srcImage = TrimInternallyOwnedRegistry(DockerHelper.NormalizeRepo(fromImage));
+            string srcImage = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(fromImage));
             return $"{Manifest.Registry}/{Options.SourceRepoPrefix}{srcImage}";
         }
 
@@ -646,7 +646,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </remarks>
         private string GetFromImagePublicTag(string fromImage)
         {
-            string trimmed = TrimInternallyOwnedRegistry(fromImage);
+            string trimmed = TrimInternallyOwnedRegistryAndRepoPrefix(fromImage);
             if (trimmed == fromImage)
             {
                 return trimmed;
@@ -657,9 +657,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private string TrimInternallyOwnedRegistry(string imageTag) =>
+        private string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
             IsInInternallyOwnedRegistry(imageTag) ?
-                DockerHelper.TrimRegistry(imageTag) :
+                DockerHelper.TrimRegistry(imageTag).TrimStart(Options.RepoPrefix) :
                 imageTag;
 
         private bool IsInInternallyOwnedRegistry(string imageTag) =>

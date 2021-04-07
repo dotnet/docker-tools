@@ -2189,6 +2189,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
             const string AspnetDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
             const string Tag = "tag";
+            const string RepoPrefix = "prefix/";
             string srcBaseImageTag = $"{srcBaseImageRepo}:basetag";
             string referencedBaseImageTag = $"{referencedBaseImageRepo}:basetag";
 
@@ -2219,15 +2220,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Returns($"{Registry}/{AspnetRepo}@{AspnetDigest}");
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false))
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false))
                     .Returns($"{RegistryOverride}/{RuntimeDepsRepo}@{RuntimeDepsDigest}");
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false))
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false))
                     .Returns($"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}");
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{AspnetRepo}:{Tag}", false))
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false))
                     .Returns($"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}");
             }
             else
@@ -2235,16 +2236,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // Locally built images will not have a digest until they get pushed. So don't return a digest until
                 // the appropriate request.
                 dockerServiceMock
-                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false))
-                    .Returns(callCount => callCount > 2 ? $"{RegistryOverride}/{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false))
+                    .Returns(callCount => callCount > 2 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false))
-                    .Returns(callCount => callCount > 1 ? $"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}" : null);
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false))
+                    .Returns(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}" : null);
 
                 dockerServiceMock
-                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{AspnetRepo}:{Tag}", false))
-                    .Returns(callCount => callCount > 0 ? $"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}" : null);
+                    .Setup(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false))
+                    .Returns(callCount => callCount > 0 ? $"{RegistryOverride}/{RepoPrefix}{AspnetRepo}@{AspnetDigest}" : null);
             }
             
             dockerServiceMock
@@ -2282,6 +2283,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.SourceRepoPrefix = SourceRepoPrefix;
             command.Options.RegistryOverride = RegistryOverride;
+            command.Options.RepoPrefix = RepoPrefix;
 
             const string ProductVersion = "1.0.1";
 
@@ -2369,7 +2371,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             CreatePlatformWithRepoBuildArg(
                                 runtimeDockerfileRelativePath,
-                                $"{RegistryOverride}/{RuntimeDepsRepo}",
+                                $"$(Repo:{RuntimeDepsRepo})",
                                 new string[] { Tag })
                         },
                         productVersion: ProductVersion)),
@@ -2379,7 +2381,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             CreatePlatformWithRepoBuildArg(
                                 aspnetDockerfileRelativePath,
-                                $"{RegistryOverride}/{RuntimeRepo}",
+                                $"$(Repo:{RuntimeRepo})",
                                 new string[] { Tag })
                         },
                         productVersion: ProductVersion))
@@ -2508,32 +2510,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             if (hasCachedImage)
             {
                 dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", false));
-                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
 
                 dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", false));
-                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             }
             else
             {
-                dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
-                dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             }
 
             dockerServiceMock.Verify(o => o.GetImageDigest(mirrorBaseTag, false));
             
-            dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
-            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RuntimeDepsRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RuntimeRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{AspnetRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }

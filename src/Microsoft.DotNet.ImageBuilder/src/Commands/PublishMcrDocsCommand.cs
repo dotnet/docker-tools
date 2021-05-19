@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task<IEnumerable<GitObject>> FilterUpdatedGitObjectsAsync(
             IEnumerable<GitObject> gitObjects, IGitHubClient gitHubClient, GitHubBranch branch)
         {
-            List<GitObject> updatedGitObjects = new List<GitObject>();
+            List<GitObject> updatedGitObjects = new();
             foreach (GitObject gitObject in gitObjects)
             {
                 string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
@@ -114,9 +114,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private GitObject[] GetUpdatedReadmes()
         {
-            List<GitObject> readmes = new List<GitObject>();
+            List<GitObject> readmes = new();
 
-            if (!string.IsNullOrEmpty(Manifest.ReadmePath))
+            if (!string.IsNullOrEmpty(Manifest.ReadmePath) && !Options.ExcludeProductFamilyReadme)
             {
                 IEnumerable<string> productRepoNames = Manifest.FilteredRepos
                     .Select(repo => GetProductRepoName(repo))
@@ -148,7 +148,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private GitObject[] GetUpdatedTagsMetadata()
         {
-            List<GitObject> metadata = new List<GitObject>();
+            List<GitObject> metadata = new();
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {

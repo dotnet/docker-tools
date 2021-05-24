@@ -18,7 +18,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
@@ -27,6 +26,7 @@ using Newtonsoft.Json.Linq;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -1587,7 +1587,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="build">The <see cref="Build"/> to validate.</param>
             /// <param name="subscription">Subscription object that contains metadata to compare against the <paramref name="build"/>.</param>
             /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
-            private static bool FilterBuildToSubscription(Build build, Subscription subscription, IList<string> expectedPaths)
+            private static bool FilterBuildToSubscription(WebApi.Build build, Subscription subscription, IList<string> expectedPaths)
             {
                 return build.Definition.Id == subscription.PipelineTrigger.Id &&
                     build.SourceBranch == subscription.Manifest.Branch &&

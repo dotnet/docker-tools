@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -39,5 +40,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static bool IsSubsetOf<T>(this IEnumerable<T> source, IEnumerable<T> items) =>
             !source.Except(items).Any();
+
+        public static IEnumerable<T> AppendIf<T>(this IEnumerable<T> source, T item, Func<bool> condition) =>
+            condition() ? source.Append(item) : source;
     }
 }

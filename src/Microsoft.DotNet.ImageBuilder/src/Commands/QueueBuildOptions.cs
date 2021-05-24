@@ -13,13 +13,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class QueueBuildOptions : Options
     {
         public string SubscriptionsPath { get; set; } = string.Empty;
-        public AzdoOptions AzdoOptions { get; set; } = new AzdoOptions();
+        public AzdoOptions AzdoOptions { get; set; } = new();
         public IEnumerable<string> AllSubscriptionImagePaths { get; set; } = Enumerable.Empty<string>();
+        public GitOptions GitOptions { get; set; } = new();
     }
 
     public class QueueBuildOptionsBuilder : CliOptionsBuilder
     {
-        private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new AzdoOptionsBuilder();
+        private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new();
+        private readonly GitOptionsBuilder _gitOptionsBuilder = new();
 
         private const string DefaultSubscriptionsPath = "subscriptions.json";
         public override IEnumerable<Option> GetCliOptions() =>
@@ -33,10 +35,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateMultiOption<string>("image-paths", nameof(QueueBuildOptions.AllSubscriptionImagePaths),
                             "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)")
                     }
-                );
+                .Concat(_gitOptionsBuilder.GetCliOptions()));
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments().Concat(_azdoOptionsBuilder.GetCliArguments());
+            base.GetCliArguments()
+                .Concat(_azdoOptionsBuilder.GetCliArguments())
+                .Concat(_gitOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

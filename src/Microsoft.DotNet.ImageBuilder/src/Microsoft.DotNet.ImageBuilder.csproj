@@ -13,7 +13,8 @@
     <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="8.0.9" />
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.22.0" />
-    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="1.0.0-beta.19426.12" />
+    <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="6.0.0-beta.21275.4" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="6.0.0-beta.21275.4" />
     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="5.2.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.153.0" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="3.0.11" />

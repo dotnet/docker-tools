@@ -6,10 +6,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
             public IBuildHttpClient GetBuildHttpClient()
             {
-                return new BuildHttpClientWrapper(_inner.GetClient<BuildHttpClient>());
+                return new BuildHttpClientWrapper(_inner.GetClient<WebApi.BuildHttpClient>());
             }
 
             private class ProjectHttpClientWrapper : IProjectHttpClient
@@ -67,9 +67,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
             private class BuildHttpClientWrapper : IBuildHttpClient
             {
-                private readonly BuildHttpClient _inner;
+                private readonly WebApi.BuildHttpClient _inner;
 
-                public BuildHttpClientWrapper(BuildHttpClient inner)
+                public BuildHttpClientWrapper(WebApi.BuildHttpClient inner)
                 {
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));
                 }
@@ -79,12 +79,12 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     _inner.Dispose();
                 }
 
-                public Task<IPagedList<Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, BuildStatus? statusFilter = null)
+                public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null)
                 {
                     return _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter);
                 }
 
-                public Task QueueBuildAsync(Build build)
+                public Task<TeamFoundation.Build.WebApi.Build> QueueBuildAsync(TeamFoundation.Build.WebApi.Build build)
                 {
                     return _inner.QueueBuildAsync(build);
                 }

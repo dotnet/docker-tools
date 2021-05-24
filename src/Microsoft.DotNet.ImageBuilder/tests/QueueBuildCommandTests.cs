@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -19,6 +18,7 @@ using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateSubscription("repo1")
             };
 
-            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new List<List<SubscriptionImagePaths>>
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
             {
                 new List<SubscriptionImagePaths>
                 {
@@ -52,14 +52,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths, hasInProgressBuild: true))
+            using (TestContext context = new(subscriptions, allSubscriptionImagePaths, hasInProgressBuild: true))
             {
                 await context.ExecuteCommandAsync();
 
                 // Normally this state would cause a build to be queued but since
                 // a build is marked as in progress, it doesn't.
 
-                context.Verify();
+                context.Verify(notificationPostCallCount: 1);
             }
         }
 
@@ -138,7 +138,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                context.Verify(notificationPostCallCount: 2, expectedPathsBySubscription);
             }
         }
 
@@ -189,7 +189,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                context.Verify(notificationPostCallCount: 0, expectedPathsBySubscription);
             }
         }
 
@@ -254,7 +254,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                context.Verify(notificationPostCallCount: 1, expectedPathsBySubscription);
             }
         }
 
@@ -310,8 +310,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly Mock<IBuildHttpClient> buildHttpClientMock;
             private readonly QueueBuildCommand command;
             private readonly IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths;
+            private readonly Mock<INotificationService> _notificationServiceMock;
 
             private const string BuildOrganization = "testOrg";
+            private const string GitOwner = "git-owner";
+            private const string GitRepo = "git-repo";
+            private const string GitAccessToken = "git-pat";
 
             /// <summary>
             /// Initializes a new instance of <see cref="TestContext"/>.
@@ -339,6 +343,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
                     projectHttpClientMock, this.buildHttpClientMock);
 
+                _notificationServiceMock = new Mock<INotificationService>();
+
                 this.command = this.CreateCommand(connectionFactoryMock);
             }
 
@@ -350,15 +356,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <summary>
             /// Verifies the test execution to ensure the results match the expected state.
             /// </summary>
+            /// <param name="notificationPostCallCount">
+            /// Number of times a post to notify the GitHub repo is expected.
+            /// </param>
             /// <param name="expectedPathsBySubscription">
             /// A mapping of subscription metadata to the list of expected path args passed to the queued build, if any.
             /// </param>
-            public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
+            public void Verify(int notificationPostCallCount, IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
             {
+                _notificationServiceMock
+                    .Verify(o => o.PostAsync(
+                        It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), $"https://github.com/{GitOwner}/{GitRepo}", GitAccessToken),
+                        Times.Exactly(notificationPostCallCount));
+
                 if (this.hasInProgressBuild)
                 {
                     // If a build was marked as in progress for the pipelines, then no build is expected to ever be queued.
-                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<Build>()), Times.Never);
+                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
                 }
                 else
                 {
@@ -374,11 +388,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             this.buildHttpClientMock
                                 .Verify(o =>
                                     o.QueueBuildAsync(
-                                        It.Is<Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
+                                        It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
                         }
                         else
                         {
-                            this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<Build>()), Times.Never);
+                            this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
                         }
                     }
                 }
@@ -394,14 +408,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private QueueBuildCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
             {
-                Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
+                Mock<ILoggerService> loggerServiceMock = new();
 
-                QueueBuildCommand command = new QueueBuildCommand(connectionFactoryMock.Object, loggerServiceMock.Object);
+                QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
                 command.Options.AzdoOptions.Organization = BuildOrganization;
                 command.Options.AzdoOptions.AccessToken = "testToken";
                 command.Options.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.AllSubscriptionImagePaths = this.allSubscriptionImagePaths
                     .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
+
+                command.Options.GitOptions.Owner = GitOwner;
+                command.Options.GitOptions.Repo = GitRepo;
+                command.Options.GitOptions.AuthToken = GitAccessToken;
 
                 return command;
             }
@@ -445,16 +463,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private static Mock<IBuildHttpClient> CreateBuildHttpClientMock(TeamProject project, bool hasInProgressBuild)
             {
-                PagedList<Build> builds = new PagedList<Build>();
+                PagedList<WebApi.Build> builds = new();
+                WebApi.Build build = new WebApi.Build { Uri = new Uri("https://contoso") };
+                build.Links.AddLink("web", "https://contoso/web");
                 if (hasInProgressBuild)
                 {
-                    builds.Add(new Build());
+                    builds.Add(build);
                 }
 
-                Mock<IBuildHttpClient> buildHttpClientMock = new Mock<IBuildHttpClient>();
+                Mock<IBuildHttpClient> buildHttpClientMock = new();
                 buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), It.IsAny<BuildStatus>()))
-                    .ReturnsAsync((IPagedList<Build>)builds);
+                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), It.IsAny<WebApi.BuildStatus>()))
+                    .ReturnsAsync(builds);
+
+                buildHttpClientMock
+                    .Setup(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()))
+                    .ReturnsAsync(build);
 
                 return buildHttpClientMock;
             }
@@ -465,7 +489,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="build">The <see cref="Build"/> to validate.</param>
             /// <param name="subscription">Subscription object that contains metadata to compare against the <paramref name="build"/>.</param>
             /// <param name="expectedPaths">The set of expected path arguments that should have been passed to the build.</param>
-            private static bool FilterBuildToSubscription(Build build, Subscription subscription, IList<string> expectedPaths)
+            private static bool FilterBuildToSubscription(WebApi.Build build, Subscription subscription, IList<string> expectedPaths)
             {
                 return build.Definition.Id == subscription.PipelineTrigger.Id &&
                     build.SourceBranch == subscription.Manifest.Branch &&

@@ -5,15 +5,15 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IBuildHttpClient : IDisposable
     {
-        Task<IPagedList<Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, BuildStatus? statusFilter = null);
+        Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);
 
-        Task QueueBuildAsync(Build build);
+        Task<WebApi.Build> QueueBuildAsync(WebApi.Build build);
     }
 }

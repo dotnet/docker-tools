@@ -7,15 +7,17 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using Newtonsoft.Json;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -23,14 +25,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly ILoggerService _loggerService;
+        private readonly INotificationService _notificationService;
 
         [ImportingConstructor]
         public QueueBuildCommand(
             IVssConnectionFactory connectionFactory,
-            ILoggerService loggerService)
+            ILoggerService loggerService,
+            INotificationService notificationService)
         {
             _connectionFactory = connectionFactory;
             _loggerService = loggerService;
+            _notificationService = notificationService;
         }
 
         protected override string Description => "Queues builds to update images";
@@ -95,38 +100,96 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
+            StringBuilder notificationMarkdown = new();
+            notificationMarkdown.AppendLine($"Subscription: {subscription}");
+            notificationMarkdown.AppendLine("Paths to rebuild:");
+            notificationMarkdown.AppendLine();
 
-            using (IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
-            using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
-            using (IBuildHttpClient client = connection.GetBuildHttpClient())
+            foreach (string path in pathsToRebuild.OrderBy(path => path))
             {
-                TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project);
+                notificationMarkdown.AppendLine($"* `{path}`");
+            }
 
-                Build build = new Build
-                {
-                    Project = new TeamProjectReference { Id = project.Id },
-                    Definition = new BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
-                    SourceBranch = subscription.Manifest.Branch,
-                    Parameters = parameters
-                };
+            notificationMarkdown.AppendLine();
 
-                if (await HasInProgressBuildAsync(client, subscription.PipelineTrigger.Id, project.Id))
+            const string QueuedCategory = "Queued";
+            const string SkippedCategory = "Skipped";
+            const string FailureCategory = "Failure";
+            string? category = null;
+
+            try
+            {
+                (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
+
+                using (IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
+                using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
+                using (IBuildHttpClient client = connection.GetBuildHttpClient())
                 {
-                    _loggerService.WriteMessage(
-                        $"An in-progress build was detected on the pipeline for subscription '{subscription}'. Queueing the build will be skipped.");
-                    return;
+                    TeamProject project = await projectHttpClient.GetProjectAsync(Options.AzdoOptions.Project);
+
+                    WebApi.Build build = new()
+                    {
+                        Project = new TeamProjectReference { Id = project.Id },
+                        Definition = new WebApi.BuildDefinitionReference { Id = subscription.PipelineTrigger.Id },
+                        SourceBranch = subscription.Manifest.Branch,
+                        Parameters = parameters
+                    };
+
+                    IEnumerable<string> inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
+                    if (!inProgressBuilds.Any())
+                    {
+                        category = QueuedCategory;
+                        WebApi.Build queuedBuild = await client.QueueBuildAsync(build);
+                        notificationMarkdown.AppendLine($"[Build Link]({GetWebLink(queuedBuild)})");
+                    }
+                    else
+                    {
+                        category = SkippedCategory;
+                        StringBuilder builder = new();
+                        builder.AppendLine($"The following in-progress builds were detected on the pipeline for subscription '{subscription}':");
+                        foreach (string buildUri in inProgressBuilds)
+                        {
+                            builder.AppendLine(buildUri);
+                        }
+
+                        builder.AppendLine();
+                        builder.AppendLine("Queueing the build will be skipped.");
+
+                        string message = builder.ToString();
+
+                        _loggerService.WriteMessage(message);
+                        notificationMarkdown.AppendLine(message);
+                    }
                 }
+            }
+            catch (Exception ex)
+            {
+                category = FailureCategory;
+                notificationMarkdown.AppendLine($"An exception was thrown when attempting to queue the build:");
+                notificationMarkdown.AppendLine(ex.ToString());
 
-                await client.QueueBuildAsync(build);
+                throw;
+            }
+            finally
+            {
+                string header = $"AutoBuilder - {category}";
+                notificationMarkdown.Insert(0, $"# {header}{Environment.NewLine}{Environment.NewLine}");
+
+                await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
+                    new string[] { NotificationLabels.AutoBuilder }.AppendIf(NotificationLabels.Failure, () => category == FailureCategory),
+                    $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}", Options.GitOptions.AuthToken);
             }
         }
 
-        private async Task<bool> HasInProgressBuildAsync(IBuildHttpClient client, int pipelineId, Guid projectId)
+        private static async Task<IEnumerable<string>> GetInProgressBuildsAsync(IBuildHttpClient client, int pipelineId, Guid projectId)
         {
-            IPagedList<Build> builds = await client.GetBuildsAsync(
-                projectId, definitions: new int[] { pipelineId }, statusFilter: BuildStatus.InProgress);
-            return builds.Any();
+            IPagedList<WebApi.Build> builds = await client.GetBuildsAsync(
+                projectId, definitions: new int[] { pipelineId }, statusFilter: WebApi.BuildStatus.InProgress);
+            return builds.Select(build => GetWebLink(build));
         }
+
+        private static string GetWebLink(WebApi.Build build) =>
+            ((ReferenceLink)build.Links.Links["web"]).Href;
     }
 }
+#nullable disable

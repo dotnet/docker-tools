@@ -61,12 +61,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             const string PrefixGroup = "Prefix";
             const string VersionGroup = "Version";
-            Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{PrefixGroup}>\w*))?(?<{VersionGroup}>\d+.\d+)");
+            const string LtscPrefix = "ltsc";
+            Match match = Regex.Match(platform.Model.OsVersion, @$"(-(?<{PrefixGroup}>[a-zA-Z_]*))?(?<{VersionGroup}>\d+.\d+)");
 
             string versionNumber = string.Empty;
-            if (match.Groups[PrefixGroup].Success)
+            if (match.Groups[PrefixGroup].Success && match.Groups[PrefixGroup].Value == LtscPrefix)
             {
-                versionNumber = match.Groups[PrefixGroup].Value;
+                versionNumber = LtscPrefix;
             }
 
             versionNumber += match.Groups[VersionGroup].Value;

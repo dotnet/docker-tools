@@ -117,11 +117,13 @@ ENV TEST2 Value1";
         [InlineData("repo1:tag3", "OS_VERSION_NUMBER", "1903")]
         [InlineData("repo1:tag4", "OS_VERSION_NUMBER", "ltsc2019")]
         [InlineData("repo1:tag5", "OS_VERSION_NUMBER", "3.12")]
+        [InlineData("repo1:tag6", "OS_VERSION_NUMBER", "1.0")]
         [InlineData("repo1:tag1", "OS_ARCH_HYPHENATED", "Debian-10-arm32")]
         [InlineData("repo1:tag2", "OS_ARCH_HYPHENATED", "NanoServer-1903")]
         [InlineData("repo1:tag3", "OS_ARCH_HYPHENATED", "WindowsServerCore-1903")]
         [InlineData("repo1:tag4", "OS_ARCH_HYPHENATED", "WindowsServerCore-ltsc2019")]
         [InlineData("repo1:tag5", "OS_ARCH_HYPHENATED", "Alpine-3.12")]
+        [InlineData("repo1:tag6", "OS_ARCH_HYPHENATED", "CBL-Mariner-1.0")]
         [InlineData("repo1:tag1", "Variable1", "Value1", true)]
         public void GenerateDockerfilesCommand_SupportedSymbols(string tag, string symbol, string expectedValue, bool isVariable = false)
         {
@@ -191,7 +193,12 @@ ENV TEST2 Value1";
                                 DockerfilePath,
                                 new string[] { "tag5" },
                                 OS.Linux,
-                                "alpine3.12")
+                                "alpine3.12"),
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag6" },
+                                OS.Linux,
+                                "cbl-mariner1.0")
                         },
                         productVersion: "1.2.3"
                     )

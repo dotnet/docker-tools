@@ -208,13 +208,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else if (os.Contains("alpine") || os.Contains("centos") || os.Contains("fedora"))
                 {
-                    int versionIndex = os.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
-                    if (versionIndex != -1)
-                    {
-                        os = os.Insert(versionIndex, " ");
-                    }
-
-                    displayName = os.FirstCharToUpper();
+                    displayName = FormatVersionableOsName(os, name => name.FirstCharToUpper());
+                }
+                else if (os.Contains("cbl-mariner"))
+                {
+                    displayName = FormatVersionableOsName(os, name => "CBL-Mariner");
                 }
                 else
                 {
@@ -230,6 +228,31 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public string GetUniqueKey(ImageInfo parentImageInfo) =>
             $"{DockerfilePathRelativeToManifest}-{Model.OS}-{Model.OsVersion}-{Model.Architecture}-{parentImageInfo.ProductVersion}";
+
+        private static string FormatVersionableOsName(string os, Func<string, string> formatName)
+        {
+            (string osName, string osVersion) = GetOsVersionInfo(os);
+            if (string.IsNullOrEmpty(osVersion))
+            {
+                return formatName(osName);
+            }
+            else
+            {
+                return $"{formatName(osName)} {osVersion}";
+            }
+        }
+
+        private static (string Name, string Version) GetOsVersionInfo(string osVersion)
+        {
+            int versionIndex = osVersion.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
+            if (versionIndex != -1)
+            {
+                return (osVersion.Substring(0, versionIndex), osVersion.Substring(versionIndex));
+            }
+
+            return (osVersion, string.Empty);
+        }
+            
 
         private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
         {

@@ -64,7 +64,7 @@ stages:
         staleImagePathsVariableName: linux-arm64-stale-image-paths
 
   - job: Get_Stale_Images_Windows_AMD
-    pool: Docker-2019-Internal
+    pool: Docker-1809-Internal
     steps:
     - template: templates/steps/get-stale-images.yml
       parameters:

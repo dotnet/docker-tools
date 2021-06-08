@@ -25,8 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// https://github.com/dotnet/docker-tools/issues/243
         /// </remarks>
         [Theory]
-        [InlineData(null, "--path 2.1.1/runtime-deps/os", "2.1.1")]
-        [InlineData(null, "--path 2.1.1/runtime-deps/os --path 2.2/runtime/os", "2.2")]
+        [InlineData(null, "--path 2.1.1/runtime-deps/os --path 2.2/runtime/os", "2.1.1")]
         [InlineData("--path 2.2/runtime/os", "--path 2.2/runtime/os", "2.2")]
         [InlineData("--path 2.1.1/runtime-deps/os", "--path 2.1.1/runtime-deps/os", "2.1.1")]
         public void GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
@@ -52,22 +51,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 DirectoryInfo runtimeDir = Directory.CreateDirectory(
                     Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
                 string dockerfileRuntimePath = Path.Combine(runtimeDir.FullName, "Dockerfile");
-                File.WriteAllText(dockerfileRuntimePath, "FROM runtime-deps:tag-2.2");
+                File.WriteAllText(dockerfileRuntimePath, "FROM runtime-deps:tag");
 
                 Manifest manifest = CreateManifest(
                     CreateRepo("runtime-deps",
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag-2.1" })
+                                CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag" })
                             },
-                            productVersion: "2.1.1"),
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(runtimeDepsRelativeDir, new string[] { "tag-2.2" })
-                            },
-                            productVersion: "2.2.3-preview")),
+                            productVersion: "2.1.1")),
                     CreateRepo("runtime",
                         CreateImage(
                             new Platform[]
@@ -88,62 +81,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
                 Assert.Equal(expectedPaths, imageBuilderPaths);
-            }
-        }
-
-        /// <summary>
-        /// Verifies the PlatformDependencyGraph matrix type
-        /// </summary>
-        [Fact]
-        public void GenerateBuildMatrixCommand_PlatformDependencyGraph_CrossVersionDependency()
-        {
-            using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
-            {
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
-                command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-                command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
-                command.Options.ProductVersionComponents = 2;
-
-                Manifest manifest = CreateManifest(
-                    CreateRepo("runtime-deps",
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(
-                                    DockerfileHelper.CreateDockerfile("5.0/runtime-deps/os", tempFolderContext, "base"),
-                                    new string[] { "tag-5.0" })
-                            },
-                            productVersion: "5.0"),
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(
-                                    DockerfileHelper.CreateDockerfile("6.0/runtime-deps/os", tempFolderContext, "runtime-deps:tag-5.0"),
-                                    new string[] { "tag-6.0" })
-                            },
-                            productVersion: "6.0")),
-                    CreateRepo("runtime",
-                        CreateImage(
-                            new Platform[]
-                            {
-                                CreatePlatform(
-                                    DockerfileHelper.CreateDockerfile("6.0/runtime/os", tempFolderContext, "runtime-deps:tag-6.0"),
-                                    new string[] { "tag-6.0" })
-                            },
-                            productVersion: "6.0"))
-                );
-
-                File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-                command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
-                Assert.Single(matrixInfos);
-
-                BuildMatrixInfo matrixInfo = matrixInfos.First();
-                BuildLegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith("5.0"));
-                string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-
-                Assert.Equal("--path 5.0/runtime-deps/os/Dockerfile --path 6.0/runtime-deps/os/Dockerfile --path 6.0/runtime/os/Dockerfile", imageBuilderPaths);
             }
         }
 

@@ -397,10 +397,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
             platform.InternalFromImages
                 .Select(fromImage => Manifest.GetPlatformByTag(fromImage))
-                .Intersect(availablePlatforms)
-                .Where(dependency =>
-                    Options.MatrixType == MatrixType.PlatformDependencyGraph ||
-                    Manifest.GetImageByPlatform(dependency).ProductVersion == Manifest.GetImageByPlatform(platform).ProductVersion);
+                .Intersect(availablePlatforms);
 
         private static void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
         {

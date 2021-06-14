@@ -150,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else if (os.StartsWith("windowsservercore"))
                 {
-                    if (version.StartsWith("ltsc")
+                    if (version.StartsWith("ltsc"))
                     {
                         displayName = $"Windows Server Core {version.TrimStart("ltsc")}";
                     }

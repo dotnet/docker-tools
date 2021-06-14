@@ -158,6 +158,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     {
                         displayName = "Windows Server Core 2019";
                     }
+                    else if (version == "ltsc2022")
+                    {
+                        displayName = "Windows Server Core 2022";
+                    }
                     else
                     {
                         displayName = $"Windows Server Core, version {version}";

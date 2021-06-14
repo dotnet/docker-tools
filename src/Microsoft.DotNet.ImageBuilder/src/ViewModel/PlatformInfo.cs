@@ -150,13 +150,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
                 else if (os.StartsWith("windowsservercore"))
                 {
-                    if (version == "ltsc2016")
+                    if (version.StartsWith("ltsc"))
                     {
-                        displayName = "Windows Server Core 2016";
-                    }
-                    else if (version == "ltsc2019")
-                    {
-                        displayName = "Windows Server Core 2019";
+                        displayName = $"Windows Server Core {version.TrimStart("ltsc")}";
                     }
                     else
                     {

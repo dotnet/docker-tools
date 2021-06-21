@@ -146,18 +146,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 string version = os.Split('-')[1];
                 if (os.StartsWith("nanoserver"))
                 {
-                    displayName = $"Nano Server, version {version}";
+                    displayName = GetWindowsVersionDisplayName("Nano Server", version);
                 }
                 else if (os.StartsWith("windowsservercore"))
                 {
-                    if (version.StartsWith("ltsc"))
-                    {
-                        displayName = $"Windows Server Core {version.TrimStart("ltsc")}";
-                    }
-                    else
-                    {
-                        displayName = $"Windows Server Core, version {version}";
-                    }
+                    displayName = GetWindowsVersionDisplayName("Windows Server Core", version);
                 }
                 else
                 {
@@ -217,6 +210,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
 
             return displayName;
+        }
+
+        private static string GetWindowsVersionDisplayName(string windowsName, string version)
+        {
+            if (version.StartsWith("ltsc"))
+            {
+                return $"{windowsName} {version.TrimStart("ltsc")}";
+            }
+            else
+            {
+                return $"{windowsName}, version {version}";
+            }
         }
 
         public static bool AreMatchingPlatforms(ImageInfo image1, PlatformInfo platform1, ImageInfo image2, PlatformInfo platform2) =>

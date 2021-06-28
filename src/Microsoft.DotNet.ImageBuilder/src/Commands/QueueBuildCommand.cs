@@ -100,22 +100,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            StringBuilder notificationMarkdown = new();
-            notificationMarkdown.AppendLine($"Subscription: {subscription}");
-            notificationMarkdown.AppendLine("Paths to rebuild:");
-            notificationMarkdown.AppendLine();
-
-            foreach (string path in pathsToRebuild.OrderBy(path => path))
-            {
-                notificationMarkdown.AppendLine($"* `{path}`");
-            }
-
-            notificationMarkdown.AppendLine();
-
-            const string QueuedCategory = "Queued";
-            const string SkippedCategory = "Skipped";
-            const string FailureCategory = "Failure";
-            string? category = null;
+            WebApi.Build? queuedBuild = null;
+            Exception? exception = null;
+            IEnumerable<string>? inProgressBuilds = null;
 
             try
             {
@@ -135,50 +122,86 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Parameters = parameters
                     };
 
-                    IEnumerable<string> inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
+                    inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
                     if (!inProgressBuilds.Any())
                     {
-                        category = QueuedCategory;
-                        WebApi.Build queuedBuild = await client.QueueBuildAsync(build);
-                        notificationMarkdown.AppendLine($"[Build Link]({GetWebLink(queuedBuild)})");
-                    }
-                    else
-                    {
-                        category = SkippedCategory;
-                        StringBuilder builder = new();
-                        builder.AppendLine($"The following in-progress builds were detected on the pipeline for subscription '{subscription}':");
-                        foreach (string buildUri in inProgressBuilds)
-                        {
-                            builder.AppendLine(buildUri);
-                        }
-
-                        builder.AppendLine();
-                        builder.AppendLine("Queueing the build will be skipped.");
-
-                        string message = builder.ToString();
-
-                        _loggerService.WriteMessage(message);
-                        notificationMarkdown.AppendLine(message);
+                        queuedBuild = await client.QueueBuildAsync(build);
                     }
                 }
             }
             catch (Exception ex)
             {
-                category = FailureCategory;
-                notificationMarkdown.AppendLine($"An exception was thrown when attempting to queue the build:");
-                notificationMarkdown.AppendLine(ex.ToString());
-
+                exception = ex;
                 throw;
             }
             finally
             {
-                string header = $"AutoBuilder - {category}";
-                notificationMarkdown.Insert(0, $"# {header}{Environment.NewLine}{Environment.NewLine}");
-
-                await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
-                    new string[] { NotificationLabels.AutoBuilder }.AppendIf(NotificationLabels.Failure, () => category == FailureCategory),
-                    $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}", Options.GitOptions.AuthToken);
+                await LogAndNotifyResultsAsync(subscription, pathsToRebuild, queuedBuild, exception, inProgressBuilds);
             }
+        }
+
+        private async Task LogAndNotifyResultsAsync(
+            Subscription subscription, IEnumerable<string> pathsToRebuild, WebApi.Build? queuedBuild, Exception? exception, IEnumerable<string>? inProgressBuilds)
+        {
+            StringBuilder notificationMarkdown = new();
+            notificationMarkdown.AppendLine($"Subscription: {subscription}");
+            notificationMarkdown.AppendLine("Paths to rebuild:");
+            notificationMarkdown.AppendLine();
+
+            foreach (string path in pathsToRebuild.OrderBy(path => path))
+            {
+                notificationMarkdown.AppendLine($"* `{path}`");
+            }
+
+            notificationMarkdown.AppendLine();
+
+            string? category = null;
+            if (queuedBuild is not null)
+            {
+                category = "Queued";
+                string webLink = GetWebLink(queuedBuild);
+                _loggerService.WriteMessage($"Queued build {webLink}");
+                notificationMarkdown.AppendLine($"[Build Link]({webLink})");
+            }
+            else if (inProgressBuilds is not null)
+            {
+                category = "Skipped";
+
+                StringBuilder builder = new();
+                builder.AppendLine($"The following in-progress builds were detected on the pipeline for subscription '{subscription}':");
+                foreach (string buildUri in inProgressBuilds)
+                {
+                    builder.AppendLine(buildUri);
+                }
+
+                builder.AppendLine();
+                builder.AppendLine("Queueing the build will be skipped.");
+
+                string message = builder.ToString();
+
+                _loggerService.WriteMessage(message);
+                notificationMarkdown.AppendLine(message);
+            }
+            else if (exception != null)
+            {
+                category = "Failed";
+                notificationMarkdown.AppendLine("An exception was thrown when attempting to queue the build:");
+                notificationMarkdown.AppendLine();
+                notificationMarkdown.AppendLine("```");
+                notificationMarkdown.AppendLine(exception.ToString());
+                notificationMarkdown.AppendLine("```");
+            }
+            else
+            {
+                throw new NotSupportedException("Unknown state");
+            }
+
+            string header = $"AutoBuilder - {category}";
+            notificationMarkdown.Insert(0, $"# {header}{Environment.NewLine}{Environment.NewLine}");
+
+            await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
+                new string[] { NotificationLabels.AutoBuilder }.AppendIf(NotificationLabels.Failure, () => exception is not null),
+                $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}", Options.GitOptions.AuthToken);
         }
 
         private static async Task<IEnumerable<string>> GetInProgressBuildsAsync(IBuildHttpClient client, int pipelineId, Guid projectId)

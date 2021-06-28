@@ -5,7 +5,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public static class NotificationLabels
     {
-        public const string AutoBuilder = "autobuilder";
-        public const string Failure = "failure";
+        private const string NotifyPrefix = "notify-";
+        public const string AutoBuilder = NotifyPrefix + "autobuilder";
+        public const string Failure = NotifyPrefix + "failure";
     }
 }

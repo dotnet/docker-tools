@@ -38,9 +38,10 @@ jobs:
       repo: "public/dotnet*/samples*"
       action: pruneDangling
       age: 0
-  - template: templates/steps/clean-acr-images.yml
-    parameters:
-      repo: "mirror/*"
-      action: pruneDangling
-      age: 0
+  # Disabled due to https://github.com/dotnet/docker-tools/issues/797
+  # - template: templates/steps/clean-acr-images.yml
+  #   parameters:
+  #     repo: "mirror/*"
+  #     action: pruneDangling
+  #     age: 0
   - template: ../common/templates/steps/cleanup-docker-linux.yml

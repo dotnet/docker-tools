@@ -13,10 +13,20 @@ namespace Microsoft.DotNet.ImageBuilder
         public const int MaxRetries = 5;
 
         public static Action<DelegateResult<T>, TimeSpan, int, Context> GetOnRetryDelegate<T>(
-            int maxRetries, ILoggerService loggerService)
-        {
-            return (delegateResult, timeSpan, retryCount, context) => loggerService.WriteMessage(
-                $"Retry {retryCount}/{maxRetries}, retrying in {timeSpan.TotalSeconds} seconds...");
-        }
+            int maxRetries, ILoggerService loggerService) =>
+            (delegateResult, timeToNextRetry, retryCount, context) =>
+                LogRetryMessage(loggerService, timeToNextRetry, retryCount, maxRetries);
+
+        public static Action<Exception, TimeSpan, int, Context> GetOnRetryDelegate(
+            int maxRetries, ILoggerService loggerService) =>
+            (exception, timeToNextRetry, retryCount, context) =>
+            {
+                loggerService.WriteError(exception.ToString());
+                LogRetryMessage(loggerService, timeToNextRetry, retryCount, maxRetries);
+            };
+
+        private static void LogRetryMessage(ILoggerService loggerService, TimeSpan timeToNextRetry, int retryCount, int maxRetries) =>
+            loggerService.WriteMessage(
+                $"Retry {retryCount}/{maxRetries}, retrying in {timeToNextRetry.TotalSeconds} seconds...");
     }
 }

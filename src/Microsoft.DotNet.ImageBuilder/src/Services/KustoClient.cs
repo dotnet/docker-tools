@@ -10,12 +10,24 @@ using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Ingest;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Polly;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Retry;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
     [Export(typeof(IKustoClient))]
     internal class KustoClientWrapper : IKustoClient
     {
+        private readonly ILoggerService _loggerService;
+
+        [ImportingConstructor]
+        public KustoClientWrapper(ILoggerService loggerService)
+        {
+            _loggerService = loggerService;
+        }
+
         public async Task IngestFromCsvStreamAsync(
             Stream csv, ServicePrincipalOptions servicePrincipal, string cluster, string database, string table, bool isDryRun)
         {
@@ -34,7 +46,15 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
                 if (!isDryRun)
                 {
-                    IKustoIngestionResult result = await client.IngestFromStreamAsync(csv, properties, sourceOptions);
+                    AsyncRetryPolicy retryPolicy = Policy
+                        .Handle<Kusto.Data.Exceptions.KustoException>()
+                        .Or<Kusto.Ingest.Exceptions.KustoException>()
+                        .WaitAndRetryAsync(
+                            Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
+                            RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _loggerService));
+
+                    IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
+                        () => client.IngestFromStreamAsync(csv, properties, sourceOptions));
 
                     IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                     for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
@@ -57,3 +77,4 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         }
     }
 }
+#nullable disable

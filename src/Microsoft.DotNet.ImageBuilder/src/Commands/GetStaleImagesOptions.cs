@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
     {
-        private readonly GitOptionsBuilder _gitOptionsBuilder = new GitOptionsBuilder();
+        private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
             new ManifestFilterOptionsBuilder();
         private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new SubscriptionOptionsBuilder();

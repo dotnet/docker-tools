@@ -199,9 +199,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string header = $"AutoBuilder - {category}";
             notificationMarkdown.Insert(0, $"# {header}{Environment.NewLine}{Environment.NewLine}");
 
-            await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
-                new string[] { NotificationLabels.AutoBuilder }.AppendIf(NotificationLabels.Failure, () => exception is not null),
-                $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}", Options.GitOptions.AuthToken);
+            if (Options.GitOptions.AuthToken == string.Empty ||
+                Options.GitOptions.Owner == string.Empty ||
+                Options.GitOptions.Repo == string.Empty)
+            {
+                _loggerService.WriteMessage(
+                    "Skipping posting of notification because GitHub auth token, owner, and repo options were not provided.");
+            }
+            else
+            {
+                await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
+                    new string[] { NotificationLabels.AutoBuilder }.AppendIf(NotificationLabels.Failure, () => exception is not null),
+                    $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}", Options.GitOptions.AuthToken);
+            }
         }
 
         private static async Task<IEnumerable<string>> GetInProgressBuildsAsync(IBuildHttpClient client, int pipelineId, Guid projectId)

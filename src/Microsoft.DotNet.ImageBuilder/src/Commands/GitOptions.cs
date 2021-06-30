@@ -28,27 +28,84 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class GitOptionsBuilder
     {
-        public IEnumerable<Option> GetCliOptions(
-            string? defaultOwner = null, string? defaultRepo = null, string? defaultBranch = null, string? defaultPath = null) =>
-            new Option[]
-            {
-                CreateOption("git-branch", nameof(GitOptions.Branch),
-                    $"GitHub branch to write to (defaults to '{defaultBranch}')", defaultBranch),
-                CreateOption("git-owner", nameof(GitOptions.Owner),
-                    $"Owner of the GitHub repo to write to (defaults to '{defaultOwner}')", defaultOwner),
-                CreateOption("git-path", nameof(GitOptions.Path),
-                    $"Path within the GitHub repo to write to (defaults to '{defaultPath}')", defaultPath),
-                CreateOption("git-repo", nameof(GitOptions.Repo),
-                    $"GitHub repo to write to (defaults to '{defaultRepo}')", defaultRepo)
-            };
+        private readonly List<Option> _options = new();
+        private readonly List<Argument> _arguments = new();
 
-        public IEnumerable<Argument> GetCliArguments() =>
-            new Argument[]
+        private GitOptionsBuilder()
+        {
+        }
+
+        public static GitOptionsBuilder Build() => new();
+
+        public static GitOptionsBuilder BuildWithDefaults() =>
+            Build()
+                .WithUsername(isRequired: true)
+                .WithEmail(isRequired: true)
+                .WithAuthToken(isRequired: true)
+                .WithBranch()
+                .WithOwner()
+                .WithPath()
+                .WithRepo();
+
+        public GitOptionsBuilder WithUsername(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Username to use for GitHub connection") =>
+            AddSymbol("git-username", nameof(GitOptions.Username), isRequired, defaultValue, description);
+
+        public GitOptionsBuilder WithEmail(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Email to use for GitHub connection") =>
+            AddSymbol("git-email", nameof(GitOptions.Email), isRequired, defaultValue, description);
+
+        public GitOptionsBuilder WithAuthToken(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Auth token to use to connect to GitHub") =>
+            AddSymbol("git-token", nameof(GitOptions.AuthToken), isRequired, defaultValue, description);
+
+        public GitOptionsBuilder WithBranch(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Name of GitHub branch to access") =>
+            AddSymbol("git-branch", nameof(GitOptions.Branch), isRequired, defaultValue, description);
+
+        public GitOptionsBuilder WithOwner(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Owner of the GitHub repo to access") =>
+            AddSymbol("git-owner", nameof(GitOptions.Owner), isRequired, defaultValue, description);
+
+        public GitOptionsBuilder WithPath(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Path of the GitHub repo to access") =>
+            AddSymbol("git-path", nameof(GitOptions.Path), isRequired, defaultValue, description);
+
+        public GitOptionsBuilder WithRepo(
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Name of the GitHub repo to access") =>
+            AddSymbol("git-repo", nameof(GitOptions.Repo), isRequired, defaultValue, description);
+
+        public IEnumerable<Option> GetCliOptions() => _options;
+
+        public IEnumerable<Argument> GetCliArguments() => _arguments;
+
+        private GitOptionsBuilder AddSymbol<T>(string alias, string propertyName, bool isRequired, T? defaultValue, string description)
+        {
+            if (isRequired)
             {
-                new Argument<string>(nameof(GitOptions.Username), "GitHub username"),
-                new Argument<string>(nameof(GitOptions.Email), "GitHub email"),
-                new Argument<string>(nameof(GitOptions.AuthToken), "GitHub authentication token")
-            };
+                _arguments.Add(new Argument<T>(propertyName, description));
+            }
+            else
+            {
+                _options.Add(CreateOption<T>(alias, propertyName, description, defaultValue is null ? default! : defaultValue));
+            }
+
+            return this;
+        }
     }
 }
 #nullable disable

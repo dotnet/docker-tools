@@ -26,11 +26,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class PublishMcrDocsOptionsBuilder : ManifestOptionsBuilder
     {
-        private readonly GitOptionsBuilder _gitOptionsBuilder = new();
+        private readonly GitOptionsBuilder _gitOptionsBuilder =
+            GitOptionsBuilder.Build()
+                .WithUsername(isRequired: true)
+                .WithEmail(isRequired: true)
+                .WithAuthToken(isRequired: true)
+                .WithOwner(defaultValue: "Microsoft")
+                .WithRepo(defaultValue: "mcrdocs")
+                .WithBranch(defaultValue: "master")
+                .WithPath(defaultValue: "teams");
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_gitOptionsBuilder.GetCliOptions("Microsoft", "mcrdocs", "master", "teams"))
+                .Concat(_gitOptionsBuilder.GetCliOptions())
                 .Append(CreateOption<bool>("exclude-product-family", nameof(PublishMcrDocsOptions.ExcludeProductFamilyReadme),
                     "Excludes the product family readme from being published"));
 

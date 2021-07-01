@@ -8,5 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         public static string FormatOutputVariable(string variableName, string value) =>
             $"##vso[task.setvariable variable={variableName};isoutput=true]{value}";
+
+        public static string FormatErrorCommand(string message) => $"##[error]{message}";
     }
 }

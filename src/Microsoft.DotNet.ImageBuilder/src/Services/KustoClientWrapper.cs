@@ -28,8 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             _loggerService = loggerService;
         }
 
-        public async Task IngestFromCsvStreamAsync(
-            Stream csv, ServicePrincipalOptions servicePrincipal, string cluster, string database, string table, bool isDryRun)
+        public async Task IngestFromCsvAsync(
+            string csv, ServicePrincipalOptions servicePrincipal, string cluster, string database, string table, bool isDryRun)
         {
             KustoConnectionStringBuilder connectionBuilder =
                 new KustoConnectionStringBuilder($"https://{cluster}.kusto.windows.net")
@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                             RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _loggerService));
 
                     IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
-                        () => client.IngestFromStreamAsync(csv, properties, sourceOptions));
+                        () => IngestFromStreamAsync(csv, client, properties, sourceOptions));
 
                     IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                     for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
@@ -63,17 +63,29 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                         ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                     }
 
-                    if (ingestionStatus.Status != Status.Succeeded)
+                    if (ingestionStatus.Status == Status.Pending) 
+                    {
+                        throw new InvalidOperationException($"Timeout while ingesting Kusto data.");
+                    }
+                    else if (ingestionStatus.Status != Status.Succeeded)
                     {
                         throw new InvalidOperationException(
                             $"Failed to ingest Kusto data.{Environment.NewLine}{ingestionStatus.Details}");
                     }
-                    else if (ingestionStatus.Status == Status.Pending)
-                    {
-                        throw new InvalidOperationException($"Timeout while ingesting Kusto data.");
-                    }
                 }
             }
+        }
+
+        private async Task<IKustoIngestionResult> IngestFromStreamAsync(
+            string csv, IKustoIngestClient client, KustoIngestionProperties properties, StreamSourceOptions sourceOptions)
+        {
+            using MemoryStream stream = new();
+            using StreamWriter writer = new(stream);
+            writer.Write(csv);
+            writer.Flush();
+            stream.Seek(0, SeekOrigin.Begin);
+
+            return await client.IngestFromStreamAsync(stream, properties, sourceOptions);
         }
     }
 }

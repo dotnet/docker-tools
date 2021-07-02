@@ -92,6 +92,9 @@ stages:
         $(System.AccessToken)
         dnceng
         internal
+        --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
+        --git-owner 'dotnet'
+        --git-repo '$(internalGitHubRepo)'
         --subscriptions-path $(checkBaseImageSubscriptionsPath)
         --image-paths "$(imagePaths1)"
         --image-paths "$(imagePaths2)"

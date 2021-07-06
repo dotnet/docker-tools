@@ -273,13 +273,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IKustoClient> kustoClientMock = new();
             kustoClientMock
-                .Setup(o => o.IngestFromCsvStreamAsync(
-                    It.IsAny<Stream>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
-                .Callback<Stream, ServicePrincipalOptions, string, string, string, bool>(
-                    (stream, servicePrincipal, cluster, database, table, isDryRun) =>
+                .Setup(o => o.IngestFromCsvAsync(
+                    It.IsAny<string>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .Callback<string, ServicePrincipalOptions, string, string, string, bool>(
+                    (csv, servicePrincipal, cluster, database, table, isDryRun) =>
                     {
-                        StreamReader reader = new(stream);
-                        ingestedData.Add(table, reader.ReadToEnd());
+                        ingestedData.Add(table, csv);
                     });
             IngestKustoImageInfoCommand command = new(Mock.Of<ILoggerService>(), kustoClientMock.Object);
             command.Options.ImageInfoPath = imageInfoPath;
@@ -296,8 +295,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             _outputHelper.WriteLine($"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
             _outputHelper.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
 
-            kustoClientMock.Verify(o => o.IngestFromCsvStreamAsync(
-                It.IsAny<Stream>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
+            kustoClientMock.Verify(o => o.IngestFromCsvAsync(
+                It.IsAny<string>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
             Assert.Equal(expectedImageData, ingestedData[command.Options.ImageTable]);
             Assert.Equal(expectedLayerData, ingestedData[command.Options.LayerTable]);
         }

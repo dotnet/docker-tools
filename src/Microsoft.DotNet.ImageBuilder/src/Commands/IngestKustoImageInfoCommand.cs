@@ -129,15 +129,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task IngestInfoAsync(string info, string table)
         {
-            using MemoryStream stream = new();
-            using StreamWriter writer = new(stream);
-            writer.Write(info);
-            writer.Flush();
-            stream.Seek(0, SeekOrigin.Begin);
-
             if (!Options.IsDryRun)
             {
-                await _kustoClient.IngestFromCsvStreamAsync(stream, Options.ServicePrincipal, Options.Cluster, Options.Database, table, Options.IsDryRun);
+                await _kustoClient.IngestFromCsvAsync(info, Options.ServicePrincipal, Options.Cluster, Options.Database, table, Options.IsDryRun);
             }
         }
     }

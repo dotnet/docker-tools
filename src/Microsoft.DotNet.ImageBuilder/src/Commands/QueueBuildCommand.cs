@@ -130,15 +130,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
                     if (!inProgressBuilds.Any())
                     {
-                        recentFailedBuilds = await GetRecentFailedBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
-                        if (!recentFailedBuilds.Any())
-                        {
-                            queuedBuild = await client.QueueBuildAsync(build);
-                        }
-                        else
+                        (bool shouldDisallowBuild, IEnumerable<string> recentFailedBuildsLocal) =
+                            await ShouldDisallowBuildDueToRecentFailuresAsync(client, subscription.PipelineTrigger.Id, project.Id);
+                        recentFailedBuilds = recentFailedBuildsLocal;
+                        if (shouldDisallowBuild)
                         {
                             _loggerService.WriteMessage(
                                 PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
+                        }
+                        else
+                        {
+                            queuedBuild = await client.QueueBuildAsync(build);
                         }
                     }
                 }
@@ -261,7 +263,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static string GetWebLink(WebApi.Build build) =>
             ((ReferenceLink)build.Links.Links["web"]).Href;
 
-		private static async Task<IEnumerable<string>> GetRecentFailedBuildsAsync(IBuildHttpClient client, int pipelineId, Guid projectId)
+		private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
+            IBuildHttpClient client, int pipelineId, Guid projectId)
         {
             List<WebApi.Build> autoBuilderBuilds = (await client.GetBuildsAsync(projectId, definitions: new int[] { pipelineId }))
                 .Where(build => build.Tags.Contains(AzdoTags.AutoBuilder))
@@ -272,10 +275,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (autoBuilderBuilds.Count == BuildFailureLimit &&
                 autoBuilderBuilds.All(build => build.Status == WebApi.BuildStatus.Completed && build.Result == WebApi.BuildResult.Failed))
             {
-                return autoBuilderBuilds.Select(GetWebLink);
+                return (true, autoBuilderBuilds.Select(GetWebLink));
             }
 
-            return Enumerable.Empty<string>();
+            return (false, Enumerable.Empty<string>());
         }
     }
 }

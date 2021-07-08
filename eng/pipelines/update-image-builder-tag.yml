@@ -1,0 +1,43 @@
+trigger: none
+pr: none
+
+resources:
+  pipelines:
+  - pipeline: image-builder
+    source: docker-tools-imagebuilder
+    trigger:
+      branches:
+        include:
+        - main
+      stages:
+      - Publish
+
+variables:
+- template: ../common/templates/variables/common.yml
+
+jobs:
+- job: Build
+  pool:
+    vmImage: $(defaultLinuxAmd64PoolImage)
+  steps:
+  - download: image-builder
+    artifact: source-build-id
+    displayName: Download Source Build ID artifact
+  - script: >
+      echo "##vso[task.setvariable variable=imageBuilderTag]$(cat $(Pipeline.Workspace)/image-builder/source-build-id/source-build-id.json)"
+    displayName: Get Image Builder Tag
+  - script: >
+      docker build . -f ./eng/src/yaml-updater/Dockerfile -t yaml-updater
+    displayName: Build YAML Updater
+  - script: >
+      docker run --rm yaml-updater
+      ./eng/image-builder-tag-update-config.json
+      variables/imageNames.imageBuilder
+      mcr.microsoft.com/dotnet-buildtools/image-builder:$(imageBuilderTag)
+      $(dotnetDockerBot.userName)
+      $(dotnetDockerBot.email)
+      $(BotAccount-dotnet-docker-bot-PAT)
+      dotnet
+      docker-tools
+      main
+    displayName: Run YAML Updater

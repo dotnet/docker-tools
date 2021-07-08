@@ -43,7 +43,11 @@ namespace FilePusher
 
             string configJson = File.ReadAllText(options.ConfigPath);
             Config config = JsonConvert.DeserializeObject<Config>(configJson);
+            await PushFilesAsync(options, config);
+        }
 
+        public static async Task PushFilesAsync(Options options, Config config)
+        {
             foreach (GitRepo repo in GetFilteredRepos(config, options))
             {
                 Console.WriteLine($"Processing {repo.Name}/{repo.Branch}");
@@ -193,10 +197,20 @@ namespace FilePusher
             }
         }
 
-        private static IEnumerable<string> GetFiles(string targetDirectory) =>
-            Directory.GetDirectories(targetDirectory)
-                .SelectMany(dir => GetFiles(dir))
-                .Concat(Directory.GetFiles(targetDirectory));
+        private static IEnumerable<string> GetFiles(string path)
+        {
+            if (File.Exists(path))
+            {
+                return new string[] { path };
+            }
+            else
+            {
+                return Directory.GetDirectories(path)
+                    .SelectMany(dir => GetFiles(dir))
+                    .Concat(Directory.GetFiles(path));
+            }
+        }
+            
 
         private static string GetFilterRegexPattern(params string[] patterns)
         {

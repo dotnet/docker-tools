@@ -6,12 +6,12 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0-alpine AS build-env
 WORKDIR /file-pusher
 
 # copy csproj and restore as distinct layers
-COPY eng/file-pusher/*.csproj ./
-COPY eng/file-pusher/NuGet.config ./
+COPY eng/src/file-pusher/*.csproj ./
+COPY eng/src/file-pusher/NuGet.config ./
 RUN dotnet restore
 
 # copy everything else and build
-COPY eng/file-pusher/. ./
+COPY eng/src/file-pusher/. ./
 RUN dotnet publish -c Release -o out --no-restore
 
 

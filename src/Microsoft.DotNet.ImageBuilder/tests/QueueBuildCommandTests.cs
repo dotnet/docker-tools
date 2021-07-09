@@ -52,15 +52,184 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new(subscriptions, allSubscriptionImagePaths, hasInProgressBuild: true))
+            PagedList<WebApi.Build> inProgressBuilds = new()
+            {
+                CreateBuild("http://contoso")
+            };
+
+            using (TestContext context = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
             {
                 await context.ExecuteCommandAsync();
 
                 // Normally this state would cause a build to be queued but since
                 // a build is marked as in progress, it doesn't.
 
-                context.Verify(notificationPostCallCount: 1);
+                context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
             }
+        }
+
+        /// <summary>
+        /// Verifies that no build is queued if there are too many recent failed builds.
+        /// </summary>
+        [Fact]
+        public async Task QueueBuildCommand_RecentFailedBuilds_MaxFailed()
+        {
+            const string path1 = "path1";
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription("repo1")
+            };
+
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
+            {
+                new List<SubscriptionImagePaths>
+                {
+                    new SubscriptionImagePaths
+                    {
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
+                        {
+                            path1
+                        }
+                    }
+                }
+            };
+
+            PagedList<WebApi.Build> allBuilds = new();
+
+            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
+            {
+                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
+                failedBuild.Status = WebApi.BuildStatus.Completed;
+                failedBuild.Result = WebApi.BuildResult.Failed;
+                allBuilds.Add(failedBuild);
+            }
+
+            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await context.ExecuteCommandAsync();
+
+            context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
+        }
+
+        /// <summary>
+        /// Verifies that a build is queued even if there are recent failed builds but not enough to meet the threshold.
+        /// </summary>
+        [Fact]
+        public async Task QueueBuildCommand_RecentFailedBuilds_PartialFailed()
+        {
+            const string path1 = "path1";
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription("repo1")
+            };
+
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
+            {
+                new List<SubscriptionImagePaths>
+                {
+                    new SubscriptionImagePaths
+                    {
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
+                        {
+                            path1
+                        }
+                    }
+                }
+            };
+
+            PagedList<WebApi.Build> allBuilds = new();
+
+            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit - 1; i++)
+            {
+                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
+                failedBuild.Status = WebApi.BuildStatus.Completed;
+                failedBuild.Result = WebApi.BuildResult.Failed;
+                allBuilds.Add(failedBuild);
+            }
+
+            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await context.ExecuteCommandAsync();
+
+
+            Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
+            {
+                {
+                    subscriptions[0],
+                    new List<string>
+                    {
+                        path1
+                    }
+                }
+            };
+
+            context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+        }
+
+        /// <summary>
+        /// Verifies that a build is queued when the set of recent builds consist of some recently succeeded builds.
+        /// </summary>
+        [Fact]
+        public async Task QueueBuildCommand_RecentFailedBuilds_SucceededAndFailed()
+        {
+            const string path1 = "path1";
+
+            Subscription[] subscriptions = new Subscription[]
+            {
+                CreateSubscription("repo1")
+            };
+
+            List<List<SubscriptionImagePaths>> allSubscriptionImagePaths = new()
+            {
+                new List<SubscriptionImagePaths>
+                {
+                    new SubscriptionImagePaths
+                    {
+                        SubscriptionId = subscriptions[0].Id,
+                        ImagePaths = new string[]
+                        {
+                            path1
+                        }
+                    }
+                }
+            };
+
+            PagedList<WebApi.Build> allBuilds = new();
+
+            WebApi.Build succeeded = CreateBuild($"https://succeededbuild");
+            succeeded.Tags.Add(AzdoTags.AutoBuilder);
+            succeeded.Status = WebApi.BuildStatus.Completed;
+            succeeded.Result = WebApi.BuildResult.Succeeded;
+            allBuilds.Add(succeeded);
+
+            for (int i = 0; i < QueueBuildCommand.BuildFailureLimit; i++)
+            {
+                WebApi.Build failedBuild = CreateBuild($"https://failedbuild-{i}");
+                failedBuild.Tags.Add(AzdoTags.AutoBuilder);
+                failedBuild.Status = WebApi.BuildStatus.Completed;
+                failedBuild.Result = WebApi.BuildResult.Failed;
+                allBuilds.Add(failedBuild);
+            }
+
+            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await context.ExecuteCommandAsync();
+
+            Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
+            {
+                {
+                    subscriptions[0],
+                    new List<string>
+                    {
+                        path1
+                    }
+                }
+            };
+
+            context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
         }
 
         /// <summary>
@@ -138,7 +307,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(notificationPostCallCount: 2, expectedPathsBySubscription);
+                context.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
             }
         }
 
@@ -177,19 +346,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 await context.ExecuteCommandAsync();
 
-                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
-                    new Dictionary<Subscription, IList<string>>
-                {
-                    {
-                        subscriptions[0],
-                        new List<string>
-                        {
-                            // No paths are expected
-                        }
-                    }
-                };
-
-                context.Verify(notificationPostCallCount: 0, expectedPathsBySubscription);
+                context.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
             }
         }
 
@@ -254,7 +411,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(notificationPostCallCount: 1, expectedPathsBySubscription);
+                context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
             }
         }
 
@@ -298,12 +455,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
         }
 
+        private static WebApi.Build CreateBuild(string url)
+        {
+            WebApi.Build build = new() { Uri = new Uri(url) };
+            build.Links.AddLink("web", $"{url}/web");
+            return build;
+        }
+
         /// <summary>
         /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
         /// </summary>
         private class TestContext : IDisposable
         {
-            private readonly bool hasInProgressBuild;
+            private readonly PagedList<WebApi.Build> inProgressBuilds;
+            private readonly PagedList<WebApi.Build> allBuilds;
             private readonly List<string> filesToCleanup = new List<string>();
             private readonly List<string> foldersToCleanup = new List<string>();
             private readonly string subscriptionsPath;
@@ -322,14 +487,29 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// </summary>
             /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
             /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
-            /// <param name="hasInProgressBuild">A value indicating whether to mark a build to be in progress for all pipelines.</param>
             public TestContext(
                 Subscription[] subscriptions,
-                IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
-                bool hasInProgressBuild = false)
+                IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths)
+                : this(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), new PagedList<WebApi.Build>())
+            {
+            }
+
+            /// <summary>
+            /// Initializes a new instance of <see cref="TestContext"/>.
+            /// </summary>
+            /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
+            /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
+            /// <param name="inProgressBuilds">The set of in-progress builds that should be configured.</param>
+            /// <param name="allBuilds">The set of failed builds that should be configured.</param>
+            public TestContext(
+            Subscription[] subscriptions,
+            IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
+            PagedList<WebApi.Build> inProgressBuilds,
+            PagedList<WebApi.Build> allBuilds)
             {
                 this.allSubscriptionImagePaths = allSubscriptionImagePaths;
-                this.hasInProgressBuild = hasInProgressBuild;
+                this.inProgressBuilds = inProgressBuilds;
+                this.allBuilds = allBuilds;
 
                 this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
 
@@ -339,7 +519,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 };
 
                 Mock<IProjectHttpClient> projectHttpClientMock = CreateProjectHttpClientMock(project);
-                this.buildHttpClientMock = CreateBuildHttpClientMock(project, hasInProgressBuild);
+                this.buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
                 Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
                     projectHttpClientMock, this.buildHttpClientMock);
 
@@ -359,19 +539,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="notificationPostCallCount">
             /// Number of times a post to notify the GitHub repo is expected.
             /// </param>
+            /// <param name="isQueuedBuildExpected">
+            /// Indicates whether a build was expected to be queued.
+            /// </param>
             /// <param name="expectedPathsBySubscription">
             /// A mapping of subscription metadata to the list of expected path args passed to the queued build, if any.
             /// </param>
-            public void Verify(int notificationPostCallCount, IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
+            public void Verify(int notificationPostCallCount, bool isQueuedBuildExpected, IDictionary<Subscription, IList<string>> expectedPathsBySubscription = null)
             {
                 _notificationServiceMock
                     .Verify(o => o.PostAsync(
                         It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), $"https://github.com/{GitOwner}/{GitRepo}", GitAccessToken),
                         Times.Exactly(notificationPostCallCount));
 
-                if (this.hasInProgressBuild)
+                if (!isQueuedBuildExpected)
                 {
-                    // If a build was marked as in progress for the pipelines, then no build is expected to ever be queued.
                     this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
                 }
                 else
@@ -389,10 +571,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 .Verify(o =>
                                     o.QueueBuildAsync(
                                         It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
-                        }
-                        else
-                        {
-                            this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
                         }
                     }
                 }
@@ -461,20 +639,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 return projectHttpClientMock;
             }
 
-            private static Mock<IBuildHttpClient> CreateBuildHttpClientMock(TeamProject project, bool hasInProgressBuild)
+            private static Mock<IBuildHttpClient> CreateBuildHttpClientMock(TeamProject project,
+                PagedList<WebApi.Build> inProgressBuilds, PagedList<WebApi.Build> failedBuilds)
             {
-                PagedList<WebApi.Build> builds = new();
-                WebApi.Build build = new WebApi.Build { Uri = new Uri("https://contoso") };
-                build.Links.AddLink("web", "https://contoso/web");
-                if (hasInProgressBuild)
-                {
-                    builds.Add(build);
-                }
+                WebApi.Build build = CreateBuild("https://contoso");
 
                 Mock<IBuildHttpClient> buildHttpClientMock = new();
                 buildHttpClientMock
-                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), It.IsAny<WebApi.BuildStatus>()))
-                    .ReturnsAsync(builds);
+                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), WebApi.BuildStatus.InProgress))
+                    .ReturnsAsync(inProgressBuilds);
+
+                buildHttpClientMock
+                    .Setup(o => o.GetBuildsAsync(project.Id, It.IsAny<IEnumerable<int>>(), null))
+                    .ReturnsAsync(failedBuilds);
 
                 buildHttpClientMock
                     .Setup(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()))

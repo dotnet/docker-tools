@@ -27,6 +27,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly INotificationService _notificationService;
 
+        // The number of most recent builds that must have failed consecutively before skipping the queuing of another build
+        public const int BuildFailureLimit = 3;
+
         [ImportingConstructor]
         public QueueBuildCommand(
             IVssConnectionFactory connectionFactory,
@@ -103,6 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             WebApi.Build? queuedBuild = null;
             Exception? exception = null;
             IEnumerable<string>? inProgressBuilds = null;
+            IEnumerable<string>? recentFailedBuilds = null;
 
             try
             {
@@ -121,11 +125,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         SourceBranch = subscription.Manifest.Branch,
                         Parameters = parameters
                     };
+                    build.Tags.Add(AzdoTags.AutoBuilder);
 
                     inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
                     if (!inProgressBuilds.Any())
                     {
-                        queuedBuild = await client.QueueBuildAsync(build);
+                        (bool shouldDisallowBuild, IEnumerable<string> recentFailedBuildsLocal) =
+                            await ShouldDisallowBuildDueToRecentFailuresAsync(client, subscription.PipelineTrigger.Id, project.Id);
+                        recentFailedBuilds = recentFailedBuildsLocal;
+                        if (shouldDisallowBuild)
+                        {
+                            _loggerService.WriteMessage(
+                                PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
+                        }
+                        else
+                        {
+                            queuedBuild = await client.QueueBuildAsync(build);
+                        }
                     }
                 }
             }
@@ -136,12 +152,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             finally
             {
-                await LogAndNotifyResultsAsync(subscription, pathsToRebuild, queuedBuild, exception, inProgressBuilds);
+                await LogAndNotifyResultsAsync(
+                    subscription, pathsToRebuild, queuedBuild, exception, inProgressBuilds, recentFailedBuilds);
             }
         }
 
         private async Task LogAndNotifyResultsAsync(
-            Subscription subscription, IEnumerable<string> pathsToRebuild, WebApi.Build? queuedBuild, Exception? exception, IEnumerable<string>? inProgressBuilds)
+            Subscription subscription, IEnumerable<string> pathsToRebuild, WebApi.Build? queuedBuild, Exception? exception,
+            IEnumerable<string>? inProgressBuilds, IEnumerable<string>? recentFailedBuilds)
         {
             StringBuilder notificationMarkdown = new();
             notificationMarkdown.AppendLine($"Subscription: {subscription}");
@@ -162,6 +180,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string webLink = GetWebLink(queuedBuild);
                 _loggerService.WriteMessage($"Queued build {webLink}");
                 notificationMarkdown.AppendLine($"[Build Link]({webLink})");
+            }
+            else if (recentFailedBuilds is not null)
+            {
+                category = "Failed";
+
+                StringBuilder builder = new();
+                builder.AppendLine(
+                    $"Due to recent failures of the following builds, a build will not be queued again for subscription '{subscription}':");
+                foreach (string buildUri in recentFailedBuilds)
+                {
+                    builder.AppendLine(buildUri);
+                }
+
+                builder.AppendLine();
+                builder.AppendLine(
+                    "Please investigate the cause of the failures, resolve the issue, and manually queue a build for the Dockerfile paths listed above.");
+
+                string message = builder.ToString();
+
+                _loggerService.WriteMessage(message);
+                notificationMarkdown.AppendLine(message);
             }
             else if (inProgressBuilds is not null)
             {
@@ -223,6 +262,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string GetWebLink(WebApi.Build build) =>
             ((ReferenceLink)build.Links.Links["web"]).Href;
+
+		private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
+            IBuildHttpClient client, int pipelineId, Guid projectId)
+        {
+            List<WebApi.Build> autoBuilderBuilds = (await client.GetBuildsAsync(projectId, definitions: new int[] { pipelineId }))
+                .Where(build => build.Tags.Contains(AzdoTags.AutoBuilder))
+                .OrderByDescending(build => build.QueueTime)
+                .Take(BuildFailureLimit)
+                .ToList();
+
+            if (autoBuilderBuilds.Count == BuildFailureLimit &&
+                autoBuilderBuilds.All(build => build.Status == WebApi.BuildStatus.Completed && build.Result == WebApi.BuildResult.Failed))
+            {
+                return (true, autoBuilderBuilds.Select(GetWebLink));
+            }
+
+            return (false, Enumerable.Empty<string>());
+        }
     }
 }
 #nullable disable

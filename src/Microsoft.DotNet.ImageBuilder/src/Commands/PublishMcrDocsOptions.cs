@@ -26,15 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class PublishMcrDocsOptionsBuilder : ManifestOptionsBuilder
     {
-        private readonly GitOptionsBuilder _gitOptionsBuilder =
-            GitOptionsBuilder.Build()
-                .WithUsername(isRequired: true)
-                .WithEmail(isRequired: true)
-                .WithAuthToken(isRequired: true)
-                .WithOwner(defaultValue: "Microsoft")
-                .WithRepo(defaultValue: "mcrdocs")
-                .WithBranch(defaultValue: "master")
-                .WithPath(defaultValue: "teams");
+        private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()

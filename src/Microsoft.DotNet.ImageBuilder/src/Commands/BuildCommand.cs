@@ -406,9 +406,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // If the previously published image was based on an image that is still the latest version AND
             // the Dockerfile hasn't changed since it was last published
-            if (IsBaseImageDigestUpToDate(platform, srcPlatformData) &&
-                IsDockerfileUpToDate(platform, srcPlatformData) &&
-                IsFullyQualifiedDigest(srcPlatformData))
+            if (IsBaseImageDigestUpToDate(platform, srcPlatformData) && IsDockerfileUpToDate(platform, srcPlatformData))
             {
                 OnCacheHit(repo, allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
                 return true;
@@ -450,15 +448,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // because they haven't yet been pushed to staging by that time.
                 _imageDigestCache.AddDigest(tag, newDigest);
             });
-        }
-
-        // TODO: This check can be removed once all digests in the image info file have been updated to be fully-qualified
-        private bool IsFullyQualifiedDigest(PlatformData srcPlatformData)
-        {
-            bool isFullyQualifiedSourceDigest = !srcPlatformData.Digest.StartsWith("sha256:");
-            _loggerService.WriteMessage();
-            _loggerService.WriteMessage($"Is source digest '{srcPlatformData.Digest}' fully qualified: {isFullyQualifiedSourceDigest}");
-            return isFullyQualifiedSourceDigest;
         }
 
         private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData)

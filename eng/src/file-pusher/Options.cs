@@ -4,16 +4,17 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 
 namespace FilePusher
 {
     public class Options
     {
-        public IEnumerable<string> Filters { get; set; }
-        public string GitEmail { get; set; }
-        public string GitAuthToken { get; set; }
-        public string GitUser { get; set; }
-        public string ConfigPath { get; set; }
+        public IEnumerable<string> Filters { get; set; } = Enumerable.Empty<string>();
+        public string GitEmail { get; set; } = string.Empty;
+        public string GitAuthToken { get; set; } = string.Empty;
+        public string GitUser { get; set; } = string.Empty;
+        public string ConfigPath { get; set; } = string.Empty;
 
         public static IEnumerable<Symbol> GetCliOptions() =>
             new Symbol[]

@@ -9,19 +9,19 @@ namespace FilePusher.Models
     public class Config
     {
         [JsonProperty(Required = Required.Always)]
-        public string CommitMessage { get; set; }
+        public string CommitMessage { get; set; } = string.Empty;
 
-        public string PullRequestDescription { get; set; }
-
-        [JsonProperty(Required = Required.Always)]
-        public string PullRequestTitle { get; set; }
+        public string? PullRequestDescription { get; set; }
 
         [JsonProperty(Required = Required.Always)]
-        public string SourcePath { get; set; }
+        public string PullRequestTitle { get; set; } = string.Empty;
 
         [JsonProperty(Required = Required.Always)]
-        public string WorkingBranchSuffix { get; set; }
+        public string SourcePath { get; set; } = string.Empty;
 
-        public GitRepo[] Repos { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string WorkingBranchSuffix { get; set; } = string.Empty;
+
+        public GitRepo[] Repos { get; set; } = System.Array.Empty<GitRepo>();
     }
 }

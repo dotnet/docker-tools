@@ -1,6 +1,7 @@
 {
   "commitMessage": "Update common Docker engineering infrastructure with latest",
   "pullRequestTitle": "Update common Docker engineering infrastructure with latest",
+  "pullRequestDescription": "Updates the common Docker engineering infrastructure with latest changes from the dotnet/docker-tools repo.",
   "sourcePath": "eng/common",
   "workingBranchSuffix": "-update-eng-common",
   "repos": [

@@ -9,13 +9,13 @@ namespace FilePusher.Models
     public class GitRepo
     {
         [JsonProperty(Required = Required.Always)]
-        public string Owner { get; set; }
+        public string Owner { get; set; } = string.Empty;
 
         [JsonProperty(Required = Required.Always)]
-        public string Name { get; set; }
+        public string Name { get; set; } = string.Empty;
 
         [JsonProperty(Required = Required.Always)]
-        public string Branch { get; set; }
+        public string Branch { get; set; } = string.Empty;
 
         public override string ToString() => $"{Owner}/{Name}/{Branch}";
     }

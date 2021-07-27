@@ -2,6 +2,27 @@
   {
     "manifest": {
       "owner": "dotnet",
+      "repo": "docker-tools",
+      "branch": "main",
+      "path": "src/Microsoft.DotNet.ImageBuilder/manifest.json",
+      "variables": {
+        "UniqueId": ""
+      }
+    },
+    "imageInfo": {
+      "owner": "dotnet",
+      "repo": "versions",
+      "branch": "main",
+      "path": "build-info/docker/image-info.dotnet-docker-tools-main-imagebuilder.json"
+    },
+    "pipelineTrigger": {
+      "id": 367,
+      "pathVariable": "imageBuilder.pathArgs"
+    }
+  },
+  {
+    "manifest": {
+      "owner": "dotnet",
       "repo": "dotnet-docker",
       "branch": "main",
       "path": "manifest.json"

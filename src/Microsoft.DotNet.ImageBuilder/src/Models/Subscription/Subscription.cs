@@ -9,7 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
     public class Subscription
     {
         [JsonProperty(Required = Required.Always)]
-        public GitFile Manifest { get; set; }
+        public SubscriptionManifest Manifest { get; set; }
 
         [JsonProperty(Required = Required.Always)]
         public GitFile ImageInfo { get; set; }

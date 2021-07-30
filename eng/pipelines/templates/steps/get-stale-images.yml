@@ -12,6 +12,8 @@ steps:
       $(dotnetDockerBot.email)
       $(BotAccount-dotnet-docker-bot-PAT)
       ${{ parameters.staleImagePathsVariableName }}
+      $(engPath)/get-installed-packages.sh
+      $(engPath)/get-upgradable-packages.sh
       --subscriptions-path $(checkBaseImageSubscriptionsPath)
       --os-type ${{ parameters.osType }}
       --architecture ${{ parameters.architecture }}

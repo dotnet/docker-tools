@@ -9,6 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface INotificationService
     {
-        Task<Uri> PostAsync(string title, string description, IEnumerable<string> labels, string repoUrl, string gitHubAccessToken);
+        Task<Uri> PostAsync(
+            string title, string description, IEnumerable<string> labels, string repoUrl, string gitHubAccessToken, bool isDryRun);
     }
 }

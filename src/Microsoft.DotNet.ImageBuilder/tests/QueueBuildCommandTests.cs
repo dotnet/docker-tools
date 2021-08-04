@@ -549,7 +549,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 _notificationServiceMock
                     .Verify(o => o.PostAsync(
-                        It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), $"https://github.com/{GitOwner}/{GitRepo}", GitAccessToken),
+                        It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), $"https://github.com/{GitOwner}/{GitRepo}", GitAccessToken, It.IsAny<bool>()),
                         Times.Exactly(notificationPostCallCount));
 
                 if (!isQueuedBuildExpected)

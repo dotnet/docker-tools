@@ -8,6 +8,16 @@ printPackageInfo() {
     echo "- Upgrade: $3"
 }
 
+addUpgradeablePackageVersion() {
+    local pkgName=$1
+    local currentVersion=$2
+    local upgradeVersion=$3
+    local versionData=$(echo "$currentVersion,$upgradeVersion")
+    upgradablePackageVersions[$pkgName]=$versionData
+
+    printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
+}
+
 getUpgradablePackageVersionsForApt() {
     echo "Updating package cache..."
     apt update
@@ -19,7 +29,6 @@ getUpgradablePackageVersionsForApt() {
 
     # Regex to parse the output from apt to get the package name, current version, and upgrade version
     regex="Inst\s(\S+)\s\[(\S+)]\s\((\S+)\s"
-    upgradablePackages=()
 
     echo
     echo "Upgradable packages:"
@@ -30,10 +39,7 @@ getUpgradablePackageVersionsForApt() {
             currentVersion=${BASH_REMATCH[2]}
             upgradeVersion=${BASH_REMATCH[3]}
             
-            local versionData=$(echo "$currentVersion,$upgradeVersion")
-            upgradablePackageVersions[$pkgName]=$versionData
-
-            printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
+            addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
         fi
     done
 }
@@ -48,8 +54,6 @@ getUpgradablePackageVersionsForApk() {
     # Find all upgradable packages
     apkPackages=$(apk version | tail -n +2 | sort)
 
-    upgradablePackages=()
-
     echo
     echo "Upgradable packages:"
     for pkgName in "${apkPackageNames[@]}"
@@ -60,10 +64,7 @@ getUpgradablePackageVersionsForApk() {
             currentVersion=${BASH_REMATCH[1]}
             upgradeVersion=${BASH_REMATCH[2]}
             
-            local versionData=$(echo "$currentVersion,$upgradeVersion")
-            upgradablePackageVersions[$pkgName]=$versionData
-
-            printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
+            addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
         fi
     done
 }
@@ -95,10 +96,7 @@ getUpgradablePackageVersionsForTdnf() {
             if [[ $upgradePkgLines =~ $upgradeRegex ]]; then
                 local upgradeVersion=${BASH_REMATCH[1]}
                 
-                local versionData=$(echo "$currentVersion,$upgradeVersion")
-                upgradablePackageVersions[$pkgName]=$versionData
-
-                printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
+                addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
             fi
         fi
     done
@@ -138,14 +136,6 @@ outputPackagesToUpgrade() {
     printf "%s\n" "${packagesToUpgrade[@]}" > $outputPath
 }
 
-getUpgradablePackageVersions()
-{
-    functionName="getUpgradablePackageVersionsFor$1"
-    $functionName
-    outputPackagesToUpgrade
-}
-
-
 
 outputPath="$1"
 args=( $@ )
@@ -156,17 +146,20 @@ declare -A upgradablePackageVersions
 upgradablePackageVersions=()
 
 if type apt > /dev/null 2>/dev/null; then
-    getUpgradablePackageVersions "Apt"
+    getUpgradablePackageVersionsForApt
+    outputPackagesToUpgrade
     exit 0
 fi
 
 if type apk > /dev/null 2>/dev/null; then
-    getUpgradablePackageVersions "Apk"
+    getUpgradablePackageVersionsForApk
+    outputPackagesToUpgrade
     exit 0
 fi
 
 if type tdnf > /dev/null 2>/dev/null; then
-    getUpgradablePackageVersions "Tdnf"
+    getUpgradablePackageVersionsForTdnf
+    outputPackagesToUpgrade
     exit 0
 fi
 

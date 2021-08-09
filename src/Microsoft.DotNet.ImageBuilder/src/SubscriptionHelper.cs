@@ -52,9 +52,10 @@ namespace Microsoft.DotNet.ImageBuilder
             string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, subscription.Manifest);
             try
             {
-                TempManifestOptions manifestOptions = new TempManifestOptions(filterOptions)
+                TempManifestOptions manifestOptions = new(filterOptions)
                 {
                     Manifest = Path.Combine(repoPath, subscription.Manifest.Path),
+                    Variables = subscription.Manifest.Variables
                 };
 
                 configureOptions?.Invoke(manifestOptions);

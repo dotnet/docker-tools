@@ -8,7 +8,11 @@ jobs:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../steps/init-docker-linux.yml
-  - template: ../steps/set-dry-run.yml
+  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
+    - template: ../steps/set-dry-run.yml
+  - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+    - script: echo "##vso[task.setvariable variable=dryRunArg]"
+      displayName: Set Default Variables
   - script: >
       $(runImageBuilderCmd)
       copyBaseImages

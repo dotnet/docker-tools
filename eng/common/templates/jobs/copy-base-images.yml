@@ -10,9 +10,6 @@ jobs:
   - template: ../steps/init-docker-linux.yml
   - ${{ if eq(variables['System.TeamProject'], 'public') }}:
     - template: ../steps/set-dry-run.yml
-  - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-    - script: echo "##vso[task.setvariable variable=dryRunArg]"
-      displayName: Set Default Variables
   - script: >
       $(runImageBuilderCmd)
       copyBaseImages
@@ -26,7 +23,7 @@ jobs:
       --registry-override '$(acr.server)'
       --os-type 'linux'
       --architecture '*'
-      $(dryRunArg)
+      $DRYRUNARG
       ${{ parameters.additionalOptions }}
     displayName: Copy Base Images
     continueOnError: true

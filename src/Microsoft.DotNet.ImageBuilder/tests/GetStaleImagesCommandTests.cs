@@ -1310,7 +1310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Id = 1,
                     PathVariable = "--my-path"
                 },
-                Manifest = new GitFile
+                Manifest = new SubscriptionManifest
                 {
                     Branch = "testBranch" + index,
                     Repo = repoName,

@@ -27,6 +27,8 @@ jobs:
       -e DOCKER_TLS_VERIFY=1
       -e DOCKER_HOST=tcp://$(DOCKER_HOST_IP):2376
       $(imageNames.testRunner)
+  - name: imageNames.pinger.linux
+    value: arm32v7/debian:stretch
   steps:
   - script: docker pull $(imageNames.testRunner)
     displayName: Pull ImageBuilder

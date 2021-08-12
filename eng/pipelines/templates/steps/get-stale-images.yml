@@ -3,6 +3,7 @@ parameters:
   architecture: null
   dockerClientOS: null
   staleImagePathsVariableName: null
+  subscriptionsPath: null
 steps:
   - template: ${{ format('../../../common/templates/steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
   - script: >
@@ -12,7 +13,7 @@ steps:
       $(dotnetDockerBot.email)
       $(BotAccount-dotnet-docker-bot-PAT)
       ${{ parameters.staleImagePathsVariableName }}
-      --subscriptions-path $(checkBaseImageSubscriptionsPath)
+      --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type ${{ parameters.osType }}
       --architecture ${{ parameters.architecture }}
     displayName: Get Stale Images

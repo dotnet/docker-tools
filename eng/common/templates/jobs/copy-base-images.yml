@@ -28,4 +28,3 @@ jobs:
     displayName: Copy Base Images
     continueOnError: true
   - template: ../steps/cleanup-docker-linux.yml
-

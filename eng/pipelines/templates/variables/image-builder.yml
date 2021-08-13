@@ -12,3 +12,5 @@ variables:
   value: ./src/Microsoft.DotNet.ImageBuilder/run-tests.ps1
 - name: testResultsDirectory
   value: src/Microsoft.DotNet.ImageBuilder/tests/TestResults/
+- name: publicGitRepoUri
+  value: https://github.com/dotnet/docker-tools

@@ -35,8 +35,6 @@ stages:
   - template: ../jobs/copy-base-images.yml
     parameters:
       name: CopyBaseImages
-      pool:
-        vmImage: $(defaultLinuxAmd64PoolImage)
       additionalOptions: "--manifest '$(manifest)' $(manifestVariables)"
   - template: ../jobs/generate-matrix.yml
     parameters:

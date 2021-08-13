@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -25,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
+        private readonly IProcessService _processService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _builtTags = new List<TagInfo>();
 
@@ -34,12 +36,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private ImageArtifactDetails? _imageArtifactDetails;
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService, IProcessService processService)
         {
             _imageDigestCache = new ImageDigestCache(dockerService);
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _processService = processService ?? throw new ArgumentNullException(nameof(processService));
         }
 
         protected override string Description => "Builds Dockerfiles";
@@ -117,6 +120,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     platformsWithNoPushTags.Add(platform);
                 }
+                else
+                {
+                    GetComponents(platform);
+                }
 
                 platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
             }
@@ -137,10 +144,48 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 platform.Digest = matchingBuiltPlatform.Digest;
                 platform.Created = matchingBuiltPlatform.Created;
+                platform.Components = matchingBuiltPlatform.Components;
             }
 
             string imageInfoString = JsonHelper.SerializeObject(_imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
+        }
+
+        private void GetComponents(PlatformData platform)
+        {
+            if (string.IsNullOrEmpty(Options.GetInstalledPackagesScriptPath) ||
+                platform.PlatformInfo is null ||
+                platform.PlatformInfo.Model.OS == OS.Windows)
+            {
+                return;
+            }
+
+            // Use the platform's overriden script path if it's defined in the manifest; otherwise fall back to the default script.
+            string? getInstalledPackagesScriptPath = platform.PlatformInfo.Model.PackageQueryOverrides?.GetInstalledPackagesPath;
+            if (getInstalledPackagesScriptPath is null)
+            {
+                getInstalledPackagesScriptPath = Options.GetInstalledPackagesScriptPath;
+            }
+            else
+            {
+                getInstalledPackagesScriptPath = Path.Combine(Manifest.Directory, getInstalledPackagesScriptPath);
+            }
+
+            string imageTag = platform.PlatformInfo.Tags.First().FullyQualifiedName;
+
+            string args = $"{getInstalledPackagesScriptPath} {imageTag} {platform.PlatformInfo.DockerfilePath}";
+            string? output = _processService.Execute("/bin/sh", args, Options.IsDryRun);
+            if (output is not null)
+            {
+                platform.Components = output
+                    .Split(Environment.NewLine)
+                    .Select(val =>
+                    {
+                        string[] pkgVersion = val.Split(new char[] { ',', '=' });
+                        return new Component(type: pkgVersion[0], name: pkgVersion[1], version: pkgVersion[2]);
+                    })
+                    .ToList();
+            }
         }
 
         private void SetPlatformDataCreatedDate(PlatformData platform, string tag)
@@ -532,7 +577,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 try
                 {
                     // Extract the tar file to a separate directory
-                    ExecuteHelper.Execute("tar", $"-xf {tempImageTar} -C {tarContentsDirectory}", Options.IsDryRun);
+                    _processService.Execute("tar", $"-xf {tempImageTar} -C {tarContentsDirectory}", Options.IsDryRun);
 
                     // Open the manifest to find the name of the Config json file
                     string manifestContents = File.ReadAllText(Path.Combine(tarContentsDirectory, "manifest.json"));
@@ -555,7 +600,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     File.WriteAllText(configPath, configContents);
 
                     // Repackage the directory into an updated tar file
-                    ExecuteHelper.Execute("tar", $"-cf {tempImageTar} -C {tarContentsDirectory} .", Options.IsDryRun);
+                    _processService.Execute("tar", $"-cf {tempImageTar} -C {tarContentsDirectory} .", Options.IsDryRun);
                 }
                 finally
                 {
@@ -605,7 +650,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             startInfo.WorkingDirectory = buildContextPath;
-            ExecuteHelper.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
+            _processService.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 
         /// <summary>

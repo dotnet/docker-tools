@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonProperty(Required = Required.Always)]
         public string Dockerfile { get; set; } = string.Empty;
 
-        public List<string> SimpleTags { get; set; } = new List<string>();
+        public List<string> SimpleTags { get; set; } = new();
 
         [JsonProperty(Required = Required.Always)]
         public string Digest { get; set; } = string.Empty;
@@ -49,7 +49,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonProperty(Required = Required.Always)]
         public string CommitUrl { get; set; } = string.Empty;
 
-        public List<string> Layers { get; set; } = new List<string>();
+        public List<string> Layers { get; set; } = new();
+
+        public List<Component> Components { get; set; } = new();
 
         /// <summary>
         /// Gets or sets whether the image or its associated tag names have changed since it was last published.

@@ -8,8 +8,8 @@ if type apt > /dev/null 2>/dev/null; then
     # Regex consists of two capture groups:
     #   1: Package name: all chars up until the first '/' character
     #   2: Package version: substring after the first whitespace occurrence and before the next whitespace
-    # Output is the format of <pkg-name>=<pkg-version>
-    apt list --installed 2>/dev/null | grep installed | sed -n 's/^\([^/]*\)\S*\s\(\S*\).*/\1=\2/p' | sort
+    # Output is the format of <pkg-type>,<pkg-name>=<pkg-version>
+    apt list --installed 2>/dev/null | grep installed | sed -n 's/^\([^/]*\)\S*\s\(\S*\).*/DEB,\1=\2/p' | sort
     exit 0
 fi
 
@@ -27,8 +27,8 @@ if type apk > /dev/null 2>/dev/null; then
     # Example of the output of "apk info -d musl":
     #   musl-1.2.2-r3 description:
     #   the musl c library (libc) implementation
-    # Output is the format of <pkg-name>=<pkg-version>
-    apk info 2>/dev/null | xargs -I {} sh -c "apk list {} | grep '\[installed\]' 2>/dev/null | sed -n 's/\({}\)-\(\S*\)\s.*/\1=\2/p'" | sort
+    # Output is the format of <pkg-type>,<pkg-name>=<pkg-version>
+    apk info 2>/dev/null | xargs -I {} sh -c "apk list {} | grep '\[installed\]' 2>/dev/null | sed -n 's/\({}\)-\(\S*\)\s.*/APK,\1=\2/p'" | sort
     exit 0
 fi
 
@@ -40,8 +40,8 @@ if type tdnf > /dev/null 2>/dev/null; then
     # Regex consists of two capture groups:
     #   1: Package name: all chars up until the first '.' character
     #   2: Package version: substring after the remaining arch text/whitespace and before the next whitespace
-    # Output is the format of <pkg-name>=<pkg-version>
-    tdnf list installed --quiet | tail -n +2 | sed -n 's/^\([^\.]*\)\S*\s*\(\S*\)\s*.*/\1=\2/p'
+    # Output is the format of <pkg-type>,<pkg-name>=<pkg-version>
+    tdnf list installed --quiet | tail -n +2 | sed -n 's/^\([^\.]*\)\S*\s*\(\S*\)\s*.*/RPM,\1=\2/p'
     exit 0
 fi
 

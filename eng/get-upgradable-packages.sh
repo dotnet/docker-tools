@@ -5,19 +5,19 @@
 
 ensureBashInstalledForApt() {
     echo "Ensuring bash is installed"
-    apt update
-    apt install -y bash
+    apt update 1>/dev/null
+    apt install -y bash 1>/dev/null
 }
 
 ensureBashInstalledForApk() {
     echo "Ensuring bash is installed"
-    apk add bash
+    apk add bash 1>/dev/null
 }
 
 ensureBashInstalledForTdnf() {
     echo "Ensuring bash is installed"
-    tdnf makecache
-    tdnf install -y bash
+    tdnf makecache 1>/dev/null
+    tdnf install -y bash 1>/dev/null
 }
 
 

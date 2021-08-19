@@ -125,7 +125,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         SourceBranch = subscription.Manifest.Branch,
                         Parameters = parameters
                     };
-                    build.Tags.Add(AzdoTags.AutoBuilder);
 
                     inProgressBuilds = await GetInProgressBuildsAsync(client, subscription.PipelineTrigger.Id, project.Id);
                     if (!inProgressBuilds.Any())
@@ -141,6 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         else
                         {
                             queuedBuild = await client.QueueBuildAsync(build);
+                            await client.AddBuildTagAsync(project.Id, queuedBuild.Id, AzdoTags.AutoBuilder);
                         }
                     }
                 }
@@ -188,9 +188,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 StringBuilder builder = new();
                 builder.AppendLine(
                     $"Due to recent failures of the following builds, a build will not be queued again for subscription '{subscription}':");
+                builder.AppendLine();
                 foreach (string buildUri in recentFailedBuilds)
                 {
-                    builder.AppendLine(buildUri);
+                    builder.AppendLine($"* {buildUri}");
                 }
 
                 builder.AppendLine();

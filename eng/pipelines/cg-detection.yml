@@ -5,7 +5,7 @@ trigger:
 pr: none
 
 variables:
-- template: ../common/templates/variables/common.yml
+- template: templates/variables/common.yml
 
 jobs:
 - template: ../common/templates/jobs/cg-detection.yml

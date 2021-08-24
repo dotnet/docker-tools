@@ -79,15 +79,14 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     _inner.Dispose();
                 }
 
-                public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null)
-                {
-                    return _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter);
-                }
+                public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag) =>
+                    _inner.AddBuildTagAsync(project, buildId, tag);
 
-                public Task<TeamFoundation.Build.WebApi.Build> QueueBuildAsync(TeamFoundation.Build.WebApi.Build build)
-                {
-                    return _inner.QueueBuildAsync(build);
-                }
+                public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
+                    _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter);
+
+                public Task<WebApi.Build> QueueBuildAsync(WebApi.Build build) =>
+                    _inner.QueueBuildAsync(build);
             }
         }
     }

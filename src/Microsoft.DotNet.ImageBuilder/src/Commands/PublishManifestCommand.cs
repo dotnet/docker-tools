@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -111,14 +112,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string syndicatedRepo = syndicatedTags.Key;
                 IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
 
+                // There won't always be a platform tag that's syndicated. So if a manifest tag is syndicated, we need to account
+                // for the possibility that a given platform for that manifest will not have a matching syndicated repo.
+
                 yield return GenerateManifest(repo, image, destinationTags,
                     tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag),
-                    platform => platform.Tags.First(tag => tag.SyndicatedRepo == syndicatedRepo));
+                    platform => platform.Tags.FirstOrDefault(tag => tag.SyndicatedRepo == syndicatedRepo));
             }
         }
 
         private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName,
-            Func<PlatformInfo, TagInfo> getTagRepresentative)
+            Func<PlatformInfo, TagInfo?> getTagRepresentative)
         {
             string imageName = getImageName(tags.First());
             StringBuilder manifestYml = new StringBuilder();
@@ -139,7 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             manifestYml.AppendLine("manifests:");
             foreach (PlatformInfo platform in image.AllPlatforms)
             {
-                TagInfo imageTag;
+                TagInfo? imageTag;
                 if (platform.Tags.Any())
                 {
                     imageTag = getTagRepresentative(platform);
@@ -164,13 +168,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     imageTag = getTagRepresentative(matchingImagePlatform.Platform);
                 }
 
-                manifestYml.AppendLine($"- image: {getImageName(imageTag.Name)}");
-                manifestYml.AppendLine($"  platform:");
-                manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
-                manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");
-                if (platform.Model.Variant != null)
+                if (imageTag is not null)
                 {
-                    manifestYml.AppendLine($"    variant: {platform.Model.Variant}");
+                    manifestYml.AppendLine($"- image: {getImageName(imageTag.Name)}");
+                    manifestYml.AppendLine($"  platform:");
+                    manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
+                    manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");
+                    if (platform.Model.Variant != null)
+                    {
+                        manifestYml.AppendLine($"    variant: {platform.Model.Variant}");
+                    }
                 }
             }
 
@@ -197,3 +204,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

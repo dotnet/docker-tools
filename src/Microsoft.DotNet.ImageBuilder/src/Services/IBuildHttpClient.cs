@@ -12,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IBuildHttpClient : IDisposable
     {
+        Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag);
+        
         Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId);
 
         Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);

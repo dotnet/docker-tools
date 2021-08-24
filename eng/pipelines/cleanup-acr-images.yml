@@ -10,7 +10,7 @@ schedules:
   always: true
 
 variables:
-- template: ../common/templates/variables/common.yml
+- template: templates/variables/common.yml
 
 jobs:
 - job: Build

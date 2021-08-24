@@ -347,6 +347,10 @@ manifests:
   platform:
     architecture: amd64
     os: linux
+- image: mcr.microsoft.com/repo:tag3
+  platform:
+    architecture: amd64
+    os: linux
 ";
 
             string expectedManifest2 =
@@ -391,7 +395,8 @@ manifests:
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
 
-            string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
+            string dockerfile1 = CreateDockerfile("1.0/repo/os", tempFolderContext);
+            string dockerfile2 = CreateDockerfile("1.0/repo/os2", tempFolderContext);
 
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
@@ -406,7 +411,7 @@ manifests:
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile,
+                                    CreatePlatform(dockerfile1,
                                         simpleTags: new List<string>
                                         {
                                             "tag1",
@@ -430,14 +435,16 @@ manifests:
 
             const string syndicatedRepo2 = "repo2";
 
-            Platform platform;
+            Platform platform1;
+            Platform platform2;
 
             Manifest manifest = CreateManifest(
                 CreateRepo("repo",
                     CreateImage(
                         new Platform[]
                         {
-                            platform = CreatePlatform(dockerfile, Array.Empty<string>())
+                            platform1 = CreatePlatform(dockerfile1, Array.Empty<string>()),
+                            platform2 = CreatePlatform(dockerfile2, Array.Empty<string>())
                         },
                         new Dictionary<string, Tag>
                         {
@@ -461,7 +468,7 @@ manifests:
             );
 
             manifest.Registry = "mcr.microsoft.com";
-            platform.Tags = new Dictionary<string, Tag>
+            platform1.Tags = new Dictionary<string, Tag>
             {
                 { "tag1", new Tag() },
                 { "tag2", new Tag
@@ -476,6 +483,11 @@ manifests:
                         }
                     }
                 },
+            };
+
+            platform2.Tags = new Dictionary<string, Tag>
+            {
+                { "tag3", new Tag() }
             };
 
             File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));

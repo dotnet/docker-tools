@@ -18,28 +18,28 @@ jobs:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
-  - template: templates/steps/clean-acr-images.yml
+  - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       repo: "build-staging/*"
       action: delete
       age: 15
-  - template: templates/steps/clean-acr-images.yml
+  - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       repo: "public/dotnet/*nightly/*"
       action: pruneDangling
       age: 30
-  - template: templates/steps/clean-acr-images.yml
+  - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       repo: "test/*"
       action: pruneAll
       age: 7
-  - template: templates/steps/clean-acr-images.yml
+  - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       repo: "public/dotnet*/samples*"
       action: pruneDangling
       age: 0
   # Disabled due to https://github.com/dotnet/docker-tools/issues/797
-  # - template: templates/steps/clean-acr-images.yml
+  # - template: ../common/templates/steps/clean-acr-images.yml
   #   parameters:
   #     repo: "mirror/*"
   #     action: pruneDangling

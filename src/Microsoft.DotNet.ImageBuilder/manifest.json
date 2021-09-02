@@ -6,6 +6,7 @@
       "images": [
         {
           "sharedTags": {
+            "latest": {},
             "$(UniqueId)": {}
           },
           "platforms": [
@@ -19,6 +20,7 @@
               "os": "linux",
               "osVersion": "alpine",
               "tags": {
+                "linux-amd64": {},
                 "linux-amd64-$(UniqueId)": {}
               }
             },
@@ -33,6 +35,7 @@
               "os": "linux",
               "osVersion": "alpine",
               "tags": {
+                "linux-arm64": {},
                 "linux-arm64-$(UniqueId)": {}
               },
               "variant": "v8"
@@ -45,6 +48,7 @@
               "os": "windows",
               "osVersion": "windowsservercore-ltsc2019",
               "tags": {
+                "windowsservercore-ltsc2016-amd64": {},
                 "windowsservercore-ltsc2016-amd64-$(UniqueId)": {}
               }
             },
@@ -56,6 +60,7 @@
               "os": "windows",
               "osVersion": "nanoserver-1809",
               "tags": {
+                "nanoserver-1809-amd64": {},
                 "nanoserver-1809-amd64-$(UniqueId)": {}
               }
             },
@@ -67,6 +72,7 @@
               "os": "windows",
               "osVersion": "nanoserver-2004",
               "tags": {
+                "nanoserver-2004-amd64": {},
                 "nanoserver-2004-amd64-$(UniqueId)": {}
               }
             },
@@ -78,6 +84,7 @@
               "os": "windows",
               "osVersion": "nanoserver-20H2",
               "tags": {
+                "nanoserver-20H2-amd64": {},
                 "nanoserver-20H2-amd64-$(UniqueId)": {}
               }
             },
@@ -89,6 +96,7 @@
               "os": "windows",
               "osVersion": "nanoserver-ltsc2022",
               "tags": {
+                "nanoserver-ltsc2022-amd64": {},
                 "nanoserver-ltsc2022-amd64-$(UniqueId)": {}
               }
             }

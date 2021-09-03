@@ -9,6 +9,7 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class McrStatusClient : IMcrStatusClient
@@ -37,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .WithMeteredRetryPolicy(loggerService)
                 .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, loggerService)
                 .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), loggerService)
-                .Build();
+                .Build() ?? throw new InvalidOperationException("Policy should not be null");
         }
 
         public Task<ImageResult> GetImageResultAsync(string imageDigest)
@@ -79,3 +80,4 @@ namespace Microsoft.DotNet.ImageBuilder
                 () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, _tenant, _clientId, _clientSecret));
     }
 }
+#nullable disable

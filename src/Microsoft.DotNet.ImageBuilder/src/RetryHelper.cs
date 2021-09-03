@@ -4,13 +4,24 @@
 
 using System;
 using Polly;
+using Polly.Contrib.WaitAndRetry;
+using Polly.Retry;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class RetryHelper
     {
         public const int WaitFactor = 5;
         public const int MaxRetries = 5;
+
+        public static AsyncRetryPolicy GetWaitAndRetryPolicy<TException>(ILoggerService loggerService, int medianFirstRetryDelaySeconds = WaitFactor)
+            where TException : Exception =>
+            Policy
+                .Handle<TException>()
+                .WaitAndRetryAsync(
+                    Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(medianFirstRetryDelaySeconds), MaxRetries),
+                    GetOnRetryDelegate(MaxRetries, loggerService));
 
         public static Action<DelegateResult<T>, TimeSpan, int, Context> GetOnRetryDelegate<T>(
             int maxRetries, ILoggerService loggerService) =>
@@ -30,3 +41,4 @@ namespace Microsoft.DotNet.ImageBuilder
                 $"Retry {retryCount}/{maxRetries}, retrying in {timeToNextRetry.TotalSeconds} seconds...");
     }
 }
+#nullable disable

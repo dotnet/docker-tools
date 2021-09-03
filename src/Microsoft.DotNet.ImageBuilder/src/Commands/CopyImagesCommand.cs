@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
@@ -12,7 +11,6 @@ using Microsoft.Azure.Management.ResourceManager.Fluent;
 using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.Rest.Azure;
-using Polly;
 using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
 
 #nullable enable
@@ -60,14 +58,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 try
                 {
-                    AsyncPolicy<HttpResponseMessage?> policy = HttpPolicyBuilder.Create()
-                        .WithMeteredRetryPolicy(LoggerService)
-                        .Build();
-                    await policy.ExecuteAsync(async () =>
-                    {
-                        await azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, destRegistryName, importParams);
-                        return null;
-                    });
+                    await RetryHelper.GetWaitAndRetryPolicy<Exception>(LoggerService)
+                        .ExecuteAsync(() => azure.ContainerRegistries.Inner.ImportImageAsync(Options.ResourceGroup, destRegistryName, importParams));
                 }
                 catch (Exception e)
                 {

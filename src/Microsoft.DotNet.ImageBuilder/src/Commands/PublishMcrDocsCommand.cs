@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
@@ -55,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
 
-                await GitHelper.ExecuteGitOperationsWithRetryAsync(async () =>
+                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
                 {
                     GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring readmes", branch =>
                     {

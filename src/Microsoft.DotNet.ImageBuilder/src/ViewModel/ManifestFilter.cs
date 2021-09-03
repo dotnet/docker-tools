@@ -16,6 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<string> IncludeRepos { get; set; }
         public IEnumerable<string> IncludeOsVersions { get; set; }
         public IEnumerable<string> IncludePaths { get; set; }
+        public IEnumerable<string> IncludeProductVersions { get; set; }
 
         public ManifestFilter()
         {
@@ -29,9 +30,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return $"^({processedPatterns})$";
         }
 
-        public IEnumerable<Platform> GetPlatforms(Image image)
+        public IEnumerable<Platform> FilterPlatforms(IEnumerable<Platform> platforms, string resolvedProductVersion)
         {
-            IEnumerable<Platform> platforms = image.Platforms;
+            if (IncludeProductVersions?.Any() ?? false)
+            {
+                string includeProductVersionsPattern = GetFilterRegexPattern(IncludeProductVersions.ToArray());
+                if (!Regex.IsMatch(resolvedProductVersion, includeProductVersionsPattern, RegexOptions.IgnoreCase))
+                {
+                    return Enumerable.Empty<Platform>();
+                }
+            }
 
             if (!string.IsNullOrEmpty(IncludeArchitecture))
             {

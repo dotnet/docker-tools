@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))
                 .ToArray();
 
-            IEnumerable<Platform> filteredPlatformModels = manifestFilter.GetPlatforms(model);
+            IEnumerable<Platform> filteredPlatformModels = manifestFilter.FilterPlatforms(model.Platforms, imageInfo.ProductVersion);
             imageInfo.FilteredPlatforms = imageInfo.AllPlatforms
                 .Where(platform => filteredPlatformModels.Contains(platform.Model));
 

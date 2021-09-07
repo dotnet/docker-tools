@@ -953,13 +953,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await Assert.ThrowsAsync<TimeoutException>(() => command.ExecuteAsync());
         }
 
-        [Fact]
-        public async Task SyndicatedTags()
+        [Theory]
+        [InlineData("manifestDigest1")] // Same as the primary digest
+        [InlineData("manifestDigest2")] // Different from the primary digest
+        public async Task SyndicatedTags(string syndicatedManifestDigest)
         {
             DateTime baselineTime = DateTime.Now;
             const string registry = "mcr.microsoft.com";
-            string repo1ManifestDigest1 = $"{registry}/repo1@sha256:manifestDigest1";
-            string repo2ManifestDigest1 = $"{registry}/repo2@sha256:manifestDigest1";
+            const string primaryManifestDigest = "manifestDigest1";
+            string repo1ManifestDigest1 = $"{registry}/repo1@sha256:{primaryManifestDigest}";
+            string repo2ManifestDigest1 = $"{registry}/repo2@sha256:{syndicatedManifestDigest}";
             const string sharedTag1 = "sharedTag1";
             const string platformTag1 = "platformTag1";
             const string repo1 = "repo1";
@@ -967,9 +970,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string repo1PlatformDigest1 = $"{registry}repo1@sha256:platformDigest1";
             string repo2PlatformDigest1 = $"{registry}repo2@sha256:platformDigest1";
 
-            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+            Mock<IMcrStatusClient> statusClientMock = new();
 
-            ImageStatus repo1SharedTag1ImageStatus = new ImageStatus
+            ImageStatus repo1SharedTag1ImageStatus = new()
             {
                 Tag = sharedTag1,
                 TargetRepository = repo1,
@@ -977,7 +980,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Succeeded
             };
 
-            ImageStatus repo2SharedTag1ImageStatus = new ImageStatus
+            ImageStatus repo2SharedTag1ImageStatus = new()
             {
                 Tag = sharedTag1,
                 TargetRepository = repo2,
@@ -985,7 +988,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Succeeded
             };
 
-            ImageStatus repo1PlatformTag1ImageStatus = new ImageStatus
+            ImageStatus repo1PlatformTag1ImageStatus = new()
             {
                 Tag = platformTag1,
                 TargetRepository = repo1,
@@ -993,7 +996,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Succeeded
             };
 
-            ImageStatus repo2PlatformTag1aImageStatus = new ImageStatus
+            ImageStatus repo2PlatformTag1aImageStatus = new()
             {
                 Tag = $"{platformTag1}a",
                 TargetRepository = repo2,
@@ -1001,7 +1004,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Succeeded
             };
 
-            ImageStatus repo2PlatformTag1bImageStatus = new ImageStatus
+            ImageStatus repo2PlatformTag1bImageStatus = new()
             {
                 Tag = $"{platformTag1}b",
                 TargetRepository = repo2,
@@ -1009,28 +1012,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Succeeded
             };
 
-            Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new Dictionary<string, IEnumerator<ImageResult>>
+            Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new()
             {
-                {
-                    DockerHelper.GetDigestSha(repo1ManifestDigest1),
-                    new List<ImageResult>
-                    {
-                        new ImageResult
-                        {
-                            Value = new List<ImageStatus>
-                            {
-                                repo1SharedTag1ImageStatus
-                            }
-                        },
-                        new ImageResult
-                        {
-                            Value = new List<ImageStatus>
-                            {
-                                repo2SharedTag1ImageStatus
-                            }
-                        }
-                    }.GetEnumerator()
-                },
                 {
                     DockerHelper.GetDigestSha(repo1PlatformDigest1),
                     new List<ImageResult>
@@ -1060,6 +1043,53 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
+            if (primaryManifestDigest == syndicatedManifestDigest)
+            {
+                imageResultMapping.Add(DockerHelper.GetDigestSha(repo1ManifestDigest1),
+                    new List<ImageResult>
+                    {
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo1SharedTag1ImageStatus
+                            }
+                        },
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo2SharedTag1ImageStatus
+                            }
+                        }
+                    }.GetEnumerator());
+            }
+            else
+            {
+                imageResultMapping.Add(DockerHelper.GetDigestSha(repo1ManifestDigest1),
+                    new List<ImageResult>
+                    {
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo1SharedTag1ImageStatus
+                            }
+                        }
+                    }.GetEnumerator());
+                imageResultMapping.Add(DockerHelper.GetDigestSha(repo2ManifestDigest1),
+                    new List<ImageResult>
+                    {
+                        new ImageResult
+                        {
+                            Value = new List<ImageStatus>
+                            {
+                                repo2SharedTag1ImageStatus
+                            }
+                        }
+                    }.GetEnumerator());
+            }
+
             statusClientMock
                 .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
                 .ReturnsAsync((string digest) =>
@@ -1077,9 +1107,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string clientId = "my id";
             const string clientSecret = "very secret";
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            Mock<IEnvironmentService> environmentServiceMock = new();
 
-            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+            WaitForMcrImageIngestionCommand command = new(
                 Mock.Of<ILoggerService>(),
                 CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
                 environmentServiceMock.Object);
@@ -1140,6 +1170,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Manifest = new ManifestData
                                     {
                                         Digest = repo1ManifestDigest1,
+                                        SyndicatedDigests = new List<string>
+                                        {
+                                            repo2ManifestDigest1
+                                        },
                                         SharedTags = new List<string>
                                         {
                                             sharedTag1
@@ -1177,8 +1211,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1ManifestDigest1)), Times.Exactly(2));
+            if (primaryManifestDigest == syndicatedManifestDigest)
+            {
+                statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1ManifestDigest1)), Times.Exactly(2));
+            }
+            else
+            {
+                statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1ManifestDigest1)), Times.Exactly(1));
+                statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo2ManifestDigest1)), Times.Exactly(1));
+            }
+            
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1PlatformDigest1)), Times.Exactly(3));
+            statusClientMock.VerifyNoOtherCalls();
+
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 

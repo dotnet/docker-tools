@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class PlatformData : IComparable<PlatformData>
@@ -23,24 +24,24 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
             PlatformInfo = platformInfo;
         }
 
-        public string Dockerfile { get; set; }
+        public string? Dockerfile { get; set; }
 
         public List<string> SimpleTags { get; set; } = new List<string>();
 
-        public string Digest { get; set; }
+        public string? Digest { get; set; }
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
-        public string BaseImageDigest { get; set; }
+        public string? BaseImageDigest { get; set; }
 
-        public string OsType { get; set; }
+        public string? OsType { get; set; }
 
-        public string OsVersion { get; set; }
+        public string? OsVersion { get; set; }
 
-        public string Architecture { get; set; }
+        public string? Architecture { get; set; }
 
         public DateTime Created { get; set; }
 
-        public string CommitUrl { get; set; }
+        public string? CommitUrl { get; set; }
 
         public List<string> Layers { get; set; } = new List<string>();
 
@@ -55,14 +56,14 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         public bool IsUnchanged { get; set; }
 
         [JsonIgnore]
-        public ImageInfo ImageInfo { get; set; }
+        public ImageInfo? ImageInfo { get; set; }
 
         [JsonIgnore]
-        public PlatformInfo PlatformInfo { get; set; }
+        public PlatformInfo? PlatformInfo { get; set; }
 
         [JsonIgnore]
         public IEnumerable<TagInfo> AllTags =>
-            ImageInfo?.SharedTags.Union(PlatformInfo.Tags ?? Enumerable.Empty<TagInfo>()) ?? Enumerable.Empty<TagInfo>();
+            ImageInfo?.SharedTags.Union(PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>()) ?? Enumerable.Empty<TagInfo>();
 
         public int CompareTo([AllowNull] PlatformData other)
         {
@@ -87,8 +88,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public bool HasDifferentTagState(PlatformData other) =>
             // If either of the platforms has no simple tags while the other does have simple tags, they are not equal
-            (SimpleTags?.Count == 0 && other.SimpleTags?.Count > 0) ||
-            (SimpleTags?.Count > 0 && other.SimpleTags?.Count == 0);
+            (IsNullOrEmpty(SimpleTags) && !IsNullOrEmpty(other.SimpleTags)) ||
+            (!IsNullOrEmpty(SimpleTags) && IsNullOrEmpty(other.SimpleTags));
 
         public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image) =>
             new PlatformData(image, platform)
@@ -100,7 +101,10 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 SimpleTags = platform.Tags.Select(tag => tag.Name).ToList()
             };
 
-        private string GetMajorMinorVersion()
+        private bool IsNullOrEmpty<T>(List<T>? list) =>
+            list is null || !list.Any();
+
+        private string? GetMajorMinorVersion()
         {
             if (ImageInfo is null)
             {
@@ -125,3 +129,4 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         }
     }
 }
+#nullable disable

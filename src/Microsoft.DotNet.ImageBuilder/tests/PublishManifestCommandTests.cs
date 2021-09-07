@@ -36,8 +36,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.Inspect("repo2:sharedtag3", false))
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
 
+            DateTime manifestCreatedDate = DateTime.UtcNow;
+            IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
+
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>());
+                manifestToolService.Object, Mock.Of<ILoggerService>(), dateTimeService);
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -61,10 +64,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile1),
+                                    CreatePlatform(dockerfile1, simpleTags: new List<string>{ "tag1" }),
                                     new PlatformData
                                     {
-                                        
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -87,7 +89,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile2)
+                                    CreatePlatform(dockerfile2, simpleTags: new List<string>{ "tag2" })
                                 },
                                 Manifest = new ManifestData
                                 {
@@ -109,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile3)
+                                    CreatePlatform(dockerfile3, simpleTags: new List<string>{ "tag3" })
                                 }
                             }
                         }
@@ -169,18 +171,98 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageArtifactDetails actualImageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(actualOutput);
 
-            // Since we don't know what the exact Created time will be that the command has calculated, we're going to
-            // pull it from the data, verify that it's recent and then use it for constructing our expected data value.
-            DateTime actualCreatedDate = actualImageArtifactDetails.Repos[0].Images[0].Manifest.Created;
-            Assert.True(actualCreatedDate > (DateTime.Now.ToUniversalTime() - TimeSpan.FromMinutes(1)));
-            Assert.True(actualCreatedDate < (DateTime.Now.ToUniversalTime() + TimeSpan.FromMinutes(1)));
+            ImageArtifactDetails expectedImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "1.0/repo1/os/Dockerfile",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "tag1" }
+                                    },
+                                    new PlatformData()
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    Created = manifestCreatedDate,
+                                    Digest = "repo1@digest1",
+                                    SharedTags =
+                                    {
+                                        "sharedtag1",
+                                        "sharedtag2"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo2",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "1.0/repo2/os/Dockerfile",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "tag2" }
+                                    }
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    Created = manifestCreatedDate,
+                                    Digest = "repo2@digest2",
+                                    SharedTags =
+                                    {
+                                        "sharedtag1",
+                                        "sharedtag3"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo3",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    new PlatformData
+                                    {
+                                        Dockerfile = "1.0/repo3/os/Dockerfile",
+                                        OsType = "Linux",
+                                        OsVersion = "focal",
+                                        Architecture = "amd64",
+                                        SimpleTags = new List<string> { "tag3" }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
 
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "repo1@digest1";
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Created = actualCreatedDate;
-            imageArtifactDetails.Repos[1].Images[0].Manifest.Digest = "repo2@digest2";
-            imageArtifactDetails.Repos[1].Images[0].Manifest.Created = actualCreatedDate;
-
-            string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
+            string expectedOutput = JsonHelper.SerializeObject(expectedImageArtifactDetails);
 
             Assert.Equal(expectedOutput, actualOutput);
         }
@@ -236,7 +318,7 @@ manifests:
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>());
+                manifestToolService.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -387,8 +469,11 @@ manifests:
                 .Setup(o => o.Inspect(It.IsAny<string>(), false))
                 .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
 
+            DateTime manifestCreatedDate = DateTime.UtcNow;
+            IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
+
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>());
+                manifestToolService.Object, Mock.Of<ILoggerService>(), dateTimeService);
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -499,6 +584,51 @@ manifests:
             Assert.True(manifest2Found);
             manifestToolService
                 .Verify(o => o.PushFromSpec(It.IsAny<string>(), false), Times.Exactly(2));
+
+            ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(dockerfile1,
+                                        simpleTags: new List<string>
+                                        {
+                                            "tag1",
+                                            "tag2"
+                                        })
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    Digest = "mcr.microsoft.com/repo@digest",
+                                    Created = manifestCreatedDate,
+                                    SyndicatedDigests = new List<string>
+                                    {
+                                        "mcr.microsoft.com/repo2@digest"
+                                    },
+                                    SharedTags =
+                                    {
+                                        "sharedtag1",
+                                        "sharedtag2"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string expectedOutput = JsonHelper.SerializeObject(expectedImageArtifactDetails);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoPath);
+
+            Assert.Equal(expectedOutput, actualOutput);
         }
     }
 }

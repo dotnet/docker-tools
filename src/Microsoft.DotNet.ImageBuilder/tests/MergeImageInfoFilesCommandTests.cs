@@ -62,7 +62,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Platforms =
                                         {
-                                            CreatePlatform(repo2Image2Dockerfile)
+                                            CreatePlatform(repo2Image2Dockerfile,
+                                            simpleTags: new List<string>
+                                            {
+                                                "tag2"
+                                            })
                                         },
                                         ProductVersion = "1.0"
                                     }

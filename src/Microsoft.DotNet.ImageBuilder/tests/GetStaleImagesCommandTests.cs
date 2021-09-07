@@ -72,10 +72,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff"),
+                                                baseImageDigest: "base1@base1digest-diff",
+                                                simpleTags: new List<string> { "tag1" }),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest")
+                                                baseImageDigest: "base2@base2digest",
+                                                simpleTags: new List<string> { "tag2" })
                                         }
                                     }
                                 }
@@ -155,10 +157,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base2@base2digest-diff"),
+                                                baseImageDigest: "base2@base2digest-diff",
+                                                simpleTags: new List<string> { "tag1" }),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base3@base3digest")
+                                                baseImageDigest: "base3@base3digest",
+                                                simpleTags: new List<string> { "tag2" })
                                         }
                                     }
                                 }
@@ -432,7 +436,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff")
+                                                baseImageDigest: "base1@base1digest-diff",
+                                                simpleTags: new List<string> { "tag1" })
                                         }
                                     }
                                 }
@@ -482,7 +487,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff")
+                                                baseImageDigest: "base1@base1digest-diff",
+                                                simpleTags: new List<string> { "tag1" })
                                         }
                                     }
                                 }
@@ -498,7 +504,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest-diff")
+                                                baseImageDigest: "base2@base2digest-diff",
+                                                simpleTags: new List<string> { "tag2" })
                                         }
                                     }
                                 }
@@ -514,7 +521,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile3Path,
-                                                baseImageDigest: "base3@base3digest")
+                                                baseImageDigest: "base3@base3digest",
+                                                simpleTags: new List<string> { "tag3" })
                                         }
                                     }
                                 }
@@ -609,10 +617,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: baseImageDigest + "-diff"),
+                                                baseImageDigest: baseImageDigest + "-diff",
+                                                simpleTags: new List<string> { "tag1" }),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: baseImageDigest + "-diff")
+                                                baseImageDigest: baseImageDigest + "-diff",
+                                                simpleTags: new List<string> { "tag2" })
                                         }
                                     }
                                 }
@@ -697,7 +707,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: $"{baseImage}@{baseImageDigest}")
+                                                baseImageDigest: $"{baseImage}@{baseImageDigest}",
+                                                simpleTags: new List<string> { "tag1" })
                                         }
                                     }
                                 }
@@ -795,7 +806,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 runtimeDepsDockerfilePath,
-                                                baseImageDigest: $"{baseImage}@{baseImageDigest}-diff")
+                                                baseImageDigest: $"{baseImage}@{baseImageDigest}-diff",
+                                                simpleTags: new List<string> { "tag1" })
                                         }
                                     }
                                 }
@@ -824,7 +836,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 otherDockerfilePath,
-                                                baseImageDigest: $"{otherImage}@{otherImageDigest}")
+                                                baseImageDigest: $"{otherImage}@{otherImageDigest}",
+                                                simpleTags: new List<string> { "tag1" })
                                         }
                                     }
                                 }
@@ -1005,10 +1018,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             CreatePlatform(
                                                 dockerfile1Path,
-                                                baseImageDigest: "base1@base1digest-diff"),
+                                                baseImageDigest: "base1@base1digest-diff",
+                                                simpleTags: new List<string> { "tag1" }),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base2@base2digest")
+                                                baseImageDigest: "base2@base2digest",
+                                                simpleTags: new List<string> { "tag2" })
                                         }
                                     }
                                 }
@@ -1166,7 +1181,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             CreatePlatform(dockerfile1Path),
                                             CreatePlatform(
                                                 dockerfile2Path,
-                                                baseImageDigest: "base1@base1digest")
+                                                baseImageDigest: "base1@base1digest",
+                                                simpleTags: new List<string> { "tag1" })
                                         }
                                     }
                                 }

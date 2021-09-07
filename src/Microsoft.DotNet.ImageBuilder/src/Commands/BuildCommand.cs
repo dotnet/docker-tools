@@ -85,9 +85,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<string, PlatformData> platformDataByTag = new Dictionary<string, PlatformData>();
             foreach (PlatformData platformData in GetBuiltPlatforms())
             {
-                foreach (TagInfo tag in platformData.PlatformInfo.Tags)
+                if (platformData.PlatformInfo is not null)
                 {
-                    platformDataByTag.Add(tag.FullyQualifiedName, platformData);
+                    foreach (TagInfo tag in platformData.PlatformInfo.Tags)
+                    {
+                        platformDataByTag.Add(tag.FullyQualifiedName, platformData);
+                    }
                 }
             }
 
@@ -96,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (PlatformData platform in builtPlatforms)
             {
-                IEnumerable<TagInfo> pushTags = GetPushTags(platform.PlatformInfo.Tags);
+                IEnumerable<TagInfo> pushTags = GetPushTags(platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>());
 
                 foreach (TagInfo tag in pushTags)
                 {
@@ -125,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (PlatformData platform in platformsWithNoPushTags)
             {
                 PlatformData matchingBuiltPlatform = builtPlatforms.First(builtPlatform =>
-                    GetPushTags(builtPlatform.PlatformInfo.Tags).Any() &&
+                    GetPushTags(builtPlatform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>()).Any() &&
                     PlatformInfo.AreMatchingPlatforms(platform.ImageInfo, platform.PlatformInfo, builtPlatform.ImageInfo, builtPlatform.PlatformInfo));
 
                 platform.Digest = matchingBuiltPlatform.Digest;
@@ -151,8 +154,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void SetPlatformDataBaseDigest(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
         {
-            string baseImageDigest = platform.BaseImageDigest;
-            if (platform.BaseImageDigest is null && platform.PlatformInfo.FinalStageFromImage is not null)
+            string? baseImageDigest = platform.BaseImageDigest;
+            if (platform.BaseImageDigest is null && platform.PlatformInfo?.FinalStageFromImage is not null)
             {
                 if (!platformDataByTag.TryGetValue(platform.PlatformInfo.FinalStageFromImage, out PlatformData? basePlatformData))
                 {
@@ -169,7 +172,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 baseImageDigest = basePlatformData.Digest;
             }
 
-            if (platform.PlatformInfo.FinalStageFromImage is not null)
+            if (platform.PlatformInfo?.FinalStageFromImage is not null)
             {
                 baseImageDigest = DockerHelper.GetDigestString(
                     DockerHelper.GetRepo(GetFromImagePublicTag(platform.PlatformInfo.FinalStageFromImage)),
@@ -191,7 +194,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
             string digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
-            if (digest != null)
+            if (digest is not null && platform.PlatformInfo is not null)
             {
                 digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
             }
@@ -311,7 +314,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private bool CachedPlatformHasAllTagsPublished(PlatformData srcPlatformData) =>
-            srcPlatformData.PlatformInfo.Tags
+            (srcPlatformData.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
                 .Where(tag => !tag.Model.IsLocal)
                 .Select(tag => tag.Name)
                 .AreEquivalent(srcPlatformData.SimpleTags);
@@ -418,7 +421,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return false;
         }
 
-        private void OnCacheHit(RepoInfo repo, IEnumerable<string> allTags, bool pullImage, string sourceDigest)
+        private void OnCacheHit(RepoInfo repo, IEnumerable<string> allTags, bool pullImage, string? sourceDigest)
         {
             _loggerService.WriteMessage();
             _loggerService.WriteMessage("CACHE HIT");
@@ -453,7 +456,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
             string currentCommitUrl = _gitService.GetDockerfileCommitUrl(platform, Options.SourceRepoUrl);
-            bool commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
+            bool commitShaMatches = false;
+            if (srcPlatformData.CommitUrl is not null)
+            {
+                commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
+            }
 
             _loggerService.WriteMessage();
             _loggerService.WriteMessage($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
@@ -790,14 +797,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private class BuildCacheInfo
         {
-            public BuildCacheInfo(string digest, string baseImageDigest)
+            public BuildCacheInfo(string? digest, string? baseImageDigest)
             {
                 Digest = digest;
                 BaseImageDigest = baseImageDigest;
             }
 
-            public string Digest { get; }
-            public string BaseImageDigest { get; }
+            public string? Digest { get; }
+            public string? BaseImageDigest { get; }
         }
     }
 }

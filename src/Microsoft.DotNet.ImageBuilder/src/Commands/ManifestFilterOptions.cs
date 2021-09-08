@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string OsType { get; set; } = string.Empty;
         public IEnumerable<string> OsVersions { get; set; } = Array.Empty<string>();
         public IEnumerable<string> Paths { get; set; } = Array.Empty<string>();
+        public IEnumerable<string> ProductVersions { get; set; } = Array.Empty<string>();
     }
 
     public class ManifestFilterOptionsBuilder
@@ -37,7 +38,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 CreateMultiOption<string>(OsVersionOptionName, nameof(ManifestFilterOptions.OsVersions),
                     "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)"),
                 CreateMultiOption<string>(PathOptionName, nameof(ManifestFilterOptions.Paths),
-                    "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)")
+                    "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)"),
+                CreateMultiOption<string>("version", nameof(ManifestFilterOptions.ProductVersions),
+                    "Product versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)")
             };
 
         public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();

@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public virtual ManifestFilter GetManifestFilter()
         {
-            ManifestFilter filter = new ManifestFilter()
+            ManifestFilter filter = new()
             {
                 IncludeRepos = Repos,
             };
@@ -33,6 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 filter.IncludeOsType = filterOptions.OsType;
                 filter.IncludeOsVersions = filterOptions.OsVersions;
                 filter.IncludePaths = filterOptions.Paths;
+                filter.IncludeProductVersions = filterOptions.ProductVersions;
             }
 
             return filter;

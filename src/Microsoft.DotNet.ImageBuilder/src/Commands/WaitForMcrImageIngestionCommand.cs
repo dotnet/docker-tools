@@ -65,13 +65,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
                 yield return new DigestInfo(digestSha, repo.Repo, image.Manifest.SharedTags);
 
-                foreach (string syndicatedDigest in image.Manifest.SyndicatedDigests)
-                {
-                    string syndicatedDigestSha = DockerHelper.GetDigestSha(syndicatedDigest);
-
-
-                }
-
                 // Find all syndicated shared tags grouped by their syndicated repo
                 IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.ManifestImage.SharedTags
                     .Where(tag => image.Manifest.SharedTags.Contains(tag.Name) && tag.SyndicatedRepo != null)
@@ -221,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         throw task.Exception;
                     }
 
-                    throw new NotImplementedException();
+                    throw new NotSupportedException();
                 }));
         }
 

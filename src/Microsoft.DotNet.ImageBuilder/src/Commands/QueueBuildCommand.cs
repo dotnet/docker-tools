@@ -196,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 builder.AppendLine();
                 builder.AppendLine(
-                    "Please investigate the cause of the failures, resolve the issue, and manually queue a build for the Dockerfile paths listed above.");
+                    $"Please investigate the cause of the failures, resolve the issue, and manually queue a build for the Dockerfile paths listed above. You must manually tag the build with a tag named '{AzdoTags.AutoBuilder}' in order for AutoBuilder to recognize that a successful build has occurred.");
 
                 string message = builder.ToString();
 

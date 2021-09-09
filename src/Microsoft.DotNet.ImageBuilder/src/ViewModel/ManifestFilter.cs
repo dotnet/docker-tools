@@ -7,19 +7,21 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestFilter
     {
-        public string IncludeArchitecture { get; set; }
-        public string IncludeOsType { get; set; }
+        public string? IncludeArchitecture { get; set; }
+        public string? IncludeOsType { get; set; }
         public IEnumerable<string> IncludeRepos { get; set; }
-        public IEnumerable<string> IncludeOsVersions { get; set; }
-        public IEnumerable<string> IncludePaths { get; set; }
-        public IEnumerable<string> IncludeProductVersions { get; set; }
+        public IEnumerable<string>? IncludeOsVersions { get; set; }
+        public IEnumerable<string>? IncludePaths { get; set; }
+        public IEnumerable<string>? IncludeProductVersions { get; set; }
 
-        public ManifestFilter()
+        public ManifestFilter(IEnumerable<string> repos)
         {
+            IncludeRepos = repos;
         }
 
         public static string GetFilterRegexPattern(params string[] patterns)
@@ -30,12 +32,13 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return $"^({processedPatterns})$";
         }
 
-        public IEnumerable<Platform> FilterPlatforms(IEnumerable<Platform> platforms, string resolvedProductVersion)
+        public IEnumerable<Platform> FilterPlatforms(IEnumerable<Platform> platforms, string? resolvedProductVersion)
         {
             if (IncludeProductVersions?.Any() ?? false)
             {
                 string includeProductVersionsPattern = GetFilterRegexPattern(IncludeProductVersions.ToArray());
-                if (!Regex.IsMatch(resolvedProductVersion, includeProductVersionsPattern, RegexOptions.IgnoreCase))
+                if (resolvedProductVersion is not null &&
+                    !Regex.IsMatch(resolvedProductVersion, includeProductVersionsPattern, RegexOptions.IgnoreCase))
                 {
                     return Enumerable.Empty<Platform>();
                 }
@@ -85,3 +88,4 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
     }
 }
+#nullable disable

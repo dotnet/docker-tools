@@ -69,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         string sha = DockerHelper.GetDigestSha(platform.Digest);
                         imageInfo.AppendLine(FormatImageCsv(sha, platform, image, repo.Repo, timestamp));
 
-                        IEnumerable<TagInfo> tagInfos = platform.PlatformInfo.Tags
+                        IEnumerable<TagInfo> tagInfos = (platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
                             .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name))
                             .ToList();
 
@@ -113,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private static string FormatImageCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>
-            $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.PlatformInfo.GetOSDisplayName()}\","
+            $"\"{imageId}\",\"{platform.Architecture}\",\"{platform.OsType}\",\"{platform.PlatformInfo?.GetOSDisplayName()}\","
                 + $"\"{image.ProductVersion}\",\"{platform.Dockerfile}\",\"{repo}\",\"{timestamp}\"";
 
         private static string FormatLayerCsv(

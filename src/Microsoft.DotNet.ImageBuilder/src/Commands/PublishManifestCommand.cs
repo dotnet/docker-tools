@@ -20,15 +20,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
+        private readonly IDateTimeService _dateTimeService;
         private List<string> _publishedManifestTags = new List<string>();
 
         [ImportingConstructor]
         public PublishManifestCommand(
             IManifestToolService manifestToolService,
-            ILoggerService loggerService)
+            ILoggerService loggerService,
+            IDateTimeService dateTimeService)
         {
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
         }
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
@@ -49,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .SelectMany(repoImage => GenerateManifests(repoImage.repo, repoImage.image))
                     .ToList();
 
-                DateTime createdDate = DateTime.Now.ToUniversalTime();
+                DateTime createdDate = _dateTimeService.UtcNow;
                 Parallel.ForEach(manifests, manifest =>
                 {
                     string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
@@ -87,10 +90,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 image.Manifest.Created = createdDate;
 
                 TagInfo sharedTag = image.ManifestImage.SharedTags.First();
+
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
                     _manifestToolService.GetManifestDigestSha(
                         ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun));
+
+                IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
+                    .Where(tag => tag.SyndicatedRepo is not null)
+                    .GroupBy(tag => tag.SyndicatedRepo)
+                    .Select(group => (group.Key, group.First().SyndicatedDestinationTags.First()))
+                    .Cast<(string Repo, string Tag)>()
+                    .OrderBy(obj => obj.Repo)
+                    .ThenBy(obj => obj.Tag);
+
+                foreach ((string Repo, string Tag) syndicatedSharedTag in syndicatedRepresentativeSharedTags)
+                {
+                    string digest = DockerHelper.GetDigestString(
+                        DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
+                        _manifestToolService.GetManifestDigestSha(
+                            ManifestMediaType.ManifestList,
+                            DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
+                            Options.IsDryRun));
+                    image.Manifest.SyndicatedDigests.Add(digest);
+                }
             });
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
@@ -125,7 +148,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Func<PlatformInfo, TagInfo?> getTagRepresentative)
         {
             string imageName = getImageName(tags.First());
-            StringBuilder manifestYml = new StringBuilder();
+            StringBuilder manifestYml = new();
             manifestYml.AppendLine($"image: {imageName}");
             _publishedManifestTags.Add(imageName);
 

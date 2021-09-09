@@ -28,18 +28,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Architecture = architecture,
                 OsType = osType,
                 OsVersion = osVersion,
-                SimpleTags = simpleTags,
+                SimpleTags = simpleTags ?? new List<string>(),
+                Layers = layers ?? new List<string>(),
                 BaseImageDigest = baseImageDigest,
             };
 
             if (created.HasValue)
             {
                 platform.Created = created.Value;
-            }
-
-            if (layers != null)
-            {
-                platform.Layers = layers;
             }
 
             return platform;

@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -72,12 +73,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
                 {
                     string syndicatedRepo = Options.RepoPrefix + syndicatedTags.Key;
+                    string fullyQualifiedRepo = DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedRepo);
 
-                    string tag = syndicatedTags.First().SyndicatedDestinationTags.First();
-                    tag = DockerHelper.GetImageName(Manifest.Registry, syndicatedRepo, tag);
+                    string? syndicatedDigest = image.Manifest.SyndicatedDigests
+                        .FirstOrDefault(digest => digest.StartsWith($"{fullyQualifiedRepo}@"));
+
+                    if (syndicatedDigest is null)
+                    {
+                        throw new InvalidOperationException($"Unable to find syndicated digest for '{fullyQualifiedRepo}'");
+                    }
 
                     yield return new DigestInfo(
-                        digestSha,
+                        DockerHelper.GetDigestSha(syndicatedDigest),
                         syndicatedRepo,
                         syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
                 }
@@ -90,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 yield return new DigestInfo(sha, repo.Repo, platform.SimpleTags);
 
                 // Find all syndicated simple tags grouped by their syndicated repo
-                IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = platform.PlatformInfo.Tags
+                IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = (platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
                     .Where(tagInfo => platform.SimpleTags.Contains(tagInfo.Name) && tagInfo.SyndicatedRepo != null)
                     .GroupBy(tagInfo => tagInfo.SyndicatedRepo);
 
@@ -202,12 +209,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             return task.Result;
                         }
                     }
-                    else if (task.IsFaulted)
+                    else if (task.Exception is not null)
                     {
                         throw task.Exception;
                     }
 
-                    return null;
+                    throw new NotSupportedException();
                 }));
         }
 
@@ -289,15 +296,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _loggerService.WriteMessage(stringBuilder.ToString());
             }
 
-            return new ImageResultInfo
-            {
-                ImageResult = imageResult,
-                DigestInfo = digestInfo
-            };
+            return new ImageResultInfo(imageResult, digestInfo);
         }
 
         private class ImageResultInfo
         {
+            public ImageResultInfo(ImageResult imageResult, DigestInfo digestInfo)
+            {
+                ImageResult = imageResult;
+                DigestInfo = digestInfo;
+            }
+
             public ImageResult ImageResult { get; set; }
             public DigestInfo DigestInfo { get; set; }
         }
@@ -322,3 +331,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

@@ -110,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
             manifestOptionsMock
                 .Setup(o => o.GetManifestFilter())
-                .Returns(new ManifestFilter());
+                .Returns(new ManifestFilter(Enumerable.Empty<string>()));
 
             return manifestOptionsMock.Object;
         }

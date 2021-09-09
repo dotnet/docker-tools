@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -40,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 },
                 "fullrepo",
                 "repo",
-                new ManifestFilter(),
+                new ManifestFilter(Enumerable.Empty<string>()),
                 new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
                 "base");
     }

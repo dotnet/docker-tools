@@ -21,10 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public virtual ManifestFilter GetManifestFilter()
         {
-            ManifestFilter filter = new()
-            {
-                IncludeRepos = Repos,
-            };
+            ManifestFilter filter = new(Repos);
 
             if (this is IFilterableOptions options)
             {

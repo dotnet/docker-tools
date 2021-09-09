@@ -1262,7 +1262,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 },
                 "fullrepo",
                 "repo",
-                new ManifestFilter(),
+                new ManifestFilter(Enumerable.Empty<string>()),
                 new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null),
                 "base");
 
@@ -1285,7 +1285,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public bool IsVerbose => false;
 
-            public ManifestFilter GetManifestFilter() => new ManifestFilter();
+            public ManifestFilter GetManifestFilter() => new ManifestFilter(Enumerable.Empty<string>());
 
             public string GetOption(string name) => throw new NotImplementedException();
         }

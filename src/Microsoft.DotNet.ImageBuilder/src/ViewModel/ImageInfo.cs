@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
@@ -22,41 +23,50 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public Image Model { get; private set; }
         public IEnumerable<TagInfo> SharedTags { get; private set; }
-        public string ProductVersion { get; private set; }
+        public string? ProductVersion { get; private set; }
 
-        private ImageInfo()
+        private ImageInfo(Image model, string? productVersion, IEnumerable<TagInfo> sharedTags, IEnumerable<PlatformInfo> allPlatforms,
+            IEnumerable<PlatformInfo> filteredPlatforms)
         {
+            Model = model;
+            ProductVersion = productVersion;
+            SharedTags = sharedTags;
+            AllPlatforms = allPlatforms;
+            FilteredPlatforms = filteredPlatforms;
         }
 
         public static ImageInfo Create(
             Image model, string fullRepoModelName, string repoName, ManifestFilter manifestFilter, VariableHelper variableHelper, string baseDirectory)
         {
-            ImageInfo imageInfo = new ImageInfo
-            {
-                Model = model,
-                ProductVersion = variableHelper.SubstituteValues(model.ProductVersion)
-            };
-
+            IEnumerable<TagInfo> sharedTags;
             if (model.SharedTags == null)
             {
-                imageInfo.SharedTags = Enumerable.Empty<TagInfo>();
+                sharedTags = Enumerable.Empty<TagInfo>();
             }
             else
             {
-                imageInfo.SharedTags = model.SharedTags
+                sharedTags = model.SharedTags
                     .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper))
                     .ToArray();
             }
 
-            imageInfo.AllPlatforms = model.Platforms
+            IEnumerable<PlatformInfo> allPlatforms = model.Platforms
                 .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))
                 .ToArray();
 
-            IEnumerable<Platform> filteredPlatformModels = manifestFilter.FilterPlatforms(model.Platforms, imageInfo.ProductVersion);
-            imageInfo.FilteredPlatforms = imageInfo.AllPlatforms
+            string? productVersion = variableHelper.SubstituteValues(model.ProductVersion);
+
+            IEnumerable<Platform> filteredPlatformModels = manifestFilter.FilterPlatforms(model.Platforms, productVersion);
+            IEnumerable<PlatformInfo> filteredPlatforms = allPlatforms
                 .Where(platform => filteredPlatformModels.Contains(platform.Model));
 
-            return imageInfo;
+            return new ImageInfo(
+                model,
+                productVersion,
+                sharedTags,
+                allPlatforms,
+                filteredPlatforms);
         }
     }
 }
+#nullable disable

@@ -33,24 +33,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(platform => platform.Tags.First().FullyQualifiedName)
                 .ToList();
 
-            StringBuilder pulledImages = new();
-
             _loggerService.WriteHeading("PULLING IMAGES");
             foreach (string imageTag in imageTags)
             {
-                _dockerService.PullImage(imageTag, Options.IsDryRun);
-
-                if (pulledImages.Length > 0)
-                {
-                    pulledImages.Append(',');
-                }
-
-                pulledImages.Append(imageTag);
+                _dockerService.PullImage(imageTag, true);
             }
 
             if (Options.OutputVariableName is not null)
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable(Options.OutputVariableName, pulledImages.ToString()));
+                _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable(Options.OutputVariableName, string.Join(',', imageTags)));
             }
 
             return Task.CompletedTask;

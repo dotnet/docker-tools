@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 manifests =
                     (await SubscriptionHelper.GetSubscriptionManifestsAsync(
-                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient,
+                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient, LoggerService,
                         options => options.RegistryOverride = Options.RegistryOverride))
                     .Select(subscriptionManifest => subscriptionManifest.Manifest);
                 fullRegistryName = Options.RegistryOverride;

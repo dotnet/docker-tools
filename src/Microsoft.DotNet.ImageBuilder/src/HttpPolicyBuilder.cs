@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class HttpPolicyBuilder
@@ -27,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public HttpPolicyBuilder WithMeteredRetryPolicy(ILoggerService loggerService)
         {
             _policies.Add(Policy
-                .HandleResult<HttpResponseMessage>(response => response?.StatusCode == HttpStatusCode.TooManyRequests)
+                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
                 .Or<TaskCanceledException>(exception =>
                     exception.InnerException is IOException ioException &&
                     ioException.InnerException is SocketException)
@@ -44,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .RetryAsync(1, async (result, retryCount, context) =>
                 {
                     loggerService.WriteMessage(
-                        $"Unauthorized status code returned for '{result.Result.RequestMessage.RequestUri}'. Refreshing access token and retrying.");
+                        $"Unauthorized status code returned for '{result.Result.RequestMessage?.RequestUri}'. Refreshing access token and retrying.");
                     await refreshAccessToken();
                 }));
             return this;
@@ -59,12 +60,12 @@ namespace Microsoft.DotNet.ImageBuilder
                 .WaitAndRetryAsync(sleepDurations, (result, duration) =>
                 {
                     loggerService.WriteMessage(
-                        $"NotFound status code returned for '{result.Result.RequestMessage.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
+                        $"NotFound status code returned for '{result.Result.RequestMessage?.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
                 }));
             return this;
         }
 
-        public AsyncPolicy<HttpResponseMessage> Build()
+        public AsyncPolicy<HttpResponseMessage>? Build()
         {
             if (!_policies.Any())
             {
@@ -81,3 +82,4 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
+#nullable disable

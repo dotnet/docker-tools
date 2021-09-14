@@ -18,7 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class SubscriptionHelper
     {
         public static async Task<IEnumerable<(Subscription Subscription, ManifestInfo Manifest)>> GetSubscriptionManifestsAsync(
-            string subscriptionsPath, ManifestFilterOptions filterOptions, HttpClient httpClient, Action<ManifestOptions>? configureOptions = null)
+            string subscriptionsPath, ManifestFilterOptions filterOptions, HttpClient httpClient, ILoggerService loggerService,
+            Action<ManifestOptions>? configureOptions = null)
         {
             string subscriptionsJson = File.ReadAllText(subscriptionsPath);
             Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
@@ -27,7 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 List<(Subscription Subscription, ManifestInfo Manifest)>();
             foreach (Subscription subscription in subscriptions)
             {
-                ManifestInfo? manifest = await GetSubscriptionManifestAsync(subscription, filterOptions, httpClient, configureOptions);
+                ManifestInfo? manifest = await GetSubscriptionManifestAsync(
+                    subscription, filterOptions, httpClient, loggerService, configureOptions);
                 if (manifest is not null)
                 {
                     subscriptionManifests.Add((subscription, manifest));
@@ -38,7 +40,8 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private static async Task<ManifestInfo?> GetSubscriptionManifestAsync(Subscription subscription,
-            ManifestFilterOptions filterOptions, HttpClient httpClient, Action<ManifestOptions>? configureOptions)
+            ManifestFilterOptions filterOptions, HttpClient httpClient, ILoggerService loggerService,
+            Action<ManifestOptions>? configureOptions)
         {
             // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
             // then there are no images that need to be inspected.
@@ -49,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, subscription.Manifest);
+            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, subscription.Manifest, loggerService);
             try
             {
                 TempManifestOptions manifestOptions = new(filterOptions)

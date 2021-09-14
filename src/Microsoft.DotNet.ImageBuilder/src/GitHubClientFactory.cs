@@ -13,19 +13,29 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IGitHubClientFactory))]
     internal class GitHubClientFactory : IGitHubClientFactory
     {
+        private readonly ILoggerService _loggerService;
+
+        [ImportingConstructor]
+        public GitHubClientFactory(ILoggerService loggerService)
+        {
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+        }
+
         public IGitHubClient GetClient(GitHubAuth gitHubAuth, bool isDryRun)
         {
-            return new GitHubClientWrapper(new GitHubClient(gitHubAuth), isDryRun);
+            return new GitHubClientWrapper(_loggerService, new GitHubClient(gitHubAuth), isDryRun);
         }
 
         // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled
         private class GitHubClientWrapper : IGitHubClient
         {
+            private readonly ILoggerService _loggerService;
             private readonly GitHubClient _innerClient;
             private readonly bool _isDryRun;
 
-            public GitHubClientWrapper(GitHubClient innerClient, bool isDryRun)
+            public GitHubClientWrapper(ILoggerService loggerService, GitHubClient innerClient, bool isDryRun)
             {
+                _loggerService = loggerService;
                 _innerClient = innerClient;
                 _isDryRun = isDryRun;
             }
@@ -41,16 +51,20 @@ namespace Microsoft.DotNet.ImageBuilder
                 _innerClient.CreateGitRemoteUrl(project);
 
             public Task<GitCommit> GetCommitAsync(GitHubProject project, string sha) =>
-                _innerClient.GetCommitAsync(project, sha);
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    .ExecuteAsync(() => _innerClient.GetCommitAsync(project, sha));
 
             public Task<GitHubContents> GetGitHubFileAsync(string path, GitHubProject project, string @ref) =>
-                _innerClient.GetGitHubFileAsync(path, project, @ref);
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    .ExecuteAsync(() => _innerClient.GetGitHubFileAsync(path, project, @ref));
 
             public Task<string> GetGitHubFileContentsAsync(string path, GitHubBranch branch) =>
-                _innerClient.GetGitHubFileContentsAsync(path, branch);
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    .ExecuteAsync(() => _innerClient.GetGitHubFileContentsAsync(path, branch));
 
             public Task<string> GetGitHubFileContentsAsync(string path, GitHubProject project, string @ref) =>
-                _innerClient.GetGitHubFileContentsAsync(path, project, @ref);
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    .ExecuteAsync(() => _innerClient.GetGitHubFileContentsAsync(path, project, @ref));
 
             public Task<string> GetMyAuthorIdAsync() =>
                 _innerClient.GetMyAuthorIdAsync();
@@ -104,7 +118,8 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             public Task<GitHubPullRequest> SearchPullRequestsAsync(GitHubProject project, string headPrefix, string author, string sortType = "created") =>
-                _innerClient.SearchPullRequestsAsync(project, headPrefix, author, sortType);
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    .ExecuteAsync(() => _innerClient.SearchPullRequestsAsync(project, headPrefix, author, sortType));
 
             public Task UpdateGitHubPullRequestAsync(GitHubProject project, int number, string title = null, string body = null, string state = null, bool? maintainersCanModify = null)
             {

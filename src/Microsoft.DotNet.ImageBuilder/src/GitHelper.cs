@@ -98,33 +98,16 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static async Task ExecuteGitOperationsWithRetryAsync(Func<Task> execute,
-            int maxTries = DefaultMaxTries, int retryMillisecondsDelay = DefaultRetryMillisecondsDelay)
-        {
-            for (int i = 0; i < maxTries; i++)
-            {
-                try
-                {
-                    await execute();
-
-                    break;
-                }
-                catch (HttpRequestException ex) when (i < (maxTries - 1))
-                {
-                    Logger.WriteMessage($"Encountered exception interacting with GitHub: {ex.Message}");
-                    Logger.WriteMessage($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");
-                    await Task.Delay(retryMillisecondsDelay);
-                }
-            }
-        }
-
-        public static async Task<string> DownloadAndExtractGitRepoArchiveAsync(HttpClient httpClient, IGitHubBranchRef branchRef)
+        public static async Task<string> DownloadAndExtractGitRepoArchiveAsync(
+            HttpClient httpClient, IGitHubBranchRef branchRef, ILoggerService loggerService)
         {
             string uniqueName = $"{branchRef.Owner}-{branchRef.Repo}-{branchRef.Branch}";
             string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-            Uri repoContentsUrl = GitHelper.GetArchiveUrl(branchRef);
+            Uri repoContentsUrl = GetArchiveUrl(branchRef);
             string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
-            File.WriteAllBytes(zipPath, await httpClient.GetByteArrayAsync(repoContentsUrl));
+            byte[] bytes = await RetryHelper.GetWaitAndRetryPolicy<Exception>(loggerService)
+                .ExecuteAsync(() => httpClient.GetByteArrayAsync(repoContentsUrl));
+            File.WriteAllBytes(zipPath, bytes);
 
             try
             {

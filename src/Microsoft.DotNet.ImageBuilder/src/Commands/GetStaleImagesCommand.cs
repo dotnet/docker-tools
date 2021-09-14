@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
                 (await SubscriptionHelper.GetSubscriptionManifestsAsync(
-                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient))
+                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient, _loggerService))
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {

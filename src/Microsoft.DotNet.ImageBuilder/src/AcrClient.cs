@@ -14,6 +14,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Acr;
 using Newtonsoft.Json;
 using Polly;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class AcrClient : IAcrClient, IDisposable
@@ -59,12 +60,12 @@ namespace Microsoft.DotNet.ImageBuilder
             _httpPolicy = HttpPolicyBuilder.Create()
                 .WithMeteredRetryPolicy(loggerService)
                 .WithRefreshAccessTokenPolicy(GetAcrRefreshTokenAsync, loggerService)
-                .Build();
+                .Build() ?? throw new InvalidOperationException("Policy should not be null");
         }
 
         public async Task<Catalog> GetCatalogAsync()
         {
-            Catalog result = null;
+            Catalog? result = null;
             await GetPagedResponseAsync<Catalog>(
                 $"{_acrV1BaseUrl}/_catalog?n={MaxPagedResults}",
                 pagedCatalog =>
@@ -79,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     }
                 });
 
-            return result;
+            return result ?? throw new InvalidOperationException("Catalog should not be null.");
         }
 
         public Task<Repository> GetRepositoryAsync(string name)
@@ -96,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public async Task<RepositoryManifests> GetRepositoryManifestsAsync(string repositoryName)
         {
-            RepositoryManifests result = null;
+            RepositoryManifests? result = null;
             await GetPagedResponseAsync<RepositoryManifests>(
                 $"{_acrV1BaseUrl}/{repositoryName}/_manifests?n={MaxPagedResults}",
                 pagedRepoManifests =>
@@ -111,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             });
 
-            return result;
+            return result ?? throw new InvalidOperationException("Catalog should not be null.");
         }
 
         public Task DeleteManifestAsync(string repositoryName, string digest)
@@ -141,9 +142,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 onGetResults(results);
 
-                if (response.Headers.TryGetValues("Link", out IEnumerable<string> linkValues))
+                if (response.Headers.TryGetValues("Link", out IEnumerable<string>? linkValues))
                 {
-                    Match nextLinkMatch = linkValues
+                    Match? nextLinkMatch = linkValues
                         .Select(linkValue => s_linkHeaderRegex.Match(linkValue))
                         .FirstOrDefault(match => match.Success && match.Groups[RelationshipTypeGroup].Value == "next");
 
@@ -221,3 +222,4 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
+#nullable disable

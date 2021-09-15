@@ -114,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             return new Dictionary<Value, Value>
             {
-                ["VARIABLES"] = Manifest.VariableHelper.GetVariables()
+                ["VARIABLES"] = Manifest.VariableHelper.ResolvedVariables
                     .ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value)
             };
         }

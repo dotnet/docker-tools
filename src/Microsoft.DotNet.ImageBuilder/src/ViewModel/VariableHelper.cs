@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class VariableHelper
@@ -27,36 +28,39 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private Manifest Manifest { get; set; }
         private IManifestOptionsInfo Options { get; set; }
 
+        public IDictionary<string, string?> ResolvedVariables { get; } = new Dictionary<string, string?>();
+
         public VariableHelper(Manifest manifest, IManifestOptionsInfo options, Func<string, RepoInfo> getRepoById)
         {
             GetRepoById = getRepoById;
             Manifest = manifest;
             Options = options;
+
+            if (Manifest.Variables is not null)
+            {
+                foreach (KeyValuePair<string, string?> kvp in Manifest.Variables)
+                {
+                    string? variableValue;
+                    if (Options.Variables?.TryGetValue(kvp.Key, out string? overridenValue) == true)
+                    {
+                        variableValue = overridenValue;
+                    }
+                    else
+                    {
+                        variableValue = kvp.Value;
+                    }
+
+                    variableValue = SubstituteValues(variableValue);
+                    ResolvedVariables.Add(kvp.Key, variableValue);
+                }
+            }
+            else if (Options.Variables is not null)
+            {
+                ResolvedVariables = new Dictionary<string, string?>(Options.Variables);
+            }
         }
 
-        public IDictionary<string, string> GetVariables()
-        {
-            Dictionary<string, string> variables;
-
-            if (Manifest.Variables != null)
-            {
-                variables = new Dictionary<string, string>(Manifest.Variables);
-            }
-            else
-            {
-                variables = new Dictionary<string, string>();
-            }
-            
-            foreach(KeyValuePair<string, string> kvp in Options.Variables)
-            {
-                // Variables specified via the Options override modeled variables
-                variables[kvp.Key] = kvp.Value;
-            }
-
-            return variables;
-        }
-
-        public string SubstituteValues(string expression, Func<string, string, string> getContextBasedSystemValue = null)
+        public string? SubstituteValues(string? expression, Func<string, string, string>? getContextBasedSystemValue = null)
         {
             if (expression == null)
             {
@@ -65,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             foreach (Match match in Regex.Matches(expression, s_tagVariablePattern))
             {
-                string variableValue;
+                string? variableValue;
                 string variableName = match.Groups[VariableGroupName].Value;
 
                 if (variableName.Contains(BuiltInDelimiter))
@@ -75,6 +79,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 else
                 {
                     variableValue = GetUserValue(variableName);
+
+                    if (variableValue is null && Manifest.Variables.ContainsKey(variableName))
+                    {
+                        throw new NotSupportedException(
+                            $"Unable to resolve value for variable '{variableName}' because it references a variable whose value hasn't been resolved yet. Dependencies between variables need to be ordered according to their dependency.");
+                    }
                 }
 
                 if (variableValue == null)
@@ -88,9 +98,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return expression;
         }
 
-        private string GetBuiltInValue(string variableName, Func<string, string, string> getContextBasedSystemValue)
+        private string? GetBuiltInValue(string variableName, Func<string, string, string>? getContextBasedSystemValue)
         {
-            string variableValue = null;
+            string? variableValue = null;
 
             string[] variableNameParts = variableName.Split(BuiltInDelimiter, 2);
             string variableType = variableNameParts[0];
@@ -123,14 +133,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return variableValue;
         }
 
-        private string GetUserValue(string variableName)
+        private string? GetUserValue(string variableName)
         {
-            if (!Options.Variables.TryGetValue(variableName, out string variableValue))
+            string? variableValue = null;
+            if (!Options.Variables?.TryGetValue(variableName, out variableValue) == true)
             {
-                Manifest.Variables?.TryGetValue(variableName, out variableValue);
+                ResolvedVariables?.TryGetValue(variableName, out variableValue);
             }
 
             return variableValue;
         }
     }
 }
+#nullable disable

@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return null;
             }
 
-            string fullVersion = ImageInfo.ProductVersion;
+            string? fullVersion = ImageInfo.ProductVersion;
 
             if (string.IsNullOrEmpty(fullVersion))
             {

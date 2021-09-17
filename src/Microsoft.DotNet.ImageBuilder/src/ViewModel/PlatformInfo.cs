@@ -195,6 +195,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = "Ubuntu 20.04";
                 }
+                else if (os.Contains("hirsute"))
+                {
+                    displayName = "Ubuntu 21.04";
+                }
                 else if (os.Contains("alpine") || os.Contains("centos") || os.Contains("fedora"))
                 {
                     displayName = FormatVersionableOsName(os, name => name.FirstCharToUpper());

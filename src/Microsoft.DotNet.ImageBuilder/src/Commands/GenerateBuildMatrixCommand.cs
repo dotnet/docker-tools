@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -19,13 +20,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const string VersionRegGroupName = "Version";
 
-        private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
+        private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
         private static readonly char[] s_pathSeparators = { '/', '\\' };
-        private static readonly Regex s_versionRegex = new Regex(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
+        private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
 
         public GenerateBuildMatrixCommand() : base()
         {
-            _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
+            _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
                 if (Options.ImageInfoPath != null)
                 {
@@ -53,15 +54,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs, Func<PlatformInfo, string> getKey)
         {
             List<List<PlatformInfo>> subGraphsList = subgraphs.Select(subgraph => subgraph.ToList()).ToList();
-            Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = new Dictionary<string, List<PlatformInfo>>();
-            List<List<PlatformInfo>> subgraphsToDelete = new List<List<PlatformInfo>>();
+            Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = new();
+            List<List<PlatformInfo>> subgraphsToDelete = new();
 
             foreach (List<PlatformInfo> subgraph in subGraphsList)
             {
                 PlatformInfo rootPlatform = subgraph.First();
                 string key = getKey(rootPlatform);
 
-                if (subgraphsByRootDockerfilePath.TryGetValue(key, out List<PlatformInfo> commonSubgraph))
+                if (subgraphsByRootDockerfilePath.TryGetValue(key, out List<PlatformInfo>? commonSubgraph))
                 {
                     commonSubgraph.AddRange(subgraph);
                     subgraphsToDelete.Add(subgraph);
@@ -97,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string[] dockerfilePaths = GetDockerfilePaths(subgraph).ToArray();
 
-                BuildLegInfo leg = new BuildLegInfo()
+                BuildLegInfo leg = new()
                 {
                     Name = GetDockerfilePathLegName(dockerfilePaths, matrixNameParts)
                 };
@@ -121,6 +122,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 subgraphs
                                     .Where(otherSubgraph => subgraph != otherSubgraph)
                                     .FirstOrDefault(otherSubgraph => otherSubgraph.Contains(dependency)))
+                            .Where(subgraph => subgraph is not null)
+                            .Cast<IEnumerable<PlatformInfo>>()
                             .Distinct();
 
                     if (dependencySubgraphs.Count() > 1)
@@ -133,6 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 })
                 .Distinct()
                 .Where(subgraph => subgraph != null)
+                .Cast<IEnumerable<PlatformInfo>>()
                 .ToArray();
 
             return dependencySubgraphs;
@@ -150,10 +154,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Options.CustomBuildLegGroups
                 .Select(groupName =>
                 {
-                    platform.CustomLegGroups.TryGetValue(groupName, out CustomBuildLegGroup group);
+                    platform.CustomLegGroups.TryGetValue(groupName, out CustomBuildLegGroup? group);
                     return group;
                 })
                 .Where(group => group != null && (!dependencyType.HasValue || group?.Type == dependencyType))
+                .Cast<CustomBuildLegGroup>()
                 .SelectMany(group =>
                 {
                     IEnumerable<PlatformInfo> dependencyPlatforms = group.Dependencies
@@ -193,7 +198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("osVersions", string.Join(" ", osVersions)));
         }
 
-        private string GetProductVersion(ImageInfo image)
+        private string? GetProductVersion(ImageInfo image)
         {
             if (image.ProductVersion is null)
             {
@@ -220,7 +225,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return null;
         }
 
-        private static string GetNormalizedOsVersion(string osVersion) =>
+        private static string? GetNormalizedOsVersion(string? osVersion) =>
             osVersion?
                 .Replace("nanoserver", "windows")
                 .Replace("windowsservercore", "windows")
@@ -254,8 +259,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
                 string osVariant = subgraph.First().BaseOsVersion;
-                string productVersion = GetProductVersion(Manifest.GetImageByPlatform(subgraph.First()));
-                BuildLegInfo leg = new BuildLegInfo() { Name = $"{productVersion}-{osVariant}" };
+                string? productVersion = GetProductVersion(Manifest.GetImageByPlatform(subgraph.First()));
+                BuildLegInfo leg = new()
+                {
+                    Name = $"{(productVersion is not null ? productVersion + "-" : string.Empty)}{osVariant}"
+                };
                 matrix.Legs.Add(leg);
 
                 AddCommonVariables(platformGrouping, subgraph, leg);
@@ -321,29 +329,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return Manifest.GetFilteredPlatforms();
             }
 
-            IEnumerable<PlatformInfo> platforms = _imageArtifactDetails.Value.Repos?
+            IEnumerable<PlatformInfo>? platforms = _imageArtifactDetails.Value.Repos?
                 .SelectMany(repo => repo.Images)
                 .SelectMany(image => image.Platforms)
-                .Where(platform => !platform.IsUnchanged && platform.PlatformInfo != null)
-                .Select(platform => platform.PlatformInfo);
+                .Where(platform => !platform.IsUnchanged)
+                .Select(platform => platform.PlatformInfo)
+                .Where(platform => platform != null)
+                .Cast<PlatformInfo>();
 
             return platforms ?? Enumerable.Empty<PlatformInfo>();
         }
 
         public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
         {
-            List<BuildMatrixInfo> matrices = new List<BuildMatrixInfo>();
+            List<BuildMatrixInfo> matrices = new();
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
             IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = GetPlatforms()
-                .GroupBy(platform => new PlatformId()
-                {
-                    OS = platform.Model.OS,
-                    OsVersion = platform.Model.OS == OS.Linux ?
-                        null : GetNormalizedOsVersion(platform.BaseOsVersion),
-                    Architecture = platform.Model.Architecture,
-                    Variant = platform.Model.Variant
-                })
+                .GroupBy(platform => CreatePlatformId(platform))
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
                 .ThenBy(platformGroup => platformGroup.Key.Architecture)
@@ -356,7 +359,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     GetOsMatrixNamePart(platformGrouping.Key),
                     platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
                 };
-                BuildMatrixInfo matrix = new BuildMatrixInfo() { Name = FormatMatrixName(matrixNameParts) };
+                BuildMatrixInfo matrix = new() { Name = FormatMatrixName(matrixNameParts) };
                 matrices.Add(matrix);
 
                 if (Options.MatrixType == MatrixType.PlatformDependencyGraph)
@@ -372,6 +375,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return matrices;
         }
 
+        private PlatformId CreatePlatformId(PlatformInfo platform)
+        {
+            string? osVersion;
+
+            if (platform.Model.CustomMatrixOsVersion is not null)
+            {
+                osVersion = platform.Model.CustomMatrixOsVersion;
+            }
+            else if (platform.Model.OS != OS.Linux)
+            {
+                osVersion = GetNormalizedOsVersion(platform.BaseOsVersion);
+            }
+            else
+            {
+                osVersion = null;
+            }
+
+            return new PlatformId
+            {
+                OS = platform.Model.OS,
+                OsVersion = osVersion,
+                Architecture = platform.Model.Architecture,
+                Variant = platform.Model.Variant
+            };
+        }
+
         private static string GetOsMatrixNamePart(PlatformId platformId)
         {
             if (platformId.OsVersion != null)
@@ -384,7 +413,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<PlatformInfo> GetParents(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms)
         {
-            List<PlatformInfo> parents = new List<PlatformInfo>();
+            List<PlatformInfo> parents = new();
             foreach (PlatformInfo parent in GetPlatformDependencies(platform, availablePlatforms))
             {
                 parents.Add(parent);
@@ -420,15 +449,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             public Architecture Architecture { get; set; }
             public OS OS { get; set; }
-            public string OsVersion { get; set; }
-            public string Variant { get; set; }
+            public string? OsVersion { get; set; }
+            public string? Variant { get; set; }
 
-            public bool Equals(PlatformId other)
+            public bool Equals(PlatformId? other)
             {
+                if (other is null)
+                {
+                    return false;
+                }
+
                 return Architecture == other.Architecture
                     && OS == other.OS
                     && OsVersion == other.OsVersion
                     && Variant == other.Variant;
+            }
+
+            public override bool Equals(object? obj)
+            {
+                return Equals(obj as PlatformId);
             }
 
             public override int GetHashCode()
@@ -438,3 +477,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

@@ -79,12 +79,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 else
                 {
                     variableValue = GetUserValue(variableName);
-
-                    if (variableValue is null && Manifest.Variables.ContainsKey(variableName))
-                    {
-                        throw new NotSupportedException(
-                            $"Unable to resolve value for variable '{variableName}' because it references a variable whose value hasn't been resolved yet. Dependencies between variables need to be ordered according to their dependency.");
-                    }
                 }
 
                 if (variableValue == null)
@@ -139,6 +133,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             if (!Options.Variables?.TryGetValue(variableName, out variableValue) == true)
             {
                 ResolvedVariables?.TryGetValue(variableName, out variableValue);
+            }
+
+            if (variableValue is null && Manifest.Variables.ContainsKey(variableName))
+            {
+                throw new NotSupportedException(
+                    $"Unable to resolve value for variable '{variableName}' because it references a variable whose value hasn't been resolved yet. Dependencies between variables need to be ordered according to their dependency.");
             }
 
             return variableValue;

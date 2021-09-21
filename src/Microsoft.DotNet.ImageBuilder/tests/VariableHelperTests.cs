@@ -52,7 +52,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 { "test2", "abc" }
             };
 
-
             Assert.Throws<NotSupportedException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
         }
 

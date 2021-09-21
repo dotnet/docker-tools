@@ -2,12 +2,12 @@
 
 <#
     .SYNOPSIS
-        Builds the .NET Dockerfiles
+        Builds the Dockerfiles
 #>
 
 [cmdletbinding()]
 param(
-    # Versions of .NET to filter by
+    # Product versions to filter by
     [string[]]$Version = "*",
 
     # Names of OS to filter by

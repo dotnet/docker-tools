@@ -379,9 +379,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string? osVersion;
 
-            if (platform.Model.CustomMatrixOsVersion is not null)
+            if (Options.DistinctMatrixOsVersions.Contains(platform.BaseOsVersion))
             {
-                osVersion = platform.Model.CustomMatrixOsVersion;
+                osVersion = platform.BaseOsVersion;
             }
             else if (platform.Model.OS != OS.Linux)
             {

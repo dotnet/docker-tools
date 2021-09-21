@@ -154,27 +154,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies that the correct matrix is generated when the CustomMatrixOsVersion field is set in the manifest.
+        /// Verifies that the correct matrix is generated when the DistinctMatrixOsVersion option is set.
         /// </summary>
         [Fact]
         public void GenerateBuildMatrixCommand_CustomMatrixOsVersion()
         {
+            const string CustomMatrixOsVersion = "custom";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateBuildMatrixCommand command = new();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
-
-            const string CustomMatrixOsVersion = "custom";
-
-            Platform aspnetPlatform = CreatePlatform(
-                CreateDockerfile("1.0/aspnet/os2/amd64", tempFolderContext),
-                new string[] { "os2" });
-            aspnetPlatform.CustomMatrixOsVersion = CustomMatrixOsVersion;
-
-            Platform sdkPlatform = CreatePlatform(
-                CreateDockerfile("1.0/sdk/os2/amd64", tempFolderContext, "aspnet:os2"),
-                new string[] { "tag2" });
-            sdkPlatform.CustomMatrixOsVersion = CustomMatrixOsVersion;
+            command.Options.DistinctMatrixOsVersions = new string[]
+            {
+                CustomMatrixOsVersion
+            };
 
             Manifest manifest = CreateManifest(
                 CreateRepo("aspnet",
@@ -182,13 +175,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreatePlatform(
                             CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext),
                             new string[] { "os" })),
-                    CreateImage(aspnetPlatform)),
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/aspnet/os2/amd64", tempFolderContext),
+                            new string[] { "os2" },
+                            osVersion: CustomMatrixOsVersion))),
                 CreateRepo("sdk",
                     CreateImage(
                         CreatePlatform(
                             CreateDockerfile("1.0/sdk/os/amd64", tempFolderContext, "aspnet:os"),
                             new string[] { "tag" })),
-                    CreateImage(sdkPlatform))
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/sdk/os2/amd64", tempFolderContext, "aspnet:os2"),
+                            new string[] { "tag2" },
+                            osVersion: CustomMatrixOsVersion)))
             );
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));

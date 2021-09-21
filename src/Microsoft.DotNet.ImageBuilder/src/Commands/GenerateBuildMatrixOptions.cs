@@ -17,6 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public IEnumerable<string> CustomBuildLegGroups { get; set; } = Enumerable.Empty<string>();
         public int ProductVersionComponents { get; set; }
         public string? ImageInfoPath { get; set; }
+        public IEnumerable<string> DistinctMatrixOsVersions { get; set; } = Enumerable.Empty<string>();
 
         public GenerateBuildMatrixOptions() : base()
         {
@@ -43,7 +44,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateOption("product-version-components", nameof(GenerateBuildMatrixOptions.ProductVersionComponents),
                             "Number of components of the product version considered to be significant", 2),
                         CreateOption<string?>("image-info", nameof(GenerateBuildMatrixOptions.ImageInfoPath),
-                            "Path to image info file")
+                            "Path to image info file"),
+                        CreateMultiOption<string>("distinct-matrix-os-version", nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups),
+                            "OS version to be contained in its own distinct matrix"),
                     });
 
         public override IEnumerable<Argument> GetCliArguments() =>

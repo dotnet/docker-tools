@@ -67,12 +67,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public CustomBuildLegGroup[] CustomBuildLegGroups { get; set; } = Array.Empty<CustomBuildLegGroup>();
 
         [Description(
-            "A custom OS version to use for the matrix instead of the default. This allows for certain platforms " +
-            "to be grouped into a distinct build matrix for when those platforms require custom configuration."
-            )]
-        public string? CustomMatrixOsVersion { get; set; }
-
-        [Description(
             "A label which further distinguishes the architecture when it " +
             "contains variants. For example, the ARM architecture has variants " +
             "named v6, v7, etc."

@@ -4,11 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -54,6 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         null : platform.FinalStageFromImage;
                 })
                 .Where(image => image != null)
+                .Cast<string>()
                 .Distinct()
                 .ToList();
 
@@ -92,3 +93,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

@@ -10,6 +10,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class PlatformInfo
@@ -21,54 +22,59 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
 
-        private List<string> _overriddenFromImages;
-        private IEnumerable<string> _internalRepos;
+        private List<string> _overriddenFromImages = new();
+        private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();
 
         public string BaseOsVersion { get; private set; }
-        public IDictionary<string, string> BuildArgs { get; private set; }
+        public IDictionary<string, string?> BuildArgs { get; private set; } = ImmutableDictionary<string, string?>.Empty;
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
         public string DockerfilePathRelativeToManifest { get; private set; }
-        public string DockerfileTemplate { get; private set; }
-        public string FinalStageFromImage { get; private set; }
-        public IEnumerable<string> ExternalFromImages { get; private set; }
-        public IEnumerable<string> InternalFromImages { get; private set; }
+        public string? DockerfileTemplate { get; private set; }
+        public string FinalStageFromImage { get; private set; } = string.Empty;
+        public IEnumerable<string> ExternalFromImages { get; private set; } = Enumerable.Empty<string>();
+        public IEnumerable<string> InternalFromImages { get; private set; } = Enumerable.Empty<string>();
         public Platform Model { get; private set; }
         public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
         public string FullRepoModelName { get; set; }
         private string RepoName { get; set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
-        public IDictionary<string, CustomBuildLegGroup> CustomLegGroups { get; private set; }
+        public IDictionary<string, CustomBuildLegGroup> CustomLegGroups { get; private set; } =
+            ImmutableDictionary<string, CustomBuildLegGroup>.Empty;
         private VariableHelper VariableHelper { get; set; }
 
-        public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory)
+        private PlatformInfo(Platform model, string baseOsVersion, string fullRepoModelName, string repoName, VariableHelper variableHelper,
+            string baseDirectory)
         {
-            PlatformInfo platformInfo = new PlatformInfo
-            {
-                BaseOsVersion = model.OsVersion.TrimEnd("-slim"),
-                FullRepoModelName = fullRepoModelName,
-                Model = model,
-                RepoName = repoName,
-                VariableHelper = variableHelper
-            };
+            Model = model;
+            BaseOsVersion = baseOsVersion;
+            FullRepoModelName = fullRepoModelName;
+            RepoName = repoName;
+            VariableHelper = variableHelper;
 
             string dockerfileWithBaseDir = Path.Combine(baseDirectory, model.ResolveDockerfilePath(baseDirectory));
-
-            platformInfo.DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
-            platformInfo.BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));
-            platformInfo.DockerfilePathRelativeToManifest = PathHelper.TrimPath(baseDirectory, platformInfo.DockerfilePath);
+            DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
+            BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));
+            DockerfilePathRelativeToManifest = PathHelper.TrimPath(baseDirectory, DockerfilePath);
 
             if (model.DockerfileTemplate != null)
             {
-                platformInfo.DockerfileTemplate = Path.Combine(baseDirectory, model.DockerfileTemplate);
+                DockerfileTemplate = Path.Combine(baseDirectory, model.DockerfileTemplate);
             }
 
-            platformInfo.Tags = model.Tags
-                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, platformInfo.BuildContextPath))
+            Tags = model.Tags
+                .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, BuildContextPath))
                 .ToArray();
-
-            return platformInfo;
         }
+
+        public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory) =>
+            new(
+                model,
+                model.OsVersion.TrimEnd("-slim"),
+                fullRepoModelName,
+                repoName,
+                variableHelper,
+                baseDirectory);
 
         public void Initialize(IEnumerable<string> internalRepos, string registry)
         {
@@ -92,11 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private void InitializeBuildArgs()
         {
-            if (Model.BuildArgs == null)
-            {
-                BuildArgs = ImmutableDictionary<string, string>.Empty;
-            }
-            else
+            if (Model.BuildArgs != null)
             {
                 BuildArgs = Model.BuildArgs.ToDictionary(kvp => kvp.Key, kvp => VariableHelper.SubstituteValues(kvp.Value));
             }
@@ -104,8 +106,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private void InitializeFromImages()
         {
-            _overriddenFromImages = new List<string>();
-
             string dockerfile = File.ReadAllText(DockerfilePath);
             IList<Match> fromMatches = FromRegex.Matches(dockerfile);
 
@@ -290,7 +290,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             foreach (Match match in Regex.Matches(instruction, s_argPattern))
             {
-                if (!BuildArgs.TryGetValue(match.Groups[ArgGroupName].Value, out string argValue))
+                if (!BuildArgs.TryGetValue(match.Groups[ArgGroupName].Value, out string? argValue))
                 {
                     throw new InvalidOperationException(
                         $"A value was not found for the ARG '{match.Value}' in `{DockerfilePath}`");
@@ -314,3 +314,4 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
     }
 }
+#nullable disable

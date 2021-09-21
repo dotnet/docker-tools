@@ -9,6 +9,7 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public delegate void ImageHandler(string repoId, string imageId, string imageTag);
@@ -84,3 +85,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

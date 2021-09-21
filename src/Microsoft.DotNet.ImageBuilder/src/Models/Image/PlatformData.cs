@@ -24,24 +24,30 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
             PlatformInfo = platformInfo;
         }
 
-        public string? Dockerfile { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string Dockerfile { get; set; } = string.Empty;
 
         public List<string> SimpleTags { get; set; } = new List<string>();
 
-        public string? Digest { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string Digest { get; set; } = string.Empty;
 
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string? BaseImageDigest { get; set; }
 
-        public string? OsType { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string OsType { get; set; } = string.Empty;
 
-        public string? OsVersion { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string OsVersion { get; set; } = string.Empty;
 
-        public string? Architecture { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string Architecture { get; set; } = string.Empty;
 
         public DateTime Created { get; set; }
 
-        public string? CommitUrl { get; set; }
+        [JsonProperty(Required = Required.Always)]
+        public string CommitUrl { get; set; } = string.Empty;
 
         public List<string> Layers { get; set; } = new List<string>();
 

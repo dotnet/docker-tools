@@ -2,12 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -34,13 +36,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("UPDATING IMAGE SIZE BASELINE");
 
-            Dictionary<string, ImageSizeInfo> imageData = null;
+            Dictionary<string, ImageSizeInfo>? imageData = null;
             if (!Options.AllBaselineData)
             {
                 imageData = LoadBaseline();
             }
 
-            JObject json = new JObject();
+            JObject json = new();
 
             void processImage(string repoId, string imageId, string imageTag)
             {
@@ -48,7 +50,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 long imageSize = GetImageSize(imageTag);
 
-                if (!Options.AllBaselineData && imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
+                if (!Options.AllBaselineData &&
+                    imageData is not null &&
+                    imageData.TryGetValue(imageId, out ImageSizeInfo? imageSizeInfo))
                 {
                     imageSizeInfo.CurrentSize = imageSize;
 
@@ -56,6 +60,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         _loggerService.WriteMessage(
                             $"Skipping '{imageId}' because its image size ({imageSize}) is within the allowed range ({imageSizeInfo.MinVariance}-{imageSizeInfo.MaxVariance})");
+
+                        if (imageSizeInfo.BaselineSize is null)
+                        {
+                            throw new InvalidOperationException($"Baseline size not set for {imageSizeInfo.Id}");
+                        }
+
                         imageSize = imageSizeInfo.BaselineSize.Value;
                     }
                 }
@@ -88,3 +98,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

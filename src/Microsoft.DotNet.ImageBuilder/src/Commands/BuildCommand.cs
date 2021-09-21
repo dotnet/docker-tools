@@ -129,6 +129,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 PlatformData matchingBuiltPlatform = builtPlatforms.First(builtPlatform =>
                     GetPushTags(builtPlatform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>()).Any() &&
+                    platform.ImageInfo is not null &&
+                    platform.PlatformInfo is not null &&
+                    builtPlatform.ImageInfo is not null &&
+                    builtPlatform.PlatformInfo is not null &&
                     PlatformInfo.AreMatchingPlatforms(platform.ImageInfo, platform.PlatformInfo, builtPlatform.ImageInfo, builtPlatform.PlatformInfo));
 
                 platform.Digest = matchingBuiltPlatform.Digest;
@@ -172,7 +176,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 baseImageDigest = basePlatformData.Digest;
             }
 
-            if (platform.PlatformInfo?.FinalStageFromImage is not null)
+            if (platform.PlatformInfo?.FinalStageFromImage is not null && baseImageDigest is not null)
             {
                 baseImageDigest = DockerHelper.GetDigestString(
                     DockerHelper.GetRepo(GetFromImagePublicTag(platform.PlatformInfo.FinalStageFromImage)),
@@ -193,13 +197,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void SetPlatformDataDigest(PlatformData platform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
-            string digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
+            string? digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
             if (digest is not null && platform.PlatformInfo is not null)
             {
                 digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
             }
 
-            if (platform.Digest != null && platform.Digest != digest)
+            if (!string.IsNullOrEmpty(platform.Digest) && platform.Digest != digest)
             {
                 // Pushing the same image with different tags should result in the same digest being output
                 throw new InvalidOperationException(
@@ -207,6 +211,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Environment.NewLine +
                     $"\tDigest value from image info: {platform.Digest}{Environment.NewLine}" +
                     $"\tDigest value retrieved from query: {digest}");
+            }
+
+            if (digest is null)
+            {
+                throw new InvalidOperationException($"Unable to retrieve digest for Dockerfile '{platform.Dockerfile}'.");
             }
 
             platform.Digest = digest;
@@ -421,7 +430,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return false;
         }
 
-        private void OnCacheHit(RepoInfo repo, IEnumerable<string> allTags, bool pullImage, string? sourceDigest)
+        private void OnCacheHit(RepoInfo repo, IEnumerable<string> allTags, bool pullImage, string sourceDigest)
         {
             _loggerService.WriteMessage();
             _loggerService.WriteMessage("CACHE HIT");
@@ -471,9 +480,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
-            string currentBaseImageDigest = _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
-            bool baseImageDigestMatches = DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest)?.Equals(
-                DockerHelper.GetDigestSha(currentBaseImageDigest), StringComparison.OrdinalIgnoreCase) == true;
+            string? currentBaseImageDigest = _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+
+            string? baseSha = srcPlatformData.BaseImageDigest is not null ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) : null;
+            string? currentSha = currentBaseImageDigest is not null ? DockerHelper.GetDigestSha(currentBaseImageDigest) : null;
+            bool baseImageDigestMatches = baseSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
             _loggerService.WriteMessage();
             _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
@@ -620,7 +631,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </remarks>
         private string GetFromImageTag(string fromImage, string? registry)
         {
-            if (DockerHelper.IsInRegistry(fromImage, registry) ||
+            if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
                 DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
                 || Options.SourceRepoPrefix is null)
             {
@@ -679,7 +690,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     IEnumerable<string> finalStageExternalFromImages = Manifest.GetFilteredPlatforms()
                         .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage))
-                        .Select(platform => GetFromImagePullTag(platform.FinalStageFromImage))
+                        .Select(platform => GetFromImagePullTag(platform.FinalStageFromImage!))
                         .Distinct();
 
                     if (!finalStageExternalFromImages.IsSubsetOf(pulledTags))
@@ -797,13 +808,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private class BuildCacheInfo
         {
-            public BuildCacheInfo(string? digest, string? baseImageDigest)
+            public BuildCacheInfo(string digest, string? baseImageDigest)
             {
                 Digest = digest;
                 BaseImageDigest = baseImageDigest;
             }
 
-            public string? Digest { get; }
+            public string Digest { get; }
             public string? BaseImageDigest { get; }
         }
     }

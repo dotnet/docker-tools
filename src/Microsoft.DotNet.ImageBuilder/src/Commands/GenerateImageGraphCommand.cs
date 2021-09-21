@@ -17,6 +17,7 @@ using GiGraph.Dot.Extensions;
 using Microsoft.DotNet.ImageBuilder.Models.Docker;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -73,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private DotNode AddImageNode(DotGraph graph, IEnumerable<string> tags, Color color, string fromImage = null)
+        private DotNode AddImageNode(DotGraph graph, IEnumerable<string> tags, Color color, string? fromImage = null)
         {
             string primaryTag = tags.First();
             Manifest manifest = _imageManifestCache[primaryTag];
@@ -162,3 +163,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

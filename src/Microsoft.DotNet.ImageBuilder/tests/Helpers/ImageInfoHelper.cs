@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
@@ -21,6 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             DateTime? created = null,
             List<string> layers = null)
         {
+            if (digest is null)
+            {
+                digest = $"sha256:{new string(Enumerable.Repeat('0', 64).ToArray())}";
+            }
+
             PlatformData platform = new()
             {
                 Dockerfile = dockerfile,

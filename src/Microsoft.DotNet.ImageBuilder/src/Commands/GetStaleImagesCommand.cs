@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -16,13 +15,14 @@ using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>, IDisposable
     {
-        private readonly Dictionary<string, string> _imageDigests = new Dictionary<string, string>();
-        private readonly object _imageDigestsLock = new object();
+        private readonly Dictionary<string, string> _imageDigests = new();
+        private readonly object _imageDigestsLock = new();
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
         private readonly IGitHubClientFactory _gitHubClientFactory;
@@ -45,8 +45,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            string subscriptionsJson = File.ReadAllText(Options.SubscriptionOptions.SubscriptionsPath);
-            Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
+            if (Options.SubscriptionOptions.SubscriptionsPath is null)
+            {
+                throw new InvalidOperationException("Subscriptions path must be set.");
+            }
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
                 (await SubscriptionHelper.GetSubscriptionManifestsAsync(
@@ -82,7 +84,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
-            List<string> pathsToRebuild = new List<string>();
+            List<string> pathsToRebuild = new();
 
             IEnumerable<PlatformInfo> allPlatforms = manifest.GetAllPlatforms().ToList();
 
@@ -92,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .SelectMany(image => image.FilteredPlatforms)
                     .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
-                RepoData repoData = imageArtifactDetails.Repos
+                RepoData? repoData = imageArtifactDetails.Repos
                     .FirstOrDefault(s => s.Repo == repo.Name);
 
                 foreach (PlatformInfo platform in platforms)
@@ -105,11 +107,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private List<string> GetPathsToRebuild(
-            IEnumerable<PlatformInfo> allPlatforms, PlatformInfo platform, RepoData repoData)
+            IEnumerable<PlatformInfo> allPlatforms, PlatformInfo platform, RepoData? repoData)
         {
             bool foundImageInfo = false;
 
-            List<string> pathsToRebuild = new List<string>();
+            List<string> pathsToRebuild = new();
 
             void processPlatformWithMissingImageInfo(PlatformInfo platform)
             {
@@ -127,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (ImageData imageData in repoData.Images)
             {
-                PlatformData platformData = imageData.Platforms
+                PlatformData? platformData = imageData.Platforms
                     .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
                 if (platformData != null)
                 {
@@ -189,3 +191,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

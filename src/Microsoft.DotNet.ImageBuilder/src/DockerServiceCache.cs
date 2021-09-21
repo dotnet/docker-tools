@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     /// <summary>
@@ -30,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Architecture Architecture => _inner.Architecture;
 
-        public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string> buildArgs, bool isRetryEnabled, bool isDryRun) =>
+        public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string?> buildArgs, bool isRetryEnabled, bool isDryRun) =>
             _inner.BuildImage(dockerfilePath, buildContextPath, tags, buildArgs, isRetryEnabled, isDryRun);
 
         public void CreateTag(string image, string tag, bool isDryRun) =>
@@ -39,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public DateTime GetCreatedDate(string image, bool isDryRun) =>
             _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun));
 
-        public string GetImageDigest(string image, bool isDryRun) =>
+        public string? GetImageDigest(string image, bool isDryRun) =>
             _imageDigestCache.GetImageDigest(image, isDryRun);
 
         public IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun) =>
@@ -64,3 +65,4 @@ namespace Microsoft.DotNet.ImageBuilder
             _inner.PushImage(tag, isDryRun);
     }
 }
+#nullable disable

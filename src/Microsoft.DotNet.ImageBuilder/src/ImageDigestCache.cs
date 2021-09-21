@@ -4,12 +4,13 @@
 
 using System.Collections.Generic;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class ImageDigestCache
     {
         private readonly IDockerService _dockerService;
-        private readonly Dictionary<string, string> _digestCache = new Dictionary<string, string>();
+        private readonly Dictionary<string, string?> _digestCache = new();
 
         public ImageDigestCache(IDockerService dockerService)
         {
@@ -24,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public string GetImageDigest(string tag, bool isDryRun) =>
+        public string? GetImageDigest(string tag, bool isDryRun) =>
             LockHelper.DoubleCheckedLockLookup(_digestCache, _digestCache, tag,
                 () => _dockerService.GetImageDigest(tag, isDryRun),
                 // Don't allow null digests to be cached. A locally built image won't have a digest until
@@ -33,3 +34,4 @@ namespace Microsoft.DotNet.ImageBuilder
                 val => !string.IsNullOrEmpty(val));
     }
 }
+#nullable disable

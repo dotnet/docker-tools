@@ -8,6 +8,7 @@ using System.ComponentModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
 {
     [Description(
@@ -21,24 +22,24 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         [DefaultValue(Architecture.AMD64)]
         [JsonConverter(typeof(StringEnumConverter))]
         [JsonProperty(DefaultValueHandling = DefaultValueHandling.IgnoreAndPopulate)]
-        public Architecture Architecture { get; set; }
+        public Architecture Architecture { get; set; } = Architecture.AMD64;
 
         [Description(
             "A set of values that will passed to the `docker build` command " +
             "to override variables defined in the Dockerfile.")]
-        public IDictionary<string, string> BuildArgs { get; set; }
+        public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
 
         [Description(
             "Relative path to the associated Dockerfile. This can be a file or a " +
             "directory. If it is a directory, the file name defaults to Dockerfile."
             )]
         [JsonProperty(Required = Required.Always)]
-        public string Dockerfile { get; set; }
+        public string Dockerfile { get; set; } = string.Empty;
 
         [Description(
             "Relative path to the template the Dockerfile is generated from."
             )]
-        public string DockerfileTemplate { get; set; }
+        public string? DockerfileTemplate { get; set; }
 
         [Description(
             "The generic name of the operating system associated with the image."
@@ -52,13 +53,13 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "Examples: alpine3.9, bionic, nanoserver-1903."
             )]
         [JsonProperty(Required = Required.Always)]
-        public string OsVersion { get; set; }
+        public string OsVersion { get; set; } = string.Empty;
 
         [Description(
             "The set of platform-specific tags associated with the image."
             )]
         [JsonProperty(Required = Required.Always)]
-        public IDictionary<string, Tag> Tags { get; set; }
+        public IDictionary<string, Tag> Tags { get; set; } = new Dictionary<string, Tag>();
 
         [Description(
             "The custom build leg groups associated with the platform."
@@ -70,10 +71,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "contains variants. For example, the ARM architecture has variants " +
             "named v6, v7, etc."
             )]
-        public string Variant { get; set; }
+        public string? Variant { get; set; }
 
         public Platform()
         {
         }
     }
 }
+#nullable disable

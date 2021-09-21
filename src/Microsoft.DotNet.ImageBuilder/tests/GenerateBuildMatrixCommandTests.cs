@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -150,6 +151,66 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Assert.Equal(expectedPaths, imageBuilderPaths);
             }
+        }
+
+        /// <summary>
+        /// Verifies that the correct matrix is generated when the DistinctMatrixOsVersion option is set.
+        /// </summary>
+        [Fact]
+        public void GenerateBuildMatrixCommand_CustomMatrixOsVersion()
+        {
+            const string CustomMatrixOsVersion = "custom";
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.DistinctMatrixOsVersions = new string[]
+            {
+                CustomMatrixOsVersion
+            };
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("aspnet",
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext),
+                            new string[] { "os" })),
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/aspnet/os2/amd64", tempFolderContext),
+                            new string[] { "os2" },
+                            osVersion: CustomMatrixOsVersion))),
+                CreateRepo("sdk",
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/sdk/os/amd64", tempFolderContext, "aspnet:os"),
+                            new string[] { "tag" })),
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/sdk/os2/amd64", tempFolderContext, "aspnet:os2"),
+                            new string[] { "tag2" },
+                            osVersion: CustomMatrixOsVersion)))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Equal(2, matrixInfos.Count());
+
+            BuildMatrixInfo matrixInfo = matrixInfos.ElementAt(0);
+            Assert.Equal($"{CustomMatrixOsVersion}Amd64", matrixInfo.Name);
+            Assert.Single(matrixInfo.Legs);
+            Assert.Equal(
+                "--path 1.0/aspnet/os2/amd64/Dockerfile --path 1.0/sdk/os2/amd64/Dockerfile",
+                matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value);
+
+            matrixInfo = matrixInfos.ElementAt(1);
+            Assert.Equal($"linuxAmd64", matrixInfo.Name);
+            Assert.Single(matrixInfo.Legs);
+            Assert.Equal(
+                "--path 1.0/aspnet/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
+                matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value);
         }
 
         /// <summary>

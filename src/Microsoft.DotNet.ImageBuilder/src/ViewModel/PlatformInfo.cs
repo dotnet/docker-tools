@@ -207,6 +207,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = FormatVersionableOsName(os, name => "CBL-Mariner");
                 }
+                else if (os.Contains("leap"))
+                {
+                    displayName = FormatVersionableOsName(os, name => "openSUSE Leap");
+                }
                 else
                 {
                     throw new NotSupportedException($"The OS version '{os}' is not supported.");

@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Number of components of the product version considered to be significant", 2),
                         CreateOption<string?>("image-info", nameof(GenerateBuildMatrixOptions.ImageInfoPath),
                             "Path to image info file"),
-                        CreateMultiOption<string>("distinct-matrix-os-version", nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups),
+                        CreateMultiOption<string>("distinct-matrix-os-version", nameof(GenerateBuildMatrixOptions.DistinctMatrixOsVersions),
                             "OS version to be contained in its own distinct matrix"),
                     });
 

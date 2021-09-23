@@ -54,9 +54,18 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     ResolvedVariables.Add(kvp.Key, variableValue);
                 }
             }
-            else if (Options.Variables is not null)
+
+            // Include any variables exclusively defined in the options
+            if (Options.Variables is not null)
             {
-                ResolvedVariables = new Dictionary<string, string?>(Options.Variables);
+                foreach (KeyValuePair<string, string?> kvp in Options.Variables)
+                {
+                    if (!ResolvedVariables.ContainsKey(kvp.Key))
+                    {
+                        string? value = SubstituteValues(kvp.Value);
+                        ResolvedVariables.Add(kvp.Key, value);
+                    }
+                }
             }
         }
 

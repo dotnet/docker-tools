@@ -67,5 +67,51 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Throws<InvalidOperationException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
         }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void ProvideNewVariableThroughOptions(bool hasManifestVariables)
+        {
+            Manifest manifest = CreateManifest();
+
+            if (hasManifestVariables)
+            {
+                manifest.Variables = new Dictionary<string, string>()
+                {
+                    { "predefinedVar", "123" },
+                };
+            }
+
+            Dictionary<string, string> optionsVariables = new()
+            {
+                { "newVar", "abc" }
+            };
+
+            if (hasManifestVariables)
+            {
+                optionsVariables.Add("newDerivativeVar", "$(predefinedVar)456");
+            }
+
+            Mock<IManifestOptionsInfo> manifestOptionsInfoMock = new();
+            manifestOptionsInfoMock
+                .SetupGet(o => o.Variables)
+                .Returns(optionsVariables);
+
+            VariableHelper helper = new(manifest, manifestOptionsInfoMock.Object, id => null);
+
+            if (hasManifestVariables)
+            {
+                Assert.Equal(3, helper.ResolvedVariables.Count);
+                Assert.Equal("123", helper.ResolvedVariables["predefinedVar"]);
+                Assert.Equal("abc", helper.ResolvedVariables["newVar"]);
+                Assert.Equal("123456", helper.ResolvedVariables["newDerivativeVar"]);
+            }
+            else
+            {
+                Assert.Equal(1, helper.ResolvedVariables.Count);
+                Assert.Equal("abc", helper.ResolvedVariables["newVar"]);
+            }
+        }
     }
 }

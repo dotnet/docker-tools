@@ -51,6 +51,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string dockerfile2 = CreateDockerfile("1.0/repo2/os", tempFolderContext);
             string dockerfile3 = CreateDockerfile("1.0/repo3/os", tempFolderContext);
 
+            const string digest1 = "sha256:123";
+            const string digest2 = "sha256:ABC";
+            const string digest3 = "sha256:DEF";
+
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
             {
                 Repos =
@@ -64,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile1, simpleTags: new List<string>{ "tag1" }),
+                                    CreatePlatform(dockerfile1, digest: digest1, simpleTags: new List<string>{ "tag1" }),
                                     new PlatformData
                                     {
                                     }
@@ -89,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile2, simpleTags: new List<string>{ "tag2" })
+                                    CreatePlatform(dockerfile2, digest: digest2, simpleTags: new List<string>{ "tag2" })
                                 },
                                 Manifest = new ManifestData
                                 {
@@ -111,7 +115,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreatePlatform(dockerfile3, simpleTags: new List<string>{ "tag3" })
+                                    CreatePlatform(dockerfile3, digest: digest3, simpleTags: new List<string>{ "tag3" })
                                 }
                             }
                         }
@@ -190,6 +194,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         OsType = "Linux",
                                         OsVersion = "focal",
                                         Architecture = "amd64",
+                                        Digest = digest1,
                                         SimpleTags = new List<string> { "tag1" }
                                     },
                                     new PlatformData()
@@ -222,6 +227,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         OsType = "Linux",
                                         OsVersion = "focal",
                                         Architecture = "amd64",
+                                        Digest = digest2,
                                         SimpleTags = new List<string> { "tag2" }
                                     }
                                 },
@@ -253,6 +259,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         OsType = "Linux",
                                         OsVersion = "focal",
                                         Architecture = "amd64",
+                                        Digest = digest3,
                                         SimpleTags = new List<string> { "tag3" }
                                     }
                                 }

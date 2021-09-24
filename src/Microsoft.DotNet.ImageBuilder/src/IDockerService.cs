@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IDockerService
@@ -14,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void PullImage(string image, bool isDryRun);
 
-        string GetImageDigest(string image, bool isDryRun);
+        string? GetImageDigest(string image, bool isDryRun);
 
         IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun);
 
@@ -26,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string dockerfilePath,
             string buildContextPath,
             IEnumerable<string> tags,
-            IDictionary<string, string> buildArgs,
+            IDictionary<string, string?> buildArgs,
             bool isRetryEnabled,
             bool isDryRun);
 
@@ -37,3 +38,4 @@ namespace Microsoft.DotNet.ImageBuilder
         DateTime GetCreatedDate(string image, bool isDryRun);
     }
 }
+#nullable disable

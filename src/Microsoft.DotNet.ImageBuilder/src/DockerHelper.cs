@@ -10,24 +10,26 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
 using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class DockerHelper
     {
-        private static readonly Lazy<Architecture> s_architecture = new Lazy<Architecture>(GetArchitecture);
-        private static readonly Lazy<OS> s_os = new Lazy<OS>(GetOS);
+        private static readonly Lazy<Architecture> s_architecture = new(GetArchitecture);
+        private static readonly Lazy<OS> s_os = new(GetOS);
 
         public static Architecture Architecture => s_architecture.Value;
         public static OS OS => s_os.Value;
 
         public const string DockerHubRegistry = "docker.io";
 
-        public static void ExecuteWithUser(Action action, string username, string password, string server, bool isDryRun)
+        public static void ExecuteWithUser(Action action, string? username, string? password, string server, bool isDryRun)
         {
-            bool userSpecified = username != null;
-            if (userSpecified)
+            bool loggedIn = false;
+            if (username is not null && password is not null)
             {
                 DockerHelper.Login(username, password, server, isDryRun);
+                loggedIn = true;
             }
 
             try
@@ -36,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             finally
             {
-                if (userSpecified)
+                if (loggedIn)
                 {
                     DockerHelper.Logout(server, isDryRun);
                 }
@@ -79,10 +81,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void Login(string username, string password, string server, bool isDryRun)
         {
-            Version clientVersion = GetClientVersion();
+            Version? clientVersion = GetClientVersion();
             if (clientVersion >= new Version(17, 7))
             {
-                ProcessStartInfo startInfo = new ProcessStartInfo(
+                ProcessStartInfo startInfo = new(
                     "docker", $"login -u {username} --password-stdin {server}")
                 {
                     RedirectStandardInput = true
@@ -141,11 +143,11 @@ namespace Microsoft.DotNet.ImageBuilder
                 "inspect", ".Created", "Failed to retrieve created date", image, isDryRun);
         }
 
-        public static string GetDigestSha(string digest) => digest?.Substring(digest.IndexOf("@") + 1);
+        public static string GetDigestSha(string digest) => digest.Substring(digest.IndexOf("@") + 1);
 
         public static string GetDigestString(string repo, string sha) => $"{repo}@{sha}";
 
-        public static string GetImageName(string registry, string repo, string tag = null, string digest = null)
+        public static string GetImageName(string registry, string repo, string? tag = null, string? digest = null)
         {
             if (tag != null && digest != null)
             {
@@ -167,7 +169,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string NormalizeRepo(string image)
         {
-            string registry = GetRegistry(image);
+            string? registry = GetRegistry(image);
             string repoAndTag = TrimRegistry(image, registry);
 
             if ((registry is null || registry == DockerHubRegistry) && !repoAndTag.Contains('/'))
@@ -185,7 +187,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string TrimRegistry(string tag) => TrimRegistry(tag, GetRegistry(tag));
 
-        public static string TrimRegistry(string tag, string registry) => tag.TrimStart($"{registry}/");
+        public static string TrimRegistry(string tag, string? registry) => tag.TrimStart($"{registry}/");
 
         public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
 
@@ -200,7 +202,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return JsonConvert.DeserializeObject<Docker.Manifest>(manifest);
         }
 
-        public static string GetRegistry(string imageName)
+        public static string? GetRegistry(string imageName)
         {
             int separatorIndex = imageName.IndexOf("/");
             if (separatorIndex >= 0)
@@ -238,7 +240,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return os;
         }
 
-        private static Version GetClientVersion()
+        private static Version? GetClientVersion()
         {
             // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
             string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
@@ -249,7 +251,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 versionString = versionString.Substring(0, versionString.IndexOf('-'));
             }
 
-            return Version.TryParse(versionString, out Version version) ? version : null;
+            return Version.TryParse(versionString, out Version? version) ? version : null;
         }
 
         private static void Logout(string server, bool isDryRun)
@@ -260,7 +262,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)
         {
             string output = ExecuteCommand(
-                $"{Enum.GetName(typeof(ManagementType), type).ToLowerInvariant()} ls -a -q {filterArg}",
+                $"{Enum.GetName(typeof(ManagementType), type)?.ToLowerInvariant()} ls -a -q {filterArg}",
                 "Failed to find resource",
                 isDryRun: isDryRun);
             return output != "";
@@ -294,14 +296,14 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private static string ExecuteCommand(
-            string command, string errorMessage, string additionalArgs = null, bool isDryRun = false)
+            string command, string errorMessage, string? additionalArgs = null, bool isDryRun = false)
         {
             string output = ExecuteHelper.Execute("docker", $"{command} {additionalArgs}", isDryRun, errorMessage);
             return isDryRun ? "" : output;
         }
 
         private static string ExecuteCommandWithFormat(
-            string command, string outputFormat, string errorMessage, string additionalArgs = null, bool isDryRun = false) =>
+            string command, string outputFormat, string errorMessage, string? additionalArgs = null, bool isDryRun = false) =>
             ExecuteCommand(command, errorMessage, $"{additionalArgs} -f \"{{{{ {outputFormat} }}}}\"", isDryRun);
 
         private enum ManagementType
@@ -311,3 +313,4 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
+#nullable disable

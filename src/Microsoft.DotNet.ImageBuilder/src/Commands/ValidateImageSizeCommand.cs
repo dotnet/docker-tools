@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -27,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Validates the size of the images against a baseline";
 
-        public ImageSizeValidationResults ValidationResults { get; private set; }
+        public ImageSizeValidationResults? ValidationResults { get; private set; }
 
         public override Task ExecuteAsync()
         {
@@ -53,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 // If the image is found in the generated set of ImageSizeInfos, it means we have
                 // baseline data for it and just need to update its CurrentSize.
-                if (imageData.TryGetValue(imageId, out ImageSizeInfo imageSizeInfo))
+                if (imageData.TryGetValue(imageId, out ImageSizeInfo? imageSizeInfo))
                 {
                     imageSizeInfo.ImageExistsOnDisk = true;
                     imageSizeInfo.CurrentSize = currentSize;
@@ -172,3 +173,4 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
+#nullable disable

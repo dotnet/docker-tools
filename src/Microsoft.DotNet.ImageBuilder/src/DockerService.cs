@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     [Export(typeof(IDockerService))]
@@ -23,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
         }
 
-        public string GetImageDigest(string image, bool isDryRun)
+        public string? GetImageDigest(string image, bool isDryRun)
         {
             IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
 
@@ -65,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string dockerfilePath,
             string buildContextPath,
             IEnumerable<string> tags,
-            IDictionary<string, string> buildArgs,
+            IDictionary<string, string?> buildArgs,
             bool isRetryEnabled,
             bool isDryRun)
         {
@@ -102,3 +103,4 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
+#nullable disable

@@ -60,8 +60,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddBaseImages(DotGraph graph, PlatformInfo[] platforms)
         {
             IEnumerable<string> externalBaseImages = platforms
-                .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage))
+                .Where(platform => platform.FinalStageFromImage is not null && !platform.IsInternalFromImage(platform.FinalStageFromImage))
                 .Select(platform => platform.FinalStageFromImage)
+                .Cast<string>()
                 .Distinct()
                 .OrderBy(name => name)
                 .ToArray();
@@ -114,12 +115,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> tags = platform.Tags.Select(tag => tag.FullyQualifiedName);
                 DotNode imageNode = AddImageNode(graph, tags, Color.Navy, platform.FinalStageFromImage);
 
-                var myEdge = new DotEdge(imageNode.Id, _nodeCache[platform.FinalStageFromImage].Id);
-                myEdge.Attributes.ArrowHead = DotArrowType.Normal;
-                myEdge.Attributes.ArrowTail = DotArrowType.None;
-                myEdge.Attributes.Color = Color.Black;
-                myEdge.Attributes.Style = DotStyle.Dashed;
-                graph.Edges.Add(myEdge);
+                if (platform.FinalStageFromImage is not null)
+                {
+                    var myEdge = new DotEdge(imageNode.Id, _nodeCache[platform.FinalStageFromImage].Id);
+                    myEdge.Attributes.ArrowHead = DotArrowType.Normal;
+                    myEdge.Attributes.ArrowTail = DotArrowType.None;
+                    myEdge.Attributes.Color = Color.Black;
+                    myEdge.Attributes.Style = DotStyle.Dashed;
+                    graph.Edges.Add(myEdge);
+                }
             }
         }
 

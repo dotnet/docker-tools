@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 IEnumerable<PlatformInfo> platforms = repo.FilteredImages
                     .SelectMany(image => image.FilteredPlatforms)
-                    .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage));
+                    .Where(platform => platform.FinalStageFromImage is not null && !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
                 RepoData? repoData = imageArtifactDetails.Repos
                     .FirstOrDefault(s => s.Repo == repo.Name);
@@ -134,8 +134,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (platformData != null)
                 {
                     foundImageInfo = true;
-                    string fromImage = platform.FinalStageFromImage;
+                    string? fromImage = platform.FinalStageFromImage;
                     string currentDigest;
+
+                    if (fromImage is null)
+                    {
+                        _loggerService.WriteMessage(
+                            $"There is no base image for '{platform.DockerfilePath}'. By default, it is considered up-to-date.");
+                        break;
+                    }
 
                     currentDigest = LockHelper.DoubleCheckedLockLookup(_imageDigestsLock, _imageDigests, fromImage,
                         () =>

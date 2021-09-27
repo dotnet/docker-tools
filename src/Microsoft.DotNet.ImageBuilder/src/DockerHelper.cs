@@ -23,10 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public const string DockerHubRegistry = "docker.io";
 
-        public static void ExecuteWithUser(Action action, string? username, string? password, string server, bool isDryRun)
+        public static void ExecuteWithUser(Action action, string? username, string? password, string? server, bool isDryRun)
         {
             bool loggedIn = false;
-            if (username is not null && password is not null)
+            if (username is not null && password is not null && server is not null)
             {
                 DockerHelper.Login(username, password, server, isDryRun);
                 loggedIn = true;
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             finally
             {
-                if (loggedIn)
+                if (loggedIn && server is not null)
                 {
                     DockerHelper.Logout(server, isDryRun);
                 }

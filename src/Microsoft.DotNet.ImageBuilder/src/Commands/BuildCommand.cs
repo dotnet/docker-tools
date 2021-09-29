@@ -267,7 +267,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             BuildImage(platform, allTags);
 
-                            if (platformData != null)
+                            if (platformData is not null && platform.FinalStageFromImage is not null)
                             {
                                 platformData.BaseImageDigest =
                                    _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
@@ -480,13 +480,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
         {
+            _loggerService.WriteMessage();
+
+            if (platform.FinalStageFromImage is null)
+            {
+                _loggerService.WriteMessage($"Image does not have a base image. By default, it is considered up-to-date.");
+                return true;
+            }
+
             string? currentBaseImageDigest = _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
 
             string? baseSha = srcPlatformData.BaseImageDigest is not null ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) : null;
             string? currentSha = currentBaseImageDigest is not null ? DockerHelper.GetDigestSha(currentBaseImageDigest) : null;
             bool baseImageDigestMatches = baseSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
-            _loggerService.WriteMessage();
             _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
             _loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
             _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
@@ -689,7 +696,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
 
                     IEnumerable<string> finalStageExternalFromImages = Manifest.GetFilteredPlatforms()
-                        .Where(platform => !platform.IsInternalFromImage(platform.FinalStageFromImage))
+                        .Where(platform => platform.FinalStageFromImage is not null && !platform.IsInternalFromImage(platform.FinalStageFromImage))
                         .Select(platform => GetFromImagePullTag(platform.FinalStageFromImage!))
                         .Distinct();
 

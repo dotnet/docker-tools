@@ -18,6 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private const string ArgGroupName = "arg";
         private const string FromImageMatchName = "fromImage";
         private const string StageIdMatchName = "stageId";
+        private const string ScratchIdentifier = "scratch";
+
         private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
         private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
@@ -31,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string DockerfilePath { get; private set; }
         public string DockerfilePathRelativeToManifest { get; private set; }
         public string? DockerfileTemplate { get; private set; }
-        public string FinalStageFromImage { get; private set; } = string.Empty;
+        public string? FinalStageFromImage { get; private set; } = string.Empty;
         public IEnumerable<string> ExternalFromImages { get; private set; } = Enumerable.Empty<string>();
         public IEnumerable<string> InternalFromImages { get; private set; } = Enumerable.Empty<string>();
         public Platform Model { get; private set; }
@@ -121,15 +123,20 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Where(from => !IsStageReference(from, fromMatches))
                 .ToArray();
 
-            FinalStageFromImage = fromImages.Last();
+            FinalStageFromImage = fromImages
+                .LastOrDefault(image => !IsFromScratchImage(image));
 
             InternalFromImages = fromImages
                 .Where(from => IsInternalFromImage(from))
                 .ToArray();
             ExternalFromImages = fromImages
                 .Except(InternalFromImages)
+                .Where(image => !IsFromScratchImage(image))
                 .ToArray();
         }
+
+        private static bool IsFromScratchImage(string image) =>
+            image.Equals(ScratchIdentifier, StringComparison.OrdinalIgnoreCase);
 
         public bool IsInternalFromImage(string fromImage)
         {

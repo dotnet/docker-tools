@@ -744,6 +744,72 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that no build will be queued for a Dockerfile with no base image.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_NoBaseImage()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
+            {
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                simpleTags: new List<string> { "tag1" })
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+            };
+
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new Dictionary<GitFile, List<DockerfileInfo>>
+            {
+                {
+                    subscriptionInfos[0].Subscription.Manifest,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("scratch", null))
+                    }
+                }
+            };
+
+            using (TestContext context = new(subscriptionInfos, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                // No paths are expected
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new();
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
         /// Verifies the correct path arguments are passed to the queued build when
         /// a base image changes where the image referencing that base image has other
         /// images dependent upon it.

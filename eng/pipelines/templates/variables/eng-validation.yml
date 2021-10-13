@@ -1,5 +1,5 @@
 variables:
-- template: common.yml
+- template: build-test-publish.yml
 - name: manifest
   value: eng/tests/pipeline-validation/test-manifest.json
 - name: testScriptPath

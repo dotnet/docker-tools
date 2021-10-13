@@ -13,6 +13,8 @@ variables:
 - template: templates/variables/eng-validation.yml
 
 stages:
-- template: ../common/templates/stages/build-test-publish-repo.yml
+- template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
   parameters:
     noCache: true
+    internalProjectName: ${{ variables.internalProjectName }}
+    publicProjectName: ${{ variables.publicProjectName }}

@@ -1,5 +1,5 @@
 variables:
-- template: common.yml
+- template: build-test-publish.yml
 - name: manifest
   value: src/Microsoft.DotNet.ImageBuilder/manifest.json
 - name: publishReadme

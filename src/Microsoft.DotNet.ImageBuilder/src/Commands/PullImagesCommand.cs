@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteHeading("PULLING IMAGES");
             foreach (string imageTag in imageTags)
             {
-                _dockerService.PullImage(imageTag, true);
+                _dockerService.PullImage(imageTag, Options.IsDryRun);
             }
 
             if (Options.OutputVariableName is not null)

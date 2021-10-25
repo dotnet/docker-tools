@@ -1,7 +1,6 @@
 #!/usr/bin/env sh
 
-# This is the main POSIX-compliant script for retrieving the list of upgradable packages. It's just a wrapper around
-# the Bash-based script. This ensures that Bash is installed and then runs the Bash script.
+# This is just a wrapper around the Bash-based script. This ensures that Bash is installed and then runs the Bash script. 
 
 ensureBashInstalledForApt() {
     echo "Ensuring bash is installed"
@@ -26,19 +25,19 @@ scriptDir=$(dirname $0)
 
 if type apt > /dev/null 2>/dev/null; then
     ensureBashInstalledForApt
-    $scriptDir/get-upgradable-packages.bash.sh $@
+    $scriptDir/get-upgradable-packages.container.bash.sh $@
     exit 0
 fi
 
 if type apk > /dev/null 2>/dev/null; then
     ensureBashInstalledForApk
-    $scriptDir/get-upgradable-packages.bash.sh $@
+    $scriptDir/get-upgradable-packages.container.bash.sh $@
     exit 0
 fi
 
 if type tdnf > /dev/null 2>/dev/null; then
     ensureBashInstalledForTdnf
-    $scriptDir/get-upgradable-packages.bash.sh $@
+    $scriptDir/get-upgradable-packages.container.bash.sh $@
     exit 0
 fi
 

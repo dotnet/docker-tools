@@ -28,7 +28,7 @@ if type apk > /dev/null 2>/dev/null; then
     #   musl-1.2.2-r3 description:
     #   the musl c library (libc) implementation
     # Output is the format of <pkg-type>,<pkg-name>=<pkg-version>
-    apk info 2>/dev/null | xargs -I {} sh -c "apk list {} | grep '\[installed\]' 2>/dev/null | sed -n 's/\({}\)-\(\S*\)\s.*/APK,\1=\2/p'" | sort
+    apk info 2>/dev/null | xargs -I {} sh -c "apk list 2>/dev/null {} | grep '\[installed\]' 2>/dev/null | sed -n 's/\({}\)-\(\S*\)\s.*/APK,\1=\2/p'" | sort
     exit 0
 fi
 

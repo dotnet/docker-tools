@@ -166,7 +166,7 @@ getUpgradablePackageVersionsForTdnf() {
 
 outputPackagesToUpgrade() {
     echo
-    echo "Packages to upgrade:"
+    echo "Packages requiring an upgrade:"
 
     local packagesToUpgrade=()
     local pkg

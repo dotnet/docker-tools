@@ -15,6 +15,7 @@ variables:
 stages:
 - template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
   parameters:
+    buildMatrixType: platformVersionedOs
     noCache: true
     internalProjectName: ${{ variables.internalProjectName }}
     publicProjectName: ${{ variables.publicProjectName }}

@@ -1,0 +1,30 @@
+trigger: none
+pr: none
+
+parameters:
+- name: containerName
+  displayName: Blob Container Name
+  type: string
+- name: sourceFilePath
+  displayName: Source File Path
+  type: string
+- name: destName
+  displayName: Destination Name
+  type: string
+
+variables:
+- template: templates/variables/common.yml
+
+jobs:
+- job: Execute
+  pool:
+    vmImage: $(defaultLinuxAmd64PoolImage)
+  steps:
+  - script: >
+      az storage blob upload
+      --account-name $(dotnetBinaries.accountName)
+      --account-key $(dotnetbinaries-accountkey)
+      --container-name ${{ parameters.containerName }}
+      --file $(Build.SourcesDirectory)/${{ parameters.sourceFilePath }}
+      --name ${{ parameters.destName }}
+    displayName: Upload File

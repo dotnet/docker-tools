@@ -3,5 +3,5 @@
 **/out
 **/.vscode
 **/.vs
-**/Dockerfile.nanoserver
-**/Dockerfile.debian
+**/Dockerfile.windows
+**/Dockerfile.linux

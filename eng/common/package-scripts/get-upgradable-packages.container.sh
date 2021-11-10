@@ -4,8 +4,8 @@
 
 ensureBashInstalledForApt() {
     echo "Ensuring bash is installed"
-    apt update 1>/dev/null
-    apt install -y bash 1>/dev/null
+    apt update 1>/dev/null 2>/dev/null
+    apt install -y bash 1>/dev/null 2>/dev/null
 }
 
 ensureBashInstalledForApk() {

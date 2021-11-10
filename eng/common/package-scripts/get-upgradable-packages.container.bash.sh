@@ -8,6 +8,11 @@ printPackageInfo() {
     echo "- Upgrade: $3"
 }
 
+writeError() {
+    echo "Error: $1" >>/dev/stderr
+    exit 1
+}
+
 addUpgradeablePackageVersion() {
     local pkgName=$1
     local currentVersion=$2
@@ -22,32 +27,32 @@ addUpgradeablePackageVersion() {
     fi
 }
 
-installPackageWithApt() {
+checkForUpgradableVersionWithApt() {
     if [[ $1 =~ $packageVersionRegex ]]; then
         local pkgName=${BASH_REMATCH[1]}
         local pkgVersion=${BASH_REMATCH[2]}
 
-        apt show 2>/dev/null $1
-        
-        # If this package version exists for install
-        if [[ $? == 0 ]]; then
-            echo "Installing package $1"
-            apt install -y $1
-        else
-            echo "Finding latest version of package $pkgName"
-            local pkgInfo=$(apt policy $pkgName)
+        echo "Finding latest version of package $pkgName"
+        local pkgInfo=$(apt policy $pkgName 2>/dev/null)
+        if [[ $pkgInfo == "" ]]; then
+            writeError "Package '$pkgName' does not exist."
+        fi
 
-            # Get the candidate version of the package to be installed
-            local candidateVersion=$(echo "$pkgInfo" | sed -n 's/.*Candidate:\s*\(\S*\)/\1/p')
+        # Get the candidate version of the package to be installed
+        local candidateVersion=$(echo "$pkgInfo" | sed -n 's/.*Candidate:\s*\(\S*\)/\1/p')
 
+        # If a newer version of the package is available
+        if [[ $candidateVersion != $pkgVersion ]]; then
             # Check if the candidate package version comes from a security repository
-            apt-cache madison $pkgName | grep $candidateVersion | grep security
+            apt-cache madison $pkgName | grep $candidateVersion | grep security 1>/dev/null
 
-            # If the candidate version comes from a security repository, install the package
+            # If the candidate version comes from a security repository, add it to the list of upgradable packages
             if [[ $? == 0 ]]; then
                 addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$candidateVersion"
             fi
         fi
+    else
+        writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
     fi
 }
 
@@ -62,33 +67,46 @@ getUpgradablePackageVersionsForApt() {
 
     echo
     echo "Installed packages available to upgrade:"
-    for pkg in "${aptPackages[@]}"
-    do
-        if [[ $pkg =~ $regex ]]; then
-            local pkgName=${BASH_REMATCH[1]}
-            local currentVersion=${BASH_REMATCH[2]}
-            local upgradeVersion=${BASH_REMATCH[3]}
-            
-            addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
-        fi
-    done
+
+    local pkgCount=${#aptPackages[@]}
+    if [[ $pkgCount > 0 ]]; then
+        for pkg in "${aptPackages[@]}"
+        do
+            if [[ $pkg =~ $regex ]]; then
+                local pkgName=${BASH_REMATCH[1]}
+                local currentVersion=${BASH_REMATCH[2]}
+                local upgradeVersion=${BASH_REMATCH[3]}
+                
+                addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
+            else
+                writeError "Unable to parse APT output to get package name and version info. Output: $pkg"
+            fi
+        done
+    else
+        echo "<none>"
+    fi
 }
 
-installPackageWithApk() {
+checkForUpgradableVersionWithApk() {
     if [[ $1 =~ $packageVersionRegex ]]; then
         local pkgName=${BASH_REMATCH[1]}
-        local pkgVersion=${BASH_REMATCH[2]}
-        apk list $pkgName | grep $pkgVersion
-        
-        # If this package version exists for install
-        if [[ $? == 0 ]]; then
-            echo "Installing package $1"
-            apk add $1
-        else
-            echo "Finding latest version of package $pkgName"
-            availableVersion=$(apk list $pkgName | tac | sed -n "1 s/$pkgName-\(\S*\).*/\1/p")
-            addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$availableVersion"
+        local pkgVersion=${BASH_REMATCH[2]}\
+
+        echo "Finding latest version of package $pkgName"
+        availableVersion=$(apk list $pkgName | tac | sed -n "1 s/$pkgName-\(\S*\).*/\1/p")
+        if [[ $availableVersion == "" ]]; then
+            writeError "Package '$pkgName' does not exist."
         fi
+
+        # If a newer version of the package is available
+        if [[ $availableVersion != $pkgVersion ]]; then
+            # If the package exists, add it to the list of upgradable packages
+            if [[ $availableVersion != "" ]]; then
+                addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$availableVersion"
+            fi
+        fi
+    else
+        writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
     fi
 }
 
@@ -114,23 +132,26 @@ getUpgradablePackageVersionsForApk() {
     done
 }
 
-installPackageWithTdnf() {
+checkForUpgradableVersionWithTdnf() {
     if [[ $1 =~ $packageVersionRegex ]]; then
         local pkgName=${BASH_REMATCH[1]}
         local pkgVersion=${BASH_REMATCH[2]}
 
-        tdnf list available $pkgName | grep $pkgVersion
-        
-        # If this package version exists for install
+        echo "Finding latest version of package $pkgName"
+        tdnf install -y $pkgName 1>/dev/null 2>/dev/null
+
+        # If the package exists
         if [[ $? == 0 ]]; then
-            echo "Installing package $1"
-            tdnf install -y $1
+            local installedVersion=$(tdnf list installed $pkgName | tail -n +2 | sed -n 's/\S*\s*\(\S*\)\s*.*/\1/p')
+            # If a newer version of the package is available
+            if [[ $installedVersion != $pkgVersion ]]; then
+                addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$installedVersion"
+            fi
         else
-            echo "Finding latest version of package $pkgName"
-            tdnf install -y $pkgName
-            installedVersion=$(tdnf list installed $pkgName | tail -n +2 | sed -n 's/\S*\s*\(\S*\)\s*.*/\1/p')
-            addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$installedVersion"
+            writeError "Package '$pkgName' does not exist."
         fi
+    else
+        writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
     fi
 }
 
@@ -157,9 +178,10 @@ getUpgradablePackageVersionsForTdnf() {
 
             if [[ $upgradePkgLines =~ $upgradeRegex ]]; then
                 local upgradeVersion=${BASH_REMATCH[1]}
-                
                 addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
             fi
+        else
+            writeError "Unable to parse TDNF output to get package name and version info. Output: $installedPackageLine"
         fi
     done
 }
@@ -186,6 +208,8 @@ outputPackagesToUpgrade() {
                 packagesToUpgrade+=($(echo "$pkgName,$currentVersion,$upgradeVersion"))
                 printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
             fi
+        else
+            writeError "Unable to parse package version info. Value: $pkg"
         fi
     done
 
@@ -213,11 +237,11 @@ packageVersionRegex="(\S+)=(\S+)"
 
 if type apt > /dev/null 2>/dev/null; then
     echo "Updating package cache..."
-    apt update 1>/dev/null
+    apt update 1>/dev/null 2>/dev/null
 
     for pkgName in "${packages[@]}"
     do
-        installPackageWithApt $pkgName
+        checkForUpgradableVersionWithApt $pkgName
     done
     getUpgradablePackageVersionsForApt
     outputPackagesToUpgrade
@@ -230,7 +254,7 @@ if type apk > /dev/null 2>/dev/null; then
 
     for pkgName in "${packages[@]}"
     do
-        installPackageWithApk $pkgName
+        checkForUpgradableVersionWithApk $pkgName
     done
     getUpgradablePackageVersionsForApk
     outputPackagesToUpgrade
@@ -243,10 +267,8 @@ if type tdnf > /dev/null 2>/dev/null; then
 
     for pkgName in "${packages[@]}"
     do
-        installPackageWithTdnf $pkgName
+        checkForUpgradableVersionWithTdnf $pkgName
     done
-
-    tdnf install -y ${packages[@]}
     getUpgradablePackageVersionsForTdnf
     outputPackagesToUpgrade
     exit 0

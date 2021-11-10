@@ -13,7 +13,7 @@ RUN dotnet restore -r win-x64 ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --no-self-contained
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
 
 RUN pwsh -Command `
         $ErrorActionPreference = 'Stop'; `
@@ -24,7 +24,7 @@ RUN pwsh -Command `
             -OutFile out/manifest-tool.exe;
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime:6.0
+FROM mcr.microsoft.com/windows/$WINDOWS_BASE
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 

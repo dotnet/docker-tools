@@ -18,11 +18,11 @@ RUN dotnet restore -r linux-musl-$RID_ARCH ./src/Microsoft.DotNet.ImageBuilder.c
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-$RID_ARCH --no-restore --no-self-contained
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-$RID_ARCH --no-restore --self-contained
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime:6.0-alpine$ALPINE_TAG_SUFFIX
+FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine$ALPINE_TAG_SUFFIX
 
 ARG MANIFEST_TOOL_ARCH=amd64
 

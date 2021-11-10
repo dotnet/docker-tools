@@ -66,18 +66,6 @@
             },
             {
               "buildArgs": {
-                "WINDOWS_BASE": "nanoserver:2004-amd64"
-              },
-              "dockerfile": "Dockerfile.windows",
-              "os": "windows",
-              "osVersion": "nanoserver-2004",
-              "tags": {
-                "nanoserver-2004-amd64": {},
-                "nanoserver-2004-amd64-$(UniqueId)": {}
-              }
-            },
-            {
-              "buildArgs": {
                 "WINDOWS_BASE": "nanoserver:20H2-amd64"
               },
               "dockerfile": "Dockerfile.windows",

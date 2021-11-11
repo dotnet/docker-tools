@@ -8,17 +8,19 @@ ARG ALPINE_TAG_SUFFIX=""
 FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 
 ARG RID_ARCH=x64
+# The rid must be version-specific to workaround a libgit2sharp issue (see https://github.com/dotnet/dotnet-docker/pull/2111)
+ARG RID=alpine.3.14-${RID_ARCH}
 
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore -r linux-musl-$RID_ARCH ./src/Microsoft.DotNet.ImageBuilder.csproj
+RUN dotnet restore -r $RID ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r linux-musl-$RID_ARCH --no-restore --self-contained
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r $RID --no-restore --self-contained
 
 
 # build runtime image

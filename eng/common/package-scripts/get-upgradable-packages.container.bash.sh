@@ -28,162 +28,81 @@ addUpgradeablePackageVersion() {
 }
 
 checkForUpgradableVersionWithApt() {
-    if [[ $1 =~ $packageVersionRegex ]]; then
-        local pkgName=${BASH_REMATCH[1]}
-        local pkgVersion=${BASH_REMATCH[2]}
-
-        echo "Finding latest version of package $pkgName"
-        local pkgInfo=$(apt policy $pkgName 2>/dev/null)
-        if [[ $pkgInfo == "" ]]; then
-            writeError "Package '$pkgName' does not exist."
-        fi
-
-        # Get the candidate version of the package to be installed
-        local candidateVersion=$(echo "$pkgInfo" | sed -n 's/.*Candidate:\s*\(\S*\)/\1/p')
-
-        # If a newer version of the package is available
-        if [[ $candidateVersion != $pkgVersion ]]; then
-            # Check if the candidate package version comes from a security repository
-            apt-cache madison $pkgName | grep $candidateVersion | grep security 1>/dev/null
-
-            # If the candidate version comes from a security repository, add it to the list of upgradable packages
-            if [[ $? == 0 ]]; then
-                addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$candidateVersion"
-            fi
-        fi
-    else
+    if [[ ! $1 =~ $packageVersionRegex ]]; then
         writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
     fi
-}
 
-getUpgradablePackageVersionsForApt() {
-    grep security /etc/apt/sources.list > /tmp/security.list
+    local pkgName=${BASH_REMATCH[1]}
+    local pkgVersion=${BASH_REMATCH[2]}
 
-    # Find all upgradable packages from security feeds and store the output in an array
-    mapfile -t aptPackages < <(apt upgrade -oDir::Etc::Sourcelist=/tmp/security.list -s 2>/dev/null | grep Inst | sort)
+    echo "Finding latest version of package $pkgName"
+    local pkgInfo=$(apt policy $pkgName 2>/dev/null)
+    if [[ $pkgInfo == "" ]]; then
+        writeError "Package '$pkgName' does not exist."
+    fi
 
-    # Regex to parse the output from apt to get the package name, current version, and upgrade version
-    local regex="Inst\s(\S+)\s\[(\S+)]\s\((\S+)\s"
+    # Get the candidate version of the package to be installed
+    local candidateVersion=$(echo "$pkgInfo" | sed -n 's/.*Candidate:\s*\(\S*\)/\1/p')
 
-    echo
-    echo "Installed packages available to upgrade:"
+    echo $candidateVersion
+    echo $pkgVersion
 
-    local pkgCount=${#aptPackages[@]}
-    if [[ $pkgCount > 0 ]]; then
-        for pkg in "${aptPackages[@]}"
-        do
-            if [[ $pkg =~ $regex ]]; then
-                local pkgName=${BASH_REMATCH[1]}
-                local currentVersion=${BASH_REMATCH[2]}
-                local upgradeVersion=${BASH_REMATCH[3]}
-                
-                addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
-            else
-                writeError "Unable to parse APT output to get package name and version info. Output: $pkg"
-            fi
-        done
-    else
-        echo "<none>"
+    # If a newer version of the package is available
+    if [[ $candidateVersion != $pkgVersion ]]; then
+        # Check if the candidate package version comes from a security repository
+        apt-cache madison $pkgName | grep $candidateVersion | grep security 1>/dev/null
+
+        # If the candidate version comes from a security repository, add it to the list of upgradable packages
+        if [[ $? == 0 ]]; then
+            addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$candidateVersion"
+        fi
     fi
 }
 
 checkForUpgradableVersionWithApk() {
-    if [[ $1 =~ $packageVersionRegex ]]; then
-        local pkgName=${BASH_REMATCH[1]}
-        local pkgVersion=${BASH_REMATCH[2]}\
-
-        echo "Finding latest version of package $pkgName"
-        availableVersion=$(apk list $pkgName | tac | sed -n "1 s/$pkgName-\(\S*\).*/\1/p")
-        if [[ $availableVersion == "" ]]; then
-            writeError "Package '$pkgName' does not exist."
-        fi
-
-        # If a newer version of the package is available
-        if [[ $availableVersion != $pkgVersion ]]; then
-            # If the package exists, add it to the list of upgradable packages
-            if [[ $availableVersion != "" ]]; then
-                addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$availableVersion"
-            fi
-        fi
-    else
+    if [[ ! $1 =~ $packageVersionRegex ]]; then
         writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
     fi
-}
 
-getUpgradablePackageVersionsForApk() {
-    # Find all installed package names and store the output in an array
-    mapfile -t apkPackageNames < <(apk info | sort)
+    local pkgName=${BASH_REMATCH[1]}
+    local pkgVersion=${BASH_REMATCH[2]}\
 
-    # Find all upgradable packages
-    local apkPackages=$(apk version | tail -n +2 | sort)
+    echo "Finding latest version of package $pkgName"
+    availableVersion=$(apk list $pkgName | tac | sed -n "1 s/$pkgName-\(\S*\).*/\1/p")
+    if [[ $availableVersion == "" ]]; then
+        writeError "Package '$pkgName' does not exist."
+    fi
 
-    echo
-    echo "Installed packages available to upgrade:"
-    for pkgName in "${apkPackageNames[@]}"
-    do
-        # Regex to parse the output from apk to get the package name, current version, and upgrade version
-        local regex="$pkgName-(\S+)\s+\S+\s+(\S+)"
-        if [[ $apkPackages =~ $regex ]]; then
-            local currentVersion=${BASH_REMATCH[1]}
-            local upgradeVersion=${BASH_REMATCH[2]}
-            
-            addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
+    # If a newer version of the package is available
+    if [[ $availableVersion != $pkgVersion ]]; then
+        # If the package exists, add it to the list of upgradable packages
+        if [[ $availableVersion != "" ]]; then
+            addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$availableVersion"
         fi
-    done
+    fi
 }
 
 checkForUpgradableVersionWithTdnf() {
-    if [[ $1 =~ $packageVersionRegex ]]; then
-        local pkgName=${BASH_REMATCH[1]}
-        local pkgVersion=${BASH_REMATCH[2]}
-
-        echo "Finding latest version of package $pkgName"
-        tdnf install -y $pkgName 1>/dev/null 2>/dev/null
-
-        # If the package exists
-        if [[ $? == 0 ]]; then
-            local installedVersion=$(tdnf list installed $pkgName | tail -n +2 | sed -n 's/\S*\s*\(\S*\)\s*.*/\1/p')
-            # If a newer version of the package is available
-            if [[ $installedVersion != $pkgVersion ]]; then
-                addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$installedVersion"
-            fi
-        else
-            writeError "Package '$pkgName' does not exist."
-        fi
-    else
+    if [[ ! $1 =~ $packageVersionRegex ]]; then
         writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
     fi
-}
 
-getUpgradablePackageVersionsForTdnf() {
-    # Find all installed packages and store the output in an array
-    local installedPkgLines
-    mapfile -t installedPkgLines < <(tdnf list installed | tail -n +2 | sort)
+    local pkgName=${BASH_REMATCH[1]}
+    local pkgVersion=${BASH_REMATCH[2]}
 
-    # Find all upgradable packages
-    local upgradePkgLines=$(tdnf list upgrades 2>/dev/null | tail -n +2 | sort)
+    echo "Finding latest version of package $pkgName"
+    tdnf install -y $pkgName 1>/dev/null 2>/dev/null
 
-    echo
-    echo "Installed packages available to upgrade:"
-    for installedPackageLine in "${installedPkgLines[@]}"
-    do
-        # Regex to get the package name and version from the output of tdnf list
-        local pkgListRegex="(\S+)\.\w+\s+(\S+)"
-        if [[ $installedPackageLine =~ $pkgListRegex ]]; then
-            local pkgName=${BASH_REMATCH[1]}
-            local currentVersion=${BASH_REMATCH[2]}
-
-            # Regex to get the package name and version from the output of tdnf list
-            local upgradeRegex="$pkgName\.\w+\s+(\S+)"
-
-            if [[ $upgradePkgLines =~ $upgradeRegex ]]; then
-                local upgradeVersion=${BASH_REMATCH[1]}
-                addUpgradeablePackageVersion "$pkgName" "$currentVersion" "$upgradeVersion"
-            fi
-        else
-            writeError "Unable to parse TDNF output to get package name and version info. Output: $installedPackageLine"
+    # If the package exists
+    if [[ $? == 0 ]]; then
+        local installedVersion=$(tdnf list installed $pkgName | tail -n +2 | sed -n 's/\S*\s*\(\S*\)\s*.*/\1/p')
+        # If a newer version of the package is available
+        if [[ $installedVersion != $pkgVersion ]]; then
+            addUpgradeablePackageVersion "$pkgName" "$pkgVersion" "$installedVersion"
         fi
-    done
+    else
+        writeError "Package '$pkgName' does not exist."
+    fi
 }
 
 outputPackagesToUpgrade() {
@@ -195,21 +114,21 @@ outputPackagesToUpgrade() {
     # Lookup the provided package names to see if any are in the list of upgradable packages
     for pkg in "${packages[@]}"
     do
-        if [[ $pkg =~ $packageVersionRegex ]]; then
-            local pkgName=${BASH_REMATCH[1]}
-            versionData=${upgradablePackageVersions[$pkgName]}
-
-            if [ ! -z "$versionData" ]; then
-                # Split versionData by comma
-                local versionArray=( ${versionData//,/ } )
-                local currentVersion=${versionArray[0]}
-                local upgradeVersion=${versionArray[1]}
-                
-                packagesToUpgrade+=($(echo "$pkgName,$currentVersion,$upgradeVersion"))
-                printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
-            fi
-        else
+        if [[ ! $pkg =~ $packageVersionRegex ]]; then
             writeError "Unable to parse package version info. Value: $pkg"
+        fi
+
+        local pkgName=${BASH_REMATCH[1]}
+        versionData=${upgradablePackageVersions[$pkgName]}
+
+        if [ ! -z "$versionData" ]; then
+            # Split versionData by comma
+            local versionArray=( ${versionData//,/ } )
+            local currentVersion=${versionArray[0]}
+            local upgradeVersion=${versionArray[1]}
+            
+            packagesToUpgrade+=($(echo "$pkgName,$currentVersion,$upgradeVersion"))
+            printPackageInfo "$pkgName" "$currentVersion" "$upgradeVersion"
         fi
     done
 
@@ -243,7 +162,6 @@ if type apt > /dev/null 2>/dev/null; then
     do
         checkForUpgradableVersionWithApt $pkgName
     done
-    getUpgradablePackageVersionsForApt
     outputPackagesToUpgrade
     exit 0
 fi
@@ -256,7 +174,6 @@ if type apk > /dev/null 2>/dev/null; then
     do
         checkForUpgradableVersionWithApk $pkgName
     done
-    getUpgradablePackageVersionsForApk
     outputPackagesToUpgrade
     exit 0
 fi
@@ -269,7 +186,6 @@ if type tdnf > /dev/null 2>/dev/null; then
     do
         checkForUpgradableVersionWithTdnf $pkgName
     done
-    getUpgradablePackageVersionsForTdnf
     outputPackagesToUpgrade
     exit 0
 fi

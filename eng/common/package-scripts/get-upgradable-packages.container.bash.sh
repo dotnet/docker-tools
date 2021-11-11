@@ -28,12 +28,8 @@ addUpgradeablePackageVersion() {
 }
 
 checkForUpgradableVersionWithApt() {
-    if [[ ! $1 =~ $packageVersionRegex ]]; then
-        writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
-    fi
-
-    local pkgName=${BASH_REMATCH[1]}
-    local pkgVersion=${BASH_REMATCH[2]}
+    pkgName=$1
+    pkgVersion=$2
 
     echo "Finding latest version of package $pkgName"
     local pkgInfo=$(apt policy $pkgName 2>/dev/null)
@@ -57,12 +53,8 @@ checkForUpgradableVersionWithApt() {
 }
 
 checkForUpgradableVersionWithApk() {
-    if [[ ! $1 =~ $packageVersionRegex ]]; then
-        writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
-    fi
-
-    local pkgName=${BASH_REMATCH[1]}
-    local pkgVersion=${BASH_REMATCH[2]}\
+    pkgName=$1
+    pkgVersion=$2
 
     echo "Finding latest version of package $pkgName"
     availableVersion=$(apk list $pkgName | tac | sed -n "1 s/$pkgName-\(\S*\).*/\1/p")
@@ -80,12 +72,8 @@ checkForUpgradableVersionWithApk() {
 }
 
 checkForUpgradableVersionWithTdnf() {
-    if [[ ! $1 =~ $packageVersionRegex ]]; then
-        writeError "Package version info for '$1' must be in the form of <pkg-name>=<pkg-version>"
-    fi
-
-    local pkgName=${BASH_REMATCH[1]}
-    local pkgVersion=${BASH_REMATCH[2]}
+    pkgName=$1
+    pkgVersion=$2
 
     echo "Finding latest version of package $pkgName"
     tdnf install -y $pkgName 1>/dev/null 2>/dev/null
@@ -160,8 +148,6 @@ packages=( "${args[@]:1}" )
 declare -A upgradablePackageVersions
 upgradablePackageVersions=()
 
-packageVersionRegex="(\S+)=(\S+)"
-
 if type apt > /dev/null 2>/dev/null; then
     pkgType="Apt"
 elif type apk > /dev/null 2>/dev/null; then
@@ -183,8 +169,13 @@ fi
 echo "Updating package cache..."
 updatePackageCacheWith$pkgType
 
+packageVersionRegex="(\S+)=(\S+)"
 for pkgName in "${packages[@]}"
 do
-    checkForUpgradableVersionWith$pkgType $pkgName
+    if [[ ! $pkgName =~ $packageVersionRegex ]]; then
+        writeError "Package version info for '$pkgName' must be in the form of <pkg-name>=<pkg-version>"
+    fi
+
+    checkForUpgradableVersionWith$pkgType ${BASH_REMATCH[1]} ${BASH_REMATCH[2]}
 done
 outputPackagesToUpgrade

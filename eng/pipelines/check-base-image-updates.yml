@@ -100,6 +100,7 @@ stages:
         $(System.AccessToken)
         dnceng
         internal
+        $(System.TeamFoundationCollectionUri)$(System.TeamProject)/_build/results?buildId=$(Build.BuildId)
         --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
         --git-owner 'dotnet'
         --git-repo '$(internalGitHubRepo)'
@@ -108,5 +109,6 @@ stages:
         --image-paths "$(imagePaths2)"
         --image-paths "$(imagePaths3)"
         --image-paths "$(imagePaths4)"
+        --enable-upgradable-pkgs:$(enableUpgradablePackagesForRebuild)
       displayName: Queue Build for Stale Images
     - template: ../common/templates/steps/cleanup-docker-linux.yml

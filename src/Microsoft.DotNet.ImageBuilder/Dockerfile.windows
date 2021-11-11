@@ -3,17 +3,17 @@
 ARG WINDOWS_BASE
 
 # build Microsoft.DotNet.ImageBuilder
-FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore -r win7-x64 ./src/Microsoft.DotNet.ImageBuilder.csproj
+RUN dotnet restore -r win-x64 ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win7-x64 --no-restore
+RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
 
 RUN pwsh -Command `
         $ErrorActionPreference = 'Stop'; `
@@ -27,3 +27,5 @@ RUN pwsh -Command `
 FROM mcr.microsoft.com/windows/$WINDOWS_BASE
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
+
+ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

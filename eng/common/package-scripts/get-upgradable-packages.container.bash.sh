@@ -44,9 +44,6 @@ checkForUpgradableVersionWithApt() {
     # Get the candidate version of the package to be installed
     local candidateVersion=$(echo "$pkgInfo" | sed -n 's/.*Candidate:\s*\(\S*\)/\1/p')
 
-    echo $candidateVersion
-    echo $pkgVersion
-
     # If a newer version of the package is available
     if [[ $candidateVersion != $pkgVersion ]]; then
         # Check if the candidate package version comes from a security repository
@@ -143,6 +140,17 @@ outputPackagesToUpgrade() {
     printf "%s\n" "${packagesToUpgrade[@]}" > $outputPath
 }
 
+updatePackageCacheWithApt() {
+    apt update 1>/dev/null 2>/dev/null
+}
+
+updatePackageCacheWithApk() {
+    apk update 1>/dev/null
+}
+
+updatePackageCacheWithTdnf() {
+    tdnf makecache 1>/dev/null
+}
 
 outputPath="$1"
 args=( $@ )
@@ -155,40 +163,28 @@ upgradablePackageVersions=()
 packageVersionRegex="(\S+)=(\S+)"
 
 if type apt > /dev/null 2>/dev/null; then
-    echo "Updating package cache..."
-    apt update 1>/dev/null 2>/dev/null
-
-    for pkgName in "${packages[@]}"
-    do
-        checkForUpgradableVersionWithApt $pkgName
-    done
-    outputPackagesToUpgrade
-    exit 0
+    pkgType="Apt"
+elif type apk > /dev/null 2>/dev/null; then
+    pkgType="Apk"
+elif type tdnf > /dev/null 2>/dev/null; then
+    pkgType="Tdnf"
+else
+    writeError "Unsupported package manager. Current supported package managers: apt, apk, tdnf"
 fi
 
-if type apk > /dev/null 2>/dev/null; then
-    echo "Updating package cache..."
-    apk update 1>/dev/null
-
-    for pkgName in "${packages[@]}"
-    do
-        checkForUpgradableVersionWithApk $pkgName
-    done
-    outputPackagesToUpgrade
-    exit 0
+if [[ $(type -t updatePackageCacheWith$pkgType) != "function" ]]; then
+    writeError "Missing function named 'updatePackageCacheWith$pkgType'"
 fi
 
-if type tdnf > /dev/null 2>/dev/null; then
-    echo "Updating package cache..."
-    tdnf makecache 1>/dev/null
-
-    for pkgName in "${packages[@]}"
-    do
-        checkForUpgradableVersionWithTdnf $pkgName
-    done
-    outputPackagesToUpgrade
-    exit 0
+if [[ $(type -t checkForUpgradableVersionWith$pkgType) != "function" ]]; then
+    writeError "Missing function named 'checkForUpgradableVersionWith$pkgType'"
 fi
 
-echo "Unsupported package manager. Current supported package managers: apt, apk, tdnf" >&2
-exit 1
+echo "Updating package cache..."
+updatePackageCacheWith$pkgType
+
+for pkgName in "${packages[@]}"
+do
+    checkForUpgradableVersionWith$pkgType $pkgName
+done
+outputPackagesToUpgrade

@@ -690,6 +690,56 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that manifest-defined and globally-defined build args can be used.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_BuildArgs()
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.BuildArgs.Add("arg1", "val1");
+            command.Options.BuildArgs.Add("arg2", "val2a");
+
+            Platform platform = CreatePlatform(
+                DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, baseImageTag),
+                new string[] { tag });
+            platform.BuildArgs.Add("arg2", "val2b");
+            platform.BuildArgs.Add("arg3", "val3");
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            platform
+                        }))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            dockerServiceMock.Verify(
+                o => o.BuildImage(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<List<string>>(),
+                    It.Is<Dictionary<string, string>>(
+                        args => args.Count == 3 && args["arg1"] == "val1" && args["arg2"] == "val2b" && args["arg3"] == "val3"),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>()));
+        }
+
+        /// <summary>
         /// Verifies that an image with no base image will get built.
         /// </summary>
         [Fact]

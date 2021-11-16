@@ -28,10 +28,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
         private readonly ImageDigestCache _imageDigestCache;
-        private readonly List<TagInfo> _builtTags = new List<TagInfo>();
+        private readonly List<TagInfo> _processedTags = new List<TagInfo>();
+        private readonly HashSet<PlatformInfo> _builtPlatforms = new();
 
         // Metadata about Dockerfiles whose images have been retrieved from the cache
-        private readonly Dictionary<string, BuildCacheInfo> _cachedDockerfilePaths = new Dictionary<string, BuildCacheInfo>();
+        private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
 
         private ImageArtifactDetails? _imageArtifactDetails;
 
@@ -60,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 BuildImages();
 
-                if (_builtTags.Any())
+                if (_processedTags.Any())
                 {
                     PushImages();
                 }
@@ -86,7 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             Dictionary<string, PlatformData> platformDataByTag = new Dictionary<string, PlatformData>();
-            foreach (PlatformData platformData in GetBuiltPlatforms())
+            foreach (PlatformData platformData in GetProcessedPlatforms())
             {
                 if (platformData.PlatformInfo is not null)
                 {
@@ -97,10 +98,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
-            IEnumerable<PlatformData> builtPlatforms = GetBuiltPlatforms();
+            IEnumerable<PlatformData> processedPlatforms = GetProcessedPlatforms();
             List<PlatformData> platformsWithNoPushTags = new List<PlatformData>();
 
-            foreach (PlatformData platform in builtPlatforms)
+            foreach (PlatformData platform in processedPlatforms)
             {
                 IEnumerable<TagInfo> pushTags = GetPushTags(platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>());
 
@@ -122,7 +123,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 else
                 {
-                    GetComponents(platform);
+                    SetComponents(platform);
                 }
 
                 platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
@@ -134,7 +135,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // set (as a result of having a concrete tag) and copy its values.
             foreach (PlatformData platform in platformsWithNoPushTags)
             {
-                PlatformData matchingBuiltPlatform = builtPlatforms.First(builtPlatform =>
+                PlatformData matchingBuiltPlatform = processedPlatforms.First(builtPlatform =>
                     GetPushTags(builtPlatform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>()).Any() &&
                     platform.ImageInfo is not null &&
                     platform.PlatformInfo is not null &&
@@ -151,9 +152,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
         }
 
-        private void GetComponents(PlatformData platform)
+        private void SetComponents(PlatformData platform)
         {
-            if (string.IsNullOrEmpty(Options.GetInstalledPackagesScriptPath) ||
+            if (platform.Components.Any() ||
+                string.IsNullOrEmpty(Options.GetInstalledPackagesScriptPath) ||
                 platform.PlatformInfo is null ||
                 platform.PlatformInfo.Model.OS == OS.Windows)
             {
@@ -297,7 +299,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Concat(image.SharedTags)
                             .ToList();
 
-                        _builtTags.AddRange(allTagInfos);
+                        _processedTags.AddRange(allTagInfos);
 
                         IEnumerable<string> allTags = allTagInfos
                             .Select(tag => tag.FullyQualifiedName)
@@ -311,6 +313,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         if (!isCachedImage)
                         {
                             BuildImage(platform, allTags);
+
+                            _builtPlatforms.Add(platform);
 
                             if (platformData is not null && platform.FinalStageFromImage is not null)
                             {
@@ -334,10 +338,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platform);
 
             string cacheKey = GetBuildCacheKey(platform);
-            if (platformData != null && _cachedDockerfilePaths.TryGetValue(cacheKey, out BuildCacheInfo? cacheInfo))
+            if (platformData != null && _cachedPlatforms.TryGetValue(cacheKey, out PlatformData? cachedPlatform))
             {
-                OnCacheHit(repo, allTags, pullImage: false, cacheInfo.Digest);
-                platformData.BaseImageDigest = cacheInfo.BaseImageDigest;
+                OnCacheHit(repo, allTags, pullImage: false, cachedPlatform.Digest);
+                CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
                 platformData.IsUnchanged = srcPlatformData != null &&
                     CachedPlatformHasAllTagsPublished(srcPlatformData);
                 return true;
@@ -349,22 +353,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (srcPlatformData != null)
             {
                 isCachedImage = CheckForCachedImageFromImageInfo(repo, platform, srcPlatformData, allTags);
-
                 if (platformData != null)
                 {
                     platformData.IsUnchanged = isCachedImage &&
                         CachedPlatformHasAllTagsPublished(srcPlatformData);
                     if (isCachedImage)
                     {
-                        platformData.BaseImageDigest = srcPlatformData.BaseImageDigest;
-
-                        _cachedDockerfilePaths[cacheKey] =
-                            new BuildCacheInfo(srcPlatformData.Digest, platformData.BaseImageDigest);
+                        CopyPlatformDataFromCachedPlatform(platformData, srcPlatformData);
                     }
                 }
+
+                _cachedPlatforms[cacheKey] = srcPlatformData;
             }
 
             return isCachedImage;
+        }
+
+        private void CopyPlatformDataFromCachedPlatform(PlatformData dstPlatform, PlatformData srcPlatform)
+        {
+            // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
+            // published image so we don't need to recalculate it again.
+            dstPlatform.BaseImageDigest = srcPlatform.BaseImageDigest;
+            dstPlatform.Components = new List<Component>(srcPlatform.Components);
+            dstPlatform.Layers = new List<string>(srcPlatform.Layers);
         }
 
         private bool CachedPlatformHasAllTagsPublished(PlatformData srcPlatformData) =>
@@ -779,7 +790,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private IEnumerable<PlatformData> GetBuiltPlatforms() => _imageArtifactDetails?.Repos
+        private IEnumerable<PlatformData> GetProcessedPlatforms() => _imageArtifactDetails?.Repos
             .Where(repoData => repoData.Images != null)
             .SelectMany(repoData => repoData.Images)
             .SelectMany(imageData => imageData.Platforms)
@@ -791,7 +802,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 _loggerService.WriteHeading("PUSHING IMAGES");
 
-                foreach (TagInfo tag in GetPushTags(_builtTags))
+                foreach (TagInfo tag in GetPushTags(_processedTags))
                 {
                     _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
                 }
@@ -839,9 +850,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("IMAGES BUILT");
 
-            if (_builtTags.Any())
+            if (_processedTags.Any())
             {
-                foreach (TagInfo tag in _builtTags)
+                foreach (TagInfo tag in _processedTags)
                 {
                     _loggerService.WriteMessage(tag.FullyQualifiedName);
                 }

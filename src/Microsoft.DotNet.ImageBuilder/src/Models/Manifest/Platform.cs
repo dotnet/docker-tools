@@ -67,6 +67,11 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public CustomBuildLegGroup[] CustomBuildLegGroups { get; set; } = Array.Empty<CustomBuildLegGroup>();
 
         [Description(
+            "Overrides the default script paths for querying package info."
+            )]
+        public PackageQueryInfo? PackageQueryOverrides { get; set; }
+
+        [Description(
             "A label which further distinguishes the architecture when it " +
             "contains variants. For example, the ARM architecture has variants " +
             "named v6, v7, etc."

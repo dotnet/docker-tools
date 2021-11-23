@@ -201,6 +201,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     MergePropertyData(srcObj, targetObj, property, options);
                 }
+                else if (typeof(IList<Component>).IsAssignableFrom(property.PropertyType))
+                {
+                    MergeLists<Component>(property, srcObj, targetObj, options);
+                }
                 else
                 {
                     throw new NotSupportedException($"Unsupported model property type: '{property.PropertyType.FullName}'");

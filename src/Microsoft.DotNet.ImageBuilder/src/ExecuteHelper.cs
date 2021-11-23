@@ -9,37 +9,38 @@ using System.Text;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ExecuteHelper
     {
         private static readonly ILoggerService s_loggerService = new LoggerService();
 
-        public static string Execute(
+        public static string? Execute(
             string fileName,
             string args,
             bool isDryRun,
-            string errorMessage = null,
-            string executeMessageOverride = null)
+            string? errorMessage = null,
+            string? executeMessageOverride = null)
         {
             return Execute(new ProcessStartInfo(fileName, args), isDryRun, errorMessage, executeMessageOverride);
         }
 
-        public static string Execute(
+        public static string? Execute(
             ProcessStartInfo info,
             bool isDryRun,
-            string errorMessage = null,
-            string executeMessageOverride = null)
+            string? errorMessage = null,
+            string? executeMessageOverride = null)
         {
             return Execute(info, info => ExecuteProcess(info), isDryRun, errorMessage, executeMessageOverride);
         }
 
-        public static string ExecuteWithRetry(
+        public static string? ExecuteWithRetry(
             string fileName,
             string args,
             bool isDryRun,
-            string errorMessage = null,
-            string executeMessageOverride = null)
+            string? errorMessage = null,
+            string? executeMessageOverride = null)
         {
             return ExecuteWithRetry(
                 new ProcessStartInfo(fileName, args),
@@ -49,12 +50,12 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
-        public static string ExecuteWithRetry(
+        public static string? ExecuteWithRetry(
             ProcessStartInfo info,
-            Action<Process> processStartedCallback = null,
+            Action<Process>? processStartedCallback = null,
             bool isDryRun = false,
-            string errorMessage = null,
-            string executeMessageOverride = null)
+            string? errorMessage = null,
+            string? executeMessageOverride = null)
         {
             return Execute(
                 info,
@@ -65,16 +66,16 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
-        private static string Execute(
+        private static string? Execute(
             ProcessStartInfo info,
             Func<ProcessStartInfo, ProcessResult> executor,
             bool isDryRun,
-            string errorMessage = null,
-            string executeMessageOverride = null)
+            string? errorMessage = null,
+            string? executeMessageOverride = null)
         {
             info.RedirectStandardError = true;
 
-            ProcessResult processResult = null;
+            ProcessResult? processResult = null;
 
             if (executeMessageOverride == null)
             {
@@ -104,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return processResult?.StandardOutput;
         }
 
-        private static ProcessResult ExecuteProcess(ProcessStartInfo info, Action<Process> processStartedCallback = null)
+        private static ProcessResult ExecuteProcess(ProcessStartInfo info, Action<Process>? processStartedCallback = null)
         {
             info.RedirectStandardOutput = true;
             info.RedirectStandardError = true;
@@ -119,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 return new DataReceivedEventHandler((sender, e) =>
                 {
-                    string line = e.Data;
+                    string? line = e.Data;
                     if (line != null)
                     {
                         stringBuilder.AppendLine(line);
@@ -170,3 +171,4 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
+#nullable disable

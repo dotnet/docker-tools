@@ -183,8 +183,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Split(Environment.NewLine)
                     .Select(val =>
                     {
-                        string[] pkgVersion = val.Split(new char[] { ',', '=' });
-                        return new Component(type: pkgVersion[0], name: pkgVersion[1], version: pkgVersion[2]);
+                        string[] pkgInfo = val.Split(new char[] { ',', '=' });
+                        return new Component(type: pkgInfo[0], name: pkgInfo[1], version: pkgInfo[2]);
                     })
                     .ToList();
             }

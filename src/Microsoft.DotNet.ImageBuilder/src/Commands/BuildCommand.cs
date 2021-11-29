@@ -440,7 +440,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     dockerfilePath,
                     platform.BuildContextPath,
                     allTags,
-                    platform.BuildArgs,
+                    GetBuildArgs(platform),
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
@@ -466,6 +466,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     File.Delete(dockerfilePath);
                 }
             }
+        }
+
+        private Dictionary<string, string?> GetBuildArgs(PlatformInfo platform)
+        {
+            // Manifest-defined build args take precendence over build args defined in the build options
+            Dictionary<string, string?> buildArgs = new(Options.BuildArgs.Cast<KeyValuePair<string, string?>>());
+            foreach (KeyValuePair<string, string?> kvp in platform.BuildArgs)
+            {
+                buildArgs[kvp.Key] = kvp.Value;
+            }
+
+            return buildArgs;
         }
 
         private bool CheckForCachedImageFromImageInfo(RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)

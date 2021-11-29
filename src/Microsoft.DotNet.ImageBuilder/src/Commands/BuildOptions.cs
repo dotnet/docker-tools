@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool NoCache { get; set; }
         public string? SourceRepoPrefix { get; set; }
         public string? GetInstalledPackagesScriptPath { get; set; }
+        public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
     }
 
     public class BuildOptionsBuilder : DockerRegistryOptionsBuilder
@@ -54,6 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Prefix to add to the external base image names when pulling them"),
                         CreateOption<string?>("get-installed-pkgs-path", nameof(BuildOptions.GetInstalledPackagesScriptPath),
                             "Path to the default script file that outputs list of installed packages"),
+                        CreateDictionaryOption("build-arg", nameof(BuildOptions.BuildArgs),
+                            "Build argument to pass to the Dockerfiles (<name>=<value>)"),
                     });
 
         public override IEnumerable<Argument> GetCliArguments() =>

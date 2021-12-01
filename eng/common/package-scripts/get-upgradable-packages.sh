@@ -9,7 +9,7 @@ usage() {
     echo 
     echo "Options:"
     echo "  -h: Print this help message"
-    echo "  -a: Additional package manager arg"
+    echo "  -a: Additional package manager args"
     echo "  -o: Output path for a formatted list of upgradable packages"
     echo "Arguments:"
     echo "  IMAGETAG: The tag of the image to query"

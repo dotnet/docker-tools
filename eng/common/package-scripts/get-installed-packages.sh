@@ -9,7 +9,7 @@ usage() {
     echo 
     echo "Options:"
     echo "  -h: Print this help message"
-    echo "  -a: Additional package manager arg"
+    echo "  -a: Additional package manager args"
     echo "Arguments:"
     echo "  IMAGETAG: The tag of the image to query"
     echo "  DOCKERFILEPATH: The path to the image's Dockerfile"

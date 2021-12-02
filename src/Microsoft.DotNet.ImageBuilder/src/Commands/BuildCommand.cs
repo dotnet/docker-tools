@@ -360,10 +360,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (isCachedImage)
                     {
                         CopyPlatformDataFromCachedPlatform(platformData, srcPlatformData);
+                        _cachedPlatforms[cacheKey] = srcPlatformData;
                     }
                 }
-
-                _cachedPlatforms[cacheKey] = srcPlatformData;
             }
 
             return isCachedImage;

@@ -30,6 +30,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string repo4Image2Dockerfile = CreateDockerfile("1.0/repo4/os2", context);
                 string repo4Image3Dockerfile = CreateDockerfile("1.0/repo4/os3", context);
 
+                PlatformData platform1 = CreatePlatform(
+                    repo2Image1Dockerfile,
+                    simpleTags: new List<string>
+                    {
+                        "tag3"
+                    });
+                platform1.Components.Add(new Component("DEB", "pkg", "1.0"));
+
+                PlatformData platform2 = CreatePlatform(
+                    repo2Image1Dockerfile,
+                    simpleTags: new List<string>
+                    {
+                        "tag1"
+                    },
+                    baseImageDigest: "base1hash");
+                platform2.Components.Add(new Component("DEB", "pkg", "1.0"));
+
                 List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
                 {
                     new ImageArtifactDetails
@@ -49,12 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Platforms =
                                         {
-                                            CreatePlatform(
-                                                repo2Image1Dockerfile,
-                                                simpleTags: new List<string>
-                                                {
-                                                    "tag3"
-                                                })
+                                            platform1
                                         },
                                         ProductVersion = "1.0"
                                     },
@@ -107,13 +119,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Platforms =
                                         {
-                                            CreatePlatform(
-                                                repo2Image1Dockerfile,
-                                                simpleTags: new List<string>
-                                                {
-                                                    "tag1"
-                                                },
-                                                baseImageDigest: "base1hash")
+                                            platform2
                                         },
                                         ProductVersion = "1.0"
                                     },
@@ -223,6 +229,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
                 ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
+                PlatformData expectedPlatform = CreatePlatform(
+                    repo2Image1Dockerfile,
+                    simpleTags: new List<string>
+                    {
+                        "tag1",
+                        "tag3"
+                    },
+                    baseImageDigest: "base1hash");
+                expectedPlatform.Components.Add(new Component("DEB", "pkg", "1.0"));
+
                 ImageArtifactDetails expected = new ImageArtifactDetails
                 {
                     Repos =
@@ -240,14 +256,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     Platforms =
                                     {
-                                        CreatePlatform(
-                                            repo2Image1Dockerfile,
-                                            simpleTags: new List<string>
-                                            {
-                                                "tag1",
-                                                "tag3"
-                                            },
-                                            baseImageDigest: "base1hash")
+                                        expectedPlatform
                                     },
                                     ProductVersion = "1.0"
                                 },

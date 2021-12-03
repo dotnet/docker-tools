@@ -148,7 +148,10 @@ namespace Microsoft.DotNet.ImageBuilder
                     property.PropertyType == typeof(DateTime) ||
                     property.PropertyType == typeof(bool))
                 {
-                    property.SetValue(targetObj, property.GetValue(srcObj));
+                    if (property.CanWrite)
+                    {
+                        property.SetValue(targetObj, property.GetValue(srcObj));
+                    }
                 }
                 else if (typeof(IDictionary).IsAssignableFrom(property.PropertyType))
                 {

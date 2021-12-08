@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -41,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         [Description(
             "The set of Docker repositories described by this manifest."
             )]
-        public Repo[] Repos { get; set; }
+        public Repo[] Repos { get; set; } = Array.Empty<Repo>();
 
         [Description(
             "A set of custom variables that can be referenced in various parts of the " +
@@ -51,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "dynamically override the value of these variables. Variables may be " +
             "referenced in other parts of the manifest by using the following syntax: " +
             "$(_VariableName_).")]
-        public IDictionary<string, string> Variables { get; set; }
+        public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
         public Manifest()
         {

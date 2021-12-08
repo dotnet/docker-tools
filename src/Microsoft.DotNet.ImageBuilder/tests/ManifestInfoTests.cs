@@ -16,23 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private static string s_repoJson = 
 $@"
   ""repos"": [
-    {{
-      ""name"": ""testRepo"",
-      ""images"": [
-        {{
-          ""platforms"": [
-            {{
-              ""dockerfile"": ""{s_dockerfilePath}"",
-              ""os"": ""linux"",
-              ""osVersion"": ""stretch"",
-              ""tags"": {{
-                  ""testTag"": {{}}
-              }}
-            }}
-          ]
-        }}
-      ]
-    }}
+    {CreateRepo("testRepo", s_dockerfilePath)}
   ]
 ";
 
@@ -111,6 +95,56 @@ $@"
             Assert.Throws<InvalidOperationException>(() => LoadManifestInfo(manifest, includeManifestPath, includeManifest));
         }
 
+        [Fact]
+        public void Load_Include_Repos()
+        {
+            const string includeManifestPath1 = "manifest.custom1.json";
+            const string includeManifestPath2 = "manifest.custom2.json";
+            string manifest =
+$@"
+{{
+  ""includes"": [
+    ""{includeManifestPath1}"",
+    ""{includeManifestPath2}""
+  ]
+}}";
+
+            string includeManifest1 =
+$@"
+{{
+  ""repos"": [
+    {CreateRepo("testRepo1", s_dockerfilePath)},
+    {CreateRepo("testRepo2", s_dockerfilePath)}
+  ]
+}}";
+
+            string includeManifest2 =
+$@"
+{{
+  ""repos"": [
+    {CreateRepo("testRepo3", s_dockerfilePath)}
+  ]
+}}";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, manifest);
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, includeManifestPath1), includeManifest1);
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, includeManifestPath2), includeManifest2);
+
+            DockerfileHelper.CreateDockerfile(s_dockerfilePath, tempFolderContext);
+
+            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+
+            Assert.Equal(3, manifestInfo.Model.Repos.Length);
+            Assert.Equal("testRepo1", manifestInfo.Model.Repos[0].Name);
+            Assert.Equal("testRepo2", manifestInfo.Model.Repos[1].Name);
+            Assert.Equal("testRepo3", manifestInfo.Model.Repos[2].Name);
+        }
+
         private static ManifestInfo LoadManifestInfo(string manifest, string includeManifestPath = null, string includeManifest = null)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -129,5 +163,26 @@ $@"
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
             return ManifestInfo.Load(manifestOptions);
         }
+
+        private static string CreateRepo(string repoName, string dockerfilePath) =>
+$@"
+{{
+    ""name"": ""{repoName}"",
+    ""images"": [
+    {{
+        ""platforms"": [
+        {{
+            ""dockerfile"": ""{dockerfilePath}"",
+            ""os"": ""linux"",
+            ""osVersion"": ""stretch"",
+            ""tags"": {{
+                ""testTag"": {{}}
+            }}
+        }}
+        ]
+    }}
+    ]
+}}
+";
     }
 }

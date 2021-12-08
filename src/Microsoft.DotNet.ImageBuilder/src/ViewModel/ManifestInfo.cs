@@ -178,8 +178,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     model.Variables = new Dictionary<string, string>();
                 }
 
-                // Limitation:  Includes only support variables at this time based on usage needs.
-                // There is nothing that prevents expanding this to support other metadata.
                 foreach (string includePath in model.Includes)
                 {
                     ModelExtensions.ValidateFileReference(includePath, manifestDirectory);
@@ -195,6 +193,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
                         model.Variables.Add(kvp.Key, kvp.Value);
                     }
+
+                    model.Repos = model.Repos.Concat(includeModel.Repos).ToArray();
                 }
             }
 

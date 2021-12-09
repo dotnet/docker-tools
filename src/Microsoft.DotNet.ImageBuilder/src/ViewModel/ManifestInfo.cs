@@ -210,7 +210,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static Repo ConsolidateReposWithSameName(IGrouping<string, Repo> grouping)
         {
-            // Validate that all repos which share the same name also have the same values for the other settings
+            // Validate that all repos which share the same name also don't have non-empty, conflicting values for the other settings
             IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo).GetProperties()
                 .Where(prop => prop.Name != nameof(Repo.Images));
             foreach (PropertyInfo property in propertiesToValidate)
@@ -231,19 +231,26 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 }
             }
 
-            Repo primaryRepo = grouping.First();
-
-            // Now we know that all the repos share the same scalar properties so we can just use one of them
-            // to provide the values for the new consolidated repo. All of the images within the repos are combined
-            // together into a single set.
+            // Create a new consolidated repo model instance that contains whichever non-empty state was set amongst the group of repos.
+            // All of the images within the repos are combined together into a single set.
             return new Repo
             {
-                Id = primaryRepo.Id,
-                McrTagsMetadataTemplate = primaryRepo.McrTagsMetadataTemplate,
-                Name = primaryRepo.Name,
-                Readme = primaryRepo.Readme,
-                ReadmeTemplate = primaryRepo.ReadmeTemplate,
-                Images = grouping.SelectMany(repo => repo.Images).ToArray()
+                Name = grouping.Key,
+                Id = grouping
+                    .Select(repo => repo.Id)
+                    .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
+                McrTagsMetadataTemplate = grouping
+                    .Select(repo => repo.McrTagsMetadataTemplate)
+                    .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
+                Readme = grouping
+                    .Select(repo => repo.Readme)
+                    .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
+                ReadmeTemplate = grouping
+                    .Select(repo => repo.ReadmeTemplate)
+                    .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
+                Images = grouping
+                    .SelectMany(repo => repo.Images)
+                    .ToArray()
             };
         }
     }

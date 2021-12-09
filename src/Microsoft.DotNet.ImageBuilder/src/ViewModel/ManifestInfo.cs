@@ -215,17 +215,19 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Where(prop => prop.Name != nameof(Repo.Images));
             foreach (PropertyInfo property in propertiesToValidate)
             {
-                List<string> distinctPropertyValues = grouping
+                List<string> distinctNonEmptyPropertyValues = grouping
                     .Select(repo => property.GetValue(repo))
                     .Distinct()
-                    .Select(item => $"'{item?.ToString()}'")
+                    .Select(item => item?.ToString())
+                    .Where(val => !string.IsNullOrEmpty(val))
+                    .Select(val => $"'{val}'")
                     .ToList();
 
-                if (distinctPropertyValues.Count > 1)
+                if (distinctNonEmptyPropertyValues.Count > 1)
                 {
                     throw new InvalidOperationException(
                         "The manifest contains multiple repos with the same name that also do not have the same " +
-                        $"value for the '{property.Name}' property. Distinct values: {string.Join(", ", distinctPropertyValues)}");
+                        $"value for the '{property.Name}' property. Distinct values: {string.Join(", ", distinctNonEmptyPropertyValues)}");
                 }
             }
 

@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
 
@@ -195,10 +196,53 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                     }
 
                     model.Repos = model.Repos.Concat(includeModel.Repos).ToArray();
+
+                    // Consolidate distinct repo instances that share the same name
+                    model.Repos = model.Repos
+                        .GroupBy(repo => repo.Name)
+                        .Select(grouping => ConsolidateReposWithSameName(grouping))
+                        .ToArray();
                 }
             }
 
             return model;
+        }
+
+        private static Repo ConsolidateReposWithSameName(IGrouping<string, Repo> grouping)
+        {
+            // Validate that all repos which share the same name also have the same values for the other settings
+            IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo).GetProperties()
+                .Where(prop => prop.Name != nameof(Repo.Images));
+            foreach (PropertyInfo property in propertiesToValidate)
+            {
+                List<string> distinctPropertyValues = grouping
+                    .Select(repo => property.GetValue(repo))
+                    .Distinct()
+                    .Select(item => $"'{item?.ToString()}'")
+                    .ToList();
+
+                if (distinctPropertyValues.Count > 1)
+                {
+                    throw new InvalidOperationException(
+                        "The manifest contains multiple repos with the same name that also do not have the same " +
+                        $"value for the '{property.Name}' property. Distinct values: {string.Join(", ", distinctPropertyValues)}");
+                }
+            }
+
+            Repo primaryRepo = grouping.First();
+
+            // Now we know that all the repos share the same scalar properties so we can just use one of them
+            // to provide the values for the new consolidated repo. All of the images within the repos are combined
+            // together into a single set.
+            return new Repo
+            {
+                Id = primaryRepo.Id,
+                McrTagsMetadataTemplate = primaryRepo.McrTagsMetadataTemplate,
+                Name = primaryRepo.Name,
+                Readme = primaryRepo.Readme,
+                ReadmeTemplate = primaryRepo.ReadmeTemplate,
+                Images = grouping.SelectMany(repo => repo.Images).ToArray()
+            };
         }
     }
 }

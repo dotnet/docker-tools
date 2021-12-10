@@ -113,7 +113,7 @@ $@"
 $@"
 {{
   ""repos"": [
-    {CreateRepo("testRepo1", s_dockerfilePath)},
+    {CreateRepo("testRepo1", s_dockerfilePath, "testTag1")},
     {CreateRepo("testRepo2", s_dockerfilePath)}
   ]
 }}";
@@ -122,6 +122,7 @@ $@"
 $@"
 {{
   ""repos"": [
+    {CreateRepo("testRepo1", s_dockerfilePath, "testTag2")},
     {CreateRepo("testRepo3", s_dockerfilePath)}
   ]
 }}";
@@ -143,6 +144,10 @@ $@"
             Assert.Equal("testRepo1", manifestInfo.Model.Repos[0].Name);
             Assert.Equal("testRepo2", manifestInfo.Model.Repos[1].Name);
             Assert.Equal("testRepo3", manifestInfo.Model.Repos[2].Name);
+
+            Assert.Equal(2, manifestInfo.Model.Repos[0].Images.Length);
+            Assert.Equal(1, manifestInfo.Model.Repos[1].Images.Length);
+            Assert.Equal(1, manifestInfo.Model.Repos[2].Images.Length);
         }
 
         private static ManifestInfo LoadManifestInfo(string manifest, string includeManifestPath = null, string includeManifest = null)
@@ -164,7 +169,7 @@ $@"
             return ManifestInfo.Load(manifestOptions);
         }
 
-        private static string CreateRepo(string repoName, string dockerfilePath) =>
+        private static string CreateRepo(string repoName, string dockerfilePath, string tag = "testTag") =>
 $@"
 {{
     ""name"": ""{repoName}"",
@@ -176,7 +181,7 @@ $@"
             ""os"": ""linux"",
             ""osVersion"": ""stretch"",
             ""tags"": {{
-                ""testTag"": {{}}
+                ""{tag}"": {{}}
             }}
         }}
         ]

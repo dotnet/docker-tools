@@ -1,4 +1,4 @@
-Set-StrictMode -Version Latest
+ASet-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
 & ./../../eng/common/build.ps1 `

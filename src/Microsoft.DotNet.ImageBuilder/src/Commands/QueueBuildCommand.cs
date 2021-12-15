@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.QueueNotification;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -177,7 +178,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (queuedBuild is not null)
             {
                 category = "Queued";
-                string webLink = GetWebLink(queuedBuild);
+                string webLink = queuedBuild.GetWebLink();
                 _loggerService.WriteMessage($"Queued build {webLink}");
                 notificationMarkdown.AppendLine($"[Build Link]({webLink})");
             }
@@ -239,6 +240,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string header = $"AutoBuilder - {category}";
             notificationMarkdown.Insert(0, $"# {header}{Environment.NewLine}{Environment.NewLine}");
 
+            // Add metadata to the issue so it can be used programmatically
+            QueueInfo queueInfo = new()
+            {
+                BuildId = queuedBuild?.Id
+            };
+
+            notificationMarkdown.AppendLine();
+            notificationMarkdown.AppendLine(NotificationHelper.FormatNotificationMetadata(queueInfo));
+
             if (Options.GitOptions.AuthToken == string.Empty ||
                 Options.GitOptions.Owner == string.Empty ||
                 Options.GitOptions.Repo == string.Empty)
@@ -249,8 +259,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             else
             {
                 await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
-                    new string[] { NotificationLabels.AutoBuilder }.AppendIf(NotificationLabels.Failure, () => exception is not null),
-                    $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}", Options.GitOptions.AuthToken);
+                    new string[]
+                    {
+                        NotificationLabels.AutoBuilder,
+                        NotificationLabels.GetRepoLocationLabel(subscription.Manifest.Repo, subscription.Manifest.Branch)
+                    }.AppendIf(NotificationLabels.Failure, () => exception is not null),
+                    Options.GitOptions.GetRepoUrl().ToString(), Options.GitOptions.AuthToken, Options.IsDryRun);
             }
         }
 
@@ -258,11 +272,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             IPagedList<WebApi.Build> builds = await client.GetBuildsAsync(
                 projectId, definitions: new int[] { pipelineId }, statusFilter: WebApi.BuildStatus.InProgress);
-            return builds.Select(build => GetWebLink(build));
+            return builds.Select(build => build.GetWebLink());
         }
-
-        private static string GetWebLink(WebApi.Build build) =>
-            ((ReferenceLink)build.Links.Links["web"]).Href;
 
 		private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
             IBuildHttpClient client, int pipelineId, Guid projectId)
@@ -276,7 +287,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (autoBuilderBuilds.Count == BuildFailureLimit &&
                 autoBuilderBuilds.All(build => build.Status == WebApi.BuildStatus.Completed && build.Result == WebApi.BuildResult.Failed))
             {
-                return (true, autoBuilderBuilds.Select(GetWebLink));
+                return (true, autoBuilderBuilds.Select(build => build.GetWebLink()));
             }
 
             return (false, Enumerable.Empty<string>());

@@ -12,11 +12,37 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(INotificationService))]
     public class NotificationService : INotificationService
     {
-        public async Task<Uri> PostAsync(string title, string description, IEnumerable<string> labels, string repoUrl, string gitHubAccessToken)
+        private readonly ILoggerService _loggerService;
+
+        [ImportingConstructor]
+        public NotificationService(ILoggerService loggerService)
+        {
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+        }
+
+        public async Task<Uri> PostAsync(
+            string title, string description, IEnumerable<string> labels, string repoUrl, string gitHubAccessToken, bool isDryRun)
         {
             IssueManager issueManager = new(gitHubAccessToken);
-            int issueId = await issueManager.CreateNewIssueAsync(repoUrl, title, description, labels: labels);
-            return new Uri($"{repoUrl}/issues/{issueId}");
+
+            int issueId = 0;
+            if (!isDryRun)
+            {
+                issueId = await issueManager.CreateNewIssueAsync(repoUrl, title, description, labels: labels);
+            }
+
+            Uri issueUrl = new($"{repoUrl}/issues/{issueId}");
+
+            _loggerService.WriteSubheading("POSTED NOTIFICATION:");
+            _loggerService.WriteMessage($"Issue URL: {issueUrl}");
+            _loggerService.WriteMessage($"Title: {title}");
+            _loggerService.WriteMessage($"Labels: {string.Join(", ", labels)}");
+            _loggerService.WriteMessage($"Description:");
+            _loggerService.WriteMessage($"====BEGIN DESCRIPTION MARKDOWN===");
+            _loggerService.WriteMessage(description);
+            _loggerService.WriteMessage($"====END DESCRIPTION MARKDOWN===");
+
+            return issueUrl;
         }
     }
 }

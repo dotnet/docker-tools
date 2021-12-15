@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.DotNet.VersionTools.Automation;
@@ -24,6 +25,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             return new GitHubAuth(AuthToken, Username, Email);
         }
+
+        public Uri GetRepoUrl() => new Uri($"https://github.com/{Owner}/{Repo}");
     }
 
     public class GitOptionsBuilder

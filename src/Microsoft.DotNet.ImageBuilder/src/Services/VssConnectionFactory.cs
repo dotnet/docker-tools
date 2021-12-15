@@ -96,9 +96,15 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
                         .ExecuteAsync(() => _inner.AddBuildTagAsync(project, buildId, tag));
 
+                public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId) =>
+                    _inner.GetBuildAsync(projectId, buildId);
+
                 public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
                     RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
                         .ExecuteAsync(() => _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter));
+
+                public Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId) =>
+                    _inner.GetBuildTimelineAsync(projectId, buildId);
 
                 public Task<WebApi.Build> QueueBuildAsync(WebApi.Build build) =>
                     _inner.QueueBuildAsync(build);

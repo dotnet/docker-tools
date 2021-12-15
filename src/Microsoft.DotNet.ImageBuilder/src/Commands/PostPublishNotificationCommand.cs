@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<BuildResult> GetBuildTaskResultsAsync(Dictionary<string, TaskResult?> taskResults, IBuildHttpClient buildClient, TeamProject project)
         {
-            BuildResult overallResult = BuildResult.Succeeded;
+            BuildResult overallResult = BuildResult.None;
             Timeline timeline = await buildClient.GetBuildTimelineAsync(project.Id, Options.BuildId);
             foreach (string task in Options.TaskNames)
             {
@@ -154,8 +154,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     switch (record.Result.Value)
                     {
+                        case TaskResult.Succeeded:
+                            if (overallResult == BuildResult.None)
+                            {
+                                overallResult = BuildResult.Succeeded;
+                            }
+                            break;
                         case TaskResult.SucceededWithIssues:
-                            if (overallResult == BuildResult.Succeeded)
+                            if (overallResult == BuildResult.None || overallResult == BuildResult.Succeeded)
                             {
                                 overallResult = BuildResult.PartiallySucceeded;
                             }

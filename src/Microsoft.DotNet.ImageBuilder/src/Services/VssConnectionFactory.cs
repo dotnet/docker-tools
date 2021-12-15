@@ -82,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag) =>
                     _inner.AddBuildTagAsync(project, buildId, tag);
 
-				public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId) =>
+                public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId) =>
                     _inner.GetBuildAsync(projectId, buildId);
 
                 public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>

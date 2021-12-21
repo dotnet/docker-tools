@@ -800,7 +800,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageInfoMergeOptions options = new ImageInfoMergeOptions
             {
-                ReplaceTags = true
+                IsPublish = true
             };
 
             ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails, options);

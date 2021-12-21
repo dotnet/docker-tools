@@ -150,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 ImageInfoMergeOptions options = new ImageInfoMergeOptions
                 {
-                    ReplaceTags = true
+                    IsPublish = true
                 };
 
                 ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);

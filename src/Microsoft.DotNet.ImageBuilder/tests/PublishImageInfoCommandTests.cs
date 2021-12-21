@@ -32,13 +32,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies the command will replace any existing tags of a merged image.
+        /// Verifies the command will replace any existing tags or syndicated digests of a merged image.
         /// </summary>
         /// <remarks>
         /// See https://github.com/dotnet/docker-tools/pull/269
         /// </remarks>
         [Fact]
-        public async Task PublishImageInfoCommand_ReplaceTags()
+        public async Task PublishImageInfoCommand_ReplaceContent()
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
@@ -77,12 +77,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags: new List<string>
-                                        {
-                                            "newtag"
-                                        })
+                                            simpleTags: new List<string>
+                                            {
+                                                "newtag"
+                                            })
                                     },
-                                    ProductVersion = "1.0"
+                                    ProductVersion = "1.0",
+                                    Manifest = new ManifestData
+                                    {
+                                        SyndicatedDigests = new List<string>
+                                        {
+                                            "newdigest1",
+                                            "newdigest2"
+                                        }
+                                    }
                                 }
                             }
                         },
@@ -132,7 +140,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "oldtag"
                                             })
                                     },
-                                    ProductVersion = "1.0"
+                                    ProductVersion = "1.0",
+                                    Manifest = new ManifestData
+                                    {
+                                        SyndicatedDigests = new List<string>
+                                        {
+                                            "olddigest1",
+                                            "olddigest2"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -142,7 +158,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 GitOptions gitOptions = new GitOptions
                 {
                     AuthToken = "token",
-                    Repo = "testRepo",
+                    Repo = "PublishImageInfoCommand_ReplaceContent",
                     Branch = "testBranch",
                     Path = "imageinfo.json",
                     Email = "test@contoso.com",
@@ -161,6 +177,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IRepository> repositoryMock = GetRepositoryMock();
                 Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path, targetImageArtifactDetails);
+
+                string actualImageArtifactDetailsContents = null;
+                gitServiceMock
+                    .Setup(o => o.Stage(It.IsAny<IRepository>(), It.IsAny<string>()))
+                    .Callback((IRepository repo, string path) =>
+                    {
+                        actualImageArtifactDetailsContents = File.ReadAllText(path);
+                    });
 
                 PublishImageInfoCommand command = new PublishImageInfoCommand(gitServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.ImageInfoPath = file;
@@ -192,13 +216,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                                 "newtag"
                                             })
                                     },
-                                    ProductVersion = "1.0"
+                                    ProductVersion = "1.0",
+                                    Manifest = new ManifestData
+                                    {
+                                        SyndicatedDigests = new List<string>
+                                        {
+                                            "newdigest1",
+                                            "newdigest2"
+                                        }
+                                    }
                                 }
                             }
                         },
                         repo2
                     }
                 };
+
+                Assert.Equal(JsonHelper.SerializeObject(expectedImageArtifactDetails), actualImageArtifactDetailsContents.Trim());
 
                 VerifyMocks(repositoryMock);
             }
@@ -315,7 +349,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 GitOptions gitOptions = new GitOptions
                 {
                     AuthToken = "token",
-                    Repo = "repo",
+                    Repo = "PublishImageInfoCommand_RemoveOutOfDateContent",
                     Owner = "owner",
                     Path = "imageinfo.json",
                     Branch = "branch",
@@ -336,6 +370,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IRepository> repositoryMock = GetRepositoryMock();
                 Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path, targetImageArtifactDetails);
 
+                string actualImageArtifactDetailsContents = null;
+                gitServiceMock
+                    .Setup(o => o.Stage(It.IsAny<IRepository>(), It.IsAny<string>()))
+                    .Callback((IRepository repo, string path) =>
+                    {
+                        actualImageArtifactDetailsContents = File.ReadAllText(path);
+                    });
 
                 PublishImageInfoCommand command = new PublishImageInfoCommand(gitServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.ImageInfoPath = file;
@@ -370,6 +411,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         repo2
                     }
                 };
+
+                Assert.Equal(JsonHelper.SerializeObject(expectedImageArtifactDetails), actualImageArtifactDetailsContents.Trim());
 
                 VerifyMocks(repositoryMock);
             }

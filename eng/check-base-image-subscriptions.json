@@ -43,25 +43,6 @@
     "manifest": {
       "owner": "dotnet",
       "repo": "dotnet-docker",
-      "branch": "nightly",
-      "path": "manifest.json"
-    },
-    "imageInfo": {
-      "owner": "dotnet",
-      "repo": "versions",
-      "branch": "main",
-      "path": "build-info/docker/image-info.dotnet-dotnet-docker-nightly.json"
-    },
-    "pipelineTrigger": {
-      "id": 359,
-      "pathVariable": "imageBuilder.pathArgs"
-    },
-    "osType": "linux"
-  },
-  {
-    "manifest": {
-      "owner": "dotnet",
-      "repo": "dotnet-docker",
       "branch": "main",
       "path": "manifest.samples.json"
     },

@@ -5,15 +5,16 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
+using System.Web;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.DotNet.VersionTools.Automation;
-using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
+using Octokit;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -25,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly object _imageDigestsLock = new();
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
-        private readonly IGitHubClientFactory _gitHubClientFactory;
+        private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly HttpClient _httpClient;
 
         [ImportingConstructor]
@@ -33,11 +34,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestToolService manifestToolService,
             IHttpClientProvider httpClientProvider,
             ILoggerService loggerService,
-            IGitHubClientFactory gitHubClientFactory)
+            IOctokitClientFactory octokitClientFactory)
         {
             _manifestToolService = manifestToolService;
             _loggerService = loggerService;
-            _gitHubClientFactory = gitHubClientFactory;
+            _octokitClientFactory = octokitClientFactory;
             _httpClient = httpClientProvider.GetClient();
         }
 
@@ -80,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
         }
 
-        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Subscription subscription, ManifestInfo manifest)
+        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
         {
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
@@ -177,17 +178,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return pathsToRebuild;
         }
 
-        private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Subscription subscription, ManifestInfo manifest)
+        private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
         {
-            string imageDataJson;
-            using (IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun))
-            {
-                GitHubProject project = new GitHubProject(subscription.ImageInfo.Repo, subscription.ImageInfo.Owner);
-                GitHubBranch branch = new GitHubBranch(subscription.ImageInfo.Branch, project);
+            IApiConnection connection = OctokitClientFactory.CreateApiConnection(Options.GitOptions.ToOctokitCredentials());
 
-                GitFile repo = subscription.Manifest;
-                imageDataJson = await gitHubClient.GetGitHubFileContentsAsync(subscription.ImageInfo.Path, branch);
-            }
+            ITreesClient treesClient = _octokitClientFactory.CreateTreesClient(connection);
+            string fileSha = await treesClient.GetFileShaAsync(
+                subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, subscription.ImageInfo.Branch, subscription.ImageInfo.Path);
+
+            IBlobsClient blobsClient = _octokitClientFactory.CreateBlobsClient(connection);
+            string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
 
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
         }

@@ -110,12 +110,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string GetSnippet(string source, int index) => source.Substring(index, Math.Min(100, source.Length - index));
 
-        protected Dictionary<Value, Value> GetSymbols()
+        protected Dictionary<Value, Value> GetSymbols<TContext>(
+            string sourceTemplatePath,
+            TContext context,
+            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols)
         {
             return new Dictionary<Value, Value>
             {
                 ["VARIABLES"] = Manifest.VariableHelper.ResolvedVariables
-                    .ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value)
+                    .ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value),
+                ["InsertTemplate"] = Value.FromFunction(Function.CreatePure1((state, path) =>
+                    RenderTemplateAsync(Path.Combine(Path.GetDirectoryName(sourceTemplatePath), path.AsString), context, getSymbols).Result))
             };
         }
 

@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 (platform) => platform.DockerfileTemplate,
                 (platform) => platform.DockerfilePath,
                 (platform) => GetSymbols(platform),
-                nameof(Models.Manifest.Platform.DockerfileTemplate),
+                nameof(Platform.DockerfileTemplate),
                 "Dockerfile");
 
             ValidateArtifacts();
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
             ImageInfo image = Manifest.GetImageByPlatform(platform);
 
-            Dictionary<Value, Value> symbols = GetSymbols();
+            Dictionary<Value, Value> symbols = GetSymbols(platform.DockerfileTemplate, platform, platform => GetSymbols(platform));
             symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;

@@ -159,9 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<string>).IsAssignableFrom(property.PropertyType))
                 {
-                    if (options.ReplaceTags &&
-                        ((srcObj is PlatformData && property.Name == nameof(PlatformData.SimpleTags)) ||
-                        (srcObj is ManifestData && property.Name == nameof(ManifestData.SharedTags))))
+                    if (options.IsPublish && IsReplaceableValueProperty(srcObj, property))
                     {
                         // Tags can be merged or replaced depending on the scenario.
                         // When merging multiple image info files together into a single file, the tags should be
@@ -214,6 +212,19 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
         }
+
+        private static bool IsReplaceableValueProperty(object srcObj, PropertyInfo property) =>
+            (
+                srcObj is PlatformData &&
+                property.Name == nameof(PlatformData.SimpleTags)
+            ) ||
+            (
+                srcObj is ManifestData &&
+                (
+                    property.Name == nameof(ManifestData.SharedTags) ||
+                    property.Name == nameof(ManifestData.SyndicatedDigests)
+                )
+            );
 
         private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj)
         {

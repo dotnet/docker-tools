@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using Microsoft.DotNet.VersionTools.Automation;
+using Octokit;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -25,6 +26,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             return new GitHubAuth(AuthToken, Username, Email);
         }
+
+        public Credentials ToOctokitCredentials() => new Credentials(AuthToken);
 
         public Uri GetRepoUrl() => new Uri($"https://github.com/{Owner}/{Repo}");
     }

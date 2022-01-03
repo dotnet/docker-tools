@@ -76,10 +76,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             TContext context,
             Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols)
         {
-            Dictionary<Value, Value> symbols = GetSymbols();
+            Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getSymbols);
             symbols["IS_PRODUCT_FAMILY"] = context is ManifestInfo;
-            symbols["InsertTemplate"] = Value.FromFunction(Function.CreatePure1((state, path) =>
-                RenderTemplateAsync(Path.Combine(Path.GetDirectoryName(sourceTemplatePath), path.AsString), context, getSymbols).Result));
 
             return symbols;
         }

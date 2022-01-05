@@ -77,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteSubheading($"Generating '{artifactPath}' from '{templatePath}'");
 
-            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getSymbols);
+            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getSymbols, Value.EmptyMap, null, trimTemplate: false);
 
             if (generatedArtifact != null)
             {
@@ -119,19 +119,44 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 ["VARIABLES"] = Manifest.VariableHelper.ResolvedVariables
                     .ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value),
-                ["InsertTemplate"] = Value.FromFunction(Function.CreatePure1((state, path) =>
-                    RenderTemplateAsync(Path.Combine(Path.GetDirectoryName(sourceTemplatePath), path.AsString), context, getSymbols).Result))
+                ["InsertTemplate"] = Value.FromFunction(
+                    Function.CreatePure(
+                        (state, args) =>
+                            RenderTemplateAsync(
+                                Path.Combine(Path.GetDirectoryName(sourceTemplatePath), args[0].AsString),
+                                context,
+                                getSymbols,
+                                args.Count > 1 ? args[1] : Value.EmptyMap,
+                                args.Count > 2 ? args[2].AsString : null,
+                                trimTemplate: true).Result,
+                        min: 1,
+                        max: 3))
             };
         }
 
         protected async Task<string> RenderTemplateAsync<TContext>(
             string templatePath,
             TContext context,
-            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols)
+            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols,
+            Value templateArgs,
+            string indent,
+            bool trimTemplate)
         {
             string artifact = null;
 
             string template = await File.ReadAllTextAsync(templatePath);
+
+            if (trimTemplate)
+            {
+                template = template.Trim();
+            }
+
+            if (!string.IsNullOrEmpty(indent))
+            {
+                // Indents all the lines except the first one
+                template = template.Replace("\n", $"\n{indent}");
+            }
+
             if (Options.IsVerbose)
             {
                 Logger.WriteMessage($"Template:{Environment.NewLine}{template}");
@@ -140,7 +165,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             try
             {
                 IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
-                artifact = document.Render(Context.CreateBuiltin(getSymbols(context)));
+                IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(getSymbols(context))
+                {
+                    { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) }
+                };
+                
+                artifact = document.Render(Context.CreateBuiltin(symbols));
 
                 if (Options.IsVerbose)
                 {

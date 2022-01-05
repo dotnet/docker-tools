@@ -59,6 +59,29 @@ Referenced Template Content";
         }
 
         [Fact]
+        public async Task GenerateReadmesCommand_TemplateArgs()
+        {
+            const string readmeTemplate =
+@"Hello World
+{{InsertTemplate(""template-with-args.md"", [ ""my-arg"": 123 ])}}";
+
+            const string templateWithArgs =
+@"ABC-{{ARGS[""my-arg""]}}";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            DockerfileHelper.CreateFile("template-with-args.md", tempFolderContext, templateWithArgs);
+            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, readmeTemplate);
+
+            await command.ExecuteAsync();
+
+            string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
+            string expectedReadme =
+@"Hello World
+ABC-123";
+            Assert.Equal(expectedReadme, generatedReadme);
+        }
+
+        [Fact]
         public async Task GenerateReadmesCommand_InvalidTemplate()
         {
             string template = "about{{if:}}";

@@ -130,7 +130,7 @@ ENV TEST2 Value1";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateDockerfilesCommand command = InitializeCommand(tempFolderContext);
 
-            IReadOnlyDictionary<Value, Value> symbols = command.GetSymbols(command.Manifest.GetPlatformByTag(tag));
+            IReadOnlyDictionary<Value, Value> symbols = command.GetSymbols(command.Manifest.GetPlatformByTag(tag), DockerfileTemplatePath);
 
             Value variableValue;
             if (isVariable)

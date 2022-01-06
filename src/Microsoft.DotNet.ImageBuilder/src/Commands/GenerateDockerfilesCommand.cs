@@ -31,19 +31,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest.GetFilteredPlatforms(),
                 (platform) => platform.DockerfileTemplate,
                 (platform) => platform.DockerfilePath,
-                (platform) => GetSymbols(platform),
+                (platform, templatePath) => GetSymbols(platform, templatePath),
                 nameof(Platform.DockerfileTemplate),
                 "Dockerfile");
 
             ValidateArtifacts();
         }
 
-        public Dictionary<Value, Value> GetSymbols(PlatformInfo platform)
+        public Dictionary<Value, Value> GetSymbols(PlatformInfo platform, string templatePath)
         {
             string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
             ImageInfo image = Manifest.GetImageByPlatform(platform);
 
-            Dictionary<Value, Value> symbols = GetSymbols(platform.DockerfileTemplate, platform, platform => GetSymbols(platform));
+            Dictionary<Value, Value> symbols = GetSymbols(templatePath, platform, (platform, templatePath) => GetSymbols(platform, templatePath));
             symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;

@@ -145,11 +145,11 @@ ABC-123";
             IReadOnlyDictionary<Value, Value> symbols;
             if (isManifest)
             {
-                symbols = command.GetSymbols(command.Manifest);
+                symbols = command.GetSymbols(command.Manifest, ReadmeTemplatePath);
             }
             else
             {
-                symbols = command.GetSymbols(command.Manifest.GetRepoByModelName("dotnet/repo"));
+                symbols = command.GetSymbols(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath);
             }
 
             Value actualSymbolValue = symbols[symbol];

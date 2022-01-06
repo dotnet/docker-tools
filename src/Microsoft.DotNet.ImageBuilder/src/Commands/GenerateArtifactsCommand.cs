@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<TContext> contexts,
             Func<TContext, string> getTemplatePath,
             Func<TContext, string> getArtifactPath,
-            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols,
+            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols,
             string templatePropertyName,
             string artifactName,
             Func<string, TContext, string> postProcess = null)
@@ -71,7 +71,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string templatePath,
             string artifactPath,
             TContext context,
-            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols,
+            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols,
             string artifactName,
             Func<string, TContext, string> postProcess)
         {
@@ -113,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected Dictionary<Value, Value> GetSymbols<TContext>(
             string sourceTemplatePath,
             TContext context,
-            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols)
+            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols)
         {
             return new Dictionary<Value, Value>
             {
@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected async Task<string> RenderTemplateAsync<TContext>(
             string templatePath,
             TContext context,
-            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols,
+            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols,
             Value templateArgs,
             string indent,
             bool trimTemplate)
@@ -165,7 +165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             try
             {
                 IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
-                IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(getSymbols(context))
+                IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(getSymbols(context, templatePath))
                 {
                     { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) }
                 };

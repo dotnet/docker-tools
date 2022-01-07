@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 new ManifestInfo[] { Manifest },
                 (manifest) => manifest.ReadmeTemplatePath,
                 (manifest) => manifest.ReadmePath,
-                (manifest) => GetSymbols(manifest),
+                (manifest, templatePath) => GetSymbols(manifest, templatePath),
                 nameof(Models.Manifest.Manifest.ReadmeTemplate),
                 ArtifactName);
 
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest.FilteredRepos,
                 (repo) => repo.ReadmeTemplatePath,
                 (repo) => repo.ReadmePath,
-                (repo) => GetSymbols(repo),
+                (repo, templatePath) => GetSymbols(repo, templatePath),
                 nameof(Models.Manifest.Repo.ReadmeTemplate),
                 ArtifactName,
                 (readme, repo) => UpdateTagsListing(readme, repo));
@@ -57,12 +57,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ValidateArtifacts();
         }
 
-        public Dictionary<Value, Value> GetSymbols(ManifestInfo manifest) =>
-            GetCommonSymbols(manifest.ReadmeTemplatePath, manifest, (manifest) => GetSymbols(manifest));
+        public Dictionary<Value, Value> GetSymbols(ManifestInfo manifest, string templatePath) =>
+            GetCommonSymbols(templatePath, manifest, (manifest, templatePath) => GetSymbols(manifest, templatePath));
 
-        public Dictionary<Value, Value> GetSymbols(RepoInfo repo)
+        public Dictionary<Value, Value> GetSymbols(RepoInfo repo, string templatePath)
         {
-            Dictionary<Value, Value> symbols = GetCommonSymbols(repo.ReadmeTemplatePath, repo, (repo) => GetSymbols(repo));
+            Dictionary<Value, Value> symbols = GetCommonSymbols(templatePath, repo, (repo, templatePath) => GetSymbols(repo, templatePath));
             symbols["FULL_REPO"] = repo.QualifiedName;
             symbols["REPO"] = repo.Name;
             symbols["PARENT_REPO"] = GetParentRepoName(repo);
@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private Dictionary<Value, Value> GetCommonSymbols<TContext>(
             string sourceTemplatePath,
             TContext context,
-            Func<TContext, IReadOnlyDictionary<Value, Value>> getSymbols)
+            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols)
         {
             Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getSymbols);
             symbols["IS_PRODUCT_FAMILY"] = context is ManifestInfo;

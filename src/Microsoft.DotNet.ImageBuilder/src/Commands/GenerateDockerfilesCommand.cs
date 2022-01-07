@@ -48,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;
             symbols["ARCH_TAG_SUFFIX"] = $"-{versionedArch}";
-            symbols["PRODUCT_VERSION"] = image.Model.ProductVersion;
+            symbols["PRODUCT_VERSION"] = image.ProductVersion;
             symbols["OS_VERSION"] = platform.Model.OsVersion;
             symbols["OS_VERSION_BASE"] = platform.BaseOsVersion;
             symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);

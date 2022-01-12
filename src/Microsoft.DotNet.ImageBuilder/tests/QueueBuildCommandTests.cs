@@ -735,7 +735,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class PagedList<T> : List<T>, IPagedList<T>
         {
-            public string ContinuationToken => throw new NotImplementedException();
+            public string ContinuationToken
+            {
+                get => throw new NotImplementedException();
+                set => throw new NotImplementedException();
+            }
         }
     }
 }

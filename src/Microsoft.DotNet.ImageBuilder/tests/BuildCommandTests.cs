@@ -2056,7 +2056,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest(It.IsAny<string>(), false));
-            dockerServiceMock.Verify(o => o.Architecture);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -2252,7 +2251,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
-            dockerServiceMock.Verify(o => o.Architecture);
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false));
@@ -2493,7 +2491,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
-            dockerServiceMock.Verify(o => o.Architecture);
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false));
@@ -3284,7 +3281,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
-            dockerServiceMock.Verify(o => o.Architecture);
 
             if (hasCachedImage)
             {
@@ -3403,7 +3399,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
-            dockerServiceMock.Verify(o => o.Architecture);
 
             dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));

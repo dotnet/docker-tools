@@ -439,7 +439,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(dockerfileRuntime2FullPath, new string[] { "runtime" }, osVersion: "buster")
+                            CreatePlatform(dockerfileRuntime2FullPath, new string[] { "runtime" }, osVersion: "bullseye")
                         },
                         productVersion: "1.0")),
                 CreateRepo("runtime3",
@@ -498,7 +498,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             CreatePlatform(
                                 DockerfileHelper.CreateDockerfile("1.0/repo1/os", tempFolderContext),
-                                new string[] { "tag" })
+                                new string[] { "tag" },
+                                osVersion: "bionic")
                         },
                         productVersion: "1.0")),
                 CreateRepo("repo2",
@@ -508,6 +509,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreatePlatform(
                                 DockerfileHelper.CreateDockerfile("1.0/repo2/os", tempFolderContext),
                                 new string[] { "tag" },
+                                osVersion: "focal",
                                 customBuildLegGroups: new CustomBuildLegGroup[]
                                 {
                                     new CustomBuildLegGroup
@@ -528,7 +530,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             CreatePlatform(
                                 DockerfileHelper.CreateDockerfile("1.0/repo3/os", tempFolderContext),
-                                new string[] { "tag" })
+                                new string[] { "tag" },
+                                osVersion: "buster")
                         },
                         productVersion: "1.0")),
                 CreateRepo("repo4",
@@ -538,6 +541,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreatePlatform(
                                 DockerfileHelper.CreateDockerfile("1.0/repo4/os", tempFolderContext),
                                 new string[] { "tag" },
+                                osVersion: "bullseye",
                                 customBuildLegGroups: new CustomBuildLegGroup[]
                                 {
                                     new CustomBuildLegGroup

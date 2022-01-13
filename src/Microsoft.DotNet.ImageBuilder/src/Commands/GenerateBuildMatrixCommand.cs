@@ -372,6 +372,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
+            // Guard against any duplicate leg names: https://github.com/dotnet/docker-tools/issues/891
+            foreach (BuildMatrixInfo matrix in matrices)
+            {
+                List<string> duplicateLegNames = matrix.Legs
+                    .Select(leg => leg.Name)
+                    .GroupBy(name => name)
+                    .Where(grouping => grouping.Count() > 1)
+                    .Select(grouping => grouping.Key)
+                    .ToList();
+
+                if (duplicateLegNames.Any())
+                {
+                    throw new InvalidOperationException(
+                        $"Duplicate leg name(s) found in matrix '{matrix.Name}': {string.Join(", ", duplicateLegNames)}");
+                }
+            }
+
             return matrices;
         }
 

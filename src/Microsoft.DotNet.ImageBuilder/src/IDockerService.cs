@@ -32,6 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder
             bool isRetryEnabled,
             bool isDryRun);
 
+        (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun);
+
         bool LocalImageExists(string tag, bool isDryRun);
 
         long GetImageSize(string image, bool isDryRun);

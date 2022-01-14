@@ -16,12 +16,13 @@ namespace Microsoft.DotNet.ImageBuilder
     internal class DockerServiceCache : IDockerService
     {
         private readonly IDockerService _inner;
-        private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new ConcurrentDictionary<string, DateTime>();
+        private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new();
         private readonly ImageDigestCache _imageDigestCache;
-        private readonly ConcurrentDictionary<string, IEnumerable<string>> _imageLayersCache = new ConcurrentDictionary<string, IEnumerable<string>>();
-        private readonly ConcurrentDictionary<string, long> _imageSizeCache = new ConcurrentDictionary<string, long>();
-        private readonly ConcurrentDictionary<string, bool> _localImageExistsCache = new ConcurrentDictionary<string, bool>();
-        private readonly ConcurrentDictionary<string, bool> _pulledImages = new ConcurrentDictionary<string, bool>();
+        private readonly ConcurrentDictionary<string, IEnumerable<string>> _imageLayersCache = new();
+        private readonly ConcurrentDictionary<string, long> _imageSizeCache = new();
+        private readonly ConcurrentDictionary<string, bool> _localImageExistsCache = new();
+        private readonly ConcurrentDictionary<string, bool> _pulledImages = new();
+        private readonly ConcurrentDictionary<string, (Architecture, string?)> _architectureCache = new();
 
         public DockerServiceCache(IDockerService inner)
         {
@@ -35,6 +36,9 @@ namespace Microsoft.DotNet.ImageBuilder
             string dockerfilePath, string buildContextPath, string platform, IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs, bool isRetryEnabled, bool isDryRun) =>
             _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, isRetryEnabled, isDryRun);
+
+        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun) =>
+            _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun));
 
         public void CreateTag(string image, string tag, bool isDryRun) =>
             _inner.CreateTag(image, tag, isDryRun);

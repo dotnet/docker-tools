@@ -89,6 +89,16 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
+        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun)
+        {
+            string archAndVariant = DockerHelper.ExecuteCommand(
+                "inspect", "Failed to retrieve image architecture", $"-f \"{{{{ .Architecture }}}}/{{{{ .Variant }}}}\" {image}", isDryRun);
+            string[] parts = archAndVariant.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            Architecture arch = Enum.Parse<Architecture>(parts[0], ignoreCase: true);
+            string? variant = parts.Length > 1 ? parts[1] : null;
+            return (arch, variant);
+        }
+
         public bool LocalImageExists(string tag, bool isDryRun) => DockerHelper.LocalImageExists(tag, isDryRun);
 
         public long GetImageSize(string image, bool isDryRun) => DockerHelper.GetImageSize(image, isDryRun);

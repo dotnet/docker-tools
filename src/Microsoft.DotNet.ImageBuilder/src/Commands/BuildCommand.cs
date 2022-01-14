@@ -425,8 +425,37 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return imageData;
         }
 
+        private void ValidatePlatformIsCompatibleWithBaseImage(PlatformInfo platform)
+        {
+            if (platform.FinalStageFromImage is null)
+            {
+                return;
+            }
+
+            string baseImageTag = GetFromImageLocalTag(platform.FinalStageFromImage);
+
+            // Base image should already be pulled or built so it's ok to inspect it
+            (Models.Manifest.Architecture arch, string? variant) =
+                _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
+
+            if (platform.Model.Architecture != arch || platform.Model.Variant != variant)
+            {
+                throw new InvalidOperationException(
+                    $"Platform '{platform.DockerfilePathRelativeToManifest}' is configured with an architecture that is not compatible with " +
+                    $"the base image '{baseImageTag}':" + Environment.NewLine +
+                    "Manifest platform:" + Environment.NewLine +
+                        $"\tArchitecture: {platform.Model.Architecture}" + Environment.NewLine +
+                        $"\tVariant: {platform.Model.Variant}" + Environment.NewLine +
+                    "Base image:" + Environment.NewLine +
+                        $"\tArchitecture: {arch}" + Environment.NewLine +
+                        $"\tVariant: {variant}");
+            }
+        }
+
         private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags)
         {
+            ValidatePlatformIsCompatibleWithBaseImage(platform);
+
             bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
             try

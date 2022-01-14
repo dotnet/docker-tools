@@ -635,8 +635,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            dockerServiceMock
+                .Setup(o => o.GetImageArch(baseImageTag, false))
+                .Returns((Architecture.ARM, "v7"));
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -688,6 +691,50 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>()));
             dockerServiceMock.Verify(
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, localTag), It.IsAny<bool>()), Times.Never);
+        }
+
+        /// <summary>
+        /// Verifies that the manifest's platform architecture settings match the architecture of the base image.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_VerifyOnBaseImageArchMismatch()
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
+
+            Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: "v7");
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            platform
+                        }))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            Assert.StartsWith(
+                $"Platform '{PathHelper.NormalizePath(dockerfileRelativePath)}' is configured with an architecture that is not compatible with the base image '{baseImageTag}'",
+                ex.Message);
         }
 
         /// <summary>
@@ -2061,6 +2108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -2263,6 +2311,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -2504,6 +2553,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -3319,6 +3369,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
+            if (!hasCachedImage)
+            {
+                dockerServiceMock.Verify(o => o.GetImageArch(mirrorBaseTag, false));
+                dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+            }
+            
+            dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+
             dockerServiceMock.VerifyNoOtherCalls();
         }
 
@@ -3421,6 +3479,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     o.CreateTag($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRegistry}/{RuntimeRepo}:{Tag}", false));
             }
 
+            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+
             dockerServiceMock.VerifyNoOtherCalls();
         }
 
@@ -3442,6 +3502,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<bool>(),
                         It.IsAny<bool>()))
                 .Returns(buildOutput ?? string.Empty);
+
+            dockerServiceMock
+                .Setup(o => o.GetImageArch(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns((Architecture.AMD64, null));
 
             return dockerServiceMock;
         }

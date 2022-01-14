@@ -62,9 +62,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public void CreateTag(string image, string tag, bool isDryRun) => DockerHelper.CreateTag(image, tag, isDryRun);
 
-        public string BuildImage(
+        public string? BuildImage(
             string dockerfilePath,
             string buildContextPath,
+            string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
             bool isRetryEnabled,
@@ -76,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             string buildArgsString = string.Join(string.Empty, buildArgList);
 
-            string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
+            string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
 
             if (isRetryEnabled)
             {

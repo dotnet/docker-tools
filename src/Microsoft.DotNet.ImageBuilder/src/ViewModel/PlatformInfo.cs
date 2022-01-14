@@ -43,6 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public IEnumerable<TagInfo> Tags { get; private set; }
         public IDictionary<string, CustomBuildLegGroup> CustomLegGroups { get; private set; } =
             ImmutableDictionary<string, CustomBuildLegGroup>.Empty;
+        public string PlatformLabel { get; }
         private VariableHelper VariableHelper { get; set; }
 
         private PlatformInfo(Platform model, string baseOsVersion, string fullRepoModelName, string repoName, VariableHelper variableHelper,
@@ -67,6 +68,14 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             Tags = model.Tags
                 .Select(kvp => TagInfo.Create(kvp.Key, kvp.Value, repoName, variableHelper, BuildContextPath))
                 .ToArray();
+
+            string platformArchLabel = Model.Architecture.ToString();
+            if (!string.IsNullOrEmpty(Model.Variant))
+            {
+                platformArchLabel += $"/{Model.Variant}";
+            }
+
+            PlatformLabel = $"{Model.OS}/{platformArchLabel}".ToLowerInvariant();
         }
 
         public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory) =>

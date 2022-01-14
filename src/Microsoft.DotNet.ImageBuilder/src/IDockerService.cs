@@ -23,9 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void CreateTag(string image, string tag, bool isDryRun);
 
-        string BuildImage(
+        string? BuildImage(
             string dockerfilePath,
             string buildContextPath,
+            string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
             bool isRetryEnabled,

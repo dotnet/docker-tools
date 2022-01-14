@@ -433,15 +433,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 InvokeBuildHook("pre-build", platform.BuildContextPath);
 
-                string buildOutput = _dockerService.BuildImage(
+                string? buildOutput = _dockerService.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
+                    platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
-                if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput.Contains("Pulling from"))
+                if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
                 {
                     throw new InvalidOperationException(
                         "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +

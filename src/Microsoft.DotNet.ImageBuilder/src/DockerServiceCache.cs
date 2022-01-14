@@ -31,8 +31,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Architecture Architecture => _inner.Architecture;
 
-        public string BuildImage(string dockerfilePath, string buildContextPath, IEnumerable<string> tags, IDictionary<string, string?> buildArgs, bool isRetryEnabled, bool isDryRun) =>
-            _inner.BuildImage(dockerfilePath, buildContextPath, tags, buildArgs, isRetryEnabled, isDryRun);
+        public string? BuildImage(
+            string dockerfilePath, string buildContextPath, string platform, IEnumerable<string> tags,
+            IDictionary<string, string?> buildArgs, bool isRetryEnabled, bool isDryRun) =>
+            _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, isRetryEnabled, isDryRun);
 
         public void CreateTag(string image, string tag, bool isDryRun) =>
             _inner.CreateTag(image, tag, isDryRun);

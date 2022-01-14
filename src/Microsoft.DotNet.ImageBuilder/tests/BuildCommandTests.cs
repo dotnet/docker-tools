@@ -646,7 +646,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
 
-            Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag });
+            Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: "v7");
             platform.Tags.Add(localTag, new Tag { IsLocal = true });
 
             Manifest manifest = CreateManifest(
@@ -671,6 +671,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.BuildImage(
                     dockerfileAbsolutePath,
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeRelativeDir)),
+                    "linux/arm/v7",
                     new string[]
                     {
                         TagInfo.GetFullyQualifiedName(repoName, tag),
@@ -732,6 +733,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.BuildImage(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
+                    It.IsAny<string>(),
                     It.IsAny<List<string>>(),
                     It.Is<Dictionary<string, string>>(
                         args => args.Count == 3 && args["arg1"] == "val1" && args["arg2"] == "val2b" && args["arg3"] == "val3"),
@@ -788,6 +790,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.BuildImage(
                     dockerfileAbsolutePath,
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeRelativeDir)),
+                    "linux/amd64",
                     new string[]
                     {
                         TagInfo.GetFullyQualifiedName(repoName, tag),
@@ -984,7 +987,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
-                    It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
@@ -1765,8 +1768,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IDictionary<string, string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -2049,6 +2052,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)),
                     It.IsAny<string>(),
+                    It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(),
@@ -2243,6 +2247,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Verify(o =>
                     o.BuildImage(
                         PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)),
+                        It.IsAny<string>(),
                         It.IsAny<string>(),
                         new string[] { expectedTag },
                         It.IsAny<IDictionary<string, string>>(),
@@ -2484,6 +2489,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     o.BuildImage(
                         PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)),
                         It.IsAny<string>(),
+                        It.IsAny<string>(),
                         new string[] { expectedTag },
                         It.IsAny<IDictionary<string, string>>(),
                         It.IsAny<bool>(),
@@ -2693,7 +2699,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
-                    It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
@@ -2937,8 +2943,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IDictionary<string, string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
@@ -3277,6 +3283,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.BuildImage(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
+                    It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(),
@@ -3395,6 +3402,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.BuildImage(
                     It.IsAny<string>(),
                     It.IsAny<string>(),
+                    It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(),
@@ -3426,6 +3434,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock
                 .Setup(o =>
                     o.BuildImage(
+                        It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<string>(),
                         It.IsAny<IEnumerable<string>>(),

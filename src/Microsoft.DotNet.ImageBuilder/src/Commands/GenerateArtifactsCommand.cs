@@ -28,6 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IEnvironmentService _environmentService;
         private readonly List<string> _invalidTemplates = new List<string>();
         private readonly List<string> _outOfSyncArtifacts = new List<string>();
+        private readonly Dictionary<string, string> generatedArtifacts = new();
 
         protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
         {
@@ -63,7 +64,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         $"The {artifactName} `{artifactPath}` does not have a {templatePropertyName} specified.");
                 }
 
+                // There may be some artifact files which are referenced more than once in different contexts. Since we can only
+                // generate the artifact once, we take the approach of first-one-wins. Once an artifact has been generated once,
+                // it doesn't get generated again during the running of this command.
+                if (generatedArtifacts.TryGetValue(artifactPath, out string originalTemplatePath))
+                {
+                    if (originalTemplatePath != templatePath)
+                    {
+                        throw new InvalidOperationException(
+                            $"Multiple unique template files are associated with the generated artifact path '{artifactPath}':" + Environment.NewLine +
+                            originalTemplatePath + Environment.NewLine + templatePath);
+                    }
+
+                    continue;
+                }
+
                 await GenerateArtifactAsync(templatePath, artifactPath, context, getSymbols, artifactName, postProcess);
+                generatedArtifacts.Add(artifactPath, templatePath);
             }
         }
 

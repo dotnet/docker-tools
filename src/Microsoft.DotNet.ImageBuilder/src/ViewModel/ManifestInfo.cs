@@ -167,6 +167,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return AllRepos.FirstOrDefault(repo => repo.Model.Name == name);
         }
 
+        public RepoInfo GetRepoByImage(ImageInfo image) =>
+            AllRepos
+                .FirstOrDefault(repoImage => repoImage.AllImages.Contains(image));
+
         private static Manifest LoadModel(string path, string manifestDirectory)
         {
             string manifestJson = File.ReadAllText(path);

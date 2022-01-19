@@ -258,11 +258,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
-                string osVariant = subgraph.First().BaseOsVersion;
-                string? productVersion = GetProductVersion(Manifest.GetImageByPlatform(subgraph.First()));
+                PlatformInfo platform = subgraph.First();
+                ImageInfo image = Manifest.GetImageByPlatform(platform);
+                string osVariant = platform.BaseOsVersion;
+                string? productVersion = GetProductVersion(image);
                 BuildLegInfo leg = new()
                 {
-                    Name = $"{(productVersion is not null ? productVersion + "-" : string.Empty)}{osVariant}"
+                    Name = $"{(productVersion is not null ? productVersion + "-" : string.Empty)}{osVariant}-{Manifest.GetRepoByImage(image).Id}"
                 };
                 matrix.Legs.Add(leg);
 

@@ -14,8 +14,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -427,33 +425,58 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return imageData;
         }
 
+        private void ValidatePlatformIsCompatibleWithBaseImage(PlatformInfo platform)
+        {
+            if (platform.FinalStageFromImage is null)
+            {
+                return;
+            }
+
+            string baseImageTag = GetFromImageLocalTag(platform.FinalStageFromImage);
+
+            // Base image should already be pulled or built so it's ok to inspect it
+            (Models.Manifest.Architecture arch, string? variant) =
+                _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
+
+            if (platform.Model.Architecture != arch || platform.Model.Variant != variant)
+            {
+                throw new InvalidOperationException(
+                    $"Platform '{platform.DockerfilePathRelativeToManifest}' is configured with an architecture that is not compatible with " +
+                    $"the base image '{baseImageTag}':" + Environment.NewLine +
+                    "Manifest platform:" + Environment.NewLine +
+                        $"\tArchitecture: {platform.Model.Architecture}" + Environment.NewLine +
+                        $"\tVariant: {platform.Model.Variant}" + Environment.NewLine +
+                    "Base image:" + Environment.NewLine +
+                        $"\tArchitecture: {arch}" + Environment.NewLine +
+                        $"\tVariant: {variant}");
+            }
+        }
+
         private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags)
         {
+            ValidatePlatformIsCompatibleWithBaseImage(platform);
+
             bool createdPrivateDockerfile = UpdateDockerfileFromCommands(platform, out string dockerfilePath);
 
             try
             {
                 InvokeBuildHook("pre-build", platform.BuildContextPath);
 
-                string buildOutput = _dockerService.BuildImage(
+                string? buildOutput = _dockerService.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
+                    platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
-                if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput.Contains("Pulling from"))
+                if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
                 {
                     throw new InvalidOperationException(
                         "Build resulted in a base image being pulled. All image pulls should be done as a pre-build step. " +
                         "Any other image that's not accounted for means there's some kind of mistake in how things are " +
                         "configured or a bug in the code.");
-                }
-
-                if (!Options.IsDryRun)
-                {
-                    EnsureArchitectureMatches(platform, allTags);
                 }
 
                 InvokeBuildHook("post-build", platform.BuildContextPath);
@@ -565,83 +588,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
             _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
             return baseImageDigestMatches;
-        }
-
-        private void EnsureArchitectureMatches(PlatformInfo platform, IEnumerable<string> allTags)
-        {
-            if (platform.Model.Architecture == _dockerService.Architecture)
-            {
-                return;
-            }
-
-            string primaryTag = allTags.First();
-            IEnumerable<string> secondaryTags = allTags.Except(new[] { primaryTag });
-
-            // Get the architecture from the built image's metadata
-            string actualArchitecture = DockerHelper.GetImageArch(primaryTag, Options.IsDryRun);
-            string expectedArchitecture = platform.Model.Architecture.GetDockerName();
-
-            // If the architecture of the built image is what we expect, then exit the method; otherwise, continue
-            // with updating the architecture metadata.
-            if (string.Equals(actualArchitecture, expectedArchitecture))
-            {
-                return;
-            }
-
-            // Save the Docker image to a tar file
-            string tempImageTar = "image.tar.gz";
-            DockerHelper.SaveImage(primaryTag, tempImageTar, Options.IsDryRun);
-            try
-            {
-                string tarContentsDirectory = "tar_contents";
-                Directory.CreateDirectory(tarContentsDirectory);
-
-                try
-                {
-                    // Extract the tar file to a separate directory
-                    _processService.Execute("tar", $"-xf {tempImageTar} -C {tarContentsDirectory}", Options.IsDryRun);
-
-                    // Open the manifest to find the name of the Config json file
-                    string manifestContents = File.ReadAllText(Path.Combine(tarContentsDirectory, "manifest.json"));
-                    JArray manifestDoc = JArray.Parse(manifestContents);
-
-                    if (manifestDoc.Count != 1)
-                    {
-                        throw new InvalidOperationException(
-                            $"Only expected one element in tar archive's manifest:{Environment.NewLine}{manifestContents}");
-                    }
-
-                    // Open the Config json file and set the architecture value
-                    string configPath = Path.Combine(tarContentsDirectory, manifestDoc[0]["Config"].Value<string>());
-                    string configContents = File.ReadAllText(configPath);
-                    JObject config = JObject.Parse(configContents);
-                    config["architecture"] = expectedArchitecture;
-
-                    // Overwrite the Config json file with the updated architecture value
-                    configContents = JsonConvert.SerializeObject(config);
-                    File.WriteAllText(configPath, configContents);
-
-                    // Repackage the directory into an updated tar file
-                    _processService.Execute("tar", $"-cf {tempImageTar} -C {tarContentsDirectory} .", Options.IsDryRun);
-                }
-                finally
-                {
-                    Directory.Delete(tarContentsDirectory, recursive: true);
-                }
-
-                // Load the updated tar file back into Docker
-                DockerHelper.LoadImage(tempImageTar, Options.IsDryRun);
-            }
-            finally
-            {
-                File.Delete(tempImageTar);
-            }
-
-            // Recreate the other tags so that they get the updated architecture value.
-            Parallel.ForEach(secondaryTags, tag =>
-            {
-                _dockerService.CreateTag(primaryTag, tag, Options.IsDryRun);
-            });
         }
 
         private void InvokeBuildHook(string hookName, string buildContextPath)

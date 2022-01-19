@@ -23,13 +23,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void CreateTag(string image, string tag, bool isDryRun);
 
-        string BuildImage(
+        string? BuildImage(
             string dockerfilePath,
             string buildContextPath,
+            string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
             bool isRetryEnabled,
             bool isDryRun);
+
+        (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun);
 
         bool LocalImageExists(string tag, bool isDryRun);
 

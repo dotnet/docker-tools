@@ -62,9 +62,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public void CreateTag(string image, string tag, bool isDryRun) => DockerHelper.CreateTag(image, tag, isDryRun);
 
-        public string BuildImage(
+        public string? BuildImage(
             string dockerfilePath,
             string buildContextPath,
+            string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
             bool isRetryEnabled,
@@ -76,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             string buildArgsString = string.Join(string.Empty, buildArgList);
 
-            string dockerArgs = $"build {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
+            string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
 
             if (isRetryEnabled)
             {
@@ -86,6 +87,16 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 return ExecuteHelper.Execute("docker", dockerArgs, isDryRun);
             }
+        }
+
+        public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun)
+        {
+            string archAndVariant = DockerHelper.ExecuteCommand(
+                "inspect", "Failed to retrieve image architecture", $"-f \"{{{{ .Architecture }}}}/{{{{ .Variant }}}}\" {image}", isDryRun);
+            string[] parts = archAndVariant.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            Architecture arch = Enum.Parse<Architecture>(parts[0], ignoreCase: true);
+            string? variant = parts.Length > 1 ? parts[1] : null;
+            return (arch, variant);
         }
 
         public bool LocalImageExists(string tag, bool isDryRun) => DockerHelper.LocalImageExists(tag, isDryRun);

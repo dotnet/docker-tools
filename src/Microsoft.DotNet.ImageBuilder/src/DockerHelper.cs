@@ -116,22 +116,6 @@ namespace Microsoft.DotNet.ImageBuilder
         public static string ReplaceRepo(string image, string newRepo) =>
             newRepo + image.Substring(GetTagOrDigestSeparatorIndex(image));
 
-        public static string GetImageArch(string image, bool isDryRun)
-        {
-            return ExecuteCommandWithFormat(
-                "inspect", ".Architecture", "Failed to retrieve image architecture", additionalArgs: image, isDryRun: isDryRun);
-        }
-
-        public static void SaveImage(string image, string tarFilePath, bool isDryRun)
-        {
-            DockerHelper.ExecuteCommand("save", "Failed to save image", $"-o {tarFilePath} {image}", isDryRun);
-        }
-
-        public static void LoadImage(string tarFilePath, bool isDryRun)
-        {
-            DockerHelper.ExecuteCommand("load", "Failed to load image", $"-i {tarFilePath}", isDryRun);
-        }
-
         public static void CreateTag(string image, string tag, bool isDryRun)
         {
             DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
@@ -295,7 +279,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return architecture;
         }
 
-        private static string ExecuteCommand(
+        public static string ExecuteCommand(
             string command, string errorMessage, string? additionalArgs = null, bool isDryRun = false)
         {
             string output = ExecuteHelper.Execute("docker", $"{command} {additionalArgs}", isDryRun, errorMessage);

@@ -72,6 +72,55 @@ ENV TEST2 Value1";
             await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
         }
 
+        /// <summary>
+        /// Validates an exception is thrown if more than one unique template file is associated with a generated Dockerfile.
+        /// </summary>
+        [Fact]
+        public async Task GenerateDockerfilesCommand_MismatchedTemplates()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            DockerfileHelper.CreateFile(DockerfilePath, tempFolderContext, DefaultDockerfile);
+
+            string templatePath1 = "Dockerfile.Template1";
+            DockerfileHelper.CreateFile(templatePath1, tempFolderContext, DefaultDockerfileTemplate);
+
+            string templatePath2 = "Dockerfile.Template2";
+            DockerfileHelper.CreateFile(templatePath2, tempFolderContext, DefaultDockerfileTemplate);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag1" },
+                                OS.Windows,
+                                "nanoserver-1903",
+                                dockerfileTemplatePath: templatePath1),
+                            CreatePlatform(
+                                DockerfilePath,
+                                new string[] { "tag2" },
+                                OS.Windows,
+                                "windowsservercore-1903",
+                                dockerfileTemplatePath: templatePath2)
+                        },
+                        productVersion: "1.2.3"
+                    )
+                )
+            );
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
+
+            GenerateDockerfilesCommand command = new(Mock.Of<IEnvironmentService>());
+            command.Options.Manifest = manifestPath;
+            command.LoadManifest();
+
+            InvalidOperationException exception = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            Assert.StartsWith("Multiple unique template files are associated with the generated artifact path", exception.Message);
+        }
+
         [Fact]
         public async Task GenerateDockerfilesCommand_Validate_UpToDate()
         {

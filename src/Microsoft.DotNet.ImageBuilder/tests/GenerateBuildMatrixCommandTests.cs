@@ -832,14 +832,63 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Assert.Equal(2, matrixInfo.Legs.Count);
 
-                Assert.Equal("3.1-focal", matrixInfo.Legs[0].Name);
+                Assert.Equal("3.1-focal-core/runtime-deps", matrixInfo.Legs[0].Name);
                 string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
 
-                Assert.Equal("5.0-focal", matrixInfo.Legs[1].Name);
+                Assert.Equal("5.0-focal-runtime-deps", matrixInfo.Legs[1].Name);
                 imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
             }
+        }
+
+        [Theory]
+        [InlineData(MatrixType.PlatformVersionedOs)]
+        [InlineData(MatrixType.PlatformDependencyGraph)]
+        public void NonDependentReposWithSameProductVersion(MatrixType matrixType)
+        {
+            TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = matrixType;
+            command.Options.ProductVersionComponents = 2;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                CreateDockerfile("1.0/repo1/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("repo2",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                CreateDockerfile("1.0/repo2/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0"))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+
+            Assert.Equal(2, matrixInfo.Legs.Count);
+            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo1-os-Dockerfile" : "1.0-focal-repo1", matrixInfo.Legs[0].Name);
+            string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal($"--path 1.0/repo1/os/Dockerfile", imageBuilderPaths);
+
+            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo2-os-Dockerfile" : "1.0-focal-repo2", matrixInfo.Legs[1].Name);
+            imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal($"--path 1.0/repo2/os/Dockerfile", imageBuilderPaths);
         }
 
         [Theory]
@@ -889,7 +938,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                expectedLegName = "3.1-focal";
+                expectedLegName = "3.1-focal-runtime";
             }
 
             Assert.Equal(expectedLegName, matrixInfo.Legs[0].Name);

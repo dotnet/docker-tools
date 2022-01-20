@@ -1,1 +1,1 @@
-FROM arm32v7/ubuntu:focal
+FROM arm64v8/ubuntu:focal

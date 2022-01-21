@@ -832,7 +832,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Assert.Equal(2, matrixInfo.Legs.Count);
 
-                Assert.Equal("3.1-focal-core/runtime-deps", matrixInfo.Legs[0].Name);
+                Assert.Equal("3.1-focal-core-runtime-deps", matrixInfo.Legs[0].Name);
                 string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
 

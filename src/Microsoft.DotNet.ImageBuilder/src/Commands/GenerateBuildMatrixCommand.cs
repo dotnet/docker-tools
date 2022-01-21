@@ -265,6 +265,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 BuildLegInfo leg = new()
                 {
                     Name = $"{(productVersion is not null ? productVersion + "-" : string.Empty)}{osVariant}-{Manifest.GetRepoByImage(image).Id}"
+                        .Replace("/", "-")
                 };
                 matrix.Legs.Add(leg);
 

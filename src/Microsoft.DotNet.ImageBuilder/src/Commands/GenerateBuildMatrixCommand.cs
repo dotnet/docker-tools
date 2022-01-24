@@ -184,7 +184,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string fullyQualifiedLegName =
                 (platformGrouping.Key.OsVersion ?? platformGrouping.Key.OS.GetDockerName()) +
-                platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant) +
+                platformGrouping.Key.Architecture.GetDisplayName() +
                 leg.Name;
 
             leg.Variables.Add(("legName", fullyQualifiedLegName));
@@ -352,15 +352,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .GroupBy(platform => CreatePlatformId(platform))
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)
-                .ThenBy(platformGroup => platformGroup.Key.Architecture)
-                .ThenByDescending(platformGroup => platformGroup.Key.Variant);
+                .ThenBy(platformGroup => platformGroup.Key.Architecture);
 
             foreach (IGrouping<PlatformId, PlatformInfo> platformGrouping in platformGroups)
             {
                 string[] matrixNameParts =
                 {
                     GetOsMatrixNamePart(platformGrouping.Key),
-                    platformGrouping.Key.Architecture.GetDisplayName(platformGrouping.Key.Variant)
+                    platformGrouping.Key.Architecture.GetDisplayName()
                 };
                 BuildMatrixInfo matrix = new() { Name = FormatMatrixName(matrixNameParts) };
                 matrices.Add(matrix);
@@ -416,8 +415,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 OS = platform.Model.OS,
                 OsVersion = osVersion,
-                Architecture = platform.Model.Architecture,
-                Variant = platform.Model.Variant
+                Architecture = platform.Model.Architecture
             };
         }
 
@@ -470,7 +468,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public Architecture Architecture { get; set; }
             public OS OS { get; set; }
             public string? OsVersion { get; set; }
-            public string? Variant { get; set; }
 
             public bool Equals(PlatformId? other)
             {
@@ -481,8 +478,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 return Architecture == other.Architecture
                     && OS == other.OS
-                    && OsVersion == other.OsVersion
-                    && Variant == other.Variant;
+                    && OsVersion == other.OsVersion;
             }
 
             public override bool Equals(object? obj)
@@ -492,7 +488,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             public override int GetHashCode()
             {
-                return $"{Architecture}-{OS}-{OsVersion}-{Variant}".GetHashCode();
+                return $"{Architecture}-{OS}-{OsVersion}".GetHashCode();
             }
         }
     }

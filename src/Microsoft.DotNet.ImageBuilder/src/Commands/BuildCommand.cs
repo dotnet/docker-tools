@@ -529,7 +529,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Pull the image instead of building it
             if (pullImage)
             {
-                _dockerService.PullImage(sourceDigest, Options.IsDryRun);
+                // Don't need to provide the platform because we're pulling by digest. No need to worry about multi-arch tags.
+                _dockerService.PullImage(sourceDigest, null, Options.IsDryRun);
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it
@@ -698,16 +699,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (!Options.IsSkipPullingEnabled)
             {
                 Logger.WriteHeading("PULLING LATEST BASE IMAGES");
-                IEnumerable<string> baseImages = Manifest.GetExternalFromImages().ToArray();
-                if (baseImages.Any())
-                {
-                    List<string> pulledTags = new List<string>();
-                    foreach (string pullTag in baseImages.Select(tag => GetFromImagePullTag(tag)))
-                    {
-                        pulledTags.Add(pullTag);
-                        _dockerService.PullImage(pullTag, Options.IsDryRun);
-                    }
 
+                HashSet<string> pulledTags = new();
+                HashSet<string> externalFromImages = new();
+
+                foreach (PlatformInfo platform in Manifest.GetFilteredPlatforms())
+                {
+                    IEnumerable<string> platformExternalFromImages = platform.ExternalFromImages.Distinct();
+                    externalFromImages.UnionWith(platformExternalFromImages);
+
+                    foreach (string pullTag in platformExternalFromImages.Select(tag => GetFromImagePullTag(tag)))
+                    {
+                        if (!pulledTags.Contains(pullTag))
+                        {
+                            pulledTags.Add(pullTag);
+
+                            // Pull the image, specifying its platform to ensure we get the necessary image in the case of a
+                            // multi-arch tag.
+                            _dockerService.PullImage(pullTag, platform.PlatformLabel, Options.IsDryRun);
+                        }
+                    }
+                }
+
+                if (pulledTags.Any())
+                {
                     IEnumerable<string> finalStageExternalFromImages = Manifest.GetFilteredPlatforms()
                         .Where(platform => platform.FinalStageFromImage is not null && !platform.IsInternalFromImage(platform.FinalStageFromImage))
                         .Select(platform => GetFromImagePullTag(platform.FinalStageFromImage!))
@@ -731,7 +746,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     });
 
                     // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles
-                    Parallel.ForEach(baseImages, fromImage =>
+                    Parallel.ForEach(externalFromImages, fromImage =>
                     {
                         string pullTag = GetFromImagePullTag(fromImage);
                         if (pullTag != fromImage)

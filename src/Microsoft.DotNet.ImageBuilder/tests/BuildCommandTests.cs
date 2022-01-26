@@ -1021,7 +1021,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
@@ -1500,12 +1500,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(expectedOutput, actualOutput);
 
             Times expectedTimes = isRuntimeDepsCached ? Times.Once() : Times.Never();
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false), expectedTimes);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), expectedTimes);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), expectedTimes);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{overridePrefix}{runtimeDepsRepo}:shared", false), expectedTimes);
 
             expectedTimes = isRuntimeCached ? Times.Once() : Times.Never();
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDigest, false), expectedTimes);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDigest, null, false), expectedTimes);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
 
             // Verify that a script call to get installed packages is not made when the image is cached
@@ -1796,10 +1796,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             dockerServiceMock.Verify(o => o.GetImageDigest(linuxBaseImageTag, false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageDigest(windowsBaseImageTag, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(linuxBaseImageTag, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(windowsBaseImageTag, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsWindowsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(linuxBaseImageTag, "linux/amd64", false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(windowsBaseImageTag, "windows/amd64", false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, null, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsWindowsDigest, null, false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
@@ -2086,7 +2086,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false));
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false));
             dockerServiceMock.Verify(o => o.GetImageManifestLayers($"{runtimeDepsRepo}:{tag}", false), Times.Once);
@@ -2105,7 +2105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
             dockerServiceMock.Verify(o => o.GetImageDigest(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
@@ -2304,7 +2304,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false));
@@ -2546,7 +2546,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{runtimeDeps2Repo}:{tag}", false));
@@ -2735,8 +2735,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(expectedOutput, actualOutput);
 
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
@@ -2977,8 +2977,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, false), Times.Once);
-            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, null, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageDigest(baseImageTag, false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
@@ -3326,7 +3326,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, false));
+            dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, "linux/amd64", false));
             dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, referencedBaseImageTag, false));
 
             dockerServiceMock.Verify(
@@ -3341,10 +3341,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (hasCachedImage)
             {
-                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", false));
+                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", null, false));
                 dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
 
-                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", false));
+                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", null, false));
                 dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             }
             else
@@ -3466,7 +3466,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
-            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", "linux/amd64", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetImageDigest($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));

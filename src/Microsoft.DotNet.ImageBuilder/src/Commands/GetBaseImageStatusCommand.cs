@@ -44,32 +44,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void CheckStatus()
         {
-            IEnumerable<string> imageTags = Manifest.GetFilteredPlatforms()
+            IEnumerable<(string Tag, string Platform)> platformTags = Manifest.GetFilteredPlatforms()
                 .Select(platform =>
                 {
                     // Find the last FROM image that's an external image. This is not the same as the last
                     // ExternalFromImage because that could be the first FROM listed in the Dockerfile which is
                     // not what we want.
-                    return platform.FinalStageFromImage is not null && platform.IsInternalFromImage(platform.FinalStageFromImage) ?
+                    string? tag = platform.FinalStageFromImage is not null && platform.IsInternalFromImage(platform.FinalStageFromImage) ?
                         null : platform.FinalStageFromImage;
+                    return (Tag: tag, Platform: platform.PlatformLabel);
                 })
-                .Where(image => image != null)
-                .Cast<string>()
+                .Where(image => image.Tag != null)
+                .Cast<(string, string)>()
                 .Distinct()
                 .ToList();
 
             _loggerService.WriteHeading("PULLING LATEST BASE IMAGES");
-            foreach (string imageTag in imageTags)
+            foreach ((string Tag, string Platform) imageTag in platformTags)
             {
-                _dockerService.PullImage(imageTag, Options.IsDryRun);
+                _dockerService.PullImage(imageTag.Tag, imageTag.Platform, Options.IsDryRun);
             }
 
             _loggerService.WriteHeading("QUERYING STATUS");
-            var statuses = imageTags
-                .Select(tag => new
+            var statuses = platformTags
+                .Select(imageTag => new
                 {
-                    Tag = tag,
-                    DateCreated = _dockerService.GetCreatedDate(tag, Options.IsDryRun)
+                    Tag = imageTag.Tag,
+                    DateCreated = _dockerService.GetCreatedDate(imageTag.Tag, Options.IsDryRun)
                 })
                 .ToList();
 

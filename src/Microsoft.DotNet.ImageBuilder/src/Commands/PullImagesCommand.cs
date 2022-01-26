@@ -27,20 +27,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
-            IEnumerable<string> imageTags = Manifest.GetFilteredPlatforms()
+            IEnumerable<(string Tag, string Platform)> platformTags = Manifest.GetFilteredPlatforms()
                 .Where(platform => platform.Tags.Any())
-                .Select(platform => platform.Tags.First().FullyQualifiedName)
+                .Select(platform => (platform.Tags.First().FullyQualifiedName, platform.PlatformLabel))
+                .Distinct()
                 .ToList();
 
             _loggerService.WriteHeading("PULLING IMAGES");
-            foreach (string imageTag in imageTags)
+            foreach ((string Tag, string Platform) platformTag in platformTags)
             {
-                _dockerService.PullImage(imageTag, Options.IsDryRun);
+                _dockerService.PullImage(platformTag.Tag, platformTag.Platform, Options.IsDryRun);
             }
 
             if (Options.OutputVariableName is not null)
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable(Options.OutputVariableName, string.Join(',', imageTags)));
+                _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable(Options.OutputVariableName, string.Join(',', platformTags)));
             }
 
             return Task.CompletedTask;

@@ -58,11 +58,11 @@ namespace Microsoft.DotNet.ImageBuilder
         public bool LocalImageExists(string tag, bool isDryRun) =>
             _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
         
-        public void PullImage(string image, bool isDryRun)
+        public void PullImage(string image, string? platform, bool isDryRun)
         {
             _pulledImages.GetOrAdd(image, _ =>
             {
-                _inner.PullImage(image, isDryRun);
+                _inner.PullImage(image, platform, isDryRun);
                 return true;
             });
         }

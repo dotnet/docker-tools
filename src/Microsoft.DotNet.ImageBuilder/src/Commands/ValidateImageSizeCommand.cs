@@ -44,12 +44,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<string, ImageSizeInfo> imageData = LoadBaseline();
 
             // This handler will be invoked for each image defined in the manifest
-            void processImage(string repoId, string imageId, string tagName)
+            void processImage(string repoId, string imageId, string tagName, string platform)
             {
                 long? currentSize = null;
                 if (Options.Mode.HasFlag(ImageSizeValidationMode.Size))
                 {
-                    currentSize = GetImageSize(tagName);
+                    currentSize = GetImageSize(tagName, platform);
                 }
 
                 // If the image is found in the generated set of ImageSizeInfos, it means we have

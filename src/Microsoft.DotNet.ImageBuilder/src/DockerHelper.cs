@@ -108,9 +108,15 @@ namespace Microsoft.DotNet.ImageBuilder
             }
         }
 
-        public static void PullImage(string image, bool isDryRun)
+        public static void PullImage(string image, string? platform, bool isDryRun)
         {
-            ExecuteHelper.ExecuteWithRetry("docker", $"pull {image}", isDryRun);
+            string platformArg = "";
+            if (platform is not null)
+            {
+                platformArg = $"--platform {platform} ";
+            }
+
+            ExecuteHelper.ExecuteWithRetry("docker", $"pull {platformArg}{image}", isDryRun);
         }
 
         public static string ReplaceRepo(string image, string newRepo) =>

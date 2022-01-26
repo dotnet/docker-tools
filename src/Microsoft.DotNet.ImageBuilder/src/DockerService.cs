@@ -56,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun) => _manifestToolService.GetImageLayers(image, isDryRun);
 
-        public void PullImage(string image, bool isDryRun) => DockerHelper.PullImage(image, isDryRun);
+        public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
 
         public void PushImage(string tag, bool isDryRun) => ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
 

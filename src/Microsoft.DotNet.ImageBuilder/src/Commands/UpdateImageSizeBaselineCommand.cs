@@ -44,11 +44,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             JObject json = new();
 
-            void processImage(string repoId, string imageId, string imageTag)
+            void processImage(string repoId, string imageId, string imageTag, string platform)
             {
                 _loggerService.WriteMessage($"Processing '{imageId}'");
 
-                long imageSize = GetImageSize(imageTag);
+                long imageSize = GetImageSize(imageTag, platform);
 
                 if (!Options.AllBaselineData &&
                     imageData is not null &&
@@ -71,7 +71,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 JObject repo;
-                if (json.TryGetValue(repoId, out JToken repoToken))
+                if (json.TryGetValue(repoId, out JToken? repoToken))
                 {
                     repo = (JObject)repoToken;
                 }

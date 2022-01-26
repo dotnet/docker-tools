@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         Architecture Architecture { get; }
 
-        void PullImage(string image, bool isDryRun);
+        void PullImage(string image, string? platform, bool isDryRun);
 
         string? GetImageDigest(string image, bool isDryRun);
 

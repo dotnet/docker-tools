@@ -129,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"FROM {McrTagsRenderingToolTag}{Environment.NewLine}COPY {tagsMetadataFileName} /tableapp/files/ ");
 
                 string renderingToolId = $"renderingtool-{DateTime.Now.ToFileTime()}";
-                DockerHelper.PullImage(McrTagsRenderingToolTag, Options.IsDryRun);
+                DockerHelper.PullImage(McrTagsRenderingToolTag, null, Options.IsDryRun);
                 ExecuteHelper.Execute(
                     "docker",
                     $"build -t {renderingToolId} -f {dockerfilePath} {tempDir}",

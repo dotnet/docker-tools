@@ -12,7 +12,7 @@ using Newtonsoft.Json.Linq;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public delegate void ImageHandler(string repoId, string imageId, string imageTag);
+    public delegate void ImageHandler(string repoId, string imageId, string imageTag, string platform);
 
     public abstract class ImageSizeCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
         where TOptions : ImageSizeOptions, new()
@@ -36,16 +36,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (PlatformInfo platform in platforms)
                 {
                     string tagName = platform.Tags.First().FullyQualifiedName;
-                    processImage(repo.Name, platform.Model.Dockerfile, tagName);
+                    processImage(repo.Name, platform.Model.Dockerfile, tagName, platform.PlatformLabel);
                 }
             }
         }
 
-        protected long GetImageSize(string tagName)
+        protected long GetImageSize(string tagName, string platform)
         {
             if (Options.IsPullEnabled)
             {
-                DockerService.PullImage(tagName, Options.IsDryRun);
+                DockerService.PullImage(tagName, platform, Options.IsDryRun);
             }
             else if (!DockerService.LocalImageExists(tagName, Options.IsDryRun))
             {

@@ -31,19 +31,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest.GetFilteredPlatforms(),
                 (platform) => platform.DockerfileTemplate,
                 (platform) => platform.DockerfilePath,
-                (platform, templatePath) => GetSymbols(platform, templatePath),
+                (platform, templatePath, indent) => GetTemplateState(platform, templatePath, indent),
                 nameof(Platform.DockerfileTemplate),
                 "Dockerfile");
 
             ValidateArtifacts();
         }
 
-        public Dictionary<Value, Value> GetSymbols(PlatformInfo platform, string templatePath)
+        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(PlatformInfo platform, string templatePath, string indent)
         {
             string versionedArch = platform.Model.Architecture.GetDisplayName(platform.Model.Variant);
             ImageInfo image = Manifest.GetImageByPlatform(platform);
 
-            Dictionary<Value, Value> symbols = GetSymbols(templatePath, platform, (platform, templatePath) => GetSymbols(platform, templatePath));
+            Dictionary<Value, Value> symbols = GetSymbols(
+                templatePath,
+                platform,
+                (platform, templatePath, currentIndent) => GetTemplateState(platform, templatePath, currentIndent + indent),
+                indent);
             symbols["ARCH_SHORT"] = platform.Model.Architecture.GetShortName();
             symbols["ARCH_NUPKG"] = platform.Model.Architecture.GetNupkgName();
             symbols["ARCH_VERSIONED"] = versionedArch;
@@ -54,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             symbols["OS_VERSION_NUMBER"] = GetOsVersionNumber(platform);
             symbols["OS_ARCH_HYPHENATED"] = GetOsArchHyphenatedName(platform);
 
-            return symbols;
+            return (symbols, indent);
         }
 
         private static string GetOsVersionNumber(PlatformInfo platform)

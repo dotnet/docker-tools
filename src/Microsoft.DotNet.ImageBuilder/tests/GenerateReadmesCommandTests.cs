@@ -142,17 +142,17 @@ ABC-123";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext);
 
-            IReadOnlyDictionary<Value, Value> symbols;
+            (IReadOnlyDictionary<Value, Value> Symbols, string Indent) templateState;
             if (isManifest)
             {
-                symbols = command.GetSymbols(command.Manifest, ReadmeTemplatePath);
+                templateState = command.GetTemplateState(command.Manifest, ReadmeTemplatePath, string.Empty);
             }
             else
             {
-                symbols = command.GetSymbols(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath);
+                templateState = command.GetTemplateState(command.Manifest.GetRepoByModelName("dotnet/repo"), ReadmeTemplatePath, string.Empty);
             }
 
-            Value actualSymbolValue = symbols[symbol];
+            Value actualSymbolValue = templateState.Symbols[symbol];
             Value expectedSymbolValue;
             if (actualSymbolValue.Type == ValueContent.Boolean)
             {

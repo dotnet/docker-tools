@@ -12,6 +12,9 @@ using Cottle.Exceptions;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
+    public delegate (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState<TContext>(
+        TContext context, string templatePath, string indent);
+
     public abstract class GenerateArtifactsCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
         where TOptions : GenerateArtifactsOptions, new()
         where TOptionsBuilder : GenerateArtifactsOptionsBuilder, new()
@@ -39,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<TContext> contexts,
             Func<TContext, string> getTemplatePath,
             Func<TContext, string> getArtifactPath,
-            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols,
+            GetTemplateState<TContext> getState,
             string templatePropertyName,
             string artifactName,
             Func<string, TContext, string> postProcess = null)
@@ -79,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     continue;
                 }
 
-                await GenerateArtifactAsync(templatePath, artifactPath, context, getSymbols, artifactName, postProcess);
+                await GenerateArtifactAsync(templatePath, artifactPath, context, getState, artifactName, postProcess);
                 generatedArtifacts.Add(artifactPath, templatePath);
             }
         }
@@ -88,13 +91,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string templatePath,
             string artifactPath,
             TContext context,
-            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols,
+            GetTemplateState<TContext> getState,
             string artifactName,
             Func<string, TContext, string> postProcess)
         {
             Logger.WriteSubheading($"Generating '{artifactPath}' from '{templatePath}'");
 
-            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getSymbols, Value.EmptyMap, null, trimTemplate: false);
+            string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false);
 
             if (generatedArtifact != null)
             {
@@ -130,7 +133,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected Dictionary<Value, Value> GetSymbols<TContext>(
             string sourceTemplatePath,
             TContext context,
-            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols)
+            GetTemplateState<TContext> getTemplateState,
+            string indent)
         {
             return new Dictionary<Value, Value>
             {
@@ -142,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             RenderTemplateAsync(
                                 Path.Combine(Path.GetDirectoryName(sourceTemplatePath), args[0].AsString),
                                 context,
-                                getSymbols,
+                                getTemplateState,
                                 args.Count > 1 ? args[1] : Value.EmptyMap,
                                 args.Count > 2 ? args[2].AsString : null,
                                 trimTemplate: true).Result,
@@ -154,9 +158,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected async Task<string> RenderTemplateAsync<TContext>(
             string templatePath,
             TContext context,
-            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols,
+            GetTemplateState<TContext> getTemplateState,
             Value templateArgs,
-            string indent,
+            string currentIndent,
             bool trimTemplate)
         {
             string artifact = null;
@@ -168,10 +172,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 template = template.Trim();
             }
 
-            if (!string.IsNullOrEmpty(indent))
+            // Indents for nested templates are cumulative. Pass the current indent value and the result will contain
+            // the new indent value to use for the nested template.
+            (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = getTemplateState(context, templatePath, currentIndent);
+            IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(state.Symbols)
+            {
+                { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) }
+            };          
+
+            if (!string.IsNullOrEmpty(state.Indent))
             {
                 // Indents all the lines except the first one
-                template = template.Replace("\n", $"\n{indent}");
+                template = template.Replace("\n", $"\n{state.Indent}");
             }
 
             if (Options.IsVerbose)
@@ -181,12 +193,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
-                IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(getSymbols(context, templatePath))
-                {
-                    { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) }
-                };
-                
+                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;                
                 artifact = document.Render(Context.CreateBuiltin(symbols));
 
                 if (Options.IsVerbose)

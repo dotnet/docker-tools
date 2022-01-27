@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 new ManifestInfo[] { Manifest },
                 (manifest) => manifest.ReadmeTemplatePath,
                 (manifest) => manifest.ReadmePath,
-                (manifest, templatePath) => GetSymbols(manifest, templatePath),
+                (manifest, templatePath, indent) => GetTemplateState(manifest, templatePath, indent),
                 nameof(Models.Manifest.Manifest.ReadmeTemplate),
                 ArtifactName);
 
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Manifest.FilteredRepos,
                 (repo) => repo.ReadmeTemplatePath,
                 (repo) => repo.ReadmePath,
-                (repo, templatePath) => GetSymbols(repo, templatePath),
+                (repo, templatePath, indent) => GetTemplateState(repo, templatePath, indent),
                 nameof(Models.Manifest.Repo.ReadmeTemplate),
                 ArtifactName,
                 (readme, repo) => UpdateTagsListing(readme, repo));
@@ -57,29 +57,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ValidateArtifacts();
         }
 
-        public Dictionary<Value, Value> GetSymbols(ManifestInfo manifest, string templatePath) =>
-            GetCommonSymbols(templatePath, manifest, (manifest, templatePath) => GetSymbols(manifest, templatePath));
+        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(ManifestInfo manifest, string templatePath, string indent) =>
+            GetCommonTemplateState(templatePath, manifest, (manifest, templatePath, currentIndent) => GetTemplateState(manifest, templatePath, currentIndent + indent), indent);
 
-        public Dictionary<Value, Value> GetSymbols(RepoInfo repo, string templatePath)
+        public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent)
         {
-            Dictionary<Value, Value> symbols = GetCommonSymbols(templatePath, repo, (repo, templatePath) => GetSymbols(repo, templatePath));
+            (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = GetCommonTemplateState(
+                templatePath,
+                repo,
+                (repo, templatePath, currentIndent) => GetTemplateState(repo, templatePath, currentIndent + indent),
+                indent);
+            Dictionary<Value, Value> symbols = new(state.Symbols);
             symbols["FULL_REPO"] = repo.QualifiedName;
             symbols["REPO"] = repo.Name;
             symbols["PARENT_REPO"] = GetParentRepoName(repo);
             symbols["SHORT_REPO"] = GetShortRepoName(repo);
 
-            return symbols;
+            return (symbols, indent);
         }
 
-        private Dictionary<Value, Value> GetCommonSymbols<TContext>(
+        private (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetCommonTemplateState<TContext>(
             string sourceTemplatePath,
             TContext context,
-            Func<TContext, string, IReadOnlyDictionary<Value, Value>> getSymbols)
+            GetTemplateState<TContext> getState,
+            string indent)
         {
-            Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getSymbols);
+            Dictionary<Value, Value> symbols = GetSymbols(sourceTemplatePath, context, getState, indent);
             symbols["IS_PRODUCT_FAMILY"] = context is ManifestInfo;
 
-            return symbols;
+            return (symbols, indent);
         }
 
         private string GetParentRepoName(RepoInfo repo)

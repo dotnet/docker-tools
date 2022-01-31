@@ -177,7 +177,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = getTemplateState(context, templatePath, currentIndent);
             IReadOnlyDictionary<Value, Value> symbols = new Dictionary<Value, Value>(state.Symbols)
             {
-                { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) }
+                { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) },
+                { "INDENT", state.Indent }
             };          
 
             if (!string.IsNullOrEmpty(state.Indent))

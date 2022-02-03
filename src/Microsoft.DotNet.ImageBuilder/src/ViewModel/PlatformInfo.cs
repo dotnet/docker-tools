@@ -132,8 +132,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Where(from => !IsStageReference(from, fromMatches))
                 .ToArray();
 
-            FinalStageFromImage = fromImages
-                .LastOrDefault(image => !IsFromScratchImage(image));
+            FinalStageFromImage = fromImages.Last();
+            if (IsFromScratchImage(FinalStageFromImage))
+            {
+                FinalStageFromImage = null;
+            }
 
             InternalFromImages = fromImages
                 .Where(from => IsInternalFromImage(from))

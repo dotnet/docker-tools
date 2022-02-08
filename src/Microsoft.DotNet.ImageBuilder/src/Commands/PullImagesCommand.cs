@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -27,9 +29,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
-            IEnumerable<(string Tag, string Platform)> platformTags = Manifest.GetFilteredPlatforms()
-                .Where(platform => platform.Tags.Any())
-                .Select(platform => (platform.Tags.First().FullyQualifiedName, platform.PlatformLabel))
+            IEnumerable<(string Tag, string Platform)> platformTags;
+            if (string.IsNullOrEmpty(Options.ImageInfoPath))
+            {
+                platformTags = Manifest.GetFilteredPlatforms()
+                    .Where(platform => platform.Tags.Any())
+                    .Select(platform => (platform.Tags.First().FullyQualifiedName, platform.PlatformLabel));
+            }
+            else
+            {
+                ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+                platformTags = imageArtifactDetails.Repos
+                    .SelectMany(repo => repo.Images)
+                    .SelectMany(image => image.Platforms)
+                    .Where(platform => platform.SimpleTags.Any())
+                    .Select(platform => (
+                        TagInfo.GetFullyQualifiedName(platform.PlatformInfo!.FullRepoModelName, platform.SimpleTags.First()),
+                        platform.PlatformInfo!.PlatformLabel));
+            }
+
+            platformTags = platformTags
                 .Distinct()
                 .ToList();
 

@@ -53,14 +53,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .ToList();
 
             _loggerService.WriteHeading("PULLING IMAGES");
-            foreach ((string Tag, string Platform) platformTag in platformTags)
+            foreach ((string tag, string platform) in platformTags)
             {
-                _dockerService.PullImage(platformTag.Tag, platformTag.Platform, Options.IsDryRun);
+                _dockerService.PullImage(tag, platform, Options.IsDryRun);
             }
 
             if (Options.OutputVariableName is not null)
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable(Options.OutputVariableName, string.Join(',', platformTags)));
+                _loggerService.WriteMessage(
+                    PipelineHelper.FormatOutputVariable(
+                        Options.OutputVariableName,
+                        string.Join(',', platformTags.Select(platformTag => platformTag.Tag))));
             }
 
             return Task.CompletedTask;

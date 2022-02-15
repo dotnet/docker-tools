@@ -16,13 +16,24 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
-        public static ImageArtifactDetails LoadFromContent(string imageInfoContent, ManifestInfo manifest, bool skipManifestValidation = false)
+        /// <summary>
+        /// Loads image info string content as a parsed model.
+        /// </summary>
+        /// <param name="imageInfoContent">The image info content to load.</param>
+        /// <param name="manifest">Representation of the manifest model.</param>
+        /// <param name="skipManifestValidation">
+        /// Whether to skip validation if no associated manifest model item was found for a given image info model item.
+        /// </param>
+        /// <param name="useFilteredManifest">Whether to use the filtered content of the manifest for lookups.</param>
+        public static ImageArtifactDetails LoadFromContent(string imageInfoContent, ManifestInfo manifest,
+            bool skipManifestValidation = false, bool useFilteredManifest = false)
         {
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContent);
 
             foreach (RepoData repoData in imageArtifactDetails.Repos)
             {
-                RepoInfo manifestRepo = manifest.AllRepos.FirstOrDefault(repo => repo.Name == repoData.Repo);
+                RepoInfo manifestRepo = (useFilteredManifest ? manifest.FilteredRepos : manifest.AllRepos)
+                    .FirstOrDefault(repo => repo.Name == repoData.Repo);
                 if (manifestRepo == null)
                 {
                     Console.WriteLine($"Image info repo not loaded: {repoData.Repo}");
@@ -35,9 +46,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
                     foreach (PlatformData platformData in imageData.Platforms)
                     {
-                        foreach (ImageInfo manifestImage in manifestRepo.AllImages)
+                        foreach (ImageInfo manifestImage in (useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages))
                         {
-                            PlatformInfo matchingManifestPlatform = manifestImage.AllPlatforms
+                            PlatformInfo matchingManifestPlatform = (useFilteredManifest ? manifestImage.FilteredPlatforms : manifestImage.AllPlatforms)
                                 .FirstOrDefault(platform => ArePlatformsEqual(platformData, imageData, platform, manifestImage));
                             if (matchingManifestPlatform != null)
                             {
@@ -65,9 +76,18 @@ namespace Microsoft.DotNet.ImageBuilder
             return imageArtifactDetails;
         }
 
-        public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest, bool skipManifestValidation = false)
+        /// <summary>
+        /// Loads an image info file as a parsed model.
+        /// </summary>
+        /// <param name="path">Path to the image info file.</param>
+        /// <param name="manifest">Representation of the manifest model.</param>
+        /// <param name="skipManifestValidation">
+        /// Whether to skip validation if no associated manifest model item was found for a given image info model item.
+        /// </param>
+        /// <param name="useFilteredManifest">Whether to use the filtered content of the manifest for lookups.</param>
+        public static ImageArtifactDetails LoadFromFile(string path, ManifestInfo manifest, bool skipManifestValidation = false, bool useFilteredManifest = false)
         {
-            return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation);
+            return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation, useFilteredManifest);
         }
 
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)

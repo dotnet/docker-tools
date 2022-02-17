@@ -4,6 +4,14 @@ parameters:
 jobs:
 - job: GenerateSBOM
   pool: ${{ parameters.pool }}
+  strategy:
+    matrix:
+      amd64:
+        arch: amd64
+      arm32:
+        arch: arm
+      arm64:
+        arch: arm64
   variables:
     sbomDirectory: $(Build.ArtifactStagingDirectory)/sbom
   steps:
@@ -18,7 +26,7 @@ jobs:
     displayName: Trim Unchanged Images
   - script: >
       $(runImageBuilderCmd) pullImages
-      --architecture '*'
+      --architecture '$(arch)'
       --manifest 'manifest.json'
       --output-var 'pulledImages'
       --image-info '$(artifactsPath)/image-info.json'
@@ -29,11 +37,11 @@ jobs:
   - task: AzureArtifacts.manifest-generator-task.manifest-generator-task.ManifestGeneratorTask@0
     displayName: Generate SBOM
     inputs:
-      PackageName: $(Build.DefinitionName)
+      PackageName: ".NET"
       PackageVersion: $(Build.BuildNumber)
       BuildDropPath: $(Build.ArtifactStagingDirectory)
       ManifestDirPath: $(sbomDirectory)
       dockerImagesToScan: $(PullImages.pulledImages)
   - publish: $(sbomDirectory)
-    artifact: sbom_linux
+    artifact: sbom_linux_$(arch)
     displayName: Publish SBOM

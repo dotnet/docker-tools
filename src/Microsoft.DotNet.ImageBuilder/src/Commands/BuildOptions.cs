@@ -24,6 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? SourceRepoPrefix { get; set; }
         public string? GetInstalledPackagesScriptPath { get; set; }
         public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
+        public bool SkipPlatformCheck { get; set; }
     }
 
     public class BuildOptionsBuilder : DockerRegistryOptionsBuilder
@@ -57,6 +58,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Path to the default script file that outputs list of installed packages"),
                         CreateDictionaryOption("build-arg", nameof(BuildOptions.BuildArgs),
                             "Build argument to pass to the Dockerfiles (<name>=<value>)"),
+                        CreateOption<bool>("skip-platform-check", nameof(BuildOptions.SkipPlatformCheck),
+                            "Skips validation that ensures the Dockerfile's base image's platform matches the manifest configuration"),
                     });
 
         public override IEnumerable<Argument> GetCliArguments() =>

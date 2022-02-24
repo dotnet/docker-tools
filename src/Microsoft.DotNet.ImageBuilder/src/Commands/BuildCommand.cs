@@ -427,7 +427,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void ValidatePlatformIsCompatibleWithBaseImage(PlatformInfo platform)
         {
-            if (platform.FinalStageFromImage is null)
+            if (platform.FinalStageFromImage is null || Options.SkipPlatformCheck)
             {
                 return;
             }

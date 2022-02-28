@@ -79,7 +79,7 @@ jobs:
   - template: ../steps/set-image-info-path-var.yml
     parameters:
       publicSourceBranch: $(publicSourceBranch)
-  - script: echo "##vso[task.setvariable variable=imageBuilderBuildArgs]"
+  - powershell: echo "##vso[task.setvariable variable=imageBuilderBuildArgs]"
     condition: eq(variables.imageBuilderBuildArgs, '')
     displayName: Initialize Image Builder Build Args
   - powershell: |

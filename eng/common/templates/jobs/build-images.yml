@@ -25,7 +25,7 @@ jobs:
   variables:
     imageBuilderDockerRunExtraOptions: $(build.imageBuilderDockerRunExtraOptions)
     versionsRepoPath: versions
-    imageBuilderBuildArgs: $[variables.imageBuilderBuildArgs] # set to empty if not defined
+    imageBuilderBuildArgs: $[variables['imageBuilderBuildArgs']]
     ${{ if eq(parameters.noCache, false) }}:
       versionsBasePath: $(versionsRepoPath)/
       pipelineDisabledCache: false

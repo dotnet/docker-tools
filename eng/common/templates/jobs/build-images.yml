@@ -25,6 +25,7 @@ jobs:
   variables:
     imageBuilderDockerRunExtraOptions: $(build.imageBuilderDockerRunExtraOptions)
     versionsRepoPath: versions
+    imageBuilderBuildArgs: $[variables.imageBuilderBuildArgs] # set to empty if not defined
     ${{ if eq(parameters.noCache, false) }}:
       versionsBasePath: $(versionsRepoPath)/
       pipelineDisabledCache: false
@@ -80,7 +81,7 @@ jobs:
     parameters:
       publicSourceBranch: $(publicSourceBranch)
   - powershell: |
-      $imageBuilderBuildArgs = "$(imageBuilder.queueArgs) --image-info-output-path $(artifactsPath)/$(legName)-image-info.json"
+      $imageBuilderBuildArgs = "$(imageBuilderBuildArgs) $(imageBuilder.queueArgs) --image-info-output-path $(artifactsPath)/$(legName)-image-info.json"
       if ($env:SYSTEM_TEAMPROJECT -eq "${{ parameters.internalProjectName }}") {
         $imageBuilderBuildArgs = "$imageBuilderBuildArgs --registry-override $(acr.server) --repo-prefix $(stagingRepoPrefix) --source-repo-prefix $(mirrorRepoPrefix) --push --registry-creds ""$(acr.server)=$(acr.userName);$(acr.password)"""
       }

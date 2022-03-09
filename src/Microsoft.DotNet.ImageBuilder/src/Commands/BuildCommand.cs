@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IProcessService _processService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
-        private readonly HashSet<PlatformInfo> _builtPlatforms = new();
+        private readonly HashSet<PlatformData> _builtPlatforms = new();
 
         // Metadata about Dockerfiles whose images have been retrieved from the cache
         private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
@@ -68,8 +68,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
             
             WriteBuildSummary();
+            WriteBuiltImagesToOutputVar();
 
             return Task.CompletedTask;
+        }
+
+        private void WriteBuiltImagesToOutputVar()
+        {
+            if (!string.IsNullOrEmpty(Options.OutputVariableName))
+            {
+                IEnumerable<string> builtDigests = _builtPlatforms
+                    .Select(platform => DockerHelper.GetDigestString(platform.PlatformInfo!.RepoName, DockerHelper.GetDigestSha(platform.Digest)))
+                    .Distinct();
+                _loggerService.WriteMessage(
+                    PipelineHelper.FormatOutputVariable(
+                        Options.OutputVariableName,
+                        string.Join(',', builtDigests)));
+            }
         }
 
         private void PublishImageInfo()
@@ -312,7 +327,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             BuildImage(platform, allTags);
 
-                            _builtPlatforms.Add(platform);
+                            if (platformData is not null)
+                            {
+                                _builtPlatforms.Add(platformData);
+                            }
 
                             if (platformData is not null && platform.FinalStageFromImage is not null)
                             {

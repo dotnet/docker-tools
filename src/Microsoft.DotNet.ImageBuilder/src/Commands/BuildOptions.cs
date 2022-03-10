@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Build argument to pass to the Dockerfiles (<name>=<value>)"),
                         CreateOption<bool>("skip-platform-check", nameof(BuildOptions.SkipPlatformCheck),
                             "Skips validation that ensures the Dockerfile's base image's platform matches the manifest configuration"),
-                        CreateOption<string>("output-var", nameof(BuildOptions.OutputVariableName),
+                        CreateOption<string>("digests-out-var", nameof(BuildOptions.OutputVariableName),
                             "Azure DevOps variable name to use for outputting the list of built image digests"),
                     });
 

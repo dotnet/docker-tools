@@ -16,22 +16,14 @@ jobs:
       # Move all image-info artifacts to their own directory
       New-Item -ItemType Directory -Path $(Build.ArtifactStagingDirectory)$(imageInfosSubDir)
       Get-ChildItem -Directory -Filter "*-image-info-*" $(Build.ArtifactStagingDirectory) |
-        ForEach-Object {
-          echo "Moving $_ to $(Build.ArtifactStagingDirectory)$(imageInfosSubDir)"
-          Move-Item $_ $(Build.ArtifactStagingDirectory)$(imageInfosSubDir)
-        }
+        Move-Item -Verbose -Destination $(Build.ArtifactStagingDirectory)$(imageInfosSubDir)
     displayName: Collect Image Info Files
   - powershell: |
       # Move the contents of all the SBOM artifact directories to a single location
       New-Item -ItemType Directory -Path $(Build.ArtifactStagingDirectory)$(sbomSubDir)
       Get-ChildItem -Directory -Filter "*-sboms" $(Build.ArtifactStagingDirectory) |
         ForEach-Object {
-          echo "Found $_";
-          Get-ChildItem $_ -Directory |
-            ForEach-Object {
-              echo "Moving $_ to $(Build.ArtifactStagingDirectory)$(sbomSubDir)"
-              Move-Item $_ $(Build.ArtifactStagingDirectory)$(sbomSubDir)
-            }
+          Get-ChildItem $_ -Directory | Move-Item -Verbose -Destination $(Build.ArtifactStagingDirectory)$(sbomSubDir)
         }
     displayName: Consolidate SBOMs to Single Directory
   - powershell: |

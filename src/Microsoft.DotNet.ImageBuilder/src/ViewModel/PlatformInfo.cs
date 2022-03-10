@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public Platform Model { get; private set; }
         public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
         public string FullRepoModelName { get; set; }
-        private string RepoName { get; set; }
+        public string RepoName { get; private set; }
         public IEnumerable<TagInfo> Tags { get; private set; }
         public IDictionary<string, CustomBuildLegGroup> CustomLegGroups { get; private set; } =
             ImmutableDictionary<string, CustomBuildLegGroup>.Empty;

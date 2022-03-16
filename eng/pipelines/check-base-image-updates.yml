@@ -42,7 +42,7 @@ stages:
 
   - job: Get_Stale_Images_Linux_ARM32
     pool:
-      name: DotNetCore-Docker
+      name: Docker-Linux-Arm-Internal
       demands:
       - Agent.OS -equals linux
       - Agent.OSArchitecture -equals ARM64
@@ -57,7 +57,7 @@ stages:
 
   - job: Get_Stale_Images_Linux_ARM64
     pool:
-      name: DotNetCore-Docker
+      name: Docker-Linux-Arm-Internal
       demands:
       - Agent.OS -equals linux
       - Agent.OSArchitecture -equals ARM64

@@ -7,7 +7,7 @@ jobs:
     ${{ if eq(variables['System.TeamProject'], 'public') }}:
       name: DotNetCore-Docker-Public
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      name: DotNetCore-Docker
+      name: Docker-Linux-Arm-Internal
     demands:
     - agent.os -equals linux
     - agent.name -equals $(agentName)

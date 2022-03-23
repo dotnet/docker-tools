@@ -12,23 +12,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishImageInfoOptions : ImageInfoOptions, IGitOptionsHost
     {
         public GitOptions GitOptions { get; set; } = new GitOptions();
-        public AzdoOptions AzdoOptions { get; set; } = new AzdoOptions();
     }
 
     public class PublishImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
-        private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new AzdoOptionsBuilder();
         private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_gitOptionsBuilder.GetCliOptions())
-                .Concat(_azdoOptionsBuilder.GetCliOptions());
+                .Concat(_gitOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
-                .Concat(_gitOptionsBuilder.GetCliArguments())
-                .Concat(_azdoOptionsBuilder.GetCliArguments());
+                .Concat(_gitOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

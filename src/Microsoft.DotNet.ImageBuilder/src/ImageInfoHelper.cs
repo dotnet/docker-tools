@@ -224,7 +224,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
                 else if (typeof(IList<Component>).IsAssignableFrom(property.PropertyType))
                 {
-                    MergeLists<Component>(property, srcObj, targetObj, options);
+                    ReplaceValue(property, srcObj, targetObj);
                 }
                 else
                 {

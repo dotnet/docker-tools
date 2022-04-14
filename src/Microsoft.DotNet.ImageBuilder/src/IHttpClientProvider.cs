@@ -9,5 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder
     public interface IHttpClientProvider
     {
         HttpClient GetClient();
+        RegistryHttpClient GetRegistryClient();
     }
 }

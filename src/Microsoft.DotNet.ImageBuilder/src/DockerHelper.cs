@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static OS OS => s_os.Value;
 
         public const string DockerHubRegistry = "docker.io";
+        public const string DockerHubApiRegistry = "registry-1.docker.io";
 
         public static void ExecuteWithUser(Action action, string? username, string? password, string? server, bool isDryRun)
         {

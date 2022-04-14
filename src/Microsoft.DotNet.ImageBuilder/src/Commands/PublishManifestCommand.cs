@@ -18,14 +18,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
-        private readonly IManifestToolService _manifestToolService;
+        private readonly IManifestService _manifestToolService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
         private List<string> _publishedManifestTags = new List<string>();
 
         [ImportingConstructor]
         public PublishManifestCommand(
-            IManifestToolService manifestToolService,
+            IManifestService manifestToolService,
             ILoggerService loggerService,
             IDateTimeService dateTimeService)
         {
@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
                     await _manifestToolService.GetManifestDigestShaAsync(
-                        ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun));
+                        sharedTag.FullyQualifiedName, Options.CredentialsOptions, Options.IsDryRun));
 
                 IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
                     .Where(tag => tag.SyndicatedRepo is not null)
@@ -107,8 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string digest = DockerHelper.GetDigestString(
                         DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
                         await _manifestToolService.GetManifestDigestShaAsync(
-                            ManifestMediaType.ManifestList,
                             DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
+                            Options.CredentialsOptions,
                             Options.IsDryRun));
                     image.Manifest.SyndicatedDigests.Add(digest);
                 }

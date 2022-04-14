@@ -9,7 +9,7 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class RegistryCredentialsOptions
+    public class RegistryCredentialsOptions : IRegistryCredentialsHost
     {
         public IDictionary<string, RegistryCredentials> Credentials { get; set; } =
             new Dictionary<string, RegistryCredentials>();
@@ -30,18 +30,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
 
         public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
-    }
-
-    public class RegistryCredentials
-    {
-        public RegistryCredentials(string username, string password)
-        {
-            Username = username;
-            Password = password;
-        }
-
-        public string Username { get; }
-        public string Password { get; }
     }
 }
 #nullable disable

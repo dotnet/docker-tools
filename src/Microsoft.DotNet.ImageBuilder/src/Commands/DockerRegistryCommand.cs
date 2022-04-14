@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading.Tasks;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -13,8 +14,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         protected void ExecuteWithUser(Action action)
         {
+            ExecuteWithUserAsync(() =>
+            {
+                action();
+                return Task.CompletedTask;
+            });
+        }
+
+        protected Task ExecuteWithUserAsync(Func<Task> action)
+        {
             Options.CredentialsOptions.Credentials.TryGetValue(Manifest.Registry ?? "", out RegistryCredentials? credentials);
-            DockerHelper.ExecuteWithUser(action, credentials?.Username, credentials?.Password, Manifest.Registry, Options.IsDryRun);
+            return DockerHelper.ExecuteWithUserAsync(action, credentials?.Username, credentials?.Password, Manifest.Registry, Options.IsDryRun);
         }
     }
 }

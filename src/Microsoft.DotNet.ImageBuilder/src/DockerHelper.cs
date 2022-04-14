@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
 using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
@@ -25,6 +26,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void ExecuteWithUser(Action action, string? username, string? password, string? server, bool isDryRun)
         {
+            ExecuteWithUserAsync(() =>
+            {
+                action();
+                return Task.CompletedTask;
+            },
+            username, password, server, isDryRun).GetAwaiter().GetResult();
+        }
+
+        public static async Task ExecuteWithUserAsync(Func<Task> action, string? username, string? password, string? server, bool isDryRun)
+        {
             bool loggedIn = false;
             if (username is not null && password is not null && server is not null)
             {
@@ -34,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             try
             {
-                action();
+                await action();
             }
             finally
             {

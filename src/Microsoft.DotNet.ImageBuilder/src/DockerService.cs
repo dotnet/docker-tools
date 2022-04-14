@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 #nullable enable
@@ -24,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
         }
 
-        public string? GetImageDigest(string image, bool isDryRun)
+        public async Task<string?> GetImageDigestAsync(string image, bool isDryRun)
         {
             IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
 
@@ -34,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string digestSha = _manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, image, isDryRun);
+            string digestSha = await _manifestToolService.GetManifestDigestShaAsync(ManifestMediaType.Any, image, isDryRun);
 
             if (digestSha is null)
             {
@@ -54,7 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return digest;
         }
 
-        public IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun) => _manifestToolService.GetImageLayers(image, isDryRun);
+        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, bool isDryRun) =>
+            _manifestToolService.GetImageLayersAsync(image, isDryRun);
 
         public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
 

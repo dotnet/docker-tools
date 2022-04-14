@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -23,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>, IDisposable
     {
         private readonly Dictionary<string, string> _imageDigests = new();
-        private readonly object _imageDigestsLock = new();
+        private readonly SemaphoreSlim _imageDigestsLock = new(1);
         private readonly IManifestToolService _manifestToolService;
         private readonly ILoggerService _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
@@ -100,14 +101,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (PlatformInfo platform in platforms)
                 {
-                    pathsToRebuild.AddRange(GetPathsToRebuild(allPlatforms, platform, repoData));
+                    pathsToRebuild.AddRange(await GetPathsToRebuildAsync(allPlatforms, platform, repoData));
                 }
             }
 
             return pathsToRebuild.Distinct().ToList();
         }
 
-        private List<string> GetPathsToRebuild(
+        private async Task<List<string>> GetPathsToRebuildAsync(
             IEnumerable<PlatformInfo> allPlatforms, PlatformInfo platform, RepoData? repoData)
         {
             bool foundImageInfo = false;
@@ -145,10 +146,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         break;
                     }
 
-                    currentDigest = LockHelper.DoubleCheckedLockLookup(_imageDigestsLock, _imageDigests, fromImage,
-                        () =>
+                    currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
+                        async () =>
                         {
-                            string digest = _manifestToolService.GetManifestDigestSha(ManifestMediaType.Any, fromImage, Options.IsDryRun);
+                            string digest = await _manifestToolService.GetManifestDigestShaAsync(ManifestMediaType.Any, fromImage, Options.IsDryRun);
                             return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 

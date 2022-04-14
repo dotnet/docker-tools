@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
@@ -22,19 +23,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData("tag2", ManifestMediaType.Manifest, null, typeof(InvalidOperationException))]
         [InlineData("tag2", ManifestMediaType.Any, ManifestListDigest)]
         [InlineData("tag1", (ManifestMediaType)100, null, typeof(ArgumentException))]
-        public void GetManifestDigestSha(string tag, ManifestMediaType mediaType, string expectedDigestSha, Type expectedExceptionType = null)
+        public async Task GetManifestDigestSha(string tag, ManifestMediaType mediaType, string expectedDigestSha, Type expectedExceptionType = null)
         {
             Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
             manifestToolService
-                .Setup(o => o.Inspect("tag1", false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestMediaType, ManifestDigest));
+                .Setup(o => o.InspectAsync("tag1", false))
+                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestMediaType, ManifestDigest));
             manifestToolService
-                .Setup(o => o.Inspect("tag2", false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, ManifestListDigest));
+                .Setup(o => o.InspectAsync("tag2", false))
+                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, ManifestListDigest));
 
             if (expectedExceptionType is null)
             {
-                string digestSha = ManifestToolServiceExtensions.GetManifestDigestSha(
+                string digestSha = await ManifestToolServiceExtensions.GetManifestDigestShaAsync(
                     manifestToolService.Object,
                     mediaType,
                     tag,
@@ -43,9 +44,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                Assert.Throws(expectedExceptionType, () =>
+                await Assert.ThrowsAsync(expectedExceptionType, async () =>
                 {
-                    ManifestToolServiceExtensions.GetManifestDigestSha(
+                    await ManifestToolServiceExtensions.GetManifestDigestShaAsync(
                         manifestToolService.Object,
                         mediaType,
                         tag,

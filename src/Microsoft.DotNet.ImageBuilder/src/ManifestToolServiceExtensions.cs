@@ -5,15 +5,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ManifestToolServiceExtensions
     {
-        public static IEnumerable<string> GetImageLayers(this IManifestToolService manifestToolService, string tag, bool isDryRun)
+        public static async Task<IEnumerable<string>> GetImageLayersAsync(this IManifestToolService manifestToolService, string tag, bool isDryRun)
         {
-            IEnumerable<JObject> tagManifests = manifestToolService.Inspect(tag, isDryRun).OfType<JObject>();
+            IEnumerable<JObject> tagManifests = (await manifestToolService.InspectAsync(tag, isDryRun)).OfType<JObject>();
 
             int manifestCount = tagManifests.Count();
             if (manifestCount != 1)
@@ -25,10 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder
             return tagManifests.First()["Layers"].ToObject<List<string>>();
         }
 
-        public static string GetManifestDigestSha(
+        public static async Task<string> GetManifestDigestShaAsync(
             this IManifestToolService manifestToolService, ManifestMediaType mediaType, string tag, bool isDryRun)
         {
-            IEnumerable<JObject> tagManifests = manifestToolService.Inspect(tag, isDryRun).OfType<JObject>();
+            IEnumerable<JObject> tagManifests = (await manifestToolService.InspectAsync(tag, isDryRun)).OfType<JObject>();
             string digest;
 
             bool hasSupportedMediaType = false;

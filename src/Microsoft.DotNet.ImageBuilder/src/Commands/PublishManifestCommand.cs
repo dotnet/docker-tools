@@ -36,13 +36,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
         {
             _loggerService.WriteHeading("GENERATING MANIFESTS");
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            ExecuteWithUser(() =>
+            await ExecuteWithUserAsync(async () =>
             {
                 IEnumerable<string> manifests = Manifest.FilteredRepos
                     .SelectMany(repo =>
@@ -71,13 +71,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 WriteManifestSummary();
 
-                SaveTagInfoToImageInfoFile(createdDate, imageArtifactDetails);
+                await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
             });
-
-            return Task.CompletedTask;
         }
 
-        private void SaveTagInfoToImageInfoFile(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
+        private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
         {
             _loggerService.WriteSubheading("SETTING TAG INFO");
 
@@ -85,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .SelectMany(repo => repo.Images)
                 .Where(image => image.Manifest != null);
 
-            Parallel.ForEach(images, image =>
+            await Parallel.ForEachAsync(images, async (image, cancellationToken) =>
             {
                 image.Manifest.Created = createdDate;
 
@@ -93,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
-                    _manifestToolService.GetManifestDigestSha(
+                    await _manifestToolService.GetManifestDigestShaAsync(
                         ManifestMediaType.ManifestList, sharedTag.FullyQualifiedName, Options.IsDryRun));
 
                 IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
@@ -108,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string digest = DockerHelper.GetDigestString(
                         DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
-                        _manifestToolService.GetManifestDigestSha(
+                        await _manifestToolService.GetManifestDigestShaAsync(
                             ManifestMediaType.ManifestList,
                             DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
                             Options.IsDryRun));

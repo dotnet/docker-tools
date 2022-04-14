@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -11,6 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private readonly IDockerService _dockerService;
         private readonly Dictionary<string, string?> _digestCache = new();
+        private readonly SemaphoreSlim _digestCacheLock = new(1);
 
         public ImageDigestCache(IDockerService dockerService)
         {
@@ -19,15 +22,20 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public void AddDigest(string tag, string digest)
         {
-            lock(_digestCache)
+            _digestCacheLock.Wait();
+            try
             {
                 _digestCache[tag] = digest;
             }
+            finally
+            {
+                _digestCacheLock.Release();
+            }
         }
 
-        public string? GetImageDigest(string tag, bool isDryRun) =>
-            LockHelper.DoubleCheckedLockLookup(_digestCache, _digestCache, tag,
-                () => _dockerService.GetImageDigest(tag, isDryRun),
+        public Task<string?> GetImageDigestAsync(string tag, bool isDryRun) =>
+            LockHelper.DoubleCheckedLockLookupAsync(_digestCacheLock, _digestCache, tag,
+                () => _dockerService.GetImageDigestAsync(tag, isDryRun),
                 // Don't allow null digests to be cached. A locally built image won't have a digest until
                 // it is pushed so if its digest is retrieved before pushing, we don't want that 
                 // null to be cached.

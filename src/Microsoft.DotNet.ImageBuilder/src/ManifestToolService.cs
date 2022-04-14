@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.ComponentModel.Composition;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -21,15 +22,15 @@ namespace Microsoft.DotNet.ImageBuilder
             ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFile}", isDryRun);
         }
 
-        public JArray Inspect(string image, bool isDryRun)
+        public Task<JArray> InspectAsync(string image, bool isDryRun)
         {
             string output = ExecuteHelper.ExecuteWithRetry("manifest-tool", $"inspect {image} --raw", isDryRun);
             if (isDryRun)
             {
-                return new JArray();
+                return Task.FromResult(new JArray());
             }
 
-            return JsonConvert.DeserializeObject<JArray>(output);
+            return Task.FromResult(JsonConvert.DeserializeObject<JArray>(output));
         }
     }
 }

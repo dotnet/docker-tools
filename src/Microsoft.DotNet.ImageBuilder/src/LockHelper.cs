@@ -69,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static async Task<TValue> DoubleCheckedLockLookupAsync<TKey, TValue>(
-            this SemaphoreSlim semaphore, IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> getValue)
+            this SemaphoreSlim semaphore, IDictionary<TKey, TValue> dictionary, TKey key, Func<Task<TValue>> getValue, Func<TValue, bool> addToDictionary = null)
         {
             if (!dictionary.TryGetValue(key, out TValue value))
             {
@@ -78,7 +78,11 @@ namespace Microsoft.DotNet.ImageBuilder
                     if (!dictionary.TryGetValue(key, out value))
                     {
                         value = await getValue();
-                        dictionary.Add(key, value);
+
+                        if (addToDictionary is null || addToDictionary(value))
+                        {
+                            dictionary.Add(key, value);
+                        }
                     }
                 });
             }

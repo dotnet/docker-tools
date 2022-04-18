@@ -668,7 +668,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 context.Verify(expectedPathsBySubscription);
 
                 context.ManifestToolServiceMock
-                    .Verify(o => o.Inspect(baseImage, false), Times.Once);
+                    .Verify(o => o.InspectAsync(baseImage, false), Times.Once);
             }
         }
 
@@ -1691,8 +1691,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Mock<IManifestToolService> manifestToolServiceMock = new Mock<IManifestToolService>();
                 manifestToolServiceMock
-                    .Setup(o => o.Inspect(It.IsAny<string>(), false))
-                    .Returns((string image, bool isDryRun) =>
+                    .Setup(o => o.InspectAsync(It.IsAny<string>(), false))
+                    .ReturnsAsync((string image, bool isDryRun) =>
                         ManifestToolServiceHelper.CreateTagManifest(
                             ManifestToolService.ManifestListMediaType, this.imageDigests[image]));
                 return manifestToolServiceMock;

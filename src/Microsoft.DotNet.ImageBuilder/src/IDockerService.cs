@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 #nullable enable
@@ -15,9 +16,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void PullImage(string image, string? platform, bool isDryRun);
 
-        string? GetImageDigest(string image, bool isDryRun);
+        Task<string?> GetImageDigestAsync(string image, bool isDryRun);
 
-        IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun);
+        Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, bool isDryRun);
 
         void PushImage(string tag, bool isDryRun);
 

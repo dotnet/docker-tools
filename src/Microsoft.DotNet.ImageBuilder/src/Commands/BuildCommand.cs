@@ -46,31 +46,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Builds Dockerfiles";
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
         {
             if (Options.ImageInfoOutputPath != null)
             {
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            ExecuteWithUser(() =>
+            await ExecuteWithUserAsync(async () =>
             {
-                PullBaseImages();
+                await PullBaseImagesAsync();
 
-                BuildImages();
+                await BuildImagesAsync();
 
                 if (_processedTags.Any())
                 {
                     PushImages();
                 }
 
-                PublishImageInfo();
+                await PublishImageInfoAsync();
             });
             
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
-
-            return Task.CompletedTask;
         }
 
         private void WriteBuiltImagesToOutputVar()
@@ -87,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void PublishImageInfo()
+        private async Task PublishImageInfoAsync()
         {
             if (string.IsNullOrEmpty(Options.ImageInfoOutputPath))
             {
@@ -122,9 +120,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (Options.IsPushEnabled)
                     {
-                        SetPlatformDataDigest(platform, tag.FullyQualifiedName);
+                        await SetPlatformDataDigestAsync(platform, tag.FullyQualifiedName);
                         SetPlatformDataBaseDigest(platform, platformDataByTag);
-                        SetPlatformDataLayers(platform, tag.FullyQualifiedName);
+                        await SetPlatformDataLayersAsync(platform, tag.FullyQualifiedName);
                     }
 
                     SetPlatformDataCreatedDate(platform, tag.FullyQualifiedName);
@@ -246,18 +244,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.BaseImageDigest = baseImageDigest;
         }
 
-        private void SetPlatformDataLayers(PlatformData platform, string tag)
+        private async Task SetPlatformDataLayersAsync(PlatformData platform, string tag)
         {
             if (platform.Layers == null || !platform.Layers.Any())
             {
-                platform.Layers = _dockerService.GetImageManifestLayers(tag, Options.IsDryRun).ToList();
+                platform.Layers = (await _dockerService.GetImageManifestLayersAsync(tag, Options.IsDryRun)).ToList();
             }
         }
 
-        private void SetPlatformDataDigest(PlatformData platform, string tag)
+        private async Task SetPlatformDataDigestAsync(PlatformData platform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
-            string? digest = _imageDigestCache.GetImageDigest(tag, Options.IsDryRun);
+            string? digest = await _imageDigestCache.GetImageDigestAsync(tag, Options.IsDryRun);
             if (digest is not null && platform.PlatformInfo is not null)
             {
                 digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
@@ -281,7 +279,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Digest = digest;
         }
 
-        private void BuildImages()
+        private async Task BuildImagesAsync()
         {
             _loggerService.WriteHeading("BUILDING IMAGES");
 
@@ -321,7 +319,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         PlatformData? platformData = CreatePlatformData(image, platform);
                         imageData?.Platforms.Add(platformData);
 
-                        bool isCachedImage = !Options.NoCache && CheckForCachedImage(srcImageData, repoInfo, platform, allTags, platformData);
+                        bool isCachedImage = !Options.NoCache &&
+                            await CheckForCachedImageAsync(srcImageData, repoInfo, platform, allTags, platformData);
 
                         if (!isCachedImage)
                         {
@@ -335,7 +334,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             if (platformData is not null && platform.FinalStageFromImage is not null)
                             {
                                 platformData.BaseImageDigest =
-                                   _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+                                   await _imageDigestCache.GetImageDigestAsync(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
                             }
                         }
                     }
@@ -348,7 +347,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private bool CheckForCachedImage(
+        private async Task<bool> CheckForCachedImageAsync(
             ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
         {
             PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platform);
@@ -368,7 +367,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // If this Dockerfile has been built and published before
             if (srcPlatformData != null)
             {
-                isCachedImage = CheckForCachedImageFromImageInfo(repo, platform, srcPlatformData, allTags);
+                isCachedImage = await CheckForCachedImageFromImageInfoAsync(repo, platform, srcPlatformData, allTags);
                 if (platformData != null)
                 {
                     platformData.IsUnchanged = isCachedImage &&
@@ -520,13 +519,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return buildArgs;
         }
 
-        private bool CheckForCachedImageFromImageInfo(RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
+        private async Task<bool> CheckForCachedImageFromImageInfoAsync(
+            RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
         {
             _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
             // If the previously published image was based on an image that is still the latest version AND
             // the Dockerfile hasn't changed since it was last published
-            if (IsBaseImageDigestUpToDate(platform, srcPlatformData) && IsDockerfileUpToDate(platform, srcPlatformData))
+            if (await IsBaseImageDigestUpToDateAsync(platform, srcPlatformData) && IsDockerfileUpToDate(platform, srcPlatformData))
             {
                 OnCacheHit(repo, allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
                 return true;
@@ -587,7 +587,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return commitShaMatches;
         }
 
-        private bool IsBaseImageDigestUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
+        private async Task<bool> IsBaseImageDigestUpToDateAsync(PlatformInfo platform, PlatformData srcPlatformData)
         {
             _loggerService.WriteMessage();
 
@@ -597,7 +597,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return true;
             }
 
-            string? currentBaseImageDigest = _imageDigestCache.GetImageDigest(GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+            string? currentBaseImageDigest = await _imageDigestCache.GetImageDigestAsync(
+                GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
 
             string? baseSha = srcPlatformData.BaseImageDigest is not null ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) : null;
             string? currentSha = currentBaseImageDigest is not null ? DockerHelper.GetDigestSha(currentBaseImageDigest) : null;
@@ -712,7 +713,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
             DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
 
-        private void PullBaseImages()
+        private async Task PullBaseImagesAsync()
         {
             if (!Options.IsSkipPullingEnabled)
             {
@@ -754,13 +755,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             string.Join(", ", finalStageExternalFromImages.Except(pulledTags).ToArray()));
                     }
 
-                    Parallel.ForEach(finalStageExternalFromImages, fromImage =>
+                    await Parallel.ForEachAsync(finalStageExternalFromImages, async (fromImage, cancellationToken) =>
                     {
                         // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
                         // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
                         // greater chance the tag could be updated resulting in a different digest returned than what was
                         // originally pulled.
-                        _imageDigestCache.GetImageDigest(fromImage, Options.IsDryRun);
+                        await _imageDigestCache.GetImageDigestAsync(fromImage, Options.IsDryRun);
                     });
 
                     // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles

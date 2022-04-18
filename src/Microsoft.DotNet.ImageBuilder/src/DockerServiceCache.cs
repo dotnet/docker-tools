@@ -5,6 +5,8 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 #nullable enable
@@ -18,7 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IDockerService _inner;
         private readonly ConcurrentDictionary<string, DateTime> _createdDateCache = new();
         private readonly ImageDigestCache _imageDigestCache;
-        private readonly ConcurrentDictionary<string, IEnumerable<string>> _imageLayersCache = new();
+        private readonly Dictionary<string, IEnumerable<string>> _imageLayersCache = new();
+        private readonly SemaphoreSlim _imageLayersCacheLock = new(1);
         private readonly ConcurrentDictionary<string, long> _imageSizeCache = new();
         private readonly ConcurrentDictionary<string, bool> _localImageExistsCache = new();
         private readonly ConcurrentDictionary<string, bool> _pulledImages = new();
@@ -46,11 +49,12 @@ namespace Microsoft.DotNet.ImageBuilder
         public DateTime GetCreatedDate(string image, bool isDryRun) =>
             _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun));
 
-        public string? GetImageDigest(string image, bool isDryRun) =>
-            _imageDigestCache.GetImageDigest(image, isDryRun);
+        public Task<string?> GetImageDigestAsync(string image, bool isDryRun) =>
+            _imageDigestCache.GetImageDigestAsync(image, isDryRun);
 
-        public IEnumerable<string> GetImageManifestLayers(string image, bool isDryRun) =>
-            _imageLayersCache.GetOrAdd(image, _ => _inner.GetImageManifestLayers(image, isDryRun));
+        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, bool isDryRun) =>
+            LockHelper.DoubleCheckedLockLookupAsync(_imageLayersCacheLock, _imageLayersCache, image,
+                () => _inner.GetImageManifestLayersAsync(image, isDryRun));
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));

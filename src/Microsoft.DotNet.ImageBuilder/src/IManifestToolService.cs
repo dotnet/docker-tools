@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -9,6 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder
     public interface IManifestToolService
     {
         void PushFromSpec(string manifestFile, bool isDryRun);
-        JArray Inspect(string image, bool isDryRun);
+        Task<JArray> InspectAsync(string image, bool isDryRun);
     }
 }

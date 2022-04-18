@@ -30,11 +30,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
             manifestToolService
-                .Setup(o => o.Inspect("repo1:sharedtag2", false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest1"));
+                .Setup(o => o.InspectAsync("repo1:sharedtag2", false))
+                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest1"));
             manifestToolService
-                .Setup(o => o.Inspect("repo2:sharedtag3", false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
+                .Setup(o => o.InspectAsync("repo2:sharedtag3", false))
+                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
@@ -321,8 +321,8 @@ manifests:
                 });
 
             manifestToolService
-                .Setup(o => o.Inspect(It.IsAny<string>(), false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
+                .Setup(o => o.InspectAsync(It.IsAny<string>(), false))
+                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
 
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestToolService.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
@@ -473,8 +473,8 @@ manifests:
                 });
 
             manifestToolService
-                .Setup(o => o.Inspect(It.IsAny<string>(), false))
-                .Returns(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
+                .Setup(o => o.InspectAsync(It.IsAny<string>(), false))
+                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);

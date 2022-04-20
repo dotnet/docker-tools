@@ -32,10 +32,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
                 .Setup(o => o.GetManifestAsync("tag1", credsOptions, false))
-                .ReturnsAsync(new ManifestResult(ManifestDigest, new JsonObject()));
+                .ReturnsAsync(new ManifestQueryResult(ManifestDigest, new JsonObject()));
             manifestToolService
                 .Setup(o => o.GetManifestAsync("tag2", credsOptions, false))
-                .ReturnsAsync(new ManifestResult(ManifestListDigest, new JsonObject()));
+                .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
 
             string digestSha = await ManifestServiceExtensions.GetManifestDigestShaAsync(
                 manifestToolService.Object,

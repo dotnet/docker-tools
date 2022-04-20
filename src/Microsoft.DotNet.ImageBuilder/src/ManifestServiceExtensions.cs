@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static async Task<IEnumerable<string>> GetImageLayersAsync(
             this IManifestService manifestService, string tag, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
-            ManifestResult manifestResult = await manifestService.GetManifestAsync(tag, credsHost, isDryRun);
+            ManifestQueryResult manifestResult = await manifestService.GetManifestAsync(tag, credsHost, isDryRun);
 
             if (isDryRun)
             {
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static async Task<string> GetManifestDigestShaAsync(
             this IManifestService manifestService, string tag, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
-            ManifestResult manifestResult = await manifestService.GetManifestAsync(tag, credsHost, isDryRun);
+            ManifestQueryResult manifestResult = await manifestService.GetManifestAsync(tag, credsHost, isDryRun);
             return manifestResult.ContentDigest;
         }
     }

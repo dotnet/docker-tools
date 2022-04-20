@@ -19,7 +19,12 @@ public class ImageName
     public string? Tag { get; }
     public string? Digest { get; }
 
-    public static ImageName Parse(string imageName, bool autoResolveRepoName = false)
+    /// <summary>
+    /// Parses an image name into its constituent parts.
+    /// </summary>
+    /// <param name="imageName">The image name to parse.</param>
+    /// <param name="autoResolveImpliedNames">Whether to resolve implied parts of the image name like repo and registry (for Docker Hub images).</param>
+    public static ImageName Parse(string imageName, bool autoResolveImpliedNames = false)
     {
         string? registry = null;
         int separatorIndex = imageName.IndexOf('/');
@@ -33,21 +38,26 @@ public class ImageName
             }
         }
 
+        if (registry is null && autoResolveImpliedNames)
+        {
+            registry = DockerHelper.DockerHubRegistry;
+        }
+
         string? tag = null;
         string? digest = null;
 
         separatorIndex = imageName.IndexOf('@');
-        if (separatorIndex < 0)
+        if (separatorIndex >= 0)
+        {
+            digest = imageName[(separatorIndex + 1)..];
+        }
+        else
         {
             separatorIndex = imageName.IndexOf(':');
             if (separatorIndex >= 0)
             {
                 tag = imageName[(separatorIndex + 1)..];
             }
-        }
-        else
-        {
-            digest = imageName[(separatorIndex + 1)..];
         }
 
         string repo;
@@ -60,7 +70,7 @@ public class ImageName
             repo = imageName;
         }
 
-        if (autoResolveRepoName && registry is null && !repo.Contains('/'))
+        if (autoResolveImpliedNames && registry == DockerHelper.DockerHubRegistry && !repo.Contains('/'))
         {
             repo = $"library/{repo}";
         }

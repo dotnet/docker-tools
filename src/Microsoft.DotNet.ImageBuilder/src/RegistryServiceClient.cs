@@ -45,14 +45,14 @@ internal class RegistryServiceClient : ServiceClient<RegistryServiceClient>
         _credentials = credentials;
     }
 
-    public async Task<ManifestResult> GetManifestAsync(string repo, string tagOrDigest)
+    public async Task<ManifestQueryResult> GetManifestAsync(string repo, string tagOrDigest)
     {
         HttpResponseMessage response = await SendRequestAsync(
             CreateGetRequestMessage(GetManifestUri(repo, tagOrDigest), HttpMethod.Get));
         string contentDigest = response.Headers.GetValues(DockerContentDigestHeader).First();
 
         string content = await response.Content.ReadAsStringAsync();
-        return new ManifestResult(
+        return new ManifestQueryResult(
             contentDigest,
             (JsonObject)(JsonNode.Parse(content) ?? throw new InvalidOperationException($"Invalid JSON result: {content}")));
     }

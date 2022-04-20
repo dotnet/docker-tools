@@ -31,10 +31,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
                 .Setup(o => o.GetManifestAsync("repo1:sharedtag2", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(new ManifestResult("digest1", new JsonObject()));
+                .ReturnsAsync(new ManifestQueryResult("digest1", new JsonObject()));
             manifestToolService
                 .Setup(o => o.GetManifestAsync("repo2:sharedtag3", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(new ManifestResult("digest2", new JsonObject()));
+                .ReturnsAsync(new ManifestQueryResult("digest2", new JsonObject()));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
@@ -322,7 +322,7 @@ manifests:
 
             manifestToolService
                 .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(new ManifestResult("digest", new JsonObject()));
+                .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestToolService.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
@@ -474,7 +474,7 @@ manifests:
 
             manifestToolService
                 .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(new ManifestResult("digest", new JsonObject()));
+                .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);

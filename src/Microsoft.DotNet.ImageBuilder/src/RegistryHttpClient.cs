@@ -186,15 +186,8 @@ public class RegistryHttpClient : HttpClient
                 return group.Success ? group.Value : null;
             }
 
-            private static bool ValidateChallenge(string? challenge)
-            {
-                if (string.IsNullOrEmpty(challenge) || !s_bearerRegex.IsMatch(challenge))
-                {
-                    return false;
-                }
-
-                return true;
-            }
+            private static bool ValidateChallenge(string? challenge) =>
+                !string.IsNullOrEmpty(challenge) && s_bearerRegex.IsMatch(challenge);
         }
     }
 }

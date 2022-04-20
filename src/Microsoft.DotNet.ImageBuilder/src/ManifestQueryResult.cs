@@ -9,7 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Result of a manifest query from <see cref="IManifestService"/>.
 /// </summary>
-public class ManifestResult
+public class ManifestQueryResult
 {
     /// <summary>
     /// Digest of the manifest content.
@@ -21,7 +21,7 @@ public class ManifestResult
     /// </summary>
     public JsonObject Manifest { get; }
 
-    public ManifestResult(string contentDigest, JsonObject manifest)
+    public ManifestQueryResult(string contentDigest, JsonObject manifest)
     {
         ContentDigest = contentDigest;
         Manifest = manifest;

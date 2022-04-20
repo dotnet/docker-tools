@@ -1694,7 +1694,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestToolServiceMock
                     .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
                     .ReturnsAsync((string image, IRegistryCredentialsHost credsOptions, bool isDryRun) =>
-                        new ManifestResult(this.imageDigests[image], new JsonObject()));
+                        new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
                 return manifestToolServiceMock;
             }
 

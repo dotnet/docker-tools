@@ -28,20 +28,19 @@ namespace Microsoft.DotNet.ImageBuilder
             ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFile}", isDryRun);
         }
 
-        public Task<ManifestResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
+        public Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
             if (isDryRun)
             {
-                return Task.FromResult(new ManifestResult("", new JsonObject()));
+                return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
             }
 
-            ImageName imageName = ImageName.Parse(image, autoResolveRepoName: true);
+            ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
             BasicAuthenticationCredentials? basicAuthCreds = null;
 
             // Lookup the credentials, if any, for the registry where the image is located
-            string credsRegistry = imageName.Registry ?? DockerHelper.DockerHubRegistry;
-            if (credsHost.Credentials.TryGetValue(credsRegistry, out RegistryCredentials? registryCreds))
+            if (credsHost.Credentials.TryGetValue(imageName.Registry!, out RegistryCredentials? registryCreds))
             {
                 basicAuthCreds = new BasicAuthenticationCredentials
                 {
@@ -50,10 +49,12 @@ namespace Microsoft.DotNet.ImageBuilder
                 };
             }
 
-            RegistryServiceClient registryClient = new(
-                imageName.Registry ?? DockerHelper.DockerHubApiRegistry,
-                _httpClient,
-                basicAuthCreds);
+            // Docker Hub's registry has a separate host name for its API
+            string apiRegistry = imageName.Registry == DockerHelper.DockerHubRegistry ?
+                DockerHelper.DockerHubApiRegistry :
+                imageName.Registry!;
+
+            RegistryServiceClient registryClient = new(apiRegistry, _httpClient, basicAuthCreds);
             return registryClient.GetManifestAsync(imageName.Repo, (imageName.Tag ?? imageName.Digest)!);
         }
     }

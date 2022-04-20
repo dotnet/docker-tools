@@ -11,6 +11,7 @@ using System.Net;
 using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -668,7 +669,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 context.Verify(expectedPathsBySubscription);
 
                 context.ManifestToolServiceMock
-                    .Verify(o => o.InspectAsync(baseImage, false), Times.Once);
+                    .Verify(o => o.GetManifestAsync(baseImage, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             }
         }
 
@@ -1428,7 +1429,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private const string VariableName = "my-var";
 
-            public Mock<IManifestToolService> ManifestToolServiceMock { get; }
+            public Mock<IManifestService> ManifestToolServiceMock { get; }
 
             /// <summary>
             /// Initializes a new instance of <see cref="TestContext"/>.
@@ -1687,14 +1688,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
             }
 
-            private Mock<IManifestToolService> CreateManifestToolServiceMock()
+            private Mock<IManifestService> CreateManifestToolServiceMock()
             {
-                Mock<IManifestToolService> manifestToolServiceMock = new Mock<IManifestToolService>();
+                Mock<IManifestService> manifestToolServiceMock = new Mock<IManifestService>();
                 manifestToolServiceMock
-                    .Setup(o => o.InspectAsync(It.IsAny<string>(), false))
-                    .ReturnsAsync((string image, bool isDryRun) =>
-                        ManifestToolServiceHelper.CreateTagManifest(
-                            ManifestToolService.ManifestListMediaType, this.imageDigests[image]));
+                    .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+                    .ReturnsAsync((string image, IRegistryCredentialsHost credsOptions, bool isDryRun) =>
+                        new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
                 return manifestToolServiceMock;
             }
 

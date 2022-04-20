@@ -7,12 +7,14 @@ using System.ComponentModel.Composition;
 using System.Net.Http;
 using System.Threading;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     [Export(typeof(IHttpClientProvider))]
     internal class HttpClientProvider : IHttpClientProvider
     {
         private readonly Lazy<HttpClient> _httpClient;
+        private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
         [ImportingConstructor]
         public HttpClientProvider(ILoggerService loggerService)
@@ -23,12 +25,12 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(loggerService)));
+            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(loggerService)));
         }
 
-        public HttpClient GetClient()
-        {
-            return _httpClient.Value;
-        }
+        public HttpClient GetClient() => _httpClient.Value;
+
+        public RegistryHttpClient GetRegistryClient() => _registryHttpClient.Value;
 
         private class LoggingHandler : MessageProcessingHandler
         {
@@ -53,3 +55,4 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
+#nullable disable

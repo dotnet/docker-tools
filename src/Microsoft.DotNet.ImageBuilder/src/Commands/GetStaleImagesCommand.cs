@@ -25,14 +25,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);
-        private readonly IManifestToolService _manifestToolService;
+        private readonly IManifestService _manifestToolService;
         private readonly ILoggerService _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly HttpClient _httpClient;
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
-            IManifestToolService manifestToolService,
+            IManifestService manifestToolService,
             IHttpClientProvider httpClientProvider,
             ILoggerService loggerService,
             IOctokitClientFactory octokitClientFactory)
@@ -149,7 +149,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
                         async () =>
                         {
-                            string digest = await _manifestToolService.GetManifestDigestShaAsync(ManifestMediaType.Any, fromImage, Options.IsDryRun);
+                            string digest = await _manifestToolService.GetManifestDigestShaAsync(fromImage, Options.CredentialsOptions, Options.IsDryRun);
                             return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 

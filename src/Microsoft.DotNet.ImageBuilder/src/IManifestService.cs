@@ -2,15 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Flags]
-    public enum ManifestMediaType
+    public interface IManifestService
     {
-        Manifest = 1,
-        ManifestList = 2,
-        Any = Manifest | ManifestList
+        void PushFromSpec(string manifestFile, bool isDryRun);
+        Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun);
     }
 }

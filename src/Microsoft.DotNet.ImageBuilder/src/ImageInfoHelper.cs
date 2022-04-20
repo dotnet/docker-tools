@@ -198,8 +198,9 @@ namespace Microsoft.DotNet.ImageBuilder
                     }
                     else if (srcObj is PlatformData && property.Name == nameof(PlatformData.Layers))
                     {
-                        // Layers are always unique and should never get merged
-                        ReplaceValue(property, srcObj, targetObj);
+                        // Layers are always unique and should never get merged.
+                        // Layers are already sorted according to their position in the image. They should not be sorted alphabetically.
+                        ReplaceValue(property, srcObj, targetObj, skipListSorting: true);
                     }
                     else
                     {
@@ -246,10 +247,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 )
             );
 
-        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj)
+        private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj, bool skipListSorting = false)
         {
             object value = property.GetValue(srcObj);
-            if (value is IList<string> stringList)
+            if (value is IList<string> stringList && !skipListSorting)
             {
                 value = stringList
                     .OrderBy(item => item)

@@ -15,17 +15,17 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IDockerService))]
     internal class DockerService : IDockerService
     {
-        private readonly IManifestToolService _manifestToolService;
+        private readonly IManifestService _manifestToolService;
 
         public Architecture Architecture => DockerHelper.Architecture;
 
         [ImportingConstructor]
-        public DockerService(IManifestToolService manifestToolService)
+        public DockerService(IManifestService manifestToolService)
         {
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
         }
 
-        public async Task<string?> GetImageDigestAsync(string image, bool isDryRun)
+        public async Task<string?> GetImageDigestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
             IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
 
@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string digestSha = await _manifestToolService.GetManifestDigestShaAsync(ManifestMediaType.Any, image, isDryRun);
+            string digestSha = await _manifestToolService.GetManifestDigestShaAsync(image, credsHost, isDryRun);
 
             if (digestSha is null)
             {
@@ -55,8 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return digest;
         }
 
-        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, bool isDryRun) =>
-            _manifestToolService.GetImageLayersAsync(image, isDryRun);
+        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun) =>
+            _manifestToolService.GetImageLayersAsync(image, credsHost, isDryRun);
 
         public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
 

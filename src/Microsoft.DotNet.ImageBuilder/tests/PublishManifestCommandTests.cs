@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -28,13 +28,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ImageInfoTagOutput()
         {
-            Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
+            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
-                .Setup(o => o.InspectAsync("repo1:sharedtag2", false))
-                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest1"));
+                .Setup(o => o.GetManifestAsync("repo1:sharedtag2", It.IsAny<IRegistryCredentialsHost>(), false))
+                .ReturnsAsync(new ManifestQueryResult("digest1", new JsonObject()));
             manifestToolService
-                .Setup(o => o.InspectAsync("repo2:sharedtag3", false))
-                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest2"));
+                .Setup(o => o.GetManifestAsync("repo2:sharedtag3", It.IsAny<IRegistryCredentialsHost>(), false))
+                .ReturnsAsync(new ManifestQueryResult("digest2", new JsonObject()));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
@@ -303,26 +303,26 @@ manifests:
             bool manifest1Found = false;
             bool manifest2Found = false;
 
-            Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
+            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
                 .Setup(o => o.PushFromSpec(It.IsAny<string>(), false))
                 .Callback((string manifestFile, bool isDryRun) =>
                 {
                     string manifestContents = File.ReadAllText(manifestFile);
 
-                    if (manifestContents == expectedManifest1)
+                    if (manifestContents.NormalizeLineEndings(expectedManifest1) == expectedManifest1)
                     {
                         manifest1Found = true;
                     }
-                    else if (manifestContents == expectedManifest2)
+                    else if (manifestContents.NormalizeLineEndings(expectedManifest2) == expectedManifest2)
                     {
                         manifest2Found = true;
                     }
                 });
 
             manifestToolService
-                .Setup(o => o.InspectAsync(It.IsAny<string>(), false))
-                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
+                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+                .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestToolService.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
@@ -455,26 +455,26 @@ manifests:
             bool manifest1Found = false;
             bool manifest2Found = false;
 
-            Mock<IManifestToolService> manifestToolService = new Mock<IManifestToolService>();
+            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
                 .Setup(o => o.PushFromSpec(It.IsAny<string>(), false))
                 .Callback((string manifestFile, bool isDryRun) =>
                 {
                     string manifestContents = File.ReadAllText(manifestFile);
 
-                    if (manifestContents == expectedManifest1)
+                    if (manifestContents.NormalizeLineEndings(expectedManifest1) == expectedManifest1)
                     {
                         manifest1Found = true;
                     }
-                    else if (manifestContents == expectedManifest2)
+                    else if (manifestContents.NormalizeLineEndings(expectedManifest2) == expectedManifest2)
                     {
                         manifest2Found = true;
                     }
                 });
 
             manifestToolService
-                .Setup(o => o.InspectAsync(It.IsAny<string>(), false))
-                .ReturnsAsync(ManifestToolServiceHelper.CreateTagManifest(ManifestToolService.ManifestListMediaType, "digest"));
+                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+                .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);

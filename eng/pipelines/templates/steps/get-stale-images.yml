@@ -16,6 +16,8 @@ steps:
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type ${{ parameters.osType }}
       --architecture ${{ parameters.architecture }}
+      --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
+      $(dockerHubRegistryCreds)
     displayName: Get Stale Images
     name: GetStaleImages
   - template: ${{ format('../../../common/templates/steps/cleanup-docker-{0}.yml', parameters.dockerClientOS) }}

@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
@@ -97,7 +98,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string filePath,
             string updatedContent)
         {
-            string gitPath = string.Join('/', Options.GitOptions.Path, repo, filePath);
+            // We only use the filename from the provided file path because all files in the target mcrdocs repo
+            // are located at the root of the repo directory.
+            string gitPath = string.Join('/', Options.GitOptions.Path, repo, Path.GetFileName(filePath));
 
             return new GitObject
             {
@@ -130,7 +133,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), repo.ReadmePath, containsTagListing: true));
+                foreach (Readme readme in repo.Readmes)
+                {
+                    readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), readme.Path, containsTagListing: true));
+                }
             }
 
             return readmes.ToArray();

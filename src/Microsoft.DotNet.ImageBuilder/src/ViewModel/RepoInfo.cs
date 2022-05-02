@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -27,8 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string QualifiedName { get; private set; }
         public string Name => Model.Name;
         public Repo Model { get; private set; }
-        public string ReadmePath { get; private set; }
-        public string ReadmeTemplatePath { get; private set; }
+        public IEnumerable<Readme> Readmes { get; private set; }
 
         private RepoInfo()
         {
@@ -53,14 +51,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             registry = string.IsNullOrEmpty(registry) ? string.Empty : $"{registry}/";
             repoInfo.QualifiedName = registry + options.RepoPrefix + model.Name;
 
-            if (model.Readme != null)
-            {
-                repoInfo.ReadmePath = Path.Combine(baseDirectory, model.Readme);
-            }
-            if (model.ReadmeTemplate != null)
-            {
-                repoInfo.ReadmeTemplatePath = Path.Combine(baseDirectory, model.ReadmeTemplate);
-            }
+            repoInfo.Readmes = model.Readmes
+                ?.Select(readme => new Readme(Path.Combine(baseDirectory, readme.Path), Path.Combine(baseDirectory, readme.TemplatePath)))
+                ?? Enumerable.Empty<Readme>();
 
             repoInfo.AllImages = model.Images
                 .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.QualifiedName, manifestFilter, variableHelper, baseDirectory))
@@ -71,16 +64,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .ToArray();
 
             return repoInfo;
-        }
-
-        public string GetReadmeContent()
-        {
-            if (ReadmePath == null)
-            {
-                throw new InvalidOperationException("A readme path was not specified in the manifest");
-            }
-
-            return File.ReadAllText(ReadmePath);
         }
     }
 }

@@ -58,6 +58,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 throw new ValidationException($"The manifest must contain at least one repo.");
             }
 
+            ValidateReadmeFilenames(manifest);
+
             foreach (Repo repo in manifest.Repos)
             {
                 ValidateRepo(repo, manifestDirectory);
@@ -69,6 +71,29 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             if (manifest.ReadmeTemplate != null && manifest.Readme == null)
             {
                 throw new ValidationException("The manifest must specify a Readme since a ReadmeTemplate is specified");
+            }
+        }
+
+        private static void ValidateReadmeFilenames(Manifest manifest)
+        {
+            // Readme filenames must be unique across all the readmes regardless of their path.
+            // This is because they will eventually be published to mcrdocs where all of the readmes are contained within the same directory
+
+            IEnumerable<IGrouping<string, string>> readmePathsWithDuplicateFilenames = manifest.Repos
+                .SelectMany(repo => repo.Readmes.Select(readme => readme.Path))
+                .GroupBy(readmePath => Path.GetFileName(readmePath))
+                .Where(group => group.Count() > 1);
+
+            if (readmePathsWithDuplicateFilenames.Any())
+            {
+                IEnumerable<string> errorMessages = readmePathsWithDuplicateFilenames
+                    .Select(group =>
+                        "Readme filenames must be unique, regardless of the directory path. " +
+                        "The following readme paths have filenames that conflict with each other:" +
+                        Environment.NewLine +
+                        string.Join(Environment.NewLine, group.ToArray()));
+
+                throw new ValidationException(string.Join(Environment.NewLine + Environment.NewLine, errorMessages.ToArray()));
             }
         }
 
@@ -108,17 +133,24 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private static void ValidateRepo(Repo repo, string manifestDirectory)
         {
             ValidateUniqueTags(repo);
-            ValidateFileReference(repo.Readme, manifestDirectory);
-            ValidateFileReference(repo.ReadmeTemplate, manifestDirectory);
             ValidateFileReference(repo.McrTagsMetadataTemplate, manifestDirectory);
 
-            if (repo.ReadmeTemplate != null && repo.Readme == null)
+            foreach (Readme readme in repo.Readmes)
             {
-                throw new ValidationException($"The repo '{repo.Name}' must specify a Readme since a ReadmeTemplate is specified");
-            }
-            if (repo.McrTagsMetadataTemplate != null && repo.ReadmeTemplate == null)
-            {
-                throw new ValidationException($"The repo '{repo.Name}' must specify a ReadmeTemplate since a McrTagsMetadataTemplate is specified");
+                string readmeFilename = Path.GetFileName(readme.Path);
+
+
+                ValidateFileReference(readme.Path, manifestDirectory);
+                ValidateFileReference(readme.TemplatePath, manifestDirectory);
+
+                if (readme.TemplatePath != null && readme.Path == null)
+                {
+                    throw new ValidationException($"The repo '{repo.Name}' must specify a Readme since a ReadmeTemplate is specified");
+                }
+                if (repo.McrTagsMetadataTemplate != null && readme.TemplatePath == null)
+                {
+                    throw new ValidationException($"The repo '{repo.Name}' must specify a ReadmeTemplate since a McrTagsMetadataTemplate is specified");
+                }
             }
 
             foreach (Image image in repo.Images)

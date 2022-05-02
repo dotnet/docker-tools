@@ -216,7 +216,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             // Validate that all repos which share the same name also don't have non-empty, conflicting values for the other settings
             IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo).GetProperties()
-                .Where(prop => prop.Name != nameof(Repo.Images));
+                .Where(prop => prop.Name != nameof(Repo.Images) && prop.Name != nameof(Repo.Readmes));
             foreach (PropertyInfo property in propertiesToValidate)
             {
                 List<string> distinctNonEmptyPropertyValues = grouping
@@ -246,12 +246,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 McrTagsMetadataTemplate = grouping
                     .Select(repo => repo.McrTagsMetadataTemplate)
                     .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
-                Readme = grouping
-                    .Select(repo => repo.Readme)
-                    .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
-                ReadmeTemplate = grouping
-                    .Select(repo => repo.ReadmeTemplate)
-                    .FirstOrDefault(val => !string.IsNullOrEmpty(val)),
+                Readmes = grouping
+                    .SelectMany(repo => repo.Readmes)
+                    .ToArray(),
                 Images = grouping
                     .SelectMany(repo => repo.Images)
                     .ToArray()

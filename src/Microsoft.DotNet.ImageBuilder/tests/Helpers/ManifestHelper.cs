@@ -33,14 +33,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string readmeTemplate = null,
             string mcrTagsMetadataTemplate = null)
         {
+            Readme[] readmes = Array.Empty<Readme>();
+            if (readme is not null)
+            {
+                readmes = new[]
+                {
+                    new Readme(readme, readmeTemplate)
+                };
+            }
+
             return new Repo
             {
                 Name = name,
                 Id = name,
                 Images = images,
                 McrTagsMetadataTemplate = mcrTagsMetadataTemplate,
-                Readme = readme,
-                ReadmeTemplate = readmeTemplate
+                Readmes = readmes
             };
         }
 

@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.QueueNotification;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
@@ -65,9 +66,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (build.Parameters is not null)
                     {
                         JObject parametersJson = JsonConvert.DeserializeObject<JObject>(build.Parameters);
-                        foreach (KeyValuePair<string, JToken> pair in parametersJson)
+                        foreach (KeyValuePair<string, JToken?> pair in parametersJson)
                         {
-                            buildParameters.Add(pair.Key, pair.Value.ToString());
+                            buildParameters.Add(pair.Key, pair.Value?.ToString() ?? string.Empty);
                         }
                     }
 
@@ -88,7 +89,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             WriteBuildParameters(buildParameters, notificationMarkdown);
             notificationMarkdown.AppendLine();
 
-            WriteTagsMarkdown(notificationMarkdown);
+            WriteImagesMarkdown(notificationMarkdown);
 
             await _notificationService.PostAsync(
                 $"Publish Result - {Options.SourceRepo}/{Options.SourceBranch}",
@@ -220,7 +221,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void WriteTagsMarkdown(StringBuilder notificationMarkdown)
+        private void WriteImagesMarkdown(StringBuilder notificationMarkdown)
         {
             if (!File.Exists(Options.ImageInfoPath))
             {
@@ -229,30 +230,45 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
             IEnumerable<ImageData> images = imageArtifactDetails.Repos.SelectMany(repo => repo.Images);
-            List<string> publishedTags = new();
+            List<(string digestSha, IEnumerable<string>tags)> publishedImages = new();
             foreach (ImageData image in images)
             {
-                if (image.ManifestImage is not null)
-{
-                    publishedTags.AddRange(image.ManifestImage.SharedTags.Select(tag => tag.FullyQualifiedName));
+                if (image.Manifest is not null)
+                {
+                    string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
+                    IEnumerable<string> tags = GetTags(image.ManifestImage.SharedTags);
+                    publishedImages.Add((digestSha, tags));
                 }
-                
-                publishedTags.AddRange(
+
+                publishedImages.AddRange(
                     image.Platforms
-                        .SelectMany(platform => platform.PlatformInfo.Tags.Select(tag => tag.FullyQualifiedName)));
+                        .Where(platform => platform.PlatformInfo.Tags.Any())
+                        .Select(platform =>
+                        {
+                            string digestSha = DockerHelper.GetDigestSha(platform.Digest);
+                            IEnumerable<string> tags = GetTags(platform.PlatformInfo.Tags);
+                            return (digestSha, tags);
+                        }));
 
             }
 
-            publishedTags.Sort();
-
-            notificationMarkdown.AppendLine("## Tags");
+            notificationMarkdown.AppendLine("## Images");
             notificationMarkdown.AppendLine();
 
-            foreach (string tag in publishedTags)
+            foreach ((string digestSha, IEnumerable<string> tags) in publishedImages.OrderBy(digestTags => digestTags.digestSha))
             {
-                notificationMarkdown.AppendLine(tag);
+                notificationMarkdown.AppendLine($"* {digestSha}");
+                foreach (string tag in tags.OrderBy(tag => tag))
+                {
+                    notificationMarkdown.AppendLine($"  * {tag}");
+                }
             }
         }
+
+        private static IEnumerable<string> GetTags(IEnumerable<TagInfo> tags) =>
+            tags
+                .Where(tag => !tag.Model.IsLocal)
+                .Select(tag => tag.FullyQualifiedName);
 
         private static void WriteTaskStatusesMarkdown(Dictionary<string, TaskResult?> taskStatuses, StringBuilder notificationMarkdown)
         {

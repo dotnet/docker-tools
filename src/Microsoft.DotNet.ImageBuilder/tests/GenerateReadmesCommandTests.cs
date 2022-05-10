@@ -193,8 +193,7 @@ ABC-123";
             };
             Manifest manifest = CreateManifest(repo);
             manifest.Registry = "mcr.microsoft.com";
-            manifest.Readme = ProductFamilyReadmePath;
-            manifest.ReadmeTemplate = templatePath;
+            manifest.Readme = new(ProductFamilyReadmePath, templatePath);
 
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));

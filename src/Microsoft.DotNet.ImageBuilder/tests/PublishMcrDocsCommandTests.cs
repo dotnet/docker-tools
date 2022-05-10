@@ -80,8 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreatePlatform(CreateDockerfile("1.0/runtime/linux", tempFolderContext), new string[] { "tag" }))
                 }, RepoReadmePath, ReadmeTemplatePath, Path.GetFileName(tagsMetadataTemplatePath)));
             manifest.Registry = "mcr.microsoft.com";
-            manifest.Readme = ProductFamilyReadmePath;
-            manifest.ReadmeTemplate = ReadmeTemplatePath;
+            manifest.Readme = new(ProductFamilyReadmePath, ReadmeTemplatePath);
             repo.Id = "repo";
 
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");

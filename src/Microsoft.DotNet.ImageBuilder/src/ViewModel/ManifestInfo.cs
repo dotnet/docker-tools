@@ -82,11 +82,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (model.Readme != null)
             {
-                manifestInfo.ReadmePath = Path.Combine(manifestInfo.Directory, model.Readme);
-            }
-            if (model.ReadmeTemplate != null)
-            {
-                manifestInfo.ReadmeTemplatePath = Path.Combine(manifestInfo.Directory, model.ReadmeTemplate);
+                manifestInfo.ReadmePath = Path.Combine(manifestInfo.Directory, model.Readme.Path);
+                if (model.Readme.TemplatePath != null)
+                {
+                    manifestInfo.ReadmeTemplatePath = Path.Combine(manifestInfo.Directory, model.Readme.TemplatePath);
+                }
             }
 
             IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.QualifiedName).ToArray();

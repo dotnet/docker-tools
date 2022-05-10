@@ -40,9 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public string Name { get; set; }
 
         [Description(
-            "Relative path to the GitHub readme Markdown file associated with the " +
-            "repository. This readme file documents the set of Docker images for " +
-            "this repository."
+            "Info about the readme that documents the repo."
             )]
         public Readme[] Readmes { get; set; } = Array.Empty<Readme>();
 

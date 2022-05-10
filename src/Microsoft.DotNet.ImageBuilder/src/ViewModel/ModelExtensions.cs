@@ -65,12 +65,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 ValidateRepo(repo, manifestDirectory);
             }
 
-            ValidateFileReference(manifest.Readme, manifestDirectory);
-            ValidateFileReference(manifest.ReadmeTemplate, manifestDirectory);
-
-            if (manifest.ReadmeTemplate != null && manifest.Readme == null)
+            if (manifest.Readme is not null)
             {
-                throw new ValidationException("The manifest must specify a Readme since a ReadmeTemplate is specified");
+                ValidateFileReference(manifest.Readme.Path, manifestDirectory);
+                ValidateFileReference(manifest.Readme.TemplatePath, manifestDirectory);
             }
         }
 

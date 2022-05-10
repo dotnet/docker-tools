@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 (manifest) => manifest.ReadmeTemplatePath,
                 (manifest) => manifest.ReadmePath,
                 (manifest, templatePath, indent) => GetTemplateState(manifest, templatePath, indent),
-                nameof(Models.Manifest.Manifest.ReadmeTemplate),
+                nameof(Readme.TemplatePath),
                 ArtifactName);
 
             // Generate Repo Readmes

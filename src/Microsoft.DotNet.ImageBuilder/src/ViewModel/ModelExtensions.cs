@@ -137,16 +137,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             foreach (Readme readme in repo.Readmes)
             {
-                string readmeFilename = Path.GetFileName(readme.Path);
-
-
                 ValidateFileReference(readme.Path, manifestDirectory);
                 ValidateFileReference(readme.TemplatePath, manifestDirectory);
 
-                if (readme.TemplatePath != null && readme.Path == null)
-                {
-                    throw new ValidationException($"The repo '{repo.Name}' must specify a Readme since a ReadmeTemplate is specified");
-                }
                 if (repo.McrTagsMetadataTemplate != null && readme.TemplatePath == null)
                 {
                     throw new ValidationException($"The repo '{repo.Name}' must specify a ReadmeTemplate since a McrTagsMetadataTemplate is specified");

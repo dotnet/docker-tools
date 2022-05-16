@@ -157,7 +157,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
                 command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-                command.Options.GetInstalledPackagesScriptPath = Path.Combine(tempFolderContext.Path, getInstalledPackagesScriptPath);
 
                 const string ProductVersion = "1.0.1";
 
@@ -229,10 +228,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 tag
                                             },
-                                            Components =
-                                                runtimeDepsInstalledPackages
-                                                    .Select(pkg => CreateComponent(pkg))
-                                                    .ToList()
                                         }
                                     },
                                     Manifest = new ManifestData
@@ -270,10 +265,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 tag
                                             },
-                                            Components =
-                                                runtimeInstalledPackages
-                                                    .Select(pkg => CreateComponent(pkg))
-                                                    .ToList()
                                         }
                                     }
                                 }
@@ -304,10 +295,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 tag
                                             },
-                                            Components =
-                                                aspnetInstalledPackages
-                                                    .Select(pkg => CreateComponent(pkg))
-                                                    .ToList()
                                         }
                                     }
                                 }
@@ -393,7 +380,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.GetInstalledPackagesScriptPath = Path.Combine(tempFolderContext.Path, getInstalledPackagesScriptPath);
 
             const string ProductVersion = "1.0.1";
 
@@ -451,10 +437,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             tag
                                         },
-                                        Components =
-                                            runtimeDepsInstalledPackages
-                                                .Select(pkg => CreateComponent(pkg))
-                                                .ToList()
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -1289,7 +1271,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
-            command.Options.GetInstalledPackagesScriptPath = Path.Combine(tempFolderContext.Path, getInstalledPackagesScriptPath);
 
             const string ProductVersion = "1.0.1";
 
@@ -1321,10 +1302,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -1366,10 +1343,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 }
                             }
@@ -1441,10 +1414,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
                                         IsUnchanged = isRuntimeDepsCached,
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -1482,10 +1451,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
                                         IsUnchanged = isRuntimeCached,
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 }
                             }
@@ -3508,12 +3473,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns((Architecture.AMD64, null));
 
             return dockerServiceMock;
-        }
-
-        private static Component CreateComponent(string package)
-        {
-            string[] parts = package.Split(',', '=');
-            return new Component(type: parts[0], name: parts[1], version: parts[2]);
         }
     }
 }

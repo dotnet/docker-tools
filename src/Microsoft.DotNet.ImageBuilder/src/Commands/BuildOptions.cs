@@ -22,7 +22,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? SourceRepoUrl { get; set; }
         public bool NoCache { get; set; }
         public string? SourceRepoPrefix { get; set; }
-        public string? GetInstalledPackagesScriptPath { get; set; }
         public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
         public bool SkipPlatformCheck { get; set; }
         public string? OutputVariableName { get; set; }
@@ -55,8 +54,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Disables build cache feature"),
                         CreateOption<string?>("source-repo-prefix", nameof(BuildOptions.SourceRepoPrefix),
                             "Prefix to add to the external base image names when pulling them"),
-                        CreateOption<string?>("get-installed-pkgs-path", nameof(BuildOptions.GetInstalledPackagesScriptPath),
-                            "Path to the default script file that outputs list of installed packages"),
                         CreateDictionaryOption("build-arg", nameof(BuildOptions.BuildArgs),
                             "Build argument to pass to the Dockerfiles (<name>=<value>)"),
                         CreateOption<bool>("skip-platform-check", nameof(BuildOptions.SkipPlatformCheck),

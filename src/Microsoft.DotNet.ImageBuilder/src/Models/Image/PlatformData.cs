@@ -51,8 +51,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public List<string> Layers { get; set; } = new();
 
-        public List<Component> Components { get; set; } = new();
-
         /// <summary>
         /// Gets or sets whether the image or its associated tag names have changed since it was last published.
         /// </summary>

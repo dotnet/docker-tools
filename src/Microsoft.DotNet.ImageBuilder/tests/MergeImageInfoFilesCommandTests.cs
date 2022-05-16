@@ -36,7 +36,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         "tag3"
                     });
-                platform1.Components.Add(new Component("DEB", "pkg", "1.0"));
 
                 PlatformData platform2 = CreatePlatform(
                     repo2Image1Dockerfile,
@@ -45,7 +44,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         "tag1"
                     },
                     baseImageDigest: "base1hash");
-                platform2.Components.Add(new Component("DEB", "pkg", "1.0"));
 
                 List<ImageArtifactDetails> imageArtifactDetailsList = new List<ImageArtifactDetails>
                 {
@@ -237,7 +235,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         "tag3"
                     },
                     baseImageDigest: "base1hash");
-                expectedPlatform.Components.Add(new Component("DEB", "pkg", "1.0"));
 
                 ImageArtifactDetails expected = new ImageArtifactDetails
                 {

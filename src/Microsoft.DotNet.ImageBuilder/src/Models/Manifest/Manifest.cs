@@ -24,15 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public string[] Includes { get; set; }
 
         [Description(
-            "Relative path to the GitHub readme Markdown file associated with the manifest. " +
-            "This readme file documents the overall set of Docker repositories described by " +
-            "the manifest.")]
-        public string Readme { get; set; }
-
-        [Description(
-            "Relative path to the template the readme is generated from."
+            "Info about the readme that documents the product family."
             )]
-        public string ReadmeTemplate { get; set; }
+        public Readme Readme { get; set; }
 
         [Description(
             "The location of the Docker registry where the images are to be published."

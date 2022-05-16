@@ -187,12 +187,13 @@ ABC-123";
             }
 
             Repo repo = CreateRepo("dotnet/repo");
-            repo.Readme = RepoReadmePath;
-            repo.ReadmeTemplate = templatePath;
+            repo.Readmes = new[]
+            {
+                new Readme(RepoReadmePath, templatePath)
+            };
             Manifest manifest = CreateManifest(repo);
             manifest.Registry = "mcr.microsoft.com";
-            manifest.Readme = ProductFamilyReadmePath;
-            manifest.ReadmeTemplate = templatePath;
+            manifest.Readme = new(ProductFamilyReadmePath, templatePath);
 
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));

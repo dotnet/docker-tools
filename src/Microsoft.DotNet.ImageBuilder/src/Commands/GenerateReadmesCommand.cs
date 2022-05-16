@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.CommandLine;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Cottle;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -41,18 +41,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 (manifest) => manifest.ReadmeTemplatePath,
                 (manifest) => manifest.ReadmePath,
                 (manifest, templatePath, indent) => GetTemplateState(manifest, templatePath, indent),
-                nameof(Models.Manifest.Manifest.ReadmeTemplate),
+                nameof(Readme.TemplatePath),
                 ArtifactName);
 
             // Generate Repo Readmes
             await GenerateArtifactsAsync(
-                Manifest.FilteredRepos,
-                (repo) => repo.ReadmeTemplatePath,
-                (repo) => repo.ReadmePath,
-                (repo, templatePath, indent) => GetTemplateState(repo, templatePath, indent),
-                nameof(Models.Manifest.Repo.ReadmeTemplate),
+                Manifest.FilteredRepos
+                    .Select(repo => repo.Readmes.Select(readme => (repo, readme)))
+                    .SelectMany(repoReadme => repoReadme),
+                ((RepoInfo repo, Readme readme) context) => context.readme.TemplatePath,
+                ((RepoInfo repo, Readme readme) context) => context.readme.Path,
+                ((RepoInfo repo, Readme readme) context, string templatePath, string indent) => GetTemplateState(context.repo, templatePath, indent),
+                nameof(Readme.TemplatePath),
                 ArtifactName,
-                (readme, repo) => UpdateTagsListing(readme, repo));
+                (string readmeContent, (RepoInfo repo, Readme readme) context) => UpdateTagsListing(readmeContent, context.repo));
 
             ValidateArtifacts();
         }

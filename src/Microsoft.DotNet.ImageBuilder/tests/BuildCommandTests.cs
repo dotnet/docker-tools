@@ -1253,17 +1253,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeCommitSha);
 
-            const string getInstalledPackagesScriptPath = "get-packages.sh";
-            Mock<IProcessService> processServiceMock = new();
-            processServiceMock
-                .Setup(o => o.Execute(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns("DEB,pkg=1.0");
-
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                processServiceMock.Object);
+                Mock.Of<IProcessService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1472,15 +1466,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             expectedTimes = isRuntimeCached ? Times.Once() : Times.Never();
             dockerServiceMock.Verify(o => o.PullImage(runtimeDigest, null, false), expectedTimes);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
-
-            // Verify that a script call to get installed packages is not made when the image is cached
-            processServiceMock.Verify(
-                o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()),
-                isRuntimeCached ? Times.Never() : Times.Once());
-            processServiceMock.Verify(
-                    o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()),
-                    isRuntimeDepsCached ? Times.Never() : Times.Once());
-            processServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>

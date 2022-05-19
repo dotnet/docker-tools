@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
+
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ReadmeHelper
@@ -29,14 +31,22 @@ namespace Microsoft.DotNet.ImageBuilder
             int fullTagListingHeaderIndex = readme.IndexOf(TagsSectionHeader);
             if (fullTagListingHeaderIndex >= 0)
             {
-                int endOfFullTagListingHeaderIndex = readme.IndexOf(TagsSectionHeader) + TagsSectionHeader.Length;
+                int endOfFullTagListingHeaderIndex = fullTagListingHeaderIndex + TagsSectionHeader.Length;
                 int endOfGeneratedTagsIndex = readme.IndexOf(EndOfGeneratedTagsMarker) + EndOfGeneratedTagsMarker.Length;
+
+                if (endOfGeneratedTagsIndex < 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Unable to find marker '{EndOfGeneratedTagsMarker}' in the readme content:{Environment.NewLine}{readme}");
+                }
 
                 readme =
                     readme.Substring(0, endOfFullTagListingHeaderIndex) +
                     targetLineEnding +
                     targetLineEnding +
                     tagsListing +
+                    EndOfGeneratedTagsMarker +
+                    targetLineEnding +
                     readme.Substring(endOfGeneratedTagsIndex);
             }
 

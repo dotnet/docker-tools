@@ -132,10 +132,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     platformsWithNoPushTags.Add(platform);
                 }
-                else
-                {
-                    SetComponents(platform);
-                }
 
                 platform.CommitUrl = _gitService.GetDockerfileCommitUrl(platform.PlatformInfo, Options.SourceRepoUrl);
             }
@@ -156,49 +152,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 platform.Digest = matchingBuiltPlatform.Digest;
                 platform.Created = matchingBuiltPlatform.Created;
-                platform.Components = matchingBuiltPlatform.Components;
             }
 
             string imageInfoString = JsonHelper.SerializeObject(_imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoOutputPath, imageInfoString);
-        }
-
-        private void SetComponents(PlatformData platform)
-        {
-            if (platform.Components.Any() ||
-                string.IsNullOrEmpty(Options.GetInstalledPackagesScriptPath) ||
-                platform.PlatformInfo is null ||
-                platform.PlatformInfo.Model.OS == OS.Windows)
-            {
-                return;
-            }
-
-            // Use the platform's overriden script path if it's defined in the manifest; otherwise fall back to the default script.
-            string? getInstalledPackagesScriptPath = platform.PlatformInfo.Model.PackageQueryOverrides?.GetInstalledPackagesPath;
-            if (getInstalledPackagesScriptPath is null)
-            {
-                getInstalledPackagesScriptPath = Options.GetInstalledPackagesScriptPath;
-            }
-            else
-            {
-                getInstalledPackagesScriptPath = Path.Combine(Manifest.Directory, getInstalledPackagesScriptPath);
-            }
-
-            string imageTag = platform.PlatformInfo.Tags.First().FullyQualifiedName;
-
-            string args = $"{getInstalledPackagesScriptPath} {imageTag} {platform.PlatformInfo.DockerfilePath}";
-            string? output = _processService.Execute("/bin/sh", args, Options.IsDryRun);
-            if (output is not null)
-            {
-                platform.Components = output
-                    .Split(Environment.NewLine)
-                    .Select(val =>
-                    {
-                        string[] pkgInfo = val.Split(new char[] { ',', '=' });
-                        return new Component(type: pkgInfo[0], name: pkgInfo[1], version: pkgInfo[2]);
-                    })
-                    .ToList();
-            }
         }
 
         private void SetPlatformDataCreatedDate(PlatformData platform, string tag)
@@ -389,7 +346,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
             // published image so we don't need to recalculate it again.
             dstPlatform.BaseImageDigest = srcPlatform.BaseImageDigest;
-            dstPlatform.Components = new List<Component>(srcPlatform.Components);
             dstPlatform.Layers = new List<string>(srcPlatform.Layers);
         }
 

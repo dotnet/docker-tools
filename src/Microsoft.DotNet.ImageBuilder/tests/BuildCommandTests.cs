@@ -157,7 +157,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
                 command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-                command.Options.GetInstalledPackagesScriptPath = Path.Combine(tempFolderContext.Path, getInstalledPackagesScriptPath);
 
                 const string ProductVersion = "1.0.1";
 
@@ -229,10 +228,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 tag
                                             },
-                                            Components =
-                                                runtimeDepsInstalledPackages
-                                                    .Select(pkg => CreateComponent(pkg))
-                                                    .ToList()
                                         }
                                     },
                                     Manifest = new ManifestData
@@ -270,10 +265,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 tag
                                             },
-                                            Components =
-                                                runtimeInstalledPackages
-                                                    .Select(pkg => CreateComponent(pkg))
-                                                    .ToList()
                                         }
                                     }
                                 }
@@ -304,10 +295,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 tag
                                             },
-                                            Components =
-                                                aspnetInstalledPackages
-                                                    .Select(pkg => CreateComponent(pkg))
-                                                    .ToList()
                                         }
                                     }
                                 }
@@ -393,7 +380,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.GetInstalledPackagesScriptPath = Path.Combine(tempFolderContext.Path, getInstalledPackagesScriptPath);
 
             const string ProductVersion = "1.0.1";
 
@@ -451,10 +437,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             tag
                                         },
-                                        Components =
-                                            runtimeDepsInstalledPackages
-                                                .Select(pkg => CreateComponent(pkg))
-                                                .ToList()
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -1271,17 +1253,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeCommitSha);
 
-            const string getInstalledPackagesScriptPath = "get-packages.sh";
-            Mock<IProcessService> processServiceMock = new();
-            processServiceMock
-                .Setup(o => o.Execute(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
-                .Returns("DEB,pkg=1.0");
-
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                processServiceMock.Object);
+                Mock.Of<IProcessService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1289,7 +1265,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
-            command.Options.GetInstalledPackagesScriptPath = Path.Combine(tempFolderContext.Path, getInstalledPackagesScriptPath);
 
             const string ProductVersion = "1.0.1";
 
@@ -1321,10 +1296,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -1366,10 +1337,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             tag
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 }
                             }
@@ -1441,10 +1408,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
                                         IsUnchanged = isRuntimeDepsCached,
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 },
                                 Manifest = new ManifestData
@@ -1482,10 +1445,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         },
                                         CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
                                         IsUnchanged = isRuntimeCached,
-                                        Components = new List<Component>
-                                        {
-                                            new Component("DEB", "pkg", "1.0")
-                                        }
                                     }
                                 }
                             }
@@ -1507,15 +1466,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             expectedTimes = isRuntimeCached ? Times.Once() : Times.Never();
             dockerServiceMock.Verify(o => o.PullImage(runtimeDigest, null, false), expectedTimes);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
-
-            // Verify that a script call to get installed packages is not made when the image is cached
-            processServiceMock.Verify(
-                o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()),
-                isRuntimeCached ? Times.Never() : Times.Once());
-            processServiceMock.Verify(
-                    o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()),
-                    isRuntimeDepsCached ? Times.Never() : Times.Once());
-            processServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -3508,12 +3458,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns((Architecture.AMD64, null));
 
             return dockerServiceMock;
-        }
-
-        private static Component CreateComponent(string package)
-        {
-            string[] parts = package.Split(',', '=');
-            return new Component(type: parts[0], name: parts[1], version: parts[2]);
         }
     }
 }

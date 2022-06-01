@@ -34,6 +34,8 @@ variables:
   value: 'mirror/'
 - name: cgBuildGrepArgs
   value: "''"
+- name: test.init
+  value: ""
 
 - name: defaultLinuxAmd64PoolImage
   value: ubuntu-latest

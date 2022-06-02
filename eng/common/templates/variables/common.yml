@@ -36,6 +36,8 @@ variables:
   value: "''"
 - name: test.init
   value: ""
+- name: testRunner.options
+  value: ""
 
 - name: defaultLinuxAmd64PoolImage
   value: ubuntu-latest

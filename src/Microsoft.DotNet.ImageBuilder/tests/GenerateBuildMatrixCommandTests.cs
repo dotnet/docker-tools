@@ -290,27 +290,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Assert.Single(matrixInfos);
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
-
+                Assert.Single(matrixInfo.Legs);
                 BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
                 string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
                 Assert.Equal("--os-version focal --os-version buster --os-version buster-slim", osVersions);
-
-                if (dependencyType == CustomBuildLegDependencyType.Integral)
-                {
-                    Assert.Single(matrixInfo.Legs);
-                }
-                else
-                {
-                    Assert.Equal(2, matrixInfo.Legs.Count);
-
-                    BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
-                    imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                    Assert.Equal("--path 2.0/runtime/os2/Dockerfile --path 2.0/sdk/os2/Dockerfile", imageBuilderPaths);
-                    osVersions = leg_2_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                    Assert.Equal("--os-version buster-slim --os-version buster", osVersions);
-                }
             }
         }
 
@@ -565,20 +550,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
-            Assert.Equal(3, matrixInfo.Legs.Count());
-            BuildLegInfo leg = matrixInfo.Legs.First();
+            Assert.Equal(2, matrixInfo.Legs.Count());
+            BuildLegInfo leg = matrixInfo.Legs.ElementAt(0);
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal(
-                "--path 1.0/repo1/os/Dockerfile",
+                "--path 1.0/repo1/os/Dockerfile --path 1.0/repo2/os/Dockerfile",
                 imageBuilderPaths);
 
             leg = matrixInfo.Legs.ElementAt(1);
-            imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(
-                "--path 1.0/repo2/os/Dockerfile --path 1.0/repo1/os/Dockerfile",
-                imageBuilderPaths);
-
-            leg = matrixInfo.Legs.ElementAt(2);
             imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal(
                 "--path 1.0/repo3/os/Dockerfile --path 1.0/repo4/os/Dockerfile",
@@ -945,6 +924,55 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal($"--path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
+        }
+
+        /// <summary>
+        /// Verifies that legs that have common Dockerfiles are consolidated together.
+        /// </summary>
+        [Fact]
+        public void PlatformVersionedOs_ConsolidateCommonDockerfiles()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ProductVersionComponents = 2;
+            command.Options.CustomBuildLegGroups = new string[] { "pr-build" };
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo",
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/repo/os/amd64", tempFolderContext),
+                            new string[] { "os" }, osVersion: "os")),
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/repo/os-variant/amd64", tempFolderContext),
+                            new string[] { "os-variant" }, osVersion: "os-variant",
+                            customBuildLegGroups: new[]
+                            {
+                                new CustomBuildLegGroup
+                                {
+                                    Type = CustomBuildLegDependencyType.Supplemental,
+                                    Name = "pr-build",
+                                    Dependencies = new string[] { "repo:os" }
+                                }
+                            })))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            Assert.Single(matrixInfo.Legs);
+            BuildLegInfo leg = matrixInfo.Legs.First();
+            Assert.Equal("os-repo", leg.Name);
+            string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+
+            Assert.Equal("--path 1.0/repo/os/amd64/Dockerfile --path 1.0/repo/os-variant/amd64/Dockerfile", imageBuilderPaths);
         }
 
         private static PlatformData CreateSimplePlatformData(string dockerfilePath, bool isCached = false)

@@ -229,38 +229,53 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
-            IEnumerable<ImageData> images = imageArtifactDetails.Repos.SelectMany(repo => repo.Images);
-            List<(string digestSha, IEnumerable<string>tags)> publishedImages = new();
-            foreach (ImageData image in images)
+
+            List<(string digestSha, string repo, IEnumerable<string> tags)> imageInfos = new();
+            foreach (RepoData repoData in imageArtifactDetails.Repos)
             {
-                if (image.Manifest is not null)
+                foreach (ImageData image in repoData.Images)
                 {
-                    string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
-                    IEnumerable<string> tags = GetTags(image.ManifestImage.SharedTags);
-                    publishedImages.Add((digestSha, tags));
+                    if (image.Manifest is not null)
+                    {
+                        string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
+                        IEnumerable<string> tags = GetTags(image.ManifestImage.SharedTags);
+                        imageInfos.Add((digestSha, repoData.Repo, tags));
+                    }
+
+                    imageInfos.AddRange(
+                        image.Platforms
+                            .Where(platform => platform.PlatformInfo.Tags.Any())
+                            .Select(platform =>
+                            {
+                                string digestSha = DockerHelper.GetDigestSha(platform.Digest);
+                                IEnumerable<string> tags = GetTags(platform.PlatformInfo.Tags);
+
+                                return (digestSha, repoData.Repo, tags);
+                            }));
+
                 }
-
-                publishedImages.AddRange(
-                    image.Platforms
-                        .Where(platform => platform.PlatformInfo.Tags.Any())
-                        .Select(platform =>
-                        {
-                            string digestSha = DockerHelper.GetDigestSha(platform.Digest);
-                            IEnumerable<string> tags = GetTags(platform.PlatformInfo.Tags);
-                            return (digestSha, tags);
-                        }));
-
             }
 
             notificationMarkdown.AppendLine("## Images");
             notificationMarkdown.AppendLine();
 
-            foreach ((string digestSha, IEnumerable<string> tags) in publishedImages.OrderBy(digestTags => digestTags.digestSha))
+            IEnumerable<IGrouping<string, (string digestSha, string repo, IEnumerable<string> tags)>> imageInfosByRepo = imageInfos
+                .GroupBy(imageInfo => imageInfo.repo)
+                .OrderBy(group => group.Key);
+
+            foreach (IGrouping<string, (string digestSha, string repo, IEnumerable<string> tags)> imageInfoRepoGroup in imageInfosByRepo)
             {
-                notificationMarkdown.AppendLine($"* {digestSha}");
-                foreach (string tag in tags.OrderBy(tag => tag))
+                string repo = imageInfoRepoGroup.Key;
+                string fullyQualifiedRepo = $"{Manifest.Registry}/{Options.RepoPrefix}{repo}";
+                notificationMarkdown.AppendLine($"### {fullyQualifiedRepo}");
+                notificationMarkdown.AppendLine();
+                foreach ((string digestSha, string _, IEnumerable<string> tags) in imageInfoRepoGroup.OrderBy(group => group.digestSha))
                 {
-                    notificationMarkdown.AppendLine($"  * {tag}");
+                    notificationMarkdown.AppendLine($"* {digestSha}");
+                    foreach (string tag in tags.OrderBy(tag => tag))
+                    {
+                        notificationMarkdown.AppendLine($"  * {tag}");
+                    }
                 }
             }
         }
@@ -268,7 +283,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static IEnumerable<string> GetTags(IEnumerable<TagInfo> tags) =>
             tags
                 .Where(tag => !tag.Model.IsLocal)
-                .Select(tag => tag.FullyQualifiedName);
+                .Select(tag => tag.Name);
 
         private static void WriteTaskStatusesMarkdown(Dictionary<string, TaskResult?> taskStatuses, StringBuilder notificationMarkdown)
         {

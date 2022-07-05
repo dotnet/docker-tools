@@ -256,7 +256,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .Distinct())
                 .ToArray();
 
-            foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
+            List<List<PlatformInfo>> consolidatedSubGraphs = ConsolidateSubGraphs(subgraphs);
+
+            foreach (IEnumerable<PlatformInfo> subgraph in consolidatedSubGraphs)
             {
                 PlatformInfo platform = subgraph.First();
                 ImageInfo image = Manifest.GetImageByPlatform(platform);
@@ -274,6 +276,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 leg.Variables.Add(("osVariant", osVariant));
                 AddImageBuilderPathsVariable(GetDockerfilePaths(subgraph).ToArray(), leg);
             }
+        }
+
+        private List<List<PlatformInfo>> ConsolidateSubGraphs(IEnumerable<IEnumerable<PlatformInfo>> subgraphs)
+        {
+            // Combine platforms which share Dockerfile paths and product version.
+            List<List<PlatformInfo>> consolidatedSubGraphs = new();
+            foreach (IEnumerable<PlatformInfo> graph in subgraphs)
+            {
+                // Look through the list of consolidated graphs we've collected so far. Find the one, if any, that has a platform
+                // which matches.
+                List<PlatformInfo>? matchingPlatformGraph = consolidatedSubGraphs
+                    .FirstOrDefault(consolidatedGraph =>
+                        consolidatedGraph.Any(consolidatedPlatform =>
+                            graph.Any(platform =>
+                                platform.DockerfilePathRelativeToManifest == consolidatedPlatform.DockerfilePathRelativeToManifest &&
+                                GetProductVersion(Manifest.GetImageByPlatform(platform)) ==
+                                    GetProductVersion(Manifest.GetImageByPlatform(consolidatedPlatform)))));
+
+                if (matchingPlatformGraph is not null)
+                {
+                    matchingPlatformGraph.AddRange(graph);
+                }
+                else
+                {
+                    consolidatedSubGraphs.Add(graph.ToList());
+                }
+            }
+
+            return consolidatedSubGraphs;
         }
 
         private static void EmitVstsVariables(IEnumerable<BuildMatrixInfo> matrices)

@@ -8,7 +8,7 @@
 param(
     [string]$Version,
     [string]$Architecture,
-    [string]$OS,
+    [string[]]$OSVersions,
     [string]$Registry,
     [string]$RepoPrefix,
     [switch]$DisableHttpVerification,

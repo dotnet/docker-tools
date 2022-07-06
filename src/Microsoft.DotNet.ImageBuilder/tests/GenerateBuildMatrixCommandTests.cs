@@ -737,7 +737,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildMatrixInfo matrixInfo = matrixInfos.First();
             Assert.Single(matrixInfo.Legs);
 
-            Assert.Equal("3.1-runtime-deps-os-graph", matrixInfo.Legs[0].Name);
+            Assert.Equal("3.1-runtime-deps-os", matrixInfo.Legs[0].Name);
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal($"--path {runtimeDepsRelativeDir}", imageBuilderPaths);
         }
@@ -913,7 +913,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedLegName;
             if (matrixType == MatrixType.PlatformDependencyGraph)
             {
-                expectedLegName = "3.1-runtime-os-Dockerfile-graph";
+                expectedLegName = "3.1-runtime-os-Dockerfile";
             }
             else
             {
@@ -973,6 +973,129 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
             Assert.Equal("--path 1.0/repo/os/amd64/Dockerfile --path 1.0/repo/os-variant/amd64/Dockerfile", imageBuilderPaths);
+        }
+
+        /// <summary>
+        /// This test verifies that we don't end up with a Dockerfile being built by multiple build jobs. In this scenario,
+        /// the Dockerfile in danger of this is at the path 1.0/runtime-deps/mariner-distroless/amd64. This Dockerfile is
+        /// shared by both a 1.0 and 2.0 version. In addition to a shared Dockerfile, the other key aspect of this scenario
+        /// is the monitor images which have both a dependency on the full Mariner sdk as well as the distroless aspnet image.
+        /// That multi-OS version dependency had exposed an issue with matrix generation that led to this test case being added.
+        /// It was incorrectly separating out the 2.0 version from 1.0 but including the 1.0/runtime-deps/mariner-distroless/amd64
+        /// in the 2.0 job. So both 1.0 and 2.0 had the same Dockerfile which leads to a conflict when publishing.
+        /// </summary>
+        [Fact]
+        public void PlatformDependencyGraph_MultiVersionSharedDockerfileGraphWithDockerfileThatHasMultiOsVersionDependencies()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ProductVersionComponents = 2;
+
+            string sharedRuntimeDepsDockerfilePath;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime-deps",
+                    // 1.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime-deps/mariner/amd64", tempFolderContext),
+                            new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                    // 1.0 distroless
+                    CreateImage(
+                        CreatePlatform(
+                            sharedRuntimeDepsDockerfilePath = CreateDockerfile("1.0/runtime-deps/mariner-distroless/amd64", tempFolderContext),
+                            new string[] { "1.0-mariner-distroless" }, osVersion: "mariner-distroless")),
+                    // 2.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/runtime-deps/mariner/amd64", tempFolderContext),
+                            new string[] { "2.0-mariner" }, osVersion: "mariner")),
+                    // 2.0 distroless (shared Dockerfile with 1.0)
+                    CreateImage(
+                        CreatePlatform(
+                            sharedRuntimeDepsDockerfilePath,
+                            new string[] { "2.0-mariner-distroless" }, osVersion: "mariner-distroless"))),
+                CreateRepo("runtime",
+                    // 1.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/mariner/amd64", tempFolderContext, "runtime-deps:1.0-mariner"),
+                            new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                    // 1.0 distroless
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/mariner-distroless/amd64", tempFolderContext, "runtime-deps:1.0-mariner-distroless"),
+                            new string[] { "1.0-mariner-distroless" }, osVersion: "mariner-distroless")),
+                    // 2.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/runtime/mariner/amd64", tempFolderContext, "runtime-deps:2.0-mariner"),
+                            new string[] { "2.0-mariner" }, osVersion: "mariner")),
+                    // 2.0 distroless
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/runtime/mariner-distroless/amd64", tempFolderContext, "runtime-deps:2.0-mariner-distroless"),
+                            new string[] { "2.0-mariner-distroless" }, osVersion: "mariner-distroless"))),
+                CreateRepo("aspnet",
+                    // 1.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/aspnet/mariner/amd64", tempFolderContext, "runtime:1.0-mariner"),
+                            new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                    // 1.0 distroless
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/aspnet/mariner-distroless/amd64", tempFolderContext, "runtime:1.0-mariner-distroless"),
+                            new string[] { "1.0-mariner-distroless" }, osVersion: "mariner-distroless")),
+                    // 2.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/aspnet/mariner/amd64", tempFolderContext, "runtime:2.0-mariner"),
+                            new string[] { "2.0-mariner" }, osVersion: "mariner")),
+                    // 2.0 distroless
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/aspnet/mariner-distroless/amd64", tempFolderContext, "runtime:2.0-mariner-distroless"),
+                            new string[] { "2.0-mariner-distroless" }, osVersion: "mariner-distroless"))),
+                CreateRepo("sdk",
+                    // 1.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/sdk/mariner/amd64", tempFolderContext, "aspnet:1.0-mariner"),
+                            new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                    // 2.0
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/sdk/mariner/amd64", tempFolderContext, "aspnet:2.0-mariner"),
+                            new string[] { "2.0-mariner" }, osVersion: "mariner"))),
+                CreateRepo("monitor",
+                    // 1.0 distroless (based on 1.0 sdk and 1.0 aspnet distroless)
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/monitor/mariner-distroless/amd64", tempFolderContext, "sdk:1.0-mariner", "aspnet:1.0-mariner-distroless"),
+                            new string[] { "1.0-mariner" }, osVersion: "mariner")),
+                    // 2.0 distroless (based on 2.0 sdk and 2.0 aspnet distroless)
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("2.0/monitor/mariner-distroless/amd64", tempFolderContext, "sdk:2.0-mariner", "aspnet:2.0-mariner-distroless"),
+                            new string[] { "2.0-mariner" }, osVersion: "mariner")))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrix = matrixInfos.First();
+            Assert.Single(matrix.Legs);
+
+            BuildLegInfo leg = matrix.Legs.First();
+            string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal("--path 1.0/runtime-deps/mariner/amd64/Dockerfile --path 1.0/runtime/mariner/amd64/Dockerfile --path 1.0/aspnet/mariner/amd64/Dockerfile --path 1.0/sdk/mariner/amd64/Dockerfile --path 1.0/monitor/mariner-distroless/amd64/Dockerfile --path 1.0/aspnet/mariner-distroless/amd64/Dockerfile --path 1.0/runtime/mariner-distroless/amd64/Dockerfile --path 1.0/runtime-deps/mariner-distroless/amd64/Dockerfile --path 2.0/runtime-deps/mariner/amd64/Dockerfile --path 2.0/runtime/mariner/amd64/Dockerfile --path 2.0/aspnet/mariner/amd64/Dockerfile --path 2.0/sdk/mariner/amd64/Dockerfile --path 2.0/monitor/mariner-distroless/amd64/Dockerfile --path 2.0/aspnet/mariner-distroless/amd64/Dockerfile --path 2.0/runtime/mariner-distroless/amd64/Dockerfile",
+                imageBuilderPaths);
         }
 
         private static PlatformData CreateSimplePlatformData(string dockerfilePath, bool isCached = false)

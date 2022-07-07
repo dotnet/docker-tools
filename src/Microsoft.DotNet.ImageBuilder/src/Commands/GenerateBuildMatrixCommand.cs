@@ -50,30 +50,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return Task.CompletedTask;
         }
 
-        private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphsWithCommonRoot(
+        private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphs(
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs, Func<PlatformInfo, string> getKey)
         {
             List<List<PlatformInfo>> subGraphsList = subgraphs.Select(subgraph => subgraph.ToList()).ToList();
             Dictionary<string, List<PlatformInfo>> subgraphsByRootDockerfilePath = new();
-            List<List<PlatformInfo>> subgraphsToDelete = new();
+            HashSet<List<PlatformInfo>> subgraphsToDelete = new();
 
             foreach (List<PlatformInfo> subgraph in subGraphsList)
             {
-                PlatformInfo rootPlatform = subgraph.First();
-                string key = getKey(rootPlatform);
+                foreach (PlatformInfo platform in subgraph)
+                {
+                    string key = getKey(platform);
 
-                if (subgraphsByRootDockerfilePath.TryGetValue(key, out List<PlatformInfo>? commonSubgraph))
-                {
-                    commonSubgraph.AddRange(subgraph);
-                    subgraphsToDelete.Add(subgraph);
-                }
-                else
-                {
-                    subgraphsByRootDockerfilePath.Add(key, subgraph);
+                    if (subgraphsByRootDockerfilePath.TryGetValue(key, out List<PlatformInfo>? commonSubgraph))
+                    {
+                        commonSubgraph.AddRange(subgraph);
+                        subgraphsToDelete.Add(subgraph);
+                    }
+                    else
+                    {
+                        subgraphsByRootDockerfilePath.Add(key, subgraph);
+                    }
                 }
             }
 
-            subgraphsToDelete.ForEach(subgraph => subGraphsList.Remove(subgraph));
+            foreach (List<PlatformInfo> subGraphToDelete in subgraphsToDelete)
+            {
+                subGraphsList.Remove(subGraphToDelete);
+            }
 
             return subGraphsList;
         }
@@ -86,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 platform => GetPlatformDependencies(platform, platformGrouping));
 
             // Pass 2: Combine subgraphs that have a common Dockerfile path for the root image
-            subgraphs = ConsolidateSubgraphsWithCommonRoot(subgraphs, platform => platform.DockerfilePath);
+            subgraphs = ConsolidateSubgraphs(subgraphs, platform => platform.DockerfilePath);
 
             // Pass 3: Find dependencies amongst the subgraphs that result from custom leg groups
             // to produce a new set of subgraphs.
@@ -94,14 +99,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(set => set.SelectMany(subgraph => subgraph))
                 .ToArray();
 
+            Dictionary<string, BuildLegInfo> buildLegsByDockerfilePath = new();
             foreach (IEnumerable<PlatformInfo> subgraph in subgraphs)
             {
                 string[] dockerfilePaths = GetDockerfilePaths(subgraph).ToArray();
-
                 BuildLegInfo leg = new()
                 {
                     Name = GetDockerfilePathLegName(dockerfilePaths, matrixNameParts)
                 };
+
+                // Validate that we don't end up with multiple legs building the same Dockerfile. This would lead to a conflict in
+                // image publishing.
+                foreach (string dockerfilePath in dockerfilePaths)
+                {
+                    if (buildLegsByDockerfilePath.TryGetValue(dockerfilePath, out BuildLegInfo? legWithDuplicateDockerfile))
+                    {
+                        throw new InvalidOperationException($"Dockerfile '{dockerfilePath}' in leg '{leg.Name}' is already included in leg '{legWithDuplicateDockerfile.Name}'. A Dockerfile can only be built in a single leg.");
+                    }
+
+                    buildLegsByDockerfilePath.Add(dockerfilePath, leg);
+                }
+                
                 matrix.Legs.Add(leg);
 
                 AddImageBuilderPathsVariable(dockerfilePaths, leg);
@@ -146,6 +164,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             return platforms
                 .Select(platform => platform.Model.Dockerfile)
+                .Distinct()
                 .ToArray();
         }
 
@@ -241,7 +260,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Union(GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Integral)));
 
             // Pass 2: Combine subgraphs that have matching roots. This combines any duplicated platforms into a single subgraph.
-            subgraphs = ConsolidateSubgraphsWithCommonRoot(subgraphs,
+            subgraphs = ConsolidateSubgraphs(subgraphs,
                 platform => platform.GetUniqueKey(Manifest.GetImageByPlatform(platform)));
 
             // Pass 3: Append any supplemental custom leg dependencies to each subgraph

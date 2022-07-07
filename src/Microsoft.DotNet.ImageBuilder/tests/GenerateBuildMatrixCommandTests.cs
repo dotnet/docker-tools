@@ -927,6 +927,62 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Scenario where a non-root Dockerfile has a duplicated platform that gets consolidated with another graph due
+        /// to a shared root Dockerfile.
+        /// </summary>
+        [Fact]
+        public void DuplicatedPlatforms_SubgraphConsolidation()
+        {
+            TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ProductVersionComponents = 2;
+
+            string sharedRuntimeDepsPath;
+            string sharedRuntimePath;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        CreatePlatform(
+                            sharedRuntimeDepsPath = CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
+                            new string[] { "3.1-os" })),
+                    CreateImage(
+                        CreatePlatform(
+                            sharedRuntimeDepsPath,
+                            new string[] { "6.0-os" }))),
+                CreateRepo("runtime",
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("3.1/runtime/os", tempFolderContext, "runtime-deps:3.1-os"),
+                            new string[] { "3.1-os" })),
+                    CreateImage(
+                        CreatePlatform(
+                            sharedRuntimePath = CreateDockerfile("6.0/runtime/os", tempFolderContext, "runtime-deps:6.0-os"),
+                            new string[] { "6.0-os" })),
+                    CreateImage(
+                        CreatePlatform(
+                            sharedRuntimePath,
+                            Array.Empty<string>()))));
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+
+            Assert.Single(matrixInfo.Legs);
+
+            string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(
+                $"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 6.0/runtime/os/Dockerfile",
+                imageBuilderPaths);
+        }
+
+        /// <summary>
         /// Verifies that legs that have common Dockerfiles are consolidated together.
         /// </summary>
         [Fact]

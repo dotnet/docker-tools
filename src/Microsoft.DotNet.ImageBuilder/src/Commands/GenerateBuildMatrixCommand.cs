@@ -65,8 +65,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (subgraphsByRootDockerfilePath.TryGetValue(key, out List<PlatformInfo>? commonSubgraph))
                     {
-                        commonSubgraph.AddRange(subgraph);
-                        subgraphsToDelete.Add(subgraph);
+                        // In some cases it is possible to have distinct PlatformInfo instances with the same Dockerfile path.
+                        // This happens in the scenario where a Dockerfile path is duplicated/redefined in a separate image such
+                        // as the case for Debian images that are contained both in the 6.0 multi-arch tag as well as
+                        // the 6.0-bullseye-slim multi-arch tag. To account for that scenario we need to look up by Dockerfile path
+                        // but also ensure that we're not getting the same subgraph that we're currently processing. That prevents us
+                        // from getting the duplicated platform that exists within the same subgraph.
+                        if (commonSubgraph != subgraph)
+                        {
+                            commonSubgraph.AddRange(subgraph);
+                            subgraphsToDelete.Add(subgraph);
+                        }
                     }
                     else
                     {

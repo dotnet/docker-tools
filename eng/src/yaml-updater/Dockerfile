@@ -8,7 +8,7 @@ WORKDIR /src
 # copy csproj and restore as distinct layers
 COPY eng/src/file-pusher/*.csproj ./file-pusher/
 COPY eng/src/yaml-updater/*.csproj ./yaml-updater/
-COPY eng/src/yaml-updater/NuGet.config ./
+COPY NuGet.config ./
 
 RUN dotnet restore ./yaml-updater/*.csproj
 

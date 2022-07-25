@@ -7,7 +7,7 @@ WORKDIR /file-pusher
 
 # copy csproj and restore as distinct layers
 COPY eng/src/file-pusher/*.csproj ./
-COPY eng/src/file-pusher/NuGet.config ./
+COPY NuGet.config ./
 RUN dotnet restore
 
 # copy everything else and build

@@ -14,93 +14,40 @@ variables:
 - name: checkBaseImageSubscriptionsPath
   value: eng/check-base-image-subscriptions.json
 
-stages:
-- stage: CopyBaseImages
-  jobs:
-  - template: ../common/templates/jobs/copy-base-images.yml
+jobs:
+- job: Build
+  pool:
+    vmImage: $(defaultLinuxAmd64PoolImage)
+  steps:
+  - template: ../common/templates/steps/init-docker-linux.yml
+  - template: ../common/templates/steps/copy-base-images.yml
     parameters:
-      name: CopyBaseImages
       additionalOptions: "--subscriptions-path '$(checkBaseImageSubscriptionsPath)'"
-      pool: 
-        vmImage: $(defaultLinuxAmd64PoolImage)
       publicProjectName: ${{ variables.publicProjectName }}
-
-- stage: GetStaleImages
-  dependsOn: CopyBaseImages
-  jobs:
-  - job: Get_Stale_Images_Linux_AMD
-    pool:
-      vmImage: $(defaultLinuxAmd64PoolImage)
-    steps:
-    - template: templates/steps/get-stale-images.yml
-      parameters:
-        osType: linux
-        architecture: amd64
-        dockerClientOS: linux
-        staleImagePathsVariableName: linux-amd-stale-image-paths
-        subscriptionsPath: $(checkBaseImageSubscriptionsPath)
-
-  - job: Get_Stale_Images_Linux_ARM32
-    pool:
-      name: Docker-Linux-Arm-Internal
-    steps:
-    - template: templates/steps/get-stale-images.yml
-      parameters:
-        osType: linux
-        architecture: arm
-        dockerClientOS: linux
-        staleImagePathsVariableName: linux-arm32-stale-image-paths
-        subscriptionsPath: $(checkBaseImageSubscriptionsPath)
-
-  - job: Get_Stale_Images_Linux_ARM64
-    pool:
-      name: Docker-Linux-Arm-Internal
-    steps:
-    - template: templates/steps/get-stale-images.yml
-      parameters:
-        osType: linux
-        architecture: arm64
-        dockerClientOS: linux
-        staleImagePathsVariableName: linux-arm64-stale-image-paths
-        subscriptionsPath: $(checkBaseImageSubscriptionsPath)
-
-  - job: Get_Stale_Images_Windows_AMD
-    pool: Docker-1809-Internal
-    steps:
-    - template: templates/steps/get-stale-images.yml
-      parameters:
-        osType: windows
-        architecture: amd64
-        dockerClientOS: windows
-        staleImagePathsVariableName: windows-amd-stale-image-paths
-        subscriptionsPath: $(checkBaseImageSubscriptionsPath)
-
-- stage: QueueBuilds
-  dependsOn: GetStaleImages
-  jobs:
-  - job: Queue_Stale_Image_Builds
-    pool:
-      vmImage: $(defaultLinuxAmd64PoolImage)
-    variables:
-      imagePaths1: $[ stageDependencies.GetStaleImages.Get_Stale_Images_Linux_AMD.outputs['GetStaleImages.linux-amd-stale-image-paths'] ]
-      imagePaths2: $[ stageDependencies.GetStaleImages.Get_Stale_Images_Linux_ARM32.outputs['GetStaleImages.linux-arm32-stale-image-paths'] ]
-      imagePaths3: $[ stageDependencies.GetStaleImages.Get_Stale_Images_Linux_ARM64.outputs['GetStaleImages.linux-arm64-stale-image-paths'] ]
-      imagePaths4: $[ stageDependencies.GetStaleImages.Get_Stale_Images_Windows_AMD.outputs['GetStaleImages.windows-amd-stale-image-paths'] ]
-    steps:
-    - template: ../common/templates/steps/init-docker-linux.yml
-    - script: >
-        $(runImageBuilderCmd)
-        queueBuild
-        $(System.AccessToken)
-        dnceng
-        internal
-        --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
-        --git-owner 'dotnet'
-        --git-repo '$(internalGitHubRepo)'
-        --subscriptions-path $(checkBaseImageSubscriptionsPath)
-        --image-paths "$(imagePaths1)"
-        --image-paths "$(imagePaths2)"
-        --image-paths "$(imagePaths3)"
-        --image-paths "$(imagePaths4)"
-      displayName: Queue Build for Stale Images
-    - template: ../common/templates/steps/cleanup-docker-linux.yml
+  - script: >
+      $(runImageBuilderCmd)
+      getStaleImages
+      $(dotnetDockerBot.userName)
+      $(dotnetDockerBot.email)
+      $(BotAccount-dotnet-docker-bot-PAT)
+      staleImagePaths
+      --subscriptions-path $(checkBaseImageSubscriptionsPath)
+      --os-type '*'
+      --architecture '*'
+      --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
+      $(dockerHubRegistryCreds)
+    displayName: Get Stale Images
+    name: GetStaleImages
+  - script: >
+      $(runImageBuilderCmd)
+      queueBuild
+      $(System.AccessToken)
+      dnceng
+      internal
+      --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
+      --git-owner 'dotnet'
+      --git-repo '$(internalGitHubRepo)'
+      --subscriptions-path $(checkBaseImageSubscriptionsPath)
+      --image-paths "$(GetStaleImages.staleImagePaths)"
+    displayName: Queue Build for Stale Images
+  - template: ../common/templates/steps/cleanup-docker-linux.yml

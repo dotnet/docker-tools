@@ -13,6 +13,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class ManifestOptions : Options, IManifestOptionsInfo
     {
+        public const string RegistryOverrideName = "registry-override";
+
         public string Manifest { get; set; } = string.Empty;
         public string? RegistryOverride { get; set; }
         public IEnumerable<string> Repos { get; set; } = Enumerable.Empty<string>();
@@ -45,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     CreateOption("manifest", nameof(ManifestOptions.Manifest),
                         "Path to json file which describes the repo", "manifest.json"),
-                    CreateOption<string?>("registry-override", nameof(ManifestOptions.RegistryOverride),
+                    CreateOption<string?>(ManifestOptions.RegistryOverrideName, nameof(ManifestOptions.RegistryOverride),
                         "Alternative registry which overrides the manifest"),
                     CreateMultiOption<string>("repo", nameof(ManifestOptions.Repos),
                         "Repos to operate on (Default is all)"),

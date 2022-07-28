@@ -11,26 +11,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesOptions : CopyImagesOptions
     {
-        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
+        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
 
-        public SubscriptionOptions SubscriptionOptions { get; set; } = new SubscriptionOptions();
+        public SubscriptionOptions SubscriptionOptions { get; set; } = new();
+
+        public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
     }
 
     public class CopyBaseImagesOptionsBuilder : CopyImagesOptionsBuilder
     {
-        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder =
-            new RegistryCredentialsOptionsBuilder();
-        private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new SubscriptionOptionsBuilder();
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+        private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new();
+        private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
-                .Concat(_subscriptionOptionsBuilder.GetCliOptions());
+                .Concat(_subscriptionOptionsBuilder.GetCliOptions())
+                .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
-                .Concat(_subscriptionOptionsBuilder.GetCliArguments());
+                .Concat(_subscriptionOptionsBuilder.GetCliArguments())
+                .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

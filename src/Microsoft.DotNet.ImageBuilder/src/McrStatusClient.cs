@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public class McrStatusClient : IMcrStatusClient
     {
-        private const string McrStatusResource = "https://microsoft.onmicrosoft.com/a4f1cc9d-1767-4c82-a9a9-8a808b66b527";
+        private const string McrStatusResource = "api://c00053c3-a979-4ee6-b94e-941881e62d8e";
         private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v1";
         private readonly HttpClient _httpClient;
         private readonly string _tenant;

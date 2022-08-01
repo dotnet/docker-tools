@@ -9,7 +9,6 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -46,6 +45,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 
+            Options.BaseImageOverrideOptions.Validate();
+
             IEnumerable<ManifestInfo> manifests;
             string fullRegistryName;
             if (Options.SubscriptionOptions.SubscriptionsPath is null)
@@ -57,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 if (Options.RegistryOverride is null)
                 {
-                    throw new InvalidOperationException($"{Options.RegistryOverride} must be set.");
+                    throw new InvalidOperationException($"The '{ManifestOptions.RegistryOverrideName}' option must be set.");
                 }
 
                 manifests =
@@ -76,8 +77,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await Task.WhenAll(copyImageTasks);
         }
 
-        private static IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
+        private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
             manifest.GetExternalFromImages()
+                .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
                 .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
 
         private Task CopyImageAsync(string fromImage, string destinationRegistryName)

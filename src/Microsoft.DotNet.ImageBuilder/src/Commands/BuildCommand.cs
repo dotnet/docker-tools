@@ -48,6 +48,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
+            Options.BaseImageOverrideOptions.Validate();
+
             if (Options.ImageInfoOutputPath != null)
             {
                 _imageArtifactDetails = new ImageArtifactDetails();
@@ -628,6 +630,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </remarks>
         private string GetFromImageTag(string fromImage, string? registry)
         {
+            fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
+
             if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
                 DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
                 || Options.SourceRepoPrefix is null)

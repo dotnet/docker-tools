@@ -3286,6 +3286,98 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.VerifyNoOtherCalls();
         }
 
+        /// <summary>
+        /// Tests the logic of image mirroring when the base image tag is configured to be overriden.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_MirroredImages_BaseImageTagOverride()
+        {
+            const string RegistryOverride = "dotnetdocker.azurecr.io";
+            const string SamplesRepo = "samples";
+            const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
+            const string SampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
+            const string ImageTag = "tag";
+            const string SourceRepoPrefix = "mirror/";
+            const string CustomRegistry = "contoso.azurecr.io";
+            const string SrcBaseTag = "amd64/os:tag";
+            const string MirroredBaseTag = "os:tag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            string baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{CustomRegistry}";
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", It.IsAny<IRegistryCredentialsHost>(), false))
+                .ReturnsAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}@{RuntimeDigest}");
+
+            dockerServiceMock
+                .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", It.IsAny<IRegistryCredentialsHost>(), false))
+                .ReturnsAsync($"{RegistryOverride}/{SamplesRepo}@{SampleDigest}");
+
+            const string dockerfileCommitSha = "mycommit";
+            Mock<IGitService> gitServiceMock = new();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(dockerfileCommitSha);
+
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object,
+                Mock.Of<IProcessService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.RegistryOverride = RegistryOverride;
+            command.Options.SourceRepoPrefix = SourceRepoPrefix;
+            command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(.*)";
+            command.Options.BaseImageOverrideOptions.Substitution = $"{CustomRegistry}/$1";
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(SamplesRepo,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                DockerfileHelper.CreateDockerfile(
+                                    "1.0/samples/os", tempFolderContext, SrcBaseTag),
+                                new string[] { ImageTag })
+                        },
+                        productVersion: "1.0.1"))
+            );
+            manifest.Registry = "mcr.microsoft.com";
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            dockerServiceMock.Verify(
+                o => o.BuildImage(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IDictionary<string, string>>(),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>()));
+
+            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false));
+            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
+            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
+            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", It.IsAny<IRegistryCredentialsHost>(), false));
+
+            dockerServiceMock.Verify(o =>
+                o.CreateTag($"{baseImageRepoPrefix}/{MirroredBaseTag}", SrcBaseTag, false));
+            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
+
+            dockerServiceMock.VerifyNoOtherCalls();
+        }
+
         private static Mock<IDockerService> CreateDockerServiceMock(string buildOutput = null)
         {
             Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();

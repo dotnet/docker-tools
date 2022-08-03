@@ -1370,6 +1370,98 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that the check for a stale base image is done by targeting the tag override rather than the tag
+        /// defined in the Dockerfile.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_BaseImageTagOverride()
+        {
+            const string repo1 = "test-repo";
+            const string dockerfile1Path = "dockerfile1/Dockerfile";
+            const string dockerfile2Path = "dockerfile2/Dockerfile";
+            const string CustomRegistry = "my-registry";
+
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
+            {
+                new SubscriptionInfo(
+                    CreateSubscription(repo1),
+                    CreateManifest(
+                        CreateRepo(
+                            repo1,
+                            CreateImage(
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" }),
+                                CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = repo1,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                dockerfile1Path,
+                                                baseImageDigest: $"{CustomRegistry}/base1@base1digest",
+                                                simpleTags: new List<string> { "tag1" }),
+                                            CreatePlatform(
+                                                dockerfile2Path,
+                                                baseImageDigest: $"{CustomRegistry}/base2@alternate-base2digest",
+                                                simpleTags: new List<string> { "tag2" })
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                )
+            };
+
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos = new()
+            {
+                {
+                    subscriptionInfos[0].Subscription.Manifest,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo("base1", "base1digest")),
+                        new DockerfileInfo(dockerfile2Path, new FromImageInfo("base2", "base2digest"))
+                    }
+                }
+            };
+
+            using (TestContext context = new(subscriptionInfos, dockerfileInfos))
+            {
+                context.ImageDigests.Add($"{CustomRegistry}/base1", "alternate-base1digest");
+                context.ImageDigests.Add($"{CustomRegistry}/base2", "alternate-base2digest");
+
+                // Override the image tags to target a custom registry
+                context.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
+                context.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry/$1";
+
+                await context.ExecuteCommandAsync();
+
+                // Only one of the images has a changed digest
+                // It should be comparing against the digest of the image from the override.
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
+                {
+                    {
+                        subscriptionInfos[0].Subscription,
+                        new List<string>
+                        {
+                            dockerfile1Path
+                        }
+                    }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
         /// Use this method to generate a unique repo owner name for the tests. This ensures that each test
         /// uses a different name and prevents collisions when running the tests in parallel. This is because
         /// the <see cref="GetStaleImagesCommand"/> generates temp folders partially based on the name of
@@ -1430,6 +1522,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private const string VariableName = "my-var";
 
             public Mock<IManifestService> ManifestToolServiceMock { get; }
+
+            public GetStaleImagesCommand Command { get => command; }
+
+            public IDictionary<string, string> ImageDigests { get => imageDigests; }
 
             /// <summary>
             /// Initializes a new instance of <see cref="TestContext"/>.

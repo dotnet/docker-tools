@@ -20,6 +20,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string VariableName { get; set; } = string.Empty;
 
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
+
+        public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
+
     }
 
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
@@ -28,14 +31,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
         private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new();
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-
+        private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_subscriptionOptionsBuilder.GetCliOptions())
                 .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(_gitOptionsBuilder.GetCliOptions())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions());
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
+                .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()

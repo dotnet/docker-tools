@@ -3299,7 +3299,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string ImageTag = "tag";
             const string SourceRepoPrefix = "mirror/";
             const string CustomRegistry = "contoso.azurecr.io";
-            const string SrcBaseTag = "amd64/os:tag";
+            const string SourceRepo = "amd64/os";
+            const string SrcBaseTag = $"{SourceRepo}:tag";
             const string MirroredBaseTag = "os:tag";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -3353,6 +3354,51 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             await command.ExecuteAsync();
+
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                    {
+                        new RepoData
+                        {
+                            Repo = "samples",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    ProductVersion = "1.0.1",
+                                    Platforms =
+                                    {
+                                        new PlatformData
+                                        {
+                                            Dockerfile = "1.0/samples/os/Dockerfile",
+                                            Architecture = "amd64",
+                                            OsType = "Linux",
+                                            OsVersion = "focal",
+                                            Digest = $"{manifest.Registry}/{SamplesRepo}@{SampleDigest}",
+
+                                            // This is the key change. The digest should be referring to the image from the
+                                            // override, not what's defined in the Dockerfile.
+                                            BaseImageDigest = $"{CustomRegistry}/os@{RuntimeDigest}",
+
+                                            Created = DateTime.MinValue.ToUniversalTime(),
+                                            CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/1.0/samples/os/Dockerfile",
+                                            SimpleTags =
+                                            {
+                                                ImageTag
+                                            },
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+            };
+
+            string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
+            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
+
+            Assert.Equal(expectedOutput, actualOutput);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(

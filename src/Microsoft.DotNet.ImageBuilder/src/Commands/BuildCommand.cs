@@ -657,7 +657,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string trimmed = TrimInternallyOwnedRegistryAndRepoPrefix(fromImage);
             if (trimmed == fromImage)
             {
-                return trimmed;
+                return Options.BaseImageOverrideOptions.ApplyBaseImageOverride(trimmed);
             }
             else
             {

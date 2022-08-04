@@ -137,8 +137,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     foundImageInfo = true;
                     string? fromImage = platform.FinalStageFromImage;
-                    string currentDigest;
-
                     if (fromImage is null)
                     {
                         _loggerService.WriteMessage(
@@ -146,7 +144,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         break;
                     }
 
-                    currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
+                    fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
+
+                    string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
                         async () =>
                         {
                             string digest = await _manifestToolService.GetManifestDigestShaAsync(fromImage, Options.CredentialsOptions, Options.IsDryRun);

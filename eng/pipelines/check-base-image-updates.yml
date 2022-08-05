@@ -11,43 +11,14 @@ schedules:
 
 variables:
 - template: templates/variables/common.yml
-- name: checkBaseImageSubscriptionsPath
-  value: eng/check-base-image-subscriptions.json
 
 jobs:
-- job: Build
-  pool:
-    vmImage: $(defaultLinuxAmd64PoolImage)
-  steps:
-  - template: ../common/templates/steps/init-docker-linux.yml
-  - template: ../common/templates/steps/copy-base-images.yml
-    parameters:
-      additionalOptions: "--subscriptions-path '$(checkBaseImageSubscriptionsPath)'"
-      publicProjectName: ${{ variables.publicProjectName }}
-  - script: >
-      $(runImageBuilderCmd)
-      getStaleImages
-      $(dotnetDockerBot.userName)
-      $(dotnetDockerBot.email)
-      $(BotAccount-dotnet-docker-bot-PAT)
-      staleImagePaths
-      --subscriptions-path $(checkBaseImageSubscriptionsPath)
-      --os-type '*'
-      --architecture '*'
-      --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
-      $(dockerHubRegistryCreds)
-    displayName: Get Stale Images
-    name: GetStaleImages
-  - script: >
-      $(runImageBuilderCmd)
-      queueBuild
-      $(System.AccessToken)
-      dnceng
-      internal
-      --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
-      --git-owner 'dotnet'
-      --git-repo '$(internalGitHubRepo)'
-      --subscriptions-path $(checkBaseImageSubscriptionsPath)
-      --image-paths "$(GetStaleImages.staleImagePaths)"
-    displayName: Queue Build for Stale Images
-  - template: ../common/templates/steps/cleanup-docker-linux.yml
+- template: templates/jobs/check-base-image-updates.yml
+  parameters:
+    jobName: Build
+    subscriptionsPath: eng/check-base-image-subscriptions.json
+    customGetStaleImagesArgs: --base-override-regex '.*\/(ubuntu:.+)' --base-override-sub 'ubuntu.azurecr.io/$1'
+- template: templates/jobs/check-base-image-updates.yml
+  parameters:
+    jobName: Build2
+    subscriptionsPath: eng/check-base-image-subscriptions2.json

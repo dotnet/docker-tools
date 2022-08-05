@@ -18,6 +18,8 @@ jobs:
     jobName: Build
     subscriptionsPath: eng/check-base-image-subscriptions.json
     customGetStaleImagesArgs: --base-override-regex '.*\/(ubuntu:.+)' --base-override-sub 'ubuntu.azurecr.io/$1'
+# Run a separate job for a different set of subscriptions that's configured to not use the base override
+# See https://github.com/dotnet/docker-tools/pull/1038
 - template: templates/jobs/check-base-image-updates.yml
   parameters:
     jobName: Build2

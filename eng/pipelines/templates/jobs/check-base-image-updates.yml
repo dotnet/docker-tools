@@ -1,0 +1,43 @@
+parameters:
+  jobName: null
+  subscriptionsPath: null
+  customGetStaleImagesArgs: ""
+
+jobs:
+- job: ${{ parameters.jobName }}
+  pool:
+    vmImage: $(defaultLinuxAmd64PoolImage)
+  steps:
+  - template: ../../../common/templates/steps/init-docker-linux.yml
+  - template: ../../../common/templates/steps/copy-base-images.yml
+    parameters:
+      additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
+      publicProjectName: ${{ variables.publicProjectName }}
+  - script: >
+      $(runImageBuilderCmd)
+      getStaleImages
+      $(dotnetDockerBot.userName)
+      $(dotnetDockerBot.email)
+      $(BotAccount-dotnet-docker-bot-PAT)
+      staleImagePaths
+      ${{ parameters.customGetStaleImagesArgs }}
+      --subscriptions-path ${{ parameters.subscriptionsPath }}
+      --os-type '*'
+      --architecture '*'
+      --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
+      $(dockerHubRegistryCreds)
+    displayName: Get Stale Images
+    name: GetStaleImages
+  - script: >
+      $(runImageBuilderCmd)
+      queueBuild
+      $(System.AccessToken)
+      dnceng
+      internal
+      --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
+      --git-owner 'dotnet'
+      --git-repo '$(internalGitHubRepo)'
+      --subscriptions-path ${{ parameters.subscriptionsPath }}
+      --image-paths "$(GetStaleImages.staleImagePaths)"
+    displayName: Queue Build for Stale Images
+  - template: ../../../common/templates/steps/cleanup-docker-linux.yml

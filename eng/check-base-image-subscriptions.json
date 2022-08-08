@@ -24,25 +24,6 @@
     "manifest": {
       "owner": "dotnet",
       "repo": "dotnet-docker",
-      "branch": "main",
-      "path": "manifest.json"
-    },
-    "imageInfo": {
-      "owner": "dotnet",
-      "repo": "versions",
-      "branch": "main",
-      "path": "build-info/docker/image-info.dotnet-dotnet-docker-main.json"
-    },
-    "pipelineTrigger": {
-      "id": 373,
-      "pathVariable": "imageBuilder.pathArgs"
-    },
-    "osType": "linux"
-  },
-  {
-    "manifest": {
-      "owner": "dotnet",
-      "repo": "dotnet-docker",
       "branch": "nightly",
       "path": "manifest.json"
     },
@@ -57,24 +38,6 @@
       "pathVariable": "imageBuilder.pathArgs"
     },
     "osType": "linux"
-  },
-  {
-    "manifest": {
-      "owner": "dotnet",
-      "repo": "dotnet-docker",
-      "branch": "main",
-      "path": "manifest.samples.json"
-    },
-    "imageInfo": {
-      "owner": "dotnet",
-      "repo": "versions",
-      "branch": "main",
-      "path": "build-info/docker/image-info.dotnet-dotnet-docker-main-samples.json"
-    },
-    "pipelineTrigger": {
-      "id": 376,
-      "pathVariable": "imageBuilder.pathArgs"
-    }
   },
   {
     "manifest": {

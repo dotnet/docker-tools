@@ -66,18 +66,6 @@
             },
             {
               "buildArgs": {
-                "WINDOWS_BASE": "nanoserver:20H2-amd64"
-              },
-              "dockerfile": "Dockerfile.windows",
-              "os": "windows",
-              "osVersion": "nanoserver-20H2",
-              "tags": {
-                "nanoserver-20H2-amd64": {},
-                "nanoserver-20H2-amd64-$(UniqueId)": {}
-              }
-            },
-            {
-              "buildArgs": {
                 "WINDOWS_BASE": "nanoserver:ltsc2022-amd64"
               },
               "dockerfile": "Dockerfile.windows",

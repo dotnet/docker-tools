@@ -57,8 +57,16 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             string dockerfileWithBaseDir = Path.Combine(baseDirectory, model.ResolveDockerfilePath(baseDirectory));
             DockerfilePath = PathHelper.NormalizePath(dockerfileWithBaseDir);
-            BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));
             DockerfilePathRelativeToManifest = PathHelper.TrimPath(baseDirectory, DockerfilePath);
+
+            if(model.ContextPath != null)
+            {
+                BuildContextPath = PathHelper.NormalizePath(Path.Combine(baseDirectory, model.ContextPath));
+            }
+            else 
+            {
+                BuildContextPath = PathHelper.NormalizePath(Path.GetDirectoryName(dockerfileWithBaseDir));
+            }
 
             if (model.DockerfileTemplate != null)
             {

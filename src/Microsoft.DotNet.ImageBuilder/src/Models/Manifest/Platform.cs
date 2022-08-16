@@ -73,6 +73,12 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             )]
         public string? Variant { get; set; }
 
+        [Description(
+            "Relative path to set for the 'docker build' context. If not provided the " +
+            "Dockerfile directory will be used."
+            )]
+        public string? ContextPath { get; set; }
+
         public Platform()
         {
         }

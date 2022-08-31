@@ -15,7 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder
     public class McrStatusClient : IMcrStatusClient
     {
         private const string McrStatusResource = "api://c00053c3-a979-4ee6-b94e-941881e62d8e";
-        private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v1";
+        // https://msazure.visualstudio.com/MicrosoftContainerRegistry/_git/docs?path=/status/status_v2.yaml
+        private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v2";
         private readonly HttpClient _httpClient;
         private readonly string _tenant;
         private readonly string _clientId;
@@ -49,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Task<ImageResultDetailed> GetImageResultDetailedAsync(string imageDigest, string onboardingRequestId)
         {
-            string uri = $"{BaseUri}/image-details/{imageDigest}/{onboardingRequestId}";
+            string uri = $"{BaseUri}/images/{imageDigest}/{onboardingRequestId}";
             return SendRequestAsync<ImageResultDetailed>(() => new HttpRequestMessage(HttpMethod.Get, uri));
         }
 
@@ -61,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public Task<CommitResultDetailed> GetCommitResultDetailedAsync(string commitDigest, string onboardingRequestId)
         {
-            string uri = $"{BaseUri}/commit-details/{commitDigest}/{onboardingRequestId}";
+            string uri = $"{BaseUri}/commits/{commitDigest}/{onboardingRequestId}";
             return SendRequestAsync<CommitResultDetailed>(() => new HttpRequestMessage(HttpMethod.Get, uri));
         }
 

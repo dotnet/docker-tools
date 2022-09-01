@@ -171,6 +171,75 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             AllRepos
                 .FirstOrDefault(repoImage => repoImage.AllImages.Contains(image));
 
+        /// <summary>
+        /// Returns the set of ancestors that the platform is dependent upon. This recursively walks the parent hierarchy.
+        /// </summary>
+        public IEnumerable<PlatformInfo> GetAncestors(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
+            GetParents(platform, availablePlatforms)
+                .SelectMany(parent => new PlatformInfo[] { parent }.Concat(GetAncestors(parent, availablePlatforms)));
+
+        /// <summary>
+        /// Returns the set of parents that the platform is directly dependent upon. Not recursive.
+        /// </summary>
+        public IEnumerable<PlatformInfo> GetParents(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
+            platform.InternalFromImages
+                .Select(fromImage => GetPlatformByTag(fromImage))
+                .Intersect(availablePlatforms);
+
+        /// <summary>
+        /// Returns the set of children are directly dependent upon the given platform. Not recursive.
+        /// </summary>
+        private static IEnumerable<PlatformInfo> GetChildren(PlatformInfo parent, IEnumerable<PlatformInfo> allPlatforms) =>
+            allPlatforms
+                .Where(platform =>
+                    platform.InternalFromImages
+                        .Intersect(parent.Tags.Select(tag => tag.FullyQualifiedName))
+                        .Any());
+
+        /// <summary>
+        /// Gets the set of platforms which are descendants of the given platform.
+        /// </summary>
+        /// <param name="parent">The platform whose descendants are to be returned.</param>
+        /// <param name="availablePlatforms">The set of available platforms to select from.</param>
+        /// <param name="includeAncestorsOfDescendants">Indicates whether to recursively gets the ancestor graph of each
+        /// descendant to account for the scenario where a descendant has more than one parent.</param>
+        public IEnumerable<PlatformInfo> GetDescendants(
+            PlatformInfo parent, IEnumerable<PlatformInfo> availablePlatforms, bool includeAncestorsOfDescendants = false)
+        {
+            List<PlatformInfo> platforms = new();
+            GetDescendants(parent, availablePlatforms, includeAncestorsOfDescendants, platforms);
+
+            // Remove the first item which is the the platform that was provided, we only want the descendants of that
+            platforms.RemoveAt(0);
+
+            return platforms;
+        }
+
+        private void GetDescendants(
+            PlatformInfo parent, IEnumerable<PlatformInfo> availablePlatforms, bool includeAncestorsOfDescendants,
+            List<PlatformInfo> platforms)
+        {
+            if (platforms.Contains(parent))
+            {
+                return;
+            }
+
+            platforms.Add(parent);
+
+            foreach (PlatformInfo child in GetChildren(parent, availablePlatforms))
+            {
+                GetDescendants(child, availablePlatforms, includeAncestorsOfDescendants, platforms);
+            }
+
+            if (includeAncestorsOfDescendants)
+            {
+                foreach (PlatformInfo childParent in GetParents(parent, availablePlatforms))
+                {
+                    GetDescendants(childParent, availablePlatforms, includeAncestorsOfDescendants, platforms);
+                }
+            }
+        }
+
         private static Manifest LoadModel(string path, string manifestDirectory)
         {
             string manifestJson = File.ReadAllText(path);

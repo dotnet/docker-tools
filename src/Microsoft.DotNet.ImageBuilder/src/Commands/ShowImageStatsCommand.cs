@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 PlatformInfo[] dependentPlatforms = platforms
                     .Where(platform => platform.ExternalFromImages.Contains(baseImage))
-                    .SelectMany(platform => platform.GetDependencyGraph(platforms))
+                    .SelectMany(platform => Manifest.GetDescendants(platform, Manifest.GetAllPlatforms().ToList()))
                     .Distinct()
                     .ToArray();
                 int dependentPlatformTagsCount = dependentPlatforms.SelectMany(platform => platform.Tags).Count();

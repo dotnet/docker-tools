@@ -845,15 +845,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateRepo(
                             runtimeRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
+                                CreatePlatform(runtimeDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             sdkRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                                CreatePlatform(sdkDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             aspnetRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                                CreatePlatform(aspnetDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             otherRepo,
                             CreateImage(
@@ -922,9 +922,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
-                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo($"{runtimeDepsRepo}:tag1", null)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo($"{aspnetRepo}:tag1", null)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo($"{runtimeRepo}:tag1", null)),
                         new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
                     }
                 }
@@ -944,8 +944,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             runtimeDepsDockerfilePath,
                             runtimeDockerfilePath,
+                            aspnetDockerfilePath,
                             sdkDockerfilePath,
-                            aspnetDockerfilePath
                         }
                     }
                 };
@@ -989,15 +989,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateRepo(
                             runtimeRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
+                                CreatePlatform(runtimeDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             sdkRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, aspnetRepo, new string[] { "tag1" }))),
+                                CreatePlatform(sdkDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             aspnetRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                                CreatePlatform(aspnetDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             otherRepo,
                             CreateImage(
@@ -1016,9 +1016,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
-                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo($"{runtimeDepsRepo}:tag1", null)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo($"{aspnetRepo}:tag1", null)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo($"{runtimeRepo}:tag1", null)),
                         new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
                     }
                 }
@@ -1229,7 +1229,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateRepo(
                             repo1,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(dockerfile1Path, $"{repo1}:tag2", new string[] { "tag1" })),
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" })),
                             CreateImage(
                                 CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
@@ -1266,7 +1266,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo($"{repo1}:tag2", null)),
                         new DockerfileInfo(dockerfile2Path, new FromImageInfo("base1", "base1digest"))
                     }
                 }
@@ -1768,13 +1768,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 foreach (FromImageInfo fromImage in dockerfileInfo.FromImages)
                 {
-                    string repo = string.Empty;
-                    if (fromImage.IsInternal)
-                    {
-                        repo = "$REPO:";
-                    }
-
-                    dockerfileContents += $"FROM {repo}{fromImage.Name}{Environment.NewLine}";
+                    dockerfileContents += $"FROM {fromImage.Name}{Environment.NewLine}";
                 }
 
                 string dockerfilePath = Directory.CreateDirectory(
@@ -1854,15 +1848,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class FromImageInfo
         {
-            public FromImageInfo (string name, string digest, bool isInternal = false)
+            public FromImageInfo (string name, string digest)
             {
                 Name = name;
                 Digest = digest;
-                IsInternal = isInternal;
             }
 
             public string Digest { get; }
-            public bool IsInternal { get; }
             public string Name { get; }
         }
 

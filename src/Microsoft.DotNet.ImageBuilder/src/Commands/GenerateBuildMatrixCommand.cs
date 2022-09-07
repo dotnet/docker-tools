@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // Pass 1: Find direct dependencies from the Dockerfile's FROM statement
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping.GetCompleteSubgraphs(
-                platform => GetPlatformDependencies(platform, platformGrouping));
+                platform => Manifest.GetParents(platform, platformGrouping));
 
             // Pass 2: Combine subgraphs that have a common Dockerfile path for the root image
             subgraphs = ConsolidateSubgraphs(subgraphs, platform => platform.DockerfilePath);
@@ -193,7 +193,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(dependency => Manifest.GetPlatformByTag(dependency));
                     return dependencyPlatforms
                         .Concat(dependencyPlatforms
-                            .SelectMany(dependencyPlatform => GetParents(dependencyPlatform, Manifest.GetFilteredPlatforms())));
+                            .SelectMany(dependencyPlatform => Manifest.GetAncestors(dependencyPlatform, Manifest.GetFilteredPlatforms())));
                 })
                 .Distinct();
         }
@@ -265,7 +265,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Pass 1: Get the set of subgraphs grouped by their FROM dependencies as well as any integral custom leg dependencies.
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping
                 .GetCompleteSubgraphs(platform =>
-                    GetPlatformDependencies(platform, platformGrouping)
+                    Manifest.GetParents(platform, platformGrouping)
                         .Union(GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Integral)));
 
             // Pass 2: Combine subgraphs that have matching roots. This combines any duplicated platforms into a single subgraph.
@@ -278,7 +278,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // Pass 4: Append the parent graph of each platform to each respective subgraph
             subgraphs = subgraphs.GetCompleteSubgraphs(
-                subgraph => subgraph.Select(platform => GetParents(platform, platformGrouping)))
+                subgraph => subgraph.Select(platform => Manifest.GetAncestors(platform, platformGrouping)))
                 .Select(set => set
                     .SelectMany(subgraph => subgraph)
                     .Distinct())
@@ -487,23 +487,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return platformId.OS.GetDockerName();
         }
-
-        private IEnumerable<PlatformInfo> GetParents(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms)
-        {
-            List<PlatformInfo> parents = new();
-            foreach (PlatformInfo parent in GetPlatformDependencies(platform, availablePlatforms))
-            {
-                parents.Add(parent);
-                parents.AddRange(GetParents(parent, availablePlatforms));
-            }
-
-            return parents;
-        }
-
-        private IEnumerable<PlatformInfo> GetPlatformDependencies(PlatformInfo platform, IEnumerable<PlatformInfo> availablePlatforms) =>
-            platform.InternalFromImages
-                .Select(fromImage => Manifest.GetPlatformByTag(fromImage))
-                .Intersect(availablePlatforms);
 
         private static void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
         {

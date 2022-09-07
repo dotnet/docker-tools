@@ -845,15 +845,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateRepo(
                             runtimeRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
+                                CreatePlatform(runtimeDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             sdkRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                                CreatePlatform(sdkDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             aspnetRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                                CreatePlatform(aspnetDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             otherRepo,
                             CreateImage(
@@ -922,9 +922,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
-                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo($"{runtimeDepsRepo}:tag1", null)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo($"{aspnetRepo}:tag1", null)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo($"{runtimeRepo}:tag1", null)),
                         new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
                     }
                 }
@@ -944,8 +944,160 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         {
                             runtimeDepsDockerfilePath,
                             runtimeDockerfilePath,
+                            aspnetDockerfilePath,
                             sdkDockerfilePath,
-                            aspnetDockerfilePath
+                        }
+                    }
+                };
+
+                context.Verify(expectedPathsBySubscription);
+            }
+        }
+
+        /// <summary>
+        /// Verifies the correct path arguments are passed to the queued build when
+        /// a base image changes where the image referencing that base image has other
+        /// images dependent upon it. And one of those dependent images is based another
+        /// image because of a multi-stage Dockerfile. So there are two root images and
+        /// both need to be included in the output. In this test, the Monitor Dockerfile
+        /// has a dependency on both sdk:jammy and aspnet:jammy-chiseled which come from
+        /// different roots.
+        /// </summary>
+        [Fact]
+        public async Task GetStaleImagesCommand_DependencyGraph_TwoRoots()
+        {
+            const string RuntimeDepsRepo = "runtime-deps";
+            const string RuntimeRepo = "runtime";
+            const string AspnetRepo = "aspnet";
+            const string SdkRepo = "sdk";
+            const string MonitorRepo = "monitor";
+
+            const string JammyRuntimeDepsDockerfilePath = "runtime-deps/jammy/Dockerfile";
+            const string JammyRuntimeDockerfilePath = "runtime/jammy/Dockerfile";
+            const string JammyAspnetDockerfilePath = "aspnet/jammy/Dockerfile";
+            const string JammySdkDockerfilePath = "sdk/jammy/Dockerfile";
+            const string JammyChiseledRuntimeDepsDockerfilePath = "runtime-deps/jammy-chiseled/Dockerfile";
+            const string JammyChiseledRuntimeDockerfilePath = "runtime/jammy-chiseled/Dockerfile";
+            const string JammyChiseledAspnetDockerfilePath = "aspnet/jammy-chiseled/Dockerfile";
+            const string JammyChiseledMonitorDockerfilePath = "monitor/jammy-chiseled/Dockerfile";
+
+            const string baseImage = "base1";
+            const string baseImageDigest = "base1digest";
+
+            SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
+            {
+                new SubscriptionInfo(
+                    CreateSubscription("repo1"),
+                    CreateManifest(
+                        CreateRepo(
+                            RuntimeDepsRepo,
+                            CreateImage(
+                                CreatePlatform(JammyRuntimeDepsDockerfilePath, new string[] { "jammy" })),
+                            CreateImage(
+                                CreatePlatform(JammyChiseledRuntimeDepsDockerfilePath, new string[] { "jammy-chiseled" }))),
+                        CreateRepo(
+                            RuntimeRepo,
+                            CreateImage(
+                                CreatePlatform(JammyRuntimeDockerfilePath, new string[] { "jammy" })),
+                            CreateImage(
+                                CreatePlatform(JammyChiseledRuntimeDockerfilePath, new string[] { "jammy-chiseled" }))),
+                        CreateRepo(
+                            AspnetRepo,
+                            CreateImage(
+                                CreatePlatform(JammyAspnetDockerfilePath, new string[] { "jammy" })),
+                            CreateImage(
+                                CreatePlatform(JammyChiseledAspnetDockerfilePath, new string[] { "jammy-chiseled" }))),
+                        CreateRepo(
+                            SdkRepo,
+                            CreateImage(
+                                CreatePlatform(JammySdkDockerfilePath, new string[] { "jammy" }))),
+                        CreateRepo(
+                            MonitorRepo,
+                            CreateImage(
+                                CreatePlatform(JammyChiseledMonitorDockerfilePath, new string[] { "jammy-chiseled" })))),
+                    new ImageArtifactDetails
+                    {
+                        Repos =
+                        {
+                            new RepoData
+                            {
+                                Repo = RuntimeDepsRepo,
+                                Images =
+                                {
+                                    new ImageData
+                                    {
+                                        Platforms =
+                                        {
+                                            CreatePlatform(
+                                                JammyRuntimeDepsDockerfilePath,
+                                                baseImageDigest: $"{baseImage}@{baseImageDigest}-diff",
+                                                simpleTags: new List<string> { "tag1" })
+                                        }
+                                    }
+                                }
+                            },
+                            new RepoData
+                            {
+                                Repo = RuntimeRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = AspnetRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = SdkRepo
+                            },
+                            new RepoData
+                            {
+                                Repo = MonitorRepo
+                            }
+                        }
+                    }
+                )
+            };
+
+            Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos =
+                new()
+            {
+                {
+                    subscriptionInfos[0].Subscription.Manifest,
+                    new List<DockerfileInfo>
+                    {
+                        new DockerfileInfo(JammyRuntimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
+                        new DockerfileInfo(JammyChiseledRuntimeDepsDockerfilePath, new FromImageInfo("scratch", null)),
+                        new DockerfileInfo(JammyRuntimeDockerfilePath, new FromImageInfo($"{RuntimeDepsRepo}:jammy", null)),
+                        new DockerfileInfo(JammyChiseledRuntimeDockerfilePath, new FromImageInfo($"{RuntimeDepsRepo}:jammy-chiseled", null)),
+                        new DockerfileInfo(JammyAspnetDockerfilePath, new FromImageInfo($"{RuntimeRepo}:jammy", null)),
+                        new DockerfileInfo(JammyChiseledAspnetDockerfilePath, new FromImageInfo($"{RuntimeRepo}:jammy-chiseled", null)),
+                        new DockerfileInfo(JammySdkDockerfilePath, new FromImageInfo($"{AspnetRepo}:jammy", null)),
+                        new DockerfileInfo(JammyChiseledMonitorDockerfilePath,
+                            new FromImageInfo($"{SdkRepo}:jammy", null),
+                            new FromImageInfo($"{AspnetRepo}:jammy-chiseled", null)),
+                    }
+                }
+            };
+
+            using (TestContext context =
+                new(subscriptionInfos, dockerfileInfos))
+            {
+                await context.ExecuteCommandAsync();
+
+                Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
+                    new()
+                {
+                    {
+                        subscriptionInfos[0].Subscription,
+                        new List<string>
+                        {
+                            JammyRuntimeDepsDockerfilePath,
+                            JammyRuntimeDockerfilePath,
+                            JammyAspnetDockerfilePath,
+                            JammySdkDockerfilePath,
+                            JammyChiseledMonitorDockerfilePath,
+                            JammyChiseledAspnetDockerfilePath,
+                            JammyChiseledRuntimeDockerfilePath,
+                            JammyChiseledRuntimeDepsDockerfilePath,
                         }
                     }
                 };
@@ -989,15 +1141,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateRepo(
                             runtimeRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(runtimeDockerfilePath, runtimeDepsRepo, new string[] { "tag1" }))),
+                                CreatePlatform(runtimeDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             sdkRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(sdkDockerfilePath, aspnetRepo, new string[] { "tag1" }))),
+                                CreatePlatform(sdkDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             aspnetRepo,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(aspnetDockerfilePath, runtimeRepo, new string[] { "tag1" }))),
+                                CreatePlatform(aspnetDockerfilePath, new string[] { "tag1" }))),
                         CreateRepo(
                             otherRepo,
                             CreateImage(
@@ -1016,9 +1168,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(runtimeDepsDockerfilePath, new FromImageInfo(baseImage, baseImageDigest)),
-                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
-                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo("tag1", null, isInternal: true)),
+                        new DockerfileInfo(runtimeDockerfilePath, new FromImageInfo($"{runtimeDepsRepo}:tag1", null)),
+                        new DockerfileInfo(sdkDockerfilePath, new FromImageInfo($"{aspnetRepo}:tag1", null)),
+                        new DockerfileInfo(aspnetDockerfilePath, new FromImageInfo($"{runtimeRepo}:tag1", null)),
                         new DockerfileInfo(otherDockerfilePath, new FromImageInfo(otherImage, otherImageDigest))
                     }
                 }
@@ -1229,7 +1381,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateRepo(
                             repo1,
                             CreateImage(
-                                CreatePlatformWithRepoBuildArg(dockerfile1Path, $"{repo1}:tag2", new string[] { "tag1" })),
+                                CreatePlatform(dockerfile1Path, new string[] { "tag1" })),
                             CreateImage(
                                 CreatePlatform(dockerfile2Path, new string[] { "tag2" })))),
                     new ImageArtifactDetails
@@ -1266,7 +1418,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos[0].Subscription.Manifest,
                     new List<DockerfileInfo>
                     {
-                        new DockerfileInfo(dockerfile1Path, new FromImageInfo(null, null, isInternal: true)),
+                        new DockerfileInfo(dockerfile1Path, new FromImageInfo($"{repo1}:tag2", null)),
                         new DockerfileInfo(dockerfile2Path, new FromImageInfo("base1", "base1digest"))
                     }
                 }
@@ -1768,13 +1920,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 foreach (FromImageInfo fromImage in dockerfileInfo.FromImages)
                 {
-                    string repo = string.Empty;
-                    if (fromImage.IsInternal)
-                    {
-                        repo = "$REPO:";
-                    }
-
-                    dockerfileContents += $"FROM {repo}{fromImage.Name}{Environment.NewLine}";
+                    dockerfileContents += $"FROM {fromImage.Name}{Environment.NewLine}";
                 }
 
                 string dockerfilePath = Directory.CreateDirectory(
@@ -1854,15 +2000,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class FromImageInfo
         {
-            public FromImageInfo (string name, string digest, bool isInternal = false)
+            public FromImageInfo (string name, string digest)
             {
                 Name = name;
                 Digest = digest;
-                IsInternal = isInternal;
             }
 
             public string Digest { get; }
-            public bool IsInternal { get; }
             public string Name { get; }
         }
 

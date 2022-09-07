@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.VisualBasic.CompilerServices;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -24,8 +23,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class WaitForMcrImageIngestionCommandTests
     {
-        [Fact]
-        public async Task SuccessfulPublish()
+        [Theory]
+        [InlineData("")]
+        [InlineData("public/")]
+        [InlineData("internal/private/")]
+        public async Task SuccessfulPublish(string repoPrefix)
         {
             DateTime baselineTime = DateTime.Now;
             const string manifestDigest1 = "repo@sha256:manifestDigest1";
@@ -44,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus previousSharedTag1ImageStatus = new ImageStatus
             {
                 Tag = sharedTag1,
-                TargetRepository = repo1,
+                SourceRepository = repoPrefix + repo1,
                 QueueTime = baselineTime.AddHours(-1),
                 OverallStatus = StageStatus.Succeeded
             };
@@ -52,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus sharedTag1ImageStatus = new ImageStatus
             {
                 Tag = sharedTag1,
-                TargetRepository = repo1,
+                SourceRepository = repoPrefix + repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.NotStarted
             };
@@ -60,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus sharedTag2ImageStatus = new ImageStatus
             {
                 Tag = sharedTag2,
-                TargetRepository = repo1,
+                SourceRepository = repoPrefix + repo1,
                 QueueTime = baselineTime,
                 OverallStatus = StageStatus.Processing
             };
@@ -68,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag1ImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repoPrefix + repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Processing
             };
@@ -76,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag2ImageStatus = new ImageStatus
             {
                 Tag = platformTag2,
-                TargetRepository = repo1,
+                SourceRepository = repoPrefix + repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Processing
             };
@@ -84,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag3ImageStatus = new ImageStatus
             {
                 Tag = platformTag3,
-                TargetRepository = repo2,
+                SourceRepository = repoPrefix + repo2,
                 QueueTime = baselineTime.AddSeconds(1),
                 OverallStatus = StageStatus.Succeeded
             };
@@ -295,6 +297,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.RepoPrefix = repoPrefix;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
@@ -326,7 +329,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus sharedTag1ImageStatus = new ImageStatus
             {
                 Tag = sharedTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OnboardingRequestId = onboardingRequestId1,
                 OverallStatus = StageStatus.NotStarted
@@ -335,7 +338,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag1ImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Processing
             };
@@ -343,7 +346,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag2ImageStatus = new ImageStatus
             {
                 Tag = platformTag2,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OnboardingRequestId = onboardingRequestId2,
                 OverallStatus = StageStatus.Processing
@@ -428,7 +431,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     OnboardingRequestId = onboardingRequestId1,
                     OverallStatus = StageStatus.Failed,
                     Tag = sharedTag1,
-                    TargetRepository = repo1,
+                    SourceRepository = repo1,
                     Substatus = new ImageSubstatus()
                 });
 
@@ -440,7 +443,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     OnboardingRequestId = onboardingRequestId2,
                     OverallStatus = StageStatus.Failed,
                     Tag = platformTag2,
-                    TargetRepository = repo1,
+                    SourceRepository = repo1,
                     Substatus = new ImageSubstatus()
                 });
 
@@ -546,7 +549,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag1aImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Processing
             };
@@ -554,7 +557,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag1bImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(2),
                 OverallStatus = StageStatus.Processing
             };
@@ -691,7 +694,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag1aImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Processing,
                 OnboardingRequestId = tag1aOnboardingRequestId
@@ -700,7 +703,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus platformTag1bImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(2),
                 OverallStatus = StageStatus.Processing,
                 OnboardingRequestId = tag1bOnboardingRequestId
@@ -764,7 +767,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     OnboardingRequestId = tag1aOnboardingRequestId,
                     OverallStatus = StageStatus.Failed,
                     Tag = platformTag1,
-                    TargetRepository = repo1,
+                    SourceRepository = repo1,
                     Substatus = new ImageSubstatus()
                 });
 
@@ -776,7 +779,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     OnboardingRequestId = tag1bOnboardingRequestId,
                     OverallStatus = StageStatus.Failed,
                     Tag = platformTag1,
-                    TargetRepository = repo1,
+                    SourceRepository = repo1,
                     Substatus = new ImageSubstatus()
                 });
 
@@ -877,7 +880,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new ImageStatus
                             {
                                 Tag = platformTag1,
-                                TargetRepository = repo1,
+                                SourceRepository = repo1,
                                 QueueTime = baselineTime.AddHours(1),
                                 OverallStatus = StageStatus.Processing
                             }
@@ -975,7 +978,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus repo1SharedTag1ImageStatus = new()
             {
                 Tag = sharedTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Succeeded
             };
@@ -983,7 +986,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus repo2SharedTag1ImageStatus = new()
             {
                 Tag = sharedTag1,
-                TargetRepository = repo2,
+                SourceRepository = repo2,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Succeeded
             };
@@ -991,7 +994,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus repo1PlatformTag1ImageStatus = new()
             {
                 Tag = platformTag1,
-                TargetRepository = repo1,
+                SourceRepository = repo1,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Succeeded
             };
@@ -999,7 +1002,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus repo2PlatformTag1aImageStatus = new()
             {
                 Tag = $"{platformTag1}a",
-                TargetRepository = repo2,
+                SourceRepository = repo2,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Succeeded
             };
@@ -1007,7 +1010,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageStatus repo2PlatformTag1bImageStatus = new()
             {
                 Tag = $"{platformTag1}b",
-                TargetRepository = repo2,
+                SourceRepository = repo2,
                 QueueTime = baselineTime.AddHours(1),
                 OverallStatus = StageStatus.Succeeded
             };

@@ -16,5 +16,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
         public DateTime QueueTime { get; set; }
         public string Tag { get; set; }
         public StageStatus OverallStatus { get; set; }
+        public string FailureReason { get; set; }
     }
 }

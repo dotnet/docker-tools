@@ -63,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (image.Manifest?.Digest != null)
             {
                 string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
-                yield return new DigestInfo(digestSha, repo.Repo, image.Manifest.SharedTags);
+                yield return new DigestInfo(digestSha, Options.RepoPrefix + repo.Repo, image.Manifest.SharedTags);
 
                 // Find all syndicated shared tags grouped by their syndicated repo
                 IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.ManifestImage.SharedTags
@@ -72,7 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (IGrouping<string, TagInfo> syndicatedTags in syndicatedTagGroups)
                 {
-                    string syndicatedRepo = Options.RepoPrefix + syndicatedTags.Key;
+                    string syndicatedRepo = syndicatedTags.Key;
                     string fullyQualifiedRepo = DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedRepo);
 
                     string? syndicatedDigest = image.Manifest.SyndicatedDigests
@@ -85,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     yield return new DigestInfo(
                         DockerHelper.GetDigestSha(syndicatedDigest),
-                        syndicatedRepo,
+                        Options.RepoPrefix + syndicatedRepo,
                         syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags));
                 }
             }
@@ -94,7 +94,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string sha = DockerHelper.GetDigestSha(platform.Digest);
 
-                yield return new DigestInfo(sha, repo.Repo, platform.SimpleTags);
+                yield return new DigestInfo(sha, Options.RepoPrefix + repo.Repo, platform.SimpleTags);
 
                 // Find all syndicated simple tags grouped by their syndicated repo
                 IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = (platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
@@ -227,6 +227,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             stringBuilder.AppendLine($"\tID: {imageStatus.OnboardingRequestId}");
             stringBuilder.AppendLine($"\tTag: {imageStatus.Tag}");
             stringBuilder.AppendLine($"\tCommit digest: {result.CommitDigest}");
+            stringBuilder.AppendLine($"\tReason: {imageStatus.FailureReason}");
             stringBuilder.Append(result.Substatus.ToString("\t"));
             return stringBuilder.ToString();
         }
@@ -237,7 +238,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Find the image statuses that are associated with the repo indicated in the image info. This filter is needed
             // because MCR's webhook responds to all image pushes in the ACR, even those to staging locations. A queue time filter
             // is needed in order to filter out onboarding requests from a previous ingestion of the same digests.
-            imageStatus.TargetRepository == digestInfo.Repo && imageStatus.QueueTime >= Options.MinimumQueueTime;
+            imageStatus.SourceRepository == digestInfo.Repo && imageStatus.QueueTime >= Options.MinimumQueueTime;
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(IMcrStatusClient statusClient, DigestInfo digestInfo)
         {

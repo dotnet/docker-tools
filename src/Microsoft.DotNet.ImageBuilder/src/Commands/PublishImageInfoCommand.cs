@@ -48,7 +48,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     repoPath,
                     new CloneOptions
                     {
-                        BranchName = Options.GitOptions.Branch
+                        BranchName = Options.GitOptions.Branch,
+                        CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
+                        {
+                            Username = Options.GitOptions.AuthToken,
+                            Password = string.Empty
+                        }
                     });
 
                 Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
@@ -85,6 +90,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void UpdateGitRepos(string imageInfoContent, string repoPath, IRepository repo)
         {
             string imageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
+
+            // Ensure the directory exists
+            string? imageInfoDir = Path.GetDirectoryName(imageInfoPath);
+            if (imageInfoDir is not null)
+            {
+                Directory.CreateDirectory(imageInfoDir);
+            }
+
             File.WriteAllText(imageInfoPath, imageInfoContent);
 
             _gitService.Stage(repo, imageInfoPath);
@@ -113,7 +126,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageArtifactDetails srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             string repoImageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
-            string originalTargetImageInfoContents = File.ReadAllText(repoImageInfoPath);
+            string? originalTargetImageInfoContents = null;
+            if (File.Exists(repoImageInfoPath))
+            {
+                originalTargetImageInfoContents = File.ReadAllText(repoImageInfoPath);
+            }
 
             ImageArtifactDetails newImageArtifactDetails;
 

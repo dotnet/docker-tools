@@ -5,13 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Web;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
@@ -21,26 +17,26 @@ using Octokit;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>, IDisposable
+    public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>
     {
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);
         private readonly IManifestService _manifestToolService;
         private readonly ILoggerService _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
-        private readonly HttpClient _httpClient;
+        private readonly IGitService _gitService;
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
             IManifestService manifestToolService,
-            IHttpClientProvider httpClientProvider,
             ILoggerService loggerService,
-            IOctokitClientFactory octokitClientFactory)
+            IOctokitClientFactory octokitClientFactory,
+            IGitService gitService)
         {
             _manifestToolService = manifestToolService;
             _loggerService = loggerService;
             _octokitClientFactory = octokitClientFactory;
-            _httpClient = httpClientProvider.GetClient();
+            _gitService = gitService;
         }
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";
@@ -53,8 +49,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
-                (await SubscriptionHelper.GetSubscriptionManifestsAsync(
-                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient, _loggerService))
+                SubscriptionHelper.GetSubscriptionManifests(
+                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService)
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {
@@ -193,11 +189,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
 
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
-        }
-
-        public void Dispose()
-        {
-            _httpClient.Dispose();
         }
     }
 }

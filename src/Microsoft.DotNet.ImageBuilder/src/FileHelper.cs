@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
-using System.Threading.Tasks;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -12,17 +12,31 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             // Handles read-only dirs/files by forcing them to be writable
 
-            DirectoryInfo directory = new DirectoryInfo(path)
+            if (!Directory.Exists(path))
             {
-                Attributes = FileAttributes.Normal
-            };
+                return;
+            }
 
-            Parallel.ForEach(directory.GetFileSystemInfos("*", SearchOption.AllDirectories), fileInfo =>
+            string[] files = Directory.GetFiles(path);
+            string[] directories = new DirectoryInfo(path).GetDirectories()
+                .Where(dir => dir.LinkTarget is null) // Ignore symlinks
+                .Select(dir => dir.FullName)
+                .ToArray();
+
+            foreach (string file in files)
             {
-                fileInfo.Attributes = FileAttributes.Normal;
-            });
+                File.SetAttributes(file, FileAttributes.Normal);
+                File.Delete(file);
+            }
 
-            directory.Delete(true);
+            foreach (string dir in directories)
+            {
+                ForceDeleteDirectory(dir);
+            }
+
+            File.SetAttributes(path, FileAttributes.Normal);
+
+            Directory.Delete(path, true);
         }
     }
 }

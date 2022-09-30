@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
 using Microsoft.DotNet.ImageBuilder.Services;
@@ -18,14 +17,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class CopyBaseImagesCommand : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>
     {
-        private readonly HttpClient _httpClient;
+        private readonly IGitService _gitService;
 
         [ImportingConstructor]
         public CopyBaseImagesCommand(
-            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService, IHttpClientProvider httpClientProvider)
+            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService, IGitService gitService)
             : base(azureManagementFactory, loggerService)
         {
-            _httpClient = httpClientProvider.GetClient();
+            _gitService = gitService;
         }
 
         protected override string Description => "Copies external base images from their source registry to ACR";
@@ -62,9 +61,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
                 manifests =
-                    (await SubscriptionHelper.GetSubscriptionManifestsAsync(
-                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _httpClient, LoggerService,
-                        options => options.RegistryOverride = Options.RegistryOverride))
+                    SubscriptionHelper.GetSubscriptionManifests(
+                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService,
+                        options => options.RegistryOverride = Options.RegistryOverride)
                     .Select(subscriptionManifest => subscriptionManifest.Manifest);
                 fullRegistryName = Options.RegistryOverride;
             }

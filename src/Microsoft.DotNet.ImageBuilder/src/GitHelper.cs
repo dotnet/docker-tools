@@ -97,28 +97,5 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
         }
-
-        public static async Task<string> DownloadAndExtractGitRepoArchiveAsync(
-            HttpClient httpClient, IGitHubBranchRef branchRef, ILoggerService loggerService)
-        {
-            string uniqueName = $"{branchRef.Owner}-{branchRef.Repo}-{branchRef.Branch}";
-            string extractPath = Path.Combine(Path.GetTempPath(), uniqueName);
-            Uri repoContentsUrl = GetArchiveUrl(branchRef);
-            string zipPath = Path.Combine(Path.GetTempPath(), $"{uniqueName}.zip");
-            byte[] bytes = await RetryHelper.GetWaitAndRetryPolicy<Exception>(loggerService)
-                .ExecuteAsync(() => httpClient.GetByteArrayAsync(repoContentsUrl));
-            File.WriteAllBytes(zipPath, bytes);
-
-            try
-            {
-                ZipFile.ExtractToDirectory(zipPath, extractPath);
-            }
-            finally
-            {
-                File.Delete(zipPath);
-            }
-
-            return Path.Combine(extractPath, $"{branchRef.Repo}-{branchRef.Branch}");
-        }
     }
 }

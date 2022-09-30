@@ -35,10 +35,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IAzureManagementFactory> azureManagementFactoryMock =
                 AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            Mock<IEnvironmentService> environmentServiceMock = new();
 
-            CopyBaseImagesCommand command = new CopyBaseImagesCommand(
-                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IHttpClientProvider>());
+            CopyBaseImagesCommand command = new(
+                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             CopyBaseImagesCommand command = new(
-                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IHttpClientProvider>());
+                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";

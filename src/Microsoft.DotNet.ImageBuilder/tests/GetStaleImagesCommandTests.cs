@@ -5,14 +5,12 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -1670,6 +1668,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
             private readonly string osType;
             private readonly IOctokitClientFactory octokitClientFactory;
+            private readonly IGitService gitService;
 
             private const string VariableName = "my-var";
 
@@ -1709,7 +1708,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Id = Guid.NewGuid()
                 };
 
-                this.httpClientFactory = CreateHttpClientFactory(subscriptionInfos, dockerfileInfos);
+                this.gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
                 this.octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
                 this.ManifestToolServiceMock = this.CreateManifestToolServiceMock();
@@ -1762,8 +1761,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private GetStaleImagesCommand CreateCommand()
             {
-                GetStaleImagesCommand command = new GetStaleImagesCommand(
-                    this.ManifestToolServiceMock.Object, this.httpClientFactory, this.loggerServiceMock.Object, this.octokitClientFactory);
+                GetStaleImagesCommand command = new(
+                    this.ManifestToolServiceMock.Object, this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;
@@ -1839,61 +1838,50 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             /// <summary>
-            /// Returns an <see cref="IHttpClientProvider"/> that creates an <see cref="HttpClient"/> which 
-            /// bypasses the network and return back pre-built responses for GitHub repo zip files.
+            /// Returns a <see cref="IGitService"/> that implements the clone operation.
             /// </summary>
             /// <param name="subscriptionInfos">Mapping of data to subscriptions.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
-            private IHttpClientProvider CreateHttpClientFactory(
+            private IGitService CreateGitService(
                 SubscriptionInfo[] subscriptionInfos,
                 Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos)
             {
-                Dictionary<string, HttpResponseMessage> responses = new Dictionary<string, HttpResponseMessage>();
+                Mock<IGitService> gitServiceMock = new();
+
                 foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
                 {
                     Subscription subscription = subscriptionInfo.Subscription;
                     List<DockerfileInfo> repoDockerfileInfos = dockerfileInfos[subscription.Manifest];
-                    string repoZipPath = GenerateRepoZipFile(subscription, subscriptionInfo.Manifest, repoDockerfileInfos);
-
-                    responses.Add(
-                        $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}/archive/{subscription.Manifest.Branch}.zip",
-                        new HttpResponseMessage
+                    
+                    string url = $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}.git";
+                    gitServiceMock
+                        .Setup(o => o.CloneRepository(url, It.IsAny<string>(), It.Is<CloneOptions>(options => options.BranchName == subscription.Manifest.Branch)))
+                        .Callback((string url, string repoPath, CloneOptions options) =>
                         {
-                            StatusCode = HttpStatusCode.OK,
-                            Content = new ByteArrayContent(File.ReadAllBytes(repoZipPath))
-                        });
+                            GenerateRepo(repoPath, subscription, subscriptionInfo.Manifest, repoDockerfileInfos);
+                        })
+                        .Returns(Mock.Of<IRepository>());
+
                 }
 
-                HttpClient client = new HttpClient(new TestHttpMessageHandler(responses));
-
-                Mock<IHttpClientProvider> httpClientFactoryMock = new Mock<IHttpClientProvider>();
-                httpClientFactoryMock
-                    .Setup(o => o.GetClient())
-                    .Returns(client);
-
-                return httpClientFactoryMock.Object;
+                return gitServiceMock.Object;
             }
 
             /// <summary>
-            /// Generates a zip file in a temp location that represents the contents of a GitHub repo.
+            /// Generates a directory that represents the contents of a GitHub repo.
             /// </summary>
+            /// <param name="repoPath">Directory path to store the repo contents.</param>
             /// <param name="subscription">The subscription associated with the GitHub repo.</param>
             /// <param name="manifest">Manifest model associated with the subscription.</param>
             /// <param name="repoDockerfileInfos">Set of <see cref="DockerfileInfo"/> objects that describe the Dockerfiles contained in the repo.</param>
-            /// <returns></returns>
-            private string GenerateRepoZipFile(
+            private void GenerateRepo(
+                string repoPath,
                 Subscription subscription,
                 Manifest manifest,
                 List<DockerfileInfo> repoDockerfileInfos)
             {
-                // Create a temp folder to store everything in.
-                string tempDir = Directory.CreateDirectory(
-                    Path.Combine(Path.GetTempPath(), Path.GetRandomFileName())).FullName;
-                this.foldersToCleanup.Add(tempDir);
-
-                // Create a sub-folder inside the temp folder that represents the repo contents.
-                string repoPath = Directory.CreateDirectory(
-                    Path.Combine(tempDir, $"{subscription.Manifest.Repo}-{subscription.Manifest.Branch}")).FullName;
+                // Create folder that represents the repo contents.
+                Directory.CreateDirectory(repoPath);
 
                 // Serialize the manifest model to a file in the repo folder.
                 string manifestPath = Path.Combine(repoPath, subscription.Manifest.Path);
@@ -1903,10 +1891,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     GenerateDockerfile(dockerfileInfo, repoPath);
                 }
-
-                string repoZipPath = Path.Combine(tempDir, "repo.zip");
-                ZipFile.CreateFromDirectory(repoPath, repoZipPath, CompressionLevel.Fastest, true);
-                return repoZipPath;
             }
 
             /// <summary>
@@ -1981,8 +1965,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     Directory.Delete(folder, true);
                 }
-
-                this.command?.Dispose();
             }
         }
 

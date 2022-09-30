@@ -4,9 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net.Http;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
+using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -17,19 +16,23 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class SubscriptionHelper
     {
-        public static async Task<IEnumerable<(Subscription Subscription, ManifestInfo Manifest)>> GetSubscriptionManifestsAsync(
-            string subscriptionsPath, ManifestFilterOptions filterOptions, HttpClient httpClient, ILoggerService loggerService,
-            Action<ManifestOptions>? configureOptions = null)
+        public static IEnumerable<(Subscription Subscription, ManifestInfo Manifest)> GetSubscriptionManifests(
+            string subscriptionsPath, ManifestFilterOptions filterOptions,
+            IGitService gitService, Action<ManifestOptions>? configureOptions = null)
         {
             string subscriptionsJson = File.ReadAllText(subscriptionsPath);
-            Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
+            Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
+            if (subscriptions is null)
+            {
+                throw new JsonException($"Unable to correctly deserialize path '{subscriptionsJson}'.");
+            }
 
             List<(Subscription Subscription, ManifestInfo Manifest)> subscriptionManifests = new
                 List<(Subscription Subscription, ManifestInfo Manifest)>();
             foreach (Subscription subscription in subscriptions)
             {
-                ManifestInfo? manifest = await GetSubscriptionManifestAsync(
-                    subscription, filterOptions, httpClient, loggerService, configureOptions);
+                ManifestInfo? manifest = GetSubscriptionManifest(
+                    subscription, filterOptions, gitService, configureOptions);
                 if (manifest is not null)
                 {
                     subscriptionManifests.Add((subscription, manifest));
@@ -39,9 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return subscriptionManifests;
         }
 
-        private static async Task<ManifestInfo?> GetSubscriptionManifestAsync(Subscription subscription,
-            ManifestFilterOptions filterOptions, HttpClient httpClient, ILoggerService loggerService,
-            Action<ManifestOptions>? configureOptions)
+        private static ManifestInfo? GetSubscriptionManifest(Subscription subscription,
+            ManifestFilterOptions filterOptions, IGitService gitService, Action<ManifestOptions>? configureOptions)
         {
             // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
             // then there are no images that need to be inspected.
@@ -52,7 +54,17 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string repoPath = await GitHelper.DownloadAndExtractGitRepoArchiveAsync(httpClient, subscription.Manifest, loggerService);
+            string uniqueName = $"{subscription.Manifest.Owner}-{subscription.Manifest.Repo}-{subscription.Manifest.Branch}";
+            string repoPath = Path.Combine(Path.GetTempPath(), uniqueName);
+
+            using IRepository repo = gitService.CloneRepository(
+                $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}.git",
+                repoPath,
+                new CloneOptions
+                {
+                    BranchName = subscription.Manifest.Branch
+                });
+
             try
             {
                 TempManifestOptions manifestOptions = new(filterOptions)
@@ -67,9 +79,8 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             finally
             {
-                // The path to the repo is stored inside a zip extraction folder so be sure to delete that
-                // zip extraction folder, not just the inner repo folder.
-                Directory.Delete(new DirectoryInfo(repoPath).Parent!.FullName, true);
+                repo.Dispose();
+                FileHelper.ForceDeleteDirectory(repoPath);
             }
         }
 

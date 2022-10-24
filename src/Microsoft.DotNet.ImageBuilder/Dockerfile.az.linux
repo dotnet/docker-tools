@@ -1,7 +1,8 @@
 ARG PYTHON_VERSION=3.10
+ARG ARCH=amd64
 
 # Azure CLI installer
-FROM mcr.microsoft.com/dotnet-buildtools/image-builder:latest AS az-installer
+FROM mcr.microsoft.com/dotnet-buildtools/image-builder:linux-$ARCH AS az-installer
 
 ARG PYTHON_VERSION
 
@@ -20,7 +21,7 @@ RUN pip install azure-cli
 
 
 # build final image
-FROM mcr.microsoft.com/dotnet-buildtools/image-builder:latest
+FROM mcr.microsoft.com/dotnet-buildtools/image-builder:linux-$ARCH
 
 ARG PYTHON_VERSION
 RUN apk add python3~=$PYTHON_VERSION

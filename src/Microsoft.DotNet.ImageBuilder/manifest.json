@@ -2,6 +2,7 @@
   "registry": "mcr.microsoft.com",
   "repos": [
     {
+      "id": "image-builder",
       "name": "dotnet-buildtools/image-builder",
       "images": [
         {
@@ -86,6 +87,7 @@
           "platforms": [
             {
               "buildArgs": {
+                "REPO": "$(Repo:image-builder)",
                 "RID_ARCH": "x64",
                 "ARCH": "amd64",
                 "ALPINE_TAG_SUFFIX": ""
@@ -100,6 +102,7 @@
             },
             {
               "buildArgs": {
+                "REPO": "$(Repo:image-builder)",
                 "RID_ARCH": "arm64",
                 "ARCH": "arm64",
                 "ALPINE_TAG_SUFFIX": "-arm64v8"

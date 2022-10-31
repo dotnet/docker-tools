@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -9,9 +9,9 @@
 
   <ItemGroup>
     <PackageReference Include="Cottle" Version="2.0.7" />
-    <PackageReference Include="GiGraph.Dot" Version="1.6.3" />
+    <PackageReference Include="GiGraph.Dot" Version="2.0.1" />
     <PackageReference Include="LibGit2Sharp" Version="0.26.2" />
-    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="10.0.3" />
+    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.0.0" />
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.38.1" />
     <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="6.0.0-beta.22351.1" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="6.0.0-beta.22351.1" />
@@ -22,6 +22,7 @@
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
     <PackageReference Include="System.ComponentModel.Composition" Version="6.0.0" />
-    <PackageReference Include="YamlDotNet" Version="11.2.1" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="6.0.1" />
+    <PackageReference Include="YamlDotNet" Version="12.0.1" />
   </ItemGroup>
 </Project>

@@ -9,12 +9,14 @@ using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using GiGraph.Dot.Entities.Attributes.Enums;
 using GiGraph.Dot.Entities.Edges;
 using GiGraph.Dot.Entities.Graphs;
 using GiGraph.Dot.Entities.Nodes;
-using GiGraph.Dot.Entities.Types.Styles;
 using GiGraph.Dot.Extensions;
+using GiGraph.Dot.Types.Arrowheads;
+using GiGraph.Dot.Types.Layout;
+using GiGraph.Dot.Types.Nodes;
+using GiGraph.Dot.Types.Styling;
 using Microsoft.DotNet.ImageBuilder.Models.Docker;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -38,8 +40,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Logger.WriteHeading("GENERATING IMAGE GRAPH");
 
             DotGraph graph = new DotGraph("ImageGraph", true);
-            graph.Attributes.Layout.Direction = DotLayoutDirection.BottomToTop;
-            graph.Attributes.Font.Color = Color.Black;
+            graph.Layout.Direction = DotLayoutDirection.BottomToTop;
+            graph.Font.Color = Color.Black;
 
             PlatformInfo[] platforms = Manifest.GetFilteredPlatforms().ToArray();
             AddBaseImages(graph, platforms);
@@ -92,10 +94,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             DotNode imageNode = new DotNode(primaryTag);
-            imageNode.Attributes.Shape = DotNodeShape.Record;
-            imageNode.Attributes.Color = color;
-            imageNode.Attributes.Label = $"{{{recordBody}}}";
-            imageNode.Attributes.Style.BorderStyle = DotBorderStyle.Solid;
+            imageNode.Shape = DotNodeShape.Record;
+            imageNode.Color = color;
+            imageNode.Label = $"{{{recordBody}}}";
+            imageNode.Style.BorderStyle = DotBorderStyle.Solid;
 
             graph.Nodes.Add(imageNode);
             foreach (string tag in tags)
@@ -119,10 +121,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (platform.FinalStageFromImage is not null)
                 {
                     var myEdge = new DotEdge(imageNode.Id, _nodeCache[platform.FinalStageFromImage].Id);
-                    myEdge.Attributes.Head.Arrowhead = DotArrowheadShape.Normal;
-                    myEdge.Attributes.Tail.Arrowhead = DotArrowheadShape.None;
-                    myEdge.Attributes.Color = Color.Black;
-                    myEdge.Attributes.Style.LineStyle = DotLineStyle.Dashed;
+                    myEdge.Head.Arrowhead = DotArrowheadShape.Normal;
+                    myEdge.Tail.Arrowhead = DotArrowheadShape.None;
+                    myEdge.Color = Color.Black;
+                    myEdge.Style.LineStyle = DotLineStyle.Dashed;
                     graph.Edges.Add(myEdge);
                 }
             }

@@ -1,6 +1,6 @@
 variables:
   # This variable is updated by automation to reference the latest version of Image Builder
-  imageNames.imageBuilderName: mcr.microsoft.com/dotnet-buildtools/image-builder:2017609
+  imageNames.imageBuilderName: mcr.microsoft.com/dotnet-buildtools/image-builder:2034095
   # This variable is referenced by the pipeline when it needs the name of the Image Builder image.
   # It's defined separately from the imageNames.imageBuilderName variable so that it can be overridden
   # by the pipeline without possibly causing a cyclic dependency. For example, an overriding pipeline

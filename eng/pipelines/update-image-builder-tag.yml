@@ -32,7 +32,7 @@ jobs:
   - script: >
       docker run --rm yaml-updater
       ./eng/image-builder-tag-update-config.json
-      variables/imageNames.imageBuilder
+      variables/imageNames.imageBuilderName
       mcr.microsoft.com/dotnet-buildtools/image-builder:$(imageBuilderTag)
       $(dotnetDockerBot.userName)
       $(dotnetDockerBot.email)

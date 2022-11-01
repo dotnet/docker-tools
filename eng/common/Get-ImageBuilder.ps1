@@ -8,8 +8,8 @@ ForEach-Object {
     Set-Variable -Name $parts[0].Trim() -Value $parts[1].Trim() -Scope Global
 }
 
-& docker inspect ${imageNames.imagebuilder} | Out-Null
+& docker inspect ${imageNames.imagebuilderName} | Out-Null
 if (-not $?) {
     Write-Output "Pulling"
-    & $PSScriptRoot/Invoke-WithRetry.ps1 "docker pull ${imageNames.imagebuilder}"
+    & $PSScriptRoot/Invoke-WithRetry.ps1 "docker pull ${imageNames.imagebuilderName}"
 }

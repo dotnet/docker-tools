@@ -1,11 +1,9 @@
 #!/usr/bin/env pwsh
 
 # Load common image names
-Get-Content $PSScriptRoot/templates/variables/docker-images.yml |
-Where-Object { $_.Trim() -notlike 'variables:' } |
-ForEach-Object { 
-    $parts = $_.Split(':', 2)
-    Set-Variable -Name $parts[0].Trim() -Value $parts[1].Trim() -Scope Global
+$imageNameVars = & $PSScriptRoot/Get-ImageNameVars.ps1
+foreach ($varName in $imageNameVars.Keys) { 
+    Set-Variable -Name $varName -Value $imageNameVars[$varName] -Scope Global
 }
 
 & docker inspect ${imageNames.imagebuilderName} | Out-Null

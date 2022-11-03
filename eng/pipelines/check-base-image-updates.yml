@@ -15,5 +15,10 @@ variables:
 jobs:
 - template: templates/jobs/check-base-image-updates.yml
   parameters:
-    jobName: Build
+    jobName: CheckBaseImages
     subscriptionsPath: eng/check-base-image-subscriptions.json
+- template: templates/jobs/check-base-image-updates.yml
+  parameters:
+    jobName: CheckBaseImages_BuildTools
+    subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
+    customGetStaleImagesArgs: --base-override-regex '^((alpine|centos|debian|fedora|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'

@@ -93,27 +93,5 @@
       "id": 374,
       "pathVariable": "imageBuilder.pathArgs"
     }
-  },
-  {
-    "manifest": {
-      "owner": "dotnet",
-      "repo": "dotnet-buildtools-prereqs-docker",
-      "branch": "main",
-      "path": "manifest.json",
-      "variables": {
-        "FloatingTagSuffix": "",
-        "UniqueId": ""
-      }
-    },
-    "imageInfo": {
-      "owner": "dotnet",
-      "repo": "versions",
-      "branch": "main",
-      "path": "build-info/docker/image-info.dotnet-dotnet-buildtools-prereqs-docker-main.json"
-    },
-    "pipelineTrigger": {
-      "id": 1183,
-      "pathVariable": "imageBuilder.pathArgs"
-    }
   }
 ]

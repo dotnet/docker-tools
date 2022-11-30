@@ -8,6 +8,7 @@
 param(
     [string]$Version,
     [string]$Architecture,
+    [string[]]$Paths,
     [string[]]$OSVersions,
     [string]$Registry,
     [string]$RepoPrefix,

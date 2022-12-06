@@ -46,6 +46,9 @@ namespace Microsoft.DotNet.ImageBuilder
         public void CreateTag(string image, string tag, bool isDryRun) =>
             _inner.CreateTag(image, tag, isDryRun);
 
+        public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun) =>
+            _inner.CreateManifestList(manifestListTag, images, isDryRun);
+
         public DateTime GetCreatedDate(string image, bool isDryRun) =>
             _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun));
 
@@ -73,6 +76,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public void PushImage(string tag, bool isDryRun) =>
             _inner.PushImage(tag, isDryRun);
+
+        public void PushManifestList(string tag, bool isDryRun) =>
+            _inner.PushManifestList(tag, isDryRun);
     }
 }
 #nullable disable

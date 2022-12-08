@@ -238,6 +238,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = FormatVersionableOsName(os, name => "openSUSE Leap");
                 }
+                else if (os.Contains("ubuntu"))
+                {
+                    displayName = FormatVersionableOsName(os, name => "Ubuntu");
+                }
                 else
                 {
                     throw new NotSupportedException($"The OS version '{os}' is not supported.");

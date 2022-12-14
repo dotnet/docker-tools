@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -19,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
         private readonly IManifestService _manifestToolService;
+        private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
         private List<string> _publishedManifestTags = new List<string>();
@@ -26,10 +26,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [ImportingConstructor]
         public PublishManifestCommand(
             IManifestService manifestToolService,
+            IDockerService dockerService,
             ILoggerService loggerService,
             IDateTimeService dateTimeService)
         {
             _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
+            _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
         }
@@ -44,29 +46,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             await ExecuteWithUserAsync(async () =>
             {
-                IEnumerable<string> manifests = Manifest.FilteredRepos
+                IEnumerable<(RepoInfo repo, ImageInfo image)> manifests = Manifest.FilteredRepos
                     .SelectMany(repo =>
                         repo.FilteredImages
                             .Where(image => image.SharedTags.Any())
-                            .Select(image => (repo, image)))
-                    .SelectMany(repoImage => GenerateManifests(repoImage.repo, repoImage.image))
-                    .ToList();
+                            .Select(image => (repo, image)));
+
+                Parallel.ForEach(manifests, ((RepoInfo Repo, ImageInfo Image) repoImage) =>
+                {
+                    GenerateManifests(repoImage.Repo, repoImage.Image);
+                });
 
                 DateTime createdDate = _dateTimeService.UtcNow;
-                Parallel.ForEach(manifests, manifest =>
+                Parallel.ForEach(_publishedManifestTags, tag =>
                 {
-                    string manifestFilename = $"manifest.{Guid.NewGuid()}.yml";
-                    _loggerService.WriteSubheading($"PUBLISHING MANIFEST:  '{manifestFilename}'{Environment.NewLine}{manifest}");
-                    File.WriteAllText(manifestFilename, manifest);
-
-                    try
-                    {
-                        _manifestToolService.PushFromSpec(manifestFilename, Options.IsDryRun);
-                    }
-                    finally
-                    {
-                        File.Delete(manifestFilename);
-                    }
+                    _dockerService.PushManifestList(tag, Options.IsDryRun);
                 });
 
                 WriteManifestSummary();
@@ -118,9 +112,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             File.WriteAllText(Options.ImageInfoPath, imageInfoString);
         }
 
-        private IEnumerable<string> GenerateManifests(RepoInfo repo, ImageInfo image)
+        private void GenerateManifests(RepoInfo repo, ImageInfo image)
         {
-            yield return GenerateManifest(repo, image, image.SharedTags.Select(tag => tag.Name),
+            GenerateManifests(repo, image, image.SharedTags.Select(tag => tag.Name),
                 tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + repo.Name, tag),
                 platform => platform.Tags.First());
 
@@ -136,32 +130,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // There won't always be a platform tag that's syndicated. So if a manifest tag is syndicated, we need to account
                 // for the possibility that a given platform for that manifest will not have a matching syndicated repo.
 
-                yield return GenerateManifest(repo, image, destinationTags,
+                GenerateManifests(repo, image, destinationTags,
                     tag => DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedRepo, tag),
                     platform => platform.Tags.FirstOrDefault(tag => tag.SyndicatedRepo == syndicatedRepo));
             }
         }
 
-        private string GenerateManifest(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName,
+        private void GenerateManifests(RepoInfo repo, ImageInfo image, IEnumerable<string> tags, Func<string, string> getImageName,
             Func<PlatformInfo, TagInfo?> getTagRepresentative)
         {
-            string imageName = getImageName(tags.First());
-            StringBuilder manifestYml = new();
-            manifestYml.AppendLine($"image: {imageName}");
-            _publishedManifestTags.Add(imageName);
-
-            string repoName = DockerHelper.GetRepo(imageName);
-
-            IEnumerable<string> additionalTags = tags.Skip(1);
-
-            if (additionalTags.Any())
+            foreach (string tag in tags)
             {
-                manifestYml.AppendLine($"tags: [{string.Join(",", additionalTags)}]");
+                GenerateManifest(repo, image, tag, getImageName, getTagRepresentative);
             }
+        }
 
-            _publishedManifestTags.AddRange(additionalTags.Select(tag => $"{repoName}:{tag}"));
+        private void GenerateManifest(RepoInfo repo, ImageInfo image, string tag, Func<string, string> getImageName,
+            Func<PlatformInfo, TagInfo?> getTagRepresentative)
+        {
+            string manifestListTag = getImageName(tag);
+            _publishedManifestTags.Add(manifestListTag);
 
-            manifestYml.AppendLine("manifests:");
+            List<string> images = new();
+
             foreach (PlatformInfo platform in image.AllPlatforms)
             {
                 TagInfo? imageTag;
@@ -171,38 +162,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 else
                 {
-                    (ImageInfo Image, PlatformInfo Platform) matchingImagePlatform = repo.AllImages
+                    PlatformInfo platformInfo = repo.AllImages
                         .SelectMany(image =>
                             image.AllPlatforms
                                 .Select(p => (Image: image, Platform: p))
                                 .Where(imagePlatform => platform != imagePlatform.Platform &&
                                     PlatformInfo.AreMatchingPlatforms(image, platform, imagePlatform.Image, imagePlatform.Platform) &&
                                     imagePlatform.Platform.Tags.Any()))
-                        .FirstOrDefault();
+                        .FirstOrDefault()
+                        .Platform;
 
-                    if (matchingImagePlatform.Platform is null)
+                    if (platformInfo is null)
                     {
                         throw new InvalidOperationException(
                             $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
                     }
 
-                    imageTag = getTagRepresentative(matchingImagePlatform.Platform);
+                    imageTag = getTagRepresentative(platformInfo);
                 }
 
                 if (imageTag is not null)
                 {
-                    manifestYml.AppendLine($"- image: {getImageName(imageTag.Name)}");
-                    manifestYml.AppendLine($"  platform:");
-                    manifestYml.AppendLine($"    architecture: {platform.Model.Architecture.GetDockerName()}");
-                    manifestYml.AppendLine($"    os: {platform.Model.OS.GetDockerName()}");
-                    if (platform.Model.Variant != null)
-                    {
-                        manifestYml.AppendLine($"    variant: {platform.Model.Variant}");
-                    }
+                    images.Add(getImageName(imageTag.Name));
                 }
             }
 
-            return manifestYml.ToString();
+            _dockerService.CreateManifestList(manifestListTag, images, Options.IsDryRun);
         }
 
         private void WriteManifestSummary()

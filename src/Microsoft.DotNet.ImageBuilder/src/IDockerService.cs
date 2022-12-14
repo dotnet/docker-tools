@@ -22,7 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void PushImage(string tag, bool isDryRun);
 
+        void PushManifestList(string manifestListTag, bool isDryRun);
+
         void CreateTag(string image, string tag, bool isDryRun);
+
+        void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun);
 
         string? BuildImage(
             string dockerfilePath,

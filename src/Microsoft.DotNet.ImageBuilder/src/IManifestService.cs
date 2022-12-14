@@ -8,7 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IManifestService
     {
-        void PushFromSpec(string manifestFile, bool isDryRun);
         Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun);
     }
 }

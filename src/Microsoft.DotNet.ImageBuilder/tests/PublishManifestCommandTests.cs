@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>(), dateTimeService);
+                manifestToolService.Object, Mock.Of<IDockerService>(), Mock.Of<ILoggerService>(), dateTimeService);
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -281,51 +281,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DuplicatePlatform()
         {
-            string expectedManifest1 =
-@"image: mcr.microsoft.com/repo1:sharedtag2
-tags: [sharedtag1]
-manifests:
-- image: mcr.microsoft.com/repo1:tag1
-  platform:
-    architecture: amd64
-    os: linux
-";
-
-            string expectedManifest2 =
-@"image: mcr.microsoft.com/repo1:sharedtag3
-manifests:
-- image: mcr.microsoft.com/repo1:tag1
-  platform:
-    architecture: amd64
-    os: linux
-";
-
-            bool manifest1Found = false;
-            bool manifest2Found = false;
-
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
-            manifestToolService
-                .Setup(o => o.PushFromSpec(It.IsAny<string>(), false))
-                .Callback((string manifestFile, bool isDryRun) =>
-                {
-                    string manifestContents = File.ReadAllText(manifestFile);
-
-                    if (manifestContents.NormalizeLineEndings(expectedManifest1) == expectedManifest1)
-                    {
-                        manifest1Found = true;
-                    }
-                    else if (manifestContents.NormalizeLineEndings(expectedManifest2) == expectedManifest2)
-                    {
-                        manifest2Found = true;
-                    }
-                });
-
             manifestToolService
                 .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
+            Mock<IDockerService> dockerServiceMock = new();
+
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
+                manifestToolService.Object, dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -416,10 +380,15 @@ manifests:
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            Assert.True(manifest1Found);
-            Assert.True(manifest2Found);
-            manifestToolService
-                .Verify(o => o.PushFromSpec(It.IsAny<string>(), false), Times.Exactly(2));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo1:sharedtag1", new string[] { "mcr.microsoft.com/repo1:tag1" }, false));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo1:sharedtag2", new string[] { "mcr.microsoft.com/repo1:tag1" }, false));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo1:sharedtag3", new string[] { "mcr.microsoft.com/repo1:tag1" }, false));
+
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo1:sharedtag1", false));
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo1:sharedtag2", false));
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo1:sharedtag3", false));
+
+            dockerServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -428,59 +397,18 @@ manifests:
         [Fact]
         public async Task SyndicatedTag()
         {
-            string expectedManifest1 =
-@"image: mcr.microsoft.com/repo:sharedtag2
-tags: [sharedtag1]
-manifests:
-- image: mcr.microsoft.com/repo:tag1
-  platform:
-    architecture: amd64
-    os: linux
-- image: mcr.microsoft.com/repo:tag3
-  platform:
-    architecture: amd64
-    os: linux
-";
-
-            string expectedManifest2 =
-@"image: mcr.microsoft.com/repo2:sharedtag2a
-tags: [sharedtag2b]
-manifests:
-- image: mcr.microsoft.com/repo2:tag2
-  platform:
-    architecture: amd64
-    os: linux
-";
-
-            bool manifest1Found = false;
-            bool manifest2Found = false;
-
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
-            manifestToolService
-                .Setup(o => o.PushFromSpec(It.IsAny<string>(), false))
-                .Callback((string manifestFile, bool isDryRun) =>
-                {
-                    string manifestContents = File.ReadAllText(manifestFile);
-
-                    if (manifestContents.NormalizeLineEndings(expectedManifest1) == expectedManifest1)
-                    {
-                        manifest1Found = true;
-                    }
-                    else if (manifestContents.NormalizeLineEndings(expectedManifest2) == expectedManifest2)
-                    {
-                        manifest2Found = true;
-                    }
-                });
-
             manifestToolService
                 .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
+
+            Mock<IDockerService> dockerServiceMock = new();
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<ILoggerService>(), dateTimeService);
+                manifestToolService.Object, dockerServiceMock.Object, Mock.Of<ILoggerService>(), dateTimeService);
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -587,10 +515,15 @@ manifests:
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            Assert.True(manifest1Found);
-            Assert.True(manifest2Found);
-            manifestToolService
-                .Verify(o => o.PushFromSpec(It.IsAny<string>(), false), Times.Exactly(2));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo:sharedtag1", new string[] { "mcr.microsoft.com/repo:tag1", "mcr.microsoft.com/repo:tag3" }, false));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo:sharedtag2", new string[] { "mcr.microsoft.com/repo:tag1", "mcr.microsoft.com/repo:tag3" }, false));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo2:sharedtag2a", new string[] { "mcr.microsoft.com/repo2:tag2" }, false));
+            dockerServiceMock.Verify(o => o.CreateManifestList("mcr.microsoft.com/repo2:sharedtag2b", new string[] { "mcr.microsoft.com/repo2:tag2" }, false));
+
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo:sharedtag1", false));
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo:sharedtag2", false));
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo2:sharedtag2a", false));
+            dockerServiceMock.Verify(o => o.PushManifestList("mcr.microsoft.com/repo2:sharedtag2b", false));
 
             ImageArtifactDetails expectedImageArtifactDetails = new ImageArtifactDetails
             {

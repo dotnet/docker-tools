@@ -15,14 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IDockerService))]
     internal class DockerService : IDockerService
     {
-        private readonly IManifestService _manifestToolService;
+        private readonly IManifestService _manifestService;
 
         public Architecture Architecture => DockerHelper.Architecture;
 
         [ImportingConstructor]
         public DockerService(IManifestService manifestToolService)
         {
-            _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
+            _manifestService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
         }
 
         public async Task<string?> GetImageDigestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string digestSha = await _manifestToolService.GetManifestDigestShaAsync(image, credsHost, isDryRun);
+            string digestSha = await _manifestService.GetManifestDigestShaAsync(image, credsHost, isDryRun);
 
             if (digestSha is null)
             {
@@ -56,13 +56,20 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun) =>
-            _manifestToolService.GetImageLayersAsync(image, credsHost, isDryRun);
+            _manifestService.GetImageLayersAsync(image, credsHost, isDryRun);
 
         public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
 
         public void PushImage(string tag, bool isDryRun) => ExecuteHelper.ExecuteWithRetry("docker", $"push {tag}", isDryRun);
 
+        public void PushManifestList(string manifestListTag, bool isDryRun) =>
+            ExecuteHelper.ExecuteWithRetry("docker", $"manifest push {manifestListTag}", isDryRun);
+
         public void CreateTag(string image, string tag, bool isDryRun) => DockerHelper.CreateTag(image, tag, isDryRun);
+
+        public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun) =>
+            ExecuteHelper.ExecuteWithRetry(
+                "docker", $"manifest create {manifestListTag} {string.Join(' ', images.ToArray())}", isDryRun);
 
         public string? BuildImage(
             string dockerfilePath,

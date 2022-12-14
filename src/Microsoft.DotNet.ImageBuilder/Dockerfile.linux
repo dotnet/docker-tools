@@ -31,17 +31,6 @@ RUN apk add --no-cache \
         docker \
         git
 
-# install manifest-tool
-ARG ARCH=amd64
-RUN manifestToolVersion="2.0.6" \
-    && wget -O binaries-manifest-tool.tar.gz \
-        "https://github.com/estesp/manifest-tool/releases/download/v$manifestToolVersion/binaries-manifest-tool-$manifestToolVersion.tar.gz" \
-    && echo "4d8a502f2d3b82a50cfde65274ff6df7ef6fe441dc65b96b595a70cc64ece5bc  binaries-manifest-tool.tar.gz" | sha256sum -c - \
-    && tar -zxf binaries-manifest-tool.tar.gz -C /usr/local/bin manifest-tool-linux-$ARCH \
-    && mv /usr/local/bin/manifest-tool-linux-$ARCH /usr/local/bin/manifest-tool \
-    && chmod +x /usr/local/bin/manifest-tool \
-    && rm binaries-manifest-tool.tar.gz
-
 # install image-builder
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./

@@ -21,13 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder
             _httpClient = httpClientProvider.GetRegistryClient();
         }
 
-        public void PushFromSpec(string manifestFile, bool isDryRun)
-        {
-            // ExecuteWithRetry because the manifest-tool fails periodically while communicating
-            // with the Docker Registry.
-            ExecuteHelper.ExecuteWithRetry("manifest-tool", $"push from-spec {manifestFile}", isDryRun);
-        }
-
         public Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
             if (isDryRun)

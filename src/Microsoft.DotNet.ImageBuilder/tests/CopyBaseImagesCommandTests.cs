@@ -30,15 +30,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string subscriptionId = "my subscription";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
-            IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
-            Mock<IAzureManagementFactory> azureManagementFactoryMock =
-                AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
-
             Mock<IEnvironmentService> environmentServiceMock = new();
+            Mock<ICopyImageService> copyImageServiceMock = new();
 
             CopyBaseImagesCommand command = new(
-                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
+                copyImageServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -94,21 +90,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (var expectedTagInfo in expectedTagInfos)
             {
-                registriesOperationsMock
-                    .Verify(o => o.ImportImageWithHttpMessagesAsync(
-                        command.Options.ResourceGroup,
-                        manifest.Registry,
-                        It.Is<ImportImageParametersInner>(parameters =>
-                            parameters.Source.RegistryUri == expectedTagInfo.Registry &&
-                            parameters.Source.Credentials.Password == expectedTagInfo.Password &&
-                            parameters.Source.Credentials.Username == expectedTagInfo.Username &&
-                            parameters.Source.SourceImage == expectedTagInfo.SourceImage &&
-                            TestHelper.CompareLists(new List<string> { expectedTagInfo.TargetTag }, parameters.TargetTags)),
-                        It.IsAny<Dictionary<string, List<string>>>(),
-                        It.IsAny<CancellationToken>()));
+                copyImageServiceMock.Verify(o =>
+                        o.ImportImageAsync(
+                            subscriptionId,
+                            command.Options.ResourceGroup,
+                            It.IsAny<ServicePrincipalOptions>(),
+                            new string[] { expectedTagInfo.TargetTag },
+                            manifest.Registry,
+                            expectedTagInfo.SourceImage,
+                            expectedTagInfo.Registry,
+                            null,
+                            It.Is<ImportSourceCredentials>(creds => creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
+                            false));
             }
 
-            registriesOperationsMock.VerifyNoOtherCalls();
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -129,15 +125,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string CustomRegistry = "contoso.azurecr.io";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
-            IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
-            Mock<IAzureManagementFactory> azureManagementFactoryMock =
-                AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
             Mock<IEnvironmentService> environmentServiceMock = new();
+            Mock<ICopyImageService> copyImageServiceMock = new();
 
             CopyBaseImagesCommand command = new(
-                azureManagementFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
+                copyImageServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -178,23 +171,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (var expectedTagInfo in expectedTagInfos)
             {
-                registriesOperationsMock
-                    .Verify(o => o.ImportImageWithHttpMessagesAsync(
-                        command.Options.ResourceGroup,
-                        manifest.Registry,
-                        It.Is<ImportImageParametersInner>(parameters =>
-                            parameters.Source.RegistryUri == expectedTagInfo.Registry &&
-                            parameters.Source.SourceImage == expectedTagInfo.SourceImage &&
-                            TestHelper.CompareLists(new List<string> { expectedTagInfo.TargetTag }, parameters.TargetTags) &&
-                            (
-                                (expectedTagInfo.Username == null && expectedTagInfo.Password == null && parameters.Source.Credentials == null) ||
-                                (parameters.Source.Credentials.Password == expectedTagInfo.Password && parameters.Source.Credentials.Username == expectedTagInfo.Username)
-                            )),
-                        It.IsAny<Dictionary<string, List<string>>>(),
-                        It.IsAny<CancellationToken>()));
+                copyImageServiceMock.Verify(o =>
+                        o.ImportImageAsync(
+                            subscriptionId,
+                            command.Options.ResourceGroup,
+                            It.IsAny<ServicePrincipalOptions>(),
+                            new string[] { expectedTagInfo.TargetTag },
+                            manifest.Registry,
+                            expectedTagInfo.SourceImage,
+                            expectedTagInfo.Registry,
+                            null,
+                            It.Is<ImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
+                            false));
             }
-
-            registriesOperationsMock.VerifyNoOtherCalls();
         }
     }
 }

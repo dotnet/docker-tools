@@ -22,6 +22,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class CleanAcrImagesOptionsBuilder : CliOptionsBuilder
     {
+        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
+            ServicePrincipalOptionsBuilder.BuildWithDefaults();
+
         private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
         private const int DefaultAge = 30;
 
@@ -33,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         new Argument<string>(nameof(CleanAcrImagesOptions.RepoName),
                             "Name of repo to target (wildcard chars * and ? supported)"),
                     })
-                .Concat(ServicePrincipalOptions.GetCliArguments())
+                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {
@@ -46,14 +49,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     });
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions().Concat(
-                new Option[]
-                {
-                    CreateOption("action", nameof(CleanAcrImagesOptions.Action),
-                        EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction), DefaultCleanAcrImagesAction),
-                    CreateOption("age", nameof(CleanAcrImagesOptions.Age),
-                        $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})", DefaultAge)
-                });
+            base.GetCliOptions()
+                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions())
+                .Concat(
+                    new Option[]
+                    {
+                        CreateOption("action", nameof(CleanAcrImagesOptions.Action),
+                            EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction), DefaultCleanAcrImagesAction),
+                        CreateOption("age", nameof(CleanAcrImagesOptions.Age),
+                            $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})", DefaultAge)
+                    });
     }
 
     public enum CleanAcrImagesAction

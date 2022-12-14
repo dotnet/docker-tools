@@ -8,7 +8,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -20,8 +19,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public CopyAcrImagesCommand(
-            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
-            : base(azureManagementFactory, loggerService)
+            ICopyImageService copyImageService, ILoggerService loggerService)
+            : base(copyImageService, loggerService)
         {
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
@@ -40,11 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 
-            string baseRegistryName = GetBaseRegistryName(Manifest.Registry);
-
-            string resourceId =
-                $"/subscriptions/{Options.Subscription}/resourceGroups/{Options.ResourceGroup}/providers" +
-                $"/Microsoft.ContainerRegistry/registries/{baseRegistryName}";
+            string resourceId = CopyImageService.GetResourceId(Options.Subscription, Options.ResourceGroup, Manifest.Registry);
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>
@@ -54,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(tagInfo =>
                             ImportImageAsync(
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
-                                baseRegistryName,
+                                Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Manifest.Registry),
                                 srcResourceId: resourceId)))
                 .SelectMany(tasks => tasks);

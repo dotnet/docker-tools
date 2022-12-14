@@ -40,7 +40,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IAzureManagementFactory> azureManagementFactoryMock =
                     AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+                Mock<ICopyImageService> copyImageServiceMock = new();
+
+                CopyAcrImagesCommand command = new(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -103,15 +105,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 foreach (string expectedTag in expectedTags)
                 {
-                    registriesOperationsMock
-                        .Verify(o => o.ImportImageWithHttpMessagesAsync(
+                    copyImageServiceMock.Verify(o =>
+                        o.ImportImageAsync(
+                            subscriptionId,
                             command.Options.ResourceGroup,
+                            It.IsAny<ServicePrincipalOptions>(),
+                            new string[] { expectedTag },
                             manifest.Registry,
-                            It.Is<ImportImageParametersInner>(parameters =>
-                                VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
-                            It.IsAny<Dictionary<string, List<string>>>(),
-                            It.IsAny<CancellationToken>()));
+                            expectedTag,
+                            null,
+                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            null,
+                            false));
                 }
+
+                copyImageServiceMock.VerifyNoOtherCalls();
             }
         }
 
@@ -130,9 +138,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<IAzureManagementFactory> azureManagementFactoryMock =
                     AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-                Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+                Mock<IEnvironmentService> environmentServiceMock = new();
+                Mock<ICopyImageService> copyImageServiceMock = new();
 
-                CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+                CopyAcrImagesCommand command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -207,15 +216,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 foreach (string expectedTag in expectedTags)
                 {
-                    registriesOperationsMock
-                        .Verify(o => o.ImportImageWithHttpMessagesAsync(
+                    copyImageServiceMock.Verify(o =>
+                        o.ImportImageAsync(
+                            subscriptionId,
                             command.Options.ResourceGroup,
+                            It.IsAny<ServicePrincipalOptions>(),
+                            new string[] { expectedTag },
                             manifest.Registry,
-                            It.Is<ImportImageParametersInner>(parameters =>
-                                VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
-                            It.IsAny<Dictionary<string, List<string>>>(),
-                            It.IsAny<CancellationToken>()));
+                            expectedTag,
+                            null,
+                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            null,
+                            false));
                 }
+
+                copyImageServiceMock.VerifyNoOtherCalls();
             }
         }
 
@@ -233,9 +248,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IAzureManagementFactory> azureManagementFactoryMock =
                 AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            Mock<IEnvironmentService> environmentServiceMock = new();
+            Mock<ICopyImageService> copyImageServiceMock = new();
 
-            CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -322,15 +338,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (string expectedTag in expectedTags)
             {
-                registriesOperationsMock
-                    .Verify(o => o.ImportImageWithHttpMessagesAsync(
-                        command.Options.ResourceGroup,
-                        manifest.Registry,
-                        It.Is<ImportImageParametersInner>(parameters =>
-                            VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
-                        It.IsAny<Dictionary<string, List<string>>>(),
-                        It.IsAny<CancellationToken>()));
+                copyImageServiceMock.Verify(o =>
+                        o.ImportImageAsync(
+                            subscriptionId,
+                            command.Options.ResourceGroup,
+                            It.IsAny<ServicePrincipalOptions>(),
+                            new string[] { expectedTag },
+                            manifest.Registry,
+                            expectedTag,
+                            null,
+                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            null,
+                            false));
             }
+
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -347,9 +369,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IAzureManagementFactory> azureManagementFactoryMock =
                 AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            Mock<IEnvironmentService> environmentServiceMock = new();
+            Mock<ICopyImageService> copyImageServiceMock = new();
 
-            CopyAcrImagesCommand command = new CopyAcrImagesCommand(azureManagementFactoryMock.Object, Mock.Of<ILoggerService>());
+            CopyAcrImagesCommand command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -437,20 +460,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             foreach (string expectedTag in expectedTags)
             {
-                registriesOperationsMock
-                    .Verify(o => o.ImportImageWithHttpMessagesAsync(
-                        command.Options.ResourceGroup,
-                        manifest.Registry,
-                        It.Is<ImportImageParametersInner>(parameters =>
-                            VerifyImportImageParameters(parameters, new List<string> { expectedTag })),
-                        It.IsAny<Dictionary<string, List<string>>>(),
-                        It.IsAny<CancellationToken>()));
+                copyImageServiceMock.Verify(o =>
+                        o.ImportImageAsync(
+                            subscriptionId,
+                            command.Options.ResourceGroup,
+                            It.IsAny<ServicePrincipalOptions>(),
+                            new string[] { expectedTag },
+                            manifest.Registry,
+                            It.IsAny<string>(),
+                            null,
+                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            null,
+                            false));
             }
-        }
 
-        private static bool VerifyImportImageParameters(ImportImageParametersInner parameters, IList<string> expectedTags)
-        {
-            return TestHelper.CompareLists(expectedTags, parameters.TargetTags);
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
     }
 }

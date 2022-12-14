@@ -26,6 +26,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder
     {
+        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
+            ServicePrincipalOptionsBuilder.BuildWithDefaults();
+
         private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
         private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
@@ -38,10 +41,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Path to image info file")
                     }
                 )
-                .Concat(ServicePrincipalOptions.GetCliArguments());
+                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments());
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
+                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {

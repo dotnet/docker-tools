@@ -26,17 +26,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
         public bool SkipPlatformCheck { get; set; }
         public string? OutputVariableName { get; set; }
+        public ServicePrincipalOptions ServicePrincipal { get; set; } = new();
+        public string? Subscription { get; set; }
+        public string? ResourceGroup { get; set; }
     }
 
     public class BuildOptionsBuilder : DockerRegistryOptionsBuilder
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
         private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
+        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
+            ServicePrincipalOptionsBuilder.Build()
+                .WithClientId("acr-client-id", description: "ACR service principal client ID")
+                .WithSecret("acr-password", description: "ACR service principal's password")
+                .WithTenant("acr-tenant", description: "ACR service principal's tenant");
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions())
+                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -62,12 +71,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Skips validation that ensures the Dockerfile's base image's platform matches the manifest configuration"),
                         CreateOption<string>("digests-out-var", nameof(BuildOptions.OutputVariableName),
                             "Azure DevOps variable name to use for outputting the list of built image digests"),
+                        CreateOption<string>("acr-subscription", nameof(BuildOptions.Subscription),
+                            "Azure subscription to operate on"),
+                        CreateOption<string>("acr-resource-group", nameof(BuildOptions.ResourceGroup),
+                            "Azure resource group to operate on"),
                     });
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments());
+                .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments())
+                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

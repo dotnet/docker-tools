@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
@@ -43,9 +42,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
+            string productRepo = GetProductRepo();
+
             IEnumerable<GitObject> gitObjects =
-                GetUpdatedReadmes()
-                .Concat(GetUpdatedTagsMetadata());
+                GetUpdatedReadmes(productRepo)
+                .Concat(GetUpdatedTagsMetadata(productRepo));
 
             foreach (GitObject gitObject in gitObjects)
             {
@@ -59,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
                 {
-                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring readmes", branch =>
+                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
                     {
                         return FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch);
                     });
@@ -111,49 +112,40 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
         }
 
-        private static string GetProductRepoName(RepoInfo repo)
+        private string GetProductRepo()
         {
-            return repo.Name.Substring(0, repo.Name.LastIndexOf('/'));
+            string firstRepoName = Manifest.AllRepos.First().QualifiedName
+                .TrimStart($"{Manifest.Registry}/");
+            return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
         }
 
-        private GitObject[] GetUpdatedReadmes()
+        private GitObject[] GetUpdatedReadmes(string productRepo)
         {
-            List<GitObject> readmes = new();
+            List<string> readmePaths = Manifest.FilteredRepos
+                .SelectMany(repo => repo.Readmes)
+                .Select(readme => readme.Path)
+                .ToList();
 
             if (!string.IsNullOrEmpty(Manifest.ReadmePath) && !Options.ExcludeProductFamilyReadme)
             {
-                IEnumerable<string> productRepoNames = Manifest.FilteredRepos
-                    .Select(repo => GetProductRepoName(repo))
-                    .Distinct();
-                foreach (string productRepo in productRepoNames)
-                {
-                    readmes.Add(GetReadMeGitObject(productRepo, Manifest.ReadmePath, containsTagListing: false));
-                }
+                readmePaths.Add(Manifest.ReadmePath);
             }
 
-            foreach (RepoInfo repo in Manifest.FilteredRepos)
+            List<GitObject> readmes = new();
+
+            foreach (string readmePath in readmePaths)
             {
-                foreach (Readme readme in repo.Readmes)
-                {
-                    readmes.Add(GetReadMeGitObject(GetProductRepoName(repo), readme.Path, containsTagListing: true));
-                }
+                string fullPath = Path.Combine(Manifest.Directory, readmePath);
+                
+                string updatedReadMe = File.ReadAllText(fullPath);
+                updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
+                readmes.Add(GetGitObject(productRepo, fullPath, updatedReadMe));
             }
 
             return readmes.ToArray();
         }
 
-        private GitObject GetReadMeGitObject(string productRepoName, string readmePath, bool containsTagListing)
-        {
-            string updatedReadMe = File.ReadAllText(readmePath);
-            if (containsTagListing)
-            {
-                updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-            }
-            
-            return GetGitObject(productRepoName, readmePath, updatedReadMe);
-        }
-
-        private GitObject[] GetUpdatedTagsMetadata()
+        private GitObject[] GetUpdatedTagsMetadata(string productRepo)
         {
             List<GitObject> metadata = new();
 
@@ -161,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 string updatedMetadata = McrTagsMetadataGenerator.Execute(_gitService, Manifest, repo, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
-                metadata.Add(GetGitObject(GetProductRepoName(repo), metadataFileName, updatedMetadata));
+                metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
             }
 
             return metadata.ToArray();

@@ -169,6 +169,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return imageName;
         }
 
+        public static string GetTagName(string imageName) => imageName[(GetTagOrDigestSeparatorIndex(imageName) + 1)..];
+
         public static string NormalizeRepo(string image)
         {
             string? registry = GetRegistry(image);

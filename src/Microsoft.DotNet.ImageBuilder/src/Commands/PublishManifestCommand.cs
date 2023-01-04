@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
@@ -21,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
-        private List<string> _publishedManifestTags = new List<string>();
+        private ConcurrentBag<string> _publishedManifestTags = new();
 
         [ImportingConstructor]
         public PublishManifestCommand(

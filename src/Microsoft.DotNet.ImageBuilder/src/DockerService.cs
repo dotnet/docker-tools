@@ -68,8 +68,9 @@ namespace Microsoft.DotNet.ImageBuilder
         public void CreateTag(string image, string tag, bool isDryRun) => DockerHelper.CreateTag(image, tag, isDryRun);
 
         public void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun) =>
+            // Use the --amend option to handle potential retries: https://github.com/dotnet/docker-tools/issues/1098
             ExecuteHelper.ExecuteWithRetry(
-                "docker", $"manifest create {manifestListTag} {string.Join(' ', images.ToArray())}", isDryRun);
+                "docker", $"manifest create --amend {manifestListTag} {string.Join(' ', images.ToArray())}", isDryRun);
 
         public string? BuildImage(
             string dockerfilePath,

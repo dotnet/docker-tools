@@ -3,7 +3,7 @@
 ARG WINDOWS_BASE
 
 # build Microsoft.DotNet.ImageBuilder
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build-env
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding

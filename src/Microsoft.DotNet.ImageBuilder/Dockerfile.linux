@@ -28,6 +28,7 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:6.0-alpine$ALPINE_TAG_SUFFIX
 
 # install tooling
 RUN apk add --no-cache \
+        openssl1.1-compat \
         docker \
         git
 

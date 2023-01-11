@@ -198,6 +198,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = "Debian 11";
                 }
+                else if (os.Contains("bookworm"))
+                {
+                    displayName = "Debian 12";
+                }
                 else if (os.Contains("xenial"))
                 {
                     displayName = "Ubuntu 16.04";

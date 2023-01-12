@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <PublishTrimmed>False</PublishTrimmed>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
   </PropertyGroup>
 

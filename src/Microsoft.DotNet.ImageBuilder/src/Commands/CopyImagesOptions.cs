@@ -21,16 +21,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
     {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
-               new ManifestFilterOptionsBuilder();
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
+        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
+            ServicePrincipalOptionsBuilder.BuildWithDefaults();
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions().Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+            base.GetCliOptions()
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(ServicePrincipalOptions.GetCliArguments())
+                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {

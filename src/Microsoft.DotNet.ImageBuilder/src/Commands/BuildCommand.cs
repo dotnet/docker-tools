@@ -12,7 +12,6 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 #nullable enable
@@ -25,6 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
+        private readonly ICopyImageService _copyImageService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -32,16 +32,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         // Metadata about Dockerfiles whose images have been retrieved from the cache
         private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
 
+        /// <summary>
+        /// Maps a source digest from the image info file to the corresponding digest in the copied location for image caching.
+        /// This is specifically needed to support shared Dockerfile scenarios.
+        /// </summary>
+        private readonly Dictionary<string, string> _sourceDigestCopyLocationMapping = new();
+
         private ImageArtifactDetails? _imageArtifactDetails;
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService, IProcessService processService)
+        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService,
+            IProcessService processService, ICopyImageService copyImageService)
         {
             _imageDigestCache = new ImageDigestCache(dockerService);
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
+            _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
         }
 
         protected override string Description => "Builds Dockerfiles";
@@ -61,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 await BuildImagesAsync();
 
-                if (_processedTags.Any())
+                if (_processedTags.Any() || _cachedPlatforms.Any())
                 {
                     PushImages();
                 }
@@ -269,8 +277,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Concat(image.SharedTags)
                             .ToList();
 
-                        _processedTags.AddRange(allTagInfos);
-
                         IEnumerable<string> allTags = allTagInfos
                             .Select(tag => tag.FullyQualifiedName)
                             .ToList();
@@ -279,10 +285,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         imageData?.Platforms.Add(platformData);
 
                         bool isCachedImage = !Options.NoCache &&
-                            await CheckForCachedImageAsync(srcImageData, repoInfo, platform, allTags, platformData);
+                            await CheckForCachedImageAsync(srcImageData, repoInfo, platform, allTagInfos, platformData);
 
                         if (!isCachedImage)
                         {
+                            _processedTags.AddRange(allTagInfos);
+
                             BuildImage(platform, allTags);
 
                             if (platformData is not null)
@@ -308,14 +316,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task<bool> CheckForCachedImageAsync(
-            ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<string> allTags, PlatformData? platformData)
+            ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<TagInfo> allTags, PlatformData? platformData)
         {
             PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platform);
 
             string cacheKey = GetBuildCacheKey(platform);
             if (platformData != null && _cachedPlatforms.TryGetValue(cacheKey, out PlatformData? cachedPlatform))
             {
-                OnCacheHit(repo, allTags, pullImage: false, cachedPlatform.Digest);
+                await OnCacheHitAsync(repo, allTags, pullImage: false, cachedPlatform.Digest);
                 CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
                 platformData.IsUnchanged = srcPlatformData != null &&
                     CachedPlatformHasAllTagsPublished(srcPlatformData);
@@ -479,7 +487,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task<bool> CheckForCachedImageFromImageInfoAsync(
-            RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<string> allTags)
+            RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<TagInfo> allTags)
         {
             _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
@@ -487,7 +495,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // the Dockerfile hasn't changed since it was last published
             if (await IsBaseImageDigestUpToDateAsync(platform, srcPlatformData) && IsDockerfileUpToDate(platform, srcPlatformData))
             {
-                OnCacheHit(repo, allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
+                await OnCacheHitAsync(repo, allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
                 return true;
             }
 
@@ -497,23 +505,41 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return false;
         }
 
-        private void OnCacheHit(RepoInfo repo, IEnumerable<string> allTags, bool pullImage, string sourceDigest)
+        private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
         {
             _loggerService.WriteMessage();
             _loggerService.WriteMessage("CACHE HIT");
             _loggerService.WriteMessage();
 
+            // When a cache hit occurs on an image, we copy the image from its source location (e.g. mcr.microsoft.com) to its
+            // destination location (e.g. staging repo in ACR). Copying only occurs if push is enabled since it will result in
+            // a write operation on the registry and is essentially a push. We then pull the image by its digest. If push is enabled
+            // and the image was copied, we pull from the destination of the copy; otherwise, we pull directly from the source.
+            // The pulled image is then tagged with the same tags it would be tagged with had it been built locally. This allows
+            // dependent Dockerfiles that reference those tags to seamlessly consume the pulled image.
+
+            string copiedSourceDigest = sourceDigest;
+            if (Options.IsPushEnabled)
+            {
+                copiedSourceDigest = await CopyCachedImage(allTags, sourceDigest);
+            }
+
             // Pull the image instead of building it
             if (pullImage)
             {
                 // Don't need to provide the platform because we're pulling by digest. No need to worry about multi-arch tags.
-                _dockerService.PullImage(sourceDigest, null, Options.IsDryRun);
+                _dockerService.PullImage(copiedSourceDigest, null, Options.IsDryRun);
+                _sourceDigestCopyLocationMapping[sourceDigest] = copiedSourceDigest;
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it
             Parallel.ForEach(allTags, tag =>
             {
-                _dockerService.CreateTag(sourceDigest, tag, Options.IsDryRun);
+                if (!_sourceDigestCopyLocationMapping.TryGetValue(sourceDigest, out string? resolvedSourceDigest))
+                {
+                    throw new InvalidOperationException("Digest should be mapped by this point");
+                }
+                _dockerService.CreateTag(resolvedSourceDigest, tag.FullyQualifiedName, Options.IsDryRun);
 
                 // Rewrite the digest to match the repo of the tags being associated with it. This is necessary
                 // in order to handle scenarios where shared Dockerfiles are being used across different repositories.
@@ -521,13 +547,41 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // encountered. For subsequent cache hits on different repositories, we need to prepopulate the digest
                 // cache with a digest value that would correspond to that repository, not the original repository.
                 string newDigest = DockerHelper.GetImageName(
-                    Manifest.Model.Registry, repo.Model.Name, digest: DockerHelper.GetDigestSha(sourceDigest));
+                    Manifest.Model.Registry, repo.Model.Name, digest: DockerHelper.GetDigestSha(resolvedSourceDigest));
 
                 // Populate the digest cache with the known digest value for the tags assigned to the image.
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
                 // because they haven't yet been pushed to staging by that time.
-                _imageDigestCache.AddDigest(tag, newDigest);
+                _imageDigestCache.AddDigest(tag.FullyQualifiedName, newDigest);
             });
+        }
+
+        private async Task<string> CopyCachedImage(IEnumerable<TagInfo> allTags, string sourceDigest)
+        {
+            if (string.IsNullOrEmpty(Options.Subscription))
+            {
+                throw new InvalidDataException("Subscription option must be set.");
+            }
+
+            if (string.IsNullOrEmpty(Options.ResourceGroup))
+            {
+                throw new InvalidDataException("Resource group option must be set.");
+            }
+
+            string[] destTags = GetPushTags(allTags)
+                                .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
+                                .ToArray();
+            string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
+            await _copyImageService.ImportImageAsync(Options.Subscription, Options.ResourceGroup,
+                    Options.ServicePrincipal, destTags, Manifest.Registry, DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
+                    srcRegistry);
+
+            // Redefine the source digest to be from the destination of the copy, not the source. The canonical scenario
+            // here is to copy the cached image from MCR to the staging location in an ACR. This allows test jobs to always pull
+            // from that staging location, not knowing whether it ended up there as a built image or a cached image.
+            string destRepo = DockerHelper.GetRepo(DockerHelper.GetRepo(destTags.First()));
+            sourceDigest = DockerHelper.GetImageName(Manifest.Registry, destRepo, digest: DockerHelper.GetDigestSha(sourceDigest));
+            return sourceDigest;
         }
 
         private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
@@ -752,7 +806,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (Options.IsPushEnabled)
             {
-                _loggerService.WriteHeading("PUSHING IMAGES");
+                _loggerService.WriteHeading("PUSHING BUILT IMAGES");
 
                 foreach (TagInfo tag in GetPushTags(_processedTags))
                 {

@@ -8,7 +8,6 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
-using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 #nullable enable
@@ -21,8 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public CopyBaseImagesCommand(
-            IAzureManagementFactory azureManagementFactory, ILoggerService loggerService, IGitService gitService)
-            : base(azureManagementFactory, loggerService)
+            ICopyImageService copyImageService, ILoggerService loggerService, IGitService gitService)
+            : base(copyImageService, loggerService)
         {
             _gitService = gitService;
         }
@@ -71,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<Task> copyImageTasks = manifests
                 .SelectMany(manifest => GetFromImages(manifest))
                 .Distinct()
-                .Select(fromImage => CopyImageAsync(fromImage, GetBaseRegistryName(fullRegistryName)));
+                .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName));
 
             await Task.WhenAll(copyImageTasks);
         }

@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using ImportSourceCredentials = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSourceCredentials;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -152,7 +153,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, aspnetDockerfileRelativePath)), It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
 
-                BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object, processServiceMock.Object);
+                BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object,
+                    processServiceMock.Object, Mock.Of<ICopyImageService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
@@ -354,7 +356,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -473,7 +476,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetImageArch(baseImageTag, false))
                 .Returns((Architecture.ARM, "v7"));
 
-            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(), copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -525,6 +531,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, sharedTag), It.IsAny<bool>()));
             dockerServiceMock.Verify(
                 o => o.PushImage(TagInfo.GetFullyQualifiedName(repoName, localTag), It.IsAny<bool>()), Times.Never);
+
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -541,7 +549,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -585,7 +594,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.BuildArgs.Add("arg1", "val1");
             command.Options.BuildArgs.Add("arg2", "val2a");
@@ -636,7 +646,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -728,16 +739,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
 
             const string ProductVersion = "1.0.0";
 
@@ -861,9 +880,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{newTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -871,6 +887,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
+
+            VerifyImportImage(copyImageServiceMock, command,
+                    new string[] { $"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared" },
+                    runtimeDepsDigest,
+                    destRegistryName: null,
+                    srcRegistryName: null);
 
             dockerServiceMock.VerifyNoOtherCalls();
         }
@@ -900,7 +922,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetCommitSha(dockerfileRelativePath, It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object, Mock.Of<IProcessService>());
+                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object,
+                    Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.SourceRepoUrl = "https://source";
@@ -942,7 +965,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string fullDockerfilePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(fullDockerfilePath, $"FROM baserepo:basetag");
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(), Mock.Of<IProcessService>());
+            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
@@ -1105,11 +1129,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1117,6 +1144,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
 
             const string ProductVersion = "1.0.1";
 
@@ -1310,14 +1342,36 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
+            string runtimeDepsDigestDestCache = $"{overridePrefix}{DockerHelper.TrimRegistry(runtimeDepsDigest)}";
             Times expectedTimes = isRuntimeDepsCached ? Times.Once() : Times.Never();
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{overridePrefix}{runtimeDepsRepo}:shared", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigestDestCache, null, false), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigestDestCache, $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigestDestCache, $"{overridePrefix}{runtimeDepsRepo}:shared", false), expectedTimes);
 
+            string runtimeDigestDestCache = $"{overridePrefix}{DockerHelper.TrimRegistry(runtimeDigest)}";
             expectedTimes = isRuntimeCached ? Times.Once() : Times.Never();
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDigest, null, false), expectedTimes);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDigest, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
+            dockerServiceMock.Verify(o => o.PullImage(runtimeDigestDestCache, null, false), expectedTimes);
+            dockerServiceMock.Verify(o => o.CreateTag(runtimeDigestDestCache, $"{overridePrefix}{runtimeRepo}:{tag}", false), expectedTimes);
+
+            if (isRuntimeDepsCached)
+            {
+                VerifyImportImage(copyImageServiceMock, command,
+                    new string[] { $"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared" },
+                    DockerHelper.TrimRegistry(runtimeDepsDigest),
+                    registryOverride,
+                    registry);
+            }
+
+            if (isRuntimeCached)
+            {
+                VerifyImportImage(copyImageServiceMock, command,
+                    new string[] { $"{repoPrefixOverride}{runtimeRepo}:{tag}" },
+                    DockerHelper.TrimRegistry(runtimeDigest),
+                    registryOverride,
+                    registry);
+            }
+
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -1395,16 +1449,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsWindowsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
 
             const string ProductVersion = "1.0.1";
 
@@ -1610,10 +1672,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{linuxTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{windowsTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{linuxTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{linuxTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{windowsTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{linuxTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -1622,6 +1680,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
+
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{runtimeDepsRepo}:{linuxTag}", $"{runtimeDepsRepo}:shared" },
+                runtimeDepsLinuxDigest,
+                destRegistryName: null,
+                srcRegistryName: null);
+
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{runtimeDeps2Repo}:{linuxTag}" },
+                runtimeDepsLinuxDigest,
+                destRegistryName: null,
+                srcRegistryName: null);
+
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{runtimeDepsRepo}:{windowsTag}", $"{runtimeDepsRepo}:shared" },
+                runtimeDepsWindowsDigest,
+                destRegistryName: null,
+                srcRegistryName: null);
+
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -1688,16 +1766,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
 
             const string ProductVersion = "1.0.1";
 
@@ -1894,8 +1980,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps3Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -1913,6 +1997,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
             dockerServiceMock.VerifyNoOtherCalls();
+
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{runtimeDepsRepo}:{tag}" },
+                runtimeDepsDigest,
+                destRegistryName: null,
+                srcRegistryName: null);
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{runtimeDeps2Repo}:{tag}" },
+                runtimeDepsDigest,
+                destRegistryName: null,
+                srcRegistryName: null);
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -1966,11 +2062,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2116,6 +2215,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
             dockerServiceMock.VerifyNoOtherCalls();
+
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -2174,7 +2275,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2407,16 +2509,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
 
             const string ProductVersion = "1.0.0";
 
@@ -2544,9 +2654,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{newTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -2556,6 +2663,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
+
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{runtimeDepsRepo}:{tag}", $"{runtimeDepsRepo}:{newTag}", $"{runtimeDepsRepo}:shared" },
+                runtimeDepsDigest,
+                destRegistryName: null,
+                srcRegistryName: null);
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -2575,6 +2689,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string baseImageTag = $"{baseImageRepo}:basetag";
             string runtimeDepsLinuxBaseImageDigest = $"{baseImageRepo}@sha";
             const string currentRuntimeDepsCommitSha = "commit-sha";
+            const string registry = "mcr.microsoft.com";
+            const string registryOverride = "new-registry.azurecr.io";
+            const string repoPrefixOverride = "test/";
+            string overridePrefix = $"{registryOverride}/{repoPrefixOverride}";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -2594,15 +2712,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DateTime createdDate = DateTime.Now;
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{tag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false))
                 .Returns(createdDate);
 
             dockerServiceMock
-                .Setup(o => o.GetCreatedDate($"{runtimeDeps2Repo}:{newTag}", false))
+                .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false))
                 .Returns(createdDate);
 
             string runtimeDepsLinuxDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
@@ -2613,16 +2731,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+            command.Options.RegistryOverride = registryOverride;
+            command.Options.RepoPrefix = repoPrefixOverride;
 
             const string ProductVersion = "1.0.0";
 
@@ -2644,8 +2772,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Architecture = "amd64",
                                     OsType = "Linux",
                                     OsVersion = "focal",
-                                    Digest = runtimeDepsLinuxDigest,
-                                    BaseImageDigest = runtimeDepsLinuxBaseImageDigest,
+                                    Digest = $"{registry}/{runtimeDepsLinuxDigest}",
+                                    BaseImageDigest = $"{registry}/{runtimeDepsLinuxBaseImageDigest}",
                                     Created = createdDate.ToUniversalTime(),
                                     SimpleTags =
                                     {
@@ -2694,6 +2822,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         productVersion: ProductVersion))
             );
+            manifest.Registry = registry;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -2720,7 +2849,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "focal",
-                                        Digest = runtimeDepsLinuxDigest,
+                                        Digest = $"{registry}/{runtimeDepsLinuxDigest}",
                                         BaseImageDigest = runtimeDepsLinuxBaseImageDigest,
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =
@@ -2757,7 +2886,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         Architecture = "amd64",
                                         OsType = "Linux",
                                         OsVersion = "focal",
-                                        Digest = runtimeDeps2Digest,
+                                        Digest = $"{registry}/{runtimeDeps2Digest}",
                                         BaseImageDigest = runtimeDepsLinuxBaseImageDigest,
                                         Created = createdDate.ToUniversalTime(),
                                         SimpleTags =
@@ -2779,20 +2908,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, null, false), Times.Once);
+            dockerServiceMock.Verify(o => o.PullImage($"{overridePrefix}{runtimeDepsLinuxDigest}", null, false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
             dockerServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{tag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{newTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{newTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:shared", false));
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:shared", false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
+            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
@@ -2801,6 +2926,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
             dockerServiceMock.VerifyNoOtherCalls();
+
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared" },
+                runtimeDepsLinuxDigest,
+                destRegistryName: registryOverride,
+                srcRegistryName: registry);
+            VerifyImportImage(copyImageServiceMock, command,
+                new string[] { $"{repoPrefixOverride}{runtimeDeps2Repo}:{tag}", $"{repoPrefixOverride}{runtimeDeps2Repo}:{newTag}" },
+                runtimeDepsLinuxDigest,
+                destRegistryName: registryOverride,
+                srcRegistryName: registry);
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -2905,11 +3042,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
                 .Returns(dockerfileCommitSha);
 
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
             BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2918,6 +3058,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoPrefix = SourceRepoPrefix;
             command.Options.RegistryOverride = RegistryOverride;
             command.Options.RepoPrefix = RepoPrefix;
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+            command.Options.ServicePrincipal.ClientId = "acr-client-id";
+            command.Options.ServicePrincipal.Secret = "acr-secret";
+            command.Options.ServicePrincipal.Tenant = "acr-tenant";
 
             const string ProductVersion = "1.0.1";
 
@@ -3143,11 +3288,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (hasCachedImage)
             {
-                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", null, false));
-                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", null, false));
+                dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
 
-                dockerServiceMock.Verify(o => o.PullImage($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", null, false));
-                dockerServiceMock.Verify(o => o.CreateTag($"{Registry}/{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+                VerifyImportImage(copyImageServiceMock, command,
+                    new string[] { $"{RepoPrefix}{RuntimeDepsRepo}:{Tag}" },
+                    $"{RuntimeDepsRepo}@{RuntimeDepsDigest}",
+                    RegistryOverride,
+                    Registry);
+
+                dockerServiceMock.Verify(o => o.PullImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", null, false));
+                dockerServiceMock.Verify(o => o.CreateTag($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}", $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+
+                VerifyImportImage(copyImageServiceMock, command,
+                    new string[] { $"{RepoPrefix}{RuntimeRepo}:{Tag}" },
+                    $"{RuntimeRepo}@{RuntimeDigest}",
+                    RegistryOverride,
+                    Registry);
             }
             else
             {
@@ -3159,8 +3316,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             
             dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
 
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            if (!hasCachedImage)
+            {
+                dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            }
+            
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
@@ -3180,6 +3341,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetImageArch($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
 
             dockerServiceMock.VerifyNoOtherCalls();
+            copyImageServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -3230,7 +3392,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3326,7 +3489,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>());
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3448,6 +3612,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns((Architecture.AMD64, null));
 
             return dockerServiceMock;
+        }
+
+        private static void VerifyImportImage(Mock<ICopyImageService> copyImageServiceMock, BuildCommand command,
+            string[] destTagNames, string srcTagName, string destRegistryName, string srcRegistryName)
+        {
+            copyImageServiceMock.Verify(o =>
+                    o.ImportImageAsync(
+                        command.Options.Subscription,
+                        command.Options.ResourceGroup,
+                        It.IsAny<ServicePrincipalOptions>(),
+                        destTagNames,
+                        destRegistryName,
+                        srcTagName,
+                        srcRegistryName,
+                        null,
+                        It.IsAny<ImportSourceCredentials>(),
+                        false));
         }
     }
 }

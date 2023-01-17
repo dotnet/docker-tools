@@ -23,10 +23,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class IngestKustoImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
+        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
+            ServicePrincipalOptionsBuilder.BuildWithDefaults();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
@@ -40,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         new Argument<string>(nameof(IngestKustoImageInfoOptions.LayerTable), "The layer table to ingest the data to"),
                     }
                 )
-                .Concat(ServicePrincipalOptions.GetCliArguments());
+                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

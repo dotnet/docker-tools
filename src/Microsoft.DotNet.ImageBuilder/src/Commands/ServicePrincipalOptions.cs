@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -15,14 +16,63 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Secret { get; set; } = string.Empty;
 
         public string Tenant { get; set; } = string.Empty;
+    }
 
-        public static IEnumerable<Argument> GetCliArguments() =>
-            new Argument[]
+    public class ServicePrincipalOptionsBuilder
+    {
+        private readonly List<Option> _options = new();
+        private readonly List<Argument> _arguments = new();
+
+        private ServicePrincipalOptionsBuilder()
+        {
+        }
+
+        public static ServicePrincipalOptionsBuilder Build() => new();
+
+        public static ServicePrincipalOptionsBuilder BuildWithDefaults() =>
+            Build()
+                .WithClientId(isRequired: true)
+                .WithSecret(isRequired: true)
+                .WithTenant(isRequired: true);
+
+        public ServicePrincipalOptionsBuilder WithClientId(
+            string alias = "sp-client-id",
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Client ID of service principal") =>
+            AddSymbol(alias, nameof(ServicePrincipalOptions.ClientId), isRequired, defaultValue, description);
+
+        public ServicePrincipalOptionsBuilder WithSecret(
+            string alias = "sp-secret",
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Secret of service principal") =>
+            AddSymbol(alias, nameof(ServicePrincipalOptions.Secret), isRequired, defaultValue, description);
+
+        public ServicePrincipalOptionsBuilder WithTenant(
+            string alias = "sp-tenant",
+            bool isRequired = false,
+            string? defaultValue = null,
+            string description = "Tenant of service principal") =>
+            AddSymbol(alias, nameof(ServicePrincipalOptions.Tenant), isRequired, defaultValue, description);
+
+        public IEnumerable<Option> GetCliOptions() => _options;
+
+        public IEnumerable<Argument> GetCliArguments() => _arguments;
+
+        private ServicePrincipalOptionsBuilder AddSymbol<T>(string alias, string propertyName, bool isRequired, T? defaultValue, string description)
+        {
+            if (isRequired)
             {
-                new Argument<string>(nameof(ClientId), "Client ID of service principal"),
-                new Argument<string>(nameof(Secret), "Secret of service principal"),
-                new Argument<string>(nameof(Tenant), "Tenant of service principal"),
-            };
+                _arguments.Add(new Argument<T>(propertyName, description));
+            }
+            else
+            {
+                _options.Add(CreateOption<T>(alias, propertyName, description, defaultValue is null ? default! : defaultValue));
+            }
+
+            return this;
+        }
     }
 }
 #nullable disable

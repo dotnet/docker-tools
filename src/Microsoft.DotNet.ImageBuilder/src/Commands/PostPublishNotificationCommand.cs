@@ -65,10 +65,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     // Get the build's queue-time parameters
                     if (build.Parameters is not null)
                     {
-                        JObject parametersJson = JsonConvert.DeserializeObject<JObject>(build.Parameters);
-                        foreach (KeyValuePair<string, JToken?> pair in parametersJson)
+                        JObject? parametersJson = JsonConvert.DeserializeObject<JObject>(build.Parameters);
+                        if (parametersJson is not null)
                         {
-                            buildParameters.Add(pair.Key, pair.Value?.ToString() ?? string.Empty);
+                            foreach (KeyValuePair<string, JToken?> pair in parametersJson)
+                            {
+                                buildParameters.Add(pair.Key, pair.Value?.ToString() ?? string.Empty);
+                            }
                         }
                     }
 
@@ -238,8 +241,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (image.Manifest is not null)
                     {
                         string digestSha = DockerHelper.GetDigestSha(image.Manifest.Digest);
-                        IEnumerable<string> tags = GetTags(image.ManifestImage.SharedTags);
-                        imageInfos.Add((digestSha, repoData.Repo, tags));
+                        imageInfos.Add((digestSha, repoData.Repo, image.Manifest.SharedTags));
                     }
 
                     imageInfos.AddRange(
@@ -248,9 +250,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(platform =>
                             {
                                 string digestSha = DockerHelper.GetDigestSha(platform.Digest);
-                                IEnumerable<string> tags = GetTags(platform.PlatformInfo.Tags);
-
-                                return (digestSha, repoData.Repo, tags);
+                                return (digestSha, repoData.Repo, platform.SimpleTags.AsEnumerable());
                             }));
 
                 }
@@ -280,10 +280,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private static IEnumerable<string> GetTags(IEnumerable<TagInfo> tags) =>
-            tags
-                .Where(tag => !tag.Model.IsLocal)
-                .Select(tag => tag.Name);
+        private static IEnumerable<string> GetTags(IEnumerable<string> tags) => tags.Select(tag => DockerHelper.GetTagName(tag));
 
         private static void WriteTaskStatusesMarkdown(Dictionary<string, TaskResult?> taskStatuses, StringBuilder notificationMarkdown)
         {

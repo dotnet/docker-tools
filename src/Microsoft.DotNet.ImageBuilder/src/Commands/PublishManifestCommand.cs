@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .SelectMany(repo => repo.Images)
                 .Where(image => image.Manifest != null);
 
-            await Parallel.ForEachAsync(images, async (image, cancellationToken) =>
+            foreach (ImageData image in images)
             {
                 image.Manifest.Created = createdDate;
 
@@ -107,7 +107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             Options.IsDryRun));
                     image.Manifest.SyndicatedDigests.Add(digest);
                 }
-            });
+            }
 
             string imageInfoString = JsonHelper.SerializeObject(imageArtifactDetails);
             File.WriteAllText(Options.ImageInfoPath, imageInfoString);

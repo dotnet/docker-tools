@@ -533,7 +533,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it
-            Parallel.ForEach(allTags, tag =>
+            foreach (TagInfo tag in allTags)
             {
                 if (!_sourceDigestCopyLocationMapping.TryGetValue(sourceDigest, out string? resolvedSourceDigest))
                 {
@@ -553,7 +553,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // This is needed in order to prevent a call to the manifest tool to get the digest for these tags
                 // because they haven't yet been pushed to staging by that time.
                 _imageDigestCache.AddDigest(tag.FullyQualifiedName, newDigest);
-            });
+            }
         }
 
         private async Task<string> CopyCachedImage(IEnumerable<TagInfo> allTags, string sourceDigest)

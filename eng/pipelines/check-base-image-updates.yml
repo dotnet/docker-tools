@@ -21,4 +21,4 @@ jobs:
   parameters:
     jobName: CheckBaseImages_BuildTools
     subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
-    customGetStaleImagesArgs: --base-override-regex '^((alpine|centos|debian|fedora|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'
+    customGetStaleImagesArgs: --base-override-regex '^((centos|debian|fedora|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'

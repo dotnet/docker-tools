@@ -4,8 +4,16 @@ trigger:
     - main
 pr: none
 
+parameters:
+- name: TSAEnabled
+  displayName: Publish CodeQL results to TSA
+  type: boolean
+  default: true
+
 variables:
 - template: templates/variables/common.yml
 
 jobs:
 - template: ../common/templates/jobs/cg-detection.yml
+  parameters:
+    TSAEnabled: ${{ parameters.TSAEnabled }}

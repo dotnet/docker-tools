@@ -1,10 +1,31 @@
+parameters:
+- name: TSAEnabled
+  displayName: Publish CodeQL results to TSA
+  type: boolean
+  default: true
+
+variables:
+  # Force CodeQL enabled so it may be run on any branch
+- name: Codeql.Enabled
+  value: true
+  # Do not let CodeQL 3000 Extension gate scan frequency
+- name: Codeql.Cadence
+  value: 0
+  # CodeQL needs this plumbed along as a variable to enable TSA
+- name: Codeql.TSAEnabled
+  value: ${{ parameters.TSAEnabled }}
+
 jobs:
 - job: Build
   pool:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
+  - task: CodeQL3000Init@0
+    displayName: CodeQL Initialize
   - script: >
       find . -name '*.csproj' | grep $(cgBuildGrepArgs) | xargs -n 1 dotnet build
     displayName: Build Projects
+  - task: CodeQL3000Finalize@0
+    displayName: CodeQL Finalize
   - task: ms.vss-governance-buildtask.governance-build-task-component-detection.ComponentGovernanceComponentDetection@0
     displayName: Component Detection

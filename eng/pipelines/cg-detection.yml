@@ -18,5 +18,3 @@ variables:
 
 jobs:
 - template: ../common/templates/jobs/cg-detection.yml
-  parameters:
-    TSAEnabled: ${{ parameters.TSAEnabled }}

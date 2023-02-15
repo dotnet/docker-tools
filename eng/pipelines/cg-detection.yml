@@ -11,6 +11,9 @@ parameters:
   default: true
 
 variables:
+- template: ../common/templates/variables/codeql.yml
+  parameters:
+    TSAEnabled: ${{ parameters.TSAEnabled }}
 - template: templates/variables/common.yml
 
 jobs:

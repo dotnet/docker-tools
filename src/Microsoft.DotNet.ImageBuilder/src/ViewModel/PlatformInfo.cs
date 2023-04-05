@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private const string StageIdMatchName = "stageId";
         private const string ScratchIdentifier = "scratch";
 
-        private static Regex FromRegex { get; } = new Regex($@"FROM\s+(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
+        private static Regex FromRegex { get; } = new Regex($@"FROM\s+(--platform=.*?\s+)?(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
         private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
 
@@ -296,7 +296,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             return (osVersion, string.Empty);
         }
-            
+
 
         private static bool IsStageReference(string fromImage, IList<Match> fromMatches)
         {

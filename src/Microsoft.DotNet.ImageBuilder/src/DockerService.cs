@@ -78,6 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
+            IEnumerable<string> additionalArgs,
             bool isRetryEnabled,
             bool isDryRun)
         {
@@ -87,7 +88,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             string buildArgsString = string.Join(string.Empty, buildArgList);
 
-            string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
+            string additionalArgsString = string.Join(' ', additionalArgs);
+
+            string dockerArgs = $"build --platform {platform} {tagArgs} {additionalArgsString} -f {dockerfilePath} {buildArgsString} {buildContextPath}";
 
             Dictionary<string, string> envVars = new Dictionary<string, string>
             {

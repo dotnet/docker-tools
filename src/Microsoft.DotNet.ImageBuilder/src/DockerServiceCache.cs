@@ -37,8 +37,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public string? BuildImage(
             string dockerfilePath, string buildContextPath, string platform, IEnumerable<string> tags,
-            IDictionary<string, string?> buildArgs, bool isRetryEnabled, bool isDryRun) =>
-            _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, isRetryEnabled, isDryRun);
+            IDictionary<string, string?> buildArgs, IEnumerable<string> additionalArgs, bool isRetryEnabled, bool isDryRun) =>
+            _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, additionalArgs, isRetryEnabled, isDryRun);
 
         public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun) =>
             _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun));
@@ -61,10 +61,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));
-        
+
         public bool LocalImageExists(string tag, bool isDryRun) =>
             _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
-        
+
         public void PullImage(string image, string? platform, bool isDryRun)
         {
             _pulledImages.GetOrAdd(image, _ =>

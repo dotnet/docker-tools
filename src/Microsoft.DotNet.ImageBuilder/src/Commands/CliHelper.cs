@@ -43,6 +43,48 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 AllowMultipleArgumentsPerToken = false
             };
 
+        public static Option<(string, string)[]> CreateTupleMultiOption(string alias, string propertyName, string description, string key1, string key2) =>
+            new Option<(string, string)[]>(
+                FormatAlias(alias),
+                description: description,
+                parseArgument: argResult =>
+                {
+                    return argResult.Tokens
+                        .Select(token =>
+                            token.Value
+                            .Split(',')
+                            .Select(s => s.ParseKeyValuePair('='))
+                        )
+                        .Select(kvp => {
+                            (string Key, string Value)[] kvpArray = kvp.ToArray();
+
+                            if (kvpArray.Count() != 2) {
+                                throw new ArgumentException($"Invalid format for {propertyName} option. Expected format: {key1}=value1,{key2}=value2");
+                            }
+
+                            string value1;
+                            string value2;
+
+                            if (kvpArray[0].Key == key1 && kvpArray[1].Key == key2) {
+                                value1 = kvpArray[0].Value;
+                                value2 = kvpArray[1].Value;
+                            } else if (kvpArray[0].Key == key2 && kvpArray[1].Key == key1) {
+                                value1 = kvpArray[1].Value;
+                                value2 = kvpArray[0].Value;
+                            } else {
+                                throw new ArgumentException($"Invalid format for {propertyName} option. Expected format: {key1}=value1,{key2}=value2");
+                            }
+
+                            return (value1, value2);
+                        })
+                        .ToArray();
+                }
+            )
+            {
+                Name = propertyName,
+                AllowMultipleArgumentsPerToken = false,
+            };
+
         public static Option<Dictionary<string, string>> CreateDictionaryOption(string alias, string propertyName, string description) =>
             CreateDictionaryOption(alias, propertyName, description, val => val);
 

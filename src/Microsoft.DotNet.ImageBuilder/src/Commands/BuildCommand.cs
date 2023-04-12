@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 await PublishImageInfoAsync();
             });
-            
+
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
         }
@@ -272,7 +272,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         // Tag the built images with the shared tags as well as the platform tags.
                         // Some tests and image FROM instructions depend on these tags.
-                        
+
                         IEnumerable<TagInfo> allTagInfos = platform.Tags
                             .Concat(image.SharedTags)
                             .ToList();
@@ -446,12 +446,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 InvokeBuildHook("pre-build", platform.BuildContextPath);
 
+                IEnumerable<string> additionalArgs = new List<string>();
+
+                if (Options.SecretInfo != null)
+                {
+                    foreach ((string Id, string Src) secretInfo in Options.SecretInfo)
+                    {
+                        additionalArgs = additionalArgs.Append($"--secret id={secretInfo.Id},src={secretInfo.Src}");
+                    }
+                }
+
                 string? buildOutput = _dockerService.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
                     platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
+                    additionalArgs,
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 

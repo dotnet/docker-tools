@@ -27,12 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ProcessStartInfo processInfo = new ProcessStartInfo(fileName, args);
 
-            if (envVars != null)
-            {
-                foreach(var envVar in envVars)
-                {
-                    processInfo.EnvironmentVariables.Add(envVar.Key, envVar.Value);
-                }
+            if (envVars != null) {
+                AttachEnvironmentVars(processInfo, envVars);
             }
 
             return Execute(processInfo, isDryRun, errorMessage, executeMessageOverride);
@@ -57,12 +53,8 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ProcessStartInfo processInfo = new ProcessStartInfo(fileName, args);
 
-            if (envVars != null)
-            {
-                foreach(var envVar in envVars)
-                {
-                    processInfo.EnvironmentVariables.Add(envVar.Key, envVar.Value);
-                }
+            if (envVars != null) {
+                AttachEnvironmentVars(processInfo, envVars);
             }
 
             return ExecuteWithRetry(
@@ -87,6 +79,15 @@ namespace Microsoft.DotNet.ImageBuilder
                 errorMessage,
                 executeMessageOverride
             );
+        }
+
+        private static ProcessStartInfo AttachEnvironmentVars(ProcessStartInfo info, Dictionary<string, string> envVars)
+        {
+            foreach (var envVar in envVars)
+            {
+                info.EnvironmentVariables.Add(envVar.Key, envVar.Value);
+            }
+            return info;
         }
 
         private static string? Execute(

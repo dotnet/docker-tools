@@ -25,12 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string? executeMessageOverride = null,
             Dictionary<string, string>? envVars = null)
         {
-            ProcessStartInfo processInfo = new ProcessStartInfo(fileName, args);
-
-            if (envVars != null) {
-                AttachEnvironmentVars(processInfo, envVars);
-            }
-
+            ProcessStartInfo processInfo = CreateProcessStartInfo(fileName, args, envVars);
             return Execute(processInfo, isDryRun, errorMessage, executeMessageOverride);
         }
 
@@ -51,12 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string? executeMessageOverride = null,
             Dictionary<string, string>? envVars = null)
         {
-            ProcessStartInfo processInfo = new ProcessStartInfo(fileName, args);
-
-            if (envVars != null) {
-                AttachEnvironmentVars(processInfo, envVars);
-            }
-
+            ProcessStartInfo processInfo = CreateProcessStartInfo(fileName, args, envVars);
             return ExecuteWithRetry(
                 processInfo,
                 isDryRun: isDryRun,
@@ -81,13 +71,18 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
-        private static ProcessStartInfo AttachEnvironmentVars(ProcessStartInfo info, Dictionary<string, string> envVars)
+        private static ProcessStartInfo CreateProcessStartInfo(string fileName, string args, Dictionary<string, string>? envVars)
         {
-            foreach (var envVar in envVars)
-            {
-                info.EnvironmentVariables.Add(envVar.Key, envVar.Value);
+            ProcessStartInfo processInfo = new ProcessStartInfo(fileName, args);
+
+            if (envVars != null) {
+                foreach (var envVar in envVars)
+                {
+                    processInfo.EnvironmentVariables.Add(envVar.Key, envVar.Value);
+                }
             }
-            return info;
+
+            return processInfo;
         }
 
         private static string? Execute(

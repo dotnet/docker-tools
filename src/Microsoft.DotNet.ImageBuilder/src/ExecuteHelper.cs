@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
@@ -21,9 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder
             string args,
             bool isDryRun,
             string? errorMessage = null,
-            string? executeMessageOverride = null)
+            string? executeMessageOverride = null,
+            Dictionary<string, string>? envVars = null)
         {
-            return Execute(new ProcessStartInfo(fileName, args), isDryRun, errorMessage, executeMessageOverride);
+            ProcessStartInfo processInfo = CreateProcessStartInfo(fileName, args, envVars);
+            return Execute(processInfo, isDryRun, errorMessage, executeMessageOverride);
         }
 
         public static string? Execute(
@@ -40,10 +43,12 @@ namespace Microsoft.DotNet.ImageBuilder
             string args,
             bool isDryRun,
             string? errorMessage = null,
-            string? executeMessageOverride = null)
+            string? executeMessageOverride = null,
+            Dictionary<string, string>? envVars = null)
         {
+            ProcessStartInfo processInfo = CreateProcessStartInfo(fileName, args, envVars);
             return ExecuteWithRetry(
-                new ProcessStartInfo(fileName, args),
+                processInfo,
                 isDryRun: isDryRun,
                 errorMessage: errorMessage,
                 executeMessageOverride: executeMessageOverride
@@ -64,6 +69,20 @@ namespace Microsoft.DotNet.ImageBuilder
                 errorMessage,
                 executeMessageOverride
             );
+        }
+
+        private static ProcessStartInfo CreateProcessStartInfo(string fileName, string args, Dictionary<string, string>? envVars)
+        {
+            ProcessStartInfo processInfo = new ProcessStartInfo(fileName, args);
+
+            if (envVars != null) {
+                foreach (var envVar in envVars)
+                {
+                    processInfo.EnvironmentVariables.Add(envVar.Key, envVar.Value);
+                }
+            }
+
+            return processInfo;
         }
 
         private static string? Execute(

@@ -89,13 +89,18 @@ namespace Microsoft.DotNet.ImageBuilder
 
             string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
 
+            Dictionary<string, string> envVars = new Dictionary<string, string>
+            {
+                { "DOCKER_BUILDKIT", "1" }
+            };
+
             if (isRetryEnabled)
             {
-                return ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, isDryRun);
+                return ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, isDryRun, envVars: envVars);
             }
             else
             {
-                return ExecuteHelper.Execute("docker", dockerArgs, isDryRun);
+                return ExecuteHelper.Execute("docker", dockerArgs, isDryRun, envVars: envVars);
             }
         }
 

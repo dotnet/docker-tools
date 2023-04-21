@@ -446,23 +446,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 InvokeBuildHook("pre-build", platform.BuildContextPath);
 
-                IEnumerable<string> additionalArgs = new List<string>();
-
-                if (Options.SecretInfo != null)
-                {
-                    foreach ((string Id, string Src) secretInfo in Options.SecretInfo)
-                    {
-                        additionalArgs = additionalArgs.Append($"--secret id={secretInfo.Id},src={secretInfo.Src}");
-                    }
-                }
-
                 string? buildOutput = _dockerService.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
                     platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
-                    additionalArgs,
+                    Options.SecretInfo,
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 

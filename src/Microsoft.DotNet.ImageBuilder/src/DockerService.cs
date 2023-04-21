@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
-            IEnumerable<string> additionalArgs,
+            IEnumerable<(string Id, string Src)> secretInfos,
             bool isRetryEnabled,
             bool isDryRun)
         {
@@ -88,9 +88,11 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             string buildArgsString = string.Join(string.Empty, buildArgList);
 
-            string additionalArgsString = string.Join(' ', additionalArgs);
+            IEnumerable<string> secretArgs = secretInfos
+                .Select(secretInfo => $"--secret id={secretInfo.Id},src={secretInfo.Src}");
+            string secretArgsString = string.Join(' ', secretArgs);
 
-            string dockerArgs = $"build --platform {platform} {tagArgs} {additionalArgsString} -f {dockerfilePath} {buildArgsString} {buildContextPath}";
+            string dockerArgs = $"build --platform {platform} {tagArgs} {secretArgsString} -f {dockerfilePath} {buildArgsString} {buildContextPath}";
 
             Dictionary<string, string> envVars = new Dictionary<string, string>
             {

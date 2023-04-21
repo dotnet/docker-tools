@@ -522,7 +522,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         TagInfo.GetFullyQualifiedName(repoName, sharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
@@ -629,7 +629,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<List<string>>(),
                     It.Is<Dictionary<string, string>>(
                         args => args.Count == 3 && args["arg1"] == "val1" && args["arg2"] == "val2b" && args["arg3"] == "val3"),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
         }
@@ -692,7 +692,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         TagInfo.GetFullyQualifiedName(repoName, sharedTag)
                     },
                     It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
@@ -888,7 +888,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
             VerifyImportImage(copyImageServiceMock, command,
@@ -1679,7 +1679,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
-                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<(string Id, string Src)>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
             dockerServiceMock.VerifyNoOtherCalls();
@@ -1991,7 +1991,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
@@ -2204,7 +2204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<string>(),
                         new string[] { expectedTag },
                         It.IsAny<IDictionary<string, string>>(),
-                        It.IsAny<IEnumerable<string>>(),
+                        It.IsAny<IEnumerable<(string Id, string Src)>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()),
                     Times.Once);
@@ -2450,7 +2450,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<string>(),
                         new string[] { expectedTag },
                         It.IsAny<IDictionary<string, string>>(),
-                        It.IsAny<IEnumerable<string>>(),
+                        It.IsAny<IEnumerable<(string Id, string Src)>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()),
                     Times.Once);
@@ -2664,7 +2664,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsLinuxDockerfileRelativePath)),
-                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
 
@@ -2927,7 +2927,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
-                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>(), It.IsAny<bool>()),
+                    It.IsAny<IDictionary<string, string>>(), It.IsAny<IEnumerable<(string Id, string Src)>>(), It.IsAny<bool>(), It.IsAny<bool>()),
                 Times.Never);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
 
@@ -3289,7 +3289,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
@@ -3435,7 +3435,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
@@ -3579,7 +3579,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<string>(),
                     It.IsAny<IEnumerable<string>>(),
                     It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
+                    It.IsAny<IEnumerable<(string Id, string Src)>>(),
                     It.IsAny<bool>(),
                     It.IsAny<bool>()));
 
@@ -3612,7 +3612,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         It.IsAny<string>(),
                         It.IsAny<IEnumerable<string>>(),
                         It.IsAny<IDictionary<string, string>>(),
-                        It.IsAny<IEnumerable<string>>(),
+                        It.IsAny<IEnumerable<(string Id, string Src)>>(),
                         It.IsAny<bool>(),
                         It.IsAny<bool>()))
                 .Returns(buildOutput ?? string.Empty);

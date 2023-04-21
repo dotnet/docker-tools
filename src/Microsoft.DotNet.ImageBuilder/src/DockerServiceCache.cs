@@ -37,8 +37,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public string? BuildImage(
             string dockerfilePath, string buildContextPath, string platform, IEnumerable<string> tags,
-            IDictionary<string, string?> buildArgs, IEnumerable<string> additionalArgs, bool isRetryEnabled, bool isDryRun) =>
-            _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, additionalArgs, isRetryEnabled, isDryRun);
+            IDictionary<string, string?> buildArgs, IEnumerable<(string Id, string Src)> secretInfos, bool isRetryEnabled, bool isDryRun) =>
+            _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, secretInfos, isRetryEnabled, isDryRun);
 
         public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun) =>
             _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun));

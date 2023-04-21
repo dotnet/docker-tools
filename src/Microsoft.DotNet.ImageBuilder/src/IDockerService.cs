@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
-            IEnumerable<string> additionalArgs,
+            IEnumerable<(string Id, string Src)> secretInfos,
             bool isRetryEnabled,
             bool isDryRun);
 

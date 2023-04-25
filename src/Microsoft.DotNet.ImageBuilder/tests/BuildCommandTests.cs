@@ -635,6 +635,58 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that the build command calls the Docker Service with the correct secret info.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_SecretInfo()
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+
+            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.SecretInfo = command.Options.SecretInfo.Append(("SecretId1", "SecretValue1"));
+            command.Options.SecretInfo = command.Options.SecretInfo.Append(("SecretId2", "SecretValue2"));
+
+            Platform platform = CreatePlatform(
+                DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, baseImageTag),
+                new string[] { tag });
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            platform
+                        }))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            dockerServiceMock.Verify(
+                o => o.BuildImage(
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<List<string>>(),
+                    It.IsAny<Dictionary<string, string>>(),
+                    It.Is<IEnumerable<(string Id, string Src)>>(secretInfos =>
+                            secretInfos.Any(secret => secret.Id == "SecretId1" && secret.Src == "SecretValue1")
+                            && secretInfos.Any(secret => secret.Id == "SecretId2" && secret.Src == "SecretValue2")),
+                    It.IsAny<bool>(),
+                    It.IsAny<bool>()));
+        }
+
+        /// <summary>
         /// Verifies that an image with no base image will get built.
         /// </summary>
         [Fact]

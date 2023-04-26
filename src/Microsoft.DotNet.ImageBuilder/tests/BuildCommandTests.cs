@@ -651,8 +651,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
                 Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.SecretInfo = command.Options.SecretInfo.Append(("SecretId1", "SecretValue1"));
-            command.Options.SecretInfo = command.Options.SecretInfo.Append(("SecretId2", "SecretValue2"));
+            command.Options.SecretInfos = command.Options.SecretInfos.Append(("SecretId1", "SecretValue1"));
+            command.Options.SecretInfos = command.Options.SecretInfos.Append(("SecretId2", "SecretValue2"));
 
             Platform platform = CreatePlatform(
                 DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, baseImageTag),

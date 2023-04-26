@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public ServicePrincipalOptions ServicePrincipal { get; set; } = new();
         public string? Subscription { get; set; }
         public string? ResourceGroup { get; set; }
-        public IEnumerable<(string Id, string Src)> SecretInfo { get; set; } = Enumerable.Empty<(string Id, string Src)>();
+        public IEnumerable<(string Id, string Src)> SecretInfos { get; set; } = Enumerable.Empty<(string Id, string Src)>();
     }
 
     public class BuildOptionsBuilder : DockerRegistryOptionsBuilder
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "Azure subscription to operate on"),
                         CreateOption<string>("acr-resource-group", nameof(BuildOptions.ResourceGroup),
                             "Azure resource group to operate on"),
-                        CreateTupleMultiOption("secret", nameof(BuildOptions.SecretInfo),
+                        CreateTupleMultiOption("secret", nameof(BuildOptions.SecretInfos),
                             "Secret to mount into the Docker build command", "id", "src")
                     });
 

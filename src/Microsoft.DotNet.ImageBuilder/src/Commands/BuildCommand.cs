@@ -452,7 +452,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
-                    Options.SecretInfo,
+                    Options.SecretInfos,
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 

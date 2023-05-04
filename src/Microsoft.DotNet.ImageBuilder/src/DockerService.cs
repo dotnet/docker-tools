@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             Dictionary<string, string> envVars = new();
             // BuildKit is not supported on Windows
-            if (platform.Contains("linux"))
+            if (DockerHelper.OS == OS.Linux)
             {
                 envVars.Add("DOCKER_BUILDKIT", "1");
             }

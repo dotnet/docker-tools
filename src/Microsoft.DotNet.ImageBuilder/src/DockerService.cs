@@ -89,20 +89,13 @@ namespace Microsoft.DotNet.ImageBuilder
 
             string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
 
-            Dictionary<string, string> envVars = new();
-            // BuildKit is not supported on Windows
-            if (DockerHelper.OS == OS.Linux)
-            {
-                envVars.Add("DOCKER_BUILDKIT", "1");
-            }
-
             if (isRetryEnabled)
             {
-                return ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, isDryRun, envVars: envVars);
+                return ExecuteHelper.ExecuteWithRetry("docker", dockerArgs, isDryRun);
             }
             else
             {
-                return ExecuteHelper.Execute("docker", dockerArgs, isDryRun, envVars: envVars);
+                return ExecuteHelper.Execute("docker", dockerArgs, isDryRun);
             }
         }
 

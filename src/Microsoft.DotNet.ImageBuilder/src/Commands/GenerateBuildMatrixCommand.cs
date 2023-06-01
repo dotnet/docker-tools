@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     buildLegsByDockerfilePath.Add(dockerfilePath, leg);
                 }
-                
+
                 matrix.Legs.Add(leg);
 
                 AddImageBuilderPathsVariable(dockerfilePaths, leg);
@@ -262,21 +262,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void AddVersionedOsLegs(BuildMatrixInfo matrix,
             IGrouping<PlatformId, PlatformInfo> platformGrouping)
         {
-            // Pass 1: Get the set of subgraphs grouped by their FROM dependencies as well as any integral custom leg dependencies.
+            IEnumerable<PlatformInfo> allPlatforms = Manifest.GetAllPlatforms();
+
+            // Pass 1: Get the set of subgraphs of all platforms grouped by their FROM dependencies as well as any
+            // integral custom leg dependencies. We use all platforms as the set of platforms to walk the graph because
+            // there can be edge cases where Dockerfiles share a parent Dockerfile that was not built (pulled from
+            // cache). The parent Dockerfile doesn't need to be tested but it still needs to be included in the graph
+            // generation, otherwise the two sibling Dockerfiles would end up in separate build legs. We filter the set
+            // of platforms in Pass 2 to only test what was already built.
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping
                 .GetCompleteSubgraphs(platform =>
-                    Manifest.GetParents(platform, platformGrouping)
+                    Manifest.GetParents(platform, allPlatforms)
                         .Union(GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Integral)));
 
-            // Pass 2: Combine subgraphs that have matching roots. This combines any duplicated platforms into a single subgraph.
+            // Pass 2: Filter subgraphs to only images that are in the current platform group
+            subgraphs = subgraphs
+                .Select(subgraph => subgraph
+                    .Where(platform => platformGrouping.Contains(platform)));
+
+            // Pass 3: Combine subgraphs that have matching roots. This combines any duplicated platforms into a single subgraph.
             subgraphs = ConsolidateSubgraphs(subgraphs,
                 platform => platform.GetUniqueKey(Manifest.GetImageByPlatform(platform)));
 
-            // Pass 3: Append any supplemental custom leg dependencies to each subgraph
+            // Pass 4: Append any supplemental custom leg dependencies to each subgraph
             subgraphs = subgraphs
                 .Select(subgraph => subgraph.Union(subgraph.SelectMany(platform => GetCustomLegGroupPlatforms(platform, CustomBuildLegDependencyType.Supplemental))));
 
-            // Pass 4: Append the parent graph of each platform to each respective subgraph
+            // Pass 5: Append the parent graph of each platform to each respective subgraph
             subgraphs = subgraphs.GetCompleteSubgraphs(
                 subgraph => subgraph.Select(platform => Manifest.GetAncestors(platform, platformGrouping)))
                 .Select(set => set

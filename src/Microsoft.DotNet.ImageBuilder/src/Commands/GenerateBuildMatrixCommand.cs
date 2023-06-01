@@ -264,7 +264,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             IEnumerable<PlatformInfo> allPlatforms = Manifest.GetAllPlatforms();
 
-            // Pass 1: Get the set of subgraphs of all platforms grouped by their FROM dependencies as well as any integral custom leg dependencies.
+            // Pass 1: Get the set of subgraphs of all platforms grouped by their FROM dependencies as well as any
+            // integral custom leg dependencies. We use all platforms as the set of platforms to walk the graph because
+            // there can be edge cases where Dockerfiles share a parent Dockerfile that was not built (pulled from
+            // cache). The parent Dockerfile doesn't need to be tested but it still needs to be included in the graph
+            // generation, otherwise the two sibling Dockerfiles would end up in separate build legs. We filter the set
+            // of platforms in Pass 2 to only test what was already built.
             IEnumerable<IEnumerable<PlatformInfo>> subgraphs = platformGrouping
                 .GetCompleteSubgraphs(platform =>
                     Manifest.GetParents(platform, allPlatforms)

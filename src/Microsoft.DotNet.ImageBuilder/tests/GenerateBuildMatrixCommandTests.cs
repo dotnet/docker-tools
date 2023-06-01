@@ -693,6 +693,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that the platformVersionedOs matrix type doesn't create mutiple legs
         /// for a scenario where platforms in the same repo share a cached parent image.
         /// </summary>
+        /// <remarks>
+        /// https://github.com/dotnet/docker-tools/issues/1141
+        /// </remarks>
         [Fact]
         public void PlatformVersionedOs_CachedParent()
         {

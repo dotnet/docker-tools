@@ -214,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Verifies the platformVersionedOs matrix type is generated correctly when a 
+        /// Verifies the platformVersionedOs matrix type is generated correctly when a
         /// custom build leg group is defined that has a parent graph.
         /// </summary>
         /// <remarks>
@@ -687,6 +687,147 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Assert.Equal(expectedPaths, imageBuilderPaths);
             }
+        }
+
+        /// <summary>
+        /// Verifies that the platformVersionedOs matrix type doesn't create mutiple legs
+        /// for a scenario where platforms in the same repo share a cached parent image.
+        /// </summary>
+        [Fact]
+        public void PlatformVersionedOs_CachedParent()
+        {
+            string expectedPaths = "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
+            command.Options.ProductVersionComponents = 2;
+
+            string runtimeDockerfilePath;
+            string aspnetDockerfilePath;
+            string aspnetCompositeDockerfilePath;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0")),
+                CreateRepo("aspnet", new[]
+                    {
+                        CreateImage(
+                            new Platform[]
+                            {
+                                CreatePlatform(
+                                    aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
+                                    new string[] { "tag" })
+                            },
+                            productVersion: "1.0"),
+                    CreateImage(
+                        new Platform[]
+                        {
+                              CreatePlatform(
+                                  aspnetCompositeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os-composite", tempFolderContext, "runtime-deps:tag"),
+                                  new string[] { "tag-composite" })
+                        },
+                        productVersion: "1.0")
+                    }));
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime-deps",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(runtimeDockerfilePath, isCached: true)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(runtimeDockerfilePath, isCached: false)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "aspnet",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(aspnetDockerfilePath, isCached: false)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "aspnet",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(aspnetCompositeDockerfilePath, isCached: false)
+                                }
+                            }
+                        }
+                    },
+                }
+            };
+
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+
+            Assert.Single(matrixInfos);
+            Assert.Single(matrixInfos.First().Legs);
+
+            BuildLegInfo buildLeg = matrixInfos.First().Legs.First();
+            string imageBuilderPaths = buildLeg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(expectedPaths, imageBuilderPaths);
         }
 
         [Fact]

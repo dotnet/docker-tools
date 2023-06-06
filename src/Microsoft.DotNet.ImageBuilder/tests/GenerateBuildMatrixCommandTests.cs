@@ -697,10 +697,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// https://github.com/dotnet/docker-tools/issues/1141
         /// </remarks>
         [Theory]
-        [InlineData(false, false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile")]
-        [InlineData(true, false, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile")]
-        [InlineData(false, false, true, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile")]
-        public void PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCompositeCached, bool isAspnetCached, string expectedPaths)
+        [InlineData(false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile")]
+        [InlineData(true, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile")]
+        [InlineData(true, true, "--path 1.0/aspnet/os-composite/Dockerfile")]
+        public void PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateBuildMatrixCommand command = new();
@@ -825,7 +825,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(aspnetCompositeDockerfilePath, isCached: isAspnetCompositeCached)
+                                    CreateSimplePlatformData(aspnetCompositeDockerfilePath, isCached: false)
                                 }
                             }
                         }
@@ -840,7 +840,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(sdkDockerfilePath, isCached: true)
+                                    CreateSimplePlatformData(sdkDockerfilePath, isCached: false)
                                 }
                             }
                         }

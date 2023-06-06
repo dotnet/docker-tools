@@ -696,11 +696,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <remarks>
         /// https://github.com/dotnet/docker-tools/issues/1141
         /// </remarks>
-        [Fact]
-        public void PlatformVersionedOs_CachedParent()
+        [Theory]
+        [InlineData(false, false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile")]
+        [InlineData(true, false, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile")]
+        [InlineData(false, false, true, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile")]
+        public void PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCompositeCached, bool isAspnetCached, string expectedPaths)
         {
-            string expectedPaths = "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile";
-
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateBuildMatrixCommand command = new();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -708,9 +709,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
             command.Options.ProductVersionComponents = 2;
 
+            string runtimeDepsDockerfilePath;
             string runtimeDockerfilePath;
             string aspnetDockerfilePath;
             string aspnetCompositeDockerfilePath;
+            string sdkDockerfilePath;
 
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime-deps",
@@ -718,7 +721,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext),
+                                runtimeDepsDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext),
                                 new string[] { "tag" })
                         },
                         productVersion: "1.0")),
@@ -749,7 +752,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                   new string[] { "tag-composite" })
                         },
                         productVersion: "1.0")
-                    }));
+                    }),
+                CreateRepo("sdk",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(
+                                sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "sdk:tag"),
+                                new string[] { "tag" })
+                        },
+                        productVersion: "1.0"))
+            );
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -767,7 +780,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(runtimeDockerfilePath, isCached: true)
+                                    CreateSimplePlatformData(runtimeDepsDockerfilePath, isCached: true)
                                 }
                             }
                         }
@@ -782,7 +795,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(runtimeDockerfilePath, isCached: false)
+                                    CreateSimplePlatformData(runtimeDockerfilePath, isCached: isRuntimeCached)
                                 }
                             }
                         }
@@ -797,7 +810,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(aspnetDockerfilePath, isCached: false)
+                                    CreateSimplePlatformData(aspnetDockerfilePath, isCached: isAspnetCached)
                                 }
                             }
                         }
@@ -812,7 +825,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 ProductVersion = "1.0",
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(aspnetCompositeDockerfilePath, isCached: false)
+                                    CreateSimplePlatformData(aspnetCompositeDockerfilePath, isCached: isAspnetCompositeCached)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "sdk",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                ProductVersion = "1.0",
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(sdkDockerfilePath, isCached: true)
                                 }
                             }
                         }

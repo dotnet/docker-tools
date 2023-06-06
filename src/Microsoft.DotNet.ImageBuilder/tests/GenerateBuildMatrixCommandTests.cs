@@ -697,9 +697,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// https://github.com/dotnet/docker-tools/issues/1141
         /// </remarks>
         [Theory]
-        [InlineData(false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile")]
-        [InlineData(true, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile")]
-        [InlineData(true, true, "--path 1.0/aspnet/os-composite/Dockerfile")]
+        [InlineData(false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [InlineData(true, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [InlineData(true, true, "--path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
         public void PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -758,7 +758,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "sdk:tag"),
+                                sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
                                 new string[] { "tag" })
                         },
                         productVersion: "1.0"))

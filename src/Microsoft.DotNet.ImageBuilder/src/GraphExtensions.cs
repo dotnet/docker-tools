@@ -31,26 +31,30 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (T item in source)
             {
-                if (!nodes.TryGetValue(item, out Node<T> itemNode))
-                {
-                    itemNode = new Node<T>() { Item = item };
-                    nodes.Add(item, itemNode);
-                }
-
-                foreach (T parent in getParents(item))
-                {
-                    if (!nodes.TryGetValue(parent, out Node<T> parentNode))
-                    {
-                        parentNode = new Node<T>() { Item = parent };
-                        nodes.Add(parent, parentNode);
-                    }
-
-                    parentNode.Children.Add(itemNode);
-                    itemNode.Parents.Add(parentNode);
-                }
+                CreateNode(item, nodes, getParents);
             }
 
             return nodes.Values.ToList();
+        }
+
+        private static Node<T> CreateNode<T>(T item, Dictionary<T, Node<T>> nodes, Func<T, IEnumerable<T>> getParents)
+        {
+            if (nodes.TryGetValue(item, out Node<T> itemNode))
+            {
+                return itemNode;
+            }
+
+            itemNode = new Node<T>() { Item = item };
+            nodes.Add(item, itemNode);
+
+            foreach (T parent in getParents(item))
+            {
+                Node<T> parentNode = CreateNode(parent, nodes, getParents);
+                parentNode.Children.Add(itemNode);
+                itemNode.Parents.Add(parentNode);
+            }
+
+            return itemNode;
         }
 
         private static void AddSubgraphNode<T>(HashSet<Node<T>> subgraph, Node<T> node, List<Node<T>> unvisitedNodes)

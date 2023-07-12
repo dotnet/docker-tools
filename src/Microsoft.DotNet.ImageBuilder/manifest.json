@@ -76,46 +76,6 @@
               }
             }
           ]
-        },
-        {
-          "sharedTags": {
-            "az": {},
-            "$(UniqueId)-az": {}
-          },
-          "platforms": [
-            {
-              "buildArgs": {
-                "REPO": "$(Repo:image-builder)",
-                "RID_ARCH": "x64",
-                "ARCH": "amd64",
-                "ALPINE_TAG_SUFFIX": ""
-              },
-              "dockerfile": "Dockerfile.az.linux",
-              "os": "linux",
-              "osVersion": "alpine",
-              "tags": {
-                "linux-amd64-az": {},
-                "linux-amd64-$(UniqueId)-az": {}
-              }
-            },
-            {
-              "buildArgs": {
-                "REPO": "$(Repo:image-builder)",
-                "RID_ARCH": "arm64",
-                "ARCH": "arm64",
-                "ALPINE_TAG_SUFFIX": "-arm64v8"
-              },
-              "architecture": "arm64",
-              "dockerfile": "Dockerfile.az.linux",
-              "os": "linux",
-              "osVersion": "alpine",
-              "tags": {
-                "linux-arm64-az": {},
-                "linux-arm64-$(UniqueId)-az": {}
-              },
-              "variant": "v8"
-            }
-          ]
         }
       ]
     }

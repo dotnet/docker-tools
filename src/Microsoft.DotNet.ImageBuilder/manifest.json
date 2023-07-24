@@ -36,8 +36,7 @@
               "tags": {
                 "linux-arm64": {},
                 "linux-arm64-$(UniqueId)": {}
-              },
-              "variant": "v8"
+              }
             },
             {
               "buildArgs": {

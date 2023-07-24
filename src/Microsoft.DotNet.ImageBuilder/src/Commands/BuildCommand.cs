@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 await PublishImageInfoAsync();
             });
-            
+
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
         }
@@ -272,7 +272,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         // Tag the built images with the shared tags as well as the platform tags.
                         // Some tests and image FROM instructions depend on these tags.
-                        
+
                         IEnumerable<TagInfo> allTagInfos = platform.Tags
                             .Concat(image.SharedTags)
                             .ToList();
@@ -419,10 +419,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string baseImageTag = GetFromImageLocalTag(platform.FinalStageFromImage);
 
             // Base image should already be pulled or built so it's ok to inspect it
-            (Models.Manifest.Architecture arch, string? variant) =
+            (Models.Manifest.Architecture baseImageArch, string? baseImageVariant) =
                 _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
 
-            if (platform.Model.Architecture != arch || platform.Model.Variant != variant)
+            // Containerd normalizes arm64/v8 to arm64 with no variant.
+            // In other words, arm64/v8 and arm64/ are compatible.
+            // We still want to check variants if either variant is not "v8" or empty.
+            // See https://github.com/moby/buildkit/issues/4039
+            bool skipVariantCheck = platform.Model.Architecture == Models.Manifest.Architecture.ARM64
+                && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
+                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant)));
+
+            if (platform.Model.Architecture != baseImageArch || (!skipVariantCheck && platform.Model.Variant != baseImageVariant))
             {
                 throw new InvalidOperationException(
                     $"Platform '{platform.DockerfilePathRelativeToManifest}' is configured with an architecture that is not compatible with " +
@@ -431,8 +439,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         $"\tArchitecture: {platform.Model.Architecture}" + Environment.NewLine +
                         $"\tVariant: {platform.Model.Variant}" + Environment.NewLine +
                     "Base image:" + Environment.NewLine +
-                        $"\tArchitecture: {arch}" + Environment.NewLine +
-                        $"\tVariant: {variant}");
+                        $"\tArchitecture: {baseImageArch}" + Environment.NewLine +
+                        $"\tVariant: {baseImageVariant}");
             }
         }
 

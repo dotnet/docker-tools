@@ -24,7 +24,7 @@ RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out 
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:7.0-alpine$ALPINE_TAG_SUFFIX
+FROM mcr.microsoft.com/dotnet/runtime-deps:7.0-alpine3.17$ALPINE_TAG_SUFFIX
 
 # install tooling
 RUN apk add --no-cache \

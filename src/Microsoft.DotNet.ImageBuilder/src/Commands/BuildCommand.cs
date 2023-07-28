@@ -427,6 +427,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // We still want to check variants if either variant is not "v8" or empty.
             // See https://github.com/moby/buildkit/issues/4039
             bool skipVariantCheck = platform.Model.Architecture == Models.Manifest.Architecture.ARM64
+                && baseImageArch == Models.Manifest.Architecture.ARM64
                 && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
                     && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant)));
 

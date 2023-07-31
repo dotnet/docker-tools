@@ -66,9 +66,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         public static Platform CreatePlatform(
-            string dockerfilePath, 
-            string[] tags, 
-            OS os = OS.Linux, 
+            string dockerfilePath,
+            string[] tags,
+            OS os = OS.Linux,
             string osVersion = "focal",
             Architecture architecture = Architecture.AMD64,
             string variant = null,

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -88,6 +89,13 @@ namespace Microsoft.DotNet.ImageBuilder
             string buildArgsString = string.Join(string.Empty, buildArgList);
 
             string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString} {buildContextPath}";
+
+            // Workaround for https://github.com/moby/buildkit/issues/1368
+            // BuildKit caches Dockerfiles based on file size and timestamp.
+            // In case we need to build two Dockerfiles that are the same size,
+            // we need to set the timestamp manually so that we build the
+            // correct Dockerfile.
+            File.SetLastWriteTimeUtc(dockerfilePath, DateTime.UtcNow);
 
             if (isRetryEnabled)
             {

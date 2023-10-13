@@ -12,10 +12,6 @@
           },
           "platforms": [
             {
-              "buildArgs": {
-                "RID_ARCH": "x64",
-                "ALPINE_TAG_SUFFIX": ""
-              },
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
               "osVersion": "alpine",
@@ -25,10 +21,6 @@
               }
             },
             {
-              "buildArgs": {
-                "RID_ARCH": "arm64",
-                "ALPINE_TAG_SUFFIX": "-arm64v8"
-              },
               "architecture": "arm64",
               "dockerfile": "Dockerfile.linux",
               "os": "linux",

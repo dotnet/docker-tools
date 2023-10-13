@@ -92,7 +92,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             WriteBuildParameters(buildParameters, notificationMarkdown);
             notificationMarkdown.AppendLine();
 
-            WriteImagesMarkdown(notificationMarkdown);
+            notificationMarkdown.AppendLine("## Images");
+            notificationMarkdown.AppendLine("Published images are listed in comments below.");
+            notificationMarkdown.AppendLine();
+
+            IEnumerable<string> imagesMarkdown = GetImagesMarkdown();
 
             await _notificationService.PostAsync(
                 $"Publish Result - {Options.SourceRepo}/{Options.SourceBranch}",
@@ -104,7 +108,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }.AppendIf(NotificationLabels.Failure, () => overallResult == BuildResult.Failed),
                 Options.GitOptions.GetRepoUrl().ToString(),
                 Options.GitOptions.AuthToken,
-                Options.IsDryRun);
+                Options.IsDryRun,
+                imagesMarkdown);
         }
 
         private async Task<string?> GetCorrelatedQueueNotificationUrlAsync()
@@ -224,11 +229,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void WriteImagesMarkdown(StringBuilder notificationMarkdown)
+        private IEnumerable<string> GetImagesMarkdown()
         {
             if (!File.Exists(Options.ImageInfoPath))
             {
-                return;
+                return Enumerable.Empty<string>();
             }
             
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
@@ -256,28 +261,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             }
 
-            notificationMarkdown.AppendLine("## Images");
-            notificationMarkdown.AppendLine();
-
             IEnumerable<IGrouping<string, (string digestSha, string repo, IEnumerable<string> tags)>> imageInfosByRepo = imageInfos
                 .GroupBy(imageInfo => imageInfo.repo)
                 .OrderBy(group => group.Key);
 
+            IEnumerable<string> imagesMarkdown = new List<string>();
             foreach (IGrouping<string, (string digestSha, string repo, IEnumerable<string> tags)> imageInfoRepoGroup in imageInfosByRepo)
             {
+                StringBuilder stringBuilder = new StringBuilder();
                 string repo = imageInfoRepoGroup.Key;
                 string fullyQualifiedRepo = $"{Manifest.Registry}/{Options.RepoPrefix}{repo}";
-                notificationMarkdown.AppendLine($"### {fullyQualifiedRepo}");
-                notificationMarkdown.AppendLine();
+                stringBuilder.AppendLine($"### {fullyQualifiedRepo}");
+                stringBuilder.AppendLine();
                 foreach ((string digestSha, string _, IEnumerable<string> tags) in imageInfoRepoGroup.OrderBy(group => group.digestSha))
                 {
-                    notificationMarkdown.AppendLine($"* {digestSha}");
+                    stringBuilder.AppendLine($"* {digestSha}");
                     foreach (string tag in tags.OrderBy(tag => tag))
                     {
-                        notificationMarkdown.AppendLine($"  * {tag}");
+                        stringBuilder.AppendLine($"  * {tag}");
                     }
                 }
+                imagesMarkdown = imagesMarkdown.Append(stringBuilder.ToString());
             }
+
+            return imagesMarkdown;
         }
 
         private static IEnumerable<string> GetTags(IEnumerable<string> tags) => tags.Select(tag => DockerHelper.GetTagName(tag));

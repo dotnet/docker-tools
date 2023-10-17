@@ -235,7 +235,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 return Enumerable.Empty<string>();
             }
-            
+
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             List<(string digestSha, string repo, IEnumerable<string> tags)> imageInfos = new();
@@ -268,20 +268,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<string> imagesMarkdown = new List<string>();
             foreach (IGrouping<string, (string digestSha, string repo, IEnumerable<string> tags)> imageInfoRepoGroup in imageInfosByRepo)
             {
-                StringBuilder stringBuilder = new StringBuilder();
+                StringBuilder imageRepoMarkdown = new();
                 string repo = imageInfoRepoGroup.Key;
                 string fullyQualifiedRepo = $"{Manifest.Registry}/{Options.RepoPrefix}{repo}";
-                stringBuilder.AppendLine($"### {fullyQualifiedRepo}");
-                stringBuilder.AppendLine();
+                imageRepoMarkdown.AppendLine($"### {fullyQualifiedRepo}");
+                imageRepoMarkdown.AppendLine();
                 foreach ((string digestSha, string _, IEnumerable<string> tags) in imageInfoRepoGroup.OrderBy(group => group.digestSha))
                 {
-                    stringBuilder.AppendLine($"* {digestSha}");
+                    imageRepoMarkdown.AppendLine($"* {digestSha}");
                     foreach (string tag in tags.OrderBy(tag => tag))
                     {
-                        stringBuilder.AppendLine($"  * {tag}");
+                        imageRepoMarkdown.AppendLine($"  * {tag}");
                     }
                 }
-                imagesMarkdown = imagesMarkdown.Append(stringBuilder.ToString());
+                imagesMarkdown = imagesMarkdown.Append(imageRepoMarkdown.ToString());
             }
 
             return imagesMarkdown;

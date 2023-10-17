@@ -33,20 +33,20 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             IssueManager issueManager = new(gitHubAccessToken);
 
-            int issueId = 0;
+            Uri issueUrl = new("https://github.com/404");
             if (!isDryRun)
             {
-                issueId = await issueManager.CreateNewIssueAsync(repoUrl, title, description, labels: labels);
-            }
+                int issueId = await issueManager.CreateNewIssueAsync(repoUrl, title, description, labels: labels);
+                issueUrl = new($"{repoUrl}/issues/{issueId}");
 
-            Uri issueUrl = new($"{repoUrl}/issues/{issueId}");
-
-            if (comments != null)
-            {
-                foreach (string comment in comments)
+                if (comments != null)
                 {
-                    string _ = await issueManager.CreateNewIssueCommentAsync(repoUrl, issueId, comment);
+                    foreach (string comment in comments)
+                    {
+                        string _ = await issueManager.CreateNewIssueCommentAsync(repoUrl, issueId, comment);
+                    }
                 }
+
             }
 
             _loggerService.WriteSubheading("POSTED NOTIFICATION:");
@@ -56,6 +56,16 @@ namespace Microsoft.DotNet.ImageBuilder
             _loggerService.WriteMessage($"Description:");
             _loggerService.WriteMessage($"====BEGIN DESCRIPTION MARKDOWN===");
             _loggerService.WriteMessage(description);
+
+            if (comments != null)
+            {
+                for (int i = 0; i < comments.Count(); i++)
+                {
+                    _loggerService.WriteMessage($"====COMMENT {i + 1} MARKDOWN===");
+                    _loggerService.WriteMessage(comments.ElementAt(i));
+                }
+            }
+
             _loggerService.WriteMessage($"====END DESCRIPTION MARKDOWN===");
 
             return issueUrl;

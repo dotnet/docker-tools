@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             IssueManager issueManager = new(gitHubAccessToken);
 
-            Uri issueUrl = new("https://github.com/404");
+            Uri? issueUrl = null;
             if (!isDryRun)
             {
                 int issueId = await issueManager.CreateNewIssueAsync(repoUrl, title, description, labels: labels);
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             _loggerService.WriteSubheading("POSTED NOTIFICATION:");
-            _loggerService.WriteMessage($"Issue URL: {issueUrl}");
+            _loggerService.WriteMessage($"Issue URL: {issueUrl?.ToString() ?? "N/A"}");
             _loggerService.WriteMessage($"Title: {title}");
             _loggerService.WriteMessage($"Labels: {string.Join(", ", labels)}");
             _loggerService.WriteMessage($"Description:");

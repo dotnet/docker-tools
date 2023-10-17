@@ -34,7 +34,7 @@
             {
               "buildArgs": {
                 "WINDOWS_BASE": "servercore:ltsc2016-amd64",
-                "WINDOWS_SDK": "windowsservercore-ltsc2019"
+                "WINDOWS_SDK": "nanoserver-1809"
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",

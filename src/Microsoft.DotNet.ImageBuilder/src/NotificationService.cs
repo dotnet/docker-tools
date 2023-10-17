@@ -56,17 +56,18 @@ namespace Microsoft.DotNet.ImageBuilder
             _loggerService.WriteMessage($"Description:");
             _loggerService.WriteMessage($"====BEGIN DESCRIPTION MARKDOWN===");
             _loggerService.WriteMessage(description);
+            _loggerService.WriteMessage($"====END DESCRIPTION MARKDOWN===");
 
             if (comments != null)
             {
+                _loggerService.WriteMessage($"====BEGIN COMMENTS MARKDOWN===");
                 for (int i = 0; i < comments.Count(); i++)
                 {
                     _loggerService.WriteMessage($"====COMMENT {i + 1} MARKDOWN===");
                     _loggerService.WriteMessage(comments.ElementAt(i));
                 }
+                _loggerService.WriteMessage($"====END COMMENTS MARKDOWN===");
             }
-
-            _loggerService.WriteMessage($"====END DESCRIPTION MARKDOWN===");
 
             return issueUrl;
         }

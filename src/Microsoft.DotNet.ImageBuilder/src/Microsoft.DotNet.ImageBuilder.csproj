@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <PublishTrimmed>False</PublishTrimmed>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
   </PropertyGroup>
 
@@ -16,7 +16,7 @@
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.3.1" />
     <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.38.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.1" />
-    <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="6.0.0-beta.22351.1" />
+    <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="9.0.0-beta.23513.3" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="6.0.0-beta.22351.1" />
     <PackageReference Include="Microsoft.IdentityModel.Clients.ActiveDirectory" Version="5.3.0" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="16.205.1" />

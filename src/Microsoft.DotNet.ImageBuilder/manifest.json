@@ -12,10 +12,6 @@
           },
           "platforms": [
             {
-              "buildArgs": {
-                "RID_ARCH": "x64",
-                "ALPINE_TAG_SUFFIX": ""
-              },
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
               "osVersion": "alpine",
@@ -25,10 +21,6 @@
               }
             },
             {
-              "buildArgs": {
-                "RID_ARCH": "arm64",
-                "ALPINE_TAG_SUFFIX": "-arm64v8"
-              },
               "architecture": "arm64",
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
@@ -41,7 +33,8 @@
             },
             {
               "buildArgs": {
-                "WINDOWS_BASE": "servercore:ltsc2016-amd64"
+                "WINDOWS_BASE": "servercore:ltsc2016-amd64",
+                "WINDOWS_SDK": "nanoserver-1809"
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
@@ -53,7 +46,8 @@
             },
             {
               "buildArgs": {
-                "WINDOWS_BASE": "nanoserver:1809-amd64"
+                "WINDOWS_BASE": "nanoserver:1809-amd64",
+                "WINDOWS_SDK": "nanoserver-1809"
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
@@ -65,7 +59,8 @@
             },
             {
               "buildArgs": {
-                "WINDOWS_BASE": "nanoserver:ltsc2022-amd64"
+                "WINDOWS_BASE": "nanoserver:ltsc2022-amd64",
+                "WINDOWS_SDK": "nanoserver-ltsc2022"
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",

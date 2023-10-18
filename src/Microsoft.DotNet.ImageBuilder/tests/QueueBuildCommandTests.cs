@@ -502,10 +502,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// <param name="inProgressBuilds">The set of in-progress builds that should be configured.</param>
             /// <param name="allBuilds">The set of failed builds that should be configured.</param>
             public TestContext(
-            Subscription[] subscriptions,
-            IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
-            PagedList<WebApi.Build> inProgressBuilds,
-            PagedList<WebApi.Build> allBuilds)
+                Subscription[] subscriptions,
+                IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
+                PagedList<WebApi.Build> inProgressBuilds,
+                PagedList<WebApi.Build> allBuilds)
             {
                 this.allSubscriptionImagePaths = allSubscriptionImagePaths;
                 this.inProgressBuilds = inProgressBuilds;
@@ -549,7 +549,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 _notificationServiceMock
                     .Verify(o => o.PostAsync(
-                        It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), $"https://github.com/{GitOwner}/{GitRepo}", GitAccessToken, It.IsAny<bool>()),
+                            It.IsAny<string>(),
+                            It.IsAny<string>(),
+                            It.IsAny<IEnumerable<string>>(),
+                            $"https://github.com/{GitOwner}/{GitRepo}",
+                            GitAccessToken,
+                            It.IsAny<bool>(),
+                            It.IsAny<IEnumerable<string>>()),
                         Times.Exactly(notificationPostCallCount));
 
                 if (!isQueuedBuildExpected)

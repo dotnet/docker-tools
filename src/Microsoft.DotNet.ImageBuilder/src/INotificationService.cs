@@ -5,11 +5,19 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface INotificationService
     {
         Task<Uri> PostAsync(
-            string title, string description, IEnumerable<string> labels, string repoUrl, string gitHubAccessToken, bool isDryRun);
+            string title,
+            string description,
+            IEnumerable<string> labels,
+            string repoUrl,
+            string gitHubAccessToken,
+            bool isDryRun,
+            IEnumerable<string>? comments = null);
     }
 }
+#nullable disable

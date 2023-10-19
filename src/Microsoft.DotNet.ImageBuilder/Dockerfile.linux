@@ -14,7 +14,7 @@ RUN dotnet restore -a $TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish -a $TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj -o out --no-restore
+RUN dotnet publish -a $TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true -o out
 
 
 # build runtime image

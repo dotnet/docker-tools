@@ -15,8 +15,6 @@ variables:
   parameters:
     TSAEnabled: ${{ parameters.TSAEnabled }}
 - template: templates/variables/common.yml
-- name: dotnetInstallDir
-  value: /usr/share/.dotnet
 
 jobs:
 - template: ../common/templates/jobs/cg-detection.yml

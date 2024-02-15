@@ -43,18 +43,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             try
             {
                 _loggerService.WriteSubheading("Cloning GitHub repo");
+
+                CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
+                cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
+                {
+                    Username = Options.GitOptions.AuthToken,
+                    Password = string.Empty
+                };
+
                 using IRepository repo =_gitService.CloneRepository(
                     $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
                     repoPath,
-                    new CloneOptions
-                    {
-                        BranchName = Options.GitOptions.Branch,
-                        CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                        {
-                            Username = Options.GitOptions.AuthToken,
-                            Password = string.Empty
-                        }
-                    });
+                    cloneOptions);
 
                 Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
 

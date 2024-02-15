@@ -23,8 +23,7 @@ FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
 # install tooling
 RUN apk add --no-cache \
         docker \
-        git \
-        openssl1.1-compat
+        git
 
 # install image-builder
 WORKDIR /image-builder

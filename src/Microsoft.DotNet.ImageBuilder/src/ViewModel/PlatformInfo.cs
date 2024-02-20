@@ -230,6 +230,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = "Ubuntu 22.04";
                 }
+                else if (os.Contains("noble"))
+                {
+                    displayName = "Ubuntu 24.04";
+                }
                 else if (os.Contains("alpine") || os.Contains("centos") || os.Contains("fedora"))
                 {
                     displayName = FormatVersionableOsName(os, name => name.FirstCharToUpper());

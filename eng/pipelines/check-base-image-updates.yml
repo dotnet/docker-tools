@@ -10,15 +10,31 @@ schedules:
   always: true
 
 variables:
-- template: templates/variables/common.yml
-
-jobs:
-- template: templates/jobs/check-base-image-updates.yml
+- template: /eng/pipelines/templates/variables/common.yml@self
+resources:
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
   parameters:
-    jobName: CheckBaseImages
-    subscriptionsPath: eng/check-base-image-subscriptions.json
-- template: templates/jobs/check-base-image-updates.yml
-  parameters:
-    jobName: CheckBaseImages_BuildTools
-    subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
-    customGetStaleImagesArgs: --base-override-regex '^((centos|debian|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'
+    pool:
+      name: NetCore1ESPool-Internal
+      image: 1es-windows-2022
+      os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
+    stages:
+    - stage: stage
+      jobs:
+      - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self
+        parameters:
+          jobName: CheckBaseImages
+          subscriptionsPath: eng/check-base-image-subscriptions.json
+      - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self
+        parameters:
+          jobName: CheckBaseImages_BuildTools
+          subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
+          customGetStaleImagesArgs: --base-override-regex '^((centos|debian|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'

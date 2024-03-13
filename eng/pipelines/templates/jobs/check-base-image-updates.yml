@@ -6,10 +6,12 @@ parameters:
 jobs:
 - job: ${{ parameters.jobName }}
   pool:
-    vmImage: $(defaultLinuxAmd64PoolImage)
+    name: NetCore1ESPool-Internal
+    image: 1es-ubuntu-2204
+    os: linux
   steps:
-  - template: ../../../common/templates/steps/init-docker-linux.yml
-  - template: ../../../common/templates/steps/copy-base-images.yml
+  - template: /eng/common/templates/steps/init-docker-linux.yml@self
+  - template: /eng/common/templates/steps/copy-base-images.yml@self
     parameters:
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
       publicProjectName: ${{ variables.publicProjectName }}
@@ -40,4 +42,4 @@ jobs:
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --image-paths "$(GetStaleImages.staleImagePaths)"
     displayName: Queue Build for Stale Images
-  - template: ../../../common/templates/steps/cleanup-docker-linux.yml
+  - template: /eng/common/templates/steps/cleanup-docker-linux.yml@self

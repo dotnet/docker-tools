@@ -19,7 +19,7 @@ parameters:
   testMatrixType: platformVersionedOs
 
 stages:
-- template: ../build-test-publish-repo.yml
+- template: /eng/common/templates/stages/build-test-publish-repo.yml@self
   parameters:
     noCache: ${{ parameters.noCache }}
     internalProjectName: ${{ parameters.internalProjectName }}
@@ -68,18 +68,38 @@ stages:
         vmImage: $(defaultLinuxAmd64PoolImage)
       ${{ elseif eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         name: NetCore1ESPool-Internal
-        demands: ImageOverride -equals Build.Ubuntu.1804.Amd64
+        image: 1es-ubuntu-2204
+        os: linux
     
     linuxArm64Pool:
+      image: Mariner-2-Docker-ARM64
+      os: linux
+      hostArchitecture: Arm64
       ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
         name: Docker-Linux-Arm-Public
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         name: Docker-Linux-Arm-Internal
     linuxArm32Pool:
+      image: Mariner-2-Docker-ARM64
+      os: linux
+      hostArchitecture: Arm64
       ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
         name: Docker-Linux-Arm-Public
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         name: Docker-Linux-Arm-Internal
+
     windows2016Pool: Docker-2016-${{ variables['System.TeamProject'] }}
-    windows1809Pool: Docker-1809-${{ variables['System.TeamProject'] }}
-    windows2022Pool: Docker-2022-${{ variables['System.TeamProject'] }}
+    ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
+      windows1809Pool: Docker-1809-${{ variables['System.TeamProject'] }}
+    ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
+      windows1809Pool:
+        name: NetCore1ESPool-Internal
+        image: 1es-windows-2019
+        os: windows
+    ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
+      windows2022Pool: Docker-2022-${{ variables['System.TeamProject'] }}
+    ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
+      windows2022Pool:
+        name: NetCore1ESPool-Internal
+        image: 1es-windows-2022
+        os: windows

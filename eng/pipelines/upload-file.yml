@@ -13,18 +13,32 @@ parameters:
   type: string
 
 variables:
-- template: templates/variables/common.yml
-
-jobs:
-- job: Execute
-  pool:
-    vmImage: $(defaultLinuxAmd64PoolImage)
-  steps:
-  - script: >
-      az storage blob upload
-      --account-name $(dotnetBinaries.accountName)
-      --account-key $(dotnetbinaries-accountkey)
-      --container-name ${{ parameters.containerName }}
-      --file $(Build.SourcesDirectory)/${{ parameters.sourceFilePath }}
-      --name ${{ parameters.destName }}
-    displayName: Upload File
+- template: /eng/pipelines/templates/variables/common.yml@self
+resources:
+  repositories:
+  - repository: 1ESPipelineTemplates
+    type: git
+    name: 1ESPipelineTemplates/1ESPipelineTemplates
+    ref: refs/tags/release
+extends:
+  template: v1/1ES.Official.PipelineTemplate.yml@1ESPipelineTemplates
+  parameters:
+    pool:
+      name: NetCore1ESPool-Internal
+      image: 1es-windows-2022
+      os: windows
+    customBuildTags:
+    - ES365AIMigrationTooling
+    stages:
+    - stage: stage
+      jobs:
+      - job: Execute
+        steps:
+        - script: >
+            az storage blob upload
+            --account-name $(dotnetBinaries.accountName)
+            --account-key $(dotnetbinaries-accountkey)
+            --container-name ${{ parameters.containerName }}
+            --file $(Build.SourcesDirectory)/${{ parameters.sourceFilePath }}
+            --name ${{ parameters.destName }}
+          displayName: Upload File

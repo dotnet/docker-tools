@@ -1,6 +1,6 @@
 variables:
-- template: docker-images.yml
-- template: common-paths.yml
+- template: /eng/common/templates/variables/docker-images.yml@self
+- template: /eng/common/templates/variables/common-paths.yml@self
 - name: stagingRepoPrefix
   value: build-staging/$(sourceBuildId)/
 - name: publishReadme

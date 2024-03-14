@@ -1,2 +1,2 @@
 variables:
-- template: ../../../common/templates/variables/dotnet/common.yml
+- template: /eng/common/templates/variables/dotnet/common.yml@self

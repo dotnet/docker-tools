@@ -2,7 +2,7 @@
 # The 1ES CG step does not scan artifacts that are built within Dockerfiles therefore they
 # need to be built outside of Dockerfiles.
 jobs:
-- job:
+- job: BuildProjects
   displayName: Build Projects
   pool:
     name: NetCore1ESPool-Internal

@@ -26,7 +26,7 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
-    - stage:
+    - stage: CgDetection
       displayName: CG Detection
       jobs:
       - template: /eng/common/templates/jobs/cg-build-projects.yml@self

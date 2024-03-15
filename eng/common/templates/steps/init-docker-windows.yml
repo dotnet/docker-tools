@@ -13,7 +13,6 @@ steps:
   ################################################################################
   # Cleanup Docker Resources
   ################################################################################
-- template: cleanup-docker-windows.yml
 - template: /eng/common/templates/steps/cleanup-docker-windows.yml@self
   parameters:
     condition: ${{ parameters.condition }}

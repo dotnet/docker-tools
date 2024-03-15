@@ -184,6 +184,7 @@ namespace FilePusher
                     try
                     {
                         await execute(client);
+
                         break;
                     }
                     catch (HttpRequestException ex) when (i < (maxTries - 1))
@@ -191,12 +192,6 @@ namespace FilePusher
                         Console.WriteLine($"Encountered exception interacting with GitHub: {ex.Message}");
                         Console.WriteLine($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");
                         await Task.Delay(retryMillisecondsDelay);
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine($"Encountered exception interacting with GitHub: {ex.Message}");
-                        Console.WriteLine("##vso[task.complete result=Failed;]");
-                        throw ex;
                     }
                 }
             }
@@ -215,7 +210,7 @@ namespace FilePusher
                     .Concat(Directory.GetFiles(path));
             }
         }
-
+            
 
         private static string GetFilterRegexPattern(params string[] patterns)
         {

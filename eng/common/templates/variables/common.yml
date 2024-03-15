@@ -1,3 +1,8 @@
+parameters:
+  # CG is disabled by default because projects are built within Dockerfiles and CG step do not scan artifacts
+  # that are built within Dockerfiles. A separate CG pipeline exists for this reason.
+  skipComponentGovernanceDetectionValue: true
+
 variables:
 - template: /eng/common/templates/variables/docker-images.yml@self
 - template: /eng/common/templates/variables/common-paths.yml@self
@@ -10,7 +15,7 @@ variables:
 - name: ingestKustoImageInfo
   value: true
 - name: skipComponentGovernanceDetection
-  value: true
+  value: $(skipComponentGovernanceDetectionValue)
 - name: build.imageBuilderDockerRunExtraOptions
   value: ""
 - name: imageBuilderDockerRunExtraOptions

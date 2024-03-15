@@ -27,7 +27,7 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
-    - stage:
+    - stage: CheckBaseImages
       displayName: Check Base Images
       jobs:
       - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self

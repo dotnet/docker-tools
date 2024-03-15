@@ -8,8 +8,8 @@ pr: none
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
-  parameters:
-    skipComponentGovernanceDetectionValue: false
+- name: skipComponentGovernanceDetection
+  value: false
 resources:
   repositories:
   - repository: 1ESPipelineTemplates

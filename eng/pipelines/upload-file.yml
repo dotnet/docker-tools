@@ -30,7 +30,8 @@ extends:
     customBuildTags:
     - ES365AIMigrationTooling
     stages:
-    - stage: stage
+    - stage: UploadFile
+      displayName: Upload File
       jobs:
       - job: Execute
         steps:

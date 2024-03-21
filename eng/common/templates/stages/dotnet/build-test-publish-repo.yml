@@ -99,7 +99,6 @@ stages:
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         image: Server2016-NESDockerBuilds-PT
 
-
     # Windows Server 2019 (1809)
     ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
       windows1809Pool: Docker-1809-${{ variables['System.TeamProject'] }}

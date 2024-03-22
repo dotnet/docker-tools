@@ -21,6 +21,10 @@ jobs:
       value: $[ replace(variables['Build.SourceBranch'], 'refs/heads/', '') ]
     ${{ if startsWith(variables['Build.SourceBranch'], 'refs/pull/') }}:
       value: $[ replace(variables['System.PullRequest.SourceBranch'], 'refs/heads/', '') ]
+  - name: imageInfoHostDir
+    value: $(Build.ArtifactStagingDirectory)/imageInfo
+  - name: imageInfoContainerDir
+    value: $(artifactsPath)/imageInfo
   - ${{ parameters.customPublishVariables }}
   steps:
   - template: /eng/common/templates/steps/retain-build.yml@self
@@ -35,7 +39,7 @@ jobs:
       internalProjectName: ${{ parameters.internalProjectName }}
   - template: /eng/common/templates/steps/download-build-artifact.yml@self
     parameters:
-      targetPath: $(Build.ArtifactStagingDirectory)/imageInfo
+      targetPath: $(imageInfoHostDir)
       artifactName: image-info
   - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
     parameters:
@@ -56,7 +60,7 @@ jobs:
     displayName: Set Publish Variables
   - script: >
       $(runImageBuilderCmd) trimUnchangedPlatforms
-      '$(artifactsPath)/imageInfo/image-info.json'
+      '$(imageInfoContainerDir)/image-info.json'
     displayName: Trim Unchanged Images
   - script: >
       $(runImageBuilderCmd) copyAcrImages
@@ -69,14 +73,14 @@ jobs:
       --os-type '*'
       --architecture '*'
       --repo-prefix '$(publishRepoPrefix)'
-      --image-info '$(artifactsPath)/imageInfo/image-info.json'
+      --image-info '$(imageInfoContainerDir)/image-info.json'
       $(dryRunArg)
       $(imageBuilder.pathArgs)
       $(imageBuilder.commonCmdArgs)
     displayName: Copy Images
   - powershell: |
       $(runImageBuilderCmd) publishManifest `
-        '$(artifactsPath)/imageInfo/image-info.json' `
+        '$(imageInfoContainerDir)/image-info.json' `
         --repo-prefix '$(publishRepoPrefix)' `
         --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)' `
         --os-type '*' `
@@ -87,7 +91,7 @@ jobs:
     displayName: Publish Manifest
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
-      path: $(Build.ArtifactStagingDirectory)
+      path: $(imageInfoHostDir)
       artifactName: image-info-final-$(System.JobAttempt)
       displayName: Publish Image Info File Artifact
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -104,7 +108,7 @@ jobs:
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
   - script: >
       $(runImageBuilderCmd) publishImageInfo
-      '$(artifactsPath)/imageInfo/image-info.json'
+      '$(imageInfoContainerDir)/image-info.json'
       '$(gitHubVersionsRepoInfo.userName)'
       '$(gitHubVersionsRepoInfo.email)'
       '$(gitHubVersionsRepoInfo.accessToken)'
@@ -118,7 +122,7 @@ jobs:
     displayName: Publish Image Info
   - script: >
       $(runImageBuilderCmd) ingestKustoImageInfo
-      '$(artifactsPath)/imageInfo/image-info.json'
+      '$(imageInfoContainerDir)/image-info.json'
       '$(kusto.cluster)'
       '$(kusto.database)'
       '$(kusto.imageTable)'
@@ -136,7 +140,7 @@ jobs:
       $(runImageBuilderCmd) postPublishNotification
       '$(publishNotificationRepoName)'
       '$(branchName)'
-      '$(artifactsPath)/imageInfo/image-info.json'
+      '$(imageInfoContainerDir)/image-info.json'
       $(Build.BuildId)
       '$(System.AccessToken)'
       '$(azdoOrgName)'

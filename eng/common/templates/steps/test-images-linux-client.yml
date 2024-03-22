@@ -76,9 +76,11 @@ steps:
 - powershell: |
     $hasTestResults = Test-Path $(Common.TestResultsDirectory)/$(testResultsDirectory)
     echo "##vso[task.setvariable variable=hasTestResults]$hasTestResults"
-    if ($hasTestResults)
-    {
+    if ($hasTestResults) {
       docker cp $(testRunner.container):/repo/$(testResultsDirectory) $(Common.TestResultsDirectory)/.
+    }
+    else {
+      echo "There were no test outputs in $(Common.TestResultsDirectory)/$(testResultsDirectory). Skipping test result publishing."
     }
   displayName: Copy Test Results
   condition: and(always(), ${{ parameters.condition }})

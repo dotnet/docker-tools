@@ -78,15 +78,15 @@ jobs:
       $(imageBuilder.pathArgs)
       $(imageBuilder.commonCmdArgs)
     displayName: Copy Images
-  - powershell: |
-      $(runImageBuilderCmd) publishManifest `
-        '$(imageInfoContainerDir)/image-info.json' `
-        --repo-prefix '$(publishRepoPrefix)' `
-        --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)' `
-        --os-type '*' `
-        --architecture '*' `
-        $(dryRunArg) `
-        $(imageBuilder.pathArgs) `
+  - script: >
+      $(runImageBuilderCmd) publishManifest
+        '$(imageInfoContainerDir)/image-info.json'
+        --repo-prefix '$(publishRepoPrefix)'
+        --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
+        --os-type '*'
+        --architecture '*'
+        $(dryRunArg)
+        $(imageBuilder.pathArgs)
         $(imageBuilder.commonCmdArgs)
     displayName: Publish Manifest
   - template: /eng/common/templates/steps/publish-artifact.yml@self

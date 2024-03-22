@@ -25,6 +25,8 @@ jobs:
   steps:
   - template: /eng/common/templates/steps/retain-build.yml@self
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    parameters:
+      cleanupDocker: false
   - pwsh: |
       $azdoOrgName = Split-Path -Leaf $Env:SYSTEM_COLLECTIONURI
       echo "##vso[task.setvariable variable=azdoOrgName]$azdoOrgName"

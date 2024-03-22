@@ -4,6 +4,8 @@ jobs:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../steps/init-docker-linux.yml
+    parameters:
+      cleanupDocker: false
   - template: ../steps/download-build-artifact.yml
     parameters:
       targetPath: $(Build.ArtifactStagingDirectory)

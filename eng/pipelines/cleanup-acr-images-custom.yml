@@ -10,6 +10,8 @@ jobs:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - template: ../common/templates/steps/init-docker-linux.yml
+    parameters:
+      cleanupDocker: false
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       repo: $(repo)

@@ -12,6 +12,8 @@ jobs:
   steps:
   - template: /eng/common/templates/steps/retain-build.yml@self
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    parameters:
+      cleanupDocker: false
   - template: /eng/common/templates/steps/validate-branch.yml@self
     parameters:
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -38,4 +40,3 @@ jobs:
       $(additionalGenerateBuildMatrixOptions)
     displayName: Generate ${{ parameters.matrixType }} Matrix
     name: matrix
-  - template: /eng/common/templates/steps/cleanup-docker-linux.yml@self

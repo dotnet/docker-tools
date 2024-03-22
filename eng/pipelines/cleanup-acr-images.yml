@@ -44,4 +44,3 @@ jobs:
   #     repo: "mirror/*"
   #     action: pruneDangling
   #     age: 0
-  - template: ../common/templates/steps/cleanup-docker-linux.yml

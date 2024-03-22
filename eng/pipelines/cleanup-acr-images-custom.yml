@@ -16,4 +16,3 @@ jobs:
       action: $(action)
       age: $(age)
       customArgs: $(customArgs)
-  - template: ../common/templates/steps/cleanup-docker-linux.yml

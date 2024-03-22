@@ -154,4 +154,3 @@ jobs:
       $(imageBuilder.commonCmdArgs)
     displayName: Post Publish Notification
     condition: and(always(), eq(variables['publishNotificationsEnabled'], 'true'))
-  - template: /eng/common/templates/steps/cleanup-docker-linux.yml@self

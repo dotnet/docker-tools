@@ -9,7 +9,7 @@ steps:
   parameters:
     setupImageBuilder: false
     setupTestRunner: true
-    cleanupDocker: ${{ and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}
+    cleanupDocker: ${{ and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.preBuildValidation, 'false')) }}
     condition: ${{ parameters.condition }}
 - ${{ parameters.customInitSteps }}
 - script: |
@@ -96,7 +96,3 @@ steps:
   displayName: Cleanup TestRunner Container
   condition: and(always(), ${{ parameters.condition }})
   continueOnError: true
-- ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
-  - template: /eng/common/templates/steps/cleanup-docker-linux.yml@self
-    parameters:
-      condition: ${{ parameters.condition }}

@@ -35,17 +35,19 @@ jobs:
       internalProjectName: ${{ parameters.internalProjectName }}
   - template: /eng/common/templates/steps/download-build-artifact.yml@self
     parameters:
-      targetPath: $(Build.ArtifactStagingDirectory)
+      targetPath: $(Build.ArtifactStagingDirectory)/imageInfo
       artifactName: image-info
   - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
     parameters:
       publicSourceBranch: $(publicSourceBranch)
   - template: /eng/common/templates/steps/set-dry-run.yml@self
-  - script: echo $(sourceBuildId) > $(Build.ArtifactStagingDirectory)/source-build-id.txt
+  - powershell: |
+      New-Item -ItemType Directory -Path $(Build.ArtifactStagingDirectory) -Name sourceBuildId
+      Set-Content -Path $(Build.ArtifactStagingDirectory)/sourceBuildId/source-build-id.txt -Value $(sourceBuildId)
     displayName: Write Source Build ID to File
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
-      path: $(Build.ArtifactStagingDirectory)/source-build-id.txt
+      path: $(Build.ArtifactStagingDirectory)/sourceBuildId
       artifactName: source-build-id
       displayName: Publish Source Build ID Artifact
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -54,7 +56,7 @@ jobs:
     displayName: Set Publish Variables
   - script: >
       $(runImageBuilderCmd) trimUnchangedPlatforms
-      '$(artifactsPath)/image-info.json'
+      '$(artifactsPath)/imageInfo/image-info.json'
     displayName: Trim Unchanged Images
   - script: >
       $(runImageBuilderCmd) copyAcrImages
@@ -67,25 +69,25 @@ jobs:
       --os-type '*'
       --architecture '*'
       --repo-prefix '$(publishRepoPrefix)'
-      --image-info '$(artifactsPath)/image-info.json'
+      --image-info '$(artifactsPath)/imageInfo/image-info.json'
       $(dryRunArg)
       $(imageBuilder.pathArgs)
       $(imageBuilder.commonCmdArgs)
     displayName: Copy Images
-  - script: >
-      $(runImageBuilderCmd) publishManifest
-      '$(artifactsPath)/image-info.json'
-      --repo-prefix '$(publishRepoPrefix)'
-      --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
-      --os-type '*'
-      --architecture '*'
-      $(dryRunArg)
-      $(imageBuilder.pathArgs)
-      $(imageBuilder.commonCmdArgs)
+  - powershell: |
+      $(runImageBuilderCmd) publishManifest `
+        '$(artifactsPath)/imageInfo/image-info.json' `
+        --repo-prefix '$(publishRepoPrefix)' `
+        --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)' `
+        --os-type '*' `
+        --architecture '*' `
+        $(dryRunArg) `
+        $(imageBuilder.pathArgs) `
+        $(imageBuilder.commonCmdArgs)
     displayName: Publish Manifest
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
-      path: $(Build.ArtifactStagingDirectory)/image-info.json
+      path: $(Build.ArtifactStagingDirectory)
       artifactName: image-info-final-$(System.JobAttempt)
       displayName: Publish Image Info File Artifact
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -102,7 +104,7 @@ jobs:
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
   - script: >
       $(runImageBuilderCmd) publishImageInfo
-      '$(artifactsPath)/image-info.json'
+      '$(artifactsPath)/imageInfo/image-info.json'
       '$(gitHubVersionsRepoInfo.userName)'
       '$(gitHubVersionsRepoInfo.email)'
       '$(gitHubVersionsRepoInfo.accessToken)'
@@ -116,7 +118,7 @@ jobs:
     displayName: Publish Image Info
   - script: >
       $(runImageBuilderCmd) ingestKustoImageInfo
-      '$(artifactsPath)/image-info.json'
+      '$(artifactsPath)/imageInfo/image-info.json'
       '$(kusto.cluster)'
       '$(kusto.database)'
       '$(kusto.imageTable)'
@@ -134,7 +136,7 @@ jobs:
       $(runImageBuilderCmd) postPublishNotification
       '$(publishNotificationRepoName)'
       '$(branchName)'
-      '$(artifactsPath)/image-info.json'
+      '$(artifactsPath)/imageInfo/image-info.json'
       $(Build.BuildId)
       '$(System.AccessToken)'
       '$(azdoOrgName)'

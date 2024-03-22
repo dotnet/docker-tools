@@ -33,7 +33,7 @@ jobs:
       Get-ChildItem $(Build.ArtifactStagingDirectory)$(imageInfosSubDir) -Directory |
           ForEach-Object {
               [pscustomobject]@{
-                  # Parse the artifact name to separate the base of the name from the job attempt number 
+                  # Parse the artifact name to separate the base of the name from the job attempt number
                   BaseName = $_.Name.Substring(0, $_.Name.LastIndexOf('-'));
                   JobAttempt = $_.Name.Substring($_.Name.LastIndexOf('-') + 1)
                   FullName = $_.FullName
@@ -64,7 +64,7 @@ jobs:
       publicProjectName: ${{ parameters.publicProjectName }}
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
-      path: $(Build.ArtifactStagingDirectory)$(imageInfosSubDir)/image-info.json
+      path: $(Build.ArtifactStagingDirectory)$(imageInfosSubDir)
       artifactName: image-info
       displayName: Publish Image Info File Artifact
       internalProjectName: ${{ parameters.internalProjectName }}

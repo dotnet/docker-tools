@@ -11,8 +11,6 @@ jobs:
     os: linux
   steps:
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
-    parameters:
-      cleanupDocker: false
   - template: /eng/common/templates/steps/copy-base-images.yml@self
     parameters:
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"

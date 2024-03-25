@@ -10,8 +10,6 @@ jobs:
   pool: ${{ parameters.pool }}
   steps:
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
-    parameters:
-      cleanupDocker: false
   - ${{ parameters.customInitSteps }}
   - template: /eng/common/templates/steps/copy-base-images.yml@self
     parameters:

@@ -5,6 +5,9 @@ parameters:
 
 steps:
   - template: ${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}
+    parameters:
+      # Get some disk space back, pipeline run time is not a concern here
+      cleanupDocker: true
   - powershell: >
       ./tests/performance/Validate-ImageSize.ps1
       -ImageBuilderCustomArgs "--architecture '${{ parameters.architecture }}'"

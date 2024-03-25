@@ -76,6 +76,8 @@ jobs:
       echo "##vso[task.setvariable variable=baseContainerRepoPath]$baseContainerRepoPath"
     displayName: Set Base Container Repo Path
   - template: /eng/common/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
+    parameters:
+      cleanupDocker: true
   - ${{ parameters.customInitSteps }}
   - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
     parameters:

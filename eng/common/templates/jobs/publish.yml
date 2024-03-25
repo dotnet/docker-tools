@@ -25,6 +25,8 @@ jobs:
     value: $(Build.ArtifactStagingDirectory)/imageInfo
   - name: imageInfoContainerDir
     value: $(artifactsPath)/imageInfo
+  - name: sourceBuildIdOutputDir
+    value: $(Build.ArtifactStagingDirectory)/sourceBuildId
   - ${{ parameters.customPublishVariables }}
   steps:
   - template: /eng/common/templates/steps/retain-build.yml@self
@@ -46,12 +48,12 @@ jobs:
       publicSourceBranch: $(publicSourceBranch)
   - template: /eng/common/templates/steps/set-dry-run.yml@self
   - powershell: |
-      New-Item -ItemType Directory -Path $(Build.ArtifactStagingDirectory) -Name sourceBuildId
-      Set-Content -Path $(Build.ArtifactStagingDirectory)/sourceBuildId/source-build-id.txt -Value $(sourceBuildId)
+      New-Item -ItemType Directory -Path $(sourceBuildIdOutputDir)
+      Set-Content -Path $(sourceBuildIdOutputDir)/source-build-id.txt -Value $(sourceBuildId)
     displayName: Write Source Build ID to File
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
-      path: $(Build.ArtifactStagingDirectory)/sourceBuildId
+      path: $(sourceBuildIdOutputDir)
       artifactName: source-build-id
       displayName: Publish Source Build ID Artifact
       internalProjectName: ${{ parameters.internalProjectName }}

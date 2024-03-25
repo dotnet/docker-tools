@@ -51,12 +51,13 @@ jobs:
                   Remove-Item -Recurse -Force
           }
     displayName: Prune Publish Artifacts
-  - script: >
-      $(runImageBuilderCmd) mergeImageInfo
-      --manifest $(manifest)
-      $(imageInfosContainerDir)
-      $(imageInfosContainerDir)$(imageInfosOutputSubDir)/image-info.json
-      $(manifestVariables)
+  - powershell: |
+      New-Item -ItemType Directory -Path $(imageInfosHostDir)$(imageInfosOutputSubDir) -Force
+      $(runImageBuilderCmd) mergeImageInfo `
+        --manifest $(manifest) `
+        $(imageInfosContainerDir) `
+        $(imageInfosContainerDir)$(imageInfosOutputSubDir)/image-info.json `
+        $(manifestVariables)
     displayName: Merge Image Info Files
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:

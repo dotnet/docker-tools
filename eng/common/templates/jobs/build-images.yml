@@ -76,6 +76,8 @@ jobs:
       echo "##vso[task.setvariable variable=baseContainerRepoPath]$baseContainerRepoPath"
     displayName: Set Base Container Repo Path
   - template: /eng/common/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
+    parameters:
+      cleanupDocker: true
   - ${{ parameters.customInitSteps }}
   - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
     parameters:
@@ -181,7 +183,7 @@ jobs:
             -PackageVersion '$(Build.BuildNumber)' `
             -ManifestDirPath $sbomChildDir `
             -DockerImagesToScan $_ `
-            -Verbosity Information 
+            -Verbosity Information
         }
       displayName: Generate SBOMs
       condition: and(succeeded(), ne(variables['BuildImages.builtImages'], ''))
@@ -189,7 +191,6 @@ jobs:
     - template: /eng/common/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
       parameters:
         condition: ne(variables.testScriptPath, '')
-  - template: /eng/common/templates/jobs/${{ format('../steps/cleanup-docker-{0}.yml', parameters.dockerClientOS) }}@self
   - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
     - template: /eng/common/templates/steps/publish-artifact.yml@self
       parameters:

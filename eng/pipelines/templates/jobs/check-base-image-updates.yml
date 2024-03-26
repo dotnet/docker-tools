@@ -42,4 +42,3 @@ jobs:
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --image-paths "$(GetStaleImages.staleImagePaths)"
     displayName: Queue Build for Stale Images
-  - template: /eng/common/templates/steps/cleanup-docker-linux.yml@self

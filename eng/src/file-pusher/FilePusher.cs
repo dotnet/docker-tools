@@ -23,27 +23,29 @@ namespace FilePusher
     {
         public static Task Main(string[] args)
         {
-            RootCommand command = new RootCommand();
-            foreach (Symbol symbol in Options.GetCliOptions())
-            {
-                command.Add(symbol);
-            }
-
+            RootCommand command = [.. Options.GetCliOptions()];
             command.Handler = CommandHandler.Create<Options>(ExecuteAsync);
-
             return command.InvokeAsync(args);
         }
 
         private static async Task ExecuteAsync(Options options)
         {
-            // TODO:  Add support for delete file scenarios
+            try
+            {
+                // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
+                Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
-            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+                string configJson = File.ReadAllText(options.ConfigPath);
+                Config config = JsonConvert.DeserializeObject<Config>(configJson)
+                    ?? throw new ArgumentException($"Could not serialize config JSON file {options.ConfigPath}.");
 
-            string configJson = File.ReadAllText(options.ConfigPath);
-            Config config = JsonConvert.DeserializeObject<Config>(configJson);
-            await PushFilesAsync(options, config);
+                await PushFilesAsync(options, config);
+            }
+            catch (Exception e)
+            {
+                Console.Error.WriteLine($"Failed to push files:{Environment.NewLine}{e}");
+                Environment.Exit(1);
+            }
         }
 
         public static async Task PushFilesAsync(Options options, Config config)
@@ -210,7 +212,7 @@ namespace FilePusher
                     .Concat(Directory.GetFiles(path));
             }
         }
-            
+
 
         private static string GetFilterRegexPattern(params string[] patterns)
         {

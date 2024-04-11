@@ -9,7 +9,7 @@
 
   <ItemGroup>
     <!-- Upgrade explicitly referenced package version referenced by Microsoft.Data.SqlClient.5.1.1 and Microsoft.Azure.Kusto.Ingest.11.3.4 -->
-    <PackageReference Include="Azure.Identity" Version="1.10.3" />
+    <PackageReference Include="Azure.Identity" Version="1.11.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.18.0" />
     <PackageReference Include="Azure.Storage.Queues" Version="12.16.0" />
     <PackageReference Include="Cottle" Version="2.0.10" />

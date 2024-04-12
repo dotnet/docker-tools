@@ -238,7 +238,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = FormatVersionableOsName(os, name => name.FirstCharToUpper());
                 }
-                else if (os.Contains("azure-linux"))
+                else if (os.Contains("azurelinux"))
                 {
                     displayName = FormatVersionableOsName(os, name => "Azure Linux");
                 }

@@ -238,6 +238,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     displayName = FormatVersionableOsName(os, name => name.FirstCharToUpper());
                 }
+                else if (os.Contains("azure-linux"))
+                {
+                    displayName = FormatVersionableOsName(os, name => "Azure Linux");
+                }
                 else if (os.Contains("cbl-mariner"))
                 {
                     displayName = FormatVersionableOsName(os, name => "CBL-Mariner");

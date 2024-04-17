@@ -74,12 +74,11 @@ steps:
     condition: and(always(), ${{ parameters.condition }})
     continueOnError: true
 - powershell: |
-    $hasTestResults = Test-Path $(Common.TestResultsDirectory)/$(testResultsDirectory)
+    $ErrorActionPreference = 'Continue'
+    docker cp $(testRunner.container):/repo/$(testResultsDirectory) $(Common.TestResultsDirectory)/.
+    $hasTestResults = Test-Path $(Common.TestResultsDirectory)
     echo "##vso[task.setvariable variable=hasTestResults]$hasTestResults"
-    if ($hasTestResults) {
-      docker cp $(testRunner.container):/repo/$(testResultsDirectory) $(Common.TestResultsDirectory)/.
-    }
-    else {
+    if (!$hasTestResults) {
       echo "There were no test outputs in $(Common.TestResultsDirectory)/$(testResultsDirectory). Skipping test result publishing."
     }
   displayName: Copy Test Results

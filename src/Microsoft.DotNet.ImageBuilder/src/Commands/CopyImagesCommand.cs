@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
+using Azure.Core;
+using Azure.ResourceManager.ContainerRegistry.Models;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -23,10 +24,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public ILoggerService LoggerService { get; }
 
         protected Task ImportImageAsync(string destTagName,
-            string destRegistryName, string srcTagName, string? srcRegistryName = null, string? srcResourceId = null,
-            ImportSourceCredentials? sourceCredentials = null) =>
+            string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
+            ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
             _copyImageService.ImportImageAsync(
-                Options.Subscription, Options.ResourceGroup, Options.ServicePrincipal, new string[] { destTagName }, destRegistryName,
+                Options.Subscription, Options.ResourceGroup, Options.ServicePrincipal, [destTagName], destRegistryName,
                 srcTagName, srcRegistryName, srcResourceId, sourceCredentials, Options.IsDryRun);
     }
 }

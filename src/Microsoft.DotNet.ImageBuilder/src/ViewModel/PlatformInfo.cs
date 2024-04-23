@@ -294,15 +294,21 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             }
         }
 
-        private static (string Name, string Version) GetOsVersionInfo(string osVersion)
+        private static (string Name, string Version) GetOsVersionInfo(string os)
         {
-            int versionIndex = osVersion.IndexOfAny(new char[] { '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' });
-            if (versionIndex != -1)
-            {
-                return (osVersion.Substring(0, versionIndex), osVersion.Substring(versionIndex));
-            }
+            // Regex matches an os name ending in a non-numeric or decimal character and up to
+            // a 3 part version number. Any additional characters are dropped (e.g. -distroless).
+            Regex versionRegex = new Regex(@"(?<name>.+[^0-9\.])(?<version>\d+(\.\d*){0,2})");
+            Match match = versionRegex.Match(os);
 
-            return (osVersion, string.Empty);
+            if (match.Success)
+            {
+                return (match.Groups["name"].Value, match.Groups["version"].Value);
+            }
+            else
+            {
+                return (os, string.Empty);
+            }
         }
 
 

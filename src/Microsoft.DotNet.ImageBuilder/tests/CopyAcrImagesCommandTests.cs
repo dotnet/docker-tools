@@ -5,15 +5,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
-using Microsoft.Azure.Management.Fluent;
+using Azure.ResourceManager.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
@@ -35,11 +31,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
-                IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
-                Mock<IAzureManagementFactory> azureManagementFactoryMock =
-                    AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
-
                 Mock<ICopyImageService> copyImageServiceMock = new();
 
                 CopyAcrImagesCommand command = new(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
@@ -114,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             null,
-                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
                 }
@@ -133,11 +124,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
-                IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
-                Mock<IAzureManagementFactory> azureManagementFactoryMock =
-                    AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
-
                 Mock<IEnvironmentService> environmentServiceMock = new();
                 Mock<ICopyImageService> copyImageServiceMock = new();
 
@@ -225,7 +211,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             null,
-                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
                 }
@@ -243,10 +229,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string subscriptionId = "my subscription";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
-            IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
-            Mock<IAzureManagementFactory> azureManagementFactoryMock =
-                AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
             Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
@@ -347,7 +329,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             null,
-                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
             }
@@ -364,10 +346,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string subscriptionId = "my subscription";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IRegistriesOperations> registriesOperationsMock = AzureHelper.CreateRegistriesOperationsMock();
-            IAzure azure = AzureHelper.CreateAzureMock(registriesOperationsMock);
-            Mock<IAzureManagementFactory> azureManagementFactoryMock =
-                AzureHelper.CreateAzureManagementFactoryMock(subscriptionId, azure);
 
             Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
@@ -469,7 +447,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             It.IsAny<string>(),
                             null,
-                            CopyImageService.GetResourceId(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
             }

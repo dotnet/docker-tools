@@ -5,15 +5,14 @@ using System;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
-using Microsoft.Azure.Management.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent;
-using Microsoft.Azure.Management.ResourceManager.Fluent.Authentication;
+using Azure;
+using Azure.Core;
+using Azure.Identity;
+using Azure.ResourceManager;
+using Azure.ResourceManager.ContainerRegistry;
+using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.Rest.Azure;
-using ImportSource = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSource;
+using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
@@ -22,53 +21,45 @@ public interface ICopyImageService
 {
     Task ImportImageAsync(
         string subscription, string resourceGroup, ServicePrincipalOptions servicePrincipalOptions, string[] destTagNames,
-        string destRegistryName, string srcTagName, string? srcRegistryName = null, string? srcResourceId = null,
-        ImportSourceCredentials? sourceCredentials = null, bool isDryRun = false);
+        string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
+        ContainerRegistryImportSourceCredentials? sourceCredentials = null, bool isDryRun = false);
 }
 
 [Export(typeof(ICopyImageService))]
 public class CopyImageService : ICopyImageService
 {
-    private readonly IAzureManagementFactory _azureManagementFactory;
     private readonly ILoggerService _loggerService;
 
     [ImportingConstructor]
-    public CopyImageService(IAzureManagementFactory azureManagementFactory, ILoggerService loggerService)
+    public CopyImageService(ILoggerService loggerService)
     {
-        _azureManagementFactory = azureManagementFactory;
         _loggerService = loggerService;
     }
 
-    private static string GetBaseRegistryName(string registry) => registry.TrimEnd(".azurecr.io");
-
-    public static string GetResourceId(string subscription, string resourceGroup, string registry) =>
-        $"/subscriptions/{subscription}/resourceGroups/{resourceGroup}/providers" +
-                $"/Microsoft.ContainerRegistry/registries/{GetBaseRegistryName(registry)}";
+    public static string GetBaseRegistryName(string registry) => registry.TrimEnd(".azurecr.io");
 
     public async Task ImportImageAsync(
         string subscription, string resourceGroup, ServicePrincipalOptions servicePrincipalOptions, string[] destTagNames,
-        string destRegistryName, string srcTagName, string? srcRegistryName = null, string? srcResourceId = null,
-        ImportSourceCredentials? sourceCredentials = null, bool isDryRun = false)
+        string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
+        ContainerRegistryImportSourceCredentials? sourceCredentials = null, bool isDryRun = false)
     {
         destRegistryName = GetBaseRegistryName(destRegistryName);
 
-        AzureCredentials credentials = SdkContext.AzureCredentialsFactory.FromServicePrincipal(
-            servicePrincipalOptions.ClientId,
-            servicePrincipalOptions.Secret,
-            servicePrincipalOptions.Tenant,
-            AzureEnvironment.AzureGlobalCloud);
-        IAzure azure = _azureManagementFactory.CreateAzureManager(credentials, subscription);
-
-        ImportImageParametersInner importParams = new()
+        ClientSecretCredential credentials = new(servicePrincipalOptions.Tenant, servicePrincipalOptions.ClientId, servicePrincipalOptions.Secret);
+        ArmClient client = new(credentials);
+        ContainerRegistryResource registryResource = client.GetContainerRegistryResource(
+            ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destRegistryName));
+        ContainerRegistryImportSource importSrc = new(srcTagName)
         {
-            Mode = "Force",
-            Source = new ImportSource(
-                srcTagName,
-                srcResourceId,
-                srcRegistryName,
-                sourceCredentials),
-            TargetTags = destTagNames
+            ResourceId = srcResourceId,
+            RegistryAddress = srcRegistryName,
+            Credentials = sourceCredentials
         };
+        ContainerRegistryImportImageContent importImageContent = new(importSrc)
+        {
+            Mode = ContainerRegistryImportMode.Force
+        };
+        importImageContent.TargetTags.AddRange(destTagNames);
 
         string formattedDestTagNames = string.Join(", ", destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destRegistryName, tag)}'").ToArray());
         _loggerService.WriteMessage($"Importing {formattedDestTagNames} from '{DockerHelper.GetImageName(srcRegistryName, srcTagName)}'");
@@ -78,16 +69,11 @@ public class CopyImageService : ICopyImageService
             try
             {
                 await RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
-                    .ExecuteAsync(() => azure.ContainerRegistries.Inner.ImportImageAsync(resourceGroup, destRegistryName, importParams));
+                    .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
             }
             catch (Exception e)
             {
                 string errorMsg = $"Importing Failure: {formattedDestTagNames}";
-                if (e is CloudException cloudException)
-                {
-                    errorMsg += Environment.NewLine + cloudException.Body.Message;
-                }
-
                 errorMsg += Environment.NewLine + e.ToString();
 
                 _loggerService.WriteMessage(errorMsg);

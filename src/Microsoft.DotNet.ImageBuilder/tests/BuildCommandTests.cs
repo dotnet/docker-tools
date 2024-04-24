@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -3627,7 +3628,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         srcTagName,
                         srcRegistryName,
                         null,
-                        It.IsAny<ImportSourceCredentials>(),
+                        It.IsAny<ContainerRegistryImportSourceCredentials>(),
                         false));
         }
     }

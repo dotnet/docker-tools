@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Azure.Management.ContainerRegistry.Fluent.Models;
+using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 #nullable enable
@@ -87,10 +87,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string registry = DockerHelper.GetRegistry(fromImage) ?? DockerHelper.DockerHubRegistry;
             string srcImage = DockerHelper.TrimRegistry(fromImage, registry);
 
-            ImportSourceCredentials? importSourceCreds = null;
+            ContainerRegistryImportSourceCredentials? importSourceCreds = null;
             if (Options.CredentialsOptions.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))
             {
-                importSourceCreds = new ImportSourceCredentials(registryCreds.Password, registryCreds.Username);
+                importSourceCreds = new ContainerRegistryImportSourceCredentials(registryCreds.Password)
+                {
+                    Username = registryCreds.Username
+                };
             }
 
             return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", destinationRegistryName, srcImage,

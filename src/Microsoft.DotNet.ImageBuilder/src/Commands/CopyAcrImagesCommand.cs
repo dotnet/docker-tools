@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure.Core;
+using Azure.ResourceManager.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -39,7 +41,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 
-            string resourceId = CopyImageService.GetResourceId(Options.Subscription, Options.ResourceGroup, Manifest.Registry);
+            ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
+                Options.Subscription, Options.ResourceGroup, CopyImageService.GetBaseRegistryName(Manifest.Registry));
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>

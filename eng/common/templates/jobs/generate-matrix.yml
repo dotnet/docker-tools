@@ -10,6 +10,7 @@ jobs:
 - job: ${{ parameters.name }}
   pool: ${{ parameters.pool }}
   steps:
+  - script: echo $(acr.servicePrincipalTenant)
   - template: /eng/common/templates/steps/retain-build.yml@self
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
   - template: /eng/common/templates/steps/validate-branch.yml@self

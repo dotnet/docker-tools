@@ -23,9 +23,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData("bionic", "Ubuntu 18.04")]
         [InlineData("disco", "Ubuntu 19.04")]
         [InlineData("focal", "Ubuntu 20.04")]
+        [InlineData("jammy", "Ubuntu 22.04")]
+        [InlineData("jammy-chiseled", "Ubuntu 22.04")]
         [InlineData("alpine3.12", "Alpine 3.12")]
         [InlineData("centos8", "Centos 8")]
         [InlineData("fedora32", "Fedora 32")]
+        [InlineData("cbl-mariner2.0", "CBL-Mariner 2.0")]
+        [InlineData("azurelinux3.0", "Azure Linux 3.0")]
+        [InlineData("azurelinux3.0-distroless", "Azure Linux 3.0")]
         public void GetOSDisplayName_Linux(string osVersion, string expectedDisplayName)
         {
             ValidateGetOSDisplayName(OS.Linux, osVersion, expectedDisplayName);

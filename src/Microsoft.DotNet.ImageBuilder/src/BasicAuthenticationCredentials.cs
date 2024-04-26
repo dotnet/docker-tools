@@ -4,9 +4,5 @@
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class BasicAuthenticationCredentials(string userName, string password)
-{
-    public string UserName { get; } = userName;
-    public string Password { get; } = password;
-}
+public record struct BasicAuthenticationCredentials(string UserName, string Password);
 #nullable disable

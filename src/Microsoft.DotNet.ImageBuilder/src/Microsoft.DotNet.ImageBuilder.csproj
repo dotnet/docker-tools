@@ -17,7 +17,6 @@
     <PackageReference Include="GiGraph.Dot" Version="2.0.1" />
     <PackageReference Include="LibGit2Sharp" Version="0.29.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="11.3.4" />
-    <PackageReference Include="Microsoft.Azure.Management.Fluent" Version="1.38.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.1.3" />
     <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="9.0.0-beta.24123.3" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.24151.5" />

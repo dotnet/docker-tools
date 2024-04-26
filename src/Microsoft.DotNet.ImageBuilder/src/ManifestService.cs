@@ -5,7 +5,6 @@
 using System.ComponentModel.Composition;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using Microsoft.Rest;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -35,11 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Lookup the credentials, if any, for the registry where the image is located
             if (credsHost.Credentials.TryGetValue(imageName.Registry!, out RegistryCredentials? registryCreds))
             {
-                basicAuthCreds = new BasicAuthenticationCredentials
-                {
-                    UserName = registryCreds.Username,
-                    Password = registryCreds.Password
-                };
+                basicAuthCreds = new BasicAuthenticationCredentials(registryCreds.Username, registryCreds.Password);
             }
 
             // Docker Hub's registry has a separate host name for its API

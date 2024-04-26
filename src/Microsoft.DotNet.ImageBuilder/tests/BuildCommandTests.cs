@@ -18,7 +18,6 @@ using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
-using ImportSourceCredentials = Microsoft.Azure.Management.ContainerRegistry.Fluent.Models.ImportSourceCredentials;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {

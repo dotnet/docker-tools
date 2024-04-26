@@ -6,12 +6,10 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Authentication;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Rest;
-using Microsoft.Rest.Azure.Authentication;
-using Microsoft.Rest.Serialization;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -98,11 +96,14 @@ public class RegistryHttpClient : HttpClient
 
             try
             {
-                return SafeJsonConvert.DeserializeObject<OAuthToken>(tokenContent);
+                return JsonConvert.DeserializeObject<OAuthToken>(tokenContent) ??
+                    throw new JsonSerializationException(
+                        $"Unable to deserialize the response.{Environment.NewLine}{Environment.NewLine}Content:{Environment.NewLine}{tokenContent}"); ;
             }
             catch (JsonException e)
             {
-                throw new SerializationException("Unable to deserialize the response.", tokenContent, e);
+                throw new JsonSerializationException(
+                    $"Unable to deserialize the response.{Environment.NewLine}{Environment.NewLine}Content:{Environment.NewLine}{tokenContent}", e);
             }
         }
 

@@ -73,8 +73,8 @@ internal class RegistryServiceClient
                 Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Format(
                     CultureInfo.InvariantCulture,
                     "{0}:{1}",
-                    _credentials.UserName,
-                    _credentials.Password).ToCharArray())));
+                    _credentials.Value.UserName,
+                    _credentials.Value.Password).ToCharArray())));
         }
 
         HttpResponseMessage response = await _httpClient.SendAsync(request);

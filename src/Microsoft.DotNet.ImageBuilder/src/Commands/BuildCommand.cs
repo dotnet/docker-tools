@@ -582,7 +582,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 .ToArray();
             string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
             await _copyImageService.ImportImageAsync(Options.Subscription, Options.ResourceGroup,
-                    Options.ServicePrincipal, destTags, Manifest.Registry, DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
+                    destTags, Manifest.Registry, DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
                     srcRegistry);
 
             // Redefine the source digest to be from the destination of the copy, not the source. The canonical scenario

@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
             ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
             _copyImageService.ImportImageAsync(
-                Options.Subscription, Options.ResourceGroup, Options.ServicePrincipal, [destTagName], destRegistryName,
+                Options.Subscription, Options.ResourceGroup, [destTagName], destRegistryName,
                 srcTagName, srcRegistryName, srcResourceId, sourceCredentials, Options.IsDryRun);
     }
 }

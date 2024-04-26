@@ -15,25 +15,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string ResourceGroup { get; set; } = string.Empty;
         public string Subscription { get; set; } = string.Empty;
-
-        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
     }
 
     public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
-        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
-            ServicePrincipalOptionsBuilder.BuildWithDefaults();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions());
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {

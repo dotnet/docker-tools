@@ -11,7 +11,7 @@ using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerRegistry;
 using Azure.ResourceManager.ContainerRegistry.Models;
-using Microsoft.DotNet.ImageBuilder.Commands;
+using Azure.ResourceManager.Resources;
 using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ICopyImageService
 {
     Task ImportImageAsync(
-        string subscription, string resourceGroup, ServicePrincipalOptions servicePrincipalOptions, string[] destTagNames,
+        string subscription, string resourceGroup, string[] destTagNames,
         string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null, bool isDryRun = false);
 }
@@ -29,6 +29,10 @@ public interface ICopyImageService
 public class CopyImageService : ICopyImageService
 {
     private readonly ILoggerService _loggerService;
+
+    private ArmClient? _armClient;
+
+    private ArmClient ArmClient => _armClient ??= new ArmClient(new DefaultAzureCredential());
 
     [ImportingConstructor]
     public CopyImageService(ILoggerService loggerService)
@@ -39,16 +43,15 @@ public class CopyImageService : ICopyImageService
     public static string GetBaseRegistryName(string registry) => registry.TrimEnd(".azurecr.io");
 
     public async Task ImportImageAsync(
-        string subscription, string resourceGroup, ServicePrincipalOptions servicePrincipalOptions, string[] destTagNames,
+        string subscription, string resourceGroup, string[] destTagNames,
         string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null, bool isDryRun = false)
     {
         destRegistryName = GetBaseRegistryName(destRegistryName);
 
-        ClientSecretCredential credentials = new(servicePrincipalOptions.Tenant, servicePrincipalOptions.ClientId, servicePrincipalOptions.Secret);
-        ArmClient client = new(credentials);
-        ContainerRegistryResource registryResource = client.GetContainerRegistryResource(
+        ContainerRegistryResource registryResource = ArmClient.GetContainerRegistryResource(
             ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destRegistryName));
+
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
             ResourceId = srcResourceId,

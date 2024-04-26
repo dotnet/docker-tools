@@ -37,6 +37,10 @@ steps:
   - script: >
       echo "##vso[task.setvariable variable=runImageBuilderCmd]
       docker run --rm
+      -e AZURE_TENANT_ID=$tenantId
+      -e AZURE_CLIENT_ID=$servicePrincipalId
+      -e AZURE_FEDERATED_TOKEN_FILE=/tmp/token
+      -v $(Agent.TempDirectory):/tmp
       -v /var/run/docker.sock:/var/run/docker.sock
       -v $(Build.ArtifactStagingDirectory):$(artifactsPath)
       -w /repo

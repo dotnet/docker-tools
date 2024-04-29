@@ -35,9 +35,7 @@ public class CopyImageService : ICopyImageService
 {
     private readonly ILoggerService _loggerService;
 
-    private ArmClient? _armClient;
-
-    private ArmClient ArmClient => _armClient ??= new ArmClient(new DefaultAzureCredential());
+    private readonly ArmClient _armClient = new(new DefaultAzureCredential());
 
     [ImportingConstructor]
     public CopyImageService(ILoggerService loggerService)
@@ -60,7 +58,7 @@ public class CopyImageService : ICopyImageService
     {
         destAcrName = GetBaseAcrName(destAcrName);
 
-        ContainerRegistryResource registryResource = ArmClient.GetContainerRegistryResource(
+        ContainerRegistryResource registryResource = _armClient.GetContainerRegistryResource(
             ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcrName));
 
         ContainerRegistryImportSource importSrc = new(srcTagName)

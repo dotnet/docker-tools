@@ -14,7 +14,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }
         public int Age { get; set; }
-        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
         public string Subscription { get; set; }
         public string ResourceGroup { get; set; }
         public string RegistryName { get; set; }
@@ -22,9 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class CleanAcrImagesOptionsBuilder : CliOptionsBuilder
     {
-        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
-            ServicePrincipalOptionsBuilder.BuildWithDefaults();
-
         private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
         private const int DefaultAge = 30;
 
@@ -36,7 +32,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         new Argument<string>(nameof(CleanAcrImagesOptions.RepoName),
                             "Name of repo to target (wildcard chars * and ? supported)"),
                     })
-                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {
@@ -50,7 +45,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {

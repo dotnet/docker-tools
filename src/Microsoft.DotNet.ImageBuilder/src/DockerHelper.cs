@@ -26,6 +26,18 @@ namespace Microsoft.DotNet.ImageBuilder
         public const string DockerHubApiRegistry = "registry-1.docker.io";
         public const string AcrDomain = ".azurecr.io";
 
+        public static string FormatAcrName(string acrName)
+        {
+            if (!acrName.EndsWith(AcrDomain))
+            {
+                acrName = $"{acrName}{AcrDomain}";
+            }
+
+            return acrName;
+        }
+
+        public static Uri GetAcrUri(string acrName) => new($"https://{FormatAcrName(acrName)}");
+
         public static void ExecuteWithUser(Action action, string? username, string? password, string? server, bool isDryRun)
         {
             ExecuteWithUserAsync(() =>

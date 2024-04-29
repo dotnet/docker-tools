@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Acr
+using Azure.Core;
+
+namespace Microsoft.DotNet.ImageBuilder;
+
+#nullable enable
+public interface IContainerRegistryClientFactory
 {
-    public class TagDetails
-    {
-        public string Name { get; set; }
-    }
+    IContainerRegistryClient Create(string acrName, TokenCredential credential);
 }

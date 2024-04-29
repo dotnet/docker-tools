@@ -10,9 +10,11 @@ using Azure.Containers.ContainerRegistry;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class ContainerRegistryContentClientWrapper(ContainerRegistryContentClient innerClient) : IRegistryContentClient
+public class ContainerRegistryContentClientWrapper(ContainerRegistryContentClient innerClient) : IContainerRegistryContentClient
 {
     private readonly ContainerRegistryContentClient _innerClient = innerClient;
+
+    public string RepositoryName => _innerClient.RepositoryName;
 
     public async Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest)
     {
@@ -20,4 +22,6 @@ public class ContainerRegistryContentClientWrapper(ContainerRegistryContentClien
         JsonObject manifestData = (JsonObject)(JsonNode.Parse(result.Value.Manifest.ToString()) ?? throw new JsonException($"Unable to deserialize result: {result.Value.Manifest}"));
         return new ManifestQueryResult(result.Value.Digest, manifestData);
     }
+
+    public Task DeleteManifestAsync(string tagOrDigest) => _innerClient.DeleteManifestAsync(tagOrDigest);
 }

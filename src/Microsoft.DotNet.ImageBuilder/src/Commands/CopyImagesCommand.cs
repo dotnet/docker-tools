@@ -7,28 +7,37 @@ using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
+    where TOptions : CopyImagesOptions, new()
+    where TOptionsBuilder : CopyImagesOptionsBuilder, new()
 {
-    public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
-        where TOptions : CopyImagesOptions, new()
-        where TOptionsBuilder : CopyImagesOptionsBuilder, new()
+    private readonly ICopyImageService _copyImageService;
+
+    public CopyImagesCommand(ICopyImageService copyImageService, ILoggerService loggerService)
     {
-        private readonly ICopyImageService _copyImageService;
-
-        public CopyImagesCommand(ICopyImageService copyImageService, ILoggerService loggerService)
-        {
-            _copyImageService = copyImageService;
-            LoggerService = loggerService;
-        }
-
-        public ILoggerService LoggerService { get; }
-
-        protected Task ImportImageAsync(string destTagName,
-            string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
-            ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
-            _copyImageService.ImportImageAsync(
-                Options.Subscription, Options.ResourceGroup, Options.ServicePrincipal, [destTagName], destRegistryName,
-                srcTagName, srcRegistryName, srcResourceId, sourceCredentials, Options.IsDryRun);
+        _copyImageService = copyImageService;
+        LoggerService = loggerService;
     }
+
+    public ILoggerService LoggerService { get; }
+
+    protected Task ImportImageAsync(
+        string destTagName,
+        string destRegistryName,
+        string srcTagName,
+        string? srcRegistryName = null,
+        ResourceIdentifier? srcResourceId = null,
+        ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
+            _copyImageService.ImportImageAsync(
+                Options.Subscription,
+                Options.ResourceGroup,
+                [ destTagName ],
+                destRegistryName,
+                srcTagName,
+                srcRegistryName,
+                srcResourceId,
+                sourceCredentials,
+                Options.IsDryRun);
 }
-#nullable disable

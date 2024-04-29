@@ -88,7 +88,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         o.ImportImageAsync(
                             subscriptionId,
                             command.Options.ResourceGroup,
-                            It.IsAny<ServicePrincipalOptions>(),
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
@@ -169,7 +168,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         o.ImportImageAsync(
                             subscriptionId,
                             command.Options.ResourceGroup,
-                            It.IsAny<ServicePrincipalOptions>(),
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,

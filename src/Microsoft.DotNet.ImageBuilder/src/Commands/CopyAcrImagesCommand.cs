@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             LoggerService.WriteHeading("COPYING IMAGES");
 
             ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                Options.Subscription, Options.ResourceGroup, CopyImageService.GetBaseRegistryName(Manifest.Registry));
+                Options.Subscription, Options.ResourceGroup, CopyImageService.GetBaseAcrName(Manifest.Registry));
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>

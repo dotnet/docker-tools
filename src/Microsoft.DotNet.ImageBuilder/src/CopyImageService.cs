@@ -11,7 +11,6 @@ using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerRegistry;
 using Azure.ResourceManager.ContainerRegistry.Models;
-using Azure.ResourceManager.Resources;
 using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -20,9 +19,15 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ICopyImageService
 {
     Task ImportImageAsync(
-        string subscription, string resourceGroup, string[] destTagNames,
-        string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
-        ContainerRegistryImportSourceCredentials? sourceCredentials = null, bool isDryRun = false);
+        string subscription,
+        string resourceGroup,
+        string[] destTagNames,
+        string destRegistryName,
+        string srcTagName,
+        string? srcRegistryName = null,
+        ResourceIdentifier? srcResourceId = null,
+        ContainerRegistryImportSourceCredentials? sourceCredentials = null,
+        bool isDryRun = false);
 }
 
 [Export(typeof(ICopyImageService))]
@@ -40,17 +45,23 @@ public class CopyImageService : ICopyImageService
         _loggerService = loggerService;
     }
 
-    public static string GetBaseRegistryName(string registry) => registry.TrimEnd(".azurecr.io");
+    public static string GetBaseAcrName(string registry) => registry.TrimEnd(".azurecr.io");
 
     public async Task ImportImageAsync(
-        string subscription, string resourceGroup, string[] destTagNames,
-        string destRegistryName, string srcTagName, string? srcRegistryName = null, ResourceIdentifier? srcResourceId = null,
-        ContainerRegistryImportSourceCredentials? sourceCredentials = null, bool isDryRun = false)
+        string subscription,
+        string resourceGroup,
+        string[] destTagNames,
+        string destAcrName,
+        string srcTagName,
+        string? srcRegistryName = null,
+        ResourceIdentifier? srcResourceId = null,
+        ContainerRegistryImportSourceCredentials? sourceCredentials = null,
+        bool isDryRun = false)
     {
-        destRegistryName = GetBaseRegistryName(destRegistryName);
+        destAcrName = GetBaseAcrName(destAcrName);
 
         ContainerRegistryResource registryResource = ArmClient.GetContainerRegistryResource(
-            ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destRegistryName));
+            ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcrName));
 
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
@@ -64,8 +75,10 @@ public class CopyImageService : ICopyImageService
         };
         importImageContent.TargetTags.AddRange(destTagNames);
 
-        string formattedDestTagNames = string.Join(", ", destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destRegistryName, tag)}'").ToArray());
-        _loggerService.WriteMessage($"Importing {formattedDestTagNames} from '{DockerHelper.GetImageName(srcRegistryName, srcTagName)}'");
+        string formattedDestTagNames = string.Join(
+            ", ", destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcrName, tag)}'").ToArray());
+        _loggerService.WriteMessage(
+            $"Importing {formattedDestTagNames} from '{DockerHelper.GetImageName(srcRegistryName, srcTagName)}'");
 
         if (!isDryRun)
         {
@@ -86,4 +99,3 @@ public class CopyImageService : ICopyImageService
         }
     }
 }
-#nullable disable

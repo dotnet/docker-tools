@@ -12,10 +12,10 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IManifestService))]
     public class ManifestService : IManifestService
     {
-        private readonly IRegistryClientFactory _registryClientFactory;
+        private readonly IRegistryContentClientFactory _registryClientFactory;
 
         [ImportingConstructor]
-        public ManifestService(IRegistryClientFactory registryClientFactory)
+        public ManifestService(IRegistryContentClientFactory registryClientFactory)
         {
             _registryClientFactory = registryClientFactory;
         }
@@ -29,8 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
             ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
-            IRegistryClient registryClient = _registryClientFactory.Create(imageName.Registry!, credsHost);
-            return registryClient.GetManifestAsync(imageName.Repo, (imageName.Tag ?? imageName.Digest)!);
+            IRegistryContentClient registryClient = _registryClientFactory.Create(imageName.Registry!, imageName.Repo, credsHost);
+            return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
         }
     }
 }

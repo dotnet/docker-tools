@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Client used for querying the REST API of container registries.
 /// </summary>
-internal class RegistryServiceClient : IRegistryClient
+internal class RegistryServiceClient : IRegistryContentClient
 {
     private const string DockerContentDigestHeader = "Docker-Content-Digest";
 
@@ -34,21 +34,23 @@ internal class RegistryServiceClient : IRegistryClient
     ];
 
     private readonly BasicAuthenticationCredentials? _credentials;
+    private readonly string _repo;
     private readonly RegistryHttpClient _httpClient;
 
     public Uri BaseUri { get; }
 
-    public RegistryServiceClient(string registry, RegistryHttpClient httpClient, BasicAuthenticationCredentials? credentials)
+    public RegistryServiceClient(string registry, string repo, RegistryHttpClient httpClient, BasicAuthenticationCredentials? credentials)
     {
         BaseUri = new Uri($"https://{registry}");
+        _repo = repo;
         _httpClient = httpClient;
         _credentials = credentials;
     }
 
-    public async Task<ManifestQueryResult> GetManifestAsync(string repo, string tagOrDigest)
+    public async Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest)
     {
         HttpResponseMessage response = await SendRequestAsync(
-            CreateGetRequestMessage(GetManifestUri(repo, tagOrDigest), HttpMethod.Get));
+            CreateGetRequestMessage(GetManifestUri(_repo, tagOrDigest), HttpMethod.Get));
         string contentDigest = response.Headers.GetValues(DockerContentDigestHeader).First();
 
         string content = await response.Content.ReadAsStringAsync();

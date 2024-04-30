@@ -30,10 +30,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
-                .Setup(o => o.GetManifestAsync("repo1:sharedtag2", It.IsAny<IRegistryCredentialsHost>(), false))
+                .Setup(o => o.GetManifestAsync("repo1:sharedtag2", It.IsAny<RegistryAuthContext>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest1", new JsonObject()));
             manifestToolService
-                .Setup(o => o.GetManifestAsync("repo2:sharedtag3", It.IsAny<IRegistryCredentialsHost>(), false))
+                .Setup(o => o.GetManifestAsync("repo2:sharedtag3", It.IsAny<RegistryAuthContext>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest2", new JsonObject()));
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
@@ -283,7 +283,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
-                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<RegistryAuthContext>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             Mock<IDockerService> dockerServiceMock = new();
@@ -399,7 +399,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
-                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<RegistryAuthContext>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             Mock<IDockerService> dockerServiceMock = new();

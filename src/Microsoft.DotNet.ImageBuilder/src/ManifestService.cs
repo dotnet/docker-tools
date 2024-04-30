@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _registryClientFactory = registryClientFactory;
         }
 
-        public Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
+        public Task<ManifestQueryResult> GetManifestAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun)
         {
             if (isDryRun)
             {
@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
-            IRegistryContentClient registryClient = _registryClientFactory.Create(imageName.Registry!, imageName.Repo, credsHost);
+            IRegistryContentClient registryClient = _registryClientFactory.Create(imageName.Registry!, imageName.Repo, registryAuthContext);
             return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
         }
     }

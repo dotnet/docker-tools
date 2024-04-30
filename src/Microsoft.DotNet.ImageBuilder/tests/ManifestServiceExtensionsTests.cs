@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
@@ -22,25 +21,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData("tag2", ManifestListDigest)]
         public async Task GetManifestDigestSha(string tag, string expectedDigestSha)
         {
-            RegistryCredentialsOptions credsOptions = new()
-            {
-                Credentials = new Dictionary<string, RegistryCredentials>
+            RegistryAuthContext registryAuthContext = new(OwnedAcr: null,
+                new Dictionary<string, RegistryCredentials>
                 {
                     { "docker.io", new RegistryCredentials("user", "pwd") }
-                }
-            };
+                });
             Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
             manifestToolService
-                .Setup(o => o.GetManifestAsync("tag1", credsOptions, false))
+                .Setup(o => o.GetManifestAsync("tag1", registryAuthContext, false))
                 .ReturnsAsync(new ManifestQueryResult(ManifestDigest, new JsonObject()));
             manifestToolService
-                .Setup(o => o.GetManifestAsync("tag2", credsOptions, false))
+                .Setup(o => o.GetManifestAsync("tag2", registryAuthContext, false))
                 .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
 
             string digestSha = await ManifestServiceExtensions.GetManifestDigestShaAsync(
                 manifestToolService.Object,
                 tag,
-                credsOptions,
+                registryAuthContext,
                 false);
             Assert.Equal(expectedDigestSha, digestSha);
         }

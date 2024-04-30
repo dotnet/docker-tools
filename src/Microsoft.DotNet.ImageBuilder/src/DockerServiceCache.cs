@@ -52,12 +52,12 @@ namespace Microsoft.DotNet.ImageBuilder
         public DateTime GetCreatedDate(string image, bool isDryRun) =>
             _createdDateCache.GetOrAdd(image, _ => _inner.GetCreatedDate(image, isDryRun));
 
-        public Task<string?> GetImageDigestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun) =>
-            _imageDigestCache.GetImageDigestAsync(image, credsHost, isDryRun);
+        public Task<string?> GetImageDigestAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun) =>
+            _imageDigestCache.GetImageDigestAsync(image, registryAuthContext, isDryRun);
 
-        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun) =>
+        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun) =>
             LockHelper.DoubleCheckedLockLookupAsync(_imageLayersCacheLock, _imageLayersCache, image,
-                () => _inner.GetImageManifestLayersAsync(image, credsHost, isDryRun));
+                () => _inner.GetImageManifestLayersAsync(image, registryAuthContext, isDryRun));
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));

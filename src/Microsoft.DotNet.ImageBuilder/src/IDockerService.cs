@@ -16,9 +16,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void PullImage(string image, string? platform, bool isDryRun);
 
-        Task<string?> GetImageDigestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun);
+        Task<string?> GetImageDigestAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun);
 
-        Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun);
+        Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun);
 
         void PushImage(string tag, bool isDryRun);
 

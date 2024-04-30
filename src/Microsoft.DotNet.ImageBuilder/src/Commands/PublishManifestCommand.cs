@@ -87,7 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
                     await _manifestToolService.GetManifestDigestShaAsync(
-                        sharedTag.FullyQualifiedName, Options.CredentialsOptions, Options.IsDryRun));
+                        sharedTag.FullyQualifiedName, Options.ToRegistryAuthContext(), Options.IsDryRun));
 
                 IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
                     .Where(tag => tag.SyndicatedRepo is not null)
@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
                         await _manifestToolService.GetManifestDigestShaAsync(
                             DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
-                            Options.CredentialsOptions,
+                            Options.ToRegistryAuthContext(),
                             Options.IsDryRun));
                     image.Manifest.SyndicatedDigests.Add(digest);
                 }

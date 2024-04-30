@@ -11,6 +11,12 @@ steps:
         exit 0
       }
 
+      if (-not "$(officialRepoPrefixes)".Split(',').Contains("$(publishRepoPrefix)"))
+      {
+        echo "This build is a test build, continuing..."
+        exit 0
+      }
+
       if ("$(overrideOfficialBranchValidation)" -eq "true")
       {
         echo "Variable overrideOfficialBranchValidation is set to true, continuing..."

@@ -36,16 +36,11 @@ internal class RegistryContentClientFactory(IHttpClientProvider httpClientProvid
         }
         else
         {
-            BasicAuthenticationCredentials? basicAuthCreds = null;
-
             // Lookup the credentials, if any, for the registry where the image is located
-            if (registryAuthContext.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds))
-            {
-                basicAuthCreds = new BasicAuthenticationCredentials(registryCreds.Username, registryCreds.Password);
-            }
+            registryAuthContext.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds);
 
             RegistryHttpClient httpClient = _httpClientProvider.GetRegistryClient();
-            return new RegistryServiceClient(apiRegistry, repo, httpClient, basicAuthCreds);
+            return new RegistryServiceClient(apiRegistry, repo, httpClient, registryCreds);
         }
     }
 }

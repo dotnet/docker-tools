@@ -68,7 +68,6 @@ jobs:
     parameters:
       displayName: Copy Images
       serviceConnection: $(acr.serviceConnectionName)
-      continueOnError: ${{ parameters.continueOnError }}
       internalProjectName: ${{ parameters.internalProjectName }}
       args: >
         copyAcrImages

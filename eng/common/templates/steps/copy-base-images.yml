@@ -13,6 +13,9 @@ steps:
     serviceConnection: $(acr.serviceConnectionName)
     continueOnError: ${{ parameters.continueOnError }}
     internalProjectName: ${{ parameters.internalProjectName }}
+    # Use environment variable to reference $(dryRunArg). Since $(dryRunArg) might be undefined,
+    # PowerShell will treat the Azure Pipelines variable macro syntax as a command and throw an
+    # error
     args: >
       copyBaseImages
       '$(acr.subscription)'
@@ -23,5 +26,5 @@ steps:
       --registry-override '$(acr.server)'
       --os-type 'linux'
       --architecture '*'
-      $(dryRunArg)
+      $DRYRUNARG
       ${{ parameters.additionalOptions }}

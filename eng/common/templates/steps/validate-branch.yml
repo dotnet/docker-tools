@@ -23,6 +23,6 @@ steps:
         exit 0
       }
 
-      echo "##vso[task.logissue type=error]Official builds must be done from an official branch: $(officialBranches)"
+      echo "##vso[task.logissue type=error]Official builds must be done from an official branch ($(officialBranches)) and repo prefix ($(officialRepoPrefixes))."
       exit 1
     displayName: Validate Branch

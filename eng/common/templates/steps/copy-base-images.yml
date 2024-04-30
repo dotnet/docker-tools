@@ -1,30 +1,27 @@
 parameters:
   additionalOptions: null
   publicProjectName: null
+  internalProjectName: null
   continueOnError: false
 
 steps:
 - ${{ if or(eq(variables['System.TeamProject'], parameters.publicProjectName), eq(variables['Build.Reason'], 'PullRequest')) }}:
   - template: /eng/common/templates/steps/set-dry-run.yml@self
-- task: AzureCLI@2
-  displayName: Copy Base Images
-  continueOnError: ${{ parameters.continueOnError }}
-  inputs:
-    azureSubscription: $(acr.serviceConnectionName)
-    addSpnToEnvironment: true
-    scriptType: 'bash'
-    scriptLocation: 'inlineScript'
-    inlineScript: |
-      echo $idToken > "$(Agent.TempDirectory)/token"
-      $(runImageBuilderCmd) \
-        copyBaseImages \
-        '$(acr.subscription)' \
-        '$(acr.resourceGroup)' \
-        $(dockerHubRegistryCreds) \
-        $(customCopyBaseImagesArgs) \
-        --repo-prefix $(mirrorRepoPrefix) \
-        --registry-override '$(acr.server)' \
-        --os-type 'linux' \
-        --architecture '*' \
-        $DRYRUNARG \
-        ${{ parameters.additionalOptions }}
+- template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  parameters:
+    displayName: Copy Base Images
+    serviceConnection: $(acr.serviceConnectionName)
+    continueOnError: ${{ parameters.continueOnError }}
+    internalProjectName: ${{ parameters.internalProjectName }}
+    args: >
+      copyBaseImages
+      '$(acr.subscription)'
+      '$(acr.resourceGroup)'
+      $(dockerHubRegistryCreds)
+      $(customCopyBaseImagesArgs)
+      --repo-prefix $(mirrorRepoPrefix)
+      --registry-override '$(acr.server)'
+      --os-type 'linux'
+      --architecture '*'
+      $(dryRunArg)
+      ${{ parameters.additionalOptions }}

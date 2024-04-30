@@ -8,6 +8,7 @@ using Azure.Containers.ContainerRegistry;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
+#nullable enable
 internal class ContainerRegistryContentClientWrapper : IRegistryContentClient
 {
     private readonly ContainerRegistryContentClient _innerClient;

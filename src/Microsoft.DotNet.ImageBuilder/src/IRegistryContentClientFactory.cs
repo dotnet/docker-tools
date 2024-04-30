@@ -8,4 +8,3 @@ public interface IRegistryContentClientFactory
 {
     IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost);
 }
-#nullable disable

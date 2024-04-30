@@ -11,9 +11,9 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 [Export(typeof(IRegistryContentClientFactory))]
 [method: ImportingConstructor]
-internal class RegistryClientFactory(IHttpClientProvider httpClientProvider) : IRegistryContentClientFactory
+internal class RegistryContentClientFactory(IHttpClientProvider httpClientProvider) : IRegistryContentClientFactory
 {
-    private readonly RegistryHttpClient _httpClient = httpClientProvider.GetRegistryClient();
+    private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
 
     public IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost)
     {
@@ -45,8 +45,8 @@ internal class RegistryClientFactory(IHttpClientProvider httpClientProvider) : I
                 basicAuthCreds = new BasicAuthenticationCredentials(registryCreds.Username, registryCreds.Password);
             }
 
-            return new RegistryServiceClient(apiRegistry, repo, _httpClient, basicAuthCreds);
+            RegistryHttpClient httpClient = _httpClientProvider.GetRegistryClient();
+            return new RegistryServiceClient(apiRegistry, repo, httpClient, basicAuthCreds);
         }
     }
 }
-#nullable disable

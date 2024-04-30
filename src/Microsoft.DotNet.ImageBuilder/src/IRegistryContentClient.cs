@@ -10,4 +10,3 @@ public interface IRegistryContentClient
 {
     Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest);
 }
-#nullable disable

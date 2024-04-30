@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Client used for querying the REST API of container registries.
 /// </summary>
-internal class RegistryServiceClient : IRegistryContentClient
+public class RegistryServiceClient : IRegistryContentClient
 {
     private const string DockerContentDigestHeader = "Docker-Content-Digest";
 

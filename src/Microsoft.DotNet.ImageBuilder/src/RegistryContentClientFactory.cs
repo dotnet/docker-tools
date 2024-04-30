@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 [Export(typeof(IRegistryContentClientFactory))]
 [method: ImportingConstructor]
-internal class RegistryContentClientFactory(IHttpClientProvider httpClientProvider) : IRegistryContentClientFactory
+public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider) : IRegistryContentClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
 

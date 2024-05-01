@@ -26,7 +26,9 @@ steps:
       scriptType: 'pscore'
       scriptLocation: 'inlineScript'
       inlineScript: >
-        $(runAuthedImageBuilderCmd) ${{ parameters.args }}; $(runAuthCleanupCmd)
+        $env:idToken | Out-File -FilePath $(tokenHostFilePath);
+        $(runAuthedImageBuilderCmd) ${{ parameters.args }};
+        Remove-Item -Path $(tokenHostFilePath) -Force
 - ${{ else }}:
   - task: CmdLine@2
     displayName: ${{ parameters.displayName }}

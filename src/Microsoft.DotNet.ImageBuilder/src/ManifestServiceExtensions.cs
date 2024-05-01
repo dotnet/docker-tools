@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -14,9 +15,9 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class ManifestServiceExtensions
     {
         public static async Task<IEnumerable<string>> GetImageLayersAsync(
-            this IManifestService manifestService, string tag, RegistryAuthContext registryAuthContext, bool isDryRun)
+            this IManifestService manifestService, string tag, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
-            ManifestQueryResult manifestResult = await manifestService.GetManifestAsync(tag, registryAuthContext, isDryRun);
+            ManifestQueryResult manifestResult = await manifestService.GetManifestAsync(tag, credsHost, isDryRun);
 
             if (isDryRun)
             {
@@ -37,9 +38,9 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static async Task<string> GetManifestDigestShaAsync(
-            this IManifestService manifestService, string tag, RegistryAuthContext registryAuthContext, bool isDryRun)
+            this IManifestService manifestService, string tag, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
-            ManifestQueryResult manifestResult = await manifestService.GetManifestAsync(tag, registryAuthContext, isDryRun);
+            ManifestQueryResult manifestResult = await manifestService.GetManifestAsync(tag, credsHost, isDryRun);
             return manifestResult.ContentDigest;
         }
     }

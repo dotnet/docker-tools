@@ -6,5 +6,5 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 public interface IRegistryContentClientFactory
 {
-    IRegistryContentClient Create(string registry, string repo, RegistryAuthContext registryAuthContext);
+    IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost);
 }

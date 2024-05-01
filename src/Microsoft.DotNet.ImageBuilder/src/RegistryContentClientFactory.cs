@@ -15,15 +15,16 @@ public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
 
-    public IRegistryContentClient Create(string registry, string repo, RegistryAuthContext registryAuthContext)
+    public IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost)
     {
         // Docker Hub's registry has a separate host name for its API
         string apiRegistry = registry == DockerHelper.DockerHubRegistry ?
             DockerHelper.DockerHubApiRegistry :
             registry!;
 
-        string? ownedAcr = registryAuthContext.OwnedAcr;
-        if (ownedAcr?.EndsWith(DockerHelper.AcrDomain) == false)
+        string ownedAcr = "dotnetdocker";
+
+        if (!ownedAcr.EndsWith(DockerHelper.AcrDomain))
         {
             ownedAcr = $"{ownedAcr}{DockerHelper.AcrDomain}";
         }
@@ -37,7 +38,7 @@ public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider
         else
         {
             // Lookup the credentials, if any, for the registry where the image is located
-            registryAuthContext.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds);
+            credsHost.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds);
 
             RegistryHttpClient httpClient = _httpClientProvider.GetRegistryClient();
             return new RegistryServiceClient(apiRegistry, repo, httpClient, registryCreds);

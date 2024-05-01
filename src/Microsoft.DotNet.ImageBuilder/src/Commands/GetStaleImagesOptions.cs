@@ -23,8 +23,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
 
-        public RegistryAuthContext ToRegistryAuthContext() =>
-            new(OwnedAcr: null, CredentialsOptions.Credentials);
     }
 
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder

@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _manifestService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
         }
 
-        public async Task<string?> GetImageDigestAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun)
+        public async Task<string?> GetImageDigestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
         {
             IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
 
@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return null;
             }
 
-            string digestSha = await _manifestService.GetManifestDigestShaAsync(image, registryAuthContext, isDryRun);
+            string digestSha = await _manifestService.GetManifestDigestShaAsync(image, credsHost, isDryRun);
 
             if (digestSha is null)
             {
@@ -56,8 +56,8 @@ namespace Microsoft.DotNet.ImageBuilder
             return digest;
         }
 
-        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun) =>
-            _manifestService.GetImageLayersAsync(image, registryAuthContext, isDryRun);
+        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun) =>
+            _manifestService.GetImageLayersAsync(image, credsHost, isDryRun);
 
         public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
 

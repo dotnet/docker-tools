@@ -8,6 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IManifestService
     {
-        Task<ManifestQueryResult> GetManifestAsync(string image, RegistryAuthContext registryAuthContext, bool isDryRun);
+        Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun);
     }
 }

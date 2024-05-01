@@ -147,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
                         async () =>
                         {
-                            string digest = await _manifestToolService.GetManifestDigestShaAsync(fromImage, Options.ToRegistryAuthContext(), Options.IsDryRun);
+                            string digest = await _manifestToolService.GetManifestDigestShaAsync(fromImage, Options.CredentialsOptions, Options.IsDryRun);
                             return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 

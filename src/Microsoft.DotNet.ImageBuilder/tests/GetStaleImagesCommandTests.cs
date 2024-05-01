@@ -667,7 +667,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 context.Verify(expectedPathsBySubscription);
 
                 context.ManifestToolServiceMock
-                    .Verify(o => o.GetManifestAsync(baseImage, It.IsAny<RegistryAuthContext>(), false), Times.Once);
+                    .Verify(o => o.GetManifestAsync(baseImage, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             }
         }
 
@@ -1918,8 +1918,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Mock<IManifestService> manifestToolServiceMock = new Mock<IManifestService>();
                 manifestToolServiceMock
-                    .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<RegistryAuthContext>(), false))
-                    .ReturnsAsync((string image, RegistryAuthContext registryAuthContext, bool isDryRun) =>
+                    .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+                    .ReturnsAsync((string image, IRegistryCredentialsHost credsOptions, bool isDryRun) =>
                         new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
                 return manifestToolServiceMock;
             }

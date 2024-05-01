@@ -12,9 +12,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public abstract class DockerRegistryOptions : ManifestOptions
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
-
-        public RegistryAuthContext ToRegistryAuthContext() =>
-            new(RegistryOverride, CredentialsOptions.Credentials);
     }
 
     public abstract class DockerRegistryOptionsBuilder : ManifestOptionsBuilder

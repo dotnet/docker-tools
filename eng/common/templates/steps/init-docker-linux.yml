@@ -44,15 +44,6 @@ steps:
           "docker run --rm"
         )
 
-        $authedDockerRunCmd = @(
-          "$env:idToken | Out-File -FilePath $(Agent.TempDirectory)/token"
-          "&&"
-          "docker run --rm"
-          "-e AZURE_TENANT_ID=$env:tenantId"
-          "-e AZURE_CLIENT_ID=$env:servicePrincipalId"
-          "-e AZURE_FEDERATED_TOKEN_FILE=/tmp/token"
-        )
-
         $dockerRunArgs = @(
           "-v /var/run/docker.sock:/var/run/docker.sock"
           "-v $(Build.ArtifactStagingDirectory):$(artifactsPath)"
@@ -61,8 +52,17 @@ steps:
           "$(imageNames.imageBuilder.withrepo)"
         )
 
+        $authedDockerRunCmd = $dockerRunCmd + @(
+          "$env:idToken | Out-File -FilePath $(Agent.TempDirectory)/token"
+          "&&"
+          "docker run --rm"
+          "-e AZURE_TENANT_ID=$env:tenantId"
+          "-e AZURE_CLIENT_ID=$env:servicePrincipalId"
+          "-e AZURE_FEDERATED_TOKEN_FILE=/tmp/token"
+        )
+
         $runImageBuilderCmd = $($($dockerRunCmd + $dockerRunArgs) -join ' ')
-        $runAuthedImageBuilderCmd = $($($dockerRunCmd + $authedDockerRunArgs + $dockerRunArgs) -join ' ')
+        $runAuthedImageBuilderCmd = $($($authedDockerRunCmd + $dockerRunArgs) -join ' ')
         $runAuthCleanupCmd = "Remove-Item -Path $(Agent.TempDirectory)/token -Force"
 
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"

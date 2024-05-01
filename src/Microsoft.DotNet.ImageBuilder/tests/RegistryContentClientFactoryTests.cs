@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Moq;
 using Xunit;
 
@@ -14,9 +15,9 @@ public class RegistryContentClientFactoryTests
     [InlineData("my-acr.azurecr.io")]
     public void CreateAcrClient(string ownedAcr)
     {
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>());
-        RegistryAuthContext registryAuthContext = new(ownedAcr, new Dictionary<string, RegistryCredentials>());
-        IRegistryContentClient client = clientFactory.Create("my-acr.azurecr.io", "repo-name", registryAuthContext);
+        DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == ownedAcr);
+        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), options);
+        IRegistryContentClient client = clientFactory.Create("my-acr.azurecr.io", "repo-name", Mock.Of<IRegistryCredentialsHost>());
 
         Assert.IsType<ContainerRegistryContentClientWrapper>(client);
     }
@@ -27,9 +28,10 @@ public class RegistryContentClientFactoryTests
     [InlineData(DockerHelper.DockerHubRegistry, $"https://{DockerHelper.DockerHubApiRegistry}/")]
     public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
     {
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>());
-        RegistryAuthContext registryAuthContext = new("my-acr", new Dictionary<string, RegistryCredentials>());
-        IRegistryContentClient client = clientFactory.Create(registry, "repo-name", registryAuthContext);
+        DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == "my-acr");
+        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), options);
+        IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
+        IRegistryContentClient client = clientFactory.Create(registry, "repo-name", credsHost);
 
         Assert.IsType<RegistryServiceClient>(client);
 

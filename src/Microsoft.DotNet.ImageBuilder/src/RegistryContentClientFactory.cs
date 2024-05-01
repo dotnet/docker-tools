@@ -5,6 +5,7 @@ using System;
 using System.ComponentModel.Composition;
 using Azure.Containers.ContainerRegistry;
 using Azure.Identity;
+using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
@@ -15,6 +16,14 @@ public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
 
+    [Import(AllowDefault = true, AllowRecomposition = true)]
+    private IOptions _options = null!;
+
+    // This constructor can be used for unit tests to pass an IOptions instance
+    public RegistryContentClientFactory(IHttpClientProvider httpClientProvider, IOptions options)
+        : this(httpClientProvider)
+        => _options = options;
+
     public IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost)
     {
         // Docker Hub's registry has a separate host name for its API
@@ -22,13 +31,17 @@ public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider
             DockerHelper.DockerHubApiRegistry :
             registry!;
 
-        string ownedAcr = "dotnetdocker";
+        string? ownedAcr = null;
+        if (_options is DockerRegistryOptions dockerRegistryOptions)
+        {
+            ownedAcr = dockerRegistryOptions.RegistryOverride;
+        }
 
-        if (!ownedAcr.EndsWith(DockerHelper.AcrDomain))
+        if (ownedAcr?.EndsWith(DockerHelper.AcrDomain) == false)
         {
             ownedAcr = $"{ownedAcr}{DockerHelper.AcrDomain}";
         }
-        
+
         if (apiRegistry == ownedAcr)
         {
             // If the target registry is the owned ACR, connect to it with the Azure library API. This handles all the Azure auth.

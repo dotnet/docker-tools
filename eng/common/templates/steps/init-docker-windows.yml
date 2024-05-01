@@ -43,7 +43,7 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
+        $runImageBuilderCmd = "$(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder/Microsoft.DotNet.ImageBuilder.exe"
 
         $authedImageBuilderCmds = @(
           '$env:AZURE_TENANT_ID = $env:tenantId'

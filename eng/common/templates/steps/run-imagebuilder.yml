@@ -26,14 +26,11 @@ steps:
       scriptType: 'pscore'
       scriptLocation: 'inlineScript'
       inlineScript: >
-        $(runAuthedImageBuilderCmd)
-        ${{ parameters.args }}
-        && $(runAuthCleanupCmd)
+        $(runAuthedImageBuilderCmd) ${{ parameters.args }}; $(runAuthCleanupCmd)
 - ${{ else }}:
   - task: CmdLine@2
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
     inputs:
       script: >
-        $(runImageBuilderCmd)
-        ${{ parameters.args }}
+        $(runImageBuilderCmd) ${{ parameters.args }}

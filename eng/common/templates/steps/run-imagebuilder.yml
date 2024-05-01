@@ -16,17 +16,8 @@ parameters:
   default: false
 
 steps:
-- script: |
-    echo "System.TeamProject: ${{ variables['System.TeamProject'] }}"
-    echo "parameters.internalProjectName: ${{ parameters.internalProjectName }}"
-    echo "Build.Reason: ${{ variables['Build.Reason'] }}"
-  displayName: 'Debug'
-
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), ne(parameters.serviceConnection, '')) }}:
-
-  # Internal Linux
   - task: AzureCLI@2
-    condition: eq( variables['Agent.OS'], 'Linux' )
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
     inputs:
@@ -34,64 +25,14 @@ steps:
       addSpnToEnvironment: true
       scriptType: 'pscore'
       scriptLocation: 'inlineScript'
-      inlineScript: |
-        $env:idToken | Out-File -FilePath "$(Agent.TempDirectory)/token"
-        docker run --rm `
-          -e AZURE_TENANT_ID=$env:tenantId `
-          -e AZURE_CLIENT_ID=$env:servicePrincipalId `
-          -e AZURE_FEDERATED_TOKEN_FILE=/tmp/token `
-          -v /var/run/docker.sock:/var/run/docker.sock `
-          -v $(Build.ArtifactStagingDirectory):$(artifactsPath) `
-          -w /repo `
-          $(imageBuilderDockerRunExtraOptions) `
-          $(imageNames.imageBuilder.withrepo) `
-          ${{ parameters.args }}
-
-  # Internal Windows
-  - task: AzureCLI@2
-    condition: eq( variables['Agent.OS'], 'Windows_NT' )
-    displayName: ${{ parameters.displayName }}
-    continueOnError: ${{ parameters.continueOnError }}
-    inputs:
-      azureSubscription: ${{ parameters.serviceConnection }}
-      addSpnToEnvironment: true
-      scriptType: 'pscore'
-      scriptLocation: 'inlineScript'
-      inlineScript: |
-        $env:AZURE_TENANT_ID = $env:tenantId
-        $env:AZURE_CLIENT_ID = $env:servicePrincipalId
-        $env:AZURE_FEDERATED_TOKEN_FILE = "$(Agent.TempDirectory)/token"
-        $env:idToken | Out-File -FilePath $env:AZURE_FEDERATED_TOKEN_FILE
-        $(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe `
-          $(imageBuilderDockerRunExtraOptions) `
-          $(imageNames.imageBuilder.withrepo) `
-          ${{ parameters.args }}
-
-- ${{ else }}:
-
-  # Public Linux
-  - task: CmdLine@2
-    condition: eq( variables['Agent.OS'], 'Linux' )
-    displayName: ${{ parameters.displayName }}
-    continueOnError: ${{ parameters.continueOnError }}
-    inputs:
-      script: >
-        docker run --rm
-        -v /var/run/docker.sock:/var/run/docker.sock
-        -v $(Build.ArtifactStagingDirectory):$(artifactsPath)
-        -w /repo
-        $(imageBuilderDockerRunExtraOptions)
-        $(imageNames.imageBuilder.withrepo)
+      inlineScript: >
+        $(runAuthedImageBuilderCmd)
         ${{ parameters.args }}
-
-  # Public Windows
+- ${{ else }}:
   - task: CmdLine@2
-    condition: eq( variables['Agent.OS'], 'Windows_NT' )
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
     inputs:
       script: >
-        $(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe
-        $(imageBuilderDockerRunExtraOptions)
-        $(imageNames.imageBuilder.withrepo)
+        $(runImageBuilderCmd)
         ${{ parameters.args }}

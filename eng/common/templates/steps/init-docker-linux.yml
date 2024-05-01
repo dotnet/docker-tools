@@ -63,9 +63,11 @@ steps:
 
         $runImageBuilderCmd = $($($dockerRunCmd + $dockerRunArgs) -join ' ')
         $runAuthedImageBuilderCmd = $($($dockerRunCmd + $authedDockerRunArgs + $dockerRunArgs) -join ' ')
+        $runAuthCleanupCmd = "Remove-Item -Path $(Agent.TempDirectory)/token -Force"
 
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"
+        Write-Host "##vso[task.setvariable variable=runAuthCleanupCmd]$runAuthCleanupCmd"
 
   ################################################################################
   # Setup Test Runner (Optional)

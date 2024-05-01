@@ -28,6 +28,7 @@ steps:
       inlineScript: >
         $(runAuthedImageBuilderCmd)
         ${{ parameters.args }}
+        && $(runAuthCleanupCmd)
 - ${{ else }}:
   - task: CmdLine@2
     displayName: ${{ parameters.displayName }}

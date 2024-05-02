@@ -41,9 +41,9 @@ steps:
       targetType: 'inline'
       script: |
         $tokenHostPath = '$(Agent.TempDirectory)'
-        $tokenHostFilePath = "$tokenHostPath/token"
-        $tokenContainerPath = "/tmp/"
-        $tokenContainerFilePath = "$tokenContainerPath/token"
+        $tokenHostFilePath = "${tokenHostPath}/token"
+        $tokenContainerPath = "/tmp"
+        $tokenContainerFilePath = "${tokenContainerPath}/token"
 
         $dockerRunBaseCmd = @(
           "docker run --rm"

@@ -2,6 +2,8 @@ parameters:
   jobName: null
   subscriptionsPath: null
   customGetStaleImagesArgs: ""
+  publicProjectName: null
+  internalProjectName: null
 
 jobs:
 - job: ${{ parameters.jobName }}
@@ -14,7 +16,8 @@ jobs:
   - template: /eng/common/templates/steps/copy-base-images.yml@self
     parameters:
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
-      publicProjectName: ${{ variables.publicProjectName }}
+      publicProjectName: ${{ parameters.publicProjectName }}
+      internalProjectName: ${{ parameters.internalProjectName }}
   - script: >
       $(runImageBuilderCmd)
       getStaleImages

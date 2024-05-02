@@ -43,7 +43,7 @@ steps:
         $tokenHostPath = '$(Agent.TempDirectory)'
         $tokenHostFilePath = "$tokenHostPath/token"
         $tokenContainerPath = "/tmp/"
-        $tokenContainerFilePath = "$tokenContainerDir/token"
+        $tokenContainerFilePath = "$tokenContainerPath/token"
 
         $dockerRunBaseCmd = @(
           "docker run --rm"

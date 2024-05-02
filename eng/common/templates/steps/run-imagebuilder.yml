@@ -30,9 +30,10 @@ steps:
         $(runAuthedImageBuilderCmd) ${{ parameters.args }};
         Remove-Item -Path $(tokenHostFilePath) -Force
 - ${{ else }}:
-  - task: CmdLine@2
+  - task: PowerShell@2
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
     inputs:
+      targetType: 'inline'
       script: >
         $(runImageBuilderCmd) ${{ parameters.args }}

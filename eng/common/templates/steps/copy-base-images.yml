@@ -26,5 +26,5 @@ steps:
       --registry-override '$(acr.server)'
       --os-type 'linux'
       --architecture '*'
-      $DRYRUNARG
+      $env:DRYRUNARG
       ${{ parameters.additionalOptions }}

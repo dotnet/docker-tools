@@ -55,7 +55,7 @@ steps:
           $runImageBuilderCmd
         )
 
-        $runAuthedImageBuilderCmd = $($($authedImageBuilderCmds + $baseImageBuilderCmd) -join "; ")
+        $runAuthedImageBuilderCmd = $($authedImageBuilderCmds -join "; ")
 
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"

@@ -30,7 +30,7 @@ steps:
     inputs:
       azureSubscription: ${{ parameters.serviceConnection }}
       addSpnToEnvironment: true
-      ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+      ${{ if eq(parameters.dockerClientOS, 'windows') }}:
         scriptType: 'ps'
       ${{ else }}:
         scriptType: 'pscore'

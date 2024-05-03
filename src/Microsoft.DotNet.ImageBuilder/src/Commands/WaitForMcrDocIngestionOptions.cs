@@ -18,15 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public TimeSpan WaitTimeout { get; set; }
 
         public TimeSpan RequeryDelay { get; set; }
-
-        public ServicePrincipalOptions ServicePrincipal { get; set; } = new ServicePrincipalOptions();
     }
 
     public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder
     {
-        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
-            ServicePrincipalOptionsBuilder.BuildWithDefaults();
-
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
@@ -38,12 +33,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         new Argument<string>(nameof(WaitForMcrDocIngestionOptions.CommitDigest),
                             "Git commit digest of the readme changes")
                     }
-                )
-                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments());
+                );
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {

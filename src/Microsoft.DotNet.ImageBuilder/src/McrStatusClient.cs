@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.ComponentModel.Composition;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Azure.Identity;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
@@ -12,29 +14,30 @@ using Polly;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
+    [Export(typeof(IMcrStatusClient))]
     public class McrStatusClient : IMcrStatusClient
     {
         private const string McrStatusResource = "api://c00053c3-a979-4ee6-b94e-941881e62d8e";
         // https://msazure.visualstudio.com/MicrosoftContainerRegistry/_git/docs?path=/status/status_v2.yaml
         private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v2";
         private readonly HttpClient _httpClient;
-        private readonly string _tenant;
-        private readonly string _clientId;
-        private readonly string _clientSecret;
         private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
 
-        public McrStatusClient(HttpClient httpClient, string tenant, string clientId, string clientSecret, ILoggerService loggerService)
+        [ImportingConstructor]
+        public McrStatusClient(IHttpClientProvider httpClientProvider, ILoggerService loggerService)
         {
             if (loggerService is null)
             {
                 throw new ArgumentNullException(nameof(loggerService));
             }
 
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _tenant = tenant ?? throw new ArgumentNullException(nameof(tenant));
-            _clientId = clientId ?? throw new ArgumentNullException(nameof(clientId));
-            _clientSecret = clientSecret ?? throw new ArgumentNullException(nameof(clientSecret));
+            if (httpClientProvider is null)
+            {
+                throw new ArgumentNullException(nameof(httpClientProvider));
+            }
+
+            _httpClient = httpClientProvider.GetClient();
             _httpPolicy = HttpPolicyBuilder.Create()
                 .WithMeteredRetryPolicy(loggerService)
                 .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, loggerService)
@@ -74,11 +77,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private Task<string> GetAccessTokenAsync() =>
             _accessToken.GetValueAsync(
-                () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, _tenant, _clientId, _clientSecret));
+                () => AuthHelper.GetMsiAadAccessTokenAsync(McrStatusResource));
 
         private Task RefreshAccessTokenAsync() =>
             _accessToken.ResetValueAsync(
-                () => AuthHelper.GetAadAccessTokenAsync(McrStatusResource, _tenant, _clientId, _clientSecret));
+                () => AuthHelper.GetMsiAadAccessTokenAsync(McrStatusResource));
     }
 }
-#nullable disable

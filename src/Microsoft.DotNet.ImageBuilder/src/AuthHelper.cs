@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
+using Azure.Identity;
+using Azure.Core;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -15,6 +17,11 @@ namespace Microsoft.DotNet.ImageBuilder
             AuthenticationResult result = await authContext.AcquireTokenAsync(
                 resource, new ClientCredential(username, password));
             return result.AccessToken;
+        }
+        public static async Task<string> GetMsiAadAccessTokenAsync(string resource)
+        {
+            AccessToken token = await new ManagedIdentityCredential().GetTokenAsync(new TokenRequestContext([ resource ]));
+            return token.Token;
         }
     }
 }

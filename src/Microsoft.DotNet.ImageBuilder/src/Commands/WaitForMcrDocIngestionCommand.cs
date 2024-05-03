@@ -15,15 +15,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
-        private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
+        private readonly IMcrStatusClient _mcrStatusClient;
         private readonly IEnvironmentService _environmentService;
 
         [ImportingConstructor]
         public WaitForMcrDocIngestionCommand(
-            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
+            ILoggerService loggerService, IMcrStatusClient mcrStatusClient, IEnvironmentService environmentService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
+            _mcrStatusClient = mcrStatusClient ?? throw new ArgumentNullException(nameof(mcrStatusClient));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
@@ -35,10 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                IMcrStatusClient statusClient = _mcrStatusClientFactory.Create(
-                Options.ServicePrincipal.Tenant, Options.ServicePrincipal.ClientId, Options.ServicePrincipal.Secret);
-
-                CommitResult result = await WaitForIngestionAsync(statusClient);
+                CommitResult result = await WaitForIngestionAsync(_mcrStatusClient);
 
                 LogSuccessfulResults(result);
             }

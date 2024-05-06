@@ -23,8 +23,12 @@ extends:
         parameters:
           jobName: CheckBaseImages
           subscriptionsPath: eng/check-base-image-subscriptions.json
+          publicProjectName: ${{ variables.publicProjectName }}
+          internalProjectName: ${{ variables.internalProjectName }}
       - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self
         parameters:
           jobName: CheckBaseImages_BuildTools
           subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
           customGetStaleImagesArgs: --base-override-regex '^((centos|debian|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'
+          publicProjectName: ${{ variables.publicProjectName }}
+          internalProjectName: ${{ variables.internalProjectName }}

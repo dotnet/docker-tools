@@ -19,9 +19,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return result.AccessToken;
         }
 
-        public static async Task<string> GetMsiAadAccessTokenAsync(string resource)
+        public static async Task<string> GetDefaultAccessTokenAsync(string resource)
         {
-            ManagedIdentityCredential credential  = new ManagedIdentityCredential();
+            DefaultAzureCredential credential  = new();
             AccessToken token = await credential.GetTokenAsync(new TokenRequestContext([ resource ]));
             return token.Token;
         }

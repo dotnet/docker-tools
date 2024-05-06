@@ -77,10 +77,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private Task<string> GetAccessTokenAsync() =>
             _accessToken.GetValueAsync(
-                () => AuthHelper.GetMsiAadAccessTokenAsync(McrStatusResource));
+                () => AuthHelper.GetDefaultAccessTokenAsync(McrStatusResource));
 
         private Task RefreshAccessTokenAsync() =>
             _accessToken.ResetValueAsync(
-                () => AuthHelper.GetMsiAadAccessTokenAsync(McrStatusResource));
+                () => AuthHelper.GetDefaultAccessTokenAsync(McrStatusResource));
     }
 }

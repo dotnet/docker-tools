@@ -4,5 +4,7 @@
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public record struct BasicAuthenticationCredentials(string UserName, string Password);
-#nullable disable
+public interface IRegistryContentClientFactory
+{
+    IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost);
+}

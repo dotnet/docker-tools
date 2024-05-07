@@ -12,12 +12,12 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IManifestService))]
     public class ManifestService : IManifestService
     {
-        private readonly RegistryHttpClient _httpClient;
+        private readonly IRegistryContentClientFactory _registryClientFactory;
 
         [ImportingConstructor]
-        public ManifestService(IHttpClientProvider httpClientProvider)
+        public ManifestService(IRegistryContentClientFactory registryClientFactory)
         {
-            _httpClient = httpClientProvider.GetRegistryClient();
+            _registryClientFactory = registryClientFactory;
         }
 
         public Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
@@ -29,21 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
             ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
-            BasicAuthenticationCredentials? basicAuthCreds = null;
-
-            // Lookup the credentials, if any, for the registry where the image is located
-            if (credsHost.Credentials.TryGetValue(imageName.Registry!, out RegistryCredentials? registryCreds))
-            {
-                basicAuthCreds = new BasicAuthenticationCredentials(registryCreds.Username, registryCreds.Password);
-            }
-
-            // Docker Hub's registry has a separate host name for its API
-            string apiRegistry = imageName.Registry == DockerHelper.DockerHubRegistry ?
-                DockerHelper.DockerHubApiRegistry :
-                imageName.Registry!;
-
-            RegistryServiceClient registryClient = new(apiRegistry, _httpClient, basicAuthCreds);
-            return registryClient.GetManifestAsync(imageName.Repo, (imageName.Tag ?? imageName.Digest)!);
+            IRegistryContentClient registryClient = _registryClientFactory.Create(imageName.Registry!, imageName.Repo, credsHost);
+            return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
         }
     }
 }

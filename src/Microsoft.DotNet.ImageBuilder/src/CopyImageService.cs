@@ -43,7 +43,7 @@ public class CopyImageService : ICopyImageService
         _loggerService = loggerService;
     }
 
-    public static string GetBaseAcrName(string registry) => registry.TrimEnd(".azurecr.io");
+    public static string GetBaseAcrName(string registry) => registry.TrimEnd(DockerHelper.AcrDomain);
 
     public async Task ImportImageAsync(
         string subscription,

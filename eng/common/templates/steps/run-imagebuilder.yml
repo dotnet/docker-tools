@@ -14,6 +14,9 @@ parameters:
 - name: args
   type: string
   default: null
+- name: condition
+  type: string
+  default: succeeded()
 - name: continueOnError
   type: boolean
   default: false
@@ -28,6 +31,7 @@ steps:
       name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
+    condition: ${{ parameters.condition }}
     inputs:
       azureSubscription: ${{ parameters.serviceConnection }}
       addSpnToEnvironment: true
@@ -46,6 +50,7 @@ steps:
       name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
+    condition: ${{ parameters.condition }}
     inputs:
       targetType: 'inline'
       script: >

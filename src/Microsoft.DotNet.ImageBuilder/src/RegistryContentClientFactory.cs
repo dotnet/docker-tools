@@ -10,7 +10,10 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 [Export(typeof(IRegistryContentClientFactory))]
 [method: ImportingConstructor]
-public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider, IContainerRegistryContentClientFactory containerRegistryContentClientFactory) : IRegistryContentClientFactory
+public class RegistryContentClientFactory(
+    IHttpClientProvider httpClientProvider,
+    IContainerRegistryContentClientFactory containerRegistryContentClientFactory)
+    : IRegistryContentClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IContainerRegistryContentClientFactory _containerRegistryContentClientFactory = containerRegistryContentClientFactory;
@@ -19,7 +22,10 @@ public class RegistryContentClientFactory(IHttpClientProvider httpClientProvider
     private IOptions _options = null!;
 
     // This constructor can be used for unit tests to pass an IOptions instance
-    public RegistryContentClientFactory(IHttpClientProvider httpClientProvider, IContainerRegistryContentClientFactory containerRegistryContentClientFactory, IOptions options)
+    public RegistryContentClientFactory(
+        IHttpClientProvider httpClientProvider,
+        IContainerRegistryContentClientFactory containerRegistryContentClientFactory,
+        IOptions options)
         : this(httpClientProvider, containerRegistryContentClientFactory)
         => _options = options;
 

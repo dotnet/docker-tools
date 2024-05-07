@@ -7,6 +7,7 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
+using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
@@ -56,6 +57,10 @@ namespace Microsoft.DotNet.ImageBuilder
                     {
                         if (context.ParseResult.CommandResult.Command != rootCliCommand)
                         {
+                            // Define the selected command's Options as a MEF component that other components can import.
+                            ICommand selectedCommand = commands.First(cmd => cmd.GetCommandName() == context.ParseResult.CommandResult.Command.Name);
+                            Container.ComposeExportedValue<IOptions>(selectedCommand.Options);
+
                             // Capture the Docker version and info in the output.
                             ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
                             ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);

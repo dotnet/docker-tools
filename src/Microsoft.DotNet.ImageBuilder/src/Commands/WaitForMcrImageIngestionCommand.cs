@@ -19,15 +19,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
-        private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
+        private readonly IMcrStatusClient _mcrStatusClient;
         private readonly IEnvironmentService _environmentService;
 
         [ImportingConstructor]
         public WaitForMcrImageIngestionCommand(
-            ILoggerService loggerService, IMcrStatusClientFactory mcrStatusClientFactory, IEnvironmentService environmentService)
+            ILoggerService loggerService, IMcrStatusClient mcrStatusClient, IEnvironmentService environmentService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            _mcrStatusClientFactory = mcrStatusClientFactory ?? throw new ArgumentNullException(nameof(mcrStatusClientFactory));
+            _mcrStatusClient = mcrStatusClient ?? throw new ArgumentNullException(nameof(mcrStatusClient));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
@@ -39,16 +39,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                IMcrStatusClient statusClient = _mcrStatusClientFactory.Create(
-                    Options.ServicePrincipal.Tenant,
-                    Options.ServicePrincipal.ClientId,
-                    Options.ServicePrincipal.Secret);
-
-                IEnumerable<ImageResultInfo> imageResultInfos = await WaitForImageIngestionAsync(statusClient);
-
+                IEnumerable<ImageResultInfo> imageResultInfos = await WaitForImageIngestionAsync(_mcrStatusClient);
                 _loggerService.WriteMessage();
-
-                await LogResults(statusClient, imageResultInfos);
+                await LogResults(_mcrStatusClient, imageResultInfos);
             }
 
             _loggerService.WriteMessage("Image ingestion complete!");

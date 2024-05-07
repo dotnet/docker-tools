@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string platformDigest1 = "repo@sha256:platformDigest1";
             const string platformDigest2 = "repo@sha256:platformDigest2";
 
-            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+            Mock<IMcrStatusClient> statusClientMock = new();
 
             ImageStatus previousSharedTag1ImageStatus = new ImageStatus
             {
@@ -183,7 +183,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }.GetEnumerator()
                 }
             };
-            
+
             statusClientMock
                 .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
                 .ReturnsAsync((string digest) =>
@@ -197,15 +197,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     return null;
                 });
 
-            const string tenant = "my tenant";
-            const string clientId = "my id";
-            const string clientSecret = "very secret";
+            Mock<IEnvironmentService> environmentServiceMock = new();
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
-
-            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+            WaitForMcrImageIngestionCommand command = new(
                 Mock.Of<ILoggerService>(),
-                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                statusClientMock.Object,
                 environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -292,9 +288,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipal.Tenant = tenant;
-            command.Options.ServicePrincipal.ClientId = clientId;
-            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
             command.Options.RepoPrefix = repoPrefix;
@@ -324,7 +317,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string onboardingRequestId1 = "onboardingRequestId1";
             const string onboardingRequestId2 = "onboardingRequestId2";
 
-            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+            Mock<IMcrStatusClient> statusClientMock = new();
 
             ImageStatus sharedTag1ImageStatus = new ImageStatus
             {
@@ -447,15 +440,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Substatus = new ImageSubstatus()
                 });
 
-            const string tenant = "my tenant";
-            const string clientId = "my id";
-            const string clientSecret = "very secret";
+            Mock<IEnvironmentService> environmentServiceMock = new();
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
-
-            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+            WaitForMcrImageIngestionCommand command = new(
                 Mock.Of<ILoggerService>(),
-                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                statusClientMock.Object,
                 environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -512,9 +501,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipal.Tenant = tenant;
-            command.Options.ServicePrincipal.ClientId = clientId;
-            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -544,7 +530,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "repo1";
             const string platformDigest1 = "repo@sha256:platformDigest1";
 
-            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+            Mock<IMcrStatusClient> statusClientMock = new();
 
             ImageStatus platformTag1aImageStatus = new ImageStatus
             {
@@ -603,15 +589,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     return null;
                 });
 
-            const string tenant = "my tenant";
-            const string clientId = "my id";
-            const string clientSecret = "very secret";
-
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
-                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                statusClientMock.Object,
                 environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -659,9 +641,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipal.Tenant = tenant;
-            command.Options.ServicePrincipal.ClientId = clientId;
-            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -689,7 +668,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string tag1aOnboardingRequestId = "onboard request1";
             const string tag1bOnboardingRequestId = "onboard request2";
 
-            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+            Mock<IMcrStatusClient> statusClientMock = new();
 
             ImageStatus platformTag1aImageStatus = new ImageStatus
             {
@@ -699,7 +678,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 OverallStatus = StageStatus.Processing,
                 OnboardingRequestId = tag1aOnboardingRequestId
             };
-            
+
             ImageStatus platformTag1bImageStatus = new ImageStatus
             {
                 Tag = platformTag1,
@@ -783,15 +762,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Substatus = new ImageSubstatus()
                 });
 
-            const string tenant = "my tenant";
-            const string clientId = "my id";
-            const string clientSecret = "very secret";
+            Mock<IEnvironmentService> environmentServiceMock = new();
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
-
-            WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
+            WaitForMcrImageIngestionCommand command = new(
                 Mock.Of<ILoggerService>(),
-                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                statusClientMock.Object,
                 environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -839,9 +814,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipal.Tenant = tenant;
-            command.Options.ServicePrincipal.ClientId = clientId;
-            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -868,7 +840,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "repo1";
             const string platformDigest1 = "repo@sha256:platformDigest1";
 
-            Mock<IMcrStatusClient> statusClientMock = new Mock<IMcrStatusClient>();
+            Mock<IMcrStatusClient> statusClientMock = new();
             statusClientMock
                 .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
                 .ReturnsAsync(
@@ -887,15 +859,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         }
                     });
 
-            const string tenant = "my tenant";
-            const string clientId = "my id";
-            const string clientSecret = "very secret";
-
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             WaitForMcrImageIngestionCommand command = new WaitForMcrImageIngestionCommand(
                 Mock.Of<ILoggerService>(),
-                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                statusClientMock.Object,
                 environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -943,9 +911,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipal.Tenant = tenant;
-            command.Options.ServicePrincipal.ClientId = clientId;
-            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromSeconds(3);
 
@@ -1106,15 +1071,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     return null;
                 });
 
-            const string tenant = "my tenant";
-            const string clientId = "my id";
-            const string clientSecret = "very secret";
-
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
                 Mock.Of<ILoggerService>(),
-                CreateMcrStatusClientFactory(tenant, clientId, clientSecret, statusClientMock.Object),
+                statusClientMock.Object,
                 environmentServiceMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1202,9 +1163,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
-            command.Options.ServicePrincipal.Tenant = tenant;
-            command.Options.ServicePrincipal.ClientId = clientId;
-            command.Options.ServicePrincipal.Secret = clientSecret;
             command.Options.MinimumQueueTime = baselineTime;
             command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
 
@@ -1223,7 +1181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1ManifestDigest1)), Times.Exactly(1));
                 statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo2ManifestDigest1)), Times.Exactly(1));
             }
-            
+
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(repo1PlatformDigest1)), Times.Exactly(3));
             statusClientMock.VerifyNoOtherCalls();
 
@@ -1240,15 +1198,5 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Tag = status.Tag,
                 OverallStatus = newOverallStatusValue ?? status.OverallStatus
             };
-
-        private static IMcrStatusClientFactory CreateMcrStatusClientFactory(
-            string tenant, string clientId, string clientSecret, IMcrStatusClient statusClient)
-        {
-            Mock<IMcrStatusClientFactory> mock = new Mock<IMcrStatusClientFactory>();
-            mock
-                .Setup(o => o.Create(tenant, clientId, clientSecret))
-                .Returns(statusClient);
-            return mock.Object;
-        }
     }
 }

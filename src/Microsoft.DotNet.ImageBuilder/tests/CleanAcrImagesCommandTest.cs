@@ -349,15 +349,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private static ContainerRepository CreateContainerRepository(
             string repoName, ContainerRepositoryProperties repositoryProperties, ArtifactManifestProperties[] manifestProperties)
         {
-            Mock<ContainerRepository> nonPublicRepo1Mock = new();
-            nonPublicRepo1Mock.SetupGet(o => o.Name).Returns(repoName);
-            nonPublicRepo1Mock
+            Mock<ContainerRepository> repoMock = new();
+            repoMock.SetupGet(o => o.Name).Returns(repoName);
+            repoMock
                 .Setup(o => o.GetProperties(It.IsAny<CancellationToken>()))
                 .Returns(CreateAzureResponse(repositoryProperties));
-            nonPublicRepo1Mock
+            repoMock
                 .Setup(o => o.GetAllManifestProperties(It.IsAny<ArtifactManifestOrder>(), It.IsAny<CancellationToken>()))
                 .Returns(new PageableMock<ArtifactManifestProperties>(manifestProperties));
-            return nonPublicRepo1Mock.Object;
+            return repoMock.Object;
         }
 
         private static Response<T> CreateAzureResponse<T>(T obj)

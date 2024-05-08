@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IContainerRegistryClient acrClient = _acrClientFactory.Create(Options.RegistryName, new DefaultAzureCredential());
 
             _loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
-            IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNames();
+            IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
             _loggerService.WriteHeading("DELETING IMAGES");
 
@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteMessage("<Querying remaining data...>");
 
             // Requery the catalog to get the latest info after things have been deleted
-            IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNames();
+            IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
             _loggerService.WriteSubheading($"Total repos remaining: {repositoryNames.ToBlockingEnumerable().Count()}");
 
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Func<ArtifactManifestProperties, bool> canDeleteManifest)
         {
             _loggerService.WriteMessage($"Querying manifests for repo '{repository.Name}'");
-            IEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestProperties();
+            IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync().;
             int manifestCount = manifestProperties.Count();
             _loggerService.WriteMessage($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
 

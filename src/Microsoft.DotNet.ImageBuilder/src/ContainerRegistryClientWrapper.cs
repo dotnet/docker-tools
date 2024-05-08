@@ -15,7 +15,7 @@ public class ContainerRegistryClientWrapper(ContainerRegistryClient innerClient)
 
     public Task DeleteRepositoryAsync(string name) => _innerClient.DeleteRepositoryAsync(name);
 
-    public IAsyncEnumerable<string> GetRepositoryNames() => _innerClient.GetRepositoryNamesAsync();
+    public IAsyncEnumerable<string> GetRepositoryNamesAsync() => _innerClient.GetRepositoryNamesAsync();
 
     public ContainerRepository GetRepository(string name) => _innerClient.GetRepository(name);
 }

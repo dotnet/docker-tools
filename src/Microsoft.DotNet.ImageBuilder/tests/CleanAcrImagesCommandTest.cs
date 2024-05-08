@@ -310,7 +310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ToAsyncEnumerable();
 
             acrClientMock
-                .Setup(o => o.GetRepositoryNames())
+                .Setup(o => o.GetRepositoryNamesAsync())
                 .Returns(repositoryNames);
 
             foreach (ContainerRepository repo in repositories)

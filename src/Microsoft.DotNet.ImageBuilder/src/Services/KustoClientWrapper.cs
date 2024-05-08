@@ -6,10 +6,10 @@ using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
+using Azure.Identity;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Ingest;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
@@ -29,14 +29,11 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         }
 
         public async Task IngestFromCsvAsync(
-            string csv, ServicePrincipalOptions servicePrincipal, string cluster, string database, string table, bool isDryRun)
+            string csv, string cluster, string database, string table, bool isDryRun)
         {
             KustoConnectionStringBuilder connectionBuilder =
                 new KustoConnectionStringBuilder($"https://{cluster}.kusto.windows.net")
-                    .WithAadApplicationKeyAuthentication(
-                        servicePrincipal.ClientId,
-                        servicePrincipal.Secret,
-                        servicePrincipal.Tenant);
+                    .WithAadAzureTokenCredentialsAuthentication(new DefaultAzureCredential());
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {

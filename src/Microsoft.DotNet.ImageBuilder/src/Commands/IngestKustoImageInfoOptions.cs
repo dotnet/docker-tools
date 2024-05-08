@@ -15,7 +15,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string Cluster { get; set; } = string.Empty;
         public string Database { get; set; } = string.Empty;
-        public ServicePrincipalOptions ServicePrincipal { get; set; } = new();
         public string ImageTable { get; set; } = string.Empty;
         public string LayerTable { get; set; } = string.Empty;
     }
@@ -23,27 +22,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class IngestKustoImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
-        private readonly ServicePrincipalOptionsBuilder _servicePrincipalOptionsBuilder =
-            ServicePrincipalOptionsBuilder.BuildWithDefaults();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(_servicePrincipalOptionsBuilder.GetCliOptions());
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
                 .Concat(
-                    new Argument[]
-                    {
+                    [
                         new Argument<string>(nameof(IngestKustoImageInfoOptions.Cluster), "The cluster to ingest the data to"),
                         new Argument<string>(nameof(IngestKustoImageInfoOptions.Database), "The database to ingest the data to"),
                         new Argument<string>(nameof(IngestKustoImageInfoOptions.ImageTable), "The image table to ingest the data to"),
-                        new Argument<string>(nameof(IngestKustoImageInfoOptions.LayerTable), "The layer table to ingest the data to"),
-                    }
-                )
-                .Concat(_servicePrincipalOptionsBuilder.GetCliArguments());
+                        new Argument<string>(nameof(IngestKustoImageInfoOptions.LayerTable), "The layer table to ingest the data to")
+                    ]
+                );
     }
 }
 #nullable disable

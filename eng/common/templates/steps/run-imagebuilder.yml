@@ -1,7 +1,7 @@
 parameters:
 - name: name
   type: string
-  default: "RunImageBuilder"
+  default: ""
 - name: displayName
   type: string
   default: "Run ImageBuilder"
@@ -24,7 +24,8 @@ parameters:
 steps:
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), ne(parameters.serviceConnection, '')) }}:
   - task: AzureCLI@2
-    name: ${{ parameters.name }}
+    ${{ if ne(parameters.name, '') }}:
+      name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
     inputs:
@@ -41,7 +42,8 @@ steps:
         Remove-Item -Path $(tokenHostFilePath) -Force
 - ${{ else }}:
   - task: PowerShell@2
-    name: ${{ parameters.name }}
+    ${{ if ne(parameters.name, '') }}:
+      name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
     inputs:

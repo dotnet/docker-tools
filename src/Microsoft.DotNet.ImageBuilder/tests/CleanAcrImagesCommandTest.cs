@@ -355,8 +355,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetProperties(It.IsAny<CancellationToken>()))
                 .Returns(CreateAzureResponse(repositoryProperties));
             repoMock
-                .Setup(o => o.GetAllManifestProperties(It.IsAny<ArtifactManifestOrder>(), It.IsAny<CancellationToken>()))
-                .Returns(new PageableMock<ArtifactManifestProperties>(manifestProperties));
+                .Setup(o => o.GetAllManifestPropertiesAsync(It.IsAny<ArtifactManifestOrder>(), It.IsAny<CancellationToken>()))
+                .Returns(new AsyncPageableMock<ArtifactManifestProperties>(manifestProperties));
             return repoMock.Object;
         }
 
@@ -368,12 +368,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return response.Object;
         }
 
-        private class PageableMock<T>(IEnumerable<T> items) : Pageable<T>
+        private class AsyncPageableMock<T>(IEnumerable<T> items) : AsyncPageable<T>
         {
             private readonly IEnumerable<T> _items = items;
 
-            public override IEnumerable<Page<T>> AsPages(string continuationToken = null, int? pageSizeHint = null) =>
-                [new PageMock<T>(_items)];
+            public override IAsyncEnumerable<Page<T>> AsPages(string continuationToken = null, int? pageSizeHint = null) =>
+                new PageMock<T>[] { new(_items) }.ToAsyncEnumerable();
         }
 
         private class PageMock<T>(IEnumerable<T> items) : Page<T>

@@ -12,8 +12,5 @@ steps:
     args: >
       waitForMcrDocIngestion
       '${{ parameters.commitDigest }}'
-      '$(mcrStatus.servicePrincipalName)'
-      '$(mcrStatus.servicePrincipalPassword)'
-      '$(mcrStatus.servicePrincipalTenant)'
       --timeout '$(mcrDocIngestionTimeout)'
       ${{ parameters.dryRunArg }}

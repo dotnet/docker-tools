@@ -20,21 +20,25 @@ jobs:
   - template: ../common/templates/steps/init-docker-linux.yml
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
       repo: "build-staging/*"
       action: delete
       age: 15
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet/*nightly/*"
       action: pruneDangling
       age: 30
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
       repo: "test/*"
       action: pruneAll
       age: 7
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet*/samples*"
       action: pruneDangling
       age: 0

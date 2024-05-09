@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
 
+        public string OwnedAcr { get; set; } = string.Empty;
     }
 
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
@@ -34,25 +35,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_subscriptionOptionsBuilder.GetCliOptions())
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(_gitOptionsBuilder.GetCliOptions())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
-                .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions());
+            [
+                ..base.GetCliOptions(),
+                .._subscriptionOptionsBuilder.GetCliOptions(),
+                .._manifestFilterOptionsBuilder.GetCliOptions(),
+                .._gitOptionsBuilder.GetCliOptions(),
+                .._registryCredentialsOptionsBuilder.GetCliOptions(),
+                .._baseImageOverrideOptionsBuilder.GetCliOptions(),
+                CreateOption<string?>("owned-acr", nameof(GetStaleImagesOptions.OwnedAcr),
+                        "The name of the ACR to authenticate with"),
+            ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_subscriptionOptionsBuilder.GetCliArguments())
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(_gitOptionsBuilder.GetCliArguments())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments()
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(GetStaleImagesOptions.VariableName),
-                            "The Azure Pipeline variable name to assign the image paths to")
-                    }));
+            [
+                ..base.GetCliArguments(),
+                .._subscriptionOptionsBuilder.GetCliArguments(),
+                .._manifestFilterOptionsBuilder.GetCliArguments(),
+                .._gitOptionsBuilder.GetCliArguments(),
+                .._registryCredentialsOptionsBuilder.GetCliArguments(),
+                new Argument<string>(nameof(GetStaleImagesOptions.VariableName),
+                    "The Azure Pipeline variable name to assign the image paths to"),
+            ];
     }
 }
-#nullable disable

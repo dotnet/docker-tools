@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -13,23 +12,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public IDictionary<string, RegistryCredentials> Credentials { get; set; } =
             new Dictionary<string, RegistryCredentials>();
+        public string? Tenant { get; set; }
     }
 
     public class RegistryCredentialsOptionsBuilder
     {
         public IEnumerable<Option> GetCliOptions() =>
-            new Option[]
-            {
+            [
                 CreateDictionaryOption("registry-creds", nameof(RegistryCredentialsOptions.Credentials),
                     "Named credentials that map to a registry (<registry>=<username>;<password>)",
                     val =>
                         {
                             (string username, string password) = val.ParseKeyValuePair(';');
                             return new RegistryCredentials(username, password);
-                        })
-            };
+                        }),
+                CreateOption<string?>("tenant", nameof(RegistryCredentialsOptions.Tenant),
+                    "Tenant containing the ACR to authenticate to"),
+            ];
 
-        public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
+        public IEnumerable<Argument> GetCliArguments() => [];
     }
 }
 #nullable disable

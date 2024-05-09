@@ -10,7 +10,9 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class AuthHelper
     {
-        public static async Task<string> GetDefaultAccessTokenAsync(string resource)
+        private const string DefaultScope = "https://management.azure.com/.default";
+
+        public static async Task<string> GetDefaultAccessTokenAsync(string resource = DefaultScope)
         {
             DefaultAzureCredential credential  = new();
             AccessToken token = await credential.GetTokenAsync(new TokenRequestContext([ resource ]));

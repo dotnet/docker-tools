@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Win32;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -25,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
         private readonly ICopyImageService _copyImageService;
+        private readonly Lazy<IManifestService> _manifestService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -41,15 +43,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private ImageArtifactDetails? _imageArtifactDetails;
 
         [ImportingConstructor]
-        public BuildCommand(IDockerService dockerService, ILoggerService loggerService, IGitService gitService,
-            IProcessService processService, ICopyImageService copyImageService)
+        public BuildCommand(
+            IDockerService dockerService,
+            ILoggerService loggerService,
+            IGitService gitService,
+            IProcessService processService,
+            ICopyImageService copyImageService,
+            IManifestServiceFactory manifestServiceFactory,
+            IRegistryCredentialsProvider registryCredentialsProvider)
+            : base(registryCredentialsProvider)
         {
-            _imageDigestCache = new ImageDigestCache(dockerService);
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
+
+            // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
+            ArgumentNullException.ThrowIfNull(manifestServiceFactory);
+            _manifestService = new Lazy<IManifestService>(() =>
+                manifestServiceFactory.Create(ownedAcr: Options.RegistryOverride, Options.CredentialsOptions));
+            _imageDigestCache = new ImageDigestCache(_manifestService);
         }
 
         protected override string Description => "Builds Dockerfiles";
@@ -63,19 +77,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            await ExecuteWithUserAsync(async () =>
-            {
-                await PullBaseImagesAsync();
-
-                await BuildImagesAsync();
-
-                if (_processedTags.Any() || _cachedPlatforms.Any())
+            await ExecuteWithCredentialsAsync(
+                Options.IsDryRun,
+                async () =>
                 {
-                    PushImages();
-                }
+                    await PullBaseImagesAsync();
 
-                await PublishImageInfoAsync();
-            });
+                    await BuildImagesAsync();
+
+                    if (_processedTags.Any() || _cachedPlatforms.Any())
+                    {
+                        PushImages();
+                    }
+
+                    await PublishImageInfoAsync();
+                },
+                registryName: Manifest.Registry,
+                ownedAcr: Options.RegistryOverride ?? "");
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
@@ -215,14 +233,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (platform.Layers == null || !platform.Layers.Any())
             {
-                platform.Layers = (await _dockerService.GetImageManifestLayersAsync(tag, Options.CredentialsOptions, Options.IsDryRun)).ToList();
+                platform.Layers = (await _manifestService.Value.GetImageLayersAsync(tag, Options.IsDryRun)).ToList();
             }
         }
 
         private async Task SetPlatformDataDigestAsync(PlatformData platform, string tag)
         {
             // The digest of an image that is pushed to ACR is guaranteed to be the same when transferred to MCR.
-            string? digest = await _imageDigestCache.GetImageDigestAsync(tag, Options.CredentialsOptions, Options.IsDryRun);
+            string? digest = await _imageDigestCache.GetImageDigestAsync(tag, Options.IsDryRun);
             if (digest is not null && platform.PlatformInfo is not null)
             {
                 digest = DockerHelper.GetDigestString(platform.PlatformInfo.FullRepoModelName, DockerHelper.GetDigestSha(digest));
@@ -302,7 +320,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             {
                                 platformData.BaseImageDigest =
                                    await _imageDigestCache.GetImageDigestAsync(
-                                       GetFromImageLocalTag(platform.FinalStageFromImage), Options.CredentialsOptions, Options.IsDryRun);
+                                       GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
                             }
                         }
                     }
@@ -624,7 +642,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string? currentBaseImageDigest = await _imageDigestCache.GetImageDigestAsync(
-                GetFromImageLocalTag(platform.FinalStageFromImage), Options.CredentialsOptions, Options.IsDryRun);
+                GetFromImageLocalTag(platform.FinalStageFromImage),
+                Options.IsDryRun);
 
             string? baseSha = srcPlatformData.BaseImageDigest is not null ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) : null;
             string? currentSha = currentBaseImageDigest is not null ? DockerHelper.GetDigestSha(currentBaseImageDigest) : null;
@@ -789,7 +808,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
                         // greater chance the tag could be updated resulting in a different digest returned than what was
                         // originally pulled.
-                        await _imageDigestCache.GetImageDigestAsync(fromImage, Options.CredentialsOptions, Options.IsDryRun);
+                        await _imageDigestCache.GetImageDigestAsync(fromImage, Options.IsDryRun);
                     });
 
                     // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles

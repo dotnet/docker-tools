@@ -18,32 +18,20 @@ public class RegistryContentClientFactory(
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IContainerRegistryContentClientFactory _containerRegistryContentClientFactory = containerRegistryContentClientFactory;
 
-    [Import(AllowDefault = true, AllowRecomposition = true)]
-    private IOptions _options = null!;
-
-    // This constructor can be used for unit tests to pass an IOptions instance
-    public RegistryContentClientFactory(
-        IHttpClientProvider httpClientProvider,
-        IContainerRegistryContentClientFactory containerRegistryContentClientFactory,
-        IOptions options)
-        : this(httpClientProvider, containerRegistryContentClientFactory)
-        => _options = options;
-
-    public IRegistryContentClient Create(string registry, string repo, IRegistryCredentialsHost credsHost)
+    public IRegistryContentClient Create(
+        string registry,
+        string repo,
+        string? ownedAcr = null,
+        IRegistryCredentialsHost? credsHost = null)
     {
         // Docker Hub's registry has a separate host name for its API
         string apiRegistry = registry == DockerHelper.DockerHubRegistry ?
             DockerHelper.DockerHubApiRegistry :
-            registry!;
+            registry;
 
-        string? ownedAcr = null;
-        if (_options is DockerRegistryOptions dockerRegistryOptions)
+        if (!string.IsNullOrEmpty(ownedAcr))
         {
-            ownedAcr = dockerRegistryOptions.RegistryOverride;
-            if (ownedAcr is not null)
-            {
-                ownedAcr = DockerHelper.FormatAcrName(ownedAcr);
-            }
+            ownedAcr = DockerHelper.FormatAcrName(ownedAcr);
         }
 
         if (apiRegistry == ownedAcr)
@@ -51,13 +39,9 @@ public class RegistryContentClientFactory(
             // If the target registry is the owned ACR, connect to it with the Azure library API. This handles all the Azure auth.
             return _containerRegistryContentClientFactory.Create(ownedAcr, repo, new DefaultAzureCredential());
         }
-        else
-        {
-            // Lookup the credentials, if any, for the registry where the image is located
-            credsHost.Credentials.TryGetValue(registry, out RegistryCredentials? registryCreds);
 
-            RegistryHttpClient httpClient = _httpClientProvider.GetRegistryClient();
-            return new RegistryServiceClient(apiRegistry, repo, httpClient, registryCreds);
-        }
+        // Look up the credentials, if any, for the registry where the image is located
+        RegistryCredentials? registryCreds = credsHost?.TryGetCredentials(registry);
+        return new RegistryServiceClient(apiRegistry, repo, _httpClientProvider.GetRegistryClient(), registryCreds);
     }
 }

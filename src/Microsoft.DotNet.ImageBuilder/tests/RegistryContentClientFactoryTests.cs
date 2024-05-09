@@ -28,8 +28,8 @@ public class RegistryContentClientFactoryTests
             .Returns(contentClient);
 
 
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object, options);
-        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, Mock.Of<IRegistryCredentialsHost>());
+        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object);
+        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName);
 
         Assert.Same(contentClient, client);
     }
@@ -41,9 +41,9 @@ public class RegistryContentClientFactoryTests
     public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
     {
         DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == "my-acr");
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), Mock.Of<IContainerRegistryContentClientFactory>(), options);
+        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), Mock.Of<IContainerRegistryContentClientFactory>());
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
-        IRegistryContentClient client = clientFactory.Create(registry, "repo-name", credsHost);
+        IRegistryContentClient client = clientFactory.Create(registry, "repo-name");
 
         Assert.IsType<RegistryServiceClient>(client);
 

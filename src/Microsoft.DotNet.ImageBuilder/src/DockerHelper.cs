@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
 using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
@@ -37,38 +36,6 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public static Uri GetAcrUri(string acrName) => new($"https://{FormatAcrName(acrName)}");
-
-        public static void ExecuteWithUser(Action action, string? username, string? password, string? server, bool isDryRun)
-        {
-            ExecuteWithUserAsync(() =>
-            {
-                action();
-                return Task.CompletedTask;
-            },
-            username, password, server, isDryRun).GetAwaiter().GetResult();
-        }
-
-        public static async Task ExecuteWithUserAsync(Func<Task> action, string? username, string? password, string? server, bool isDryRun)
-        {
-            bool loggedIn = false;
-            if (username is not null && password is not null && server is not null)
-            {
-                DockerHelper.Login(username, password, server, isDryRun);
-                loggedIn = true;
-            }
-
-            try
-            {
-                await action();
-            }
-            finally
-            {
-                if (loggedIn && server is not null)
-                {
-                    DockerHelper.Logout(server, isDryRun);
-                }
-            }
-        }
 
         public static IEnumerable<string> GetImageDigests(string image, bool isDryRun)
         {
@@ -104,13 +71,13 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static bool LocalImageExists(string tag, bool isDryRun) => ResourceExists(ManagementType.Image, tag, isDryRun);
 
-        public static void Login(string username, string password, string server, bool isDryRun)
+        public static void Login(RegistryCredentials credentials, string server, bool isDryRun)
         {
             Version? clientVersion = GetClientVersion();
             if (clientVersion >= new Version(17, 7))
             {
                 ProcessStartInfo startInfo = new(
-                    "docker", $"login -u {username} --password-stdin {server}")
+                    "docker", $"login -u {credentials.Username} --password-stdin {server}")
                 {
                     RedirectStandardInput = true
                 };
@@ -118,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     startInfo,
                     process =>
                     {
-                        process.StandardInput.WriteLine(password);
+                        process.StandardInput.WriteLine(credentials.Password);
                         process.StandardInput.Close();
                     },
                     isDryRun);
@@ -127,11 +94,14 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 ExecuteHelper.ExecuteWithRetry(
                     "docker",
-                    $"login -u {username} -p {password} {server}",
+                    $"login -u {credentials.Username} -p {credentials.Password} {server}",
                     isDryRun,
-                    executeMessageOverride: $"login -u {username} -p ******** {server}");
+                    executeMessageOverride: $"login -u {credentials.Username} -p ******** {server}");
             }
         }
+
+        public static void Logout(string server, bool isDryRun) =>
+            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
 
         public static void PullImage(string image, string? platform, bool isDryRun)
         {
@@ -237,7 +207,6 @@ namespace Microsoft.DotNet.ImageBuilder
                     return firstSegment;
                 }
             }
-            
 
             return null;
         }
@@ -276,11 +245,6 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return Version.TryParse(versionString, out Version? version) ? version : null;
-        }
-
-        private static void Logout(string server, bool isDryRun)
-        {
-            ExecuteHelper.ExecuteWithRetry("docker", $"logout {server}", isDryRun);
         }
 
         private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)

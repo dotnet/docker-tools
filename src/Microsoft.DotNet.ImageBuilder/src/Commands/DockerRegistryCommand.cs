@@ -12,20 +12,39 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         where TOptions : DockerRegistryOptions, new()
         where TOptionsBuilder : DockerRegistryOptionsBuilder, new()
     {
-        protected void ExecuteWithUser(Action action)
+        protected IRegistryCredentialsProvider RegistryCredentialsProvider { get; init; }
+
+        protected DockerRegistryCommand(IRegistryCredentialsProvider registryCredentialsProvider)
         {
-            ExecuteWithUserAsync(() =>
-            {
-                action();
-                return Task.CompletedTask;
-            });
+            RegistryCredentialsProvider = registryCredentialsProvider;
         }
 
-        protected Task ExecuteWithUserAsync(Func<Task> action)
+        protected async Task ExecuteWithCredentialsAsync(bool isDryRun, Func<Task> action, string registryName, string? ownedAcr)
         {
-            Options.CredentialsOptions.Credentials.TryGetValue(Manifest.Registry ?? "", out RegistryCredentials? credentials);
-            return DockerHelper.ExecuteWithUserAsync(action, credentials?.Username, credentials?.Password, Manifest.Registry, Options.IsDryRun);
+            bool loggedIn = false;
+
+            RegistryCredentials? credentials = await RegistryCredentialsProvider.GetCredentialsAsync(
+                    registryName, ownedAcr, Options.CredentialsOptions);
+
+            if (registryName is not null && credentials is not null)
+            {
+                DockerHelper.Login(credentials, registryName, isDryRun);
+                loggedIn = true;
+            }
+
+            try
+            {
+                await action();
+            }
+            finally
+            {
+                if (loggedIn && registryName is not null)
+                {
+                    DockerHelper.Logout(registryName, isDryRun);
+                }
+            }
         }
+
     }
 }
 #nullable disable

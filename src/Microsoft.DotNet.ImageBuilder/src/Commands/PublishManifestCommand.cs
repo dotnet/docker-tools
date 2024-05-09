@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
-        private readonly IManifestService _manifestToolService;
+        private readonly Lazy<IManifestService> _manifestService;
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
@@ -26,15 +26,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public PublishManifestCommand(
-            IManifestService manifestToolService,
+            IManifestServiceFactory manifestServiceFactory,
             IDockerService dockerService,
             ILoggerService loggerService,
-            IDateTimeService dateTimeService)
+            IDateTimeService dateTimeService,
+            IRegistryCredentialsProvider registryCredentialsProvider)
+            : base(registryCredentialsProvider)
         {
-            _manifestToolService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
+
+            // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
+            ArgumentNullException.ThrowIfNull(manifestServiceFactory);
+            _manifestService = new Lazy<IManifestService>(() =>
+                manifestServiceFactory.Create(ownedAcr: Options.RegistryOverride, Options.CredentialsOptions));
         }
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
@@ -45,29 +51,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            await ExecuteWithUserAsync(async () =>
-            {
-                IEnumerable<(RepoInfo repo, ImageInfo image)> manifests = Manifest.FilteredRepos
-                    .SelectMany(repo =>
-                        repo.FilteredImages
-                            .Where(image => image.SharedTags.Any())
-                            .Select(image => (repo, image)));
-
-                Parallel.ForEach(manifests, ((RepoInfo Repo, ImageInfo Image) repoImage) =>
+            await ExecuteWithCredentialsAsync(
+                Options.IsDryRun,
+                async () =>
                 {
-                    GenerateManifests(repoImage.Repo, repoImage.Image);
-                });
+                    IEnumerable<(RepoInfo repo, ImageInfo image)> manifests = Manifest.FilteredRepos
+                        .SelectMany(repo =>
+                            repo.FilteredImages
+                                .Where(image => image.SharedTags.Any())
+                                .Select(image => (repo, image)));
 
-                DateTime createdDate = _dateTimeService.UtcNow;
-                Parallel.ForEach(_publishedManifestTags, tag =>
-                {
-                    _dockerService.PushManifestList(tag, Options.IsDryRun);
-                });
+                    Parallel.ForEach(manifests, ((RepoInfo Repo, ImageInfo Image) repoImage) =>
+                    {
+                        GenerateManifests(repoImage.Repo, repoImage.Image);
+                    });
 
-                WriteManifestSummary();
+                    DateTime createdDate = _dateTimeService.UtcNow;
+                    Parallel.ForEach(_publishedManifestTags, tag =>
+                    {
+                        _dockerService.PushManifestList(tag, Options.IsDryRun);
+                    });
 
-                await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
-            });
+                    WriteManifestSummary();
+
+                    await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
+                },
+                registryName: Manifest.Registry,
+                ownedAcr: Manifest.Registry);
         }
 
         private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
@@ -86,8 +96,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
-                    await _manifestToolService.GetManifestDigestShaAsync(
-                        sharedTag.FullyQualifiedName, Options.CredentialsOptions, Options.IsDryRun));
+                    await _manifestService.Value.GetManifestDigestShaAsync(
+                        sharedTag.FullyQualifiedName,
+                        Options.IsDryRun));
 
                 IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
                     .Where(tag => tag.SyndicatedRepo is not null)
@@ -101,9 +112,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string digest = DockerHelper.GetDigestString(
                         DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
-                        await _manifestToolService.GetManifestDigestShaAsync(
+                        await _manifestService.Value.GetManifestDigestShaAsync(
                             DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
-                            Options.CredentialsOptions,
                             Options.IsDryRun));
                     image.Manifest.SyndicatedDigests.Add(digest);
                 }

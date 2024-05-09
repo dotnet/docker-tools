@@ -2,12 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading.Tasks;
-
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public interface IManifestService
+    public interface IManifestServiceFactory
     {
-        Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun);
+        IManifestService Create(string? ownedAcr = null, IRegistryCredentialsHost? credsHost = null);
     }
 }

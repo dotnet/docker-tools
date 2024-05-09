@@ -18,6 +18,7 @@ using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -58,35 +59,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(runtimeDepsDigest);
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{runtimeRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(runtimeDigest);
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{aspnetRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(aspnetDigest);
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(baseImageDigest);
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(runtimeDepsLayers);
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageManifestLayersAsync($"{runtimeRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(runtimeLayers);
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageManifestLayersAsync($"{aspnetRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(aspnetLayers);
+                Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(
+                    imageDigestResults:
+                    [
+                        new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                        new($"{runtimeRepo}:{tag}", runtimeDigest),
+                        new($"{aspnetRepo}:{tag}", aspnetDigest),
+                        new(baseImageTag, baseImageDigest),
+                    ],
+                    imageLayersResults:
+                    [
+                        new($"{runtimeDepsRepo}:{tag}", runtimeDepsLayers),
+                        new($"{runtimeRepo}:{tag}", runtimeLayers),
+                        new($"{aspnetRepo}:{tag}", aspnetLayers),
+                    ]);
 
                 string[] runtimeDepsInstalledPackages =
                 {
@@ -122,6 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 DateTime createdDate = DateTime.Now;
 
+                Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
                 dockerServiceMock
                     .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
                     .Returns(createdDate);
@@ -153,8 +140,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, aspnetDockerfileRelativePath)), It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
 
-                BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object,
-                    processServiceMock.Object, Mock.Of<ICopyImageService>());
+                BuildCommand command = new(
+                    dockerServiceMock.Object,
+                    Mock.Of<ILoggerService>(),
+                    gitServiceMock.Object,
+                    processServiceMock.Object,
+                    Mock.Of<ICopyImageService>(),
+                    manifestServiceFactoryMock.Object,
+                    Mock.Of<IRegistryCredentialsProvider>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
@@ -329,13 +322,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(baseImageDigest);
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock([
+                new($"{runtimeRepo}:{tag}", runtimeDigest),
+                new(baseImageTag, baseImageDigest)
+            ]);
 
             DateTime createdDate = DateTime.Now;
 
@@ -352,12 +342,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(dockerfileCommitSha);
 
-            BuildCommand command = new BuildCommand(
-                dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
-                gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
-                Mock.Of<ICopyImageService>());
+                BuildCommand command = new(
+                    dockerServiceMock.Object,
+                    Mock.Of<ILoggerService>(),
+                    gitServiceMock.Object,
+                    Mock.Of<IProcessService>(),
+                    Mock.Of<ICopyImageService>(),
+                    manifestServiceFactoryMock.Object,
+                    Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -478,8 +470,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<ICopyImageService> copyImageServiceMock = new();
 
-            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(), copyImageServiceMock.Object);
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
+                copyImageServiceMock.Object,
+                CreateManifestServiceFactoryMock().Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -549,8 +547,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>(),
+                CreateManifestServiceFactoryMock().Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -594,8 +598,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>(),
+                CreateManifestServiceFactoryMock().Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.BuildArgs.Add("arg1", "val1");
             command.Options.BuildArgs.Add("arg2", "val2a");
@@ -646,8 +656,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>(),
+                Mock.Of<IManifestServiceFactory>(),
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -715,11 +731,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock(imageDigestResults: [ new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest) ], []);
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(manifestServiceMock);
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             DateTime createdDate = DateTime.Now;
 
@@ -746,7 +761,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -754,9 +771,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
 
             const string ProductVersion = "1.0.0";
 
@@ -874,12 +891,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -906,10 +923,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
                 Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
-                const string digest = "runtime@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync("runtime:runtime", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync(digest);
+                Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(
+                    imageDigestResults:
+                    [
+                        new("runtime:runtime", "runtime@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227")
+                    ],
+                    imageLayersResults: []);
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
                 Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
@@ -922,8 +941,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .Setup(o => o.GetCommitSha(dockerfileRelativePath, It.IsAny<bool>()))
                     .Returns(dockerfileCommitSha);
 
-                BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), gitServiceMock.Object,
-                    Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
+                BuildCommand command = new(
+                    dockerServiceMock.Object,
+                    Mock.Of<ILoggerService>(),
+                    gitServiceMock.Object,
+                    Mock.Of<IProcessService>(),
+                    Mock.Of<ICopyImageService>(),
+                    manifestServiceFactoryMock.Object,
+                    Mock.Of<IRegistryCredentialsProvider>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.SourceRepoUrl = "https://source";
@@ -965,8 +990,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string fullDockerfilePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(fullDockerfilePath, $"FROM baserepo:basetag");
 
-            BuildCommand command = new BuildCommand(dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(), Mock.Of<ICopyImageService>());
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
+                Mock.Of<ICopyImageService>(),
+                CreateManifestServiceFactoryMock().Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
@@ -1086,25 +1117,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepoQualified}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeRepoQualified}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDigest);
-
-            dockerServiceMock
-               .Setup(o => o.GetImageDigestAsync($"{overridePrefix}{runtimeRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-               .ReturnsAsync(runtimeDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsBaseImageDigest);
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(imageDigestResults:
+                [
+                    new($"{runtimeDepsRepoQualified}:{tag}", runtimeDepsDigest),
+                    new($"{overridePrefix}{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{runtimeRepoQualified}:{tag}", runtimeDigest),
+                    new($"{overridePrefix}{runtimeRepo}:{tag}", runtimeDigest),
+                    new(baseImageTag, runtimeDepsBaseImageDigest),
+                ], []);
 
             DateTime createdDate = DateTime.Now;
 
@@ -1131,12 +1151,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<ICopyImageService> copyImageServiceMock = new();
 
-            BuildCommand command = new BuildCommand(
+            BuildCommand command = new(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1146,9 +1168,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RepoPrefix = repoPrefixOverride;
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
 
             const string ProductVersion = "1.0.1";
 
@@ -1401,25 +1423,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{linuxTag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsLinuxDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{windowsTag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsWindowsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{linuxTag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDeps2Digest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(linuxBaseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsLinuxBaseImageDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(windowsBaseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsWindowsBaseImageDigest);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                    new($"{runtimeDepsRepo}:{linuxTag}", runtimeDepsLinuxDigest),
+                    new($"{runtimeDepsRepo}:{windowsTag}", runtimeDepsWindowsDigest),
+                    new($"{runtimeDeps2Repo}:{linuxTag}", runtimeDeps2Digest),
+                    new(linuxBaseImageTag, runtimeDepsLinuxBaseImageDigest),
+                    new(windowsBaseImageTag, runtimeDepsWindowsBaseImageDigest),
+                ], []);
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(manifestServiceMock);
 
             DateTime createdDate = DateTime.Now;
 
@@ -1451,12 +1462,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<ICopyImageService> copyImageServiceMock = new();
 
-            BuildCommand command = new BuildCommand(
+            BuildCommand command = new(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1464,9 +1477,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
 
             const string ProductVersion = "1.0.1";
 
@@ -1658,8 +1671,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(linuxBaseImageTag, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(windowsBaseImageTag, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(linuxBaseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(windowsBaseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(linuxBaseImageTag, "linux/amd64", false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(windowsBaseImageTag, "windows/amd64", false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsLinuxDigest, null, false), Times.Once);
@@ -1669,9 +1685,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsLinuxDigest, $"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsWindowsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{linuxTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{windowsTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{linuxTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -1728,21 +1741,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDeps2Digest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDeps3Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDeps3Digest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsBaseImageDigest);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock(
+                imageDigestResults:
+                [
+                    new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{runtimeDeps2Repo}:{tag}", runtimeDeps2Digest),
+                    new($"{runtimeDeps3Repo}:{tag}", runtimeDeps3Digest),
+                    new(baseImageTag, runtimeDepsBaseImageDigest),
+                ], []);
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(manifestServiceMock);
 
             DateTime createdDate = DateTime.Now;
 
@@ -1773,7 +1780,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1781,9 +1790,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
 
             const string ProductVersion = "1.0.1";
 
@@ -1974,12 +1983,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps3Repo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(It.IsAny<string>(), false));
+
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDeps2Repo}:{tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps3Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps3Repo}:{tag}", false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -1992,7 +2003,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>()));
 
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false));
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
@@ -2032,17 +2042,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsBaseImageDigest);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                    new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{runtimeDeps2Repo}:{tag}", runtimeDepsDigest),
+                    new(baseImageTag, runtimeDepsBaseImageDigest),
+                ], []);
 
             DateTime createdDate = DateTime.Now;
 
@@ -2069,7 +2073,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+                CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2205,12 +2211,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
@@ -2241,17 +2248,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsBaseImageDigest);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                new($"{runtimeDeps2Repo}:{tag}", runtimeDepsDigest),
+                new(baseImageTag, runtimeDepsBaseImageDigest),
+            ], []);
 
             DateTime createdDate = DateTime.Now;
 
@@ -2271,12 +2272,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
 
-            BuildCommand command = new(
+            BuildCommand command = new BuildCommand(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                Mock.Of<ICopyImageService>());
+                Mock.Of<ICopyImageService>(),
+                CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2450,12 +2453,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
+
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
 
@@ -2481,17 +2485,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsDigest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsLinuxBaseImageDigest);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                    new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new(baseImageTag, runtimeDepsLinuxBaseImageDigest),
+                ], []);
 
             DateTime createdDate = DateTime.Now;
+
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             dockerServiceMock
                 .Setup(o => o.GetCreatedDate($"{runtimeDepsRepo}:{tag}", false))
@@ -2516,7 +2517,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+                CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2524,9 +2527,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
 
             const string ProductVersion = "1.0.0";
 
@@ -2646,14 +2649,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
+
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{newTag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:shared", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{runtimeDepsRepo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.GetCreatedDate(It.IsAny<string>(), false));
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
@@ -2696,20 +2700,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsLinuxDigest);
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDeps2Digest);
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync(runtimeDepsLinuxBaseImageDigest);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                    new($"{runtimeDepsRepo}:{tag}", runtimeDepsLinuxDigest),
+                    new($"{runtimeDeps2Repo}:{tag}", runtimeDeps2Digest),
+                    new(baseImageTag, runtimeDepsLinuxBaseImageDigest),
+                ], []);
 
             DateTime createdDate = DateTime.Now;
+
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
             dockerServiceMock
                 .Setup(o => o.GetCreatedDate($"{overridePrefix}{runtimeDepsRepo}:{tag}", false))
@@ -2738,7 +2737,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2746,9 +2747,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
 
@@ -2908,16 +2909,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false), Times.Once);
+
             dockerServiceMock.Verify(o => o.PullImage($"{overridePrefix}{runtimeDepsLinuxDigest}", null, false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDepsRepo}:shared", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
             dockerServiceMock.Verify(o => o.CreateTag($"{overridePrefix}{runtimeDepsLinuxDigest}", $"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
             dockerServiceMock.Verify(o =>
                 o.BuildImage(
                     It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<IEnumerable<string>>(),
@@ -2975,51 +2977,39 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
 
+            Mock<IManifestService> manifestServiceMock;
             if (hasCachedImage)
             {
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{Registry}/{RuntimeDepsRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync($"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}");
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{Registry}/{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync($"{Registry}/{RuntimeRepo}@{RuntimeDigest}");
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{Registry}/{AspnetRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync($"{Registry}/{AspnetRepo}@{AspnetDigest}");
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync($"{RegistryOverride}/{RuntimeDepsRepo}@{RuntimeDepsDigest}");
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync($"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}");
-
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync($"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}");
+                manifestServiceMock = CreateManifestServiceMock([
+                        new($"{Registry}/{RuntimeDepsRepo}:{Tag}", $"{Registry}/{RuntimeDepsRepo}@{RuntimeDepsDigest}"),
+                        new($"{Registry}/{RuntimeRepo}:{Tag}", $"{Registry}/{RuntimeRepo}@{RuntimeDigest}"),
+                        new($"{Registry}/{AspnetRepo}:{Tag}", $"{Registry}/{AspnetRepo}@{AspnetDigest}"),
+                        new($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", $"{RegistryOverride}/{RuntimeDepsRepo}@{RuntimeDepsDigest}"),
+                        new($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", $"{RegistryOverride}/{RuntimeRepo}@{RuntimeDigest}"),
+                        new($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", $"{RegistryOverride}/{AspnetRepo}@{AspnetDigest}"),
+                    ], []);
             }
             else
             {
                 // Locally built images will not have a digest until they get pushed. So don't return a digest until
                 // the appropriate request.
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
+                manifestServiceMock = CreateManifestServiceMock([], []);
+
+                manifestServiceMock
+                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false))
                     .ReturnsAsync(callCount => callCount > 2 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
 
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
+                manifestServiceMock
+                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false))
                     .ReturnsAsync(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}" : null);
 
-                dockerServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
+                manifestServiceMock
+                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false))
                     .ReturnsAsync(callCount => callCount > 0 ? $"{RegistryOverride}/{RepoPrefix}{AspnetRepo}@{AspnetDigest}" : null);
             }
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync(mirrorBaseTag, It.IsAny<IRegistryCredentialsHost>(), false))
+            manifestServiceMock
+                .Setup(o => o.GetImageDigestAsync(mirrorBaseTag, false))
                 .ReturnsAsync(mirrorBaseImageDigest);
 
             DateTime createdDate = DateTime.Now.ToUniversalTime();
@@ -3049,7 +3039,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                copyImageServiceMock.Object);
+                copyImageServiceMock.Object,
+CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -3060,9 +3052,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
-            command.Options.ServicePrincipal.ClientId = "acr-client-id";
-            command.Options.ServicePrincipal.Secret = "acr-secret";
-            command.Options.ServicePrincipal.Tenant = "acr-tenant";
+
+
+
 
             const string ProductVersion = "1.0.1";
 
@@ -3308,13 +3300,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-                dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
+                manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             }
 
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync(mirrorBaseTag, It.IsAny<IRegistryCredentialsHost>(), false));
-
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync(mirrorBaseTag, false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
             if (!hasCachedImage)
             {
@@ -3328,9 +3319,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
             if (!hasCachedImage)
             {
@@ -3371,13 +3362,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{baseImageRegistry}";
             }
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync($"{baseImageRepoPrefix}/{RuntimeRepo}@{RuntimeDigest}");
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync($"{RegistryOverride}/{SamplesRepo}@{SampleDigest}");
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                new($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", $"{baseImageRepoPrefix}/{RuntimeRepo}@{RuntimeDigest}"),
+                new($"{RegistryOverride}/{SamplesRepo}:{Tag}", $"{RegistryOverride}/{SamplesRepo}@{SampleDigest}"),
+            ], []);
 
             string sampleDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/samples/os", tempFolderContext, $"{baseImageRegistry}/{RuntimeRepo}:{Tag}");
@@ -3393,7 +3381,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                Mock.Of<ICopyImageService>());
+                Mock.Of<ICopyImageService>(),
+CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3432,11 +3422,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>()));
 
             dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
 
             if (isExternallyOwnedBaseImage)
             {
@@ -3471,13 +3461,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{CustomRegistry}";
 
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}@{RuntimeDigest}");
-
-            dockerServiceMock
-                .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", It.IsAny<IRegistryCredentialsHost>(), false))
-                .ReturnsAsync($"{RegistryOverride}/{SamplesRepo}@{SampleDigest}");
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
+                new($"{baseImageRepoPrefix}/{MirroredBaseTag}", $"{baseImageRepoPrefix}/{MirroredBaseTag}@{RuntimeDigest}"),
+                new($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", $"{RegistryOverride}/{SamplesRepo}@{SampleDigest}"),
+            ], []);
 
             const string dockerfileCommitSha = "mycommit";
             Mock<IGitService> gitServiceMock = new();
@@ -3490,7 +3477,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
                 Mock.Of<IProcessService>(),
-                Mock.Of<ICopyImageService>());
+                Mock.Of<ICopyImageService>(),
+CreateManifestServiceFactoryMock(manifestServiceMock).Object,
+                Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3575,11 +3564,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>()));
 
             dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", It.IsAny<IRegistryCredentialsHost>(), false));
-            dockerServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
+            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            dockerServiceMock.Verify(o => o.GetImageManifestLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", It.IsAny<IRegistryCredentialsHost>(), false));
+            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
 
             dockerServiceMock.Verify(o =>
                 o.CreateTag($"{baseImageRepoPrefix}/{MirroredBaseTag}", SrcBaseTag, false));

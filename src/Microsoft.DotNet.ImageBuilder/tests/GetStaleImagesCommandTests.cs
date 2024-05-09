@@ -179,12 +179,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new List<DockerfileInfo>
                     {
                         new DockerfileInfo(
-                            dockerfile1Path, 
+                            dockerfile1Path,
                             new FromImageInfo("base1", "base1digest"),
                             new FromImageInfo("base2", "base2digest")),
                         new DockerfileInfo(
-                            dockerfile2Path, 
-                            new FromImageInfo("base2", "base2digest"), 
+                            dockerfile2Path,
+                            new FromImageInfo("base2", "base2digest"),
                             new FromImageInfo("base3", "base3digest"))
                     }
                 }
@@ -666,8 +666,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 context.Verify(expectedPathsBySubscription);
 
-                context.ManifestToolServiceMock
-                    .Verify(o => o.GetManifestAsync(baseImage, It.IsAny<IRegistryCredentialsHost>(), false), Times.Once);
+                context.InnerManifestServiceMock
+                    .Verify(o => o.GetManifestAsync(baseImage, false), Times.Once);
             }
         }
 
@@ -1672,7 +1672,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private const string VariableName = "my-var";
 
-            public Mock<IManifestService> ManifestToolServiceMock { get; }
+            public Mock<IInnerManifestService> InnerManifestServiceMock { get; }
+
+            public Mock<IManifestServiceFactory> ManifestServiceFactoryMock { get; }
 
             public GetStaleImagesCommand Command { get => command; }
 
@@ -1694,7 +1696,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
                 // Cache image digests lookup
-                foreach (FromImageInfo fromImage in 
+                foreach (FromImageInfo fromImage in
                     dockerfileInfos.Values.SelectMany(infos => infos).SelectMany(info => info.FromImages))
                 {
                     if (fromImage.Name != null)
@@ -1711,7 +1713,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
                 this.octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
-                this.ManifestToolServiceMock = this.CreateManifestToolServiceMock();
+                (ManifestServiceFactoryMock, InnerManifestServiceMock) = CreateManifestServiceMocks();
+
                 this.command = this.CreateCommand();
             }
 
@@ -1728,7 +1731,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IInvocation invocation = this.loggerServiceMock.Invocations
                     .First(invocation => invocation.Method.Name == nameof(ILoggerService.WriteMessage) &&
                         invocation.Arguments[0].ToString().StartsWith("##vso"));
-                
+
                 string message = invocation.Arguments[0].ToString();
                 int variableNameStartIndex = message.IndexOf("=") + 1;
                 string actualVariableName = message.Substring(variableNameStartIndex, message.IndexOf(";") - variableNameStartIndex);
@@ -1737,7 +1740,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string variableValue = message
                     .Substring(message.IndexOf("]") + 1);
 
-                SubscriptionImagePaths[] pathsBySubscription = 
+                SubscriptionImagePaths[] pathsBySubscription =
                     JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(variableValue.Replace("\\\"", "\""));
 
                 Assert.Equal(expectedPathsBySubscription.Count, pathsBySubscription.Length);
@@ -1762,7 +1765,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestToolServiceMock.Object, this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
+                    this.ManifestServiceFactoryMock.Object, this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.OsType = this.osType;
@@ -1781,7 +1784,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     if (subscriptionInfo.ImageInfo != null)
                     {
-                        
+
                         string generatedFakeSha = Guid.NewGuid().ToString();
                         treesClientMock
                             .Setup(o => o.Get(
@@ -1852,7 +1855,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     Subscription subscription = subscriptionInfo.Subscription;
                     List<DockerfileInfo> repoDockerfileInfos = dockerfileInfos[subscription.Manifest];
-                    
+
                     string url = $"https://github.com/{subscription.Manifest.Owner}/{subscription.Manifest.Repo}.git";
                     gitServiceMock
                         .Setup(o => o.CloneRepository(url, It.IsAny<string>(), It.Is<CloneOptions>(options => options.BranchName == subscription.Manifest.Branch)))
@@ -1914,14 +1917,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
             }
 
-            private Mock<IManifestService> CreateManifestToolServiceMock()
+            private (Mock<IManifestServiceFactory>, Mock<IInnerManifestService>) CreateManifestServiceMocks()
             {
-                Mock<IManifestService> manifestToolServiceMock = new Mock<IManifestService>();
-                manifestToolServiceMock
-                    .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
-                    .ReturnsAsync((string image, IRegistryCredentialsHost credsOptions, bool isDryRun) =>
+                Mock<IInnerManifestService> innerManifestServiceMock = new Mock<IInnerManifestService>();
+                innerManifestServiceMock
+                    .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
+                    .ReturnsAsync((string image, bool isDryRun) =>
                         new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
-                return manifestToolServiceMock;
+
+                IManifestService manifestService = new ManifestService(innerManifestServiceMock.Object);
+
+                Mock<IManifestServiceFactory> manifestServiceFactoryMock =
+                    ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestService);
+
+                return (manifestServiceFactoryMock, innerManifestServiceMock);
             }
 
             /// <summary>

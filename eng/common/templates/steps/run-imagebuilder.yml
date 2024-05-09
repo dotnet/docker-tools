@@ -1,7 +1,7 @@
 parameters:
 - name: name
   type: string
-  default: "RunImageBuilder"
+  default: ""
 - name: displayName
   type: string
   default: "Run ImageBuilder"
@@ -14,6 +14,9 @@ parameters:
 - name: args
   type: string
   default: null
+- name: condition
+  type: string
+  default: succeeded()
 - name: continueOnError
   type: boolean
   default: false
@@ -24,9 +27,11 @@ parameters:
 steps:
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), ne(parameters.serviceConnection, '')) }}:
   - task: AzureCLI@2
-    name: ${{ parameters.name }}
+    ${{ if ne(parameters.name, '') }}:
+      name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
+    condition: ${{ parameters.condition }}
     inputs:
       azureSubscription: ${{ parameters.serviceConnection }}
       addSpnToEnvironment: true
@@ -41,9 +46,11 @@ steps:
         Remove-Item -Path $(tokenHostFilePath) -Force
 - ${{ else }}:
   - task: PowerShell@2
-    name: ${{ parameters.name }}
+    ${{ if ne(parameters.name, '') }}:
+      name: ${{ parameters.name }}
     displayName: ${{ parameters.displayName }}
     continueOnError: ${{ parameters.continueOnError }}
+    condition: ${{ parameters.condition }}
     inputs:
       targetType: 'inline'
       script: >

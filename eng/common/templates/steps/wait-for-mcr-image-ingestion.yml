@@ -7,7 +7,6 @@ parameters:
 steps:
 - template: /eng/common/templates/steps/run-imagebuilder.yml@self
   parameters:
-    name: WaitForImageIngestion
     displayName: Wait for Image Ingestion
     condition: and(${{ parameters.condition }}, eq(variables['waitForIngestionEnabled'], 'true'))
     args: >

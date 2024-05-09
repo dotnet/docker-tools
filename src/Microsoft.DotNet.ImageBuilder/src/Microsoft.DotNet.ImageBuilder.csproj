@@ -31,6 +31,7 @@
     <PackageReference Include="System.ComponentModel.Composition" Version="8.0.0-rc.2.23479.6" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0-rc.2.23479.6" />
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="YamlDotNet" Version="13.7.1" />
   </ItemGroup>
 </Project>

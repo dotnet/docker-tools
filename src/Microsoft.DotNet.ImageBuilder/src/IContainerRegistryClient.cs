@@ -13,7 +13,7 @@ public interface IContainerRegistryClient
 {
     Task DeleteRepositoryAsync(string name);
 
-    IAsyncEnumerable<string> GetRepositoryNames();
+    IAsyncEnumerable<string> GetRepositoryNamesAsync();
 
     ContainerRepository GetRepository(string name);
 }

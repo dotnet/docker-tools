@@ -6,7 +6,6 @@ parameters:
 steps:
 - template: /eng/common/templates/steps/run-imagebuilder.yml@self
   parameters:
-    name: WaitForMcrDocIngestion
     displayName: Wait for MCR Doc Ingestion
     condition: and(${{ parameters.condition }}, eq(variables['waitForIngestionEnabled'], 'true'))
     args: >

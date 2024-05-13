@@ -150,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Timeline timeline = await buildClient.GetBuildTimelineAsync(project.Id, Options.BuildId);
             foreach (string task in Options.TaskNames)
             {
-                TimelineRecord? record = timeline.Records.FirstOrDefault(rec => rec.Name == task);
+                TimelineRecord? record = timeline.Records.FirstOrDefault(rec => rec.Name.Equals(task, StringComparison.OrdinalIgnoreCase));
                 if (record is null)
                 {
                     throw new InvalidOperationException(

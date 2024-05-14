@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IMcrStatusClient))]
     public class McrStatusClient : IMcrStatusClient
     {
-        private const string McrStatusResource = "api://c00053c3-a979-4ee6-b94e-941881e62d8e";
+        private const string McrStatusResource = "api://c00053c3-a979-4ee6-b94e-941881e62d8e/.default";
         // https://msazure.visualstudio.com/MicrosoftContainerRegistry/_git/docs?path=/status/status_v2.yaml
         private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v2";
         private readonly HttpClient _httpClient;
@@ -27,15 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder
         [ImportingConstructor]
         public McrStatusClient(IHttpClientProvider httpClientProvider, ILoggerService loggerService)
         {
-            if (loggerService is null)
-            {
-                throw new ArgumentNullException(nameof(loggerService));
-            }
-
-            if (httpClientProvider is null)
-            {
-                throw new ArgumentNullException(nameof(httpClientProvider));
-            }
+            ArgumentNullException.ThrowIfNull(loggerService);
+            ArgumentNullException.ThrowIfNull(httpClientProvider);
 
             _httpClient = httpClientProvider.GetClient();
             _httpPolicy = HttpPolicyBuilder.Create()

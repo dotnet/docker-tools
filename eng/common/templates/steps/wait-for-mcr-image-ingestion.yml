@@ -9,12 +9,13 @@ steps:
   parameters:
     displayName: Wait for Image Ingestion
     condition: and(${{ parameters.condition }}, eq(variables['waitForIngestionEnabled'], 'true'))
+    serviceConnection: $(marStatus.serviceConnectionName)
+    internalProjectName: 'internal'
     args: >
       waitForMcrImageIngestion
       '${{ parameters.imageInfoPath }}'
       --manifest '$(manifest)'
       --repo-prefix '$(publishRepoPrefix)'
-      --min-queue-time '${{ parameters.minQueueTime }}'
       --timeout '$(mcrImageIngestionTimeout)'
       $(manifestVariables)
       ${{ parameters.dryRunArg }}

@@ -45,7 +45,7 @@ extends:
         whatIf: true
         showAlertLink: true
       sbom:
-        enabled: ture
+        enabled: true
       sourceRepositoriesToScan:
         exclude:
         - repository: InternalVersionsRepo

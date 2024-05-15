@@ -16,6 +16,7 @@ steps:
       '${{ parameters.imageInfoPath }}'
       --manifest '$(manifest)'
       --repo-prefix '$(publishRepoPrefix)'
+      --min-queue-time '${{ parameters.minQueueTime }}'
       --timeout '$(mcrImageIngestionTimeout)'
       $(manifestVariables)
       ${{ parameters.dryRunArg }}

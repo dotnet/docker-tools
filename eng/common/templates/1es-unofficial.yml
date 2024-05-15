@@ -44,6 +44,8 @@ extends:
         ignoreDirectories: $(Build.SourcesDirectory)/versions
         whatIf: true
         showAlertLink: true
+      sbom:
+        enabled: ture
       sourceRepositoriesToScan:
         exclude:
         - repository: InternalVersionsRepo

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -131,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsDryRun)
             {
-                await _kustoClient.IngestFromCsvAsync(info, Options.ServicePrincipal, Options.Cluster, Options.Database, table, Options.IsDryRun);
+                await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table, Options.IsDryRun);
             }
         }
     }

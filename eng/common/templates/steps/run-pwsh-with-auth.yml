@@ -1,0 +1,38 @@
+parameters:
+- name: name
+  type: string
+  default: "RunPwshWithAuth"
+- name: displayName
+  type: string
+  default: "Run PowerShell"
+- name: serviceConnection
+  type: string
+  default: ""
+- name: command
+  type: string
+  default: null
+- name: continueOnError
+  type: boolean
+  default: false
+- name: dockerClientOS
+  type: string
+  default: "linux"
+- name: condition
+  type: string
+  default: true
+
+steps:
+- task: AzureCLI@2
+  name: ${{ parameters.name }}
+  displayName: ${{ parameters.displayName }} (Authenticated)
+  continueOnError: ${{ parameters.continueOnError }}
+  condition: and(succeeded(), ${{ parameters.condition }})
+  inputs:
+    azureSubscription: ${{ parameters.serviceConnection }}
+    addSpnToEnvironment: true
+    ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+      scriptType: 'ps'
+    ${{ else }}:
+      scriptType: 'pscore'
+    scriptLocation: 'inlineScript'
+    inlineScript: ${{ parameters.command }};

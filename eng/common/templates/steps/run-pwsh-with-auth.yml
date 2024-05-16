@@ -4,7 +4,7 @@ parameters:
   default: "RunPwshWithAuth"
 - name: displayName
   type: string
-  default: "Run PowerShell with Auth"
+  default: "Run PowerShell"
 - name: serviceConnection
   type: string
   default: ""
@@ -24,7 +24,7 @@ parameters:
 steps:
 - task: AzureCLI@2
   name: ${{ parameters.name }}
-  displayName: ${{ parameters.displayName }}
+  displayName: ${{ parameters.displayName }} (Authenticated)
   continueOnError: ${{ parameters.continueOnError }}
   condition: and(succeeded(), ${{ parameters.condition }})
   inputs:

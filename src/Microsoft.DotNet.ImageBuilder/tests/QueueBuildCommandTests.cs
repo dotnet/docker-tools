@@ -18,6 +18,7 @@ using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests

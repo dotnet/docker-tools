@@ -113,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 (Uri baseUrl, VssCredentials credentials) = Options.AzdoOptions.GetConnectionDetails();
 
-                using (IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
+                using (Services.IVssConnection connection = _connectionFactory.Create(baseUrl, credentials))
                 using (IProjectHttpClient projectHttpClient = connection.GetProjectHttpClient())
                 using (IBuildHttpClient client = connection.GetBuildHttpClient())
                 {

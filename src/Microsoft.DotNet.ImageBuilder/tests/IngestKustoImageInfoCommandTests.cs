@@ -274,9 +274,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IKustoClient> kustoClientMock = new();
             kustoClientMock
                 .Setup(o => o.IngestFromCsvAsync(
-                    It.IsAny<string>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
-                .Callback<string, ServicePrincipalOptions, string, string, string, bool>(
-                    (csv, servicePrincipal, cluster, database, table, isDryRun) =>
+                    It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+                .Callback<string, string, string, string, bool>(
+                    (csv, cluster, database, table, isDryRun) =>
                     {
                         ingestedData.Add(table, csv);
                     });
@@ -296,7 +296,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             _outputHelper.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
 
             kustoClientMock.Verify(o => o.IngestFromCsvAsync(
-                It.IsAny<string>(), It.IsAny<ServicePrincipalOptions>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
             Assert.Equal(expectedImageData, ingestedData[command.Options.ImageTable]);
             Assert.Equal(expectedLayerData, ingestedData[command.Options.LayerTable]);
         }

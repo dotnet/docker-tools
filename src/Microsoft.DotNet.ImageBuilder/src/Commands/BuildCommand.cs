@@ -13,7 +13,6 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Win32;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands

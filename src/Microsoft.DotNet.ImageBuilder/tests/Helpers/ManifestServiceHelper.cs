@@ -18,13 +18,16 @@ internal static class ManifestServiceHelper
         IEnumerable<ImageLayersResults>? imageLayersResults = null) =>
             CreateManifestServiceFactoryMock(CreateManifestServiceMock(imageDigestResults, imageLayersResults));
 
-    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(Mock<IInnerManifestService> innerManifestService) =>
-        CreateManifestServiceFactoryMock(new ManifestService(innerManifestService.Object));        
+    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
+        Mock<IInnerManifestService> innerManifestService) =>
+            CreateManifestServiceFactoryMock(new ManifestService(innerManifestService.Object));
 
-    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(Mock<IManifestService> manifestServiceMock) =>
-        CreateManifestServiceFactoryMock(manifestServiceMock.Object);        
+    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
+        Mock<IManifestService> manifestServiceMock) =>
+            CreateManifestServiceFactoryMock(manifestServiceMock.Object);
 
-    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(IManifestService manifestService)
+    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
+        IManifestService manifestService)
     {
         Mock<IManifestServiceFactory> manifestServiceFactoryMock = new();
         manifestServiceFactoryMock

@@ -208,6 +208,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
 
+
             return null;
         }
 

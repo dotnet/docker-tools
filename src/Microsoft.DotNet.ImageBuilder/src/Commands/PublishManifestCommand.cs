@@ -97,8 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
                     await _manifestService.Value.GetManifestDigestShaAsync(
-                        sharedTag.FullyQualifiedName,
-                        Options.IsDryRun));
+                        sharedTag.FullyQualifiedName, Options.IsDryRun));
 
                 IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
                     .Where(tag => tag.SyndicatedRepo is not null)

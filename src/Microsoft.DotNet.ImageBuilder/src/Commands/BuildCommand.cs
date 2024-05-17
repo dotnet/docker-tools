@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     await PublishImageInfoAsync();
                 },
                 registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride ?? "");
+                ownedAcr: Options.RegistryOverride);
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();

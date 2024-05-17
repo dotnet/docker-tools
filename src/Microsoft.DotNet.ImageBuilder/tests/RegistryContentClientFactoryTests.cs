@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -11,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 public class RegistryContentClientFactoryTests
 {
+    private static readonly string s_tenant = Guid.Empty.ToString();
+
     [Theory]
     [InlineData("my-acr")]
     [InlineData("my-acr.azurecr.io")]
@@ -18,7 +21,7 @@ public class RegistryContentClientFactoryTests
     {
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
-        DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == ownedAcr);
+        IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(o => o.Tenant == s_tenant);
 
         IContainerRegistryContentClient contentClient = Mock.Of<IContainerRegistryContentClient>();
 
@@ -29,7 +32,7 @@ public class RegistryContentClientFactoryTests
 
 
         RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object);
-        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName);
+        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, credsHost);
 
         Assert.Same(contentClient, client);
     }

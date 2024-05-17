@@ -32,12 +32,12 @@ public class RegistryCredentialsProvider(IHttpClientProvider httpClientProvider)
             DockerHelper.DockerHubApiRegistry :
             registry;
 
-        if (ownedAcr is not null)
+        if (!string.IsNullOrEmpty(ownedAcr))
         {
             ownedAcr = DockerHelper.FormatAcrName(ownedAcr);
         }
 
-        if (apiRegistry == ownedAcr && tenant is not null)
+        if (apiRegistry == ownedAcr && !string.IsNullOrEmpty(tenant))
         {
             return await GetAcrCredentialsWithOAuthAsync(apiRegistry, tenant);
         }

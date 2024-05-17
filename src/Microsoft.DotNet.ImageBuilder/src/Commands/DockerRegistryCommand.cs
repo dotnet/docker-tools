@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             RegistryCredentials? credentials = await RegistryCredentialsProvider.GetCredentialsAsync(
                     registryName, ownedAcr, Options.CredentialsOptions);
 
-            if (registryName is not null && credentials is not null)
+            if (!string.IsNullOrEmpty(registryName) && credentials is not null)
             {
                 DockerHelper.Login(credentials, registryName, isDryRun);
                 loggedIn = true;
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             finally
             {
-                if (loggedIn && registryName is not null)
+                if (loggedIn && !string.IsNullOrEmpty(registryName))
                 {
                     DockerHelper.Logout(registryName, isDryRun);
                 }

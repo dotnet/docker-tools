@@ -152,11 +152,11 @@ jobs:
       '$(gitHubNotificationsRepoInfo.org)'
       '$(gitHubNotificationsRepoInfo.repo)'
       --repo-prefix '$(publishRepoPrefix)'
-      --task "Copy Images"
+      --task "Copy Images (Authenticated)"
       --task "Publish Manifest"
-      --task "Wait for Image Ingestion"
+      --task "Wait for Image Ingestion (Authenticated)"
       --task "Publish Readmes"
-      --task "Wait for Mcr Doc Ingestion"
+      --task "Wait for MCR Doc Ingestion"
       --task "Publish Image Info"
       --task "Ingest Kusto Image Info"
       $(dryRunArg)

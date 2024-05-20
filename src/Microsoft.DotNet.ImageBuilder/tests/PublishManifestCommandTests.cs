@@ -17,6 +17,7 @@ using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -28,19 +29,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ImageInfoTagOutput()
         {
-            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
-            manifestToolService
-                .Setup(o => o.GetManifestAsync("repo1:sharedtag2", It.IsAny<IRegistryCredentialsHost>(), false))
+            Mock<IInnerManifestService> innerManifestServiceMock = new();
+            innerManifestServiceMock
+                .Setup(o => o.GetManifestAsync("repo1:sharedtag2", false))
                 .ReturnsAsync(new ManifestQueryResult("digest1", new JsonObject()));
-            manifestToolService
-                .Setup(o => o.GetManifestAsync("repo2:sharedtag3", It.IsAny<IRegistryCredentialsHost>(), false))
+            innerManifestServiceMock
+                .Setup(o => o.GetManifestAsync("repo2:sharedtag3", false))
                 .ReturnsAsync(new ManifestQueryResult("digest2", new JsonObject()));
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(innerManifestServiceMock);
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
-            PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, Mock.Of<IDockerService>(), Mock.Of<ILoggerService>(), dateTimeService);
+            PublishManifestCommand command = new(
+                manifestServiceFactoryMock.Object,
+                Mock.Of<IDockerService>(),
+                Mock.Of<ILoggerService>(),
+                dateTimeService,
+                Mock.Of<IRegistryCredentialsProvider>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -281,15 +287,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DuplicatePlatform()
         {
-            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
-            manifestToolService
-                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+            Mock<IManifestService> manifestService = CreateManifestServiceMock();
+            Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestService);
+            manifestService
+                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             Mock<IDockerService> dockerServiceMock = new();
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, dockerServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IDateTimeService>());
+                manifestServiceFactory.Object,
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IDateTimeService>(),
+                Mock.Of<IRegistryCredentialsProvider>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -397,9 +408,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task SyndicatedTag()
         {
-            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
-            manifestToolService
-                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), It.IsAny<IRegistryCredentialsHost>(), false))
+            Mock<IInnerManifestService> innerManifestServiceMock = new();
+            Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(innerManifestServiceMock);
+            innerManifestServiceMock
+                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             Mock<IDockerService> dockerServiceMock = new();
@@ -408,7 +420,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new PublishManifestCommand(
-                manifestToolService.Object, dockerServiceMock.Object, Mock.Of<ILoggerService>(), dateTimeService);
+                manifestServiceFactory.Object,
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                dateTimeService,
+                Mock.Of<IRegistryCredentialsProvider>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 

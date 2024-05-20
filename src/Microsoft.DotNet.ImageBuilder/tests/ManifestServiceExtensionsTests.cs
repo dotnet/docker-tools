@@ -29,19 +29,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     { "docker.io", new RegistryCredentials("user", "pwd") }
                 }
             };
-            Mock<IManifestService> manifestToolService = new Mock<IManifestService>();
-            manifestToolService
-                .Setup(o => o.GetManifestAsync("tag1", credsOptions, false))
+            Mock<IInnerManifestService> manifestService = new();
+            manifestService
+                .Setup(o => o.GetManifestAsync("tag1", false))
                 .ReturnsAsync(new ManifestQueryResult(ManifestDigest, new JsonObject()));
-            manifestToolService
-                .Setup(o => o.GetManifestAsync("tag2", credsOptions, false))
+            manifestService
+                .Setup(o => o.GetManifestAsync("tag2", false))
                 .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
 
             string digestSha = await ManifestServiceExtensions.GetManifestDigestShaAsync(
-                manifestToolService.Object,
-                tag,
-                credsOptions,
-                false);
+                manifestService.Object, tag, false);
             Assert.Equal(expectedDigestSha, digestSha);
         }
     }

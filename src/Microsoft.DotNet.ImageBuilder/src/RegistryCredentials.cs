@@ -4,15 +4,4 @@
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class RegistryCredentials
-{
-    public RegistryCredentials(string username, string password)
-    {
-        Username = username;
-        Password = password;
-    }
-
-    public string Username { get; }
-    public string Password { get; }
-}
-#nullable disable
+public record RegistryCredentials(string Username, string Password);

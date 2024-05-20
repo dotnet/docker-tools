@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -11,6 +12,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 public class RegistryContentClientFactoryTests
 {
+    private static readonly string s_tenant = Guid.Empty.ToString();
+
     [Theory]
     [InlineData("my-acr")]
     [InlineData("my-acr.azurecr.io")]
@@ -18,7 +21,7 @@ public class RegistryContentClientFactoryTests
     {
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
-        DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == ownedAcr);
+        IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>();
 
         IContainerRegistryContentClient contentClient = Mock.Of<IContainerRegistryContentClient>();
 
@@ -28,8 +31,8 @@ public class RegistryContentClientFactoryTests
             .Returns(contentClient);
 
 
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object, options);
-        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, Mock.Of<IRegistryCredentialsHost>());
+        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object);
+        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, credsHost);
 
         Assert.Same(contentClient, client);
     }
@@ -41,9 +44,9 @@ public class RegistryContentClientFactoryTests
     public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
     {
         DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == "my-acr");
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), Mock.Of<IContainerRegistryContentClientFactory>(), options);
+        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), Mock.Of<IContainerRegistryContentClientFactory>());
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
-        IRegistryContentClient client = clientFactory.Create(registry, "repo-name", credsHost);
+        IRegistryContentClient client = clientFactory.Create(registry, "repo-name");
 
         Assert.IsType<RegistryServiceClient>(client);
 

@@ -21,22 +21,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);
-        private readonly IManifestService _manifestToolService;
+        private readonly IManifestService _manifestService;
         private readonly ILoggerService _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
 
         [ImportingConstructor]
         public GetStaleImagesCommand(
-            IManifestService manifestToolService,
+            IManifestServiceFactory manifestServiceFactory,
             ILoggerService loggerService,
             IOctokitClientFactory octokitClientFactory,
             IGitService gitService)
         {
-            _manifestToolService = manifestToolService;
             _loggerService = loggerService;
             _octokitClientFactory = octokitClientFactory;
             _gitService = gitService;
+
+            ArgumentNullException.ThrowIfNull(manifestServiceFactory);
+            _manifestService = manifestServiceFactory.Create();
         }
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";
@@ -147,7 +149,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
                         async () =>
                         {
-                            string digest = await _manifestToolService.GetManifestDigestShaAsync(fromImage, Options.CredentialsOptions, Options.IsDryRun);
+                            string digest = await _manifestService.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
                             return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 

@@ -7,57 +7,15 @@ using System.IO;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     [Export(typeof(IDockerService))]
-    internal class DockerService : IDockerService
+    public class DockerService : IDockerService
     {
-        private readonly IManifestService _manifestService;
-
         public Architecture Architecture => DockerHelper.Architecture;
-
-        [ImportingConstructor]
-        public DockerService(IManifestService manifestToolService)
-        {
-            _manifestService = manifestToolService ?? throw new ArgumentNullException(nameof(manifestToolService));
-        }
-
-        public async Task<string?> GetImageDigestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
-        {
-            IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
-
-            // A digest will not exist for images that have been built locally or have been manually installed
-            if (!digests.Any())
-            {
-                return null;
-            }
-
-            string digestSha = await _manifestService.GetManifestDigestShaAsync(image, credsHost, isDryRun);
-
-            if (digestSha is null)
-            {
-                return null;
-            }
-
-            string digest = DockerHelper.GetDigestString(DockerHelper.GetRepo(image), digestSha);
-
-            if (!digests.Contains(digest))
-            {
-                throw new InvalidOperationException(
-                    $"Found published digest '{digestSha}' for tag '{image}' but could not find a matching digest value from " +
-                    $"the set of locally pulled digests for this tag: { string.Join(", ", digests) }. This most likely means that " +
-                    "this tag has been updated since it was last pulled.");
-            }
-
-            return digest;
-        }
-
-        public Task<IEnumerable<string>> GetImageManifestLayersAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun) =>
-            _manifestService.GetImageLayersAsync(image, credsHost, isDryRun);
 
         public void PullImage(string image, string? platform, bool isDryRun) => DockerHelper.PullImage(image, platform, isDryRun);
 

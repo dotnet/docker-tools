@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -18,8 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class RegistryCredentialsOptionsBuilder
     {
         public IEnumerable<Option> GetCliOptions() =>
-            new Option[]
-            {
+            [
                 CreateDictionaryOption("registry-creds", nameof(RegistryCredentialsOptions.Credentials),
                     "Named credentials that map to a registry (<registry>=<username>;<password>)",
                     val =>
@@ -27,9 +25,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             (string username, string password) = val.ParseKeyValuePair(';');
                             return new RegistryCredentials(username, password);
                         })
-            };
+            ];
 
-        public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
+        public IEnumerable<Argument> GetCliArguments() => [];
     }
 }
 #nullable disable

@@ -2,36 +2,26 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.ComponentModel.Composition;
-using System.Text.Json.Nodes;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+// Wrapper for ManifestService extension methods required for unit testing 
+public class ManifestService(IInnerManifestService inner) : IManifestService
 {
-    [Export(typeof(IManifestService))]
-    public class ManifestService : IManifestService
-    {
-        private readonly IRegistryContentClientFactory _registryClientFactory;
+    private readonly IInnerManifestService _inner = inner;
 
-        [ImportingConstructor]
-        public ManifestService(IRegistryContentClientFactory registryClientFactory)
-        {
-            _registryClientFactory = registryClientFactory;
-        }
+    public Task<string?> GetImageDigestAsync(string image, bool isDryRun) =>
+        _inner.GetImageDigestAsync(image, isDryRun);
 
-        public Task<ManifestQueryResult> GetManifestAsync(string image, IRegistryCredentialsHost credsHost, bool isDryRun)
-        {
-            if (isDryRun)
-            {
-                return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
-            }
+    public Task<IEnumerable<string>> GetImageLayersAsync(string tag, bool isDryRun) =>
+        _inner.GetImageLayersAsync(tag, isDryRun);
 
-            ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
+    public Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun) =>
+        _inner.GetManifestAsync(image, isDryRun);
 
-            IRegistryContentClient registryClient = _registryClientFactory.Create(imageName.Registry!, imageName.Repo, credsHost);
-            return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
-        }
-    }
+    public Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun) =>
+        _inner.GetManifestDigestShaAsync(tag, isDryRun);
 }
-#nullable disable

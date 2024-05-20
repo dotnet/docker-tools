@@ -21,7 +21,7 @@ public class RegistryContentClientFactoryTests
     {
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
-        IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(o => o.Tenant == s_tenant);
+        IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>();
 
         IContainerRegistryContentClient contentClient = Mock.Of<IContainerRegistryContentClient>();
 

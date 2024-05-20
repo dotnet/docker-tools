@@ -21,7 +21,7 @@ public static class OAuthHelper
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
-    public static async Task<string> GetRefreshTokenAsync(HttpClient httpClient, string acrName, string tenant, string eidToken)
+    public static async Task<string> GetRefreshTokenAsync(HttpClient httpClient, string acrName, Guid tenant, string eidToken)
     {
         StringContent requestContent = new(
             $"grant_type=access_token&service={acrName}&tenant={tenant}&access_token={eidToken}",

@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly HttpClient _httpClient;
         private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
+        private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
         public McrStatusClient(IHttpClientProvider httpClientProvider, ILoggerService loggerService)
@@ -36,6 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, loggerService)
                 .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), loggerService)
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");
+            _loggerService = loggerService;
         }
 
         public Task<ImageResult> GetImageResultAsync(string imageDigest)
@@ -69,11 +71,11 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private Task<string> GetAccessTokenAsync() =>
-            _accessToken.GetValueAsync(
-                () => AuthHelper.GetDefaultAccessTokenAsync(McrStatusResource));
+            _accessToken.GetValueAsync(async () =>
+                (await AuthHelper.GetDefaultAccessTokenAsync(_loggerService, McrStatusResource)).token);
 
         private Task RefreshAccessTokenAsync() =>
-            _accessToken.ResetValueAsync(
-                () => AuthHelper.GetDefaultAccessTokenAsync(McrStatusResource));
+            _accessToken.ResetValueAsync(async () =>
+                (await AuthHelper.GetDefaultAccessTokenAsync(_loggerService, McrStatusResource)).token);
     }
 }

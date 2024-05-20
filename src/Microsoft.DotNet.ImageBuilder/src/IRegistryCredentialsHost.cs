@@ -9,6 +9,5 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface IRegistryCredentialsHost
 {
     IDictionary<string, RegistryCredentials> Credentials { get; }
-    string? Tenant { get; }
 }
 #nullable disable

@@ -29,7 +29,6 @@ jobs:
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'
-      --registry-creds '$(acr.server)=$(acr.userName);$(acr.password)'
       $(dockerHubRegistryCreds)
     displayName: Get Stale Images
     name: GetStaleImages

@@ -68,7 +68,6 @@ namespace Microsoft.DotNet.ImageBuilder
                         context.BindingContext.AddModelBinder(new ModelBinder<GitOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<ManifestFilterOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<RegistryCredentialsOptions>());
-                        context.BindingContext.AddModelBinder(new ModelBinder<ServicePrincipalOptions>());
                         context.BindingContext.AddModelBinder(new ModelBinder<SubscriptionOptions>());
                     })
                     .Build();

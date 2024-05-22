@@ -22,7 +22,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
 
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-
     }
 
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder

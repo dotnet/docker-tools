@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);
-        private readonly IManifestService _manifestService;
+        private readonly Lazy<IManifestService> _manifestService;
         private readonly ILoggerService _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
@@ -37,8 +37,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _octokitClientFactory = octokitClientFactory;
             _gitService = gitService;
 
+            // Don't worry about authenticating to our own ACR, since we are checking base image digests from public
+            // registries instead of our staging location. Registry credentials are needed however to prevent rate
+            // limiting on other registries we don't own.
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
-            _manifestService = manifestServiceFactory.Create();
+            _manifestService = new Lazy<IManifestService>(() =>
+                manifestServiceFactory.Create(ownedAcr: null, Options.CredentialsOptions));
         }
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";
@@ -149,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
                         async () =>
                         {
-                            string digest = await _manifestService.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
+                            string digest = await _manifestService.Value.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
                             return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
                         });
 

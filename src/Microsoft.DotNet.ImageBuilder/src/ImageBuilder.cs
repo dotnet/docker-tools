@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Binding;
 using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
-using System.ComponentModel.Composition;
 using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
@@ -21,20 +20,22 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private static CompositionContainer s_container;
 
-        public static CompositionContainer Container
+        private static CompositionContainer Container
         {
             get
             {
                 if (s_container == null)
                 {
                     string dllLocation = Assembly.GetExecutingAssembly().Location;
-                    DirectoryCatalog catalog = new DirectoryCatalog(Path.GetDirectoryName(dllLocation), Path.GetFileName(dllLocation));
-                    s_container = new CompositionContainer(catalog);
+                    DirectoryCatalog catalog = new(Path.GetDirectoryName(dllLocation), Path.GetFileName(dllLocation));
+                    s_container = new CompositionContainer(catalog, CompositionOptions.DisableSilentRejection);
                 }
 
                 return s_container;
             }
         }
+
+        public static ICommand[] Commands => Container.GetExportedValues<ICommand>().ToArray();
 
         public static int Main(string[] args)
         {
@@ -42,11 +43,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
             try
             {
-                ICommand[] commands = Container.GetExportedValues<ICommand>().ToArray();
+                RootCommand rootCliCommand = new();
 
-                RootCommand rootCliCommand = new RootCommand();
-
-                foreach (ICommand command in commands)
+                foreach (ICommand command in Commands)
                 {
                     rootCliCommand.AddCommand(command.GetCliCommand());
                 }

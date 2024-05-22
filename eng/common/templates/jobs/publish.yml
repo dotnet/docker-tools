@@ -163,7 +163,7 @@ jobs:
       --task "Publish Readmes"
       --task "Wait for MCR Doc Ingestion (Authenticated)"
       --task "Publish Image Info"
-      --task "Ingest Kusto Image Info"
+      --task "Ingest Kusto Image Info (Authenticated)"
       $(dryRunArg)
       $(imageBuilder.commonCmdArgs)
     displayName: Post Publish Notification

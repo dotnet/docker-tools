@@ -29,6 +29,7 @@ jobs:
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'
+      $(dockerHubRegistryCreds)
     displayName: Get Stale Images
     name: GetStaleImages
   - script: >

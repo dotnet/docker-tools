@@ -41,9 +41,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             LoggerService.WriteHeading("COPYING IMAGES");
 
-            ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                Options.Subscription, Options.ResourceGroup, CopyImageService.GetBaseAcrName(Manifest.Registry));
-
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>
                     repo.FilteredImages
@@ -53,8 +50,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             ImportImageAsync(
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                                 Manifest.Registry,
-                                DockerHelper.TrimRegistry(tagInfo.SourceTag, Manifest.Registry),
-                                srcResourceId: resourceId)))
+                                DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
+                                srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
@@ -121,6 +118,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private string GetSourceTag(string destinationTag) =>
-            destinationTag.Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
+            destinationTag
+                .Replace(Manifest.Registry, Options.SourceRegistry)
+                .Replace(Options.RepoPrefix, Options.SourceRepoPrefix);
     }
 }

@@ -38,6 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+                command.Options.SourceRegistry = "my.custom.registry";
                 command.Options.ImageInfoPath = "image-info.json";
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
@@ -103,8 +104,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
+                            command.Options.SourceRegistry,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
                 }
@@ -131,6 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+                command.Options.SourceRegistry = "my.custom.registry";
                 command.Options.ImageInfoPath = "image-info.json";
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
@@ -208,8 +210,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
+                            command.Options.SourceRegistry,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
                 }
@@ -236,6 +238,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = "my.custom.registry";
             command.Options.ImageInfoPath = "image-info.json";
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext);
@@ -325,8 +328,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
+                            command.Options.SourceRegistry,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
             }
@@ -352,6 +355,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = "my.custom.registry";
             command.Options.ImageInfoPath = "image-info.json";
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -442,8 +446,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             It.IsAny<string>(),
+                            command.Options.SourceRegistry,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
                             null,
                             false));
             }

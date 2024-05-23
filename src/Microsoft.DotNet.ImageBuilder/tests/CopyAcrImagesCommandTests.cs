@@ -104,8 +104,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            command.Options.SourceRegistry,
                             null,
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
                 }
@@ -210,8 +210,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            command.Options.SourceRegistry,
                             null,
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
                 }
@@ -328,8 +328,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            command.Options.SourceRegistry,
                             null,
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
             }
@@ -446,8 +446,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             It.IsAny<string>(),
-                            command.Options.SourceRegistry,
                             null,
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
             }

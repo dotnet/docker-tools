@@ -19,7 +19,10 @@ RUN dotnet publish -r linux-musl-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder
 # download oras package tarball
 WORKDIR /
 RUN oras_version=1.1.0 \
-    && wget https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz -O oras_linux.tar.gz
+    && wget https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz -O oras_linux.tar.gz \
+    && mkdir -p oras-install/ \
+    && tar -zxf oras_linux.tar.gz -C oras-install/ \
+    && rm -rf oras_linux.tar.gz
 
 
 # build runtime image
@@ -35,10 +38,7 @@ WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 
 # install oras tool
-COPY --from=build-env /oras_linux.tar.gz ./
-RUN mkdir -p oras-install/ \
-    && tar -zxf oras_linux.tar.gz -C oras-install/ \
-    && mv oras-install/oras /usr/local/bin/ \
-    && rm -rf oras_linux.tar.gz oras-install/
+WORKDIR /usr/local/bin
+COPY --from=build-env /oras-install/oras ./
 
 ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

@@ -23,6 +23,8 @@ jobs:
       serviceConnection: $(acr-staging.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "build-staging/*"
+      subscription: $(acr-staging.subscription)
+      resourceGroup: $(acr-staging.resourceGroup)
       acr: $(acr-staging.server)
       action: delete
       age: 15
@@ -31,6 +33,8 @@ jobs:
       serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet/*nightly/*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)
       action: pruneDangling
       age: 30
@@ -39,6 +43,8 @@ jobs:
       serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "test/*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)
       action: pruneAll
       age: 7
@@ -47,6 +53,8 @@ jobs:
       serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet*/samples*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)
       action: pruneDangling
       age: 0
@@ -55,6 +63,8 @@ jobs:
   #   parameters:
   #     serviceConnection: $(acr-staging.serviceConnectionName)
   #     repo: "mirror/*"
+  #     subscription: $(acr-staging.subscription)
+  #     resourceGroup: $(acr-staging.resourceGroup)
   #     arc: $(acr-staging.server)
   #     action: pruneDangling
   #     age: 0

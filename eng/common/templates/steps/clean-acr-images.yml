@@ -1,5 +1,7 @@
 parameters:
   repo: null
+  subscription: null
+  resourceGroup: null
   acr: null
   action: null
   age: null
@@ -15,8 +17,8 @@ steps:
       args: >
         cleanAcrImages
         ${{ parameters.repo }}
-        $(acr.subscription)
-        $(acr.resourceGroup)
+        ${{ parameters.subscription }}
+        ${{ parameters.resourceGroup }}
         ${{ parameters.acr }}
         --action ${{ parameters.action }}
         --age ${{ parameters.age }}

@@ -38,7 +38,6 @@ WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 
 # install oras tool
-WORKDIR /usr/local/bin
-COPY --from=build-env /oras-install/oras ./
+COPY --from=build-env ["/oras-install/oras", "/usr/local/bin"]
 
 ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

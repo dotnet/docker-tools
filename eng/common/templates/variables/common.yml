@@ -65,3 +65,5 @@ variables:
   value: 00000000-0000-0000-0000-000000000000
 - name: acr.subscription
   value: 00000000-0000-0000-0000-000000000000
+- name: acr-staging.subscription
+  value: 00000000-0000-0000-0000-000000000000

@@ -66,6 +66,7 @@ jobs:
     displayName: Trim Unchanged Images
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
+      TODO: 'Does this need to be updated if the ACRs have different subs and RGs?'
       displayName: Copy Images
       serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}

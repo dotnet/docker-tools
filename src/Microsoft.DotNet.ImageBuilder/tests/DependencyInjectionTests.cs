@@ -9,8 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 public class DependencyInjectionTests
 {
-    // Temporarily disable due to implementation of ContainerRegistryContentClientFactory constructor which attempts to authenticate as part of DI. Doesn't work in test environment.
-    //[Fact]
+    [Fact]
     public void DependencyResolution()
     {
         ICommand[] commands = ImageBuilder.Commands;

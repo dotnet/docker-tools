@@ -83,16 +83,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     await PullBaseImagesAsync();
 
                     await BuildImagesAsync();
-
-                    if (_processedTags.Any() || _cachedPlatforms.Any())
-                    {
-                        PushImages();
-                    }
-
-                    await PublishImageInfoAsync();
                 },
                 registryName: Manifest.Registry,
                 ownedAcr: Options.RegistryOverride);
+
+            if (_processedTags.Any() || _cachedPlatforms.Any())
+            {
+                // Log in again to refresh token as it may have expired from a long build
+                await ExecuteWithCredentialsAsync(
+                    Options.IsDryRun,
+                    async () =>
+                    {
+                        PushImages();
+                        await PublishImageInfoAsync();
+                    },
+                    registryName: Manifest.Registry,
+                    ownedAcr: Options.RegistryOverride);
+            }
+            
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();

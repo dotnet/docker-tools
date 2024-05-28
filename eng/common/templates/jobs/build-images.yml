@@ -109,10 +109,9 @@ jobs:
     displayName: Set Image Builder Build Args
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
-      TODO: 'Does this need to be updated if the ACRs have different subs and RGs?'
       name: BuildImages
       displayName: Build Images
-      serviceConnection: $(acr.serviceConnectionName)
+      serviceConnection: $(acr-staging.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
       dockerClientOS: ${{ parameters.dockerClientOS }}
       args: >
@@ -125,8 +124,8 @@ jobs:
         --retry
         --source-repo $(publicGitRepoUri)
         --digests-out-var 'builtImages'
-        --acr-subscription '$(acr.subscription)'
-        --acr-resource-group '$(acr.resourceGroup)'
+        --acr-subscription '$(acr-staging.subscription)'
+        --acr-resource-group '$(acr-staging.resourceGroup)'
         $(manifestVariables)
         $(imageBuilderBuildArgs)
   - template: /eng/common/templates/steps/publish-artifact.yml@self

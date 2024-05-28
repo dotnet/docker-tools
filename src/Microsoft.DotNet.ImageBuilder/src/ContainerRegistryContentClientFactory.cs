@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
@@ -14,12 +15,20 @@ namespace Microsoft.DotNet.ImageBuilder;
 [Export(typeof(IContainerRegistryContentClientFactory))]
 internal class ContainerRegistryContentClientFactory : IContainerRegistryContentClientFactory
 {
-    private readonly CachedTokenCredential _credential;
+    private readonly CachedTokenCredential? _credential;
 
-    public ContainerRegistryContentClientFactory()
+    [ImportingConstructor]
+    public ContainerRegistryContentClientFactory(ILoggerService loggerService)
     {
-        AccessToken token = new DefaultAzureCredential().GetToken(new TokenRequestContext(["https://containerregistry.azure.net/.default"]), CancellationToken.None);
-        _credential = new CachedTokenCredential(token);
+        try
+        {
+            AccessToken token = new DefaultAzureCredential().GetToken(new TokenRequestContext(["https://containerregistry.azure.net/.default"]), CancellationToken.None);
+            _credential = new CachedTokenCredential(token);
+        }
+        catch (Exception ex)
+        {
+            loggerService.WriteError(ex.Message);
+        }
     }
 
     public IContainerRegistryContentClient Create(string acrName, string repositoryName, TokenCredential credential)

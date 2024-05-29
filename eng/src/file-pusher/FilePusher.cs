@@ -222,13 +222,13 @@ public class FilePusher
         return $"^({processedPatterns})$";
     }
 
-    private async static Task<GitObject[]> GetUpdatedFiles(string sourcePath, GitHubClient client, GitHubBranch branch)
+    private static async Task<GitObject[]> GetUpdatedFiles(string sourcePath, GitHubClient client, GitHubBranch branch)
     {
-        List<GitObject> updatedFiles = new List<GitObject>();
+        List<GitObject> updatedFiles = new();
 
         foreach (string file in GetFiles(sourcePath))
         {
-            await AddUpdatedFile(updatedFiles, client, branch, file, File.ReadAllText(file));
+            await AddUpdatedFile(updatedFiles, client, branch, file, await File.ReadAllTextAsync(file));
         }
 
         return updatedFiles.ToArray();

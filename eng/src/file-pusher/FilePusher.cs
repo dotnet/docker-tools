@@ -35,7 +35,7 @@ public class FilePusher
             // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-            string configJson = File.ReadAllText(options.ConfigPath);
+            string configJson = await File.ReadAllTextAsync(options.ConfigPath);
             Config config = JsonConvert.DeserializeObject<Config>(configJson)
                             ?? throw new ArgumentException($"Could not serialize config JSON file {options.ConfigPath}.");
 
@@ -43,7 +43,7 @@ public class FilePusher
         }
         catch (Exception e)
         {
-            Console.Error.WriteLine($"Failed to push files:{Environment.NewLine}{e}");
+            await Console.Error.WriteLineAsync($"Failed to push files:{Environment.NewLine}{e}");
             Environment.Exit(1);
         }
     }
@@ -61,7 +61,7 @@ public class FilePusher
         }
     }
 
-    private async static Task AddUpdatedFile(
+    private static async Task AddUpdatedFile(
         List<GitObject> updatedFiles,
         GitHubClient client,
         GitHubBranch branch,
@@ -93,7 +93,7 @@ public class FilePusher
         }
     }
 
-    private async static Task<bool> BranchExists(GitHubClient client, GitHubProject project, string @ref)
+    private static async Task<bool> BranchExists(GitHubClient client, GitHubProject project, string @ref)
     {
         try
         {

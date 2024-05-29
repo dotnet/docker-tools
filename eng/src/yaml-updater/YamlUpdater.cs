@@ -37,7 +37,7 @@ public class YamlUpdater
         // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
         Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
 
-        string configJson = File.ReadAllText(options.ConfigPath);
+        string configJson = await File.ReadAllTextAsync(options.ConfigPath);
         FilePusher.Models.Config config = JsonConvert.DeserializeObject<FilePusher.Models.Config>(configJson);
 
         UpdateYamlFile(options, config);

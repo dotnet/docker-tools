@@ -22,5 +22,5 @@ public class Config
     [JsonProperty(Required = Required.Always)]
     public string WorkingBranchSuffix { get; set; } = string.Empty;
 
-    public GitRepo[] Repos { get; set; } = System.Array.Empty<GitRepo>();
+    public GitRepo[] Repos { get; set; } = [];
 }

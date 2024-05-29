@@ -40,16 +40,17 @@ public class YamlUpdater
         string configJson = await File.ReadAllTextAsync(options.ConfigPath);
         FilePusher.Models.Config config = JsonConvert.DeserializeObject<FilePusher.Models.Config>(configJson);
 
-        UpdateYamlFile(options, config);
-
-        FilePusher.Options filePusherOptions = new()
+        if (config != null)
         {
-            GitAuthToken = options.GitAuthToken,
-            GitEmail = options.GitEmail,
-            GitUser = options.GitUser
-        };
+            UpdateYamlFile(options, config);
 
-        await FilePusher.FilePusher.PushFilesAsync(filePusherOptions, config);
+            FilePusher.Options filePusherOptions = new()
+            {
+                GitAuthToken = options.GitAuthToken, GitEmail = options.GitEmail, GitUser = options.GitUser
+            };
+
+            await FilePusher.FilePusher.PushFilesAsync(filePusherOptions, config);
+        }
     }
 
     private static void UpdateYamlFile(Options options, FilePusher.Models.Config config)

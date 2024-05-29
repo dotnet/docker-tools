@@ -96,26 +96,14 @@ public class YamlUpdater
         File.WriteAllText(config.SourcePath, stringBuilder.ToString());
     }
 
-    private class CustomEmitter : IEmitter
+    private class CustomEmitter(TextWriter textWriter) : IEmitter
     {
-        private readonly Emitter _inner;
-
-        public CustomEmitter(TextWriter textWriter)
-        {
-            _inner = new Emitter(textWriter);
-        }
+        private readonly Emitter _inner = new(textWriter);
 
         public void Emit(ParsingEvent @event)
         {
-            if (@event is DocumentEnd)
-            {
-                // Prevents the "..." document end characters from being added to the end of the file
-                _inner.Emit(new DocumentEnd(isImplicit: true));
-            }
-            else
-            {
-                _inner.Emit(@event);
-            }
+            // Prevents the "..." document end characters from being added to the end of the file
+            _inner.Emit(@event is DocumentEnd ? new DocumentEnd(isImplicit: true) : @event);
         }
     }
 }

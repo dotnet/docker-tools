@@ -17,221 +17,220 @@ using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
 
-namespace FilePusher
+namespace FilePusher;
+
+public class FilePusher
 {
-    public class FilePusher
+    public static Task Main(string[] args)
     {
-        public static Task Main(string[] args)
+        RootCommand command = [.. Options.GetCliOptions()];
+        command.Handler = CommandHandler.Create<Options>(ExecuteAsync);
+        return command.InvokeAsync(args);
+    }
+
+    private static async Task ExecuteAsync(Options options)
+    {
+        try
         {
-            RootCommand command = [.. Options.GetCliOptions()];
-            command.Handler = CommandHandler.Create<Options>(ExecuteAsync);
-            return command.InvokeAsync(args);
+            // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
+            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+
+            string configJson = File.ReadAllText(options.ConfigPath);
+            Config config = JsonConvert.DeserializeObject<Config>(configJson)
+                            ?? throw new ArgumentException($"Could not serialize config JSON file {options.ConfigPath}.");
+
+            await PushFilesAsync(options, config);
+        }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"Failed to push files:{Environment.NewLine}{e}");
+            Environment.Exit(1);
+        }
+    }
+
+    public static async Task PushFilesAsync(Options options, Config config)
+    {
+        foreach (GitRepo repo in GetFilteredRepos(config, options))
+        {
+            Console.WriteLine($"Processing {repo.Name}/{repo.Branch}");
+
+            await ExecuteGitOperationsWithRetryAsync(options, async client =>
+            {
+                await CreatePullRequestAsync(client, repo, config, options);
+            });
+        }
+    }
+
+    private async static Task AddUpdatedFile(
+        List<GitObject> updatedFiles,
+        GitHubClient client,
+        GitHubBranch branch,
+        string filePath,
+        string updatedContent)
+    {
+        if (updatedContent.Contains("\r\n"))
+        {
+            updatedContent = updatedContent.Replace("\r\n", "\n");
         }
 
-        private static async Task ExecuteAsync(Options options)
+        filePath = filePath.Replace('\\','/');
+        string currentContent = await client.GetGitHubFileContentsAsync(filePath, branch);
+
+        if (currentContent == updatedContent)
         {
-            try
+            Console.WriteLine($"File '{filePath}' has not changed.");
+        }
+        else
+        {
+            Console.WriteLine($"File '{filePath}' has changed.");
+            updatedFiles.Add(new GitObject
             {
-                // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
-                Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+                Path = filePath,
+                Type = GitObject.TypeBlob,
+                Mode = GitObject.ModeFile,
+                Content = updatedContent
+            });
+        }
+    }
 
-                string configJson = File.ReadAllText(options.ConfigPath);
-                Config config = JsonConvert.DeserializeObject<Config>(configJson)
-                    ?? throw new ArgumentException($"Could not serialize config JSON file {options.ConfigPath}.");
+    private async static Task<bool> BranchExists(GitHubClient client, GitHubProject project, string @ref)
+    {
+        try
+        {
+            await client.GetReferenceAsync(project, @ref);
+            return true;
+        }
+        catch (HttpFailureResponseException)
+        {
+            return false;
+        }
+    }
 
-                await PushFilesAsync(options, config);
-            }
-            catch (Exception e)
-            {
-                Console.Error.WriteLine($"Failed to push files:{Environment.NewLine}{e}");
-                Environment.Exit(1);
-            }
+    private static IEnumerable<GitRepo> GetFilteredRepos(Config config, Options options)
+    {
+        IEnumerable<GitRepo> activeRepos = config.Repos;
+        if (options.Filters?.Any() ?? false)
+        {
+            string pathsRegexPattern = GetFilterRegexPattern(options.Filters.ToArray());
+            activeRepos = activeRepos.Where(repo =>
+                Regex.IsMatch(repo.ToString(), pathsRegexPattern, RegexOptions.IgnoreCase));
         }
 
-        public static async Task PushFilesAsync(Options options, Config config)
+        if (!activeRepos.Any())
         {
-            foreach (GitRepo repo in GetFilteredRepos(config, options))
-            {
-                Console.WriteLine($"Processing {repo.Name}/{repo.Branch}");
+            Console.WriteLine("No repos found to update.");
+            Environment.Exit(1);
+        }
 
-                await ExecuteGitOperationsWithRetryAsync(options, async client =>
+        return activeRepos;
+    }
+
+    private static async Task CreatePullRequestAsync(GitHubClient client, GitRepo gitRepo, Config config, Options options)
+    {
+        GitHubProject project = new GitHubProject(gitRepo.Name, gitRepo.Owner);
+        GitHubProject forkedProject = new GitHubProject(gitRepo.Name, options.GitUser);
+        GitHubBranch baseBranch = new GitHubBranch(gitRepo.Branch, project);
+        GitHubBranch headBranch = new GitHubBranch(
+            $"{gitRepo.Name}-{gitRepo.Branch}{config.WorkingBranchSuffix}",
+            forkedProject);
+
+        IEnumerable<GitObject> changes = await GetUpdatedFiles(config.SourcePath, client, baseBranch);
+
+        if (!changes.Any())
+        {
+            return;
+        }
+
+        GitReference currentRef = await client.GetReferenceAsync(project, $"heads/{baseBranch.Name}");
+        string parentSha = currentRef.Object.Sha;
+        GitTree tree = await client.PostTreeAsync(forkedProject, parentSha, changes.ToArray());
+        GitCommit commit = await client.PostCommitAsync(forkedProject, config.CommitMessage, tree.Sha, new[] { parentSha });
+
+        string workingReference = $"heads/{headBranch.Name}";
+        if (await BranchExists(client, forkedProject, workingReference))
+        {
+            await client.PatchReferenceAsync(forkedProject, workingReference, commit.Sha, force: true);
+        }
+        else
+        {
+            await client.PostReferenceAsync(forkedProject, workingReference, commit.Sha);
+        }
+
+        GitHubPullRequest pullRequestToUpdate = await client.SearchPullRequestsAsync(
+            project,
+            headBranch.Name,
+            await client.GetMyAuthorIdAsync());
+
+        if (pullRequestToUpdate == null)
+        {
+            await client.PostGitHubPullRequestAsync(
+                $"[{gitRepo.Branch}] {config.PullRequestTitle}",
+                config.PullRequestDescription,
+                headBranch,
+                baseBranch,
+                maintainersCanModify: true);
+        }
+    }
+
+    public static async Task ExecuteGitOperationsWithRetryAsync(
+        Options options,
+        Func<GitHubClient, Task> execute,
+        int maxTries = 10,
+        int retryMillisecondsDelay = 5000)
+    {
+        GitHubAuth githubAuth = new GitHubAuth(options.GitAuthToken, options.GitUser, options.GitEmail);
+        using (GitHubClient client = new GitHubClient(githubAuth))
+        {
+            for (int i = 0; i < maxTries; i++)
+            {
+                try
                 {
-                    await CreatePullRequestAsync(client, repo, config, options);
-                });
-            }
-        }
+                    await execute(client);
 
-        private async static Task AddUpdatedFile(
-            List<GitObject> updatedFiles,
-            GitHubClient client,
-            GitHubBranch branch,
-            string filePath,
-            string updatedContent)
-        {
-            if (updatedContent.Contains("\r\n"))
-            {
-                updatedContent = updatedContent.Replace("\r\n", "\n");
-            }
-
-            filePath = filePath.Replace('\\','/');
-            string currentContent = await client.GetGitHubFileContentsAsync(filePath, branch);
-
-            if (currentContent == updatedContent)
-            {
-                Console.WriteLine($"File '{filePath}' has not changed.");
-            }
-            else
-            {
-                Console.WriteLine($"File '{filePath}' has changed.");
-                updatedFiles.Add(new GitObject
+                    break;
+                }
+                catch (HttpRequestException ex) when (i < (maxTries - 1))
                 {
-                    Path = filePath,
-                    Type = GitObject.TypeBlob,
-                    Mode = GitObject.ModeFile,
-                    Content = updatedContent
-                });
-            }
-        }
-
-        private async static Task<bool> BranchExists(GitHubClient client, GitHubProject project, string @ref)
-        {
-            try
-            {
-                await client.GetReferenceAsync(project, @ref);
-                return true;
-            }
-            catch (HttpFailureResponseException)
-            {
-                return false;
-            }
-        }
-
-        private static IEnumerable<GitRepo> GetFilteredRepos(Config config, Options options)
-        {
-            IEnumerable<GitRepo> activeRepos = config.Repos;
-            if (options.Filters?.Any() ?? false)
-            {
-                string pathsRegexPattern = GetFilterRegexPattern(options.Filters.ToArray());
-                activeRepos = activeRepos.Where(repo =>
-                    Regex.IsMatch(repo.ToString(), pathsRegexPattern, RegexOptions.IgnoreCase));
-            }
-
-            if (!activeRepos.Any())
-            {
-                Console.WriteLine("No repos found to update.");
-                Environment.Exit(1);
-            }
-
-            return activeRepos;
-        }
-
-        private static async Task CreatePullRequestAsync(GitHubClient client, GitRepo gitRepo, Config config, Options options)
-        {
-            GitHubProject project = new GitHubProject(gitRepo.Name, gitRepo.Owner);
-            GitHubProject forkedProject = new GitHubProject(gitRepo.Name, options.GitUser);
-            GitHubBranch baseBranch = new GitHubBranch(gitRepo.Branch, project);
-            GitHubBranch headBranch = new GitHubBranch(
-                $"{gitRepo.Name}-{gitRepo.Branch}{config.WorkingBranchSuffix}",
-                forkedProject);
-
-            IEnumerable<GitObject> changes = await GetUpdatedFiles(config.SourcePath, client, baseBranch);
-
-            if (!changes.Any())
-            {
-                return;
-            }
-
-            GitReference currentRef = await client.GetReferenceAsync(project, $"heads/{baseBranch.Name}");
-            string parentSha = currentRef.Object.Sha;
-            GitTree tree = await client.PostTreeAsync(forkedProject, parentSha, changes.ToArray());
-            GitCommit commit = await client.PostCommitAsync(forkedProject, config.CommitMessage, tree.Sha, new[] { parentSha });
-
-            string workingReference = $"heads/{headBranch.Name}";
-            if (await BranchExists(client, forkedProject, workingReference))
-            {
-                await client.PatchReferenceAsync(forkedProject, workingReference, commit.Sha, force: true);
-            }
-            else
-            {
-                await client.PostReferenceAsync(forkedProject, workingReference, commit.Sha);
-            }
-
-            GitHubPullRequest pullRequestToUpdate = await client.SearchPullRequestsAsync(
-                project,
-                headBranch.Name,
-                await client.GetMyAuthorIdAsync());
-
-            if (pullRequestToUpdate == null)
-            {
-                await client.PostGitHubPullRequestAsync(
-                    $"[{gitRepo.Branch}] {config.PullRequestTitle}",
-                    config.PullRequestDescription,
-                    headBranch,
-                    baseBranch,
-                    maintainersCanModify: true);
-            }
-        }
-
-        public static async Task ExecuteGitOperationsWithRetryAsync(
-            Options options,
-            Func<GitHubClient, Task> execute,
-            int maxTries = 10,
-            int retryMillisecondsDelay = 5000)
-        {
-            GitHubAuth githubAuth = new GitHubAuth(options.GitAuthToken, options.GitUser, options.GitEmail);
-            using (GitHubClient client = new GitHubClient(githubAuth))
-            {
-                for (int i = 0; i < maxTries; i++)
-                {
-                    try
-                    {
-                        await execute(client);
-
-                        break;
-                    }
-                    catch (HttpRequestException ex) when (i < (maxTries - 1))
-                    {
-                        Console.WriteLine($"Encountered exception interacting with GitHub: {ex.Message}");
-                        Console.WriteLine($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");
-                        await Task.Delay(retryMillisecondsDelay);
-                    }
+                    Console.WriteLine($"Encountered exception interacting with GitHub: {ex.Message}");
+                    Console.WriteLine($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");
+                    await Task.Delay(retryMillisecondsDelay);
                 }
             }
         }
+    }
 
-        private static IEnumerable<string> GetFiles(string path)
+    private static IEnumerable<string> GetFiles(string path)
+    {
+        if (File.Exists(path))
         {
-            if (File.Exists(path))
-            {
-                return new string[] { path };
-            }
-            else
-            {
-                return Directory.GetDirectories(path)
-                    .SelectMany(dir => GetFiles(dir))
-                    .Concat(Directory.GetFiles(path));
-            }
+            return new string[] { path };
+        }
+        else
+        {
+            return Directory.GetDirectories(path)
+                .SelectMany(dir => GetFiles(dir))
+                .Concat(Directory.GetFiles(path));
+        }
+    }
+
+
+    private static string GetFilterRegexPattern(params string[] patterns)
+    {
+        string processedPatterns = patterns
+            .Select(pattern => Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", "."))
+            .Aggregate((working, next) => $"{working}|{next}");
+        return $"^({processedPatterns})$";
+    }
+
+    private async static Task<GitObject[]> GetUpdatedFiles(string sourcePath, GitHubClient client, GitHubBranch branch)
+    {
+        List<GitObject> updatedFiles = new List<GitObject>();
+
+        foreach (string file in GetFiles(sourcePath))
+        {
+            await AddUpdatedFile(updatedFiles, client, branch, file, File.ReadAllText(file));
         }
 
-
-        private static string GetFilterRegexPattern(params string[] patterns)
-        {
-            string processedPatterns = patterns
-                .Select(pattern => Regex.Escape(pattern).Replace(@"\*", ".*").Replace(@"\?", "."))
-                .Aggregate((working, next) => $"{working}|{next}");
-            return $"^({processedPatterns})$";
-        }
-
-        private async static Task<GitObject[]> GetUpdatedFiles(string sourcePath, GitHubClient client, GitHubBranch branch)
-        {
-            List<GitObject> updatedFiles = new List<GitObject>();
-
-            foreach (string file in GetFiles(sourcePath))
-            {
-                await AddUpdatedFile(updatedFiles, client, branch, file, File.ReadAllText(file));
-            }
-
-            return updatedFiles.ToArray();
-        }
+        return updatedFiles.ToArray();
     }
 }

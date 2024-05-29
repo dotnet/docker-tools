@@ -4,24 +4,23 @@
 
 using Newtonsoft.Json;
 
-namespace FilePusher.Models
+namespace FilePusher.Models;
+
+public class Config
 {
-    public class Config
-    {
-        [JsonProperty(Required = Required.Always)]
-        public string CommitMessage { get; set; } = string.Empty;
+    [JsonProperty(Required = Required.Always)]
+    public string CommitMessage { get; set; } = string.Empty;
 
-        public string? PullRequestDescription { get; set; }
+    public string? PullRequestDescription { get; set; }
 
-        [JsonProperty(Required = Required.Always)]
-        public string PullRequestTitle { get; set; } = string.Empty;
+    [JsonProperty(Required = Required.Always)]
+    public string PullRequestTitle { get; set; } = string.Empty;
 
-        [JsonProperty(Required = Required.Always)]
-        public string SourcePath { get; set; } = string.Empty;
+    [JsonProperty(Required = Required.Always)]
+    public string SourcePath { get; set; } = string.Empty;
 
-        [JsonProperty(Required = Required.Always)]
-        public string WorkingBranchSuffix { get; set; } = string.Empty;
+    [JsonProperty(Required = Required.Always)]
+    public string WorkingBranchSuffix { get; set; } = string.Empty;
 
-        public GitRepo[] Repos { get; set; } = System.Array.Empty<GitRepo>();
-    }
+    public GitRepo[] Repos { get; set; } = System.Array.Empty<GitRepo>();
 }

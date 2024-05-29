@@ -1,7 +1,6 @@
 // Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
@@ -19,7 +18,7 @@ public class Options
     public static IEnumerable<Symbol> GetCliOptions() =>
         new Symbol[]
         {
-            new Option<string[]>("--filter", () => Array.Empty<string>(),
+            new Option<string[]>("--filter", () => [],
                 "Filter to apply to repositories of the config json - wildcard chars * and ? supported")
             {
                 Name = nameof(Filters),

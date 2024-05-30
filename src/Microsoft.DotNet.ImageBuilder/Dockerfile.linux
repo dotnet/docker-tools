@@ -5,6 +5,15 @@
 # build Microsoft.DotNet.ImageBuilder
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build-env
 ARG TARGETARCH
+
+# download oras package tarball
+WORKDIR /
+RUN oras_version=1.1.0 \
+    && wget https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz -O oras_linux.tar.gz \
+    && mkdir -p oras-install/ \
+    && tar -zxf oras_linux.tar.gz -C oras-install/ \
+    && rm -rf oras_linux.tar.gz
+
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
@@ -15,14 +24,6 @@ RUN dotnet restore -r linux-musl-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder
 # copy everything else and publish
 COPY . ./
 RUN dotnet publish -r linux-musl-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true --no-restore -o out
-
-# download oras package tarball
-WORKDIR /
-RUN oras_version=1.1.0 \
-    && wget https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz -O oras_linux.tar.gz \
-    && mkdir -p oras-install/ \
-    && tar -zxf oras_linux.tar.gz -C oras-install/ \
-    && rm -rf oras_linux.tar.gz
 
 
 # build runtime image

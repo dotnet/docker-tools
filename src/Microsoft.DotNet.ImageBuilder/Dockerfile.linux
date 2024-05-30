@@ -34,11 +34,11 @@ RUN apk add --no-cache \
         docker \
         git
 
+# install oras tool
+COPY --from=build-env ["/oras-install/oras", "/usr/local/bin"]
+
 # install image-builder
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
-
-# install oras tool
-COPY --from=build-env ["/oras-install/oras", "/usr/local/bin"]
 
 ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

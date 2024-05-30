@@ -5,24 +5,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Azure.Core;
-using Azure.Identity;
 using Azure.ResourceManager;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class AuthHelper
     {
-        private const string DefaultScope = "https://management.azure.com/.default";
+        public const string DefaultAzureManagementScope = "https://management.azure.com/.default";
+        public const string ContainerRegistryScope = "https://containerregistry.azure.net/.default";
+        public const string McrStatusScope = "api://c00053c3-a979-4ee6-b94e-941881e62d8e/.default";
 
-        public static async Task<(string token, Guid tenantId)> GetDefaultAccessTokenAsync(ILoggerService loggerService, string resource = DefaultScope)
-        {
-            DefaultAzureCredential credential  = new();
-            AccessToken token = await credential.GetTokenAsync(new TokenRequestContext([ resource ]));
-            Guid tenantId = GetTenantId(loggerService, credential);
-            return (token.Token, tenantId);
-        }
+        public static readonly string[] AllScopes =
+            [
+                DefaultAzureManagementScope,
+                ContainerRegistryScope,
+                McrStatusScope
+            ];
 
         public static Guid GetTenantId(ILoggerService loggerService, TokenCredential credential)
         {

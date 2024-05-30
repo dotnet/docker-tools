@@ -33,6 +33,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         {
             KustoConnectionStringBuilder connectionBuilder =
                 new KustoConnectionStringBuilder($"https://{cluster}.kusto.windows.net")
+                    // We can't use AzureTokenCredentialProvider here to get the credential because that would require
+                    // knowing the scope at startup which is based on the cluster name. It's fine to not use a pre-cached
+                    // token anyway since kusto ingestion happens right away in the command invocation.
                     .WithAadAzureTokenCredentialsAuthentication(new DefaultAzureCredential());
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))

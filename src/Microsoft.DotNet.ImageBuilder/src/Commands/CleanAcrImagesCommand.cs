@@ -10,7 +10,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
-using Azure.Identity;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -21,14 +20,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IContainerRegistryClientFactory _acrClientFactory;
         private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
         private readonly ILoggerService _loggerService;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private Regex _repoNameFilterRegex;
 
         [ImportingConstructor]
-        public CleanAcrImagesCommand(IContainerRegistryClientFactory acrClientFactory, IContainerRegistryContentClientFactory acrContentClientFactory, ILoggerService loggerService)
+        public CleanAcrImagesCommand(
+            IContainerRegistryClientFactory acrClientFactory,
+            IContainerRegistryContentClientFactory acrContentClientFactory,
+            ILoggerService loggerService,
+            IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
         }
 
         protected override string Description => "Removes unnecessary images from an ACR";
@@ -40,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
 
             _loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
-            IContainerRegistryClient acrClient = _acrClientFactory.Create(Options.RegistryName, new DefaultAzureCredential());
+            IContainerRegistryClient acrClient = _acrClientFactory.Create(Options.RegistryName, _tokenCredentialProvider.GetCredential());
 
             _loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
@@ -55,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(repoName => acrClient.GetRepository(repoName))
                 .Select(repo =>
                 {
-                    IContainerRegistryContentClient acrContentClient = _acrContentClientFactory.Create(Options.RegistryName, repo.Name, new DefaultAzureCredential());
+                    IContainerRegistryContentClient acrContentClient = _acrContentClientFactory.Create(Options.RegistryName, repo.Name, _tokenCredentialProvider.GetCredential());
                     return ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
                 })
                 .ToArrayAsync();

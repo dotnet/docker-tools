@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel.Composition;
-using Azure.Identity;
-using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
@@ -12,11 +10,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 [method: ImportingConstructor]
 public class RegistryContentClientFactory(
     IHttpClientProvider httpClientProvider,
-    IContainerRegistryContentClientFactory containerRegistryContentClientFactory)
+    IContainerRegistryContentClientFactory containerRegistryContentClientFactory,
+    IAzureTokenCredentialProvider tokenCredentialProvider)
     : IRegistryContentClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IContainerRegistryContentClientFactory _containerRegistryContentClientFactory = containerRegistryContentClientFactory;
+    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
 
     public IRegistryContentClient Create(
         string registry,
@@ -37,7 +37,7 @@ public class RegistryContentClientFactory(
         if (apiRegistry == ownedAcr)
         {
             // If the target registry is the owned ACR, connect to it with the Azure library API. This handles all the Azure auth.
-            return _containerRegistryContentClientFactory.Create(ownedAcr, repo, new DefaultAzureCredential());
+            return _containerRegistryContentClientFactory.Create(ownedAcr, repo, _tokenCredentialProvider.GetCredential(AuthHelper.ContainerRegistryScope));
         }
 
         // Look up the credentials, if any, for the registry where the image is located

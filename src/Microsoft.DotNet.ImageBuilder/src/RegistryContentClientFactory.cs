@@ -37,7 +37,7 @@ public class RegistryContentClientFactory(
         if (apiRegistry == ownedAcr)
         {
             // If the target registry is the owned ACR, connect to it with the Azure library API. This handles all the Azure auth.
-            return _containerRegistryContentClientFactory.Create(ownedAcr, repo, _tokenCredentialProvider.GetCredential(AuthHelper.ContainerRegistryScope));
+            return _containerRegistryContentClientFactory.Create(ownedAcr, repo, _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope));
         }
 
         // Look up the credentials, if any, for the registry where the image is located

@@ -8,5 +8,5 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 public interface IAzureTokenCredentialProvider
 {
-    TokenCredential GetCredential(string scope = AuthHelper.DefaultAzureManagementScope);
+    TokenCredential GetCredential(string scope = AzureScopes.DefaultAzureManagementScope);
 }

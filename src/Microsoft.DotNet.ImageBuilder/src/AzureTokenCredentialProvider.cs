@@ -25,7 +25,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 
         // Pre-cache the credentials for all the scopes we need. This is done at startup to ensure we have a valid OIDC token from the pipeline before it expires.
         // Otherwise, long-running commands that don't attempt to request an Azure access token until much later run the risk of failing due to the expired OIDC token.
-        _credentialsByScope = AuthHelper.AllScopes
+        _credentialsByScope = AzureScopes.AllScopes
             .ToDictionary<string, string, TokenCredential?>(scope => scope, scope =>
             {
                 TokenCredential? credential = null;
@@ -56,7 +56,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
             });
     }
 
-    public TokenCredential GetCredential(string scope = AuthHelper.DefaultAzureManagementScope)
+    public TokenCredential GetCredential(string scope = AzureScopes.DefaultAzureManagementScope)
     {
         if (!_credentialsByScope.TryGetValue(scope, out TokenCredential? credential) || credential is null)
         {

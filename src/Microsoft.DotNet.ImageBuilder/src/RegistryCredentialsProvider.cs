@@ -51,7 +51,7 @@ public class RegistryCredentialsProvider(ILoggerService loggerService, IHttpClie
     {
         TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential();
         Guid tenantId = AuthHelper.GetTenantId(logger, tokenCredential);
-        string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AuthHelper.DefaultAzureManagementScope]), CancellationToken.None)).Token;
+        string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AzureScopes.DefaultAzureManagementScope]), CancellationToken.None)).Token;
         string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), apiRegistry, tenantId, token);
         return new RegistryCredentials(Guid.Empty.ToString(), refreshToken);
     }

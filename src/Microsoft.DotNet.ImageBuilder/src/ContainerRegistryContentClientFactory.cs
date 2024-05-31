@@ -17,5 +17,5 @@ internal class ContainerRegistryContentClientFactory(IAzureTokenCredentialProvid
             new ContainerRegistryContentClient(
                 DockerHelper.GetAcrUri(acrName),
                 repositoryName,
-                tokenCredentialProvider.GetCredential(AuthHelper.ContainerRegistryScope)));
+                tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope)));
 }

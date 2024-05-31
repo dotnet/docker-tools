@@ -1,6 +1,7 @@
 parameters:
   dryRunArg: ""
   condition: true
+  waitForIngestionEnabled: false
 
 steps:
 - script: >
@@ -27,3 +28,4 @@ steps:
     commitDigest: $(PublishReadmes.readmeCommitDigest)
     condition: and(${{ parameters.condition }}, ne(variables['PublishReadmes.readmeCommitDigest'], ''))
     dryRunArg: ${{ parameters.dryRunArg }}
+    waitForIngestionEnabled: ${{ parameters.waitForIngestionEnabled }}

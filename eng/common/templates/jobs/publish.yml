@@ -3,6 +3,8 @@ parameters:
   internalProjectName: null
   customInitSteps: []
   customPublishVariables: []
+  waitForIngestionEnabled: false
+  ingestKustoImageInfo: false
 
 jobs:
 - job: Publish
@@ -109,10 +111,12 @@ jobs:
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)
       condition: succeeded()
+      waitForIngestionEnabled: ${{ parameters.waitForIngestionEnabled }}
   - template: /eng/common/templates/steps/publish-readmes.yml@self
     parameters:
       dryRunArg: $(dryRunArg)
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
+      waitForIngestionEnabled: ${{ parameters.waitForIngestionEnabled }}
   - script: >
       $(runImageBuilderCmd) publishImageInfo
       '$(imageInfoContainerDir)/image-info.json'
@@ -127,24 +131,24 @@ jobs:
       $(imageBuilder.commonCmdArgs)
     condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
     displayName: Publish Image Info
-  - ${{ if eq(variables['ingestKustoImageInfo'], 'true') }}:
-    - template: /eng/common/templates/steps/run-imagebuilder.yml@self
-      parameters:
-        displayName: Ingest Kusto Image Info
+  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+    parameters:
+      displayName: Ingest Kusto Image Info
+      internalProjectName: ${{ parameters.internalProjectName }}
+      condition: and(succeeded(), eq('${{ parameters.ingestKustoImageInfo }}', 'true'))
+      ${{ if eq(parameters.ingestKustoImageInfo, 'true') }}:
         serviceConnection: $(kusto.serviceConnectionName)
-        internalProjectName: ${{ parameters.internalProjectName }}
-        condition: succeeded()
-        args: >
-          ingestKustoImageInfo
-          '$(imageInfoContainerDir)/image-info.json'
-          '$(kusto.cluster)'
-          '$(kusto.database)'
-          '$(kusto.imageTable)'
-          '$(kusto.layerTable)'
-          --os-type '*'
-          --architecture '*'
-          $(dryRunArg)
-          $(imageBuilder.commonCmdArgs)
+      args: >
+        ingestKustoImageInfo
+        '$(imageInfoContainerDir)/image-info.json'
+        '$(kusto.cluster)'
+        '$(kusto.database)'
+        '$(kusto.imageTable)'
+        '$(kusto.layerTable)'
+        --os-type '*'
+        --architecture '*'
+        $(dryRunArg)
+        $(imageBuilder.commonCmdArgs)
   - script: >
       $(runImageBuilderCmd) postPublishNotification
       '$(publishNotificationRepoName)'

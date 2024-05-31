@@ -292,3 +292,5 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       customPublishVariables: ${{ parameters.customPublishVariables }}
       customInitSteps: ${{ parameters.customPublishInitSteps }}
+      ingestKustoImageInfo: ${{ variables.ingestKustoImageInfo }}
+      waitForIngestionEnabled: ${{ variables.waitForIngestionEnabled }}

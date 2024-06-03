@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Core;
-using Azure.Identity;
 using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerRegistry;
 using Azure.ResourceManager.ContainerRegistry.Models;
@@ -34,13 +33,13 @@ public interface ICopyImageService
 public class CopyImageService : ICopyImageService
 {
     private readonly ILoggerService _loggerService;
-
-    private readonly ArmClient _armClient = new(new DefaultAzureCredential());
+    private readonly Lazy<ArmClient> _armClient;
 
     [ImportingConstructor]
-    public CopyImageService(ILoggerService loggerService)
+    public CopyImageService(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
     {
         _loggerService = loggerService;
+        _armClient = new(() => new ArmClient(tokenCredentialProvider.GetCredential()));
     }
 
     public static string GetBaseAcrName(string registry) => registry.TrimEnd(DockerHelper.AcrDomain);
@@ -58,7 +57,7 @@ public class CopyImageService : ICopyImageService
     {
         destAcrName = GetBaseAcrName(destAcrName);
 
-        ContainerRegistryResource registryResource = _armClient.GetContainerRegistryResource(
+        ContainerRegistryResource registryResource = _armClient.Value.GetContainerRegistryResource(
             ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcrName));
 
         ContainerRegistryImportSource importSrc = new(srcTagName)

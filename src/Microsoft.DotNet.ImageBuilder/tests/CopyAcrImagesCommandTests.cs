@@ -38,6 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+                command.Options.SourceRegistry = "my.custom.registry";
                 command.Options.ImageInfoPath = "image-info.json";
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
@@ -104,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
                 }
@@ -131,6 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+                command.Options.SourceRegistry = "my.custom.registry";
                 command.Options.ImageInfoPath = "image-info.json";
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
@@ -209,7 +211,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
                 }
@@ -236,6 +238,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = "my.custom.registry";
             command.Options.ImageInfoPath = "image-info.json";
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext);
@@ -326,7 +329,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             expectedTag,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
             }
@@ -352,6 +355,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = "my.custom.registry";
             command.Options.ImageInfoPath = "image-info.json";
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -443,7 +447,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             manifest.Registry,
                             It.IsAny<string>(),
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, manifest.Registry),
+                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
                             null,
                             false));
             }

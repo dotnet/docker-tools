@@ -14,6 +14,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public string SourceRepoPrefix { get; set; } = string.Empty;
 
+        public string SourceRegistry { get; set; } = string.Empty;
+
         public string? ImageInfoPath { get; set; }
     }
 
@@ -35,6 +37,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         new Argument<string>(nameof(CopyAcrImagesOptions.SourceRepoPrefix),
                             "Prefix of the source ACR repository to copy images from")
+                    })
+                .Concat(
+                    new Argument[]
+                    {
+                        new Argument<string>(nameof(CopyAcrImagesOptions.SourceRegistry),
+                            "The source ACR to copy images from")
                     });
     }
 }

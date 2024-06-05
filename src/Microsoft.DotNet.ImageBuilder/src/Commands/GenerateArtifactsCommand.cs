@@ -179,13 +179,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) },
                 { "INDENT", state.Indent }
-            };          
+            };
 
-            if (!string.IsNullOrEmpty(state.Indent))
-            {
-                // Indents all the lines except the first one
-                template = template.Replace("\n", $"\n{state.Indent}");
-            }
+            state.Indent ??= "";
+            // Indents all the lines except the first one
+            template = template.Replace("\n", $"\n{state.Indent}");
 
             if (Options.IsVerbose)
             {
@@ -204,7 +202,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             catch (ParseException e)
             {
-                Logger.WriteError($"Error: {e}{Environment.NewLine}Invalid Syntax:{Environment.NewLine}{template.Substring(e.LocationStart)}");
+                // Cottle's ParseException line number property is stubbed out and always returns 0.
+                // Furthermore, ParseException's "LocationStart" is actually the end of the error.
+                // Calculate text position ourselves given the template and the character index of the error,
+                // compensating for the indent length and error properties.
+                int indentLength = state.Indent.Length;
+                (int startLine, int startColumn) = GetTextLocationFromIndex(template, e.LocationStart - e.LocationLength, indentLength);
+                (int endLine, int endColumn) = GetTextLocationFromIndex(template, e.LocationStart, indentLength);
+
+                Logger.WriteError($"""
+                    Template parsing error in file {templatePath}:{startLine},{startColumn},{endLine},{endColumn}
+                    Message: {e.Message}
+                    {e}
+                """);
+
                 _invalidTemplates.Add(templatePath);
             }
 
@@ -229,6 +240,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 _environmentService.Exit(1);
             }
+        }
+
+        private static (int Line, int Column) GetTextLocationFromIndex(string template, int index, int indentLength)
+        {
+            int line = 1 + template.Take(index).Count(c => c == '\n');
+            int column = index - template.LastIndexOf('\n', index - 1) - indentLength;
+
+            return (line, column);
         }
     }
 }

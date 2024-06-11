@@ -43,20 +43,10 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     foreach (string comment in comments)
                     {
-                        try
-                        {
-                            string _ = await issueManager.CreateNewIssueCommentAsync(repoUrl, issueId, comment);
-                        }
-                        catch (OverflowException ex)
-                        {
-                            _loggerService.WriteError($"""
-                                Comment post threw {ex.GetType().FullName}, most likely due to https://github.com/dotnet/docker-tools/issues/1322.
-                                This message should be removed once the issue is fixed.
-                                Message: {ex.Message}
-                                """);
-                        }
+                        string _ = await issueManager.CreateNewIssueCommentAsync(repoUrl, issueId, comment);
                     }
                 }
+
             }
 
             _loggerService.WriteSubheading("POSTED NOTIFICATION:");

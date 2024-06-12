@@ -57,9 +57,6 @@ public class CopyImageService : ICopyImageService
     {
         destAcrName = GetBaseAcrName(destAcrName);
 
-        ContainerRegistryResource registryResource = _armClient.Value.GetContainerRegistryResource(
-            ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcrName));
-
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
             ResourceId = srcResourceId,
@@ -79,6 +76,9 @@ public class CopyImageService : ICopyImageService
 
         if (!isDryRun)
         {
+            ContainerRegistryResource registryResource = _armClient.Value.GetContainerRegistryResource(
+                ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcrName));
+
             try
             {
                 await RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)

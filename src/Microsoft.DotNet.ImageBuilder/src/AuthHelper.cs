@@ -5,25 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using Azure.Core;
-using Azure.Identity;
 using Azure.ResourceManager;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class AuthHelper
     {
-        private const string DefaultScope = "https://management.azure.com/.default";
-
-        public static async Task<(string token, Guid tenantId)> GetDefaultAccessTokenAsync(ILoggerService loggerService, string resource = DefaultScope)
-        {
-            DefaultAzureCredential credential  = new();
-            AccessToken token = await credential.GetTokenAsync(new TokenRequestContext([ resource ]));
-            Guid tenantId = GetTenantId(loggerService, credential);
-            return (token.Token, tenantId);
-        }
-
         public static Guid GetTenantId(ILoggerService loggerService, TokenCredential credential)
         {
             ArmClient armClient = new(credential);

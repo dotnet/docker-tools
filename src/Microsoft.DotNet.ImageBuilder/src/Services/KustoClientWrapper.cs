@@ -6,7 +6,6 @@ using System;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
-using Azure.Identity;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Ingest;
@@ -21,19 +20,22 @@ namespace Microsoft.DotNet.ImageBuilder.Services
     internal class KustoClientWrapper : IKustoClient
     {
         private readonly ILoggerService _loggerService;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
         [ImportingConstructor]
-        public KustoClientWrapper(ILoggerService loggerService)
+        public KustoClientWrapper(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _loggerService = loggerService;
+            _tokenCredentialProvider = tokenCredentialProvider;
         }
 
         public async Task IngestFromCsvAsync(
             string csv, string cluster, string database, string table, bool isDryRun)
         {
+            string clusterResource = $"https://{cluster}.kusto.windows.net";
             KustoConnectionStringBuilder connectionBuilder =
-                new KustoConnectionStringBuilder($"https://{cluster}.kusto.windows.net")
-                    .WithAadAzureTokenCredentialsAuthentication(new DefaultAzureCredential());
+                new KustoConnectionStringBuilder(clusterResource)
+                    .WithAadAzureTokenCredentialsAuthentication(_tokenCredentialProvider.GetCredential(clusterResource + AzureScopes.ScopeSuffix));
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {

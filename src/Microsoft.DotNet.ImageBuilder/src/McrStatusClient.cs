@@ -6,7 +6,6 @@ using System;
 using System.ComponentModel.Composition;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Azure.Identity;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
@@ -17,16 +16,16 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IMcrStatusClient))]
     public class McrStatusClient : IMcrStatusClient
     {
-        private const string McrStatusResource = "api://c00053c3-a979-4ee6-b94e-941881e62d8e/.default";
         // https://msazure.visualstudio.com/MicrosoftContainerRegistry/_git/docs?path=/status/status_v2.yaml
         private const string BaseUri = "https://status.mscr.io/api/onboardingstatus/v2";
         private readonly HttpClient _httpClient;
         private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
         private readonly ILoggerService _loggerService;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
         [ImportingConstructor]
-        public McrStatusClient(IHttpClientProvider httpClientProvider, ILoggerService loggerService)
+        public McrStatusClient(IHttpClientProvider httpClientProvider, ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             ArgumentNullException.ThrowIfNull(loggerService);
             ArgumentNullException.ThrowIfNull(httpClientProvider);
@@ -38,6 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), loggerService)
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");
             _loggerService = loggerService;
+            _tokenCredentialProvider = tokenCredentialProvider;
         }
 
         public Task<ImageResult> GetImageResultAsync(string imageDigest)
@@ -72,10 +72,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private Task<string> GetAccessTokenAsync() =>
             _accessToken.GetValueAsync(async () =>
-                (await AuthHelper.GetDefaultAccessTokenAsync(_loggerService, McrStatusResource)).token);
+                (await _tokenCredentialProvider.GetTokenAsync(AzureScopes.McrStatusScope)).Token);
 
         private Task RefreshAccessTokenAsync() =>
             _accessToken.ResetValueAsync(async () =>
-                (await AuthHelper.GetDefaultAccessTokenAsync(_loggerService, McrStatusResource)).token);
+                (await _tokenCredentialProvider.GetTokenAsync(AzureScopes.McrStatusScope)).Token);
     }
 }

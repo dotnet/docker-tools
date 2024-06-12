@@ -46,7 +46,6 @@ namespace Microsoft.DotNet.ImageBuilder
                         string _ = await issueManager.CreateNewIssueCommentAsync(repoUrl, issueId, comment);
                     }
                 }
-
             }
 
             _loggerService.WriteSubheading("POSTED NOTIFICATION:");

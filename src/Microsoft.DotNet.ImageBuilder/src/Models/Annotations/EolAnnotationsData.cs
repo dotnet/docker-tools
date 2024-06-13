@@ -21,11 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
             EolDigests = eolDigests;
         }
 
-        public void AddDigest(string digest)
-        {
-            EolDigests?.Add(new EolDigestData { Digest = digest });
-        }
-
         [JsonProperty(Required = Required.Always)]
         public DateOnly EolDate { get; set; }
 

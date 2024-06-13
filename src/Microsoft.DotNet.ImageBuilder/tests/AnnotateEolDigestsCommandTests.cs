@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             loggerServiceMock.Verify(o => o.WriteMessage("Digest 'digest2' is already annotated for EOL."));
         }
 
-        public AnnotateEolDigestsCommand InitializeCommand(
+        private AnnotateEolDigestsCommand InitializeCommand(
             TempFolderContext tempFolderContext,
             out Mock<ILoggerService> loggerServiceMock,
             bool noCheck = true,

@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class AnnotateEolDigestsCommandTests
     {
         private readonly ITestOutputHelper _outputHelper;
+        private readonly DateOnly _globalDate = new DateOnly(2024, 6, 10);
+        private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
 
         public AnnotateEolDigestsCommandTests(ITestOutputHelper outputHelper)
         {
@@ -43,8 +45,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            loggerServiceMock.Verify(o => o.WriteMessage("Annotating EOL for digest 'digest1', date '6/10/2024'"));
-            loggerServiceMock.Verify(o => o.WriteMessage("Annotating EOL for digest 'digest2', date '1/1/2022'"));
+            loggerServiceMock.Verify(o => o.WriteMessage($"Annotating EOL for digest 'digest1', date '{_globalDate}'"));
+            loggerServiceMock.Verify(o => o.WriteMessage($"Annotating EOL for digest 'digest2', date '{_specificDigestDate}'"));
         }
 
         [Fact]
@@ -114,11 +116,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             EolAnnotationsData eolAnnotations = new()
             {
-                EolDate = new DateOnly(2024, 6, 10),
+                EolDate = _globalDate,
                 EolDigests = new List<EolDigestData>
                 {
                     new EolDigestData { Digest = "digest1" },
-                    new EolDigestData { Digest = "digest2", EolDate = new DateOnly(2022, 1, 1) }
+                    new EolDigestData { Digest = "digest2", EolDate = _specificDigestDate }
                 }
             };
 

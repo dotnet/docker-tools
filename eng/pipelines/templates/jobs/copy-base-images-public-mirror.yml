@@ -1,0 +1,31 @@
+parameters:
+- name: name
+  type: string
+  default: null
+- name: subscriptionsPath
+  type: string
+  default: null
+- name: customInitSteps
+  type: stepList
+  default: []
+- name: dryRun
+  type: boolean
+  default: false
+
+jobs:
+- template: /eng/common/templates/jobs/copy-base-images.yml@self
+  parameters:
+    name: MirrorBaseImages_${{ parameters.name }}
+    pool:
+      name: NetCore1ESPool-Internal
+      image: 1es-ubuntu-2204
+      os: linux
+    acr:
+      server: $(public-mirror.server)
+      serviceConnection: $(public-mirror.serviceConnectionName)
+      subscription: $(public-mirror.subscription)
+      resourceGroup: $(public-mirror.resourceGroup)
+    repoPrefix: $(mirrorRepoPrefix)
+    customInitSteps: ${{ parameters.customInitSteps }}
+    additionalOptions: '--subscriptions-path ${{ parameters.subscriptionsPath }}'
+    forceDryRun: ${{ parameters.dryRun }}

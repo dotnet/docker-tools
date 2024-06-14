@@ -1,0 +1,39 @@
+trigger: none
+pr: none
+
+schedules:
+- cron: "0 0,6,12,18 * * *"
+  displayName: Daily build
+  branches:
+    include:
+    - main
+  always: true
+
+parameters:
+- name: dryRun
+  displayName: Dry Run
+  type: boolean
+  default: false
+
+variables:
+- template: /eng/common/templates/variables/dotnet/common.yml@self
+- name: mirrorRepoPrefix
+  value: ""
+
+extends:
+  template: /eng/common/templates/1es-unofficial.yml@self
+  parameters:
+    stages:
+    - stage: MirrorBaseImages
+      displayName: Mirror Base Images
+      jobs:
+      - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
+        parameters:
+          name: "Public"
+          subscriptionsPath: eng/check-base-image-subscriptions.json
+          dryRun: ${{ parameters.dryRun }}
+      - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
+        parameters:
+          name: "Public_Buildtools"
+          subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
+          dryRun: ${{ parameters.dryRun }}

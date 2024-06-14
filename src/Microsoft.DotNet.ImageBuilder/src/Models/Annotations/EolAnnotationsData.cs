@@ -15,14 +15,13 @@ namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
         {
         }
 
-        public EolAnnotationsData(DateOnly eolDate, List<EolDigestData> eolDigests)
+        public EolAnnotationsData(List<EolDigestData> eolDigests, DateOnly? eolDate = null)
         {
             EolDate = eolDate;
             EolDigests = eolDigests;
         }
 
-        [JsonProperty(Required = Required.Always)]
-        public DateOnly EolDate { get; set; }
+        public DateOnly? EolDate { get; set; }
 
         public List<EolDigestData>? EolDigests { get; set; }
     }

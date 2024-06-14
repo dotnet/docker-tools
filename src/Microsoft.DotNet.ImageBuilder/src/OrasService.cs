@@ -11,11 +11,13 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IOrasService))]
     public class OrasService : IOrasService
     {
+        private const string LifecycleArtifactType = "application/vnd.microsoft.artifact.lifecycle";
+
         public bool IsDigestAnnotatedForEol(string digest, bool isDryRun)
         {
             string? stdOut = ExecuteHelper.ExecuteWithRetry(
                 "oras",
-                $"discover --artifact-type application/vnd.microsoft.artifact.lifecycle {digest}",
+                $"discover --artifact-type {LifecycleArtifactType} {digest}",
                 isDryRun);
 
             if (!string.IsNullOrEmpty(stdOut) && stdOut.Contains("Discovered 0 artifact"))
@@ -26,13 +28,18 @@ namespace Microsoft.DotNet.ImageBuilder
             return true;
         }
 
-        public bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun)
+        public bool AnnotateEolDigest(string digest, DateOnly? date, ILoggerService loggerService, bool isDryRun)
         {
+            if (date == null)
+            {
+                loggerService.WriteError($"EOL date is not specified for digest '{digest}'.");
+            }
+
             try
             {
                 ExecuteHelper.ExecuteWithRetry(
                     "oras",
-                    $"attach --artifact-type application/vnd.microsoft.artifact.lifecycle --annotation \"vnd.microsoft.artifact.lifecycle.end-of-life.date={date}\" {digest}",
+                    $"attach --artifact-type {LifecycleArtifactType} --annotation \"vnd.microsoft.artifact.lifecycle.end-of-life.date={date:yyyy-MM-dd}\" {digest}",
                     isDryRun);
             }
             catch (InvalidOperationException ex)
@@ -45,4 +52,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

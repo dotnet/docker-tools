@@ -16,11 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string EolDigestsListPath { get; set; } = string.Empty;
         public string? Subscription { get; set; }
         public string? ResourceGroup { get; set; }
-        public bool NoCheck { get; set; } = false;
-
-        public AnnotateEolDigestsOptions() : base()
-        {
-        }
+        public bool Force { get; set; } = false;
     }
 
     public class AnnotateEolDigestsOptionsBuilder : DockerRegistryOptionsBuilder
@@ -30,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Option[]
                     {
-                        CreateOption<bool>("no-check", nameof(AnnotateEolDigestsOptions.NoCheck),
+                        CreateOption<bool>("force", nameof(AnnotateEolDigestsOptions.Force),
                             "Annotate always, without checking if digest is already annotated for EOL"),
                         CreateOption<string>("acr-subscription", nameof(AnnotateEolDigestsOptions.Subscription),
                             "Azure subscription to operate on"),

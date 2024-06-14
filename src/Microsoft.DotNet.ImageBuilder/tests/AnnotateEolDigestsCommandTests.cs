@@ -33,20 +33,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<ILoggerService> loggerServiceMock;
+            Mock<IOrasService> orasServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out loggerServiceMock,
-                    noCheck: true,
+                    out orasServiceMock,
+                    force: true,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            loggerServiceMock.Verify(o => o.WriteMessage($"Annotating EOL for digest 'digest1', date '{_globalDate}'"));
-            loggerServiceMock.Verify(o => o.WriteMessage($"Annotating EOL for digest 'digest2', date '{_specificDigestDate}'"));
+            orasServiceMock.Verify(
+                o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILoggerService>(), It.IsAny<bool>()));
+            orasServiceMock.Verify(
+                o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILoggerService>(), It.IsAny<bool>()));
         }
 
         [Fact]
@@ -54,13 +56,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<ILoggerService> loggerServiceMock;
+            Mock<IOrasService> orasServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out loggerServiceMock,
-                    noCheck: true,
+                    out orasServiceMock,
+                    force: true,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: false);
             command.LoadManifest();
@@ -76,26 +78,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<ILoggerService> loggerServiceMock;
+            Mock<IOrasService> orasServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out loggerServiceMock,
-                    noCheck: false,
+                    out orasServiceMock,
+                    force: false,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            loggerServiceMock.Verify(o => o.WriteMessage("Digest 'digest1' is already annotated for EOL."));
-            loggerServiceMock.Verify(o => o.WriteMessage("Digest 'digest2' is already annotated for EOL."));
+            orasServiceMock.Verify(
+                o => o.IsDigestAnnotatedForEol("digest1", It.IsAny<bool>()));
+            orasServiceMock.Verify(
+                o => o.IsDigestAnnotatedForEol("digest2", It.IsAny<bool>()));
+
+            orasServiceMock.Verify(
+                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()),
+                Times.Never());
         }
 
         private AnnotateEolDigestsCommand InitializeCommand(
             TempFolderContext tempFolderContext,
-            out Mock<ILoggerService> loggerServiceMock,
-            bool noCheck = true,
+            out Mock<IOrasService> orasServiceMock,
+            bool force = true,
             bool digestAlreadyAnnotated = true,
             bool digestAnnotationIsSuccessful = true)
         {
@@ -127,8 +135,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string eolDigestsListPath = Path.Combine(tempFolderContext.Path, "eol-digests.json");
             File.WriteAllText(eolDigestsListPath, JsonConvert.SerializeObject(eolAnnotations));
 
-            loggerServiceMock = new();
-            Mock<IOrasService> orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful);
+            Mock<ILoggerService> loggerServiceMock = new();
+            orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful);
             Mock<IRegistryCredentialsProvider> registryCredentialsProviderMock = CreateRegistryCredentialsProviderMock();
             AnnotateEolDigestsCommand command = new(
                 Mock.Of<IDockerService>(),
@@ -139,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.EolDigestsListPath = eolDigestsListPath;
             command.Options.Subscription = "941d4baa-5ef2-462e-b4b1-505791294610";
             command.Options.ResourceGroup = "DotnetContainers";
-            command.Options.NoCheck = noCheck;
+            command.Options.Force = force;
             command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
             command.Options.Manifest = manifestPath;
             return command;

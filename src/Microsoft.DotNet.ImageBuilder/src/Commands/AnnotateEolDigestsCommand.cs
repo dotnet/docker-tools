@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
-            DateOnly globalEolDate = eolAnnotations.EolDate;
+            DateOnly? globalEolDate = eolAnnotations?.EolDate;
 
             await ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
@@ -51,9 +51,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Parallel.ForEach(eolAnnotations.EolDigests, (a) =>
                     {
-                        if (Options.NoCheck || !_orasService.IsDigestAnnotatedForEol(a.Digest, Options.IsDryRun))
+                        if (Options.Force || !_orasService.IsDigestAnnotatedForEol(a.Digest, Options.IsDryRun))
                         {
-                            DateOnly eolDate = a.EolDate ?? globalEolDate;
+                            DateOnly? eolDate = a.EolDate ?? globalEolDate;
                             _loggerService.WriteMessage($"Annotating EOL for digest '{a.Digest}', date '{eolDate}'");
                             if (!_orasService.AnnotateEolDigest(a.Digest, eolDate, _loggerService, Options.IsDryRun))
                             {
@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 _loggerService.WriteMessage("JSON file for rerunning failed annotations:");
                 _loggerService.WriteMessage("");
-                _loggerService.WriteMessage(JsonConvert.SerializeObject(new EolAnnotationsData(globalEolDate, [.. _failedAnnotations])));
+                _loggerService.WriteMessage(JsonConvert.SerializeObject(new EolAnnotationsData(eolDigests: [.. _failedAnnotations])));
                 _loggerService.WriteMessage("");
                 throw new InvalidOperationException($"Failed to annotate {_failedAnnotations.Count} digests for EOL.");
             }
@@ -84,11 +84,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static EolAnnotationsData LoadEolAnnotationsData(string eolDigestsListPath)
         {
-            if (eolDigestsListPath == null)
-            {
-                throw new ArgumentNullException("EolDigestsListPath is required.");
-            }
-
             string eolAnnotationsJson = File.ReadAllText(eolDigestsListPath);
             EolAnnotationsData? eolAnnotations = JsonConvert.DeserializeObject<EolAnnotationsData>(eolAnnotationsJson);
             return eolAnnotations is null
@@ -97,4 +92,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable restore

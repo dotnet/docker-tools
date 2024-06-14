@@ -5,20 +5,26 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.IO;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using Cottle;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class GenerateReadmesCommand : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>
     {
         private const string ArtifactName = "Readme";
-        private const string McrTagsRenderingToolTag = "mcr.microsoft.com/mcr/renderingtool:1.0";
+        private const string LinuxTableHeader = "Tags | Dockerfile | OS Version\n-----------| -------------| -------------";
+        private const string WindowsTableHeader = "Tag | Dockerfile\n---------| ---------------";
 
         private readonly IGitService _gitService;
 
@@ -90,13 +96,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return (symbols, indent);
         }
 
-        private string GetParentRepoName(RepoInfo repo)
+        private static string GetParentRepoName(RepoInfo repo)
         {
             string[] parts = repo.Name.Split('/');
             return parts.Length > 1 ? parts[parts.Length - 2] : string.Empty;
         }
 
-        private string GetShortRepoName(RepoInfo repo)
+        private static string GetShortRepoName(RepoInfo repo)
         {
             int lastSlashIndex = repo.Name.LastIndexOf('/');
             return lastSlashIndex == -1 ? repo.Name : repo.Name.Substring(lastSlashIndex + 1);
@@ -111,70 +117,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string tagsMetadata = McrTagsMetadataGenerator.Execute(
                 _gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch);
-            string tagsListing = GenerateTagsListing(repo, tagsMetadata);
+            string tagsListing = GenerateTagsListing(repo.Name, tagsMetadata);
             return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
         }
 
-        private string GenerateTagsListing(RepoInfo repo, string tagsMetadata)
+        private string GenerateTagsListing(string repoName, string tagsMetadata)
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
-            string tagsDoc;
-
-            string tempDir = $"{this.GetCommandName()}-{DateTime.Now.ToFileTime()}";
-            Directory.CreateDirectory(tempDir);
-
-            try
-            {
-                string tagsMetadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
-                File.WriteAllText(
-                    Path.Combine(tempDir, tagsMetadataFileName),
-                    tagsMetadata);
-
-                string dockerfilePath = Path.Combine(tempDir, "Dockerfile");
-                File.WriteAllText(
-                    dockerfilePath,
-                    $"FROM {McrTagsRenderingToolTag}{Environment.NewLine}COPY {tagsMetadataFileName} /tableapp/files/ ");
-
-                string renderingToolId = $"renderingtool-{DateTime.Now.ToFileTime()}";
-                DockerHelper.PullImage(McrTagsRenderingToolTag, null, Options.IsDryRun);
-                ExecuteHelper.Execute(
-                    "docker",
-                    $"build -t {renderingToolId} -f {dockerfilePath} {tempDir}",
-                    Options.IsDryRun);
-
-                try
-                {
-                    ExecuteHelper.Execute(
-                        "docker",
-                        $"run --name {renderingToolId} {renderingToolId} {tagsMetadataFileName}",
-                        Options.IsDryRun);
-
-                    try
-                    {
-                        string outputPath = Path.Combine(tempDir, "output.md");
-                        ExecuteHelper.Execute(
-                            "docker",
-                            $"cp {renderingToolId}:/tableapp/files/{repo.Name.Replace('/', '-')}.md {outputPath}",
-                            Options.IsDryRun
-                        );
-
-                        tagsDoc = File.ReadAllText(outputPath);
-                    }
-                    finally
-                    {
-                        ExecuteHelper.Execute("docker", $"container rm -f {renderingToolId}", Options.IsDryRun);
-                    }
-                }
-                finally
-                {
-                    ExecuteHelper.Execute("docker", $"image rm -f {renderingToolId}", Options.IsDryRun);
-                }
-            }
-            finally
-            {
-                Directory.Delete(tempDir, true);
-            }
+            string tagsDoc = RenderTables(repoName, tagsMetadata);
 
             if (Options.IsVerbose)
             {
@@ -183,6 +134,110 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return tagsDoc;
+        }
+
+        private static string RenderTables(string repoName, string tagsMetadata)
+        {
+            TagMetadataManifest metadataManifest = new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build()
+                .Deserialize<TagMetadataManifest>(tagsMetadata);
+
+            // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
+            RepoTagGroups repoTagGroups = metadataManifest.Repos.Single();
+
+            string content = AddRepoTableContent(repoTagGroups.TagGroups);
+            content += $"You can retrieve a list of all available tags for {repoName} at https://mcr.microsoft.com/v2/{repoName}/tags/list.";
+            return content.Replace("\r\n", "\n");
+        }
+
+        private static string AddRepoTableContent(IEnumerable<TagGroup> tagGroups)
+        {
+            StringBuilder tables = new();
+            IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch = tagGroups
+                .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
+
+            foreach (IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup> groupedTagGroups in tagGroupsGroupedByOsArch)
+        {
+                string title;
+                string tableHeader;
+                if (groupedTagGroups.Key.OsVersion is not null)
+                {
+                    title = groupedTagGroups.Key.OsVersion;
+                    tableHeader = WindowsTableHeader;
+                }
+                else
+                {
+                    title = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(groupedTagGroups.Key.OS);
+                    tableHeader = LinuxTableHeader;
+                }
+
+                AddOsTableContent(groupedTagGroups, title, groupedTagGroups.Key.Architecture, tableHeader, tables);
+            }
+            return tables.ToString();
+        }
+
+        private static void AddOsTableContent(IEnumerable<TagGroup> tagGroups, string title, string arch, string tableHeader, StringBuilder tables)
+        {
+            // Group tags by custom sub table title (e.g. Preview tags). Those tags without a custom sub table title will be listed first.
+            List<IGrouping<string, TagGroup>> tagGroupGroupings = tagGroups
+                .GroupBy(tg => tg.CustomSubTableTitle)
+                .OrderBy(group => group.Key)
+                .ToList();
+
+            for (int i = 0; i < tagGroupGroupings.Count; i++)
+            {
+                if (i > 0)
+                {
+                    tables.AppendLine();
+                }
+
+                IGrouping<string, TagGroup> tagGroupGrouping = tagGroupGroupings[i];
+
+                if (!string.IsNullOrEmpty(tagGroupGrouping.Key))
+                {
+                    tables.AppendLine("##### " + tagGroupGrouping.Key);
+                    tables.AppendLine(tableHeader);
+                }
+                else
+                {
+                    tables.AppendLine($"## {title} {arch} Tags");
+                    tables.AppendLine(tableHeader);
+                }
+
+                foreach (TagGroup tagGroup in tagGroupGrouping)
+                {
+                    tables.AppendLine(FormatTagGroupRow(tagGroup));
+                }
+
+            }
+
+            tables.AppendLine();
+        }
+
+        private static string FormatTagGroupRow(TagGroup tagGroup)
+        {
+            string row = $"{string.Join(", ", tagGroup.Tags)} | [Dockerfile]({tagGroup.Dockerfile})";
+            if (tagGroup.OS != "windows")
+            {
+                row += $" | {tagGroup.OsVersion}";
+            }
+
+            return row;
+        }
+
+        private class TagMetadataManifest
+        {
+            public List<RepoTagGroups> Repos { get; set; } = [];
+        }
+
+        private class RepoTagGroups
+        {
+            public string RepoName { get; set; } = null!;
+
+            public bool CustomTablePivots { get; set; }
+
+            public List<TagGroup> TagGroups { get; set; } = [];
         }
     }
 }

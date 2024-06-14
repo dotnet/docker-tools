@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     new Argument[]
                     {
                         new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListPath),
-                            "Eol annotations digests list path")
+                            "EOL annotations digests list path")
                     }
                 );
     }

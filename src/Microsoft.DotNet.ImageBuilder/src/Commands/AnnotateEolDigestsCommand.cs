@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (_failedAnnotations.Count > 0)
             {
-                _loggerService.WriteMessage("JSon file for rerunning failed annotations:");
+                _loggerService.WriteMessage("JSON file for rerunning failed annotations:");
                 _loggerService.WriteMessage("");
                 _loggerService.WriteMessage(JsonConvert.SerializeObject(new EolAnnotationsData(globalEolDate, [.. _failedAnnotations])));
                 _loggerService.WriteMessage("");

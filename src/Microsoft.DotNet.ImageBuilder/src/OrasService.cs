@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             catch (InvalidOperationException ex)
             {
-                loggerService.WriteMessage($"Failed to annotate EOL for digest '{digest}': {ex.Message}");
+                loggerService.WriteError($"Failed to annotate EOL for digest '{digest}': {ex.Message}");
                 return false;
             }
 

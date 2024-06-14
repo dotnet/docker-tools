@@ -102,7 +102,7 @@ jobs:
       }
 
       if ($env:SYSTEM_TEAMPROJECT -eq "${{ parameters.publicProjectName }}" && ${env:PUBLIC-MIRROR_SERVER} -ne "") {
-        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --registry-override $(public-mirror.server) --repo-prefix $(stagingRepoPrefix) --source-repo-prefix $(mirrorRepoPrefix) --push"
+        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --base-override-regex '^((?!mcr\.microsoft\.com):.+)' --base-override-sub '$(public-mirror.server)/$1'"
       }
 
       # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache

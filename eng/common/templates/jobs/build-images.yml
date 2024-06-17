@@ -101,7 +101,7 @@ jobs:
         $imageBuilderBuildArgs = "$imageBuilderBuildArgs --registry-override $(acr-staging.server) --repo-prefix $(stagingRepoPrefix) --source-repo-prefix $(mirrorRepoPrefix) --push"
       }
 
-      if ($env:SYSTEM_TEAMPROJECT -eq "${{ parameters.publicProjectName }}" && ${env:PUBLIC-MIRROR_SERVER} -ne "") {
+      if ($env:SYSTEM_TEAMPROJECT -eq "${{ parameters.publicProjectName }}" -and ${env:PUBLIC-MIRROR_SERVER} -ne "") {
         $imageBuilderBuildArgs = "$imageBuilderBuildArgs --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
       }
 

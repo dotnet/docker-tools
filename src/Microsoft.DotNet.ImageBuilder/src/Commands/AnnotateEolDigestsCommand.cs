@@ -54,12 +54,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         if (Options.Force || !_orasService.IsDigestAnnotatedForEol(a.Digest, Options.IsDryRun))
                         {
                             DateOnly? eolDate = a.EolDate ?? globalEolDate;
-                            _loggerService.WriteMessage($"Annotating EOL for digest '{a.Digest}', date '{eolDate}'");
-                            if (!_orasService.AnnotateEolDigest(a.Digest, eolDate, _loggerService, Options.IsDryRun))
+                            if (eolDate != null)
                             {
-                                // We will capture all failures and log the json data at the end.
-                                // Json data can be used to rerun the failed annotations.
-                                _failedAnnotations.Add(new EolDigestData { Digest = a.Digest, EolDate = eolDate });
+                                _loggerService.WriteMessage($"Annotating EOL for digest '{a.Digest}', date '{eolDate}'");
+                                if (!_orasService.AnnotateEolDigest(a.Digest, eolDate, _loggerService, Options.IsDryRun))
+                                {
+                                    // We will capture all failures and log the json data at the end.
+                                    // Json data can be used to rerun the failed annotations.
+                                    _failedAnnotations.Add(new EolDigestData { Digest = a.Digest, EolDate = eolDate });
+                                }
+                            }
+                            else
+                            {
+                                _loggerService.WriteError($"EOL date is not specified for digest '{a.Digest}'.");
                             }
                         }
                         else

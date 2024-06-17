@@ -145,8 +145,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 orasServiceMock.Object,
                 registryCredentialsProviderMock.Object);
             command.Options.EolDigestsListPath = eolDigestsListPath;
-            command.Options.Subscription = "941d4baa-5ef2-462e-b4b1-505791294610";
-            command.Options.ResourceGroup = "DotnetContainers";
             command.Options.Force = force;
             command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
             command.Options.Manifest = manifestPath;

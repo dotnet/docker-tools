@@ -30,11 +30,6 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public bool AnnotateEolDigest(string digest, DateOnly? date, ILoggerService loggerService, bool isDryRun)
         {
-            if (date == null)
-            {
-                loggerService.WriteError($"EOL date is not specified for digest '{digest}'.");
-            }
-
             try
             {
                 ExecuteHelper.ExecuteWithRetry(

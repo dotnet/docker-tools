@@ -1,1 +1,1 @@
-FROM amd64/ubuntu:focal
+FROM ubuntu.azurecr.io/ubuntu:focal

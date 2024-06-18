@@ -42,7 +42,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     force: true,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
-            command.LoadManifest();
             await command.ExecuteAsync();
 
             orasServiceMock.Verify(
@@ -65,7 +64,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     force: true,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: false);
-            command.LoadManifest();
 
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
             Assert.StartsWith(
@@ -87,7 +85,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     force: false,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
-            command.LoadManifest();
             await command.ExecuteAsync();
 
             orasServiceMock.Verify(
@@ -107,21 +104,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             bool digestAlreadyAnnotated = true,
             bool digestAnnotationIsSuccessful = true)
         {
-            const string runtimeRelativeDir = "1.0/runtime/os";
-            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
-            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo("runtime",
-                    ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
-            );
-            manifest.Registry = "mcr.microsoft.com";
-
-            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
-
             EolAnnotationsData eolAnnotations = new()
             {
                 EolDate = _globalDate,
@@ -147,7 +129,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.EolDigestsListPath = eolDigestsListPath;
             command.Options.Force = force;
             command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
-            command.Options.Manifest = manifestPath;
             return command;
         }
 

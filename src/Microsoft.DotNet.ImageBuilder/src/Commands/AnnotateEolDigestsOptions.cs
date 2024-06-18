@@ -11,16 +11,22 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class AnnotateEolDigestsOptions : DockerRegistryOptions
+    public class AnnotateEolDigestsOptions : Options
     {
+        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
+
         public string EolDigestsListPath { get; set; } = string.Empty;
+        public string AcrName { get; set; } = string.Empty;
         public bool Force { get; set; } = false;
     }
 
-    public class AnnotateEolDigestsOptionsBuilder : DockerRegistryOptionsBuilder
+    public class AnnotateEolDigestsOptionsBuilder : CliOptionsBuilder
     {
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -31,11 +37,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
+                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {
                         new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListPath),
-                            "EOL annotations digests list path")
+                            "EOL annotations digests list path"),
+                        new Argument<string>(nameof(AnnotateEolDigestsOptions.AcrName),
+                            "Azure registry name")
                     }
                 );
     }

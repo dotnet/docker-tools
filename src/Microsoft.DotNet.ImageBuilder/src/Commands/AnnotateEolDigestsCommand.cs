@@ -14,12 +14,13 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class AnnotateEolDigestsCommand : DockerRegistryCommand<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
+    public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IProcessService _processService;
         private readonly IOrasService _orasService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
         private ConcurrentBag<EolDigestData> _failedAnnotations = new ();
 
@@ -30,12 +31,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IProcessService processService,
             IOrasService orasService,
             IRegistryCredentialsProvider registryCredentialsProvider)
-            : base(registryCredentialsProvider)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         }
 
         protected override string Description => "Annotates EOL digests in Docker Registry";
@@ -45,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
             DateOnly? globalEolDate = eolAnnotations?.EolDate;
 
-            await ExecuteWithCredentialsAsync(
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {
@@ -76,8 +77,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     });
 
                 },
-                registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
+                Options.CredentialsOptions,
+                registryName: Options.AcrName,
+                ownedAcr: Options.AcrName);
 
             if (_failedAnnotations.Count > 0)
             {

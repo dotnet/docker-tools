@@ -9,9 +9,10 @@ using System.Linq;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishManifestOptions : DockerRegistryOptions, IFilterableOptions
+    public class PublishManifestOptions : ManifestOptions, IFilterableOptions
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
+        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
 
         public string ImageInfoPath { get; set; } = string.Empty;
 
@@ -20,18 +21,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 
-    public class PublishManifestOptionsBuilder : DockerRegistryOptionsBuilder
+    public class PublishManifestOptionsBuilder : ManifestOptionsBuilder
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
             new ManifestFilterOptionsBuilder();
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder =
+            new RegistryCredentialsOptionsBuilder();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
+                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {

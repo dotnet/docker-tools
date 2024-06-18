@@ -31,7 +31,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
 
-
         // Metadata about Dockerfiles whose images have been retrieved from the cache
         private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
 

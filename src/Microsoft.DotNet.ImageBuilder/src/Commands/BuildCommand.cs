@@ -26,11 +26,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IProcessService _processService;
         private readonly ICopyImageService _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
 
-        protected IRegistryCredentialsProvider RegistryCredentialsProvider { get; init; }
 
         // Metadata about Dockerfiles whose images have been retrieved from the cache
         private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
@@ -58,8 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
-
-            RegistryCredentialsProvider = registryCredentialsProvider;
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
 
             // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -79,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            await RegistryCredentialsProvider.ExecuteWithCredentialsAsync(
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {
@@ -94,7 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (_processedTags.Any() || _cachedPlatforms.Any())
             {
                 // Log in again to refresh token as it may have expired from a long build
-                await RegistryCredentialsProvider.ExecuteWithCredentialsAsync(
+                await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                     Options.IsDryRun,
                     async () =>
                     {

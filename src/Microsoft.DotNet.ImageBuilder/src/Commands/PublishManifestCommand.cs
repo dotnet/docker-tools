@@ -22,9 +22,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private ConcurrentBag<string> _publishedManifestTags = new();
-
-        protected IRegistryCredentialsProvider RegistryCredentialsProvider { get; init; }
 
         [ImportingConstructor]
         public PublishManifestCommand(
@@ -37,8 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
-
-            RegistryCredentialsProvider = registryCredentialsProvider;
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
 
             // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -54,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            await RegistryCredentialsProvider.ExecuteWithCredentialsAsync(
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {

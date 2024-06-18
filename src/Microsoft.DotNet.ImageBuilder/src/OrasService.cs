@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             string? stdOut = ExecuteHelper.ExecuteWithRetry(
                 "oras",
-                $"discover --artifact-type {LifecycleArtifactType} {digest}",
+                $"discover --artifact-type {LifecycleArtifactType} {digest} --format table",
                 isDryRun);
 
             if (!string.IsNullOrEmpty(stdOut) && stdOut.Contains("Discovered 0 artifact"))

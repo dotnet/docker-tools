@@ -10,10 +10,11 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class BuildOptions : DockerRegistryOptions, IFilterableOptions
+    public class BuildOptions : ManifestOptions, IFilterableOptions
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new();
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
+        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
 
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }
@@ -30,15 +31,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? ResourceGroup { get; set; }
     }
 
-    public class BuildOptionsBuilder : DockerRegistryOptionsBuilder
+    public class BuildOptionsBuilder : ManifestOptionsBuilder
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
         private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions())
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {
@@ -73,7 +76,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments());
+                .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments())
+                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments());
     }
 }
 #nullable disable

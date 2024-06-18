@@ -18,7 +18,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class BuildCommand : DockerRegistryCommand<BuildOptions, BuildOptionsBuilder>
+    public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
@@ -29,6 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
+
+        protected IRegistryCredentialsProvider RegistryCredentialsProvider { get; init; }
 
         // Metadata about Dockerfiles whose images have been retrieved from the cache
         private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
@@ -50,13 +52,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ICopyImageService copyImageService,
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider)
-            : base(registryCredentialsProvider)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
+
+            RegistryCredentialsProvider = registryCredentialsProvider;
 
             // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -76,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            await ExecuteWithCredentialsAsync(
+            await RegistryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {
@@ -84,19 +87,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     await BuildImagesAsync();
                 },
+                Options.CredentialsOptions,
                 registryName: Manifest.Registry,
                 ownedAcr: Options.RegistryOverride);
 
             if (_processedTags.Any() || _cachedPlatforms.Any())
             {
                 // Log in again to refresh token as it may have expired from a long build
-                await ExecuteWithCredentialsAsync(
+                await RegistryCredentialsProvider.ExecuteWithCredentialsAsync(
                     Options.IsDryRun,
                     async () =>
                     {
                         PushImages();
                         await PublishImageInfoAsync();
                     },
+                    Options.CredentialsOptions,
                     registryName: Manifest.Registry,
                     ownedAcr: Options.RegistryOverride);
             }

@@ -2,15 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Threading.Tasks;
-
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class DockerRegistryCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
-        where TOptions : DockerRegistryOptions, new()
-        where TOptionsBuilder : DockerRegistryOptionsBuilder, new()
+    public abstract class DockerRegistryCommand<TOptions, TOptionsBuilder> : Command<TOptions, TOptionsBuilder>
+        where TOptions : Options, new()
+        where TOptionsBuilder : CliOptionsBuilder, new()
     {
         protected IRegistryCredentialsProvider RegistryCredentialsProvider { get; init; }
 
@@ -18,33 +15,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             RegistryCredentialsProvider = registryCredentialsProvider;
         }
-
-        protected async Task ExecuteWithCredentialsAsync(bool isDryRun, Func<Task> action, string registryName, string? ownedAcr)
-        {
-            bool loggedIn = false;
-
-            RegistryCredentials? credentials = await RegistryCredentialsProvider.GetCredentialsAsync(
-                    registryName, ownedAcr, Options.CredentialsOptions);
-
-            if (!string.IsNullOrEmpty(registryName) && credentials is not null)
-            {
-                DockerHelper.Login(credentials, registryName, isDryRun);
-                loggedIn = true;
-            }
-
-            try
-            {
-                await action();
-            }
-            finally
-            {
-                if (loggedIn && !string.IsNullOrEmpty(registryName))
-                {
-                    DockerHelper.Logout(registryName, isDryRun);
-                }
-            }
-        }
-
     }
 }
 #nullable disable

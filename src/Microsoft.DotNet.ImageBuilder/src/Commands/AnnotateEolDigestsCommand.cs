@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             if (eolDate != null)
                             {
                                 _loggerService.WriteMessage($"Annotating EOL for digest '{a.Digest}', date '{eolDate}'");
-                                if (!_orasService.AnnotateEolDigest(a.Digest, eolDate, _loggerService, Options.IsDryRun))
+                                if (!_orasService.AnnotateEolDigest(a.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
                                 {
                                     // We will capture all failures and log the json data at the end.
                                     // Json data can be used to rerun the failed annotations.

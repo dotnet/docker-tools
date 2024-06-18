@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return true;
         }
 
-        public bool AnnotateEolDigest(string digest, DateOnly? date, ILoggerService loggerService, bool isDryRun)
+        public bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun)
         {
             try
             {

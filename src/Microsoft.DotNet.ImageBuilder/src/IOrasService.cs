@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         bool IsDigestAnnotatedForEol(string digest, bool isDryRun);
 
-        bool AnnotateEolDigest(string digest, DateOnly? date, ILoggerService loggerService, bool isDryRun);
+        bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun);
     }
 }
 #nullable disable

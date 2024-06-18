@@ -15,9 +15,13 @@ jobs:
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
   - template: /eng/common/templates/steps/copy-base-images.yml@self
     parameters:
+      acr:
+        server: $(acr-staging.server)
+        serviceConnection: $(acr-staging.serviceConnectionName)
+        subscription: $(acr-staging.subscription)
+        resourceGroup: $(acr-staging.resourceGroup)
+      repoPrefix: $(mirrorRepoPrefix)
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
-      publicProjectName: ${{ parameters.publicProjectName }}
-      internalProjectName: ${{ parameters.internalProjectName }}
   - script: >
       $(runImageBuilderCmd)
       getStaleImages

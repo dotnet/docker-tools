@@ -16,12 +16,13 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
+    public class PublishManifestCommand : ManifestCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private ConcurrentBag<string> _publishedManifestTags = new();
 
         [ImportingConstructor]
@@ -31,11 +32,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ILoggerService loggerService,
             IDateTimeService dateTimeService,
             IRegistryCredentialsProvider registryCredentialsProvider)
-            : base(registryCredentialsProvider)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
 
             // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -51,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            await ExecuteWithCredentialsAsync(
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {
@@ -76,6 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
                 },
+                Options.CredentialsOptions,
                 registryName: Manifest.Registry,
                 ownedAcr: Manifest.Registry);
         }

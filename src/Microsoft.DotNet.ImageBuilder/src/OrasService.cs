@@ -4,6 +4,9 @@
 
 using System;
 using System.ComponentModel.Composition;
+using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Models.EolAnnotations;
+using Newtonsoft.Json;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -13,19 +16,19 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private const string LifecycleArtifactType = "application/vnd.microsoft.artifact.lifecycle";
 
-        public bool IsDigestAnnotatedForEol(string digest, bool isDryRun)
+        public bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun)
         {
             string? stdOut = ExecuteHelper.ExecuteWithRetry(
                 "oras",
-                $"discover --artifact-type {LifecycleArtifactType} {digest} --format table",
+                $"discover --artifact-type {LifecycleArtifactType} {digest} --format json",
                 isDryRun);
 
-            if (!string.IsNullOrEmpty(stdOut) && stdOut.Contains("Discovered 0 artifact"))
+            if (!string.IsNullOrEmpty(stdOut) && LifecycleAnnotationExists(stdOut, loggerService))
             {
-                return false;
+                return true;
             }
 
-            return true;
+            return false;
         }
 
         public bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun)
@@ -44,6 +47,24 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return true;
+        }
+
+        private static bool LifecycleAnnotationExists(string json, ILoggerService loggerService)
+        {
+            try
+            {
+                OrasDiscoverData? orasDiscoverData = JsonConvert.DeserializeObject<OrasDiscoverData>(json);
+                if (orasDiscoverData?.Manifests != null)
+                {
+                    return orasDiscoverData.Manifests.Where(m => m.ArtifactType == LifecycleArtifactType).Any();
+                }
+            }
+            catch (JsonException ex)
+            {
+                loggerService.WriteError($"Failed to deserialize 'oras discover' json: {ex.Message}");
+            }
+
+            return false;
         }
     }
 }

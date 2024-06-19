@@ -88,9 +88,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync();
 
             orasServiceMock.Verify(
-                o => o.IsDigestAnnotatedForEol("digest1", It.IsAny<bool>()));
+                o => o.IsDigestAnnotatedForEol("digest1", It.IsAny<ILoggerService>(), It.IsAny<bool>()));
             orasServiceMock.Verify(
-                o => o.IsDigestAnnotatedForEol("digest2", It.IsAny<bool>()));
+                o => o.IsDigestAnnotatedForEol("digest2", It.IsAny<ILoggerService>(), It.IsAny<bool>()));
 
             orasServiceMock.Verify(
                 o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()),
@@ -146,7 +146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IOrasService> orasServiceMock = new();
             orasServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<bool>()))
+                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()))
                 .Returns(digestAlreadyAnnotated);
 
             orasServiceMock

@@ -9,7 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IOrasService
     {
-        bool IsDigestAnnotatedForEol(string digest, bool isDryRun);
+        bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun);
 
         bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun);
     }

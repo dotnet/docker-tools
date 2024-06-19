@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Parallel.ForEach(eolAnnotations.EolDigests, (a) =>
                     {
-                        if (Options.Force || !_orasService.IsDigestAnnotatedForEol(a.Digest, Options.IsDryRun))
+                        if (Options.Force || !_orasService.IsDigestAnnotatedForEol(a.Digest, _loggerService, Options.IsDryRun))
                         {
                             DateOnly? eolDate = a.EolDate ?? globalEolDate;
                             if (eolDate != null)

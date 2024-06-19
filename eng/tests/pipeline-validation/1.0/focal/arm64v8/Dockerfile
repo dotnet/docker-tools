@@ -1,1 +1,1 @@
-FROM arm64v8/ubuntu:focal
+FROM ubuntu.azurecr.io/ubuntu:focal

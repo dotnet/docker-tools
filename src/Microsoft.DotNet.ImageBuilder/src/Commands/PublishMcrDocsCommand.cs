@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
@@ -38,6 +39,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _loggerService.WriteHeading("PUBLISHING MCR DOCS");
+
+            ValidateReadmeFilenames(Manifest);
 
             // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
             Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
@@ -70,6 +73,33 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
                 });
+            }
+        }
+
+        private bool IncludeReadme(string readmePath) =>
+            Options.RootPath is null || Path.GetFullPath(readmePath).StartsWith(Path.GetFullPath(Options.RootPath));
+
+        private void ValidateReadmeFilenames(ManifestInfo manifest)
+        {
+            // Readme filenames must be unique across all the readmes regardless of their path.
+            // This is because they will eventually be published to mcrdocs where all of the readmes are contained within the same directory
+
+            IEnumerable<IGrouping<string, string>> readmePathsWithDuplicateFilenames = manifest.AllRepos
+                .SelectMany(repo => repo.Readmes.Select(readme => readme.Path))
+                .Where(readmePath => IncludeReadme(readmePath))
+                .GroupBy(readmePath => Path.GetFileName(readmePath))
+                .Where(group => group.Count() > 1);
+
+            if (readmePathsWithDuplicateFilenames.Any())
+            {
+                IEnumerable<string> errorMessages = readmePathsWithDuplicateFilenames
+                    .Select(group =>
+                        "Readme filenames must be unique, regardless of the directory path. " +
+                        "The following readme paths have filenames that conflict with each other:" +
+                        Environment.NewLine +
+                        string.Join(Environment.NewLine, group.ToArray()));
+
+                throw new ValidationException(string.Join(Environment.NewLine + Environment.NewLine, errorMessages.ToArray()));
             }
         }
 
@@ -124,6 +154,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> readmePaths = Manifest.FilteredRepos
                 .SelectMany(repo => repo.Readmes)
                 .Select(readme => readme.Path)
+                .Where(readmePath => IncludeReadme(readmePath))
                 .ToList();
 
             if (!string.IsNullOrEmpty(Manifest.ReadmePath) && !Options.ExcludeProductFamilyReadme)

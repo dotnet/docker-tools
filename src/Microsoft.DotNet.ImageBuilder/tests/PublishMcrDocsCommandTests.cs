@@ -35,28 +35,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ExcludeProductFamilyReadme()
         {
-            Mock<IGitHubClient> gitHubClientMock = new();
-            gitHubClientMock
-                .Setup(o => o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()))
-                .ReturnsAsync(new GitReference
-                {
-                    Object = new GitReferenceObject()
-                });
+            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
+            IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            gitHubClientMock
-                .Setup(o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<GitObject[]>()))
-                .ReturnsAsync(new GitTree());
-
-            gitHubClientMock
-                .Setup(o => o.PostCommitAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new GitCommit());
-
-            Mock<IGitHubClientFactory> gitHubClientFactoryMock = new();
-            gitHubClientFactoryMock
-                .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
-                .Returns(gitHubClientMock.Object);
-
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactoryMock.Object, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -65,12 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             DockerfileHelper.CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
             DockerfileHelper.CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
 
-            // Create MCR tags metadata template file
-            StringBuilder tagsMetadataTemplateBuilder = new();
-            tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:repo)");
-            tagsMetadataTemplateBuilder.Append($"$(McrTagsYmlTagGroup:tag)");
-            string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, TagsYamlPath);
-            File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
+            string tagsMetadataTemplatePath = CreateMcrTagsMetadataTemplateFile(tempFolderContext);
 
             Repo repo;
             Manifest manifest = CreateManifest(
@@ -100,6 +77,164 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             objs.Length == 2 &&
                             Path.GetFileName(objs[0].Path) == RepoReadmePath &&
                             Path.GetFileName(objs[1].Path) == TagsYamlPath)));
+        }
+
+        [Fact]
+        public async Task RootPathOption()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string readme1 = RepoReadmePath;
+            string readme2 = Path.Combine("dir", RepoReadmePath);
+            const string ReadmeContents = "Readme Contents";
+            const string readme2Content = ReadmeContents + "-readme2";
+
+            CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
+            CreateFile(readme1, tempFolderContext, ReadmeContents);
+            CreateFile(readme2, tempFolderContext, readme2Content);
+            CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
+            CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
+
+            string tagsMetadataTemplatePath = CreateMcrTagsMetadataTemplateFile(tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                new Repo
+                {
+                    Name = "dotnet/repo",
+                    Id = "repo",
+                    Images = [
+                        CreateImage(
+                            CreatePlatform(CreateDockerfile("1.0/runtime/linux", tempFolderContext), ["tag"]))
+                    ],
+                    McrTagsMetadataTemplate = Path.GetFileName(tagsMetadataTemplatePath),
+                    Readmes = [
+                        new Readme(readme1, ReadmeTemplatePath),
+                        new Readme(readme2, ReadmeTemplatePath)
+                    ]
+                });
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
+
+            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
+            IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
+
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            command.Options.Manifest = manifestPath;
+            command.Options.ExcludeProductFamilyReadme = true;
+            command.Options.RootPath = Path.Combine(tempFolderContext.Path, "dir");
+            command.LoadManifest();
+
+            await command.ExecuteAsync();
+
+            gitHubClientMock
+                .Verify(o =>
+                    o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(),
+                        It.Is<GitObject[]>(objs =>
+                            objs.Length == 2 &&
+                            Path.GetFileName(objs[0].Path) == RepoReadmePath &&
+                            Path.GetFileName(objs[1].Path) == TagsYamlPath &&
+                            objs[0].Content == readme2Content)));
+
+            gitHubClientMock.Verify(o =>
+                o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.IsAny<GitHubBranch>()));
+            gitHubClientMock.Verify(o =>
+                o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()));
+            gitHubClientMock.Verify(o =>
+                o.PostCommitAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]>()));
+            gitHubClientMock.Verify(o =>
+                o.PatchReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
+            gitHubClientMock.Verify(o => o.Dispose());
+
+            gitHubClientMock.VerifyNoOtherCalls();
+        }
+
+        [Fact]
+        public async Task DuplicateFilename()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string readme1 = RepoReadmePath;
+            string readme2 = Path.Combine("dir", RepoReadmePath);
+            const string ReadmeContents = "Readme Contents";
+            const string readme2Content = ReadmeContents + "-readme2";
+
+            CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
+            CreateFile(readme1, tempFolderContext, ReadmeContents);
+            CreateFile(readme2, tempFolderContext, readme2Content);
+            CreateFile(AboutRepoTemplatePath, tempFolderContext, AboutRepoTemplate);
+            CreateFile(ReadmeTemplatePath, tempFolderContext, ReadmeTemplate);
+
+            string tagsMetadataTemplatePath = CreateMcrTagsMetadataTemplateFile(tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                new Repo
+                {
+                    Name = "dotnet/repo",
+                    Id = "repo",
+                    Images = [
+                        CreateImage(
+                            CreatePlatform(CreateDockerfile("1.0/runtime/linux", tempFolderContext), ["tag"]))
+                    ],
+                    McrTagsMetadataTemplate = Path.GetFileName(tagsMetadataTemplatePath),
+                    Readmes = [
+                        new Readme(readme1, ReadmeTemplatePath),
+                        new Readme(readme2, ReadmeTemplatePath)
+                    ]
+                });
+
+            string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
+            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
+
+            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
+            IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
+
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            command.Options.Manifest = manifestPath;
+            command.Options.ExcludeProductFamilyReadme = true;
+            command.LoadManifest();
+
+            await Assert.ThrowsAsync<ValidationException>(() => command.ExecuteAsync());
+        }
+
+        private static string CreateMcrTagsMetadataTemplateFile(TempFolderContext tempFolderContext)
+        {
+            StringBuilder tagsMetadataTemplateBuilder = new();
+            tagsMetadataTemplateBuilder.AppendLine($"$(McrTagsYmlRepo:repo)");
+            tagsMetadataTemplateBuilder.Append($"$(McrTagsYmlTagGroup:tag)");
+            string tagsMetadataTemplatePath = Path.Combine(tempFolderContext.Path, TagsYamlPath);
+            File.WriteAllText(tagsMetadataTemplatePath, tagsMetadataTemplateBuilder.ToString());
+            return tagsMetadataTemplatePath;
+        }
+
+        private static Mock<IGitHubClient> CreateGitHubClientMock()
+        {
+            Mock<IGitHubClient> gitHubClientMock = new();
+            gitHubClientMock
+                .Setup(o => o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()))
+                .ReturnsAsync(new GitReference
+                {
+                    Object = new GitReferenceObject()
+                });
+
+            gitHubClientMock
+                .Setup(o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<GitObject[]>()))
+                .ReturnsAsync(new GitTree());
+
+            gitHubClientMock
+                .Setup(o => o.PostCommitAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]>()))
+                .ReturnsAsync(new GitCommit());
+
+            return gitHubClientMock;
+        }
+
+        private static IGitHubClientFactory CreateGitHubClientFactory(Mock<IGitHubClient> gitHubClientMock)
+        {
+            Mock<IGitHubClientFactory> gitHubClientFactoryMock = new();
+            gitHubClientFactoryMock
+                            .Setup(o => o.GetClient(It.IsAny<GitHubAuth>(), false))
+                            .Returns(gitHubClientMock.Object);
+            return gitHubClientFactoryMock.Object;
         }
     }
 }

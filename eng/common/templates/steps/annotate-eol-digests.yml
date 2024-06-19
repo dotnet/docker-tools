@@ -3,8 +3,6 @@ parameters:
   force: false
   dataFile: null
   dockerRegistry: null
-  acrSubscription: null
-  acrResourceGroup: null
 steps:
   - script: |
       optionalArgs=""
@@ -22,10 +20,5 @@ steps:
       args: >
         annotateEolDigests
         /repo/${{ parameters.dataFile }}
-        --manifest $(manifest)
-        --var UniqueId=0000000
-        --acr-subscription '${{ parameters.acrSubscription }}'
-        --acr-resource-group '${{ parameters.acrResourceGroup }}'
-        --registry-override '${{ parameters.dockerRegistry }}'
-        --repo-prefix build-staging/9999999/
+        ${{ parameters.dockerRegistry }}
         $(optionalArgs)

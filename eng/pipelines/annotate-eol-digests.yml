@@ -12,12 +12,6 @@ parameters:
 - name: dockerRegistry
   displayName: Docker registry name (e.g. mcr.microsoft.com)
   type: string
-- name: acrSubscription
-  displayName: ACR subscription Id (e.g. 941d4baa-5ef2-462e-b4b1-505791294610)
-  type: string
-- name: acrResourceGroup
-  displayName: ACR resource group (e.g. DotnetContainers)
-  type: string
 
 variables:
 - template: templates/variables/image-builder.yml
@@ -33,14 +27,9 @@ extends:
         displayName: Annotate EOL Images
         steps:
         - template: /eng/common/templates/steps/init-docker-linux.yml@self
-          parameters:
-            cleanupDocker: true
         - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
           parameters:
             internalProjectName: ${{ variables.internalProjectName }}
             dataFile: ${{ parameters.dataFile }}
             force: ${{ parameters.force }}
             dockerRegistry: ${{ parameters.dockerRegistry }}
-            acrSubscription: ${{ parameters.acrSubscription }}
-            acrResourceGroup: ${{ parameters.acrResourceGroup }}
-        - template: /eng/common/templates/steps/cleanup-docker-linux.yml@self

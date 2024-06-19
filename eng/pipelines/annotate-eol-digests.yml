@@ -9,9 +9,6 @@ parameters:
   displayName: Annotate always, without checking if digests are already annotated for EOL
   type: boolean
   default: false
-- name: dockerRegistry
-  displayName: Docker registry name (e.g. mcr.microsoft.com)
-  type: string
 
 variables:
 - template: templates/variables/image-builder.yml
@@ -32,4 +29,3 @@ extends:
             internalProjectName: ${{ variables.internalProjectName }}
             dataFile: ${{ parameters.dataFile }}
             force: ${{ parameters.force }}
-            dockerRegistry: ${{ parameters.dockerRegistry }}

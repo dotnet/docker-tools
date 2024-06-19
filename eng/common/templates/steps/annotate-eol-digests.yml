@@ -2,7 +2,6 @@ parameters:
   internalProjectName: null
   force: false
   dataFile: null
-  dockerRegistry: null
 steps:
   - script: |
       optionalArgs=""
@@ -20,5 +19,5 @@ steps:
       args: >
         annotateEolDigests
         /repo/${{ parameters.dataFile }}
-        ${{ parameters.dockerRegistry }}
+        $(acr.server)
         $(optionalArgs)

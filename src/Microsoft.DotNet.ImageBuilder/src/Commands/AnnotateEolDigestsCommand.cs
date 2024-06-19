@@ -7,7 +7,7 @@ using System.Collections.Concurrent;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.EolAnnotations;
+using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Newtonsoft.Json;
 
 #nullable enable

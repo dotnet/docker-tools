@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
+namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public class EolAnnotationsData
     {
@@ -26,4 +26,3 @@ namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
         public List<EolDigestData>? EolDigests { get; set; }
     }
 }
-#nullable disable

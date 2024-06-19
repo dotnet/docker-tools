@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
+namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public class OrasDiscoverData
     {
@@ -16,4 +16,3 @@ namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
         }
     }
 }
-

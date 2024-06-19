@@ -5,7 +5,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
+namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public class EolDigestData
     {

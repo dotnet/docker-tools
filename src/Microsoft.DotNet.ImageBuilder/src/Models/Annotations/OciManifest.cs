@@ -5,15 +5,10 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
+namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public class OciManifest
     {
-        public string? Reference { get; set; }
-        public string? MediaType { get; set; }
-        public string? Digest { get; set; }
-        public int? Size { get; set; }
-        public IDictionary<string, string>? Annotations { get; set; }
         public string? ArtifactType { get; set; }
 
         public OciManifest()
@@ -21,4 +16,3 @@ namespace Microsoft.DotNet.ImageBuilder.Models.EolAnnotations
         }
     }
 }
-

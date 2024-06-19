@@ -1,0 +1,31 @@
+trigger: none
+pr: none
+
+parameters:
+- name: dataFile
+  displayName: Relative path to EOL annotations data file (e.g. eol-3.1.json for file in root of the branch)
+  type: string
+- name: force
+  displayName: Annotate always, without checking if digests are already annotated for EOL
+  type: boolean
+  default: false
+
+variables:
+- template: templates/variables/image-builder.yml
+
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    stages:
+    - stage: eolAnnotate
+      displayName: Annotate EOL images
+      jobs:
+      - job: AnnotateImages
+        displayName: Annotate EOL Images
+        steps:
+        - template: /eng/common/templates/steps/init-docker-linux.yml@self
+        - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
+          parameters:
+            internalProjectName: ${{ variables.internalProjectName }}
+            dataFile: ${{ parameters.dataFile }}
+            force: ${{ parameters.force }}

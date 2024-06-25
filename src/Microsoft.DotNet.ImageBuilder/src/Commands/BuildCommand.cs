@@ -82,7 +82,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // Prepopulate the credential cache with the container registry scope so that the token isn't expired by the time we
             // need to query the registry at the end of the command.
-            _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+            if (Options.IsPushEnabled)
+            {
+                _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+            }
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,

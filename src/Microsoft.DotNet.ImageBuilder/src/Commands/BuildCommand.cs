@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ICopyImageService _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -50,7 +51,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IProcessService processService,
             ICopyImageService copyImageService,
             IManifestServiceFactory manifestServiceFactory,
-            IRegistryCredentialsProvider registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -58,6 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
 
             // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -76,6 +79,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
+
+            // Prepopulate the credential cache with the container registry scope so that the token isn't expired by the time we
+            // need to query the registry at the end of the command.
+            _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,

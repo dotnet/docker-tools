@@ -46,7 +46,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
                 dateTimeService,
-                Mock.Of<IRegistryCredentialsProvider>());
+                Mock.Of<IRegistryCredentialsProvider>(),
+                Mock.Of<IAzureTokenCredentialProvider>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -300,7 +301,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IDateTimeService>(),
-                Mock.Of<IRegistryCredentialsProvider>());
+                Mock.Of<IRegistryCredentialsProvider>(),
+                Mock.Of<IAzureTokenCredentialProvider>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
@@ -424,7 +426,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 dateTimeService,
-                Mock.Of<IRegistryCredentialsProvider>());
+                Mock.Of<IRegistryCredentialsProvider>(),
+                Mock.Of<IAzureTokenCredentialProvider>());
 
             using TempFolderContext tempFolderContext = new TempFolderContext();
 

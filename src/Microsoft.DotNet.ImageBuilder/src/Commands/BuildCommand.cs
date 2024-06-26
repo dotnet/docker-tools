@@ -80,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            // Prepopulate the credential cache with the container registry scope so that the token isn't expired by the time we
+            // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we
             // need to query the registry at the end of the command.
             if (Options.IsPushEnabled)
             {

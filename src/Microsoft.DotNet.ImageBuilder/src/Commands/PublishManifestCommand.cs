@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private ConcurrentBag<string> _publishedManifestTags = new();
 
         [ImportingConstructor]
@@ -31,12 +32,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IDockerService dockerService,
             ILoggerService loggerService,
             IDateTimeService dateTimeService,
-            IRegistryCredentialsProvider registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
 
             // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -49,6 +52,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _loggerService.WriteHeading("GENERATING MANIFESTS");
+
+            // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we
+            // need to query the registry at the end of the command.
+            if (!Options.IsDryRun)
+            {
+                _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+            }
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 

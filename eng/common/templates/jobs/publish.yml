@@ -164,7 +164,6 @@ jobs:
     condition: succeeded()
     displayName: Write Source Build ID to File
   - template: /eng/common/templates/steps/publish-artifact.yml@self
-    condition: succeeded()
     parameters:
       path: $(sourceBuildIdOutputDir)
       artifactName: source-build-id

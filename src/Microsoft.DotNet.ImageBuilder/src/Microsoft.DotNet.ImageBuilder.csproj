@@ -10,6 +10,7 @@
   <ItemGroup>
     <!-- Upgrade explicitly referenced package version referenced by Microsoft.Data.SqlClient.5.1.1 and Microsoft.Azure.Kusto.Ingest.11.3.4 -->
     <PackageReference Include="Azure.Containers.ContainerRegistry" Version="1.1.1" />
+    <PackageReference Include="Azure.Monitor.Query" Version="1.4.0" />
     <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Azure.ResourceManager.ContainerRegistry" Version="1.2.1" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.20.0" />
@@ -19,6 +20,7 @@
     <PackageReference Include="LibGit2Sharp" Version="0.29.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="12.2.1" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+    <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.0" />
     <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="9.0.0-beta.24123.3" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.24151.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />

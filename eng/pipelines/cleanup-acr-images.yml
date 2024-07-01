@@ -20,7 +20,6 @@ jobs:
   - template: ../common/templates/steps/init-docker-linux.yml
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
-      serviceConnection: $(acr-staging.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "build-staging/*"
       subscription: $(acr-staging.subscription)
@@ -30,7 +29,6 @@ jobs:
       age: 15
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
-      serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet/*nightly/*"
       subscription: $(acr.subscription)
@@ -40,7 +38,6 @@ jobs:
       age: 30
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
-      serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "test/*"
       subscription: $(acr.subscription)
@@ -50,7 +47,6 @@ jobs:
       age: 7
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
-      serviceConnection: $(acr.serviceConnectionName)
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet*/samples*"
       subscription: $(acr.subscription)
@@ -61,7 +57,6 @@ jobs:
   # Disabled due to https://github.com/dotnet/docker-tools/issues/797
   # - template: ../common/templates/steps/clean-acr-images.yml
   #   parameters:
-  #     serviceConnection: $(acr-staging.serviceConnectionName)
   #     repo: "mirror/*"
   #     subscription: $(acr-staging.subscription)
   #     resourceGroup: $(acr-staging.resourceGroup)

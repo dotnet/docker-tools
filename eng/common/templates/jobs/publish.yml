@@ -3,6 +3,8 @@ parameters:
   internalProjectName: null
   customInitSteps: []
   customPublishVariables: []
+  waitForIngestionEnabled: false
+  ingestKustoImageInfo: false
 
 jobs:
 - job: Publish
@@ -99,10 +101,12 @@ jobs:
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)
       condition: succeeded()
+      waitForIngestionEnabled: ${{ parameters.waitForIngestionEnabled }}
   - template: /eng/common/templates/steps/publish-readmes.yml@self
     parameters:
       dryRunArg: $(dryRunArg)
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
+      waitForIngestionEnabled: ${{ parameters.waitForIngestionEnabled }}
   - script: >
       $(runImageBuilderCmd) publishImageInfo
       '$(imageInfoContainerDir)/image-info.json'
@@ -120,9 +124,10 @@ jobs:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Ingest Kusto Image Info
-      serviceConnection: $(kusto.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
-      condition: and(succeeded(), eq(variables['ingestKustoImageInfo'], 'true'))
+      condition: and(succeeded(), eq('${{ parameters.ingestKustoImageInfo }}', 'true'))
+      ${{ if eq(parameters.ingestKustoImageInfo, 'true') }}:
+        serviceConnection: $(kusto.serviceConnectionName)
       args: >
         ingestKustoImageInfo
         '$(imageInfoContainerDir)/image-info.json'

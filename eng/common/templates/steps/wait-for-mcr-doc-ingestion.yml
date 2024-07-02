@@ -2,13 +2,15 @@ parameters:
   commitDigest: null
   condition: true
   dryRunArg: ""
+  waitForIngestionEnabled: true
 
 steps:
 - template: /eng/common/templates/steps/run-imagebuilder.yml@self
   parameters:
     displayName: Wait for MCR Doc Ingestion
-    condition: and(${{ parameters.condition }}, eq(variables['waitForIngestionEnabled'], 'true'))
-    serviceConnection: $(marStatus.serviceConnectionName)
+    condition: and(${{ parameters.condition }}, eq('${{ parameters.waitForIngestionEnabled }}', 'true'))
+    ${{ if eq(parameters.waitForIngestionEnabled, 'true') }}:
+      serviceConnection: $(marStatus.serviceConnectionName)
     internalProjectName: 'internal'
     args: >
       waitForMcrDocIngestion

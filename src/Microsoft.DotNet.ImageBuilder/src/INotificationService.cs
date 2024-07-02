@@ -9,7 +9,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface INotificationService
 {
-    Task<NotificationPublishResult?> PostAsync(
+    Task PostAsync(
         string title,
         string description,
         IEnumerable<string> labels,

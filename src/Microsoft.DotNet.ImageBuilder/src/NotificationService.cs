@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
-        public async Task<NotificationPublishResult?> PostAsync(
+        public async Task PostAsync(
             string title,
             string description,
             IEnumerable<string> labels,
@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             IGitHubClient github = OctokitClientFactory.CreateGitHubClient(new(gitHubAccessToken));
 
-            NotificationPublishResult? result = null;
+            Issue? issue = null;
             if (!isDryRun)
             {
                 var newIssue = new NewIssue(title) { Body = description };
@@ -43,10 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     newIssue.Labels.Add(label);
                 }
 
-                Issue issue = await github.Issue.Create(repoOwner, repoName, newIssue);
-                result = new NotificationPublishResult(
-                    IssueUri: new(issue.HtmlUrl),
-                    IssueId: issue.Number);
+                issue = await github.Issue.Create(repoOwner, repoName, newIssue);
 
                 if (comments != null)
                 {
@@ -59,7 +56,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             _loggerService.WriteSubheading("POSTED NOTIFICATION:");
-            _loggerService.WriteMessage($"Issue URL: {result?.IssueUri?.ToString() ?? "SKIPPED"}");
+            _loggerService.WriteMessage($"Issue URL: {issue?.HtmlUrl ?? "SKIPPED"}");
             _loggerService.WriteMessage($"Title: {title}");
             _loggerService.WriteMessage($"Labels: {string.Join(", ", labels)}");
             _loggerService.WriteMessage($"Description:");
@@ -78,19 +75,17 @@ namespace Microsoft.DotNet.ImageBuilder
                 _loggerService.WriteMessage($"====END COMMENTS MARKDOWN===");
             }
 
-            if (result is null)
+            if (issue is null)
             {
-                return result;
+                return;
             }
 
             // Immediately close issues which aren't failures, since open issues should represent actionable items
             if (!labels.Where(l => l.Contains(Commands.NotificationLabels.Failure)).Any())
             {
                 _loggerService.WriteMessage("No failure label found in the notification labels.");
-                await github.Issue.Update(repoOwner, repoName, result.IssueId, new IssueUpdate { State = ItemState.Closed });
+                await github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed });
             }
-
-            return result;
         }
     }
 }

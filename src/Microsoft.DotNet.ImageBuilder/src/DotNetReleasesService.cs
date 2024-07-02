@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder
             foreach (Product product in col)
             {
                 if (product.EndOfLifeDate != null &&
-                    product.EndOfLifeDate < DateTime.Today)
+                    product.EndOfLifeDate <= DateTime.Today)
                 {
                     productEolDates.Add(product.ProductVersion, DateOnly.FromDateTime((DateTime)product.EndOfLifeDate));
                 }

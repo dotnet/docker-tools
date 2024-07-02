@@ -13,10 +13,27 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         public static IApiConnection CreateApiConnection(Credentials credentials)
         {
-            Connection connection = new(new ProductHeaderValue(Assembly.GetExecutingAssembly().GetName().Name));
-            connection.Credentials = credentials;
+            Connection connection = new(GetProductHeaderValue())
+            {
+                Credentials = credentials
+            };
+
             return new ApiConnection(connection);
         }
+
+        public static IGitHubClient CreateGitHubClient(Credentials credentials)
+        {
+            GitHubClient client = new(GetProductHeaderValue())
+            {
+                Credentials = credentials
+            };
+
+            return client;
+        }
+
+        private static ProductHeaderValue GetProductHeaderValue() =>
+            new(Assembly.GetExecutingAssembly().GetName().Name);
+
 
         public IBlobsClient CreateBlobsClient(IApiConnection connection) =>
             new BlobsClient(connection);

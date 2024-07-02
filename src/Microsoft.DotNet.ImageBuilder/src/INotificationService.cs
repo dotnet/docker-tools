@@ -6,18 +6,25 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface INotificationService
 {
-    public interface INotificationService
-    {
-        Task<Uri> PostAsync(
-            string title,
-            string description,
-            IEnumerable<string> labels,
-            string repoUrl,
-            string gitHubAccessToken,
-            bool isDryRun,
-            IEnumerable<string>? comments = null);
-    }
+    Task<NotificationPublishResult?> PostAsync(
+        string title,
+        string description,
+        IEnumerable<string> labels,
+        string repoOwner,
+        string repoName,
+        string gitHubAccessToken,
+        bool isDryRun,
+        IEnumerable<string>? comments = null);
 }
-#nullable disable
+
+public record NotificationPublishResult(Uri IssueUri, int IssueId);
+
+public enum NotificationPublishResultType
+{
+    Posted,
+    Skipped,
+}

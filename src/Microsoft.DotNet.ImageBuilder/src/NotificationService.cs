@@ -6,7 +6,9 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.Git.IssueManager;
+using Kusto.Cloud.Platform.Utils;
+using Microsoft.DotNet.ImageBuilder.Commands;
+using Octokit;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -22,34 +24,41 @@ namespace Microsoft.DotNet.ImageBuilder
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
-        public async Task<Uri> PostAsync(
+        public async Task<NotificationPublishResult?> PostAsync(
             string title,
             string description,
             IEnumerable<string> labels,
-            string repoUrl,
+            string repoOwner,
+            string repoName,
             string gitHubAccessToken,
             bool isDryRun,
             IEnumerable<string>? comments = null)
         {
-            IssueManager issueManager = new(gitHubAccessToken);
+            IGitHubClient github = OctokitClientFactory.CreateGitHubClient(new(gitHubAccessToken));
 
-            Uri? issueUrl = null;
+            NotificationPublishResult? result = null;
             if (!isDryRun)
             {
-                int issueId = await issueManager.CreateNewIssueAsync(repoUrl, title, description, labels: labels);
-                issueUrl = new($"{repoUrl}/issues/{issueId}");
+                var newIssue = new NewIssue(title) { Body = description };
+                labels.ForEach(newIssue.Labels.Add);
+
+                Issue issue = await github.Issue.Create(repoOwner, repoName, newIssue);
+                result = new NotificationPublishResult(
+                    IssueUri: new(issue.HtmlUrl),
+                    IssueId: issue.Number);
 
                 if (comments != null)
                 {
                     foreach (string comment in comments)
                     {
-                        string _ = await issueManager.CreateNewIssueCommentAsync(repoUrl, issueId, comment);
+                        IssueComment postedComment = 
+                            await github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment);
                     }
                 }
             }
 
             _loggerService.WriteSubheading("POSTED NOTIFICATION:");
-            _loggerService.WriteMessage($"Issue URL: {issueUrl?.ToString() ?? "N/A"}");
+            _loggerService.WriteMessage($"Issue URL: {result?.IssueUri?.ToString() ?? "SKIPPED"}");
             _loggerService.WriteMessage($"Title: {title}");
             _loggerService.WriteMessage($"Labels: {string.Join(", ", labels)}");
             _loggerService.WriteMessage($"Description:");
@@ -68,7 +77,23 @@ namespace Microsoft.DotNet.ImageBuilder
                 _loggerService.WriteMessage($"====END COMMENTS MARKDOWN===");
             }
 
-            return issueUrl;
+            if (result is null)
+            {
+                return result;
+            }
+
+            // Immediately close issues which aren't failures since there is no action
+            if (!labels.Where(l => l.Contains(NotificationLabels.Failure)).Any())
+            {
+                _loggerService.WriteMessage("No failure label found in the notification labels.");
+                await github.Issue.Update(repoOwner, repoName, result.IssueId, new IssueUpdate { State = ItemState.Closed });
+            }
+            else
+            {
+                _loggerService.WriteMessage("Failure label found in the notification labels.");
+            }
+
+            return result;
         }
     }
 }

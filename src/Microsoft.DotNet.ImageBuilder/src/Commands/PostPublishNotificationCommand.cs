@@ -106,7 +106,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     NotificationLabels.Publish,
                     NotificationLabels.GetRepoLocationLabel(Options.SourceRepo, Options.SourceBranch)
                 }.AppendIf(NotificationLabels.Failure, () => overallResult == BuildResult.Failed),
-                Options.GitOptions.GetRepoUrl().ToString(),
+                Options.GitOptions.Owner,
+                Options.GitOptions.Repo,
                 Options.GitOptions.AuthToken,
                 Options.IsDryRun,
                 imagesMarkdown);

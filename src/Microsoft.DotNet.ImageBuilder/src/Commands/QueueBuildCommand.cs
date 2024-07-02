@@ -258,13 +258,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                await _notificationService.PostAsync($"{header} - {subscription}", notificationMarkdown.ToString(),
-                    new string[]
+                await _notificationService.PostAsync(
+                    title: $"{header} - {subscription}", notificationMarkdown.ToString(),
+                    labels: new string[]
                     {
                         NotificationLabels.AutoBuilder,
                         NotificationLabels.GetRepoLocationLabel(subscription.Manifest.Repo, subscription.Manifest.Branch)
                     }.AppendIf(NotificationLabels.Failure, () => exception is not null),
-                    Options.GitOptions.GetRepoUrl().ToString(), Options.GitOptions.AuthToken, Options.IsDryRun);
+                    Options.GitOptions.Owner,
+                    Options.GitOptions.Repo,
+                    Options.GitOptions.AuthToken,
+                    Options.IsDryRun);
             }
         }
 

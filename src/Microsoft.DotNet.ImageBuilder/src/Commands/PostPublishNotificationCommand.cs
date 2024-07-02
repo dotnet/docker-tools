@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.QueueNotification;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.TeamFoundation.Build.WebApi;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;

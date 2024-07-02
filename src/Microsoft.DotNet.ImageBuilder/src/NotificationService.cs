@@ -6,8 +6,6 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
-using Kusto.Cloud.Platform.Utils;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
 
 #nullable enable
@@ -40,7 +38,10 @@ namespace Microsoft.DotNet.ImageBuilder
             if (!isDryRun)
             {
                 var newIssue = new NewIssue(title) { Body = description };
-                labels.ForEach(newIssue.Labels.Add);
+                foreach (string label in labels)
+                {
+                    newIssue.Labels.Add(label);
+                }
 
                 Issue issue = await github.Issue.Create(repoOwner, repoName, newIssue);
                 result = new NotificationPublishResult(
@@ -82,15 +83,11 @@ namespace Microsoft.DotNet.ImageBuilder
                 return result;
             }
 
-            // Immediately close issues which aren't failures since there is no action
-            if (!labels.Where(l => l.Contains(NotificationLabels.Failure)).Any())
+            // Immediately close issues which aren't failures, since open issues should represent actionable items
+            if (!labels.Where(l => l.Contains(Commands.NotificationLabels.Failure)).Any())
             {
                 _loggerService.WriteMessage("No failure label found in the notification labels.");
                 await github.Issue.Update(repoOwner, repoName, result.IssueId, new IssueUpdate { State = ItemState.Closed });
-            }
-            else
-            {
-                _loggerService.WriteMessage("Failure label found in the notification labels.");
             }
 
             return result;

@@ -116,7 +116,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             }
                             else
                             {
-                                PlatformData? newPlatform = newImage!.Platforms.FirstOrDefault(p => p.Dockerfile == oldPlatform.Dockerfile);
+                                PlatformData? newPlatform = newImage.Platforms.FirstOrDefault(p => p.Dockerfile == oldPlatform.Dockerfile);
                                 if (newPlatform == null || oldPlatform.Digest != newPlatform.Digest)
                                 {
                                     AddDigestForAnnotation(oldPlatform.Digest, oldPlatform.SimpleTags.First(), newDigest: newPlatform?.Digest);

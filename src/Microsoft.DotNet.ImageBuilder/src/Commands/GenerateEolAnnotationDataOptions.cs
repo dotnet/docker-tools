@@ -16,6 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? OldImageInfoPath { get; set; }
         public string? NewImageInfoPath { get; set; }
         public bool AnnotateEolProducts { get; set; } = false;
+        public string? RepoPrefix { get; set; }
     }
 
     public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
@@ -31,6 +32,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             "New image-info file"),
                         CreateOption<bool>("annotate-eol-products", nameof(GenerateEolAnnotationDataOptions.AnnotateEolProducts),
                             "Annotate images of EOL products"),
+                        CreateOption<string>("repo-prefix", nameof(GenerateEolAnnotationDataOptions.RepoPrefix),
+                            "Prefix to add to the repo names specified in the manifest"),
                     }
                 );
 

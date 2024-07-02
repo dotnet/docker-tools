@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder
             List<AcrEventEntry> entries = [];
 
             LogsTable? logsTable = await GetLogDataTable(
-                $"ContainerRegistryRepositoryEvents | where OperationName == 'Push' | where Repository == '{repository}' | where Tag == '{tag}'",
+                $"ContainerRegistryRepositoryEvents | where OperationName == 'Push' | where Repository == '{repository}' | where Tag == '{tag}' | sort by TimeGenerated asc",
                 TimespanDays);
 
             foreach (LogsTableRow row in logsTable.Rows)
@@ -39,7 +39,6 @@ namespace Microsoft.DotNet.ImageBuilder
                 });
             }
 
-            entries.Sort((x, y) => x.TimeGenerated.CompareTo(y.TimeGenerated));
             return entries.DistinctBy(x => x.Digest).ToList();
         }
 

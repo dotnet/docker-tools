@@ -1121,6 +1121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string oldImageInfoPath,
             string newImageInfoPath,
             string newEolDigestsListPath,
+            string repoPrefix = "public/",
             Mock<IDotNetReleasesService> dotNetReleasesServiceMock = null,
             Mock<IAzureLogService> azureLogServiceMock = null)
         {
@@ -1134,6 +1135,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
             command.Options.EolDigestsListPath = newEolDigestsListPath;
+            command.Options.RepoPrefix = repoPrefix;
             return command;
         }
 

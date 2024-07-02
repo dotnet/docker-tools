@@ -55,6 +55,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 throw new ArgumentNullException("Image-info paths are required.");
             }
 
+            if (string.IsNullOrEmpty(Options.RepoPrefix))
+            {
+                throw new ArgumentNullException("rep-prefix option is required.");
+            }
+
             _productEolDates = await _dotNetReleasesService.GetProductEolDatesFromReleasesJson();
 
             _oldImageArtifactDetails = LoadImageInfoData(Options.OldImageInfoPath);
@@ -70,7 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             EolAnnotationsData eolAnnotations = new EolAnnotationsData { EolDate = _eolDate, EolDigests = [] };
             foreach (KeyValuePair<string, DateOnly?> digest in _digestsToAnnotate)
             {
-                eolAnnotations.EolDigests!.Add(new EolDigestData { Digest = digest.Key, EolDate = digest.Value });
+                eolAnnotations.EolDigests.Add(new EolDigestData { Digest = digest.Key, EolDate = digest.Value });
             }
 
             string annotationsJson = JsonConvert.SerializeObject(eolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -163,7 +168,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // If newDigest is not null, annotate all dangling digests starting with oldDigest, except newDigest.
 
             string[] oldDigestParts = oldDigest.Split('@');
-            string repo = oldDigestParts[0].Replace("mcr.microsoft.com/", "public/");
+            string repo = oldDigestParts[0].Replace("mcr.microsoft.com/", Options.RepoPrefix);
 
             var recentPushes = _azureLogService.GetRecentPushEntries(repo, tag).Result;
             if (recentPushes.Count == 0)
@@ -231,11 +236,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void AddRepoForAnnotation(RepoData repo, DateOnly? eolDate = null, bool isNewRepo = false)
+        private void AddRepoForAnnotation(RepoData repo)
         {
             foreach (ImageData image in repo.Images)
             {
-                AddImageForAnnotation(image, eolDate, isNewImage: isNewRepo);
+                AddImageForAnnotation(image);
             }
         }
 

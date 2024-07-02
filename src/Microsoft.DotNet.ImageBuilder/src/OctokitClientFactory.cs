@@ -34,13 +34,10 @@ namespace Microsoft.DotNet.ImageBuilder
         private static ProductHeaderValue GetProductHeaderValue() =>
             new(Assembly.GetExecutingAssembly().GetName().Name);
 
-
         public IBlobsClient CreateBlobsClient(IApiConnection connection) =>
             new BlobsClient(connection);
 
         public ITreesClient CreateTreesClient(IApiConnection connection) =>
             new TreesClient(connection);
-
     }
 }
-#nullable disable

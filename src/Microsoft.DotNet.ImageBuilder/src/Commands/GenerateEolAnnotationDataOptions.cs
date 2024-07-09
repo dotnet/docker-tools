@@ -38,12 +38,12 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
         base.GetCliArguments()
             .Concat(
                 [
+                    new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListOutputPath),
+                        "EOL annotations digests list output path"),
                     new Argument<string>(nameof(GenerateEolAnnotationDataOptions.OldImageInfoPath),
                         "Old image-info file"),
                     new Argument<string>(nameof(GenerateEolAnnotationDataOptions.NewImageInfoPath),
                         "New image-info file"),
-                    new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListPath),
-                        "Eol annotations digests list path"),
                     new Argument<string>(nameof(GenerateEolAnnotationDataOptions.RepoPrefix),
                         "Prefix to add to the repo names specified in the manifest"),
                     new Argument<string>(nameof(GenerateEolAnnotationDataOptions.LogsWorkspaceId),

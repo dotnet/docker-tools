@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
+            EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListOutputPath);
             DateOnly? globalEolDate = eolAnnotations?.EolDate;
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(

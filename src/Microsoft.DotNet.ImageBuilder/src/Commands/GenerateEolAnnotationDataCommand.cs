@@ -21,15 +21,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureLogService _azureLogService;
         private readonly IDotNetReleasesService _dotNetReleasesService;
         private readonly ILoggerService _loggerService;
-
-        private ImageArtifactDetails _oldImageArtifactDetails;
-        private ImageArtifactDetails _newImageArtifactDetails;
-
-        private Dictionary<string, DateOnly?> _digestsToAnnotate = [];
-        private Dictionary<string, DateOnly?> _productEolDates = [];
-        private List<ImageArtifactDetails> _failedManifestsData = [];
-
         private readonly DateOnly _eolDate;
+        private readonly Dictionary<string, DateOnly?> _digestsToAnnotate = [];
+
+        private Dictionary<string, DateOnly?> _productEolDates = null!;
+        private ImageArtifactDetails _oldImageArtifactDetails = null!;
+        private ImageArtifactDetails _newImageArtifactDetails = null!;
 
         [ImportingConstructor]
         public GenerateEolAnnotationDataCommand(
@@ -61,10 +58,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void SerializeDigestDataJson()
         {
-            EolAnnotationsData eolAnnotations = new EolAnnotationsData { EolDate = _eolDate, EolDigests = [] };
+            EolAnnotationsData eolAnnotations = new([], _eolDate);
             foreach (KeyValuePair<string, DateOnly?> digest in _digestsToAnnotate)
             {
-                eolAnnotations.EolDigests.Add(new EolDigestData { Digest = digest.Key, EolDate = digest.Value });
+                eolAnnotations.EolDigests.Add(new EolDigestData(digest.Key) { EolDate = digest.Value });
             }
 
             string annotationsJson = JsonConvert.SerializeObject(eolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -97,12 +94,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         string oldImageIdentity = ImageIdentityString(oldImage);
                         foreach (PlatformData oldPlatform in oldImage.Platforms)
                         {
-                            if (newImage == null)
-                            {
-                                // There might be more than one image that contains the platform entry for this dockerfile
-                                // find the correct one that matches product version and the set of image tags
-                                newImage = newRepo!.Images.Where(i => i.Platforms.Any(p => p.Dockerfile == oldPlatform.Dockerfile)).FirstOrDefault(i => ImageIdentityString(i) == oldImageIdentity);
-                            }
+                            // There might be more than one image that contains the platform entry for this dockerfile
+                            // find the correct one that matches product version and the set of image tags
+                            newImage ??= newRepo!.Images
+                                .Where(i => i.Platforms.Any(p => p.Dockerfile == oldPlatform.Dockerfile))
+                                .FirstOrDefault(i => ImageIdentityString(i) == oldImageIdentity);
 
                             if (newImage == null)
                             {
@@ -134,12 +130,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (Options.AnnotateEolProducts)
                 {
                     // Annotate images for eol products in new image info
-                    foreach (RepoData repo in _newImageArtifactDetails.Repos)
+                    foreach (ImageData image in _newImageArtifactDetails.Repos.SelectMany(repo => repo.Images))
                     {
-                        foreach (ImageData image in repo.Images)
-                        {
-                            AnnotateImageIfProductIsEol(image);
-                        }
+                        AnnotateImageIfProductIsEol(image);
                     }
                 }
             }
@@ -159,7 +152,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string[] oldDigestParts = oldDigest.Split('@');
             string repo = oldDigestParts[0].Replace("mcr.microsoft.com/", Options.RepoPrefix);
 
-            var recentPushes = _azureLogService.GetRecentPushEntries(repo, tag, Options.LogsWorkspaceId, Options.LogsQueryDayRange).Result;
+            List<AcrEventEntry> recentPushes = _azureLogService.GetRecentPushEntries(repo, tag, Options.LogsWorkspaceId, Options.LogsQueryDayRange).Result;
             if (recentPushes.Count == 0)
             {
                 _loggerService.WriteMessage($"No recent pushes found for {repo}:{tag}");
@@ -178,7 +171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             for (int i = oldIndex + 1; i < newIndex; i++)
             {
-                _digestsToAnnotate.Add(oldDigestParts[0] + "@"  + recentPushes[i].Digest, eolDate);
+                _digestsToAnnotate.Add(oldDigestParts[0] + "@" + recentPushes[i].Digest, eolDate);
             }
         }
 
@@ -188,12 +181,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // as indicated by 'isNewDigest' flag. This is not clear from the method signature.
             // 'newDigest' is an optional parameter, provided in some code paths.
 
-            if (!_digestsToAnnotate.ContainsKey(digest))
+            if (_digestsToAnnotate.TryAdd(digest, eolDate))
             {
-                _digestsToAnnotate.Add(digest, eolDate);
-
                 // We do not check for dangling digests if annotating new digest/image/repo.
-                if (isNewDigest == false)
+                if (!isNewDigest)
                 {
                     AnnotateDanglingDigests(digest, tag, newDigest: newDigest);
                 }

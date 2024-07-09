@@ -91,25 +91,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         // If none of the platforms, in this image, exist in new image, annotate the image as EOL
 
                         ImageData? newImage = null;
-                        string oldImageIdentity = ImageIdentityString(oldImage);
+                        string oldImageIdentity = GetImageIdentityString(oldImage);
                         foreach (PlatformData oldPlatform in oldImage.Platforms)
                         {
                             // There might be more than one image that contains the platform entry for this dockerfile
                             // find the correct one that matches product version and the set of image tags
                             newImage ??= newRepo!.Images
                                 .Where(i => i.Platforms.Any(p => p.Dockerfile == oldPlatform.Dockerfile))
-                                .FirstOrDefault(i => ImageIdentityString(i) == oldImageIdentity);
+                                .FirstOrDefault(i => GetImageIdentityString(i) == oldImageIdentity);
 
                             if (newImage == null)
                             {
-                                AddDigestForAnnotation(oldPlatform.Digest, oldPlatform.SimpleTags.First());
+                                AddDigestForAnnotation(new DigestAnnotationData(oldPlatform.Digest, oldPlatform.SimpleTags.First()));
                             }
                             else
                             {
                                 PlatformData? newPlatform = newImage.Platforms.FirstOrDefault(p => p.Dockerfile == oldPlatform.Dockerfile);
                                 if (newPlatform == null || oldPlatform.Digest != newPlatform.Digest)
                                 {
-                                    AddDigestForAnnotation(oldPlatform.Digest, oldPlatform.SimpleTags.First(), newDigest: newPlatform?.Digest);
+                                    AddDigestForAnnotation(
+                                        new DigestAnnotationData(oldPlatform.Digest, oldPlatform.SimpleTags.First()),
+                                        newDigest: newPlatform?.Digest);
                                 }
                             }
                         }
@@ -122,7 +124,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                              newImage.Manifest == null ||
                              oldImage.Manifest.Digest != newImage.Manifest.Digest))
                         {
-                            AddDigestForAnnotation(oldImage.Manifest.Digest, oldImage.Manifest.SharedTags.First(), newDigest: newImage?.Manifest?.Digest);
+                            AddDigestForAnnotation(
+                                new DigestAnnotationData(oldImage.Manifest.Digest, oldImage.Manifest.SharedTags.First(), IsNew: false),
+                                newDigest: newImage?.Manifest?.Digest);
                         }
                     }
                 }
@@ -143,19 +147,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void AnnotateDanglingDigests(string oldDigest, string tag, DateOnly? eolDate = null, string? newDigest = null)
+        private void AnnotateDanglingDigests(DigestAnnotationData targetDigestData, string? newDigest = null)
         {
-            // If newDigest is null, annotate all dangling digests starting with oldDigest.
+            // If newDigest is null, annotate all dangling digests starting with targetDigest.
             // newDigest can be null if image or platform is being removed.
-            // If newDigest is not null, annotate all dangling digests starting with oldDigest, except newDigest.
+            // If newDigest is not null, annotate all dangling digests starting with targetDigest, except newDigest.
 
-            string[] oldDigestParts = oldDigest.Split('@');
+            string[] oldDigestParts = targetDigestData.Digest.Split('@');
             string repo = oldDigestParts[0].Replace("mcr.microsoft.com/", Options.RepoPrefix);
 
-            List<AcrEventEntry> recentPushes = _azureLogService.GetRecentPushEntries(repo, tag, Options.LogsWorkspaceId, Options.LogsQueryDayRange).Result;
+            List<AcrEventEntry> recentPushes = _azureLogService.GetRecentPushEntries(repo, targetDigestData.Tag, Options.LogsWorkspaceId, Options.LogsQueryDayRange).Result;
             if (recentPushes.Count == 0)
             {
-                _loggerService.WriteMessage($"No recent pushes found for {repo}:{tag}");
+                _loggerService.WriteMessage($"No recent pushes found for {repo}:{targetDigestData.Tag}");
                 return;
             }
 
@@ -171,48 +175,44 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             for (int i = oldIndex + 1; i < newIndex; i++)
             {
-                _digestsToAnnotate.Add(oldDigestParts[0] + "@" + recentPushes[i].Digest, eolDate);
+                _digestsToAnnotate.Add(oldDigestParts[0] + "@" + recentPushes[i].Digest, targetDigestData.EolDate);
             }
         }
 
-        private void AddDigestForAnnotation(string digest, string tag, DateOnly? eolDate = null, string? newDigest = null, bool isNewDigest = false)
+        private void AddDigestForAnnotation(DigestAnnotationData targetDigestData, string? newDigest = null)
         {
-            // TODO: This could likely use some updates. 'digest' can represent either old or new one
-            // as indicated by 'isNewDigest' flag. This is not clear from the method signature.
-            // 'newDigest' is an optional parameter, provided in some code paths.
-
-            if (_digestsToAnnotate.TryAdd(digest, eolDate))
+            if (_digestsToAnnotate.TryAdd(targetDigestData.Digest, targetDigestData.EolDate))
             {
                 // We do not check for dangling digests if annotating new digest/image/repo.
-                if (!isNewDigest)
+                if (!targetDigestData.IsNew)
                 {
-                    AnnotateDanglingDigests(digest, tag, newDigest: newDigest);
+                    AnnotateDanglingDigests(targetDigestData, newDigest);
                 }
             }
-            else if (eolDate != null)
+            else if (targetDigestData.EolDate != null)
             {
-                _digestsToAnnotate[digest] = eolDate;
+                _digestsToAnnotate[targetDigestData.Digest] = targetDigestData.EolDate;
             }
         }
 
-        private void AddImageForAnnotation(ImageData image, DateOnly? eolDate = null, bool isNewImage = false)
+        private void AddImageForAnnotation(ImageAnnotationData targetImageData, DateOnly? eolDate = null)
         {
             string tag = string.Empty;
 
-            if (image.Manifest != null)
+            if (targetImageData.Image.Manifest != null)
             {
-                tag = image.Manifest.SharedTags.First();
-                AddDigestForAnnotation(image.Manifest.Digest, tag, eolDate, isNewDigest: isNewImage);
+                tag = targetImageData.Image.Manifest.SharedTags.First();
+                AddDigestForAnnotation(new DigestAnnotationData(targetImageData.Image.Manifest.Digest, tag, eolDate, targetImageData.IsNew));
             }
 
-            foreach (PlatformData platform in image.Platforms)
+            foreach (PlatformData platform in targetImageData.Image.Platforms)
             {
                 if (platform.SimpleTags?.Count > 0)
                 {
                     tag = platform.SimpleTags.First();
                 }
 
-                AddDigestForAnnotation(platform.Digest, tag, eolDate, isNewDigest: isNewImage);
+                AddDigestForAnnotation(new DigestAnnotationData(platform.Digest, tag, eolDate, targetImageData.IsNew));
             }
         }
 
@@ -220,7 +220,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             foreach (ImageData image in repo.Images)
             {
-                AddImageForAnnotation(image);
+                AddImageForAnnotation(new ImageAnnotationData(image, IsNew: false));
             }
         }
 
@@ -228,21 +228,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (image.ProductVersion != null)
             {
-                string dotnetVersion = DotnetVersion(image.ProductVersion);
+                string dotnetVersion = Version.Parse(image.ProductVersion).ToString(2);
                 if (_productEolDates != null && _productEolDates.TryGetValue(dotnetVersion, out DateOnly? date))
                 {
-                    AddImageForAnnotation(image, eolDate: date, isNewImage: true);
+                    AddImageForAnnotation(new ImageAnnotationData(image, IsNew: true), eolDate: date);
                 }
             }
         }
 
-        private static string DotnetVersion(string productVersion)
-        {
-            string[] versionParts = productVersion.Split('.');
-            return versionParts.Length >= 2 ? versionParts[0] + "." + versionParts[1] : productVersion;
-        }
-
-        private static string ImageIdentityString(ImageData image) =>
+        private static string GetImageIdentityString(ImageData image) =>
             image.ProductVersion + (image.Manifest?.SharedTags != null ? " " + string.Join(" ", image.Manifest.SharedTags.Order()) : "");
 
         private static ImageArtifactDetails LoadImageInfoData(string imageInfoPath)
@@ -253,5 +247,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ? throw new JsonException($"Unable to correctly deserialize path '{imageInfoJson}'.")
                 : imageArtifactDetails;
         }
+
+        private record DigestAnnotationData(string Digest, string Tag, DateOnly? EolDate = null, bool IsNew = false);
+        private record ImageAnnotationData(ImageData Image, DateOnly? EolDate = null, bool IsNew = false);
     }
 }

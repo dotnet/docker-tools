@@ -32,11 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (LogsTableRow row in logsTable.Rows)
             {
-                entries.Add(new AcrEventEntry
-                {
-                    TimeGenerated = DateTime.Parse(row["TimeGenerated"].ToString()),
-                    Digest = row["Digest"].ToString()
-                });
+                entries.Add(new AcrEventEntry(DateTime.Parse(row["TimeGenerated"].ToString()), row["Digest"].ToString()));
             }
 
             return entries.DistinctBy(x => x.Digest).ToList();

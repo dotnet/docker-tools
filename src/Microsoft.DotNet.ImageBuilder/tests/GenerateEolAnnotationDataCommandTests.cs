@@ -9,31 +9,16 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.TeamFoundation.Build.WebApi;
-using Microsoft.TeamFoundation.Core.WebApi;
-using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using Xunit.Abstractions;
-using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
-using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class GenerateEolAnnotationDataTests
     {
-        private readonly ITestOutputHelper _outputHelper;
         private readonly DateOnly _globalDate = DateOnly.FromDateTime(DateTime.UtcNow);
-        private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
-
-        public GenerateEolAnnotationDataTests(ITestOutputHelper outputHelper)
-        {
-            _outputHelper = outputHelper;
-        }
 
         [Fact]
         public async Task GenerateEolAnnotationData_RepoRemoved()
@@ -44,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
                 string repo2Image1DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -58,19 +43,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag"
-                                            },
+                                            ],
                                             digest: "platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest101"
                                     }
                                 },
@@ -79,19 +64,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag"
-                                            },
+                                            ],
                                             digest: "platformdigest102")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest102"
                                     }
                                 }
@@ -107,19 +92,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo2Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "newtag"
-                                            },
+                                            ],
                                             digest : "platformdigest201")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest201"
                                     }
                                 }
@@ -141,22 +126,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath);
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "imagedigest101" },
-                        new EolDigestData { Digest = "platformdigest101" },
-                        new EolDigestData { Digest = "imagedigest102" },
-                        new EolDigestData { Digest = "platformdigest102" }
-                    }
+                    EolDigests =
+                    [
+                        new("imagedigest101"),
+                        new("platformdigest101"),
+                        new("imagedigest102"),
+                        new("platformdigest102")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -189,19 +173,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0"
-                                            },
+                                            ],
                                             digest: "platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest101"
                                     }
                                 },
@@ -210,25 +194,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0"
-                                            },
+                                            ],
                                             digest: "platformdigest102-amd64"),
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0"
-                                            },
+                                            ],
                                             digest: "platformdigest102-arm64")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest102"
                                     }
                                 }
@@ -250,21 +234,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath);
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "platformdigest102-amd64" },
-                        new EolDigestData { Digest = "platformdigest102-arm64" },
-                        new EolDigestData { Digest = "imagedigest102" }
-                    }
+                    EolDigests =
+                    [
+                        new("platformdigest102-amd64"),
+                        new("platformdigest102-arm64"),
+                        new("imagedigest102")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -295,19 +278,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0"
-                                            },
+                                            ],
                                             digest: "platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest101"
                                     }
                                 },
@@ -316,19 +299,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0"
-                                            },
+                                            ],
                                             digest: "platformdigest102")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest102"
                                     }
                                 }
@@ -351,20 +334,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath);
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "platformdigest102" },
-                        new EolDigestData { Digest = "imagedigest102" }
-                    }
+                    EolDigests =
+                    [
+                        new("platformdigest102"),
+                        new("imagedigest102")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -381,7 +363,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -395,19 +377,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0"
-                                            },
+                                            ],
                                             digest: "platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest101"
                                     }
                                 },
@@ -416,19 +398,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0"
-                                            },
+                                            ],
                                             digest: "platformdigest102")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest102"
                                     }
                                 }
@@ -458,7 +440,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath,
@@ -469,13 +450,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "platformdigest101" },
-                        new EolDigestData { Digest = "imagedigest101" },
-                        new EolDigestData { Digest = "imagedigest101-updated", EolDate = productEolDate },
-                        new EolDigestData { Digest = "platformdigest101-updated", EolDate = productEolDate }
-                    }
+                    EolDigests =
+                    [
+                        new("platformdigest101"),
+                        new("imagedigest101"),
+                        new("imagedigest101-updated") { EolDate = productEolDate },
+                        new("platformdigest101-updated") { EolDate = productEolDate }
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -492,7 +473,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -506,19 +487,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0-amd64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "mcr.microsoft.com/repo1@imagedigest101"
                                     }
                                 },
@@ -527,19 +508,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0-amd64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest102")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "mcr.microsoft.com/repo1@imagedigest102"
                                     }
                                 }
@@ -565,22 +546,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // old non-dangling digest is in of the entries.
                 // For platform digest we have 2 entries for EOL, both dangling,
                 // old non-dangling digest is not in the list.
-                List<AcrEventEntry> imageEntries = new List<AcrEventEntry>
-                {
-                    new AcrEventEntry { Digest = "imagedigest101", TimeGenerated = DateTime.Today.AddDays(-5) },
-                    new AcrEventEntry { Digest = "imagedigest101-dangling1", TimeGenerated = DateTime.Today.AddDays(-3) },
-                    new AcrEventEntry { Digest = "imagedigest101-dangling2", TimeGenerated = DateTime.Today.AddDays(-2) },
-                    new AcrEventEntry { Digest = "imagedigest101-updated", TimeGenerated = DateTime.Today },
-                };
+                List<AcrEventEntry> imageEntries =
+                [
+                    new(DateTime.Today.AddDays(-5), "imagedigest101"),
+                    new(DateTime.Today.AddDays(-3), "imagedigest101-dangling1"),
+                    new(DateTime.Today.AddDays(-2), "imagedigest101-dangling2"),
+                    new(DateTime.Today, "imagedigest101-updated"),
+                ];
 
-                List<AcrEventEntry> platformEntries = new List<AcrEventEntry>
-                {
-                    new AcrEventEntry { Digest = "platformdigest101-dangling1", TimeGenerated = DateTime.Today.AddDays(-5) },
-                    new AcrEventEntry { Digest = "platformdigest101-dangling2", TimeGenerated = DateTime.Today.AddDays(-3) },
-                    new AcrEventEntry { Digest = "platformdigest101-updated", TimeGenerated = DateTime.Today },
-                };
+                List<AcrEventEntry> platformEntries =
+                [
+                    new(DateTime.Today.AddDays(-5), "platformdigest101-dangling1"),
+                    new(DateTime.Today.AddDays(-3), "platformdigest101-dangling2"),
+                    new(DateTime.Today, "platformdigest101-updated"),
+                ];
 
-                Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new Dictionary<string, List<AcrEventEntry>>
+                Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new()
                 {
                     { RepoTagIdentity("public/repo1", "1.0"), imageEntries },
                     { RepoTagIdentity("public/repo1", "1.0-amd64"), platformEntries }
@@ -588,25 +569,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath,
-                        azureLogServiceMock : CreateAzureLogServiceMock(repoTagLogEntries));
+                        azureLogServiceMock: CreateAzureLogServiceMock(repoTagLogEntries));
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101-dangling1" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101-dangling2" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@imagedigest101" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@imagedigest101-dangling1" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@imagedigest101-dangling2" }
-                    }
+                    EolDigests =
+                    [
+                        new("mcr.microsoft.com/repo1@platformdigest101"),
+                        new("mcr.microsoft.com/repo1@platformdigest101-dangling1"),
+                        new("mcr.microsoft.com/repo1@platformdigest101-dangling2"),
+                        new("mcr.microsoft.com/repo1@imagedigest101"),
+                        new("mcr.microsoft.com/repo1@imagedigest101-dangling1"),
+                        new("mcr.microsoft.com/repo1@imagedigest101-dangling2")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -623,7 +603,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -637,19 +617,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0-amd64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "mcr.microsoft.com/repo1@imagedigest101"
                                     }
                                 },
@@ -658,19 +638,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0-amd64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest102")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "mcr.microsoft.com/repo1@imagedigest102"
                                     }
                                 }
@@ -696,20 +676,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // For platform digest we have 2 entries for EOL, both dangling,
                 // old non-dangling digest is not in the list.
                 // There are no new digests for image or platform as image was removed.
-                List<AcrEventEntry> imageEntries = new List<AcrEventEntry>
-                {
-                    new AcrEventEntry { Digest = "imagedigest101", TimeGenerated = DateTime.Today.AddDays(-5) },
-                    new AcrEventEntry { Digest = "imagedigest101-dangling1", TimeGenerated = DateTime.Today.AddDays(-3) },
-                    new AcrEventEntry { Digest = "imagedigest101-dangling2", TimeGenerated = DateTime.Today.AddDays(-2) },
-                };
+                List<AcrEventEntry> imageEntries =
+                [
+                    new(DateTime.Today.AddDays(-5), "imagedigest101"),
+                    new(DateTime.Today.AddDays(-3), "imagedigest101-dangling1"),
+                    new(DateTime.Today.AddDays(-2), "imagedigest101-dangling2"),
+                ];
 
-                List<AcrEventEntry> platformEntries = new List<AcrEventEntry>
-                {
-                    new AcrEventEntry { Digest = "platformdigest101-dangling1", TimeGenerated = DateTime.Today.AddDays(-5) },
-                    new AcrEventEntry { Digest = "platformdigest101-dangling2", TimeGenerated = DateTime.Today.AddDays(-3) },
-                };
+                List<AcrEventEntry> platformEntries =
+                [
+                    new(DateTime.Today.AddDays(-5), "platformdigest101-dangling1"),
+                    new(DateTime.Today.AddDays(-3), "platformdigest101-dangling2"),
+                ];
 
-                Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new Dictionary<string, List<AcrEventEntry>>
+                Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new()
                 {
                     { RepoTagIdentity("public/repo1", "1.0"), imageEntries },
                     { RepoTagIdentity("public/repo1", "1.0-amd64"), platformEntries }
@@ -717,25 +697,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath,
                         azureLogServiceMock: CreateAzureLogServiceMock(repoTagLogEntries));
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101-dangling1" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101-dangling2" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@imagedigest101" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@imagedigest101-dangling1" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@imagedigest101-dangling2" }
-                    }
+                    EolDigests =
+                    [
+                        new("mcr.microsoft.com/repo1@platformdigest101"),
+                        new("mcr.microsoft.com/repo1@platformdigest101-dangling1"),
+                        new("mcr.microsoft.com/repo1@platformdigest101-dangling2"),
+                        new("mcr.microsoft.com/repo1@imagedigest101"),
+                        new("mcr.microsoft.com/repo1@imagedigest101-dangling1"),
+                        new("mcr.microsoft.com/repo1@imagedigest101-dangling2")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -754,7 +733,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string repo1Image1arm64DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/arm64", tempFolderContext);
                 string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -768,25 +747,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1amd64DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0-amd64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest101"),
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1arm64DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0-arm64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest102")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "mcr.microsoft.com/repo1@imagedigest101"
                                     }
                                 },
@@ -795,19 +774,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0-amd64"
-                                            },
+                                            ],
                                             digest: "mcr.microsoft.com/repo1@platformdigest102")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "mcr.microsoft.com/repo1@imagedigest102"
                                     }
                                 }
@@ -831,35 +810,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // For platform digest we have 2 entries for EOL, both dangling,
                 // old non-dangling digest is not in the list.
                 // There are no new digests for platform as it was removed.
-                List<AcrEventEntry> platformEntries = new List<AcrEventEntry>
-                {
-                    new AcrEventEntry { Digest = "platformdigest101-dangling1", TimeGenerated = DateTime.Today.AddDays(-5) },
-                    new AcrEventEntry { Digest = "platformdigest101-dangling2", TimeGenerated = DateTime.Today.AddDays(-3) },
-                };
+                List<AcrEventEntry> platformEntries =
+                [
+                    new(DateTime.Today.AddDays(-5), "platformdigest101-dangling1"),
+                    new(DateTime.Today.AddDays(-3), "platformdigest101-dangling2")
+                ];
 
-                Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new Dictionary<string, List<AcrEventEntry>>
+                Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new()
                 {
                     { RepoTagIdentity("public/repo1", "1.0-amd64"), platformEntries }
                 };
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath,
                         azureLogServiceMock: CreateAzureLogServiceMock(repoTagLogEntries));
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101-dangling1" },
-                        new EolDigestData { Digest = "mcr.microsoft.com/repo1@platformdigest101-dangling2" }
-                    }
+                    EolDigests =
+                    [
+                        new("mcr.microsoft.com/repo1@platformdigest101"),
+                        new("mcr.microsoft.com/repo1@platformdigest101-dangling1"),
+                        new("mcr.microsoft.com/repo1@platformdigest101-dangling2")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -876,7 +854,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -890,19 +868,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "1.0"
-                                            },
+                                            ],
                                             digest: "platformdigest101")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest101"
                                     }
                                 }
@@ -925,20 +903,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath);
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "platformdigest101" },
-                        new EolDigestData { Digest = "imagedigest101" }
-                    }
+                    EolDigests =
+                    [
+                        new("platformdigest101"),
+                        new("imagedigest101")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -956,7 +933,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
                 string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -970,25 +947,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag"
-                                            },
+                                            ],
                                             digest: "platformdigest101"),
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "tag2"
-                                            },
+                                            ],
                                             digest: "platformdigest102")
                                     },
                                     ProductVersion = "1.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "1.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest101"
                                     }
                                 }
@@ -1010,19 +987,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath);
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "platformdigest102" }
-                    }
+                    EolDigests =
+                    [
+                        new("platformdigest102")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -1040,7 +1016,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
                 string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
 
-                ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+                ImageArtifactDetails imageArtifactDetails = new()
                 {
                     Repos =
                     {
@@ -1054,25 +1030,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     Platforms =
                                     {
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0"
-                                            },
+                                            ],
                                             digest: "platformdigest102-amd64"),
                                         Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
-                                            simpleTags: new List<string>
-                                            {
+                                            simpleTags:
+                                            [
                                                 "2.0"
-                                            },
+                                            ],
                                             digest: "platformdigest102-arm64")
                                     },
                                     ProductVersion = "2.0",
                                     Manifest = new ManifestData
                                     {
-                                        SharedTags = new List<string>
-                                        {
+                                        SharedTags =
+                                        [
                                             "2.0"
-                                        },
+                                        ],
                                         Digest = "imagedigest102"
                                     }
                                 }
@@ -1094,19 +1070,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GenerateEolAnnotationDataCommand command =
                     InitializeCommand(
-                        tempFolderContext,
                         oldImageInfoPath,
                         newImageInfoPath,
                         newEolDigestsListPath);
                 await command.ExecuteAsync();
 
-                EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+                EolAnnotationsData expectedEolAnnotations = new()
                 {
                     EolDate = _globalDate,
-                    EolDigests = new List<EolDigestData>
-                    {
-                        new EolDigestData { Digest = "platformdigest102-arm64" }
-                    }
+                    EolDigests =
+                    [
+                        new("platformdigest102-arm64")
+                    ]
                 };
 
                 string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
@@ -1116,8 +1091,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        private GenerateEolAnnotationDataCommand InitializeCommand(
-            TempFolderContext tempFolderContext,
+        private static GenerateEolAnnotationDataCommand InitializeCommand(
             string oldImageInfoPath,
             string newImageInfoPath,
             string newEolDigestsListPath,
@@ -1139,7 +1113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return command;
         }
 
-        private Mock<IDotNetReleasesService> CreateDotNetReleasesServiceMock(Dictionary<string, DateOnly?> productEolDates = null)
+        private static Mock<IDotNetReleasesService> CreateDotNetReleasesServiceMock(Dictionary<string, DateOnly?> productEolDates = null)
         {
             Mock<IDotNetReleasesService> dotNetReleasesServiceMock = new();
             dotNetReleasesServiceMock
@@ -1149,7 +1123,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return dotNetReleasesServiceMock;
         }
 
-        private Mock<IAzureLogService> CreateAzureLogServiceMock(Dictionary<string, List<AcrEventEntry>> acrEventEntriesForRepoTags = null)
+        private static Mock<IAzureLogService> CreateAzureLogServiceMock(Dictionary<string, List<AcrEventEntry>> acrEventEntriesForRepoTags = null)
         {
             Mock<IAzureLogService> dotNetReleasesServiceMock = new();
             dotNetReleasesServiceMock
@@ -1157,8 +1131,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync((string repository, string tag) => {
                     return acrEventEntriesForRepoTags != null && acrEventEntriesForRepoTags.ContainsKey(RepoTagIdentity(repository, tag))
                         ? acrEventEntriesForRepoTags[RepoTagIdentity(repository, tag)]
-                        : new List<AcrEventEntry>();
-                } );
+                        : [];
+                });
 
             return dotNetReleasesServiceMock;
         }

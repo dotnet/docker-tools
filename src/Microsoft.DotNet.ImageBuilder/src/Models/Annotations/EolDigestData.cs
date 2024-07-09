@@ -13,5 +13,14 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
         public string Digest { get; set; }
 
         public DateOnly? EolDate { get; set; }
+
+        public EolDigestData()
+        {
+        }
+
+        public EolDigestData(string digest)
+        {
+            Digest = digest;
+        }
     }
 }

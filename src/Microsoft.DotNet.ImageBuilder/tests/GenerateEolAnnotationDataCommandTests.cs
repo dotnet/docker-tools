@@ -259,7 +259,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
 
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            ImageArtifactDetails imageArtifactDetails = new()
             {
                 Repos =
                 {
@@ -440,7 +440,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.AnnotateEolProducts = true;
             await command.ExecuteAsync();
 
-            EolAnnotationsData expectedEolAnnotations = new EolAnnotationsData
+            EolAnnotationsData expectedEolAnnotations = new()
             {
                 EolDate = _globalDate,
                 EolDigests =

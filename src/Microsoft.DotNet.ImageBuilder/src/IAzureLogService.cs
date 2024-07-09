@@ -7,11 +7,10 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface IAzureLogService
 {
-    public interface IAzureLogService
-    {
-        Task<List<AcrEventEntry>> GetRecentPushEntries(string repository, string tag);
-    }
+    Task<List<AcrEventEntry>> GetRecentPushEntries(string repository, string tag, string acrLogsWorkspaceId, int logsQueryDayRange);
 }
-#nullable disable
+

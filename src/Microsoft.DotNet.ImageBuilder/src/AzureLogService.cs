@@ -2,52 +2,62 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Azure;
-using Azure.Identity;
-using Azure.Monitor.Query.Models;
-using Azure.Monitor.Query;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using System.Linq;
+using System.Threading.Tasks;
+using Azure;
+using Azure.Monitor.Query;
+using Azure.Monitor.Query.Models;
+using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+[Export(typeof(IAzureLogService))]
+public class AzureLogService : IAzureLogService
 {
-    [Export(typeof(IAzureLogService))]
-    public class AzureLogService : IAzureLogService
+    private const string DigestField = "Digest";
+    private const string TimeGeneratedField = "TimeGenerated";
+
+    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
+
+    [ImportingConstructor]
+    public AzureLogService(IAzureTokenCredentialProvider tokenCredentialProvider)
     {
-        private string AcrLogsWorkspaceId = "4db2f537-e3cf-4a80-97ba-9e2e66717407";
-        private const int TimespanDays = 7;
+        _tokenCredentialProvider = tokenCredentialProvider;
+    }
 
-        public async Task<List<AcrEventEntry>> GetRecentPushEntries(string repository, string tag)
+    public async Task<List<AcrEventEntry>> GetRecentPushEntries(string repository, string tag, string acrLogsWorkspaceId, int logsQueryDayRange)
+    {
+        List<AcrEventEntry> entries = [];
+
+        LogsTable? logsTable = await GetLogDataTable(
+            $"ContainerRegistryRepositoryEvents | where OperationName == 'Push' | where Repository == '{repository}' | where Tag == '{tag}' | sort by {TimeGeneratedField} asc",
+            acrLogsWorkspaceId,
+            logsQueryDayRange);
+
+        foreach (LogsTableRow row in logsTable.Rows)
         {
-            List<AcrEventEntry> entries = [];
+            string? timeGenerated = (row[TimeGeneratedField]?.ToString()) ?? throw new Exception($"Missing '{TimeGeneratedField}'");
+            string? digest = (row[DigestField]?.ToString()) ?? throw new Exception($"Missing '{DigestField}'");
 
-            LogsTable? logsTable = await GetLogDataTable(
-                $"ContainerRegistryRepositoryEvents | where OperationName == 'Push' | where Repository == '{repository}' | where Tag == '{tag}' | sort by TimeGenerated asc",
-                TimespanDays);
-
-            foreach (LogsTableRow row in logsTable.Rows)
-            {
-                entries.Add(new AcrEventEntry(DateTime.Parse(row["TimeGenerated"].ToString()), row["Digest"].ToString()));
-            }
-
-            return entries.DistinctBy(x => x.Digest).ToList();
+            entries.Add(new AcrEventEntry(DateTime.Parse(timeGenerated), digest));
         }
 
-        private async Task<LogsTable> GetLogDataTable(string query, int timespanDays)
-        {
-            var client = new LogsQueryClient(new DefaultAzureCredential());
+        return entries.DistinctBy(x => x.Digest).ToList();
+    }
 
-            Response<LogsQueryResult> result = await client.QueryWorkspaceAsync(
-                AcrLogsWorkspaceId,
-                query,
-                new QueryTimeRange(TimeSpan.FromDays(timespanDays)));
+    private async Task<LogsTable> GetLogDataTable(string query, string acrLogsWorkspaceId, int logsQueryDayRange)
+    {
+        var client = new LogsQueryClient(_tokenCredentialProvider.GetCredential());
 
-            return result.Value.Table;
-        }
+        Response<LogsQueryResult> result = await client.QueryWorkspaceAsync(
+            acrLogsWorkspaceId,
+            query,
+            new QueryTimeRange(TimeSpan.FromDays(logsQueryDayRange)));
+
+        return result.Value.Table;
     }
 }

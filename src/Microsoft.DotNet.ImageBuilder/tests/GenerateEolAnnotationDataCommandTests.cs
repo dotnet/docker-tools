@@ -1107,8 +1107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IAzureLogService> dotNetReleasesServiceMock = new();
             dotNetReleasesServiceMock
-                .Setup(o => o.GetRecentPushEntries(It.IsAny<string>(), It.IsAny<string>()))
-                .ReturnsAsync((string repository, string tag) => {
+                .Setup(o => o.GetRecentPushEntries(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
+                .ReturnsAsync((string repository, string tag, string acrLogsWorkspaceId, int logsQueryDayRange) => {
                     return acrEventEntriesForRepoTags != null && acrEventEntriesForRepoTags.ContainsKey(RepoTagIdentity(repository, tag))
                         ? acrEventEntriesForRepoTags[RepoTagIdentity(repository, tag)]
                         : [];

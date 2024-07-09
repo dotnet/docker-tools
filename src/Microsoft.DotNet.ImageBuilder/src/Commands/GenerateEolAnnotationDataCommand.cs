@@ -49,17 +49,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            if (string.IsNullOrEmpty(Options.OldImageInfoPath) ||
-                string.IsNullOrEmpty(Options.NewImageInfoPath))
-            {
-                throw new ArgumentNullException("Image-info paths are required.");
-            }
-
-            if (string.IsNullOrEmpty(Options.RepoPrefix))
-            {
-                throw new ArgumentNullException("rep-prefix option is required.");
-            }
-
             _productEolDates = await _dotNetReleasesService.GetProductEolDatesFromReleasesJson();
 
             _oldImageArtifactDetails = LoadImageInfoData(Options.OldImageInfoPath);
@@ -170,7 +159,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string[] oldDigestParts = oldDigest.Split('@');
             string repo = oldDigestParts[0].Replace("mcr.microsoft.com/", Options.RepoPrefix);
 
-            var recentPushes = _azureLogService.GetRecentPushEntries(repo, tag).Result;
+            var recentPushes = _azureLogService.GetRecentPushEntries(repo, tag, Options.LogsWorkspaceId, Options.LogsQueryDayRange).Result;
             if (recentPushes.Count == 0)
             {
                 _loggerService.WriteMessage($"No recent pushes found for {repo}:{tag}");

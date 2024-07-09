@@ -43,7 +43,7 @@ public class RegistryContentClientFactoryTests
     [InlineData(DockerHelper.DockerHubRegistry, $"https://{DockerHelper.DockerHubApiRegistry}/")]
     public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
     {
-        DockerRegistryOptions options = Mock.Of<DockerRegistryOptions>(options => options.RegistryOverride == "my-acr");
+        ManifestOptions options = Mock.Of<ManifestOptions>(options => options.RegistryOverride == "my-acr");
         RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<IAzureTokenCredentialProvider>());
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
         IRegistryContentClient client = clientFactory.Create(registry, "repo-name");

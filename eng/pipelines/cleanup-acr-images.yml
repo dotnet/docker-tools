@@ -22,29 +22,44 @@ jobs:
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "build-staging/*"
+      subscription: $(acr-staging.subscription)
+      resourceGroup: $(acr-staging.resourceGroup)
+      acr: $(acr-staging.server)
       action: delete
       age: 15
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet/*nightly/*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
       action: pruneDangling
       age: 30
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "test/*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
       action: pruneAll
       age: 7
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet*/samples*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
       action: pruneDangling
       age: 0
   # Disabled due to https://github.com/dotnet/docker-tools/issues/797
   # - template: ../common/templates/steps/clean-acr-images.yml
   #   parameters:
   #     repo: "mirror/*"
+  #     subscription: $(acr-staging.subscription)
+  #     resourceGroup: $(acr-staging.resourceGroup)
+  #     arc: $(acr-staging.server)
   #     action: pruneDangling
   #     age: 0

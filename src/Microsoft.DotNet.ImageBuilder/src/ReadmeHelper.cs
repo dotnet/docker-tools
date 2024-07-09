@@ -32,12 +32,11 @@ namespace Microsoft.DotNet.ImageBuilder
             if (fullTagListingHeaderIndex >= 0)
             {
                 int endOfFullTagListingHeaderIndex = fullTagListingHeaderIndex + TagsSectionHeader.Length;
-                int endOfGeneratedTagsIndex = readme.IndexOf(EndOfGeneratedTagsMarker) + EndOfGeneratedTagsMarker.Length;
+                int endOfGeneratedTagsIndex = readme.IndexOf(EndOfGeneratedTagsMarker);
 
                 if (endOfGeneratedTagsIndex < 0)
                 {
-                    throw new InvalidOperationException(
-                        $"Unable to find marker '{EndOfGeneratedTagsMarker}' in the readme content:{Environment.NewLine}{readme}");
+                    return readme;
                 }
 
                 readme =
@@ -47,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     tagsListing +
                     EndOfGeneratedTagsMarker +
                     targetLineEnding +
-                    readme.Substring(endOfGeneratedTagsIndex);
+                    readme.Substring(endOfGeneratedTagsIndex + EndOfGeneratedTagsMarker.Length);
             }
 
             return readme;

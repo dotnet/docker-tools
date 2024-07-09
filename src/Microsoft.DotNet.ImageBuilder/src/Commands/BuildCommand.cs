@@ -18,7 +18,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class BuildCommand : DockerRegistryCommand<BuildOptions, BuildOptionsBuilder>
+    public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
@@ -26,6 +26,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IProcessService _processService;
         private readonly ICopyImageService _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -49,14 +51,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IProcessService processService,
             ICopyImageService copyImageService,
             IManifestServiceFactory manifestServiceFactory,
-            IRegistryCredentialsProvider registryCredentialsProvider)
-            : base(registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
 
             // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -76,7 +80,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _imageArtifactDetails = new ImageArtifactDetails();
             }
 
-            await ExecuteWithCredentialsAsync(
+            // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we
+            // need to query the registry at the end of the command.
+            if (Options.IsPushEnabled)
+            {
+                _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+            }
+
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {
@@ -84,19 +95,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     await BuildImagesAsync();
                 },
+                Options.CredentialsOptions,
                 registryName: Manifest.Registry,
                 ownedAcr: Options.RegistryOverride);
 
             if (_processedTags.Any() || _cachedPlatforms.Any())
             {
                 // Log in again to refresh token as it may have expired from a long build
-                await ExecuteWithCredentialsAsync(
+                await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                     Options.IsDryRun,
                     async () =>
                     {
                         PushImages();
                         await PublishImageInfoAsync();
                     },
+                    Options.CredentialsOptions,
                     registryName: Manifest.Registry,
                     ownedAcr: Options.RegistryOverride);
             }

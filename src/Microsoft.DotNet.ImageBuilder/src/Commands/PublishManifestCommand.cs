@@ -16,12 +16,14 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class PublishManifestCommand : DockerRegistryCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
+    public class PublishManifestCommand : ManifestCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private ConcurrentBag<string> _publishedManifestTags = new();
 
         [ImportingConstructor]
@@ -30,12 +32,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IDockerService dockerService,
             ILoggerService loggerService,
             IDateTimeService dateTimeService,
-            IRegistryCredentialsProvider registryCredentialsProvider)
-            : base(registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
 
             // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -49,9 +53,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("GENERATING MANIFESTS");
 
+            // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we
+            // need to query the registry at the end of the command.
+            if (!Options.IsDryRun)
+            {
+                _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+            }
+
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
-            await ExecuteWithCredentialsAsync(
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
                 async () =>
                 {
@@ -76,6 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
                 },
+                Options.CredentialsOptions,
                 registryName: Manifest.Registry,
                 ownedAcr: Manifest.Registry);
         }

@@ -14,6 +14,9 @@ jobs:
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
       repo: $(repo)
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
       action: $(action)
       age: $(age)
       customArgs: $(customArgs)

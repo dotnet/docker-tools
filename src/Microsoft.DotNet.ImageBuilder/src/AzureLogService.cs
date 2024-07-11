@@ -31,13 +31,17 @@ public class AzureLogService : IAzureLogService
 
     public async Task<List<AcrEventEntry>> GetRecentPushEntries(string repository, string tag, string acrLogsWorkspaceId, int logsQueryDayRange)
     {
+        string query = $"""
+            ContainerRegistryRepositoryEvents
+            | where OperationName == 'Push' or OperationName == 'importImage'
+            | where Repository == '{repository}'
+            | where Tag == '{tag}'
+            | sort by {TimeGeneratedField} asc
+            """;
+
+        LogsTable? logsTable = await GetLogDataTable(query, acrLogsWorkspaceId, logsQueryDayRange);
+
         List<AcrEventEntry> entries = [];
-
-        LogsTable? logsTable = await GetLogDataTable(
-            $"ContainerRegistryRepositoryEvents | where OperationName == 'Push' | where Repository == '{repository}' | where Tag == '{tag}' | sort by {TimeGeneratedField} asc",
-            acrLogsWorkspaceId,
-            logsQueryDayRange);
-
         foreach (LogsTableRow row in logsTable.Rows)
         {
             string? timeGenerated = (row[TimeGeneratedField]?.ToString()) ?? throw new Exception($"Missing '{TimeGeneratedField}'");
@@ -51,7 +55,7 @@ public class AzureLogService : IAzureLogService
 
     private async Task<LogsTable> GetLogDataTable(string query, string acrLogsWorkspaceId, int logsQueryDayRange)
     {
-        var client = new LogsQueryClient(_tokenCredentialProvider.GetCredential());
+        var client = new LogsQueryClient(_tokenCredentialProvider.GetCredential(AzureScopes.LogAnalyticsScope));
 
         Response<LogsQueryResult> result = await client.QueryWorkspaceAsync(
             acrLogsWorkspaceId,

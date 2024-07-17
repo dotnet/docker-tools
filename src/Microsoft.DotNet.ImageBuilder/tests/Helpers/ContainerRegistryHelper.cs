@@ -85,11 +85,11 @@ internal static class ContainerRegistryHelper
                     tagCount
             ];
 
-        MethodInfo thisMethod = typeof(CleanAcrImagesCommandTest).GetMethod(nameof(CreateContainerRepositoryProperties), BindingFlags.Static | BindingFlags.NonPublic);
-
+        MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateContainerRepositoryProperties), BindingFlags.Static | BindingFlags.Public) ??
+            throw new Exception("Unable to find method");
         ConstructorInfo ctor = typeof(ContainerRepositoryProperties).GetConstructor(
             BindingFlags.NonPublic | BindingFlags.Instance,
-            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray());
+            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ?? throw new Exception("Unable to find constructor");
         return (ContainerRepositoryProperties)ctor.Invoke(args);
     }
 
@@ -133,8 +133,8 @@ internal static class ContainerRegistryHelper
         DateTimeOffset lastUpdatedOn = default,
         ArtifactArchitecture? architecture = null,
         ArtifactOperatingSystem? operatingSystem = null,
-        IReadOnlyList<ArtifactManifestPlatform> relatedArtifacts = null,
-        IReadOnlyList<string> tags = null,
+        IReadOnlyList<ArtifactManifestPlatform>? relatedArtifacts = null,
+        IReadOnlyList<string>? tags = null,
         bool? canDelete = null,
         bool? canWrite = null,
         bool? canList = null,
@@ -147,7 +147,7 @@ internal static class ContainerRegistryHelper
 
         tags ??= [];
 
-        object[] args =
+        object?[] args =
             [
                 registryLoginServer,
                 repositoryName,
@@ -165,11 +165,12 @@ internal static class ContainerRegistryHelper
                 canRead
             ];
 
-        MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateArtifactManifestProperties), BindingFlags.Static | BindingFlags.Public);
+        MethodInfo thisMethod = typeof(ContainerRegistryHelper).GetMethod(nameof(CreateArtifactManifestProperties), BindingFlags.Static | BindingFlags.Public) ??
+            throw new Exception("Unable to find method");
 
         ConstructorInfo ctor = typeof(ArtifactManifestProperties).GetConstructor(
             BindingFlags.NonPublic | BindingFlags.Instance,
-            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray());
+            thisMethod.GetParameters().Select(param => param.ParameterType).ToArray()) ?? throw new Exception("Unable to find constructor");
         return (ArtifactManifestProperties)ctor.Invoke(args);
     }
 }

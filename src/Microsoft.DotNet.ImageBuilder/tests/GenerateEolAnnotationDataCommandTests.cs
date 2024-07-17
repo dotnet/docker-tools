@@ -14,11 +14,18 @@ using Moq;
 using Newtonsoft.Json;
 using Xunit;
 
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
+
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class GenerateEolAnnotationDataTests
     {
+        private const string AcrName = "myacr.azurecr.io";
         private readonly DateOnly _globalDate = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Additional test scenarios:
+        // *  exclusion of digests which are already annotated
+        // * 
 
         [Fact]
         public async Task GenerateEolAnnotationData_RepoRemoved()
@@ -46,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "tag"
                                         ],
-                                        digest: "platformdigest101")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -55,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest101"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
                                 }
                             },
                             new ImageData
@@ -67,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "tag"
                                         ],
-                                        digest: "platformdigest102")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -76,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest102"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
                                 }
                             }
                         }
@@ -95,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "newtag"
                                         ],
-                                        digest : "platformdigest201")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo2", digest: "platformdigest201"))
                                 },
                                 ProductVersion = "2.0",
                                 Manifest = new ManifestData
@@ -104,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "2.0"
                                     ],
-                                    Digest = "imagedigest201"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo2", digest: "imagedigest201")
                                 }
                             }
                         }
@@ -123,11 +130,30 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["tag"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["1.0"])
+                        ]),
+                    CreateContainerRepository("repo2",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest201", tags: ["newtag"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest201", tags: ["2.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
-                    newEolDigestsListPath);
+                    newEolDigestsListPath,
+                    registryClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -135,10 +161,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("imagedigest101"),
-                    new("platformdigest101"),
-                    new("imagedigest102"),
-                    new("platformdigest102")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")) { Tag = "1.0" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")) { Tag = "1.0" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101")) { Tag = "tag" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102")) { Tag = "tag" },
                 ]
             };
 
@@ -156,7 +182,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
             string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
 
-            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            ImageArtifactDetails imageArtifactDetails = new()
             {
                 Repos =
                 {
@@ -174,7 +200,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "1.0"
                                         ],
-                                        digest: "platformdigest101")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -183,7 +209,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest101"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
                                 }
                             },
                             new ImageData
@@ -195,13 +221,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "2.0"
                                         ],
-                                        digest: "platformdigest102-amd64"),
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-amd64")),
                                     Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
                                         simpleTags:
                                         [
                                             "2.0"
                                         ],
-                                        digest: "platformdigest102-arm64")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64"))
                                 },
                                 ProductVersion = "2.0",
                                 Manifest = new ManifestData
@@ -210,7 +236,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "2.0"
                                     ],
-                                    Digest = "imagedigest102"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
                                 }
                             }
                         }
@@ -229,11 +255,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
-                    newEolDigestsListPath);
+                    newEolDigestsListPath,
+                    registryClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -241,9 +282,137 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("platformdigest102-amd64"),
-                    new("platformdigest102-arm64"),
-                    new("imagedigest102")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")) { Tag = "2.0" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-amd64")) { Tag = "2.0" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64")) { Tag = "2.0" },
+                ]
+            };
+
+            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
+
+            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+        }
+
+        [Fact]
+        public async Task GenerateEolAnnotationData_ExcludeDigestsThatAreAlreadyAnnotated()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            string repo1Image2amd64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/amd64", tempFolderContext);
+            string repo1Image2arm64DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/arm64", tempFolderContext);
+
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "1.0"
+                                        ],
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101"))
+                                },
+                                ProductVersion = "1.0",
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    [
+                                        "1.0"
+                                    ],
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2amd64DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "2.0"
+                                        ],
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-amd64")),
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "2.0"
+                                        ],
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64"))
+                                },
+                                ProductVersion = "2.0",
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    [
+                                        "2.0"
+                                    ],
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            // Remove second image from 'repo1' repo
+            imageArtifactDetails.Repos[0].Images.RemoveAt(1);
+
+            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
+
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
+            string armDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64");
+
+            // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
+            Mock<IOrasService> orasServiceMock = new();
+            orasServiceMock
+                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                .Returns(true);
+
+            GenerateEolAnnotationDataCommand command =
+                InitializeCommand(
+                    oldImageInfoPath,
+                    newImageInfoPath,
+                    newEolDigestsListPath,
+                    registryClientFactory,
+                    orasService: orasServiceMock.Object);
+            await command.ExecuteAsync();
+
+            EolAnnotationsData expectedEolAnnotations = new()
+            {
+                EolDate = _globalDate,
+                EolDigests =
+                [
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")) { Tag = "2.0" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-amd64")) { Tag = "2.0" },
                 ]
             };
 
@@ -277,7 +446,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "1.0"
                                         ],
-                                        digest: "platformdigest101")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -286,7 +455,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest101"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
                                 }
                             },
                             new ImageData
@@ -298,7 +467,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "2.0"
                                         ],
-                                        digest: "platformdigest102")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
                                 },
                                 ProductVersion = "2.0",
                                 Manifest = new ManifestData
@@ -307,7 +476,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "2.0"
                                     ],
-                                    Digest = "imagedigest102"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
                                 }
                             }
                         }
@@ -319,19 +488,35 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             // Update image and platform digests in only one image that uses the shared Dockerfile
-            imageArtifactDetails.Repos[0].Images[1].Manifest.Digest = "imagedigest102-updated";
-            imageArtifactDetails.Repos[0].Images[1].Platforms[0].Digest = "platformdigest102-updated";
+            imageArtifactDetails.Repos[0].Images[1].Manifest.Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102-updated");
+            imageArtifactDetails.Repos[0].Images[1].Platforms[0].Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-updated");
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102"),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest102"),
+                            CreateArtifactManifestProperties(digest: "imagedigest102-updated", tags: ["2.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
-                    newEolDigestsListPath);
+                    newEolDigestsListPath,
+                    registryClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -339,8 +524,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("platformdigest102"),
-                    new("imagedigest102")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")),
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102")),
                 ]
             };
 
@@ -374,7 +559,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "1.0"
                                         ],
-                                        digest: "platformdigest101")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -383,7 +568,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest101"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
                                 }
                             },
                             new ImageData
@@ -395,7 +580,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "2.0"
                                         ],
-                                        digest: "platformdigest102")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
                                 },
                                 ProductVersion = "2.0",
                                 Manifest = new ManifestData
@@ -404,7 +589,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "2.0"
                                     ],
-                                    Digest = "imagedigest102"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
                                 }
                             }
                         }
@@ -416,8 +601,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             // Update image a platform digest for EOL product.
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "imagedigest101-updated";
-            imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = "platformdigest101-updated";
+            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101-updated");
+            imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101-updated");
 
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
@@ -431,12 +616,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 { "1.0", productEolDate }
             };
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101"),
+                            CreateArtifactManifestProperties(digest: "platformdigest101-updated", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101"),
+                            CreateArtifactManifestProperties(digest: "imagedigest101-updated", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    dotNetReleasesServiceMock: CreateDotNetReleasesServiceMock(productEolDates));
+                    registryClientFactory,
+                    dotNetReleasesService: CreateDotNetReleasesService(productEolDates));
             command.Options.AnnotateEolProducts = true;
             await command.ExecuteAsync();
 
@@ -445,385 +646,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("platformdigest101"),
-                    new("imagedigest101"),
-                    new("imagedigest101-updated") { EolDate = productEolDate },
-                    new("platformdigest101-updated") { EolDate = productEolDate }
-                ]
-            };
-
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
-        }
-
-        [Fact]
-        public async Task GenerateEolAnnotationData_DanglingDigests_UpdatedImageAndPlatform()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0-amd64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest101")
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = "mcr.microsoft.com/repo1@imagedigest101"
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0-amd64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest102")
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = "mcr.microsoft.com/repo1@imagedigest102"
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Update first image and platform digests
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "mcr.microsoft.com/repo1@imagedigest101-updated";
-            imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = "mcr.microsoft.com/repo1@platformdigest101-updated";
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
-            // Prep test dangling digests
-            // For image digest we have 3 entries for EOL, 2 of them are dangling,
-            // old non-dangling digest is in of the entries.
-            // For platform digest we have 2 entries for EOL, both dangling,
-            // old non-dangling digest is not in the list.
-            List<AcrEventEntry> imageEntries =
-            [
-                new(DateTime.Today.AddDays(-5), "imagedigest101"),
-                new(DateTime.Today.AddDays(-3), "imagedigest101-dangling1"),
-                new(DateTime.Today.AddDays(-2), "imagedigest101-dangling2"),
-                new(DateTime.Today, "imagedigest101-updated"),
-            ];
-
-            List<AcrEventEntry> platformEntries =
-            [
-                new(DateTime.Today.AddDays(-5), "platformdigest101-dangling1"),
-                new(DateTime.Today.AddDays(-3), "platformdigest101-dangling2"),
-                new(DateTime.Today, "platformdigest101-updated"),
-            ];
-
-            Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new()
-            {
-                { RepoTagIdentity("public/repo1", "1.0"), imageEntries },
-                { RepoTagIdentity("public/repo1", "1.0-amd64"), platformEntries }
-            };
-
-            GenerateEolAnnotationDataCommand command =
-                InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
-                    azureLogServiceMock: CreateAzureLogServiceMock(repoTagLogEntries));
-            await command.ExecuteAsync();
-
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
-                [
-                    new("mcr.microsoft.com/repo1@platformdigest101"),
-                    new("mcr.microsoft.com/repo1@platformdigest101-dangling1"),
-                    new("mcr.microsoft.com/repo1@platformdigest101-dangling2"),
-                    new("mcr.microsoft.com/repo1@imagedigest101"),
-                    new("mcr.microsoft.com/repo1@imagedigest101-dangling1"),
-                    new("mcr.microsoft.com/repo1@imagedigest101-dangling2")
-                ]
-            };
-
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
-        }
-
-        [Fact]
-        public async Task GenerateEolAnnotationData_DanglingDigests_ImageRemoved()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0-amd64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest101")
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = "mcr.microsoft.com/repo1@imagedigest101"
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0-amd64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest102")
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = "mcr.microsoft.com/repo1@imagedigest102"
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Remove first image in first repo
-            imageArtifactDetails.Repos[0].Images.RemoveAt(0);
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
-            // Prep test dangling digests
-            // For image digest we have 3 entries for EOL, 2 of them are dangling,
-            // old non-dangling digest is in of the entries.
-            // For platform digest we have 2 entries for EOL, both dangling,
-            // old non-dangling digest is not in the list.
-            // There are no new digests for image or platform as image was removed.
-            List<AcrEventEntry> imageEntries =
-            [
-                new(DateTime.Today.AddDays(-5), "imagedigest101"),
-                new(DateTime.Today.AddDays(-3), "imagedigest101-dangling1"),
-                new(DateTime.Today.AddDays(-2), "imagedigest101-dangling2"),
-            ];
-
-            List<AcrEventEntry> platformEntries =
-            [
-                new(DateTime.Today.AddDays(-5), "platformdigest101-dangling1"),
-                new(DateTime.Today.AddDays(-3), "platformdigest101-dangling2"),
-            ];
-
-            Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new()
-            {
-                { RepoTagIdentity("public/repo1", "1.0"), imageEntries },
-                { RepoTagIdentity("public/repo1", "1.0-amd64"), platformEntries }
-            };
-
-            GenerateEolAnnotationDataCommand command =
-                InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
-                    azureLogServiceMock: CreateAzureLogServiceMock(repoTagLogEntries));
-            await command.ExecuteAsync();
-
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
-                [
-                    new("mcr.microsoft.com/repo1@platformdigest101"),
-                    new("mcr.microsoft.com/repo1@platformdigest101-dangling1"),
-                    new("mcr.microsoft.com/repo1@platformdigest101-dangling2"),
-                    new("mcr.microsoft.com/repo1@imagedigest101"),
-                    new("mcr.microsoft.com/repo1@imagedigest101-dangling1"),
-                    new("mcr.microsoft.com/repo1@imagedigest101-dangling2")
-                ]
-            };
-
-            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
-
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
-        }
-
-        [Fact]
-        public async Task GenerateEolAnnotationData_DanglingDigests_PlatformRemoved()
-        {
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            string repo1Image1amd64DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/amd64", tempFolderContext);
-            string repo1Image1arm64DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/arm64", tempFolderContext);
-            string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("2.0/runtime/os", tempFolderContext);
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo1",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1amd64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0-amd64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest101"),
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1arm64DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "1.0-arm64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest102")
-                                },
-                                ProductVersion = "1.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "1.0"
-                                    ],
-                                    Digest = "mcr.microsoft.com/repo1@imagedigest101"
-                                }
-                            },
-                            new ImageData
-                            {
-                                Platforms =
-                                {
-                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
-                                        simpleTags:
-                                        [
-                                            "2.0-amd64"
-                                        ],
-                                        digest: "mcr.microsoft.com/repo1@platformdigest102")
-                                },
-                                ProductVersion = "2.0",
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    [
-                                        "2.0"
-                                    ],
-                                    Digest = "mcr.microsoft.com/repo1@imagedigest102"
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
-            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            // Remove first platform (in first image, first repo)
-            imageArtifactDetails.Repos[0].Images[0].Platforms.RemoveAt(0);
-
-            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
-            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
-
-            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
-
-            // Prep test dangling digests
-            // For platform digest we have 2 entries for EOL, both dangling,
-            // old non-dangling digest is not in the list.
-            // There are no new digests for platform as it was removed.
-            List<AcrEventEntry> platformEntries =
-            [
-                new(DateTime.Today.AddDays(-5), "platformdigest101-dangling1"),
-                new(DateTime.Today.AddDays(-3), "platformdigest101-dangling2")
-            ];
-
-            Dictionary<string, List<AcrEventEntry>> repoTagLogEntries = new()
-            {
-                { RepoTagIdentity("public/repo1", "1.0-amd64"), platformEntries }
-            };
-
-            GenerateEolAnnotationDataCommand command =
-                InitializeCommand(
-                    oldImageInfoPath,
-                    newImageInfoPath,
-                    newEolDigestsListPath,
-                    azureLogServiceMock: CreateAzureLogServiceMock(repoTagLogEntries));
-            await command.ExecuteAsync();
-
-            EolAnnotationsData expectedEolAnnotations = new()
-            {
-                EolDate = _globalDate,
-                EolDigests =
-                [
-                    new("mcr.microsoft.com/repo1@platformdigest101"),
-                    new("mcr.microsoft.com/repo1@platformdigest101-dangling1"),
-                    new("mcr.microsoft.com/repo1@platformdigest101-dangling2")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")),
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101-updated")) { EolDate = productEolDate, Tag = "1.0" },
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101")),
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101-updated")) { EolDate = productEolDate, Tag = "1.0" }
                 ]
             };
 
@@ -857,7 +683,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "1.0"
                                         ],
-                                        digest: "platformdigest101")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -866,7 +692,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest101"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
                                 }
                             }
                         }
@@ -878,19 +704,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             // Update and image and platform digests
-            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = "imagedigest101-updated";
-            imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = "platformdigest101-updated";
+            imageArtifactDetails.Repos[0].Images[0].Manifest.Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101-updated");
+            imageArtifactDetails.Repos[0].Images[0].Platforms[0].Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101-updated");
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101"),
+                            CreateArtifactManifestProperties(digest: "platformdigest101-updated", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101"),
+                            CreateArtifactManifestProperties(digest: "imagedigest101-updated", tags: ["1.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
-                    newEolDigestsListPath);
+                    newEolDigestsListPath,
+                    registryClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -898,8 +738,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("platformdigest101"),
-                    new("imagedigest101")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")),
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101")),
                 ]
             };
 
@@ -934,13 +774,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "tag"
                                         ],
-                                        digest: "platformdigest101"),
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101")),
                                     Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
                                         simpleTags:
                                         [
                                             "tag2"
                                         ],
-                                        digest: "platformdigest102")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
                                 },
                                 ProductVersion = "1.0",
                                 Manifest = new ManifestData
@@ -949,7 +789,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "1.0"
                                     ],
-                                    Digest = "imagedigest101"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
                                 }
                             }
                         }
@@ -961,18 +801,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             // Update just one platform digest
-            imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = "platformdigest102-updated";
+            imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-updated");
 
             string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
             File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102"),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["tag2"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
-                    newEolDigestsListPath);
+                    newEolDigestsListPath,
+                    registryClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -980,7 +834,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("platformdigest102")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
                 ]
             };
 
@@ -1015,13 +869,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         [
                                             "2.0"
                                         ],
-                                        digest: "platformdigest102-amd64"),
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-amd64")),
                                     Helpers.ImageInfoHelper.CreatePlatform(repo1Image2arm64DockerfilePath,
                                         simpleTags:
                                         [
                                             "2.0"
                                         ],
-                                        digest: "platformdigest102-arm64")
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64"))
                                 },
                                 ProductVersion = "2.0",
                                 Manifest = new ManifestData
@@ -1030,7 +884,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     [
                                         "2.0"
                                     ],
-                                    Digest = "imagedigest102"
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
                                 }
                             }
                         }
@@ -1049,11 +903,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest102-amd64", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-arm64", tags: ["2.0"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
-                    newEolDigestsListPath);
+                    newEolDigestsListPath,
+                    registryClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -1061,7 +928,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDate = _globalDate,
                 EolDigests =
                 [
-                    new("platformdigest102-arm64")
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64")) { Tag = "2.0" },
                 ]
             };
 
@@ -1075,46 +942,54 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string oldImageInfoPath,
             string newImageInfoPath,
             string newEolDigestsListPath,
+            IContainerRegistryClientFactory registryClientFactory,
             string repoPrefix = "public/",
-            Mock<IDotNetReleasesService> dotNetReleasesServiceMock = null,
-            Mock<IAzureLogService> azureLogServiceMock = null)
+            IOrasService orasService = null,
+            IDotNetReleasesService dotNetReleasesService = null)
         {
             Mock<ILoggerService> loggerServiceMock = new();
-            dotNetReleasesServiceMock = dotNetReleasesServiceMock ?? CreateDotNetReleasesServiceMock();
-            azureLogServiceMock = azureLogServiceMock ?? CreateAzureLogServiceMock();
+            orasService = orasService ?? CreateOrasService([]);
+            dotNetReleasesService = dotNetReleasesService ?? CreateDotNetReleasesService();
             GenerateEolAnnotationDataCommand command = new(
-                azureLogServiceMock.Object,
-                dotNetReleasesServiceMock.Object,
-                loggerServiceMock.Object);
+                dotNetReleasesService,
+                loggerServiceMock.Object,
+                registryClientFactory,
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                orasService);
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
             command.Options.EolDigestsListPath = newEolDigestsListPath;
             command.Options.RepoPrefix = repoPrefix;
+            command.Options.RegistryName = AcrName;
             return command;
         }
 
-        private static Mock<IDotNetReleasesService> CreateDotNetReleasesServiceMock(Dictionary<string, DateOnly?> productEolDates = null)
+        private static IOrasService CreateOrasService(Dictionary<string, bool> digestAnnotatedMapping)
+        {
+            Mock<IOrasService> orasServiceMock = new();
+
+            orasServiceMock
+                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                .Returns(false);
+
+            foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
+            { 
+                orasServiceMock
+                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                    .Returns(digestAnnotated.Value);
+            }
+            
+            return orasServiceMock.Object;
+        }
+
+        private static IDotNetReleasesService CreateDotNetReleasesService(Dictionary<string, DateOnly?> productEolDates = null)
         {
             Mock<IDotNetReleasesService> dotNetReleasesServiceMock = new();
             dotNetReleasesServiceMock
                 .Setup(o => o.GetProductEolDatesFromReleasesJson())
                 .ReturnsAsync(productEolDates);
 
-            return dotNetReleasesServiceMock;
-        }
-
-        private static Mock<IAzureLogService> CreateAzureLogServiceMock(Dictionary<string, List<AcrEventEntry>> acrEventEntriesForRepoTags = null)
-        {
-            Mock<IAzureLogService> dotNetReleasesServiceMock = new();
-            dotNetReleasesServiceMock
-                .Setup(o => o.GetRecentPushEntries(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
-                .ReturnsAsync((string repository, string tag, string acrLogsWorkspaceId, int logsQueryDayRange) => {
-                    return acrEventEntriesForRepoTags != null && acrEventEntriesForRepoTags.ContainsKey(RepoTagIdentity(repository, tag))
-                        ? acrEventEntriesForRepoTags[RepoTagIdentity(repository, tag)]
-                        : [];
-                });
-
-            return dotNetReleasesServiceMock;
+            return dotNetReleasesServiceMock.Object;
         }
 
         private static string RepoTagIdentity(string repo, string tag) =>

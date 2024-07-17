@@ -17,8 +17,7 @@ public class GenerateEolAnnotationDataOptions : Options
     public string NewImageInfoPath { get; set; } = string.Empty;
     public bool AnnotateEolProducts { get; set; }
     public string RepoPrefix { get; set; } = string.Empty;
-    public int LogsQueryDayRange { get; set; }
-    public string LogsWorkspaceId { get; set; } = string.Empty;
+    public string RegistryName { get; set; } = string.Empty;
 }
 
 public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
@@ -29,8 +28,6 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
                 [
                     CreateOption<bool>("annotate-eol-products", nameof(GenerateEolAnnotationDataOptions.AnnotateEolProducts),
                         "Annotate images of EOL products"),
-                    CreateOption("log-days", nameof(GenerateEolAnnotationDataOptions.LogsQueryDayRange),
-                        "Number of days in the past to query for previous images", 7),
                 ]
             );
 
@@ -46,8 +43,8 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
                         "New image-info file"),
                     new Argument<string>(nameof(GenerateEolAnnotationDataOptions.RepoPrefix),
                         "Prefix to add to the repo names specified in the manifest"),
-                    new Argument<string>(nameof(GenerateEolAnnotationDataOptions.LogsWorkspaceId),
-                        "ID of the log analytics workspace containing the ACR logs"),
+                    new Argument<string>(nameof(GenerateEolAnnotationDataOptions.RegistryName),
+                        "Name of the registry"),
                 ]
             );
 }

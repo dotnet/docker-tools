@@ -43,29 +43,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.IsDryRun,
                 () =>
                 {
-                    Parallel.ForEach(eolAnnotations.EolDigests, (a) =>
+                    Parallel.ForEach(eolAnnotations.EolDigests, digestData =>
                     {
-                        if (Options.Force || !_orasService.IsDigestAnnotatedForEol(a.Digest, _loggerService, Options.IsDryRun))
+                        if (Options.Force || !_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun))
                         {
-                            DateOnly? eolDate = a.EolDate ?? globalEolDate;
+                            DateOnly? eolDate = digestData.EolDate ?? globalEolDate;
                             if (eolDate != null)
                             {
-                                _loggerService.WriteMessage($"Annotating EOL for digest '{a.Digest}', date '{eolDate}'");
-                                if (!_orasService.AnnotateEolDigest(a.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
+                                _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
+                                if (!_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
                                 {
                                     // We will capture all failures and log the json data at the end.
                                     // Json data can be used to rerun the failed annotations.
-                                    _failedAnnotations.Add(new EolDigestData { Digest = a.Digest, EolDate = eolDate });
+                                    _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
                                 }
                             }
                             else
                             {
-                                _loggerService.WriteError($"EOL date is not specified for digest '{a.Digest}'.");
+                                _loggerService.WriteError($"EOL date is not specified for digest '{digestData.Digest}'.");
                             }
                         }
                         else
                         {
-                            _loggerService.WriteMessage($"Digest '{a.Digest}' is already annotated for EOL.");
+                            _loggerService.WriteMessage($"Digest '{digestData.Digest}' is already annotated for EOL.");
                         }
                     });
 

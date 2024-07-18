@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
@@ -23,6 +22,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 
         public DateOnly? EolDate { get; set; }
 
-        public List<EolDigestData>? EolDigests { get; set; }
+        public List<EolDigestData> EolDigests { get; set; } = [];
     }
 }

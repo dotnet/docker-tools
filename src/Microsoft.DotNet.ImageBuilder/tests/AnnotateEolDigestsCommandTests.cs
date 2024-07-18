@@ -120,9 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful);
             Mock<IRegistryCredentialsProvider> registryCredentialsProviderMock = CreateRegistryCredentialsProviderMock();
             AnnotateEolDigestsCommand command = new(
-                Mock.Of<IDockerService>(),
                 loggerServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 orasServiceMock.Object,
                 registryCredentialsProviderMock.Object);
             command.Options.EolDigestsListPath = eolDigestsListPath;

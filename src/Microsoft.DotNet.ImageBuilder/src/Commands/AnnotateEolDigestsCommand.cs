@@ -16,25 +16,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     [Export(typeof(ICommand))]
     public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
     {
-        private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
-        private readonly IProcessService _processService;
         private readonly IOrasService _orasService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-
-        private ConcurrentBag<EolDigestData> _failedAnnotations = new ();
+        private readonly ConcurrentBag<EolDigestData> _failedAnnotations = [];
 
         [ImportingConstructor]
         public AnnotateEolDigestsCommand(
-            IDockerService dockerService,
             ILoggerService loggerService,
-            IProcessService processService,
             IOrasService orasService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {
-            _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         }
@@ -44,11 +37,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
-            DateOnly? globalEolDate = eolAnnotations?.EolDate;
+            DateOnly? globalEolDate = eolAnnotations.EolDate;
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
-                async () =>
+                () =>
                 {
                     Parallel.ForEach(eolAnnotations.EolDigests, (a) =>
                     {
@@ -76,12 +69,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         }
                     });
 
+                    return Task.CompletedTask;
                 },
                 Options.CredentialsOptions,
                 registryName: Options.AcrName,
                 ownedAcr: Options.AcrName);
 
-            if (_failedAnnotations.Count > 0)
+            if (!_failedAnnotations.IsEmpty)
             {
                 _loggerService.WriteMessage("JSON file for rerunning failed annotations:");
                 _loggerService.WriteMessage("");

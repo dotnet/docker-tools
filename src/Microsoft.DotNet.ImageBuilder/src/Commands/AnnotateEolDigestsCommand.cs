@@ -20,6 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IOrasService _orasService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotations = [];
+        private readonly ConcurrentBag<EolDigestData> _skippedAnnotations = [];
+        private readonly ConcurrentBag<EolDigestData> _existingAnnotations = [];
 
         [ImportingConstructor]
         public AnnotateEolDigestsCommand(
@@ -54,39 +56,65 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 registryName: Options.AcrName,
                 ownedAcr: Options.AcrName);
 
-            if (!_failedAnnotations.IsEmpty)
+            WriteNonEmptySummary(_skippedAnnotations,
+                "The following digests were skipped because they have existing annotations with matching EOL dates.");
+
+            WriteNonEmptySummary(_existingAnnotations,
+                "The following digests were skipped because they have existing annotations with non-matching EOL dates. These need to be deleted from MAR before they can be re-annotated.");
+
+            WriteNonEmptySummary(_failedAnnotations,
+                "The following digests had annotation failures:");
+
+            if (!_existingAnnotations.IsEmpty || !_failedAnnotations.IsEmpty)
             {
-                _loggerService.WriteMessage("JSON file for rerunning failed annotations:");
+                throw new InvalidOperationException(
+                    $"Some digest annotations failed or were skipped due to existing non-matching EOL date annotations (failed: {_failedAnnotations.Count}, skipped: {_existingAnnotations.Count}).");
+            }
+        }
+
+        private void WriteNonEmptySummary(ConcurrentBag<EolDigestData> eolDigests, string message)
+        {
+            if (!eolDigests.IsEmpty)
+            {
+                _loggerService.WriteMessage(message);
                 _loggerService.WriteMessage("");
-                _loggerService.WriteMessage(JsonConvert.SerializeObject(new EolAnnotationsData(eolDigests: [.. _failedAnnotations])));
+                _loggerService.WriteMessage(JsonConvert.SerializeObject(new EolAnnotationsData(eolDigests: [.. eolDigests])));
                 _loggerService.WriteMessage("");
-                throw new InvalidOperationException($"Failed to annotate {_failedAnnotations.Count} digests for EOL.");
             }
         }
 
         private void AnnotateDigest(EolDigestData digestData, DateOnly? globalEolDate)
         {
-            if (Options.Force || !_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun))
+            DateOnly? eolDate = digestData.EolDate ?? globalEolDate;
+            if (eolDate is null)
             {
-                DateOnly? eolDate = digestData.EolDate ?? globalEolDate;
-                if (eolDate != null)
+                _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
+                _loggerService.WriteError($"EOL date is not specified for digest '{digestData.Digest}'.");
+                return;
+            }
+
+            if (!_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out OciManifest? lifecycleArtifactManifest))
+            {
+                _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
+                if (!_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
                 {
-                    _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                    if (!_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
-                    {
-                        // We will capture all failures and log the json data at the end.
-                        // Json data can be used to rerun the failed annotations.
-                        _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
-                    }
-                }
-                else
-                {
-                    _loggerService.WriteError($"EOL date is not specified for digest '{digestData.Digest}'.");
+                    // We will capture all failures and log the json data at the end.
+                    // Json data can be used to rerun the failed annotations.
+                    _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
                 }
             }
             else
             {
-                _loggerService.WriteMessage($"Digest '{digestData.Digest}' is already annotated for EOL.");
+                if (lifecycleArtifactManifest.Annotations[OrasService.EndOfLifeAnnotation] == eolDate?.ToString(OrasService.EolDateFormat))
+                {
+                    _loggerService.WriteMessage($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
+                    _skippedAnnotations.Add(digestData);
+                }
+                else
+                {
+                    _loggerService.WriteError($"Could not annotate digest '{digestData.Digest}' because it has an existing non-matching EOL date: {eolDate}.");
+                    _existingAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
+                }
             }
         }
 

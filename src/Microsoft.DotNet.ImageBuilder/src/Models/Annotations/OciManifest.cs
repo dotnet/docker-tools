@@ -11,6 +11,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
     {
         public string? ArtifactType { get; set; }
 
+        public Dictionary<string, string> Annotations { get; set; } = [];
+
         public OciManifest()
         {
         }

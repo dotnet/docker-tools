@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -17,7 +15,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string EolDigestsListPath { get; set; } = string.Empty;
         public string AcrName { get; set; } = string.Empty;
-        public bool Force { get; set; } = false;
     }
 
     public class AnnotateEolDigestsOptionsBuilder : CliOptionsBuilder
@@ -26,14 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
-                .Concat(
-                    new Option[]
-                    {
-                        CreateOption<bool>("force", nameof(AnnotateEolDigestsOptions.Force),
-                            "Annotate always, without checking if digest is already annotated for EOL"),
-                    }
-                );
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions());
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()

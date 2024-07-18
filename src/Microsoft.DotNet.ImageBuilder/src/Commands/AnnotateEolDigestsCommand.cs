@@ -45,28 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     Parallel.ForEach(eolAnnotations.EolDigests, digestData =>
                     {
-                        if (Options.Force || !_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun))
-                        {
-                            DateOnly? eolDate = digestData.EolDate ?? globalEolDate;
-                            if (eolDate != null)
-                            {
-                                _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                                if (!_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
-                                {
-                                    // We will capture all failures and log the json data at the end.
-                                    // Json data can be used to rerun the failed annotations.
-                                    _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
-                                }
-                            }
-                            else
-                            {
-                                _loggerService.WriteError($"EOL date is not specified for digest '{digestData.Digest}'.");
-                            }
-                        }
-                        else
-                        {
-                            _loggerService.WriteMessage($"Digest '{digestData.Digest}' is already annotated for EOL.");
-                        }
+                        AnnotateDigest(digestData, globalEolDate);
                     });
 
                     return Task.CompletedTask;
@@ -82,6 +61,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _loggerService.WriteMessage(JsonConvert.SerializeObject(new EolAnnotationsData(eolDigests: [.. _failedAnnotations])));
                 _loggerService.WriteMessage("");
                 throw new InvalidOperationException($"Failed to annotate {_failedAnnotations.Count} digests for EOL.");
+            }
+        }
+
+        private void AnnotateDigest(EolDigestData digestData, DateOnly? globalEolDate)
+        {
+            if (Options.Force || !_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun))
+            {
+                DateOnly? eolDate = digestData.EolDate ?? globalEolDate;
+                if (eolDate != null)
+                {
+                    _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
+                    if (!_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
+                    {
+                        // We will capture all failures and log the json data at the end.
+                        // Json data can be used to rerun the failed annotations.
+                        _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
+                    }
+                }
+                else
+                {
+                    _loggerService.WriteError($"EOL date is not specified for digest '{digestData.Digest}'.");
+                }
+            }
+            else
+            {
+                _loggerService.WriteMessage($"Digest '{digestData.Digest}' is already annotated for EOL.");
             }
         }
 

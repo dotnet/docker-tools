@@ -611,7 +611,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
             DateOnly productEolDate = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(10);
-            Dictionary<string, DateOnly?> productEolDates = new()
+            Dictionary<string, DateOnly> productEolDates = new()
             {
                 { "1.0", productEolDate }
             };
@@ -982,7 +982,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return orasServiceMock.Object;
         }
 
-        private static IDotNetReleasesService CreateDotNetReleasesService(Dictionary<string, DateOnly?> productEolDates = null)
+        private static IDotNetReleasesService CreateDotNetReleasesService(Dictionary<string, DateOnly> productEolDates = null)
         {
             Mock<IDotNetReleasesService> dotNetReleasesServiceMock = new();
             dotNetReleasesServiceMock

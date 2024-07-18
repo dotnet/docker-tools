@@ -8,15 +8,15 @@ using Newtonsoft.Json;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
-    public class EolDigestData
+    public record EolDigestData
     {
         [JsonProperty(Required = Required.Always)]
-        public string Digest { get; set; } = string.Empty;
+        public string Digest { get; init; } = string.Empty;
 
         // This isn't read from programmatically, but is useful for debugging
-        public string? Tag { get; set; }
+        public string? Tag { get; init; }
 
-        public DateOnly? EolDate { get; set; }
+        public DateOnly? EolDate { get; init; }
 
         public EolDigestData()
         {

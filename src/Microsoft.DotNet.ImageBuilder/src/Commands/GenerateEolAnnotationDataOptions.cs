@@ -35,7 +35,7 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
         base.GetCliArguments()
             .Concat(
                 [
-                    new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListOutputPath),
+                    new Argument<string>(nameof(GenerateEolAnnotationDataOptions.EolDigestsListPath),
                         "EOL annotations digests list output path"),
                     new Argument<string>(nameof(GenerateEolAnnotationDataOptions.OldImageInfoPath),
                         "Old image-info file"),

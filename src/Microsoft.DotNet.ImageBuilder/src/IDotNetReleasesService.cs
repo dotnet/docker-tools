@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IDotNetReleasesService
     {
-        Task<Dictionary<string, DateOnly?>> GetProductEolDatesFromReleasesJson();
+        Task<Dictionary<string, DateOnly>> GetProductEolDatesFromReleasesJson();
     }
 }
 #nullable disable

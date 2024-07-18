@@ -28,10 +28,6 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private readonly IOrasService _orasService;
     private readonly DateOnly _eolDate;
 
-    private Dictionary<string, DateOnly?> _productEolDates = null!;
-    private ImageArtifactDetails _oldImageArtifactDetails = null!;
-    private ImageArtifactDetails _newImageArtifactDetails = null!;
-
     [ImportingConstructor]
     public GenerateEolAnnotationDataCommand(
         IDotNetReleasesService dotNetReleasesService,
@@ -53,25 +49,25 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
     public override async Task ExecuteAsync()
     {
-        _productEolDates = await _dotNetReleasesService.GetProductEolDatesFromReleasesJson();
-
-        _oldImageArtifactDetails = LoadImageInfoData(Options.OldImageInfoPath);
-        _newImageArtifactDetails = LoadImageInfoData(Options.NewImageInfoPath);
-
         List<EolDigestData> digestsToAnnotate = await GetDigestsToAnnotate();
-        SerializeDigestDataJson(digestsToAnnotate);
+        WriteDigestDataJson(digestsToAnnotate);
     }
 
-    private void SerializeDigestDataJson(List<EolDigestData> digestsToAnnotate)
+    private void WriteDigestDataJson(List<EolDigestData> digestsToAnnotate)
     {
         EolAnnotationsData eolAnnotations = new(digestsToAnnotate, _eolDate);
 
-        string annotationsJson = JsonConvert.SerializeObject(eolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+        string annotationsJson = JsonConvert.SerializeObject(
+            eolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
         File.WriteAllText(Options.EolDigestsListPath, annotationsJson);
     }
 
     private async Task<List<EolDigestData>> GetDigestsToAnnotate()
     {
+        Dictionary<string, DateOnly> productEolDates = await _dotNetReleasesService.GetProductEolDatesFromReleasesJson();
+        ImageArtifactDetails oldImageArtifactDetails = LoadImageInfoData(Options.OldImageInfoPath);
+        ImageArtifactDetails newImageArtifactDetails = LoadImageInfoData(Options.NewImageInfoPath);
+
         List<EolDigestData> digestDataList = [];
 
         try
@@ -83,11 +79,11 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             // all the digests in that repo to be annotated. But since the repo is deleted, it doesn't show up in the newly generated image info file. So we
             // need the previous version of the image info file to know that the repo had previously existed and so that repo is included in the scope for
             // the query of the digests.
-            IEnumerable<string> repoNames = _newImageArtifactDetails.Repos.Select(repo => repo.Repo)
-                .Union(_oldImageArtifactDetails.Repos.Select(repo => repo.Repo));
+            IEnumerable<string> repoNames = newImageArtifactDetails.Repos.Select(repo => repo.Repo)
+                .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo));
             IEnumerable<(string Digest, string? Tag)> registryDigests = await GetAllDigestsFromRegistry(repoNames);
 
-            IEnumerable<string> supportedDigests = GetSupportedDigests();
+            IEnumerable<string> supportedDigests = GetSupportedDigests(newImageArtifactDetails);
             IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryDigests, supportedDigests);
 
             // Annotate digests that are not already annotated for EOL
@@ -105,9 +101,9 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             if (Options.AnnotateEolProducts)
             {
                 // Annotate images for eol products in new image info
-                foreach (ImageData image in _newImageArtifactDetails.Repos.SelectMany(repo => repo.Images))
+                foreach (ImageData image in newImageArtifactDetails.Repos.SelectMany(repo => repo.Images))
                 {
-                    digestDataList.AddRange(GetProductEolDigests(image));
+                    digestDataList.AddRange(GetProductEolDigests(image, productEolDates));
                 }
             }
         }
@@ -125,53 +121,15 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     /// <summary>
     /// Finds all the digests that are in the registry but not in the supported digests list.
     /// </summary>
-    private static IEnumerable<EolDigestData> GetUnsupportedDigests(IEnumerable<(string Digest, string? Tag)> registryDigests, IEnumerable<string> supportedDigests)
-    {
-        List<(string Digest, string? Tag)> sortedRegistryDigests = registryDigests
-            .OrderBy(val => val.Digest)
-            .ToList();
-        List<string> sortedSupportedDigests = supportedDigests
-            .Order()
-            .ToList();
+    private static IEnumerable<EolDigestData> GetUnsupportedDigests(IEnumerable<(string Digest, string? Tag)> registryDigests, IEnumerable<string> supportedDigests) =>
+        registryDigests
+            .Where(registryDigest => !supportedDigests.Contains(registryDigest.Digest))
+            .Select(registryDigest => new EolDigestData(registryDigest.Digest) { Tag = registryDigest.Tag });
 
-        int supportedIndex = 0;
-        int registryIndex = 0;
-        List<EolDigestData> result = [];
-        while (supportedIndex < sortedSupportedDigests.Count && registryIndex < sortedRegistryDigests.Count)
-        {
-            int comparison = sortedSupportedDigests[supportedIndex].CompareTo(sortedRegistryDigests[registryIndex].Digest);
-            if (comparison < 0)
-            {
-                supportedIndex++;
-            }
-            else if (comparison > 0)
-            {
-                (string digest, string? tag) = sortedRegistryDigests[registryIndex];
-                result.Add(new EolDigestData(digest) { Tag = tag });
-                registryIndex++;
-            }
-            else
-            {
-                supportedIndex++;
-                registryIndex++;
-            }
-        }
-
-        // If there are remaining items, add them to the result
-        while (registryIndex < sortedRegistryDigests.Count)
-        {
-            (string digest, string tag) = sortedRegistryDigests[registryIndex];
-            result.Add(new EolDigestData(digest) { Tag = tag });
-            registryIndex++;
-        }
-
-        return result;
-    }
-
-    private IEnumerable<string> GetSupportedDigests() =>
-        _newImageArtifactDetails.Repos
+    private static IEnumerable<string> GetSupportedDigests(ImageArtifactDetails newImageArtifactDetails) =>
+        newImageArtifactDetails.Repos
             .SelectMany(repo => repo.Images)
-            .SelectMany(image => GetImageDigests(image))
+            .SelectMany(GetImageDigests)
             .Select(digest => digest.Digest);
     
     private static IEnumerable<(string Digest, string? Tag)> GetImageDigests(ImageData image)
@@ -210,18 +168,20 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         return digests;
     }
 
-    private IEnumerable<EolDigestData> GetProductEolDigests(ImageData image)
+    private static IEnumerable<EolDigestData> GetProductEolDigests(ImageData image, Dictionary<string, DateOnly> productEolDates)
     {
-        if (image.ProductVersion != null)
+        if (image.ProductVersion == null)
         {
-            string dotnetVersion = Version.Parse(image.ProductVersion).ToString(2);
-            if (_productEolDates != null && _productEolDates.TryGetValue(dotnetVersion, out DateOnly? date))
-            {
-                return GetImageDigests(image).Select(val => new EolDigestData(val.Digest) { Tag = val.Tag, EolDate = date });
-            }
+            return [];
         }
 
-        return [];
+        string dotnetVersion = Version.Parse(image.ProductVersion).ToString(2);
+        if (!productEolDates.TryGetValue(dotnetVersion, out DateOnly date))
+        {
+            return [];
+        }
+
+        return GetImageDigests(image).Select(val => new EolDigestData(val.Digest) { Tag = val.Tag, EolDate = date });
     }
 
     private static ImageArtifactDetails LoadImageInfoData(string imageInfoPath)

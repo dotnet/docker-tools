@@ -5,11 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Linq;
-using Microsoft.Deployment.DotNet.Releases;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
-using Newtonsoft.Json;
+using Microsoft.Deployment.DotNet.Releases;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -17,13 +14,13 @@ namespace Microsoft.DotNet.ImageBuilder
     [Export(typeof(IDotNetReleasesService))]
     public class DotNetReleasesService : IDotNetReleasesService
     {
-        public async Task<Dictionary<string, DateOnly?>> GetProductEolDatesFromReleasesJson()
+        public async Task<Dictionary<string, DateOnly>> GetProductEolDatesFromReleasesJson()
         {
-            Dictionary<string, DateOnly?> productEolDates = [];
+            Dictionary<string, DateOnly> productEolDates = [];
 
-            ProductCollection col = await ProductCollection.GetAsync();
+            ProductCollection dotnetProducts = await ProductCollection.GetAsync();
 
-            foreach (Product product in col)
+            foreach (Product product in dotnetProducts)
             {
                 if (product.EndOfLifeDate != null &&
                     product.EndOfLifeDate <= DateTime.Today)

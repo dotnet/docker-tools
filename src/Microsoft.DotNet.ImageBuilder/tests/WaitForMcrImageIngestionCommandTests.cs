@@ -130,9 +130,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
             command.Options.MinimumQueueTime = baselineTime;
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
             command.Options.RepoPrefix = repoPrefix;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
@@ -260,9 +260,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
             command.Options.MinimumQueueTime = baselineTime;
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
             File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));

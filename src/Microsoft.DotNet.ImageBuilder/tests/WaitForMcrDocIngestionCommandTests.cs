@@ -84,7 +84,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 environmentServiceMock.Object);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
             await command.ExecuteAsync();
 
@@ -172,7 +172,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 environmentServiceMock.Object);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
             Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
 
@@ -271,7 +271,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 environmentServiceMock.Object);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
             await command.ExecuteAsync();
 
@@ -361,7 +361,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 environmentServiceMock.Object);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.WaitTimeout = TimeSpan.FromMinutes(1);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
             Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
 
@@ -401,7 +401,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 environmentServiceMock.Object);
 
             command.Options.CommitDigest = commitDigest;
-            command.Options.WaitTimeout = TimeSpan.FromSeconds(3);
+            command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
             await Assert.ThrowsAsync<TimeoutException>(command.ExecuteAsync);

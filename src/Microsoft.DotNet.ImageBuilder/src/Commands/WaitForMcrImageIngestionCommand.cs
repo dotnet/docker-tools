@@ -37,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
                 IEnumerable<DigestInfo> imageInfos = GetImageDigestInfos(imageArtifactDetails);
-                await _imageIngestionReporter.ReportImageStatusesAsync(imageInfos, Options.WaitTimeout, Options.RequeryDelay, Options.MinimumQueueTime);
+                await _imageIngestionReporter.ReportImageStatusesAsync(imageInfos, Options.IngestionOptions.WaitTimeout, Options.IngestionOptions.RequeryDelay, Options.MinimumQueueTime);
             }
         }
 

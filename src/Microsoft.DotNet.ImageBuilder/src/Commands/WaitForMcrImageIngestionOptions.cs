@@ -17,9 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public DateTime MinimumQueueTime { get; set; }
 
-        public TimeSpan WaitTimeout { get; set; }
-
-        public TimeSpan RequeryDelay { get; set; }
+        public MarIngestionOptions IngestionOptions { get; set; } = new();
     }
 
     public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder
@@ -27,31 +25,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
         private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
+        private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
+
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
+                .Concat(_ingestionOptionsBuilder.GetCliArguments())
                 .Concat(
-                    new Argument[]
-                    {
+                    [
                         new Argument<string>(nameof(WaitForMcrImageIngestionOptions.ImageInfoPath),
                             "Path to image info file")
-                    }
+                    ]
                 );
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
+                .Concat(_ingestionOptionsBuilder.GetCliOptions(DefaultWaitTimeout, DefaultRequeryDelay))
                 .Concat(
-                    new Option[]
-                    {
+                    [
                         CreateOption("min-queue-time", nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime),
                             "Minimum queue time an image must have to be awaited",
-                            val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue),
-                        CreateOption("timeout", nameof(WaitForMcrImageIngestionOptions.WaitTimeout),
-                            $"Maximum time to wait for image ingestion (default: {DefaultWaitTimeout})",
-                            val => TimeSpan.Parse(val), DefaultWaitTimeout),
-                        CreateOption("requery-delay", nameof(WaitForMcrImageIngestionOptions.RequeryDelay),
-                            $"Amount of time to wait before requerying the status of an image (default: {DefaultRequeryDelay})",
-                            val => TimeSpan.Parse(val), DefaultRequeryDelay)
-                    });
+                            val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue)
+                    ]);
     }
 }
-#nullable disable

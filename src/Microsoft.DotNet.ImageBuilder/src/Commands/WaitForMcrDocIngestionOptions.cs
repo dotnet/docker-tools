@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -15,9 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public string CommitDigest { get; set; } = string.Empty;
 
-        public TimeSpan WaitTimeout { get; set; }
-
-        public TimeSpan RequeryDelay { get; set; }
+        public MarIngestionOptions IngestionOptions { get; set; } = new();
     }
 
     public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder
@@ -25,29 +22,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
         private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
+        private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
+
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
+                .Concat(_ingestionOptionsBuilder.GetCliArguments())
                 .Concat(
-                    new Argument[]
-                    {
+                    [
                         new Argument<string>(nameof(WaitForMcrDocIngestionOptions.CommitDigest),
                             "Git commit digest of the readme changes")
-                    }
+                    ]
                 );
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
-                .Concat(
-                    new Option[]
-                    {
-                        CreateOption("timeout", nameof(WaitForMcrDocIngestionOptions.WaitTimeout),
-                            $"Maximum time to wait for doc ingestion (default: {DefaultTimeout})",
-                            val => TimeSpan.Parse(val), DefaultTimeout),
-                        CreateOption("requery-delay", nameof(WaitForMcrDocIngestionOptions.RequeryDelay),
-                            $"Amount of time to wait before requerying the status of the commit (default: {DefaultRequeryDelay})",
-                            val => TimeSpan.Parse(val), DefaultRequeryDelay)
-                    }
-                );
+                .Concat(_ingestionOptionsBuilder.GetCliOptions(DefaultTimeout, DefaultRequeryDelay));
     }
 }
 #nullable disable

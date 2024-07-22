@@ -64,7 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         case StageStatus.Processing:
                         case StageStatus.NotStarted:
-                            await Task.Delay(Options.RequeryDelay);
+                            await Task.Delay(Options.IngestionOptions.RequeryDelay);
                             break;
                         case StageStatus.Failed:
                             _loggerService.WriteError(await GetFailureResultsAsync(statusClient, commitStatus));
@@ -85,9 +85,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     _environmentService.Exit(1);
                 }
 
-                if (DateTime.Now - startTime >= Options.WaitTimeout)
+                if (DateTime.Now - startTime >= Options.IngestionOptions.WaitTimeout)
                 {
-                    throw new TimeoutException($"Timed out after '{Options.WaitTimeout}' waiting for the docs to be ingested.");
+                    throw new TimeoutException($"Timed out after '{Options.IngestionOptions.WaitTimeout}' waiting for the docs to be ingested.");
                 }
             }
 

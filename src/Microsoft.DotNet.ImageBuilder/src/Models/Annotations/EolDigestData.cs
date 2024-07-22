@@ -5,13 +5,26 @@
 using System;
 using Newtonsoft.Json;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
-    public class EolDigestData
+    public record EolDigestData
     {
         [JsonProperty(Required = Required.Always)]
-        public string Digest { get; set; }
+        public string Digest { get; init; } = string.Empty;
 
-        public DateOnly? EolDate { get; set; }
+        // This isn't read from programmatically, but is useful for debugging
+        public string? Tag { get; init; }
+
+        public DateOnly? EolDate { get; init; }
+
+        public EolDigestData()
+        {
+        }
+
+        public EolDigestData(string digest)
+        {
+            Digest = digest;
+        }
     }
 }

@@ -125,7 +125,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<IProcessService>(),
                 orasServiceMock.Object,
                 registryCredentialsProviderMock.Object);
-            command.Options.EolDigestsListPath = eolDigestsListPath;
+            command.Options.EolDigestsListOutputPath = eolDigestsListPath;
             command.Options.Force = force;
             command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
             return command;

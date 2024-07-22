@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
 
-        public string EolDigestsListPath { get; set; } = string.Empty;
+        public string EolDigestsListOutputPath { get; set; } = string.Empty;
         public string AcrName { get; set; } = string.Empty;
         public bool Force { get; set; } = false;
     }
@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(
                     new Argument[]
                     {
-                        new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListPath),
+                        new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListOutputPath),
                             "EOL annotations digests list path"),
                         new Argument<string>(nameof(AnnotateEolDigestsOptions.AcrName),
                             "Azure registry name")

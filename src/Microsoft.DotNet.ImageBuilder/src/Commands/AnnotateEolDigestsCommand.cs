@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListPath);
+            EolAnnotationsData eolAnnotations = LoadEolAnnotationsData(Options.EolDigestsListOutputPath);
             DateOnly? globalEolDate = eolAnnotations.EolDate;
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
@@ -100,7 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // We will capture all failures and log the json data at the end.
                     // Json data can be used to rerun the failed annotations.
-                    _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate });
+                    _failedAnnotations.Add(new EolDigestData { Digest = digestData.Digest, EolDate = eolDate, Tag = digestData.Tag });
                 }
             }
             else

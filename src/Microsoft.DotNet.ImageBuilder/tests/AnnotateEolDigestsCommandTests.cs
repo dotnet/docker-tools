@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 loggerServiceMock.Object,
                 orasServiceMock.Object,
                 registryCredentialsProviderMock.Object);
-            command.Options.EolDigestsListPath = eolDigestsListPath;
+            command.Options.EolDigestsListOutputPath = eolDigestsListPath;
             command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
             return command;
         }

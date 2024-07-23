@@ -23,6 +23,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 
         public DateOnly? EolDate { get; set; }
 
-        public List<EolDigestData>? EolDigests { get; set; }
+        public List<EolDigestData> EolDigests { get; set; } = [];
     }
 }

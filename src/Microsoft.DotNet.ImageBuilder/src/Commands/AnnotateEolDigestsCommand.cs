@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private static EolAnnotationsData LoadEolAnnotationsData(string eolDigestsListPath)
+        public static EolAnnotationsData LoadEolAnnotationsData(string eolDigestsListPath)
         {
             string eolAnnotationsJson = File.ReadAllText(eolDigestsListPath);
             EolAnnotationsData? eolAnnotations = JsonConvert.DeserializeObject<EolAnnotationsData>(eolAnnotationsJson);

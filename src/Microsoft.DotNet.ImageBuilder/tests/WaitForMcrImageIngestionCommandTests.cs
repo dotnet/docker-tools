@@ -282,15 +282,5 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.Is<IEnumerable<DigestInfo>>(infos => infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
                     It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<DateTime>()));
         }
-
-        private class DigestInfoEqualityComparer : IEqualityComparer<DigestInfo>
-        {
-            public static DigestInfoEqualityComparer Instance { get; } = new DigestInfoEqualityComparer();
-
-            public bool Equals(DigestInfo x, DigestInfo y) =>
-                x.Repo == y.Repo && x.Digest == y.Digest && x.RemainingTags.SequenceEqual(y.RemainingTags);
-
-            public int GetHashCode([DisallowNull] DigestInfo obj) => throw new NotImplementedException();
-        }
     }
 }

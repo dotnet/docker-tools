@@ -9,12 +9,10 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public class OciManifest
     {
-        public string? ArtifactType { get; set; }
+        public string ArtifactType { get; set; } = string.Empty;
+
+        public string Reference { get; set; } = string.Empty;
 
         public Dictionary<string, string> Annotations { get; set; } = [];
-
-        public OciManifest()
-        {
-        }
     }
 }

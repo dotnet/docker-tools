@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private readonly ITestOutputHelper _outputHelper;
         private readonly DateOnly _globalDate = new DateOnly(2024, 6, 10);
         private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
+        private const string RepoPrefix = "public/";
+        private const string AcrName = "myacr.azurecr.io";
 
         public AnnotateEolDigestsCommandTests(ITestOutputHelper outputHelper)
         {
@@ -134,24 +136,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<ILoggerService> loggerServiceMock = new();
             orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful, useNonMatchingDate);
-            Mock<IRegistryCredentialsProvider> registryCredentialsProviderMock = CreateRegistryCredentialsProviderMock();
             AnnotateEolDigestsCommand command = new(
                 loggerServiceMock.Object,
                 orasServiceMock.Object,
-                registryCredentialsProviderMock.Object);
+                Mock.Of<IRegistryCredentialsProvider>());
+            command.Options.RepoPrefix = RepoPrefix;
+            command.Options.AcrName = AcrName;
             command.Options.EolDigestsListOutputPath = eolDigestsListPath;
-            command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
             return command;
-        }
-
-        private static Mock<IRegistryCredentialsProvider> CreateRegistryCredentialsProviderMock()
-        {
-            Mock<IRegistryCredentialsProvider> registryCredentialsProviderMock = new();
-            registryCredentialsProviderMock
-                .Setup(o => o.GetCredentialsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<RegistryCredentialsOptions>()))
-                .ReturnsAsync(new RegistryCredentials("username", "password"));
-
-            return registryCredentialsProviderMock;
         }
 
         private Mock<IOrasService> CreateOrasServiceMock(bool digestAlreadyAnnotated, bool digestAnnotationIsSuccessful, bool useNonMatchingDate)
@@ -182,7 +174,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Annotations = new Dictionary<string, string>
                     {
                         { OrasService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
-                    }
+                    },
+                    Reference = $"{AcrName}/{RepoPrefix}repo@{digest}"
                 };
             }
 

@@ -15,6 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string EolDigestsListOutputPath { get; set; } = string.Empty;
         public string AcrName { get; set; } = string.Empty;
+        public string RepoPrefix { get; set; } = string.Empty;
     }
 
     public class AnnotateEolDigestsOptionsBuilder : CliOptionsBuilder
@@ -34,7 +35,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListOutputPath),
                             "EOL annotations digests list path"),
                         new Argument<string>(nameof(AnnotateEolDigestsOptions.AcrName),
-                            "Azure registry name")
+                            "Azure registry name"),
+                        new Argument<string>(nameof(GenerateEolAnnotationDataOptions.RepoPrefix),
+                            "Publish prefix of the repo names"),
                     }
                 );
     }

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -22,29 +21,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder
     {
-        private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
-        private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
+        private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
         private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_ingestionOptionsBuilder.GetCliArguments())
-                .Concat(
-                    [
-                        new Argument<string>(nameof(WaitForMcrImageIngestionOptions.ImageInfoPath),
-                            "Path to image info file")
-                    ]
-                );
+            [
+                ..base.GetCliArguments(),
+                .._ingestionOptionsBuilder.GetCliArguments(),
+                new Argument<string>(nameof(WaitForMcrImageIngestionOptions.ImageInfoPath),
+                    "Path to image info file")
+            ];
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_ingestionOptionsBuilder.GetCliOptions(DefaultWaitTimeout, DefaultRequeryDelay))
-                .Concat(
-                    [
-                        CreateOption("min-queue-time", nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime),
-                            "Minimum queue time an image must have to be awaited",
-                            val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue)
-                    ]);
+            [
+                ..base.GetCliOptions(),
+                .._ingestionOptionsBuilder.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
+                CreateOption("min-queue-time", nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime),
+                    "Minimum queue time an image must have to be awaited",
+                    val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue)
+            ];
     }
 }

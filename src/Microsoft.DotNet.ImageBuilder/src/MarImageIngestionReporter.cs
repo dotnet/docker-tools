@@ -248,21 +248,21 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             return stringBuilder.ToString();
         }
     }
-}
 
-internal class ImageResultInfo
-{
-    public ImageResultInfo(ImageResult imageResult, DigestInfo digestInfo)
+    private record ImageResultInfo
     {
-        ImageResult = imageResult;
-        DigestInfo = digestInfo;
-    }
+        public ImageResultInfo(ImageResult imageResult, DigestInfo digestInfo)
+        {
+            ImageResult = imageResult;
+            DigestInfo = digestInfo;
+        }
 
-    public ImageResult ImageResult { get; set; }
-    public DigestInfo DigestInfo { get; set; }
+        public ImageResult ImageResult { get; set; }
+        public DigestInfo DigestInfo { get; set; }
+    }
 }
 
-public class DigestInfo
+public record DigestInfo
 {
     public DigestInfo(string digest, string repo, IEnumerable<string> tags)
     {

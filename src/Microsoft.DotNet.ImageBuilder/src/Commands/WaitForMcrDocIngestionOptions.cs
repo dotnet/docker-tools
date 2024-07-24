@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -19,24 +18,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder
     {
-        private static readonly TimeSpan DefaultTimeout = TimeSpan.FromMinutes(5);
-        private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
         private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_ingestionOptionsBuilder.GetCliArguments())
-                .Concat(
-                    [
-                        new Argument<string>(nameof(WaitForMcrDocIngestionOptions.CommitDigest),
-                            "Git commit digest of the readme changes")
-                    ]
-                );
+            [
+                ..base.GetCliArguments(),
+                .._ingestionOptionsBuilder.GetCliArguments(),
+                new Argument<string>(nameof(WaitForMcrDocIngestionOptions.CommitDigest),
+                    "Git commit digest of the readme changes")
+            ];
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_ingestionOptionsBuilder.GetCliOptions(DefaultTimeout, DefaultRequeryDelay));
+            [
+                ..base.GetCliOptions(),
+                .._ingestionOptionsBuilder.GetCliOptions(s_defaultTimeout, s_defaultRequeryDelay)
+            ];
     }
 }
 #nullable disable

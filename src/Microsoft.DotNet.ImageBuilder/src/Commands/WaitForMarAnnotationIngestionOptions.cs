@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -19,23 +18,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class WaitForMarAnnotationIngestionOptionsBuilder : CliOptionsBuilder
     {
-        private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
-        private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
+        private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
         private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_ingestionOptionsBuilder.GetCliArguments())
-                .Concat(
-                    [
-                        new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListPath),
-                            "EOL annotations digests list path"),
-                    ]
-                );
+            [
+                ..base.GetCliArguments(),
+                .._ingestionOptionsBuilder.GetCliArguments(),
+                new Argument<string>(nameof(WaitForMarAnnotationIngestionOptions.EolDigestsListPath),
+                    "EOL annotations digests list path")
+            ];
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_ingestionOptionsBuilder.GetCliOptions(DefaultWaitTimeout, DefaultRequeryDelay));
+            [
+                ..base.GetCliOptions(),
+                .._ingestionOptionsBuilder.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay)
+            ];
     }
 }

@@ -6,8 +6,8 @@ using System.Collections.Generic;
 namespace Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
 
 #nullable enable
-internal class BulkDeletionDescription
+internal record BulkDeletionDescription
 {
-    public string RegistryType { get; set; } = "public";
-    public List<string> Digests { get; set;} = [];
+    public string RegistryType { get; init; } = "public";
+    public List<string> Digests { get; init;} = [];
 }

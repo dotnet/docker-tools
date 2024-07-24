@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ConcurrentBag<EolDigestData> _existingAnnotationImageDigests = [];
         private readonly ConcurrentBag<string> _existingAnnotationDigests = [];
 
-        private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
+        private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
         {
             PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
             WriteIndented = true
@@ -55,11 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.IsDryRun,
                 () =>
                 {
-                    Parallel.ForEach(eolAnnotations.EolDigests, digestData =>
-                    {
-                        AnnotateDigest(digestData, globalEolDate);
-                    });
-
+                    Parallel.ForEach(eolAnnotations.EolDigests, digestData => AnnotateDigest(digestData, globalEolDate));
                     return Task.CompletedTask;
                 },
                 Options.CredentialsOptions,
@@ -104,9 +100,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private void WriteNonEmptySummary(object value, string message)
         {
             _loggerService.WriteMessage(message);
-            _loggerService.WriteMessage("");
-            _loggerService.WriteMessage(JsonSerializer.Serialize(value, _jsonSerializerOptions));
-            _loggerService.WriteMessage("");
+            _loggerService.WriteMessage();
+            _loggerService.WriteMessage(JsonSerializer.Serialize(value, s_jsonSerializerOptions));
+            _loggerService.WriteMessage();
         }
 
         private void AnnotateDigest(EolDigestData digestData, DateOnly? globalEolDate)

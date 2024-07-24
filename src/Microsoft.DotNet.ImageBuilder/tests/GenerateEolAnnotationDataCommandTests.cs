@@ -392,9 +392,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string armDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64");
 
             // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
+            OciManifest lifecycleArtifactManifest;
             Mock<IOrasService> orasServiceMock = new();
             orasServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
             GenerateEolAnnotationDataCommand command =
@@ -967,15 +968,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private static IOrasService CreateOrasService(Dictionary<string, bool> digestAnnotatedMapping)
         {
             Mock<IOrasService> orasServiceMock = new();
-
+            OciManifest lifecycleArtifactManifest;
             orasServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(false);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             { 
                 orasServiceMock
-                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                     .Returns(digestAnnotated.Value);
             }
             

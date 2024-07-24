@@ -90,7 +90,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             ConcurrentBag<EolDigestData> digetsToAnnotate = [];
             Parallel.ForEach(unsupportedDigests, digest =>
             {
-                if (!_orasService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun))
+                if (!_orasService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun, out _))
                 {
                     digetsToAnnotate.Add(digest);
                 }

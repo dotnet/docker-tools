@@ -3,13 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IOrasService
     {
-        bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun);
+        bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out OciManifest lifecycleArtifactManifest);
 
         bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun);
     }

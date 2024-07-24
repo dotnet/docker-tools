@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private readonly ITestOutputHelper _outputHelper;
         private readonly DateOnly _globalDate = new DateOnly(2024, 6, 10);
         private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
+        private const string RepoPrefix = "public/";
+        private const string AcrName = "myacr.azurecr.io";
 
         public AnnotateEolDigestsCommandTests(ITestOutputHelper outputHelper)
         {
@@ -38,8 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     tempFolderContext,
                     out orasServiceMock,
-                    force: true,
-                    digestAlreadyAnnotated: true,
+                    digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: true);
             await command.ExecuteAsync();
 
@@ -60,18 +61,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     tempFolderContext,
                     out orasServiceMock,
-                    force: true,
-                    digestAlreadyAnnotated: true,
+                    digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: false);
 
             InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
-            Assert.StartsWith(
-                $"Failed to annotate 2 digests for EOL.",
+            Assert.Contains(
+                $"(failed: 2, skipped: 0)",
                 ex.Message);
         }
 
         [Fact]
-        public async Task AnnotateEolDigestsCommand_CheckAnnotations_AlreadyAnnotated()
+        public async Task AnnotateEolDigestsCommand_CheckAnnotations_AlreadyAnnotated_NonMatchingEolDate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -81,16 +81,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 InitializeCommand(
                     tempFolderContext,
                     out orasServiceMock,
-                    force: false,
+                    digestAlreadyAnnotated: true,
+                    digestAnnotationIsSuccessful: true,
+                    useNonMatchingDate: true);
+
+            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            Assert.Contains(
+                $"(failed: 0, skipped: 2)",
+                ex.Message);
+            orasServiceMock.Verify(
+                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()),
+                Times.Never());
+        }
+
+        [Fact]
+        public async Task AnnotateEolDigestsCommand_CheckAnnotations_AlreadyAnnotated_MatchingEolDate()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IOrasService> orasServiceMock;
+
+            AnnotateEolDigestsCommand command =
+                InitializeCommand(
+                    tempFolderContext,
+                    out orasServiceMock,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
+
             await command.ExecuteAsync();
-
-            orasServiceMock.Verify(
-                o => o.IsDigestAnnotatedForEol("digest1", It.IsAny<ILoggerService>(), It.IsAny<bool>()));
-            orasServiceMock.Verify(
-                o => o.IsDigestAnnotatedForEol("digest2", It.IsAny<ILoggerService>(), It.IsAny<bool>()));
-
             orasServiceMock.Verify(
                 o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()),
                 Times.Never());
@@ -99,9 +117,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private AnnotateEolDigestsCommand InitializeCommand(
             TempFolderContext tempFolderContext,
             out Mock<IOrasService> orasServiceMock,
-            bool force = true,
             bool digestAlreadyAnnotated = true,
-            bool digestAnnotationIsSuccessful = true)
+            bool digestAnnotationIsSuccessful = true,
+            bool useNonMatchingDate = false)
         {
             EolAnnotationsData eolAnnotations = new()
             {
@@ -117,42 +135,53 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(eolDigestsListPath, JsonConvert.SerializeObject(eolAnnotations));
 
             Mock<ILoggerService> loggerServiceMock = new();
-            orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful);
-            Mock<IRegistryCredentialsProvider> registryCredentialsProviderMock = CreateRegistryCredentialsProviderMock();
+            orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful, useNonMatchingDate);
             AnnotateEolDigestsCommand command = new(
-                Mock.Of<IDockerService>(),
                 loggerServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 orasServiceMock.Object,
-                registryCredentialsProviderMock.Object);
+                Mock.Of<IRegistryCredentialsProvider>());
+            command.Options.RepoPrefix = RepoPrefix;
+            command.Options.AcrName = AcrName;
             command.Options.EolDigestsListOutputPath = eolDigestsListPath;
-            command.Options.Force = force;
-            command.Options.CredentialsOptions.Credentials.Add("mcr.microsoft.com", new RegistryCredentials("user", "pass"));
             return command;
         }
 
-        private Mock<IRegistryCredentialsProvider> CreateRegistryCredentialsProviderMock()
-        {
-            Mock<IRegistryCredentialsProvider> registryCredentialsProviderMock = new();
-            registryCredentialsProviderMock
-                .Setup(o => o.GetCredentialsAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<RegistryCredentialsOptions>()))
-                .ReturnsAsync(new RegistryCredentials("username", "password"));
-
-            return registryCredentialsProviderMock;
-        }
-
-        private Mock<IOrasService> CreateOrasServiceMock(bool digestAlreadyAnnotated = true, bool digestAnnotationIsSuccessful = true)
+        private Mock<IOrasService> CreateOrasServiceMock(bool digestAlreadyAnnotated, bool digestAnnotationIsSuccessful, bool useNonMatchingDate)
         {
             Mock<IOrasService> orasServiceMock = new();
-            orasServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()))
-                .Returns(digestAlreadyAnnotated);
+            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, "digest1", digestAlreadyAnnotated, _globalDate, useNonMatchingDate);
+            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, "digest2", digestAlreadyAnnotated, _specificDigestDate, useNonMatchingDate);
 
             orasServiceMock
                 .Setup(o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()))
                 .Returns(digestAnnotationIsSuccessful);
 
             return orasServiceMock;
+        }
+
+        private static void SetupIsDigestAnnotatedForEolMethod(Mock<IOrasService> orasServiceMock, string digest, bool digestAlreadyAnnotated, DateOnly eolDate, bool useNonMatchingDate)
+        {
+            if (useNonMatchingDate)
+            {
+                eolDate = eolDate.AddDays(1);
+            }
+
+            OciManifest manifest = null;
+            if (digestAlreadyAnnotated)
+            {
+                manifest = new OciManifest
+                {
+                    Annotations = new Dictionary<string, string>
+                    {
+                        { OrasService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
+                    },
+                    Reference = $"{AcrName}/{RepoPrefix}repo@{digest}"
+                };
+            }
+
+            orasServiceMock
+                .Setup(o => o.IsDigestAnnotatedForEol(digest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest))
+                .Returns(digestAlreadyAnnotated);
         }
     }
 }

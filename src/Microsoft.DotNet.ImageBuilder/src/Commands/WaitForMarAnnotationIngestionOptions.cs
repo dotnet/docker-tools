@@ -9,16 +9,16 @@ using System.CommandLine;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class WaitForMcrDocIngestionOptions : Options
+    public class WaitForMarAnnotationIngestionOptions : Options
     {
-        public string CommitDigest { get; set; } = string.Empty;
+        public string EolDigestsListPath { get; set; } = string.Empty;
 
         public MarIngestionOptions IngestionOptions { get; set; } = new();
     }
 
-    public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder
+    public class WaitForMarAnnotationIngestionOptionsBuilder : CliOptionsBuilder
     {
-        private static readonly TimeSpan s_defaultTimeout = TimeSpan.FromMinutes(5);
+        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
         private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
         private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
@@ -27,15 +27,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             [
                 ..base.GetCliArguments(),
                 .._ingestionOptionsBuilder.GetCliArguments(),
-                new Argument<string>(nameof(WaitForMcrDocIngestionOptions.CommitDigest),
-                    "Git commit digest of the readme changes")
+                new Argument<string>(nameof(WaitForMarAnnotationIngestionOptions.EolDigestsListPath),
+                    "EOL annotations digests list path")
             ];
 
         public override IEnumerable<Option> GetCliOptions() =>
             [
                 ..base.GetCliOptions(),
-                .._ingestionOptionsBuilder.GetCliOptions(s_defaultTimeout, s_defaultRequeryDelay)
+                .._ingestionOptionsBuilder.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay)
             ];
     }
 }
-#nullable disable

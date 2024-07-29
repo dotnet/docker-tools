@@ -10,28 +10,20 @@
   <ItemGroup>
     <!-- Upgrade explicitly referenced package version referenced by Microsoft.Data.SqlClient.5.1.1 and Microsoft.Azure.Kusto.Ingest.11.3.4 -->
     <PackageReference Include="Azure.Containers.ContainerRegistry" Version="1.1.1" />
-    <PackageReference Include="Azure.Monitor.Query" Version="1.4.0" />
-    <PackageReference Include="Azure.Identity" Version="1.11.4" />
     <PackageReference Include="Azure.ResourceManager.ContainerRegistry" Version="1.2.1" />
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.20.0" />
-    <PackageReference Include="Azure.Storage.Queues" Version="12.18.0" />
     <PackageReference Include="Cottle" Version="2.0.10" />
     <PackageReference Include="GiGraph.Dot" Version="3.0.1" />
     <PackageReference Include="LibGit2Sharp" Version="0.29.0" />
-    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="12.2.1" />
-    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+    <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="12.2.3" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.0" />
-    <PackageReference Include="Microsoft.DotNet.Git.IssueManager" Version="9.0.0-beta.24123.3" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.24151.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
-    <PackageReference Include="Newtonsoft.Json.Schema" Version="3.0.15" />
-    <PackageReference Include="Octokit" Version="13.0.0" />
-    <PackageReference Include="Polly" Version="8.4.0" />
+    <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
+    <PackageReference Include="Octokit" Version="13.0.1" />
+    <PackageReference Include="Polly" Version="8.4.1" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
     <PackageReference Include="System.ComponentModel.Composition" Version="8.0.0" />
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="YamlDotNet" Version="15.1.2" />
   </ItemGroup>

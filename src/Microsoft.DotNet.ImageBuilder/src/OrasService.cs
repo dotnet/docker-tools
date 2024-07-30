@@ -6,7 +6,7 @@ using System;
 using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Newtonsoft.Json;
 
 #nullable enable

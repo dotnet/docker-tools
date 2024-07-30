@@ -4,7 +4,7 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.ImageBuilder.Models.Oras;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder

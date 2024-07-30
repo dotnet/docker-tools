@@ -12,6 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
+using Microsoft.DotNet.ImageBuilder.Models.Oras;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands

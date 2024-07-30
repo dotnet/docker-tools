@@ -36,10 +36,14 @@ jobs:
     - task: ComponentGovernanceComponentDetection@0
       displayName: Component Detection (manually injected)
       inputs:
+        # Running CG with `whatIf: true` or `scanType: LogOnly` outputs a list of detected components, but doesn't show
+        # which components would trigger an alert on a production build.
+        # As long as the build isn't ran on a tracked branch (typically main or nightly), it's OK to submit components
+        # to CG for analysis. Only the results for tracked branches matter.
+        scanType: Register
+        whatIf: false
         alertWarningLevel: Low
         failOnAlert: false
         ignoreDirectories: $(Build.SourcesDirectory)/versions
-        scanType: Register
         showAlertLink: true
         timeoutInMinutes: 10
-        whatIf: false

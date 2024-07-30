@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out OciManifest lifecycleArtifactManifest);
 
-        bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun);
+        bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out OciManifest lifecycleArtifactManifest);
     }
 }
 #nullable disable

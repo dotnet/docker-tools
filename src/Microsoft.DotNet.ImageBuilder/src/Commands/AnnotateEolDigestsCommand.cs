@@ -27,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _existingAnnotationImageDigests = [];
         private readonly ConcurrentBag<string> _existingAnnotationDigests = [];
+        private readonly ConcurrentBag<string> _createdAnnotationDigests = [];
 
         private static readonly JsonSerializerOptions s_jsonSerializerOptions = new()
         {
@@ -80,6 +81,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 throw new InvalidOperationException(
                     $"Some digest annotations failed or were skipped due to existing non-matching EOL date annotations (failed: {_failedAnnotationImageDigests.Count}, skipped: {_existingAnnotationImageDigests.Count}).");
             }
+
+            File.WriteAllLines(Options.AnnotationDigestsOutputPath, _createdAnnotationDigests.Order());
         }
 
         private void WriteNonEmptySummaryForAnnotationDigests(IEnumerable<string> annotationDigests, string message)
@@ -116,10 +119,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            if (!_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out OciManifest? lifecycleArtifactManifest))
+            if (!_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out OciManifest? existingAnnotationManifest))
             {
                 _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                if (!_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun))
+                if (_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun, out OciManifest? createdAnnotationManifest))
+                {
+                    _createdAnnotationDigests.Add(createdAnnotationManifest.Reference);
+                }
+                else
                 {
                     // We will capture all failures and log the json data at the end.
                     // Json data can be used to rerun the failed annotations.
@@ -128,7 +135,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                if (lifecycleArtifactManifest.Annotations[OrasService.EndOfLifeAnnotation] == eolDate?.ToString(OrasService.EolDateFormat))
+                if (existingAnnotationManifest.Annotations[OrasService.EndOfLifeAnnotation] == eolDate?.ToString(OrasService.EolDateFormat))
                 {
                     _loggerService.WriteMessage($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
                     _skippedAnnotationImageDigests.Add(digestData);
@@ -140,13 +147,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     // Reference is a fully-qualified digest name. We want to remove the registry and repo prefix from the name to reflect the repo-qualified
                     // name that exists in MAR.
-                    string refDigest = lifecycleArtifactManifest.Reference.TrimStart($"{Options.AcrName}/{Options.RepoPrefix}");
+                    string refDigest = existingAnnotationManifest.Reference.TrimStart($"{Options.AcrName}/{Options.RepoPrefix}");
                     _existingAnnotationDigests.Add(refDigest);
                 }
             }
         }
 
-        public static EolAnnotationsData LoadEolAnnotationsData(string eolDigestsListPath)
+        private static EolAnnotationsData LoadEolAnnotationsData(string eolDigestsListPath)
         {
             string eolAnnotationsJson = File.ReadAllText(eolDigestsListPath);
             EolAnnotationsData? eolAnnotations = JsonSerializer.Deserialize<EolAnnotationsData>(eolAnnotationsJson);

@@ -1,6 +1,13 @@
 # This job builds all projects in the repository. It is intended to be used for CG purposes.
 # The 1ES CG step does not scan artifacts that are built within Dockerfiles therefore they
 # need to be built outside of Dockerfiles.
+parameters:
+# Setting cgDryRun will run CG but not submit the results
+- name: cgDryRun
+  type: boolean
+  default: false
+  displayName: CG Dry Run
+
 jobs:
 - job: BuildProjects
   displayName: Build Projects
@@ -15,3 +22,24 @@ jobs:
   - script: >
       find . -name '*.csproj' | grep $(cgBuildGrepArgs) | xargs -n 1 /usr/share/.dotnet/dotnet build
     displayName: Build Projects
+
+    # Component Detection is only automatically run on production branches.
+    # To run Component Detection on non-production branches, the task must be manually injected.
+  - ${{ if eq(parameters.cgDryRun, true) }}:
+    - task: PowerShell@2
+      displayName: Update Build Number
+      inputs:
+        targetType: 'inline'
+        script: |
+          Write-Host "##vso[build.updatebuildnumber]$env:BUILD_BUILDNUMBER (Dry run)"
+          Write-Host "##vso[build.addbuildtag]dry-run"
+    - task: ComponentGovernanceComponentDetection@0
+      displayName: Component Detection (manually injected)
+      inputs:
+        alertWarningLevel: Low
+        failOnAlert: false
+        ignoreDirectories: $(Build.SourcesDirectory)/versions
+        scanType: Register
+        showAlertLink: true
+        timeoutInMinutes: 10
+        whatIf: false

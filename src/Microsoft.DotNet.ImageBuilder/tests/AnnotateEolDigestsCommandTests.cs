@@ -142,7 +142,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<IRegistryCredentialsProvider>());
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.AcrName = AcrName;
-            command.Options.EolDigestsListOutputPath = eolDigestsListPath;
+            command.Options.EolDigestsListPath = eolDigestsListPath;
             return command;
         }
 

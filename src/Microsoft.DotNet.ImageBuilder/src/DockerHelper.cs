@@ -7,8 +7,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Newtonsoft.Json;
-using Docker = Microsoft.DotNet.ImageBuilder.Models.Docker;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
@@ -185,17 +183,6 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
 
-        /// <remarks>
-        /// This method depends on the experimental Docker CLI `manifest` command.  As a result, this method
-        /// should only used for developer usage scenarios.
-        /// </remarks>
-        public static Docker.Manifest InspectManifest(string image, bool isDryRun)
-        {
-            string manifest = ExecuteCommand(
-                "manifest inspect", "Failed to inspect manifest", $"{image} --verbose", isDryRun);
-            return JsonConvert.DeserializeObject<Docker.Manifest>(manifest);
-        }
-
         public static string? GetRegistry(string imageName)
         {
             int separatorIndex = imageName.IndexOf("/");
@@ -207,7 +194,6 @@ namespace Microsoft.DotNet.ImageBuilder
                     return firstSegment;
                 }
             }
-
 
             return null;
         }

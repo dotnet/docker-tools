@@ -26,13 +26,10 @@ jobs:
     # Component Detection is only automatically run on production branches.
     # To run Component Detection on non-production branches, the task must be manually injected.
   - ${{ if eq(parameters.cgDryRun, true) }}:
-    - task: PowerShell@2
+    - powershell: |
+        Write-Host "##vso[build.updatebuildnumber]$env:BUILD_BUILDNUMBER (Dry run)"
+        Write-Host "##vso[build.addbuildtag]dry-run"
       displayName: Update Build Number
-      inputs:
-        targetType: 'inline'
-        script: |
-          Write-Host "##vso[build.updatebuildnumber]$env:BUILD_BUILDNUMBER (Dry run)"
-          Write-Host "##vso[build.addbuildtag]dry-run"
     - task: ComponentGovernanceComponentDetection@0
       displayName: Component Detection (manually injected)
       inputs:

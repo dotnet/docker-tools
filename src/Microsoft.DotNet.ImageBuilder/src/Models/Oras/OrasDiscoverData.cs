@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
+namespace Microsoft.DotNet.ImageBuilder.Models.Oras
 {
     public class OrasDiscoverData
     {

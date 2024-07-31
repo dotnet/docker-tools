@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMarAnnotationIngestionOptions : Options
     {
-        public string EolDigestsListPath { get; set; } = string.Empty;
+        public string AnnotationDigestsPath { get; set; } = string.Empty;
 
         public MarIngestionOptions IngestionOptions { get; set; } = new();
     }
@@ -27,8 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             [
                 ..base.GetCliArguments(),
                 .._ingestionOptionsBuilder.GetCliArguments(),
-                new Argument<string>(nameof(WaitForMarAnnotationIngestionOptions.EolDigestsListPath),
-                    "EOL annotations digests list path")
+                new Argument<string>(nameof(WaitForMarAnnotationIngestionOptions.AnnotationDigestsPath),
+                    "Path of file containing the list of annotation digests to be queried"),
             ];
 
         public override IEnumerable<Option> GetCliOptions() =>

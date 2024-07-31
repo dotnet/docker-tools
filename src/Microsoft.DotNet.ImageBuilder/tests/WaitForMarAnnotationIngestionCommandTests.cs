@@ -7,10 +7,8 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
-using Newtonsoft.Json;
 using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
@@ -22,23 +20,18 @@ public class WaitForMarAnnotationIngestionCommandTests
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-        EolAnnotationsData eolAnnotations = new()
-        {
-            EolDigests =
-                [
-                    new EolDigestData { Digest = "registry.azurecr.io/repo@sha256:digest1" },
-                    new EolDigestData { Digest = "registry.azurecr.io/repo2@sha256:digest2", }
-                ]
-        };
-
-        string eolDigestsListPath = Path.Combine(tempFolderContext.Path, "eol-digests.json");
-        File.WriteAllText(eolDigestsListPath, JsonConvert.SerializeObject(eolAnnotations));
+        string annotationsDigestsPath = Path.Combine(tempFolderContext.Path, "annotations.txt");
+        File.WriteAllLines(annotationsDigestsPath,
+            [
+                "registry.azurecr.io/repo@sha256:digest1",
+                "registry.azurecr.io/repo2@sha256:digest2"
+            ]);
 
         Mock<IMarImageIngestionReporter> ingestionReporter = new();
         WaitForMarAnnotationIngestionCommand cmd = new(
             Mock.Of<ILoggerService>(),
             ingestionReporter.Object);
-        cmd.Options.EolDigestsListPath = eolDigestsListPath;
+        cmd.Options.AnnotationDigestsPath = annotationsDigestsPath;
 
         await cmd.ExecuteAsync();
 

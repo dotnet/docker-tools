@@ -29,6 +29,13 @@ jobs:
     - powershell: |
         Write-Host "##vso[build.updatebuildnumber]$env:BUILD_BUILDNUMBER (Dry run)"
         Write-Host "##vso[build.addbuildtag]dry-run"
+        
+        if ("$(officialBranches)".Split(',').Contains("$(Build.SourceBranch)"))
+        {
+          Write-Host "##vso[task.logissue type=error]Cannot run a CG dry-run build from an official branch ($(officialBranches))."
+          Write-Host "##vso[task.logissue type=error]Run the pipeline again from a different branch to avoid registering scan results."
+          exit 1
+        }
       displayName: Update Build Number
     - task: ComponentGovernanceComponentDetection@0
       displayName: Component Detection (manually injected)

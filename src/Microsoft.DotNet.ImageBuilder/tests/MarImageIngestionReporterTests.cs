@@ -213,6 +213,175 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Fact]
+        public async Task SuccessfulPublish_TaglessDigest()
+        {
+            DateTime baselineTime = DateTime.Now;
+            const string digest = "repo@sha256:digest";
+            const string repo1 = "repo1";
+
+            Mock<IMcrStatusClient> statusClientMock = new();
+
+            ImageStatus sharedTag2ImageStatus = new()
+            {
+                Tag = null,
+                SourceRepository = repo1,
+                QueueTime = baselineTime,
+                OverallStatus = StageStatus.NotStarted
+            };
+
+            Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new()
+            {
+                {
+                    DockerHelper.GetDigestSha(digest),
+                    new List<ImageResult>
+                    {
+                        new() {
+                            Digest = digest,
+                            Value =
+                            [
+                                sharedTag2ImageStatus,
+                            ]
+                        },
+                        new() {
+                            Digest = digest,
+                            Value =
+                            [
+                                Clone(sharedTag2ImageStatus, StageStatus.Processing),
+                            ]
+                        },
+                        new() {
+                            Digest = digest,
+                            Value =
+                            [
+                                Clone(sharedTag2ImageStatus, StageStatus.Succeeded),
+                            ]
+                        }
+                    }.GetEnumerator()
+                }
+            };
+
+            statusClientMock
+                .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
+                .ReturnsAsync((string digest) =>
+                {
+                    IEnumerator<ImageResult> enumerator = imageResultMapping[digest];
+                    if (enumerator.MoveNext())
+                    {
+                        return enumerator.Current;
+                    }
+
+
+
+                    return null;
+                });
+
+            Mock<IEnvironmentService> environmentServiceMock = new();
+
+            MarImageIngestionReporter reporter = new(
+                Mock.Of<ILoggerService>(),
+                statusClientMock.Object,
+                environmentServiceMock.Object);
+
+            List<DigestInfo> digestInfos =
+                [
+                    new(DockerHelper.GetDigestSha(digest), repo1, []),
+                ];
+
+            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest)), Times.Exactly(3));
+            environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task PublishFailure_TaglessDigest()
+        {
+            DateTime baselineTime = DateTime.Now;
+            const string repo1 = "repo1";
+            const string digest = "repo@sha256:digest";
+            const string onboardingRequestId = "onboardingRequestId";
+
+            Mock<IMcrStatusClient> statusClientMock = new();
+
+            ImageStatus platformTag2ImageStatus = new()
+            {
+                Tag = null,
+                SourceRepository = repo1,
+                QueueTime = baselineTime.AddHours(1),
+                OnboardingRequestId = onboardingRequestId,
+                OverallStatus = StageStatus.Processing
+            };
+
+            Dictionary<string, IEnumerator<ImageResult>> imageResultMapping = new()
+            {
+                {
+                    DockerHelper.GetDigestSha(digest),
+                    new List<ImageResult>
+                    {
+                        new() {
+                            Digest = digest,
+                            Value =
+                            [
+                                platformTag2ImageStatus,
+                            ]
+                        },
+                        new() {
+                            Digest = digest,
+                            Value =
+                            [
+                                Clone(platformTag2ImageStatus, StageStatus.Failed),
+                            ]
+                        }
+                    }.GetEnumerator()
+                }
+            };
+
+            statusClientMock
+                .Setup(o => o.GetImageResultAsync(It.IsAny<string>()))
+                .ReturnsAsync((string digest) =>
+                {
+                    IEnumerator<ImageResult> enumerator = imageResultMapping[digest];
+                    if (enumerator.MoveNext())
+                    {
+                        return enumerator.Current;
+                    }
+
+                    return null;
+                });
+
+            statusClientMock
+                .Setup(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), onboardingRequestId))
+                .ReturnsAsync(new ImageResultDetailed
+                {
+                    CommitDigest = digest,
+                    OnboardingRequestId = onboardingRequestId,
+                    OverallStatus = StageStatus.Failed,
+                    Tag = null,
+                    SourceRepository = repo1,
+                    Substatus = new ImageSubstatus()
+                });
+
+            Mock<IEnvironmentService> environmentServiceMock = new();
+
+            MarImageIngestionReporter reporter = new(
+                Mock.Of<ILoggerService>(),
+                statusClientMock.Object,
+                environmentServiceMock.Object);
+
+            List<DigestInfo> digestInfos =
+                [
+                    new(DockerHelper.GetDigestSha(digest), repo1, []),
+                ];
+
+            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+
+            statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest)), Times.Exactly(2));
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), onboardingRequestId), Times.Once);
+            statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), It.Is<string>(val => val != onboardingRequestId)), Times.Never);
+            environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
+        }
+
+        [Fact]
         public async Task PublishFailure()
         {
             DateTime baselineTime = DateTime.Now;

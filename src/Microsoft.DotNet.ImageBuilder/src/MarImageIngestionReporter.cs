@@ -75,7 +75,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                 {
                     if (task.IsCompletedSuccessfully)
                     {
-                        if (task.Result.DigestInfo.RemainingTags.Any())
+                        if (!task.Result.DigestInfo.IsComplete)
                         {
                             await Task.Delay(_requeryDelay);
                             return await ReportImageStatusAsync(digestInfo);
@@ -132,10 +132,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                                 break;
                             case StageStatus.Succeeded:
                                 // If we've found at least one successful overall status for the tag, we're done with that tag.
-                                if (imageStatus.Tag is not null)
-                                {
-                                    digestInfo.RemainingTags.Remove(imageStatus.Tag);
-                                }
+                                RemoveTagFromDigest(digestInfo, imageStatus.Tag);
                                 break;
                             case StageStatus.NotApplicable:
                             default:
@@ -145,9 +142,9 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
 
                     // If all found statuses for a given tag have failed, we're done with that tag.
-                    if (tagImageStatuses.All(status => status.OverallStatus == StageStatus.Failed) && tagImageStatuses.Key is not null)
+                    if (tagImageStatuses.All(status => status.OverallStatus == StageStatus.Failed))
                     {
-                        digestInfo.RemainingTags.Remove(tagImageStatuses.Key);
+                        RemoveTagFromDigest(digestInfo, tagImageStatuses.Key);
                     }
                 }
 
@@ -155,6 +152,19 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             }
 
             return new ImageResultInfo(imageResult, digestInfo);
+        }
+
+        private static void RemoveTagFromDigest(DigestInfo digestInfo, string? tag)
+        {
+            if (tag is not null)
+            {
+                digestInfo.RemainingTags.Remove(tag);
+            }
+            
+            if (digestInfo.RemainingTags.Count == 0)
+            {
+                digestInfo.IsComplete = true;
+            }
         }
 
         private static string GetQualifiedDigest(string repo, string imageDigest) => $"{repo}@{imageDigest}";
@@ -279,4 +289,10 @@ public record DigestInfo
     /// List of tags that need to still be awaited.
     /// </summary>
     public List<string> RemainingTags { get; }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether processing of this digest is complete.
+    /// This is not an indication of success.
+    /// </summary>
+    public bool IsComplete { get; set; }
 }

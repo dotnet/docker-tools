@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
@@ -149,12 +150,31 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                        }),
+                    CreateContainerRegistryContentClientMock("repo2",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest201", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest201", new ManifestQueryResult(string.Empty, []) },
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    registryClientFactory);
+                    registryClientFactory,
+                    registryContentClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -270,12 +290,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    registryClientFactory);
+                    registryClientFactory,
+                    registryContentClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -399,12 +433,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
                     registryClientFactory,
+                    registryContentClientFactory,
                     orasService: orasServiceMock.Object);
             await command.ExecuteAsync();
 
@@ -513,12 +561,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102-updated", new ManifestQueryResult(string.Empty, []) }
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    registryClientFactory);
+                    registryClientFactory,
+                    registryContentClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -633,12 +696,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest101-updated", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101-updated", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
                     registryClientFactory,
+                    registryContentClientFactory,
                     dotNetReleasesService: CreateDotNetReleasesService(productEolDates));
             command.Options.AnnotateEolProducts = true;
             await command.ExecuteAsync();
@@ -727,12 +805,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest101-updated", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101-updated", new ManifestQueryResult(string.Empty, []) },
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    registryClientFactory);
+                    registryClientFactory,
+                    registryContentClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -823,12 +914,136 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    registryClientFactory);
+                    registryClientFactory,
+                    registryContentClientFactory);
+            await command.ExecuteAsync();
+
+            EolAnnotationsData expectedEolAnnotations = new()
+            {
+                EolDate = _globalDate,
+                EolDigests =
+                [
+                    new(DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
+                ]
+            };
+
+            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
+
+            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+        }
+
+        [Fact]
+        public async Task GenerateEolAnnotationData_DoNotReturnAnnotationDigest()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            string repo1Image2DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os2", tempFolderContext);
+
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "tag"
+                                        ],
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest101")),
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image2DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "tag2"
+                                        ],
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102"))
+                                },
+                                ProductVersion = "1.0",
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    [
+                                        "1.0"
+                                    ],
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest101")
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            // Update just one platform digest
+            imageArtifactDetails.Repos[0].Images[0].Platforms[1].Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-updated");
+
+            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
+
+            Mock<IContainerRegistryClient> registryClientMock = CreateContainerRegistryClientMock(
+                [
+                    CreateContainerRepository("repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                            CreateArtifactManifestProperties(digest: "platformdigest102"),
+                            CreateArtifactManifestProperties(digest: "platformdigest102-updated", tags: ["tag2"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                            CreateArtifactManifestProperties(digest: "annotationdigest"),
+                        ])
+                ]);
+            IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+                AcrName, registryClientMock.Object);
+
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-updated", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                            // Define a subject field in this manifest to indicate it is a referrer, not an image manifest
+                            { "annotationdigest", new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) },
+                        })
+                ]);
+
+            GenerateEolAnnotationDataCommand command =
+                InitializeCommand(
+                    oldImageInfoPath,
+                    newImageInfoPath,
+                    newEolDigestsListPath,
+                    registryClientFactory,
+                    registryContentClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -917,12 +1132,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
                 AcrName, registryClientMock.Object);
 
+            IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+                [
+                    CreateContainerRegistryContentClientMock("repo1",
+                        imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },
+                            { "platformdigest102-arm64", new ManifestQueryResult(string.Empty, []) },
+                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) },
+                        })
+                ]);
+
             GenerateEolAnnotationDataCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
                     newEolDigestsListPath,
-                    registryClientFactory);
+                    registryClientFactory,
+                    registryContentClientFactory);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -945,6 +1172,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string newImageInfoPath,
             string newEolDigestsListPath,
             IContainerRegistryClientFactory registryClientFactory,
+            IContainerRegistryContentClientFactory registryContentClientFactory,
             string repoPrefix = "public/",
             IOrasService orasService = null,
             IDotNetReleasesService dotNetReleasesService = null)
@@ -956,6 +1184,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dotNetReleasesService,
                 loggerServiceMock.Object,
                 registryClientFactory,
+                registryContentClientFactory,
                 Mock.Of<IAzureTokenCredentialProvider>(),
                 orasService);
             command.Options.OldImageInfoPath = oldImageInfoPath;

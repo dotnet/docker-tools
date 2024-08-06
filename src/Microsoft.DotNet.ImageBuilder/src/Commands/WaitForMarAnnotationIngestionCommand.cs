@@ -5,9 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -32,14 +32,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("WAITING FOR ANNOTATION INGESTION");
 
-            EolAnnotationsData annotationsData = AnnotateEolDigestsCommand.LoadEolAnnotationsData(Options.EolDigestsListPath);
-            IEnumerable<DigestInfo> digests = annotationsData.EolDigests
-                .Select(annotation =>
+            string[] annotationDigests = File.ReadAllLines(Options.AnnotationDigestsPath);
+            IEnumerable<DigestInfo> digests = annotationDigests
+                .Select(digest =>
                 {
-                    ImageName name = ImageName.Parse(annotation.Digest);
+                    ImageName name = ImageName.Parse(digest);
                     if (name.Digest is null)
                     {
-                        throw new Exception($"Could not parse digest SHA value from '{annotation.Digest}'.");
+                        throw new Exception($"Could not parse digest SHA value from '{digest}'.");
                     }
                     return new DigestInfo(name.Digest, name.Repo, tags: []);
                 });

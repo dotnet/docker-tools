@@ -6,7 +6,7 @@ using System;
 using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Newtonsoft.Json;
 
 #nullable enable
@@ -35,18 +35,21 @@ namespace Microsoft.DotNet.ImageBuilder
             return false;
         }
 
-        public bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun)
+        public bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out OciManifest lifecycleArtifactManifest)
         {
             try
             {
-                ExecuteHelper.ExecuteWithRetry(
+                string? output = ExecuteHelper.ExecuteWithRetry(
                     "oras",
-                    $"attach --artifact-type {LifecycleArtifactType} --annotation \"{EndOfLifeAnnotation}={date.ToString(EolDateFormat)}\" {digest}",
+                    $"attach --artifact-type {LifecycleArtifactType} --annotation \"{EndOfLifeAnnotation}={date.ToString(EolDateFormat)}\" --format json {digest}",
                     isDryRun);
+
+                lifecycleArtifactManifest = JsonConvert.DeserializeObject<OciManifest>(output ?? string.Empty) ?? throw new Exception("Unable to deserialize manifest");
             }
             catch (InvalidOperationException ex)
             {
                 loggerService.WriteError($"Failed to annotate EOL for digest '{digest}': {ex.Message}");
+                lifecycleArtifactManifest = null;
                 return false;
             }
 

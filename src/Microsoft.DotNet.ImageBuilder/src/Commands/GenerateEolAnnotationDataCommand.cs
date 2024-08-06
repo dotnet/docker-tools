@@ -24,6 +24,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private readonly IDotNetReleasesService _dotNetReleasesService;
     private readonly ILoggerService _loggerService;
     private readonly IContainerRegistryClientFactory _acrClientFactory;
+    private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly IOrasService _orasService;
     private readonly DateOnly _eolDate;
@@ -33,12 +34,14 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         IDotNetReleasesService dotNetReleasesService,
         ILoggerService loggerService,
         IContainerRegistryClientFactory acrClientFactory,
+        IContainerRegistryContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IOrasService orasService)
     {
         _dotNetReleasesService = dotNetReleasesService ?? throw new ArgumentNullException(nameof(dotNetReleasesService));
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
+        _acrContentClientFactory = acrContentClientFactory ?? throw new ArgumentNullException(nameof(acrContentClientFactory));
         _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
         _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
 
@@ -81,7 +84,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             // the query of the digests.
             IEnumerable<string> repoNames = newImageArtifactDetails.Repos.Select(repo => repo.Repo)
                 .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo));
-            IEnumerable<(string Digest, string? Tag)> registryDigests = await GetAllDigestsFromRegistry(repoNames);
+            IEnumerable<(string Digest, string? Tag)> registryDigests = await GetAllImageDigestsFromRegistry(repoNames);
 
             IEnumerable<string> supportedDigests = GetSupportedDigests(newImageArtifactDetails);
             IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryDigests, supportedDigests);
@@ -148,7 +151,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private static string? GetLongestTag(IEnumerable<string> tags) =>
         tags.OrderByDescending(tag => tag.Length).FirstOrDefault();
 
-    private async Task<IEnumerable<(string Digest, string? Tag)>> GetAllDigestsFromRegistry(IEnumerable<string> repoNames)
+    private async Task<IEnumerable<(string Digest, string? Tag)>> GetAllImageDigestsFromRegistry(IEnumerable<string> repoNames)
     {
         IContainerRegistryClient acrClient = _acrClientFactory.Create(Options.RegistryName, _tokenCredentialProvider.GetCredential());
         IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
@@ -156,12 +159,23 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
         await foreach (string repositoryName in repositoryNames.Where(name => repoNames.Contains(name)))
         {
+            IContainerRegistryContentClient contentClient =
+                _acrContentClientFactory.Create(Options.RegistryName, repositoryName, _tokenCredentialProvider.GetCredential());
+
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
             await foreach (ArtifactManifestProperties manifestProps in manifests)
             {
-                string imageName = DockerHelper.GetImageName(Options.RegistryName, repositoryName, digest: manifestProps.Digest);
-                digests.Add((imageName, GetLongestTag(manifestProps.Tags)));
+                ManifestQueryResult manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
+
+                // We only want to return image or manifest list digests here. But the registry will also contain digests for annotations.
+                // These annotation digests should not be returned as we don't want to annotate an annotation. An annotation is just a referrer
+                // and referrers are indicated by the presence of a subject field. So skip any manifest that has a subject field.
+                if (manifestResult.Manifest["subject"] is null)
+                {
+                    string imageName = DockerHelper.GetImageName(Options.RegistryName, repositoryName, digest: manifestProps.Digest);
+                    digests.Add((imageName, GetLongestTag(manifestProps.Tags)));
+                }
             }
         }
 

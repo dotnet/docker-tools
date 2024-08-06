@@ -8,6 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
@@ -23,6 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
         private const string RepoPrefix = "public/";
         private const string AcrName = "myacr.azurecr.io";
+        private const string AnnotationsOutputPath = "annotations.txt";
+        private const string AnnotationDigest1 = "annotationdigest1";
+        private const string AnnotationDigest2 = "annotationdigest2";
 
         public AnnotateEolDigestsCommandTests(ITestOutputHelper outputHelper)
         {
@@ -44,10 +48,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAnnotationIsSuccessful: true);
             await command.ExecuteAsync();
 
+            OciManifest manifest;
             orasServiceMock.Verify(
-                o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILoggerService>(), It.IsAny<bool>()));
+                o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest));
             orasServiceMock.Verify(
-                o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILoggerService>(), It.IsAny<bool>()));
+                o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest));
+
+            string[] expectedAnnotationDigests =
+                [
+                    $"{AcrName}/{RepoPrefix}@{AnnotationDigest1}",
+                    $"{AcrName}/{RepoPrefix}@{AnnotationDigest2}"
+                ];
+            string[] annotationDigests = File.ReadAllLines(Path.Combine(tempFolderContext.Path, AnnotationsOutputPath));
+            Assert.Equal(expectedAnnotationDigests, annotationDigests);
         }
 
         [Fact]
@@ -89,8 +102,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Contains(
                 $"(failed: 0, skipped: 2)",
                 ex.Message);
+
+            OciManifest manifest;
             orasServiceMock.Verify(
-                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()),
+                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest),
                 Times.Never());
         }
 
@@ -109,8 +124,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAnnotationIsSuccessful: true);
 
             await command.ExecuteAsync();
+
+            OciManifest manifest;
             orasServiceMock.Verify(
-                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()),
+                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest),
                 Times.Never());
         }
 
@@ -142,7 +159,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<IRegistryCredentialsProvider>());
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.AcrName = AcrName;
-            command.Options.EolDigestsListOutputPath = eolDigestsListPath;
+            command.Options.EolDigestsListPath = eolDigestsListPath;
+            command.Options.AnnotationDigestsOutputPath = Path.Combine(tempFolderContext.Path, AnnotationsOutputPath);
             return command;
         }
 
@@ -152,8 +170,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             SetupIsDigestAnnotatedForEolMethod(orasServiceMock, "digest1", digestAlreadyAnnotated, _globalDate, useNonMatchingDate);
             SetupIsDigestAnnotatedForEolMethod(orasServiceMock, "digest2", digestAlreadyAnnotated, _specificDigestDate, useNonMatchingDate);
 
+            OciManifest digest1Annotation = new()
+            {
+                Reference = $"{AcrName}/{RepoPrefix}@{AnnotationDigest1}"
+            };
+
             orasServiceMock
-                .Setup(o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>()))
+                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out digest1Annotation))
+                .Returns(digestAnnotationIsSuccessful);
+
+            OciManifest digest2Annotation = new()
+            {
+                Reference = $"{AcrName}/{RepoPrefix}@{AnnotationDigest2}"
+            };
+
+            orasServiceMock
+                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out digest2Annotation))
                 .Returns(digestAnnotationIsSuccessful);
 
             return orasServiceMock;

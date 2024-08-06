@@ -33,10 +33,18 @@ internal static class ContainerRegistryHelper
         return repoMock.Object;
     }
 
-    public static Mock<IContainerRegistryContentClient> CreateContainerRegistryContentClientMock(string repositoryName)
+    public static Mock<IContainerRegistryContentClient> CreateContainerRegistryContentClientMock(string repositoryName, Dictionary<string, ManifestQueryResult>? imageNameToQueryResultsMapping = null)
     {
         Mock<IContainerRegistryContentClient> acrClientContentMock = new();
         acrClientContentMock.SetupGet(o => o.RepositoryName).Returns(repositoryName);
+        if (imageNameToQueryResultsMapping is not null)
+        {
+            foreach (KeyValuePair<string, ManifestQueryResult> kvp in imageNameToQueryResultsMapping)
+            {
+                acrClientContentMock.Setup(o => o.GetManifestAsync(kvp.Key)).ReturnsAsync(kvp.Value);
+            }
+        }
+        
         return acrClientContentMock;
     }
 

@@ -324,7 +324,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
-            Mock<IContainerRegistryContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name);
+            Mock<IContainerRegistryContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name,
+                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { "sha256:digest1", new ManifestQueryResult(string.Empty, []) },
+                            { "sha256:digest2", new ManifestQueryResult(string.Empty, []) },
+                            { "sha256:digest3", new ManifestQueryResult(string.Empty, []) }
+                        });
 
             IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock]);
 
@@ -377,6 +383,5 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.IsDigestAnnotatedForEol(reference, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest))
                 .Returns(digestAlreadyAnnotated);
         }
-
     }
 }

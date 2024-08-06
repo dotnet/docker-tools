@@ -85,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     break;
                 case CleanAcrImagesAction.PruneEol:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        manifest => manifest.Tags.Any() && HasExpiredEol(manifest, Options.Age));
+                        manifest => !IsAnnotationManifest(manifest, acrContentClient) && HasExpiredEol(manifest, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
@@ -241,6 +241,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
+
+        private bool IsAnnotationManifest(ArtifactManifestProperties manifest, IContainerRegistryContentClient acrContentClient)
+        {
+            ManifestQueryResult manifestResult = acrContentClient.GetManifestAsync(manifest.Digest).Result;
+
+            // An annotation is just a referrer and referrers are indicated by the presence of a subject field.
+            return manifestResult.Manifest["subject"] is null ? false : true;
+        }
 
         private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
         {

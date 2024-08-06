@@ -10,6 +10,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
+using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -21,6 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
+        private readonly IOrasService _orasService;
         private Regex _repoNameFilterRegex;
 
         [ImportingConstructor]
@@ -28,12 +30,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IContainerRegistryClientFactory acrClientFactory,
             IContainerRegistryContentClientFactory acrContentClientFactory,
             ILoggerService loggerService,
-            IAzureTokenCredentialProvider tokenCredentialProvider)
+            IAzureTokenCredentialProvider tokenCredentialProvider,
+            IOrasService orasService)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
+            _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
         }
 
         protected override string Description => "Removes unnecessary images from an ACR";
@@ -78,6 +82,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 case CleanAcrImagesAction.PruneDangling:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
                         manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age));
+                    break;
+                case CleanAcrImagesAction.PruneEol:
+                    await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
+                        manifest => manifest.Tags.Any() && HasExpiredEol(manifest, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
@@ -233,5 +241,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
+
+        private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
+        {
+            if(_orasService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, Options.IsDryRun, out OciManifest? lifecycleArtifactManifest) &&
+                lifecycleArtifactManifest?.Annotations != null)
+            {
+                return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[OrasService.EndOfLifeAnnotation]), expirationDays);
+            }
+
+            return false;
+        }
     }
 }

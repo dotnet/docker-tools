@@ -83,18 +83,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 case CleanAcrImagesAction.PruneDangling:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => !manifest.Tags.Any() && await IsExpired(manifest.LastUpdatedOn, Options.Age));
+                        async manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneEol:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => !(await IsAnnotationManifest(manifest, acrContentClient)) && await HasExpiredEol(manifest, Options.Age));
+                        async manifest => !(await IsAnnotationManifestAsync(manifest, acrContentClient)) && await HasExpiredEolAsync(manifest, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => await IsExpired(manifest.LastUpdatedOn, Options.Age));
+                        async manifest => IsExpired(manifest.LastUpdatedOn, Options.Age));
                     break;
                 case CleanAcrImagesAction.Delete:
-                    if (await IsExpired(repository.GetProperties().Value.LastUpdatedOn, Options.Age))
+                    if (IsExpired(repository.GetProperties().Value.LastUpdatedOn, Options.Age))
                     {
                         await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
                     }
@@ -247,9 +247,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private static async Task<bool> IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
+        private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
 
-        private async Task<bool> IsAnnotationManifest(ArtifactManifestProperties manifest, IContainerRegistryContentClient acrContentClient)
+        private async Task<bool> IsAnnotationManifestAsync(ArtifactManifestProperties manifest, IContainerRegistryContentClient acrContentClient)
         {
             ManifestQueryResult manifestResult = acrContentClient.GetManifestAsync(manifest.Digest).Result;
 
@@ -257,12 +257,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestResult.Manifest["subject"] is not null;
         }
 
-        private async Task<bool> HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
+        private async Task<bool> HasExpiredEolAsync(ArtifactManifestProperties manifest, int expirationDays)
         {
             if(_orasService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, Options.IsDryRun, out OciManifest? lifecycleArtifactManifest) &&
                 lifecycleArtifactManifest?.Annotations != null)
             {
-                return await IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[OrasService.EndOfLifeAnnotation]), expirationDays);
+                return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[OrasService.EndOfLifeAnnotation]), expirationDays);
             }
 
             return false;

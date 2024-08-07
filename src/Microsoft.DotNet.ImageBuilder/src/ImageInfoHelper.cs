@@ -17,6 +17,19 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class ImageInfoHelper
     {
         /// <summary>
+        /// Gets all of the digests listed in the given image info.
+        /// </summary>
+        public static List<string> GetAllDigests(ImageArtifactDetails imageInfo)
+        {
+            IEnumerable<string> digests =
+                imageInfo.Repos.SelectMany(
+                    repo => repo.Images.SelectMany(
+                        image => GetAllDigestsForImage(image)));
+
+            return digests.ToList();
+        }
+
+        /// <summary>
         /// Loads image info string content as a parsed model.
         /// </summary>
         /// <param name="imageInfoContent">The image info content to load.</param>
@@ -134,6 +147,20 @@ namespace Microsoft.DotNet.ImageBuilder
             return Version.TryParse(productVersion1, out Version version1) &&
                 Version.TryParse(productVersion2, out Version version2) &&
                 version1.ToString(2) == version2.ToString(2);
+        }
+
+        private static IEnumerable<string> GetAllDigestsForImage(ImageData imageData)
+        {
+            // Platform specific digests
+            IEnumerable<string> digests = imageData.Platforms.Select(platform => platform.Digest);
+
+            // Include manifest list digest if it exists
+            if (imageData.Manifest is not null)
+            {
+                digests = [ ..digests, imageData.Manifest.Digest ];
+            }
+
+            return digests;
         }
 
         private static void MergePropertyData(object srcObj, object targetObj, PropertyInfo property, ImageInfoMergeOptions options)

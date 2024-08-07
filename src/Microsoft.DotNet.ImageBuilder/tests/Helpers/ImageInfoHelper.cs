@@ -15,6 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
     public static class ImageInfoHelper
     {
+        public static string WriteImageInfoToDisk(ImageArtifactDetails imageInfo, string directory)
+        {
+            string imageInfoJson = JsonConvert.SerializeObject(imageInfo);
+            string imageInfoPath = Path.Combine(directory, "image-info.json");
+            File.WriteAllText(imageInfoPath, imageInfoJson);
+            return imageInfoPath;
+        }
+
         public static (ImageArtifactDetails, string) CreateImageInfoOnDisk(
             TempFolderContext tempFolderContext,
             IEnumerable<string> repos,
@@ -23,10 +31,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             IEnumerable<string> versions)
         {
             ImageArtifactDetails imageInfo = CreateImageInfo(repos, oses, archs, versions);
-            string imageInfoJson = JsonConvert.SerializeObject(imageInfo);
-            string imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-            File.WriteAllText(imageInfoPath, imageInfoJson);
-            return (imageInfo, imageInfoPath);
+            string filePath = WriteImageInfoToDisk(imageInfo, directory: tempFolderContext.Path);
+            return (imageInfo, filePath);
         }
 
         public static ImageArtifactDetails CreateImageInfo(

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Kusto.Cloud.Platform.Utils;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
@@ -20,46 +21,73 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 using ImageDigestInfo = (string Digest, List<string> Tags);
 
-public class GenerateSigningPayloadsCommandTests
+public sealed class GenerateSigningPayloadsCommandTests : IDisposable
 {
     private readonly ITestOutputHelper _outputHelper;
-    private readonly DateOnly _globalDate = new DateOnly(2024, 6, 10);
-    private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
-    private const string RepoPrefix = "public/";
-    private const string AcrName = "myacr.azurecr.io";
-    private const string AnnotationsOutputPath = "annotations.txt";
-    private const string AnnotationDigest1 = "annotationdigest1";
-    private const string AnnotationDigest2 = "annotationdigest2";
+
+    // Test Context
+    private readonly TempFolderContext _tempFolderContext;
+    private readonly ImageArtifactDetails _imageInfo;
+    private readonly string _payloadOutputDir;
 
     public GenerateSigningPayloadsCommandTests(ITestOutputHelper outputHelper)
     {
         _outputHelper = outputHelper;
+
+        // Shared test initialization
+        _tempFolderContext = new TempFolderContext();
+        _imageInfo = CreateImageInfo();
+        _payloadOutputDir = Path.Combine(_tempFolderContext.Path, "payloads");
     }
 
     [Fact]
     public async Task GenerateSigningPayloadsCommand_Success()
     {
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        string payloadOutputDir = Path.Combine(tempFolderContext.Path, "payloads");
+        string imageInfoPath = Helpers.ImageInfoHelper.WriteImageInfoToDisk(_imageInfo, _tempFolderContext.Path);
+        IOrasClient orasClientMock = CreateOrasClientMock(_imageInfo);
 
-        string[] repos = [ "runtime-deps", "runtime" ];
-        string[] oses = [ "foolinux", "barlinux" ];
-        string[] archs = [ "amd64", "arm64v8", "arm32v7" ];
-        string[] versions = [ "8.0", "10.0" ];
-
-        (ImageArtifactDetails imageInfo, string imageInfoPath) =
-            Helpers.ImageInfoHelper.CreateImageInfoOnDisk(tempFolderContext, repos, oses, archs, versions);
-
-        IOrasClient orasClientMock = CreateOrasClientMock(imageInfo);
-
-        GenerateSigningPayloadsCommand command = CreateCommand(imageInfoPath, payloadOutputDir, orasClientMock);
-
+        GenerateSigningPayloadsCommand command = CreateCommand(imageInfoPath, _payloadOutputDir, orasClientMock);
         await command.ExecuteAsync();
 
-        Assert.Equal(true, true);
+        VerifySigningPayloadsExistOnDisk(_imageInfo, _payloadOutputDir);
     }
 
-    private static GenerateSigningPayloadsCommand CreateCommand(string imageInfoPath, string outputDir, IOrasClient orasClient)
+    [Fact]
+    public async Task ImagesWithoutManifestLists()
+    {
+        // Remove all manifest lists from the generated image info.
+        RemoveManifestLists(_imageInfo);
+
+        string imageInfoPath = Helpers.ImageInfoHelper.WriteImageInfoToDisk(_imageInfo, _tempFolderContext.Path);
+        IOrasClient orasClientMock = CreateOrasClientMock(_imageInfo);
+
+        GenerateSigningPayloadsCommand command = CreateCommand(imageInfoPath, _payloadOutputDir, orasClientMock);
+        await command.ExecuteAsync();
+
+        VerifySigningPayloadsExistOnDisk(_imageInfo, _payloadOutputDir);
+    }
+
+    public void Dispose()
+    {
+        _tempFolderContext.Dispose();
+    }
+
+    private static void VerifySigningPayloadsExistOnDisk(ImageArtifactDetails imageInfo, string payloadOutputDir)
+    {
+        IEnumerable<string> expectedFilePaths = ImageInfoHelper.GetAllDigests(imageInfo)
+            .Select(DockerHelper.TrimDigestAlgorithm)
+            .Select(digest => Path.Combine(payloadOutputDir, digest + ".json"));
+
+        foreach (string filePath in expectedFilePaths)
+        {
+            Assert.True(File.Exists(filePath), $"Payload file '{filePath}' does not exist");
+        }
+    }
+
+    private static GenerateSigningPayloadsCommand CreateCommand(
+        string imageInfoPath,
+        string outputDir,
+        IOrasClient orasClient)
     {
         GenerateSigningPayloadsCommand command = new(Mock.Of<ILoggerService>(), orasClient);
         command.Options.ImageInfoPath = imageInfoPath;
@@ -85,6 +113,7 @@ public class GenerateSigningPayloadsCommandTests
             imageArtifactDetails.Repos
                 .SelectMany(repo => repo.Images)
                 .Select(image => image.Manifest)
+                .Where(manifest => manifest is not null)
                 .Select(manifest => (manifest.Digest, Tags: manifest.SharedTags));
 
         foreach (ImageDigestInfo imageDigest in platformDigestsAndTags)
@@ -125,5 +154,28 @@ public class GenerateSigningPayloadsCommandTests
             : "application/vnd.docker.distribution.manifest.v2+json";
 
         return new Descriptor(MediaType: mediaType, Digest: digest, Size: 999);
+    }
+
+    /// <summary>
+    /// Create some generic test image info spanning multiple repos, versions, OSes, and architectures.
+    /// </summary>
+    private static ImageArtifactDetails CreateImageInfo()
+    {
+        string[] repos = [ "runtime-deps", "runtime" ];
+        string[] oses = [ "foolinux", "barlinux" ];
+        string[] archs = [ "amd64", "arm64v8", "arm32v7" ];
+        string[] versions = [ "2.0", "99.0" ];
+
+        return Helpers.ImageInfoHelper.CreateImageInfo(repos, oses, archs, versions);
+    }
+
+    /// <summary>
+    /// Removes manifest lists from image info for some tests.
+    /// </summary>
+    private static void RemoveManifestLists(ImageArtifactDetails imageInfo)
+    {
+        imageInfo.Repos
+            .SelectMany(repo => repo.Images)
+            .ForEach(image => image.Manifest = null);
     }
 }

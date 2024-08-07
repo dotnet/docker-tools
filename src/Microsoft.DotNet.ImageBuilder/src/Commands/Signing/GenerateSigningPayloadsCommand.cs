@@ -44,7 +44,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 
         _loggerService.WriteSubheading("Reading digests from image info file");
         ImageArtifactDetails imageInfo = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath);
-        IReadOnlyList<string> digests = GetAllDigests(imageInfo);
+        IReadOnlyList<string> digests = ImageInfoHelper.GetAllDigests(imageInfo);
 
         _loggerService.WriteSubheading("Generating signing payloads using ORAS");
         IReadOnlyList<Payload> payloads = CreatePayloads(digests);
@@ -96,23 +96,5 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
     {
         Descriptor descriptor = _orasClient.GetDescriptor(digest, Options.IsDryRun);
         return new Payload(TargetArtifact: descriptor);
-    }
-
-    private static List<string> GetAllDigests(ImageArtifactDetails imageInfo) =>
-        imageInfo.Repos.SelectMany(GetAllDigestsForRepo).ToList();
-
-    private static IEnumerable<string> GetAllDigestsForRepo(RepoData repoData) =>
-        repoData.Images.SelectMany(GetAllDigestsForImage);
-
-    private static IEnumerable<string> GetAllDigestsForImage(ImageData imageData)
-    {
-        IEnumerable<string> digests = imageData.Platforms.Select(platform => platform.Digest);
-
-        if (imageData.Manifest is not null)
-        {
-            digests = [ ..digests, imageData.Manifest.Digest ];
-        }
-
-        return digests;
     }
 }

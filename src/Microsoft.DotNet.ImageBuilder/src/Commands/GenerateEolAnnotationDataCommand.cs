@@ -26,7 +26,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private readonly IContainerRegistryClientFactory _acrClientFactory;
     private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-    private readonly IOrasService _orasService;
+    private readonly ILifecycleMetadataService _orasService;
     private readonly DateOnly _eolDate;
 
     [ImportingConstructor]
@@ -36,7 +36,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        IOrasService orasService)
+        ILifecycleMetadataService orasService)
     {
         _dotNetReleasesService = dotNetReleasesService ?? throw new ArgumentNullException(nameof(dotNetReleasesService));
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

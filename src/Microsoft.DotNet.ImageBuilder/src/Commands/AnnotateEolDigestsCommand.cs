@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
-using Microsoft.DotNet.ImageBuilder.Models.Oras;
+using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
-        private readonly IOrasService _orasService;
+        private readonly ILifecycleMetadataService _orasService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [ImportingConstructor]
         public AnnotateEolDigestsCommand(
             ILoggerService loggerService,
-            IOrasService orasService,
+            ILifecycleMetadataService orasService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -119,10 +119,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            if (!_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out OciManifest? existingAnnotationManifest))
+            if (!_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out Manifest? existingAnnotationManifest))
             {
                 _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                if (_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun, out OciManifest? createdAnnotationManifest))
+                if (_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun, out Manifest? createdAnnotationManifest))
                 {
                     _createdAnnotationDigests.Add(createdAnnotationManifest.Reference);
                 }
@@ -135,7 +135,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                if (existingAnnotationManifest.Annotations[OrasService.EndOfLifeAnnotation] == eolDate?.ToString(OrasService.EolDateFormat))
+                if (existingAnnotationManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation] == eolDate?.ToString(LifecycleMetadataService.EolDateFormat))
                 {
                     _loggerService.WriteMessage($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
                     _skippedAnnotationImageDigests.Add(digestData);

@@ -90,6 +90,18 @@ namespace Microsoft.DotNet.ImageBuilder
             return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation, useFilteredManifest);
         }
 
+        /// <summary>
+        /// Loads an image info file as a parsed model directly with no validation or filtering.
+        /// </summary>
+        /// <param name="path">Path to the image info file.</param>
+        /// <exception cref="InvalidDataException"/>
+        public static ImageArtifactDetails LoadFromFile(string path)
+        {
+            string imageInfoText = File.ReadAllText(path);
+            return JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
+                throw new InvalidDataException($"Unable to deserialize image info file {path}");
+        }
+
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)
         {
             if (options == null)

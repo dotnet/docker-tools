@@ -6,12 +6,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;
 using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
@@ -22,10 +24,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class CleanAcrImagesCommandTest
     {
+        private const string AcrName = "myacr.azurecr.io";
+
         [Fact]
         public async Task StagingRepos()
         {
-            const string acrName = "myacr.azurecr.io";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -53,13 +56,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name))
                 .Returns(Task.CompletedTask);
 
-            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(acrName, acrClientMock.Object);
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
-            command.Options.RegistryName = acrName;
+            command.Options.RegistryName = AcrName;
             command.Options.RepoName = "build-staging/*";
             command.Options.Action = CleanAcrImagesAction.Delete;
             command.Options.Age = 15;
@@ -73,7 +76,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task PublicNightlyRepos()
         {
-            const string acrName = "myacr.azurecr.io";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -118,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.DeleteRepositoryAsync(publicRepo4Name))
                 .Returns(Task.CompletedTask);
 
-            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(acrName, acrClientMock.Object);
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             Mock<IContainerRegistryContentClient> repo1ContentClient = CreateContainerRegistryContentClientMock(publicRepo1Name);
             Mock<IContainerRegistryContentClient> repo2ContentClient = CreateContainerRegistryContentClientMock(publicRepo2Name);
@@ -126,13 +128,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IContainerRegistryContentClient> repo4ContentClient = CreateContainerRegistryContentClientMock(publicRepo4Name);
 
             IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(
-                acrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
+                AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
-            command.Options.RegistryName = acrName;
+            command.Options.RegistryName = AcrName;
             command.Options.RepoName = "public/dotnet/*nightly/*";
             command.Options.Action = CleanAcrImagesAction.PruneDangling;
             command.Options.Age = 30;
@@ -154,7 +156,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DeleteEmptyTestRepo()
         {
-            const string acrName = "myacr.azurecr.io";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -177,13 +178,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.DeleteRepositoryAsync(repo2Name))
                 .Returns(Task.CompletedTask);
 
-            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(acrName, acrClientMock.Object);
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
-            command.Options.RegistryName = acrName;
+            command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
             command.Options.Age = 7;
@@ -200,7 +201,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DeleteAllExpiredImagesTestRepo()
         {
-            const string acrName = "myacr.azurecr.io";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -222,13 +222,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.DeleteRepositoryAsync(repo1Name))
                 .Returns(Task.CompletedTask);
 
-            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(acrName, acrClientMock.Object);
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
-            command.Options.RegistryName = acrName;
+            command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
             command.Options.Age = 7;
@@ -241,7 +241,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task TestRepos()
         {
-            const string acrName = "myacr.azurecr.io";
             const string subscription = "my sub";
             const string resourceGroup = "group";
 
@@ -272,18 +271,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IContainerRegistryClient> acrClientMock = CreateContainerRegistryClientMock([repo1, repo2]);
 
-            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(acrName, acrClientMock.Object);
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             Mock<IContainerRegistryContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name);
             Mock<IContainerRegistryContentClient> repo2ContentClientMock = CreateContainerRegistryContentClientMock(repo2Name);
 
-            IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(acrName, [repo1ContentClientMock, repo2ContentClientMock]);
+            IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
-            command.Options.RegistryName = acrName;
+            command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
             command.Options.Age = 7;
@@ -294,6 +293,100 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
             repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest1), Times.Never);
             repo2ContentClientMock.Verify(o => o.DeleteManifestAsync(repo2Digest2));
+        }
+
+        /// <summary>
+        /// Validates that images with EOL date older than specified age are deleted.
+        /// </summary>
+        [Fact]
+        public async Task DeleteEolImages()
+        {
+            const string subscription = "my sub";
+            const string resourceGroup = "group";
+
+            const string repo1Name = "test/repo1";
+
+            const string repo1Digest1 = "sha256:digest1";
+            const string repo1Digest2 = "sha256:digest2";
+            const string repo1Digest3 = "sha256:digest3";
+            const string annotationdigest = "annotationdigest";
+
+            const int age = 30;
+
+            ContainerRepository repo1 = CreateContainerRepository(
+                repo1Name,
+                CreateContainerRepositoryProperties(),
+                [
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8)), tags: ["latest"], registryLoginServer: AcrName),
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)), tags: ["latest"], registryLoginServer: AcrName),
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName),
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: annotationdigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
+                ]);
+
+            Mock<IContainerRegistryClient> acrClientMock = CreateContainerRegistryClientMock([repo1]);
+
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+
+            Mock<IContainerRegistryContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name,
+                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                        {
+                            { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
+                            { repo1Digest2, new ManifestQueryResult(string.Empty, []) },
+                            { repo1Digest3, new ManifestQueryResult(string.Empty, []) },
+                            { annotationdigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
+                        });
+
+            IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock]);
+
+            Mock<IOrasService> orasServiceMock = CreateOrasServiceMock(age, repo1Name);
+
+            CleanAcrImagesCommand command = new CleanAcrImagesCommand(
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), orasServiceMock.Object);
+            command.Options.Subscription = subscription;
+            command.Options.ResourceGroup = resourceGroup;
+            command.Options.RegistryName = AcrName;
+            command.Options.RepoName = "test/*";
+            command.Options.Action = CleanAcrImagesAction.PruneEol;
+            command.Options.Age = age;
+
+            await command.ExecuteAsync();
+
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
+        }
+
+        private Mock<IOrasService> CreateOrasServiceMock(int age, string repoName)
+        {
+            DateOnly dateToday = DateOnly.FromDateTime(DateTime.Now);
+            Mock<IOrasService> orasServiceMock = new();
+            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, repoName, "sha256:digest1", true, dateToday.AddDays(-age - 1));
+            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, repoName, "sha256:digest2", false, dateToday);
+            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, repoName, "sha256:digest3", true, dateToday.AddDays(-age + 1));
+            return orasServiceMock;
+        }
+
+        private static void SetupIsDigestAnnotatedForEolMethod(Mock<IOrasService> orasServiceMock, string repoName, string digest, bool digestAlreadyAnnotated, DateOnly eolDate)
+        {
+            string reference = $"{AcrName}/{repoName}@{digest}";
+
+            OciManifest manifest = null;
+            if (digestAlreadyAnnotated)
+            {
+                manifest = new OciManifest
+                {
+                    Annotations = new Dictionary<string, string>
+                    {
+                        { OrasService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
+                    },
+                    Reference = reference
+                };
+            }
+
+            orasServiceMock
+                .Setup(o => o.IsDigestAnnotatedForEol(reference, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest))
+                .Returns(digestAlreadyAnnotated);
         }
     }
 }

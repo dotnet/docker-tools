@@ -63,6 +63,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         PruneDangling,
 
         /// <summary>
+        /// Deletes EOL images in a repo.
+        /// Where EOL annotation date is older than the specified age.
+        /// </summary>
+        PruneEol,
+
+        /// <summary>
         /// Deletes all images in a repo.
         /// </summary>
         PruneAll,

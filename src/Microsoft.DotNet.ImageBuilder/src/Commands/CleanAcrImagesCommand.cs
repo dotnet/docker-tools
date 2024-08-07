@@ -91,7 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => IsExpired(manifest.LastUpdatedOn, Options.Age));
+                        manifest => Task.FromResult(IsExpired(manifest.LastUpdatedOn, Options.Age)));
                     break;
                 case CleanAcrImagesAction.Delete:
                     if (IsExpired(repository.GetProperties().Value.LastUpdatedOn, Options.Age))

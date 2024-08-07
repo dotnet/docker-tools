@@ -83,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 case CleanAcrImagesAction.PruneDangling:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => !manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age));
+                        manifest => Task.FromResult(!manifest.Tags.Any() && IsExpired(manifest.LastUpdatedOn, Options.Age)));
                     break;
                 case CleanAcrImagesAction.PruneEol:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,

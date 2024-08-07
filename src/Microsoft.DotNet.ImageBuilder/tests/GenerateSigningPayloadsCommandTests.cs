@@ -4,21 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Drawing;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.NET.StringTools;
 using Moq;
-using Octokit;
 using Xunit;
 using Xunit.Abstractions;
 

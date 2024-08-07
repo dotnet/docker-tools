@@ -87,7 +87,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     break;
                 case CleanAcrImagesAction.PruneEol:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => !(await IsAnnotationManifestAsync(manifest, acrContentClient)) && await HasExpiredEolAsync(manifest, Options.Age));
+                        async manifest => !(await IsAnnotationManifestAsync(manifest, acrContentClient)) && HasExpiredEol(manifest, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,

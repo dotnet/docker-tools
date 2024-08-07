@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
@@ -308,6 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1Digest1 = "sha256:digest1";
             const string repo1Digest2 = "sha256:digest2";
             const string repo1Digest3 = "sha256:digest3";
+            const string annotationdigest = "annotationdigest";
 
             const int age = 30;
 
@@ -317,7 +319,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 [
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(8)), tags: ["latest"], registryLoginServer: AcrName),
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)), tags: ["latest"], registryLoginServer: AcrName),
-                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName)
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), tags: ["latest"], registryLoginServer: AcrName),
+                    CreateArtifactManifestProperties(repositoryName: repo1Name, digest: annotationdigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
                 ]);
 
             Mock<IContainerRegistryClient> acrClientMock = CreateContainerRegistryClientMock([repo1]);
@@ -327,9 +330,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IContainerRegistryContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name,
                 imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
-                            { "sha256:digest1", new ManifestQueryResult(string.Empty, []) },
-                            { "sha256:digest2", new ManifestQueryResult(string.Empty, []) },
-                            { "sha256:digest3", new ManifestQueryResult(string.Empty, []) }
+                            { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
+                            { repo1Digest2, new ManifestQueryResult(string.Empty, []) },
+                            { repo1Digest3, new ManifestQueryResult(string.Empty, []) },
+                            { annotationdigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
                         });
 
             IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock]);
@@ -350,6 +354,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest1));
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3), Times.Never);
+            repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
         }
 
         private Mock<IOrasService> CreateOrasServiceMock(int age, string repoName)

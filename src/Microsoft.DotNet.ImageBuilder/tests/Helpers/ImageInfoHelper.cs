@@ -4,13 +4,102 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
     public static class ImageInfoHelper
     {
+        public static (ImageArtifactDetails, string) CreateImageInfoOnDisk(
+            TempFolderContext tempFolderContext,
+            IEnumerable<string> repos,
+            IEnumerable<string> oses,
+            IEnumerable<string> archs,
+            IEnumerable<string> versions)
+        {
+            ImageArtifactDetails imageInfo = CreateImageInfo(repos, oses, archs, versions);
+            string imageInfoJson = JsonConvert.SerializeObject(imageInfo);
+            string imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+            File.WriteAllText(imageInfoPath, imageInfoJson);
+            return (imageInfo, imageInfoPath);
+        }
+
+        public static ImageArtifactDetails CreateImageInfo(
+            IEnumerable<string> repos,
+            IEnumerable<string> oses,
+            IEnumerable<string> archs,
+            IEnumerable<string> versions)
+        {
+            IEnumerable<RepoData> repoDatas =
+                from repoName in repos
+                select CreateRepo(repoName, oses, archs, versions);
+
+            return new ImageArtifactDetails()
+            {
+                Repos = repoDatas.ToList()
+            };
+        }
+
+        private static RepoData CreateRepo(
+            string repoName,
+            IEnumerable<string> oses,
+            IEnumerable<string> archs,
+            IEnumerable<string> versions)
+        {
+            IEnumerable<ImageData> imageDatas = 
+                from version in versions
+                from os in oses
+                select CreateImage(repoName, version, os, archs);
+            
+            return new RepoData
+            {
+                Repo = repoName,
+                Images = imageDatas.ToList()
+            };
+        }
+
+        private static ImageData CreateImage(
+            string repoName,
+            string productVersion,
+            string os,
+            IEnumerable<string> archs)
+        {
+            IEnumerable<PlatformData> platformDatas =
+                from arch in archs
+                select CreatePlatformSimple(repoName, productVersion, os, arch);
+
+            return new ImageData
+            {
+                Platforms = platformDatas.ToList(),
+                ProductVersion = productVersion,
+                Manifest = new ManifestData
+                {
+                    SharedTags = GetSharedTags(productVersion, os),
+                    Digest = CalculateDigest(repoName, productVersion, os),
+                }
+            };
+        }
+
+        private static PlatformData CreatePlatformSimple(
+            string repoName,
+            string productVersion,
+            string os,
+            string arch)
+        {
+            return CreatePlatform(
+                dockerfile: string.Join('/', [repoName, productVersion, os, arch, "Dockerfile"]),
+                digest: CalculateDigest(repoName, productVersion, os, arch),
+                architecture: arch,
+                osVersion: os,
+                simpleTags: [ $"{productVersion}-{os}-{arch}" ]
+            );
+        }
+
         public static PlatformData CreatePlatform(
             string dockerfile,
             string digest = null,
@@ -46,5 +135,23 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
             return platform;
         }
+
+        private static List<string> GetSharedTags(string productVersion, string os)
+        {
+            return
+            [
+                productVersion,
+                $"{productVersion}-{os}"
+            ];
+        }
+
+        private static string CalculateDigest(string repoName, string version, string os, string arch = "")
+        {
+            string uniqueIdentifier = repoName + version + os + arch;
+            return "sha256:" + CalculateSHA256(uniqueIdentifier).ToLowerInvariant();
+        }
+
+        private static string CalculateSHA256(string s) =>
+            Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(s)));
     }
 }

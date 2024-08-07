@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Oras;
+using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
@@ -427,8 +427,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string armDigest = DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest102-arm64");
 
             // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
-            OciManifest lifecycleArtifactManifest;
-            Mock<IOrasService> orasServiceMock = new();
+            Manifest lifecycleArtifactManifest;
+            Mock<ILifecycleMetadataService> orasServiceMock = new();
             orasServiceMock
                 .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
@@ -1174,7 +1174,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory,
             IContainerRegistryContentClientFactory registryContentClientFactory,
             string repoPrefix = "public/",
-            IOrasService orasService = null,
+            ILifecycleMetadataService orasService = null,
             IDotNetReleasesService dotNetReleasesService = null)
         {
             Mock<ILoggerService> loggerServiceMock = new();
@@ -1195,10 +1195,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return command;
         }
 
-        private static IOrasService CreateOrasService(Dictionary<string, bool> digestAnnotatedMapping)
+        private static ILifecycleMetadataService CreateOrasService(Dictionary<string, bool> digestAnnotatedMapping)
         {
-            Mock<IOrasService> orasServiceMock = new();
-            OciManifest lifecycleArtifactManifest;
+            Mock<ILifecycleMetadataService> orasServiceMock = new();
+            Manifest lifecycleArtifactManifest;
             orasServiceMock
                 .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(false);

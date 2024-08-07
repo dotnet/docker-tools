@@ -257,7 +257,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestResult.Manifest["subject"] is not null;
         }
 
-        private async Task<bool> HasExpiredEolAsync(ArtifactManifestProperties manifest, int expirationDays)
+        private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
         {
             if(_orasService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, Options.IsDryRun, out OciManifest? lifecycleArtifactManifest) &&
                 lifecycleArtifactManifest?.Annotations != null)

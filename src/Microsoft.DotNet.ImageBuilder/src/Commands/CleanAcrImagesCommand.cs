@@ -251,7 +251,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<bool> IsAnnotationManifestAsync(ArtifactManifestProperties manifest, IContainerRegistryContentClient acrContentClient)
         {
-            ManifestQueryResult manifestResult = acrContentClient.GetManifestAsync(manifest.Digest).Result;
+            ManifestQueryResult manifestResult = await acrContentClient.GetManifestAsync(manifest.Digest);
 
             // An annotation is just a referrer and referrers are indicated by the presence of a subject field.
             return manifestResult.Manifest["subject"] is not null;

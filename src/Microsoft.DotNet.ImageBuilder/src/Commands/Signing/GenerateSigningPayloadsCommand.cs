@@ -49,6 +49,10 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         _loggerService.WriteSubheading("Generating signing payloads using ORAS");
         IReadOnlyList<Payload> payloads = CreatePayloads(digests);
 
+        // It is possible for two of our images, built separately, from different Dockerfiles, to have the same digest.
+        // In this situation, they are literally the same image, so one signature payload will suffice.
+        payloads = payloads.Distinct().ToList();
+
         _loggerService.WriteSubheading("Writing payloads to disk");
         IReadOnlyList<string> outputFiles = await WriteAllPayloadsAsync(payloads, Options.PayloadOutputDirectory);
 
@@ -73,7 +77,8 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 
     private async Task<string> WritePayloadToDiskAsync(Payload payload, string outputDirectory)
     {
-        string fileName = $"{payload.TargetArtifact.Digest}.json";
+        string digestWithoutAlgorithm = payload.TargetArtifact.Digest.Split(':')[1];
+        string fileName = $"{digestWithoutAlgorithm}.json";
         string payloadPath = Path.Combine(outputDirectory, fileName);
         await File.WriteAllTextAsync(payloadPath, payload.ToJson());
         _loggerService.WriteMessage($"Wrote signing payload to disk: {payloadPath}");
@@ -99,12 +104,15 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
     private static IEnumerable<string> GetAllDigestsForRepo(RepoData repoData) =>
         repoData.Images.SelectMany(GetAllDigestsForImage);
 
-    private static IEnumerable<string> GetAllDigestsForImage(ImageData imageData) =>
-        [GetManifestListDigest(imageData), ..GetManifestDigests(imageData)];
+    private static IEnumerable<string> GetAllDigestsForImage(ImageData imageData)
+    {
+        IEnumerable<string> digests = imageData.Platforms.Select(platform => platform.Digest);
 
-    private static IEnumerable<string> GetManifestDigests(ImageData imageData) =>
-        imageData.Platforms.Select(platform => platform.Digest);
+        if (imageData.Manifest is not null)
+        {
+            digests = [ ..digests, imageData.Manifest.Digest ];
+        }
 
-    private static string GetManifestListDigest(ImageData imageData) =>
-        imageData.Manifest.Digest;
+        return digests;
+    }
 }

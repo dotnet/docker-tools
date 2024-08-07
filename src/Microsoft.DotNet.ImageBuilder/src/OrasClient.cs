@@ -32,13 +32,12 @@ public interface IOrasClient
 public class OrasClient : IOrasClient
 {
     private const string OrasExecutable = "oras";
-    private const string JsonFormatArg = "--format json";
 
     public string RunOrasCommand(IEnumerable<string> args, bool isDryRun = false)
     {
         return ExecuteHelper.Execute(
             fileName: OrasExecutable,
-            args: string.Join(' ', [..args, JsonFormatArg]),
+            args: string.Join(' ', args),
             isDryRun: isDryRun);
     }
 }

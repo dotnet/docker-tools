@@ -41,9 +41,17 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void CreateDirectoryIfNotExists(string path)
         {
-            if (!Directory.Exists(path))
+            bool directoryExists = Directory.Exists(path);
+
+            if (!directoryExists)
             {
                 Directory.CreateDirectory(path);
+                return;
+            }
+
+            if (Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                throw new IOException($"Directory '{path}' already exists and is not empty");
             }
         }
     }

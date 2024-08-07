@@ -31,7 +31,12 @@ public class LifecycleMetadataService : ILifecycleMetadataService
     public bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
     {
         string stdOut = _orasClient.RunOrasCommand(
-            args: ["discover",  $"--artifact-type {LifecycleArtifactType}", digest],
+            args: [
+                "discover",
+                $"--artifact-type {LifecycleArtifactType}",
+                $"--format json",
+                digest
+            ],
             isDryRun: isDryRun);
 
         if (LifecycleAnnotationExists(stdOut, loggerService, out lifecycleArtifactManifest))
@@ -52,6 +57,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
                     "attach",
                     $"--artifact-type {LifecycleArtifactType}",
                     $"--annotation \"{EndOfLifeAnnotation}={date.ToString(EolDateFormat)}\"",
+                    $"--format json",
                     digest
                 ],
                 isDryRun: isDryRun);

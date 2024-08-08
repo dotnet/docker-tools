@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Kusto.Cloud.Platform.Utils;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
@@ -18,8 +19,6 @@ using Xunit.Abstractions;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Tests;
-
-using ImageDigestInfo = (string Digest, List<string> Tags);
 
 public sealed class GenerateSigningPayloadsCommandTests : IDisposable
 {
@@ -44,12 +43,15 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
     public async Task GenerateSigningPayloadsCommand_Success()
     {
         string imageInfoPath = Helpers.ImageInfoHelper.WriteImageInfoToDisk(_imageInfo, _tempFolderContext.Path);
-        IOrasClient orasClientMock = CreateOrasClientMock(_imageInfo);
+        IEnumerable<ImageDigestInfo> imageDigestInfos = GetAllImageDigestInfos(_imageInfo);
+        IOrasClient orasClientMock = CreateOrasClientMock(imageDigestInfos);
 
         GenerateSigningPayloadsCommand command = CreateCommand(imageInfoPath, _payloadOutputDir, orasClientMock);
         await command.ExecuteAsync();
 
-        VerifySigningPayloadsExistOnDisk(_imageInfo, _payloadOutputDir);
+        IEnumerable<string> expectedFilePaths = GetExpectedFilePaths(imageDigestInfos, _payloadOutputDir);
+        VerifySigningPayloadsExistOnDisk(expectedFilePaths);
+        await VerifyAllPayloadContentsAsync(imageDigestInfos, _payloadOutputDir);
     }
 
     [Fact]
@@ -59,12 +61,15 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         RemoveManifestLists(_imageInfo);
 
         string imageInfoPath = Helpers.ImageInfoHelper.WriteImageInfoToDisk(_imageInfo, _tempFolderContext.Path);
-        IOrasClient orasClientMock = CreateOrasClientMock(_imageInfo);
+        IEnumerable<ImageDigestInfo> imageDigestInfos = GetAllImageDigestInfos(_imageInfo);
+        IOrasClient orasClientMock = CreateOrasClientMock(imageDigestInfos);
 
         GenerateSigningPayloadsCommand command = CreateCommand(imageInfoPath, _payloadOutputDir, orasClientMock);
         await command.ExecuteAsync();
 
-        VerifySigningPayloadsExistOnDisk(_imageInfo, _payloadOutputDir);
+        IEnumerable<string> expectedFilePaths = GetExpectedFilePaths(imageDigestInfos, _payloadOutputDir);
+        VerifySigningPayloadsExistOnDisk(expectedFilePaths);
+        await VerifyAllPayloadContentsAsync(imageDigestInfos, _payloadOutputDir);
     }
 
     public void Dispose()
@@ -72,16 +77,50 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         _tempFolderContext.Dispose();
     }
 
-    private static void VerifySigningPayloadsExistOnDisk(ImageArtifactDetails imageInfo, string payloadOutputDir)
+    private static async Task VerifyAllPayloadContentsAsync(
+        IEnumerable<ImageDigestInfo> imageDigestInfos,
+        string payloadOutputDirectory)
     {
-        IEnumerable<string> expectedFilePaths = ImageInfoHelper.GetAllDigests(imageInfo)
-            .Select(DockerHelper.TrimDigestAlgorithm)
-            .Select(digest => Path.Combine(payloadOutputDir, digest + ".json"));
+        string[] payloadFilePaths = Directory.GetFiles(payloadOutputDirectory);
 
+        // Sort for comparison
+        ImageDigestInfo[] orderedImageDigestInfos = imageDigestInfos.OrderBy(d => TrimDigest(d.Digest)).ToArray();
+        string[] orderedPayloadFilePaths = payloadFilePaths.OrderBy(path => Path.GetFileName(path)).ToArray();
+
+        Assert.Equal(orderedImageDigestInfos.Length, orderedPayloadFilePaths.Length);
+
+        // Compare expected and actual results pairwise
+        IEnumerable<(ImageDigestInfo DigestInfo, string Path)> pairs = 
+            orderedImageDigestInfos.Zip(orderedPayloadFilePaths);
+        await Parallel.ForEachAsync(pairs, (p, _) => ValidatePayloadContentsAsync(p.DigestInfo, p.Path));
+    }
+
+    private static async ValueTask ValidatePayloadContentsAsync(ImageDigestInfo digestInfo, string payloadFilePath)
+    {
+        string payloadJson = await File.ReadAllTextAsync(payloadFilePath);
+        Descriptor targetArtifact = Payload.FromJson(payloadJson).TargetArtifact;
+        Assert.Equal(TrimDigest(digestInfo.Digest), TrimDigest(targetArtifact.Digest));
+        Assert.Equal(digestInfo.IsManifestList, targetArtifact.MediaType.Contains("manifest.list"));
+    }
+
+    private static void VerifySigningPayloadsExistOnDisk(IEnumerable<string> expectedFilePaths)
+    {
         foreach (string filePath in expectedFilePaths)
         {
             Assert.True(File.Exists(filePath), $"Payload file '{filePath}' does not exist");
         }
+    }
+
+    private static IEnumerable<string> GetExpectedFilePaths(
+        IEnumerable<ImageDigestInfo> imageDigestInfos,
+        string payloadOutputDir)
+    {
+        return imageDigestInfos
+            .Select(digestInfo => {
+                    string fileName = TrimDigest(digestInfo.Digest) + ".json";
+                    return Path.Combine(payloadOutputDir, fileName);
+                })
+            .Distinct();
     }
 
     private static GenerateSigningPayloadsCommand CreateCommand(
@@ -99,45 +138,26 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
     /// Assuming all images have been pushed to the registry, create an ORAS client mock which returns the OCI
     /// descriptor for an image when querying via digest or tags.
     /// </summary>
-    private static IOrasClient CreateOrasClientMock(ImageArtifactDetails imageArtifactDetails)
+    private static IOrasClient CreateOrasClientMock(IEnumerable<ImageDigestInfo> imageDigestInfos)
     {
         Mock<IOrasClient> orasClientMock = new();
-
-        IEnumerable<ImageDigestInfo> platformDigestsAndTags =
-            imageArtifactDetails.Repos
-                .SelectMany(repo => repo.Images)
-                .SelectMany(image => image.Platforms)
-                .Select(platform => (platform.Digest, Tags: platform.SimpleTags));
-
-        IEnumerable<ImageDigestInfo> manifestListDigestsAndTags = 
-            imageArtifactDetails.Repos
-                .SelectMany(repo => repo.Images)
-                .Select(image => image.Manifest)
-                .Where(manifest => manifest is not null)
-                .Select(manifest => (manifest.Digest, Tags: manifest.SharedTags));
-
-        foreach (ImageDigestInfo imageDigest in platformDigestsAndTags)
+        foreach (ImageDigestInfo digestInfo in imageDigestInfos)
         {
-            SetupMockDescriptors(orasClientMock, imageDigest, isManifestList: false);
-        }
-
-        foreach (ImageDigestInfo imageDigest in manifestListDigestsAndTags)
-        {
-            SetupMockDescriptors(orasClientMock, imageDigest, isManifestList: true);
+            SetupMockDescriptors(orasClientMock, digestInfo);
         }
 
         return orasClientMock.Object;
     }
 
-    private static Mock<IOrasClient> SetupMockDescriptors(Mock<IOrasClient> orasClientMock, ImageDigestInfo image, bool isManifestList)
+    private static Mock<IOrasClient> SetupMockDescriptors(Mock<IOrasClient> orasClientMock, ImageDigestInfo digestInfo)
     {
-        Descriptor descriptor = CreateDescriptor(image.Digest, isManifestList);
+        Descriptor descriptor = CreateDescriptor(digestInfo.Digest, digestInfo.IsManifestList);
 
         orasClientMock
-            .Setup(o => o.GetDescriptor(image.Digest, false))
+            .Setup(o => o.GetDescriptor(digestInfo.Digest, false))
             .Returns(descriptor);
         
-        foreach (string tag in image.Tags)
+        foreach (string tag in digestInfo.Tags)
         {
             orasClientMock
                 .Setup(o => o.GetDescriptor(tag, false))
@@ -161,12 +181,13 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
     /// </summary>
     private static ImageArtifactDetails CreateImageInfo()
     {
+        string registry = "myregistry.azurecr.io";
         string[] repos = [ "runtime-deps", "runtime" ];
         string[] oses = [ "foolinux", "barlinux" ];
         string[] archs = [ "amd64", "arm64v8", "arm32v7" ];
         string[] versions = [ "2.0", "99.0" ];
 
-        return Helpers.ImageInfoHelper.CreateImageInfo(repos, oses, archs, versions);
+        return Helpers.ImageInfoHelper.CreateImageInfo(registry, repos, oses, archs, versions);
     }
 
     /// <summary>
@@ -178,4 +199,34 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
             .SelectMany(repo => repo.Images)
             .ForEach(image => image.Manifest = null);
     }
+
+    private static IReadOnlyList<ImageDigestInfo> GetAllImageDigestInfos(ImageArtifactDetails imageInfo)
+    {
+        IEnumerable<ImageData> allImages = imageInfo.Repos.SelectMany(repo => repo.Images);
+
+        IEnumerable<ImageDigestInfo> platformDigestsAndTags =
+            allImages
+                .SelectMany(image => image.Platforms)
+                .Select(platform =>
+                    new ImageDigestInfo(
+                        Digest: platform.Digest,
+                        Tags: platform.SimpleTags,
+                        IsManifestList: false));
+
+        IEnumerable<ImageDigestInfo> manifestListDigestsAndTags = 
+            allImages
+                .Select(image => image.Manifest)
+                .Where(manifest => manifest is not null)
+                .Select(manifestList =>
+                    new ImageDigestInfo(
+                        Digest: manifestList.Digest,
+                        Tags: manifestList.SharedTags,
+                        IsManifestList: true));
+
+        return [..platformDigestsAndTags, ..manifestListDigestsAndTags];
+    }
+
+    private static string TrimDigest(string fullDigest) => fullDigest.Split(':')[1];
+
+    private record ImageDigestInfo(string Digest, List<string> Tags, bool IsManifestList);
 }

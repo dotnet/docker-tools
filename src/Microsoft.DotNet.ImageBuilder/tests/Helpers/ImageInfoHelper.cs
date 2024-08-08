@@ -25,17 +25,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
         public static (ImageArtifactDetails, string) CreateImageInfoOnDisk(
             TempFolderContext tempFolderContext,
+            string registry,
             IEnumerable<string> repos,
             IEnumerable<string> oses,
             IEnumerable<string> archs,
             IEnumerable<string> versions)
         {
-            ImageArtifactDetails imageInfo = CreateImageInfo(repos, oses, archs, versions);
+            ImageArtifactDetails imageInfo = CreateImageInfo(registry, repos, oses, archs, versions);
             string filePath = WriteImageInfoToDisk(imageInfo, directory: tempFolderContext.Path);
             return (imageInfo, filePath);
         }
 
         public static ImageArtifactDetails CreateImageInfo(
+            string registry,
             IEnumerable<string> repos,
             IEnumerable<string> oses,
             IEnumerable<string> archs,
@@ -43,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         {
             IEnumerable<RepoData> repoDatas =
                 from repoName in repos
-                select CreateRepo(repoName, oses, archs, versions);
+                select CreateRepo(registry, repoName, oses, archs, versions);
 
             return new ImageArtifactDetails()
             {
@@ -52,6 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         private static RepoData CreateRepo(
+            string registry,
             string repoName,
             IEnumerable<string> oses,
             IEnumerable<string> archs,
@@ -60,7 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             IEnumerable<ImageData> imageDatas = 
                 from version in versions
                 from os in oses
-                select CreateImage(repoName, version, os, archs);
+                select CreateImage(registry, repoName, version, os, archs);
             
             return new RepoData
             {
@@ -70,6 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         private static ImageData CreateImage(
+            string registry,
             string repoName,
             string productVersion,
             string os,
@@ -77,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         {
             IEnumerable<PlatformData> platformDatas =
                 from arch in archs
-                select CreatePlatformSimple(repoName, productVersion, os, arch);
+                select CreatePlatformSimple(registry, repoName, productVersion, os, arch);
 
             return new ImageData
             {
@@ -86,12 +90,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Manifest = new ManifestData
                 {
                     SharedTags = GetSharedTags(productVersion, os),
-                    Digest = CalculateDigest(repoName, productVersion, os),
+                    Digest = GenerateFakeDigest(registry, repoName, productVersion, os),
                 }
             };
         }
 
         private static PlatformData CreatePlatformSimple(
+            string registry,
             string repoName,
             string productVersion,
             string os,
@@ -99,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         {
             return CreatePlatform(
                 dockerfile: string.Join('/', [repoName, productVersion, os, arch, "Dockerfile"]),
-                digest: CalculateDigest(repoName, productVersion, os, arch),
+                digest: GenerateFakeDigest(registry, repoName, productVersion, os, arch),
                 architecture: arch,
                 osVersion: os,
                 simpleTags: [ $"{productVersion}-{os}-{arch}" ]
@@ -151,10 +156,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             ];
         }
 
-        private static string CalculateDigest(string repoName, string version, string os, string arch = "")
+        private static string GenerateFakeDigest(
+            string registry,
+            string repoName,
+            string version,
+            string os,
+            string arch = "")
         {
-            string uniqueIdentifier = repoName + version + os + arch;
-            return "sha256:" + CalculateSHA256(uniqueIdentifier).ToLowerInvariant();
+            string repoPrefix = $"{registry}/{repoName}";
+            string uniqueIdentifier = registry + repoName + version + os + arch;
+            string digest = "sha256:" + CalculateSHA256(uniqueIdentifier).ToLowerInvariant();
+            return repoPrefix + "@" + digest;
         }
 
         private static string CalculateSHA256(string s) =>

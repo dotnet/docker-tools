@@ -20,8 +20,8 @@ public sealed record Payload(Descriptor TargetArtifact)
         return JsonSerializer.Serialize(this, s_jsonOptions);
     }
 
-    public static Descriptor FromJson(string json)
+    public static Payload FromJson(string json)
     {
-        return JsonSerializer.Deserialize<Descriptor>(json, s_jsonOptions);
+        return JsonSerializer.Deserialize<Payload>(json, s_jsonOptions);
     }
 }

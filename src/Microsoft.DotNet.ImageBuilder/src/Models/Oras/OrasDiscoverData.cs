@@ -5,14 +5,9 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Oras
-{
-    public class OrasDiscoverData
-    {
-        public List<OciManifest>? Manifests { get; set; }
+namespace Microsoft.DotNet.ImageBuilder.Models.Oras;
 
-        public OrasDiscoverData()
-        {
-        }
-    }
+public class OrasDiscoverData
+{
+    public List<Oci.Manifest>? Manifests { get; set; }
 }

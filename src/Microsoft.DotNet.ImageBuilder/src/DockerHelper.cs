@@ -181,6 +181,8 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string TrimRegistry(string tag, string? registry) => tag.TrimStart($"{registry}/");
 
+        public static string TrimDigestAlgorithm(string digest) => digest.TrimStart("sha256:");
+
         public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
 
         public static string? GetRegistry(string imageName)

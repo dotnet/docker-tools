@@ -11,6 +11,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CleanAcrImagesOptions : Options
     {
+        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
+
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }
         public int Age { get; set; }
@@ -21,11 +23,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class CleanAcrImagesOptionsBuilder : CliOptionsBuilder
     {
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+
         private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
         private const int DefaultAge = 30;
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
+                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {
@@ -45,6 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
+                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
                 .Concat(
                     new Option[]
                     {

@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -225,7 +225,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -279,7 +279,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -341,7 +341,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IOrasService> orasServiceMock = CreateOrasServiceMock(age, repo1Name);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), orasServiceMock.Object);
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), orasServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;

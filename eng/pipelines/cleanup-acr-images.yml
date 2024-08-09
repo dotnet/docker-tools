@@ -30,12 +30,12 @@ jobs:
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet/*nightly/*"
+      repo: "public/*"
       subscription: $(acr.subscription)
       resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)
-      action: pruneDangling
-      age: 30
+      action: pruneEol
+      age: 15
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
@@ -45,15 +45,6 @@ jobs:
       acr: $(acr.server)
       action: pruneAll
       age: 7
-  - template: ../common/templates/steps/clean-acr-images.yml
-    parameters:
-      internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet*/samples*"
-      subscription: $(acr.subscription)
-      resourceGroup: $(acr.resourceGroup)
-      acr: $(acr.server)
-      action: pruneDangling
-      age: 0
   # Disabled due to https://github.com/dotnet/docker-tools/issues/797
   # - template: ../common/templates/steps/clean-acr-images.yml
   #   parameters:

@@ -25,6 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IOrasService _orasService;
+        private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private Regex _repoNameFilterRegex;
 
         [ImportingConstructor]
@@ -33,13 +34,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IContainerRegistryContentClientFactory acrContentClientFactory,
             ILoggerService loggerService,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IOrasService orasService)
+            IOrasService orasService,
+            IRegistryCredentialsProvider registryCredentialsProvider)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
+            _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         }
 
         protected override string Description => "Removes unnecessary images from an ACR";
@@ -61,17 +64,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
 
-            IEnumerable<Task> cleanupTasks = await repositoryNames
-                .Where(repoName => _repoNameFilterRegex.IsMatch(repoName))
-                .Select(repoName => acrClient.GetRepository(repoName))
-                .Select(repo =>
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+                Options.IsDryRun,
+                async () =>
                 {
-                    IContainerRegistryContentClient acrContentClient = _acrContentClientFactory.Create(Options.RegistryName, repo.Name, _tokenCredentialProvider.GetCredential());
-                    return ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
-                })
-                .ToArrayAsync();
+                    IEnumerable<Task> cleanupTasks = await repositoryNames
+                        .Where(repoName => _repoNameFilterRegex.IsMatch(repoName))
+                        .Select(repoName => acrClient.GetRepository(repoName))
+                        .Select(repo =>
+                        {
+                            IContainerRegistryContentClient acrContentClient = _acrContentClientFactory.Create(Options.RegistryName, repo.Name, _tokenCredentialProvider.GetCredential());
+                            return ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
+                        })
+                        .ToArrayAsync();
 
-            await Task.WhenAll(cleanupTasks);
+                    await Task.WhenAll(cleanupTasks);
+                },
+                Options.CredentialsOptions,
+                registryName: Options.RegistryName,
+                ownedAcr: Options.RegistryName);
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }

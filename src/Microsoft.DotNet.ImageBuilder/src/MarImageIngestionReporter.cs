@@ -129,6 +129,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                             case StageStatus.Processing:
                             case StageStatus.NotStarted:
                             case StageStatus.Failed:
+                            case StageStatus.Unknown:
                                 break;
                             case StageStatus.Succeeded:
                                 // If we've found at least one successful overall status for the tag, we're done with that tag.

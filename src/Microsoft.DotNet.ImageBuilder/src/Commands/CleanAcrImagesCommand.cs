@@ -65,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             List<string> deletedImages = new List<string>();
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                Options.IsDryRun,
+                isDryRun: false,
                 async () =>
                 {
                     IEnumerable<Task> cleanupTasks = await repositoryNames

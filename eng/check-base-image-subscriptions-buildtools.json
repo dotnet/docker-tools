@@ -6,7 +6,6 @@
       "branch": "main",
       "path": "manifest.json",
       "variables": {
-        "FloatingTagSuffix": "",
         "UniqueId": ""
       }
     },

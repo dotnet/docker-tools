@@ -5,6 +5,7 @@ parameters:
   dockerClientOS: null
   buildJobTimeout: 60
   customInitSteps: []
+  customPostSteps: []
   noCache: false
   internalProjectName: null
   publicProjectName: null
@@ -134,6 +135,7 @@ jobs:
         --acr-resource-group '$(acr-staging.resourceGroup)'
         $(manifestVariables)
         $(imageBuilderBuildArgs)
+  - ${{ parameters.customPostSteps }}
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(imageInfoHostDir)

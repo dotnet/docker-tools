@@ -11,10 +11,10 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
+#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
@@ -26,7 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IOrasService _orasService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-        private Regex _repoNameFilterRegex;
 
         [ImportingConstructor]
         public CleanAcrImagesCommand(
@@ -49,7 +48,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _repoNameFilterRegex = new Regex(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
+            Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
             _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
 
@@ -69,7 +68,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 async () =>
                 {
                     IEnumerable<Task> cleanupTasks = await repositoryNames
-                        .Where(repoName => _repoNameFilterRegex.IsMatch(repoName))
+                        .Where(repoName => repoNameFilterRegex.IsMatch(repoName))
                         .Select(repoName => acrClient.GetRepository(repoName))
                         .Select(repo =>
                         {

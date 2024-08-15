@@ -189,6 +189,13 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             return [];
         }
 
+        // Check if the version has a pre-release label. If so, it's not EOL by definition.
+        int separatorIndex = image.ProductVersion.IndexOf("-");
+        if (separatorIndex != -1)
+        {
+            return [];
+        }
+
         string dotnetVersion = Version.Parse(image.ProductVersion).ToString(2);
         if (!productEolDates.TryGetValue(dotnetVersion, out DateOnly date))
         {

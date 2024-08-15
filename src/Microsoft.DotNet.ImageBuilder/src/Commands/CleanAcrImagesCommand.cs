@@ -196,14 +196,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .AddConcurrencyLimiter(permitLimit: MaxConcurrentDeleteRequestsPerRepo, queueLimit: int.MaxValue)
                 .Build();
 
-            List<Task> tasks = [];
-            foreach (ArtifactManifestProperties manifest in manifests)
-            {
-                tasks.Add(pipeline.ExecuteAsync(async cancellationToken =>
-                {
-                    await DeleteManifestAsync(acrContentClient, deletedImages, repository, manifest);
-                }).AsTask());
-            }
+            IEnumerable<Task> tasks =
+                manifests.Select(manifest =>
+                    pipeline.ExecuteAsync(async cancellationToken =>
+                        await DeleteManifestAsync(acrContentClient, deletedImages, repository, manifest))
+                    .AsTask());
 
             await Task.WhenAll(tasks);
         }

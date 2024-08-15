@@ -14,7 +14,7 @@
             {
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
-              "osVersion": "alpine",
+              "osVersion": "azurelinux",
               "tags": {
                 "linux-amd64": {},
                 "linux-amd64-$(UniqueId)": {}
@@ -24,7 +24,7 @@
               "architecture": "arm64",
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
-              "osVersion": "alpine",
+              "osVersion": "azurelinux",
               "tags": {
                 "linux-arm64": {},
                 "linux-arm64-$(UniqueId)": {}

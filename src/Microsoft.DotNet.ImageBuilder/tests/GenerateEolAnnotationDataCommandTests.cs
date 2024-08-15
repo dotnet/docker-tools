@@ -656,6 +656,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     ],
                                     Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest102")
                                 }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "3.0-preview"
+                                        ],
+                                        digest: DockerHelper.GetImageName(AcrName, "repo1", digest: "platformdigest103"))
+                                },
+                                ProductVersion = "3.0-preview",
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags =
+                                    [
+                                        "3.0-preview"
+                                    ],
+                                    Digest = DockerHelper.GetImageName(AcrName, "repo1", digest: "imagedigest103")
+                                }
                             }
                         }
                     }
@@ -689,8 +710,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "platformdigest101-updated", tags: ["1.0"]),
                             CreateArtifactManifestProperties(digest: "imagedigest101"),
                             CreateArtifactManifestProperties(digest: "imagedigest101-updated", tags: ["1.0"]),
-                            CreateArtifactManifestProperties(digest: "platformdigest102", tags: ["2.0"]),
-                            CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
                         ])
                 ]);
             IContainerRegistryClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
@@ -705,8 +724,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             { "platformdigest101-updated", new ManifestQueryResult(string.Empty, []) },
                             { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
                             { "imagedigest101-updated", new ManifestQueryResult(string.Empty, []) },
-                            { "platformdigest102", new ManifestQueryResult(string.Empty, []) },
-                            { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
                         })
                 ]);
 

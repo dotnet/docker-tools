@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Polly;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -26,6 +27,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IOrasService _orasService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+
+        private const int MaxConcurrentDeleteRequestsPerRepo = 20;
 
         [ImportingConstructor]
         public CleanAcrImagesCommand(
@@ -188,10 +191,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task DeleteManifestsAsync(
             IContainerRegistryContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, IEnumerable<ArtifactManifestProperties> manifests)
         {
-            List<Task> tasks = new List<Task>();
+            ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
+                // Allow any number of tasks to be queued up but only allow X number of them to execute concurrently
+                .AddConcurrencyLimiter(permitLimit: MaxConcurrentDeleteRequestsPerRepo, queueLimit: int.MaxValue)
+                .Build();
+
+            List<Task> tasks = [];
             foreach (ArtifactManifestProperties manifest in manifests)
             {
-                tasks.Add(DeleteManifestAsync(acrContentClient, deletedImages, repository, manifest));
+                tasks.Add(pipeline.ExecuteAsync(async cancellationToken =>
+                {
+                    await DeleteManifestAsync(acrContentClient, deletedImages, repository, manifest);
+                }).AsTask());
             }
 
             await Task.WhenAll(tasks);

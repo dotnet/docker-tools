@@ -190,8 +190,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         }
 
         // Check if the version has a pre-release label. If so, it's not EOL by definition.
-        int separatorIndex = image.ProductVersion.IndexOf("-");
-        if (separatorIndex != -1)
+        if (image.ProductVersion.Contains("-"))
         {
             return [];
         }

@@ -33,7 +33,9 @@ namespace FilePusher
             try
             {
                 // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
-                Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+                TextWriterTraceListener textWriterTraceListener = new(Console.Out);
+                AzDoSafeTraceListenerWrapper safeTraceListener = new(textWriterTraceListener);
+                Trace.Listeners.Add(safeTraceListener);
 
                 string configJson = File.ReadAllText(options.ConfigPath);
                 Config config = JsonConvert.DeserializeObject<Config>(configJson)

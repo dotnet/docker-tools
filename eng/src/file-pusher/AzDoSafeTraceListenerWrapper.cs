@@ -20,6 +20,13 @@ public class AzDoSafeTraceListenerWrapper(TraceListener innerTraceListener) : Tr
         _innerTraceListener.WriteLine(EscapeVsoDirectives(message));
     }
 
+    /// <summary>
+    /// This method "escapes" Azure DevOps Pipeline tasks/variable assignments in strings so that they are safe to
+    /// output to the console in pipeline.
+    /// This prevents issues like https://github.com/dotnet/docker-tools/issues/1388, where pushing files containing
+    /// these AzDO variable assignments results in pipeline failure.
+    /// Azure DevOps documentation: https://learn.microsoft.com/en-us/azure/devops/pipelines/process/set-variables-scripts
+    /// </summary>
     private static string? EscapeVsoDirectives(string? message)
     {
         return message?.Replace("##vso", "#VSO_DIRECTIVE");

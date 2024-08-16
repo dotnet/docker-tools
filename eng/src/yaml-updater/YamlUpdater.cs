@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using FilePusher;
 using Newtonsoft.Json;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -35,7 +36,9 @@ namespace YamlUpdater
         private static async Task ExecuteAsync(Options options)
         {
             // Hookup a TraceListener to capture details from Microsoft.DotNet.VersionTools
-            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
+            TextWriterTraceListener textWriterTraceListener = new(Console.Out);
+            AzDoSafeTraceListenerWrapper safeTraceListener = new(textWriterTraceListener);
+            Trace.Listeners.Add(safeTraceListener);
 
             string configJson = File.ReadAllText(options.ConfigPath);
             FilePusher.Models.Config config = JsonConvert.DeserializeObject<FilePusher.Models.Config>(configJson);

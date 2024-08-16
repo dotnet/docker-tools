@@ -125,7 +125,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
-            string tagsDoc = RenderTables(repoName, tagsMetadata);
+            string tagsDoc = GenerateTables(repoName, tagsMetadata);
 
             if (Options.IsVerbose)
             {
@@ -136,7 +136,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return tagsDoc;
         }
 
-        private static string RenderTables(string repoName, string tagsMetadata)
+        private static string GenerateTables(string repoName, string tagsMetadata)
         {
             TagMetadataManifest metadataManifest = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -146,19 +146,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
             RepoTagGroups repoTagGroups = metadataManifest.Repos.Single();
 
-            string content = AddRepoTableContent(repoTagGroups.TagGroups);
-            content += $"You can retrieve a list of all available tags for {repoName} at https://mcr.microsoft.com/v2/{repoName}/tags/list.";
-            return content.Replace("\r\n", "\n");
+            return GenerateTables(repoTagGroups.TagGroups).Replace("\r\n", "\n");
         }
 
-        private static string AddRepoTableContent(IEnumerable<TagGroup> tagGroups)
+        private static string GenerateTables(IEnumerable<TagGroup> tagGroups)
         {
             StringBuilder tables = new();
             IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch = tagGroups
                 .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
+            bool isFirstTable = true;
 
             foreach (IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup> groupedTagGroups in tagGroupsGroupedByOsArch)
-        {
+            {
+                if (isFirstTable)
+                {
+                    isFirstTable = false;
+                }
+                else
+                {
+                    tables.AppendLine();
+                }
+
                 string title;
                 string tableHeader;
                 if (groupedTagGroups.Key.OsVersion is not null)
@@ -174,6 +182,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 AddOsTableContent(groupedTagGroups, title, groupedTagGroups.Key.Architecture, tableHeader, tables);
             }
+
             return tables.ToString();
         }
 
@@ -196,12 +205,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (!string.IsNullOrEmpty(tagGroupGrouping.Key))
                 {
-                    tables.AppendLine("##### " + tagGroupGrouping.Key);
+                    tables.AppendLine("#### " + tagGroupGrouping.Key);
+                    tables.AppendLine();
                     tables.AppendLine(tableHeader);
                 }
                 else
                 {
-                    tables.AppendLine($"## {title} {arch} Tags");
+                    tables.AppendLine($"### {title} {arch} Tags");
+                    tables.AppendLine();
                     tables.AppendLine(tableHeader);
                 }
 
@@ -211,8 +222,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
 
             }
-
-            tables.AppendLine();
         }
 
         private static string FormatTagGroupRow(TagGroup tagGroup)

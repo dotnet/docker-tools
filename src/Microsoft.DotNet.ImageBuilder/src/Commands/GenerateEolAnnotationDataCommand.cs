@@ -26,7 +26,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private readonly IContainerRegistryClientFactory _acrClientFactory;
     private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-    private readonly ILifecycleMetadataService _orasService;
+    private readonly ILifecycleMetadataService _lifecycleMetadataService;
     private readonly DateOnly _eolDate;
 
     [ImportingConstructor]
@@ -36,14 +36,14 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        ILifecycleMetadataService orasService)
+        ILifecycleMetadataService lifecycleMetadataService)
     {
         _dotNetReleasesService = dotNetReleasesService ?? throw new ArgumentNullException(nameof(dotNetReleasesService));
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
         _acrContentClientFactory = acrContentClientFactory ?? throw new ArgumentNullException(nameof(acrContentClientFactory));
         _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
-        _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
+        _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
 
         _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
     }
@@ -93,7 +93,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             ConcurrentBag<EolDigestData> digetsToAnnotate = [];
             Parallel.ForEach(unsupportedDigests, digest =>
             {
-                if (!_orasService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun, out _))
+                if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun, out _))
                 {
                     digetsToAnnotate.Add(digest);
                 }

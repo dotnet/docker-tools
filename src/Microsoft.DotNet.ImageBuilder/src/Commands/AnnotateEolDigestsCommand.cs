@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
-        private readonly ILifecycleMetadataService _orasService;
+        private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly ConcurrentBag<EolDigestData> _failedAnnotationImageDigests = [];
         private readonly ConcurrentBag<EolDigestData> _skippedAnnotationImageDigests = [];
@@ -38,11 +38,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [ImportingConstructor]
         public AnnotateEolDigestsCommand(
             ILoggerService loggerService,
-            ILifecycleMetadataService orasService,
+            ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
+            _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         }
 
@@ -119,10 +119,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            if (!_orasService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out Manifest? existingAnnotationManifest))
+            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out Manifest? existingAnnotationManifest))
             {
                 _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                if (_orasService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun, out Manifest? createdAnnotationManifest))
+                if (_lifecycleMetadataService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun, out Manifest? createdAnnotationManifest))
                 {
                     _createdAnnotationDigests.Add(createdAnnotationManifest.Reference);
                 }

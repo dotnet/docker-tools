@@ -428,8 +428,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
             Manifest lifecycleArtifactManifest;
-            Mock<ILifecycleMetadataService> orasServiceMock = new();
-            orasServiceMock
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
+            lifecycleMetadataServiceMock
                 .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
@@ -453,7 +453,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     newEolDigestsListPath,
                     registryClientFactory,
                     registryContentClientFactory,
-                    orasService: orasServiceMock.Object);
+                    lifecycleMetadataService: lifecycleMetadataServiceMock.Object);
             await command.ExecuteAsync();
 
             EolAnnotationsData expectedEolAnnotations = new()
@@ -1191,11 +1191,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory registryClientFactory,
             IContainerRegistryContentClientFactory registryContentClientFactory,
             string repoPrefix = "public/",
-            ILifecycleMetadataService orasService = null,
+            ILifecycleMetadataService lifecycleMetadataService = null,
             IDotNetReleasesService dotNetReleasesService = null)
         {
             Mock<ILoggerService> loggerServiceMock = new();
-            orasService = orasService ?? CreateOrasService([]);
+            lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
             dotNetReleasesService = dotNetReleasesService ?? CreateDotNetReleasesService();
             GenerateEolAnnotationDataCommand command = new(
                 dotNetReleasesService,
@@ -1203,7 +1203,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 registryClientFactory,
                 registryContentClientFactory,
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                orasService);
+                lifecycleMetadataService);
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
             command.Options.EolDigestsListPath = newEolDigestsListPath;
@@ -1212,22 +1212,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return command;
         }
 
-        private static ILifecycleMetadataService CreateOrasService(Dictionary<string, bool> digestAnnotatedMapping)
+        private static ILifecycleMetadataService CreateLifecycleMetadataService(Dictionary<string, bool> digestAnnotatedMapping)
         {
-            Mock<ILifecycleMetadataService> orasServiceMock = new();
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             Manifest lifecycleArtifactManifest;
-            orasServiceMock
+            lifecycleMetadataServiceMock
                 .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(false);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             { 
-                orasServiceMock
+                lifecycleMetadataServiceMock
                     .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                     .Returns(digestAnnotated.Value);
             }
             
-            return orasServiceMock.Object;
+            return lifecycleMetadataServiceMock.Object;
         }
 
         private static IDotNetReleasesService CreateDotNetReleasesService(Dictionary<string, DateOnly> productEolDates = null)

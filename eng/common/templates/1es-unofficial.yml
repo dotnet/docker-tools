@@ -23,9 +23,9 @@ parameters:
 - name: pool
   type: object
   default:
-    name: NetCore1ESPool-Internal
-    image: 1es-windows-2022
-    os: windows
+    name: $(defaultInternalPoolName)
+    image: $(defaultInternalWindowsPoolImage)
+    os: $(defaultInternalWindowsOS)
 
 resources:
   repositories:

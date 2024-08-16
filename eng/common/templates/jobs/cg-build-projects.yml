@@ -12,9 +12,9 @@ jobs:
 - job: BuildProjects
   displayName: Build Projects
   pool:
-    name: NetCore1ESPool-Internal
-    image: 1es-ubuntu-2204
-    os: linux
+    name: $(defaultInternalPoolName)
+    image: $(defaultInternalLinuxPoolImage)
+    os: $(defaultInternalLinuxOS)
   steps:
   - powershell: >
       ./eng/common/Install-DotNetSdk.ps1 /usr/share/.dotnet

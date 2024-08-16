@@ -17,9 +17,9 @@ jobs:
   parameters:
     name: MirrorBaseImages_${{ parameters.name }}
     pool:
-      name: NetCore1ESPool-Internal
-      image: 1es-ubuntu-2204
-      os: linux
+      name: $(defaultInternalPoolName)
+      image: $(defaultInternalLinuxPoolImage)
+      os: $(defaultInternalLinuxOS)
     acr:
       server: $(public-mirror.server)
       serviceConnection: $(public-mirror.serviceConnectionName)

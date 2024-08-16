@@ -70,9 +70,9 @@ stages:
       ${{ elseif eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
         vmImage: $(defaultLinuxAmd64PoolImage)
       ${{ elseif eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
-        name: NetCore1ESPool-Internal
-        image: 1es-ubuntu-2204
-        os: linux
+        name: $(defaultInternalPoolName)
+        image: $(defaultInternalLinuxPoolImage)
+        os: $(defaultInternalLinuxOS)
 
     # Linux Arm64
     linuxArm64Pool:

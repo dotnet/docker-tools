@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
@@ -59,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                     foreach (PlatformData platformData in imageData.Platforms)
                     {
-                        foreach (ImageInfo manifestImage in (useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages))
+                        foreach (ImageInfo manifestImage in useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages)
                         {
                             PlatformInfo matchingManifestPlatform = (useFilteredManifest ? manifestImage.FilteredPlatforms : manifestImage.AllPlatforms)
                                 .FirstOrDefault(platform => ArePlatformsEqual(platformData, imageData, platform, manifestImage));
@@ -108,11 +109,14 @@ namespace Microsoft.DotNet.ImageBuilder
         /// </summary>
         /// <param name="path">Path to the image info file.</param>
         /// <exception cref="InvalidDataException"/>
-        public static ImageArtifactDetails LoadFromFile(string path)
+        public static ImageArtifactDetails LoadFromFile(string path, RegistryOverrideOptions registryOverrideOptions)
         {
             string imageInfoText = File.ReadAllText(path);
-            return JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
+
+            ImageArtifactDetails imageInfo = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
                 throw new InvalidDataException($"Unable to deserialize image info file {path}");
+
+            return ApplyRegistryOverride(imageInfo, registryOverrideOptions);
         }
 
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)
@@ -123,6 +127,37 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             MergeData(src, target, options);
+        }
+
+        private static ImageArtifactDetails ApplyRegistryOverride(
+            ImageArtifactDetails imageInfo,
+            RegistryOverrideOptions overrideOptions)
+        {
+            if (string.IsNullOrEmpty(overrideOptions.RegistryOverride)
+                && string.IsNullOrEmpty(overrideOptions.RepoPrefix))
+            {
+                return imageInfo;
+            }
+
+            foreach (RepoData repo in imageInfo.Repos)
+            {
+                foreach (ImageData imageData in repo.Images)
+                {
+                    if (imageData.Manifest is not null)
+                    {
+                        imageData.Manifest.Digest =
+                            overrideOptions.ApplyToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
+                    }
+
+                    foreach (PlatformData platformData in imageData.Platforms)
+                    {
+                        platformData.Digest =
+                            overrideOptions.ApplyToDigest(platformData.Digest, repoName: repo.Repo);
+                    }
+                }
+            }
+
+            return imageInfo;
         }
 
         private static bool ArePlatformsEqual(PlatformData platformData, ImageData imageData, PlatformInfo platform, ImageInfo manifestImage)

@@ -43,10 +43,11 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         _loggerService.WriteHeading("GENERATING SIGNING PAYLOADS");
 
         _loggerService.WriteSubheading("Reading digests from image info file");
-        ImageArtifactDetails imageInfo = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath);
+        ImageArtifactDetails imageInfo =
+            ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Options.RegistryOverrideOptions);
         IReadOnlyList<string> digests = ImageInfoHelper.GetAllDigests(imageInfo);
 
-        _loggerService.WriteSubheading("Generating signing payloads using ORAS");
+        _loggerService.WriteSubheading("Generating signing payloads");
         IReadOnlyList<Payload> payloads = CreatePayloads(digests);
 
         // It is possible for two of our images, built separately, from different Dockerfiles, to have the same digest.
@@ -54,13 +55,15 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         payloads = payloads.Distinct().ToList();
 
         _loggerService.WriteSubheading("Writing payloads to disk");
-        IReadOnlyList<string> outputFiles = await WriteAllPayloadsAsync(payloads, Options.PayloadOutputDirectory);
+        IReadOnlyList<string> outputFiles = await WritePayloadsToDiskAsync(payloads, Options.PayloadOutputDirectory);
 
         _loggerService.WriteMessage(
             $"Done! Wrote {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}");
     }
 
-    private async Task<IReadOnlyList<string>> WriteAllPayloadsAsync(IEnumerable<Payload> payloads, string outputDirectory)
+    private async Task<IReadOnlyList<string>> WritePayloadsToDiskAsync(
+        IEnumerable<Payload> payloads,
+        string outputDirectory)
     {
         var outputs = new ConcurrentBag<string>();
 
@@ -85,7 +88,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         return fileName;
     }
 
-    private IReadOnlyList<Payload> CreatePayloads(IReadOnlyList<string> digests)
+    private List<Payload> CreatePayloads(IReadOnlyList<string> digests)
     {
         var payloads = new ConcurrentBag<Payload>();
         Parallel.ForEach(digests, digest => payloads.Add(CreatePayload(digest)));

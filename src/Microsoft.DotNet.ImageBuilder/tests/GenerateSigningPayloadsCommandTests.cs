@@ -22,18 +22,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 public sealed class GenerateSigningPayloadsCommandTests : IDisposable
 {
-    private readonly ITestOutputHelper _outputHelper;
-
-    // Test Context
     private readonly TempFolderContext _tempFolderContext;
     private readonly ImageArtifactDetails _imageInfo;
     private readonly string _payloadOutputDir;
 
     public GenerateSigningPayloadsCommandTests(ITestOutputHelper outputHelper)
     {
-        _outputHelper = outputHelper;
-
-        // Shared test initialization
         _tempFolderContext = new TempFolderContext();
         _imageInfo = CreateImageInfo();
         _payloadOutputDir = Path.Combine(_tempFolderContext.Path, "payloads");

@@ -21,20 +21,36 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 {
     private readonly ILoggerService _loggerService;
     private readonly IOrasClient _orasClient;
+    private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
     [ImportingConstructor]
     public GenerateSigningPayloadsCommand(
         ILoggerService loggerService,
-        IOrasClient orasClient)
+        IOrasClient orasClient,
+        IRegistryCredentialsProvider registryCredentialsProvider)
     {
         ArgumentNullException.ThrowIfNull(loggerService, nameof(loggerService));
+        ArgumentNullException.ThrowIfNull(orasClient, nameof(orasClient));
+        ArgumentNullException.ThrowIfNull(registryCredentialsProvider, nameof(registryCredentialsProvider));
+
         _loggerService = loggerService;
         _orasClient = orasClient;
+        _registryCredentialsProvider = registryCredentialsProvider;
     }
 
     protected override string Description => "Generate signing payloads";
 
     public override async Task ExecuteAsync()
+    {
+        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+            isDryRun: Options.IsDryRun,
+            action: ExecuteAsyncInternal,
+            credentialsOptions: Options.RegistryCredentialsOptions,
+            registryName: Options.RegistryOverrideOptions.RegistryOverride,
+            ownedAcr: Options.RegistryOverrideOptions.RegistryOverride);
+    }
+
+    private async Task ExecuteAsyncInternal()
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(Options.ImageInfoPath, nameof(Options.ImageInfoPath));
         ArgumentException.ThrowIfNullOrWhiteSpace(Options.PayloadOutputDirectory, nameof(Options.PayloadOutputDirectory));

@@ -10,7 +10,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 internal static class RegistryCredentialsProviderExtensions
 {
-    public static async Task ExecuteWithCredentialsAsync(this IRegistryCredentialsProvider credsProvider, bool isDryRun, Func<Task> action, RegistryCredentialsOptions credentialsOptions, string registryName, string? ownedAcr)
+    public static async Task ExecuteWithCredentialsAsync(
+        this IRegistryCredentialsProvider credsProvider,
+        bool isDryRun,
+        Func<Task> action,
+        RegistryCredentialsOptions credentialsOptions,
+        string registryName,
+        string? ownedAcr)
     {
         bool loggedIn = false;
 

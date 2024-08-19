@@ -78,7 +78,7 @@ stages:
     linuxArm64Pool:
       os: linux
       hostArchitecture: Arm64
-      image: $(linuxArm64PublicPoolImage)
+      image: $(linuxArm64PoolImage)
       ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
         name: $(linuxArm64PublicPoolName)
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
@@ -88,7 +88,7 @@ stages:
     linuxArm32Pool:
       os: linux
       hostArchitecture: Arm64
-      image: $(linuxArm32PublicPoolImage)
+      image: $(linuxArm32PoolImage)
       ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
         name: $(linuxArm32PublicPoolName)
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:

@@ -12,14 +12,14 @@ variables:
 - name: linuxAmd64InternalPoolName
   value: 1es-ubuntu-2204
 
-- name: linuxArm64PublicPoolImage
+- name: linuxArm64PoolImage
   value: Mariner-2-Docker-ARM64
 - name: linuxArm64PublicPoolName
   value: Docker-Linux-Arm-Public
 - name: linuxArm64InternalPoolName
   value: Docker-Linux-Arm-Internal
 
-- name: linuxArm32PublicPoolImage
+- name: linuxArm32PoolImage
   value: Mariner-2-Docker-ARM64
 - name: linuxArm32PublicPoolName
   value: Docker-Linux-Arm-Public

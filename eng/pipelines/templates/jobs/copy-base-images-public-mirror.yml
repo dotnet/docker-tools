@@ -17,9 +17,9 @@ jobs:
   parameters:
     name: MirrorBaseImages_${{ parameters.name }}
     pool:
-      name: $(defaultInternalPoolName)
-      image: $(defaultInternalLinuxPoolImage)
-      os: $(defaultInternalLinuxOS)
+      name: $(default1ESInternalPoolName)
+      image: $(default1ESInternalPoolImage)
+      os: linux
     acr:
       server: $(public-mirror.server)
       serviceConnection: $(public-mirror.serviceConnectionName)

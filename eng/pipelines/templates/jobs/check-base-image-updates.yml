@@ -8,9 +8,9 @@ parameters:
 jobs:
 - job: ${{ parameters.jobName }}
   pool:
-    name: $(defaultInternalPoolName)
-    image: $(defaultInternalLinuxPoolImage)
-    os: $(defaultInternalLinuxOS)
+    name: $(default1ESInternalPoolName)
+    image: $(default1ESInternalPoolImage)
+    os: linux
   steps:
   - template: /eng/common/templates/steps/init-docker-linux.yml@self
   - template: /eng/common/templates/steps/copy-base-images.yml@self

@@ -12,9 +12,9 @@ jobs:
 - job: BuildProjects
   displayName: Build Projects
   pool:
-    name: $(defaultInternalPoolName)
-    image: $(defaultInternalLinuxPoolImage)
-    os: $(defaultInternalLinuxOS)
+    name: $(default1ESInternalPoolName)
+    image: $(default1ESInternalPoolImage)
+    os: linux
   steps:
   - powershell: >
       ./eng/common/Install-DotNetSdk.ps1 /usr/share/.dotnet

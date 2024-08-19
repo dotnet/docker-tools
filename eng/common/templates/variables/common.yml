@@ -56,16 +56,15 @@ variables:
 - name: defaultWindows2022PoolImage
   value: windows-2022
 
-- name: defaultInternalPoolName
+- name: default1ESInternalPoolName
   value: NetCore1ESPool-Internal
-- name: defaultInternalLinuxPoolImage
+- name: default1ESInternalPoolImage
   value: 1es-ubuntu-2204
-- name: defaultInternalWindowsPoolImage
+
+- name: defaultSourceAnalysisPoolName
+  value: NetCore1ESPool-Interal
+- name: defaultSourceAnalysisPoolImage
   value: 1es-windows-2022
-- name: defaultInternalLinuxOS
-  value: linux
-- name: defaultInternalWindowsOS
-  value: windows
 
 # Define these as placeholder values to allow string validation to succeed since we don't have the
 # variable group with the actual values in public builds. For internal builds, the variable group

@@ -7,6 +7,40 @@ variables:
 - name: dockerHubRegistryCreds
   value: --registry-creds 'docker.io=$(dotnetDockerHubBot.userName);$(BotAccount-dotnet-dockerhub-bot-PAT)'
 
+- name: linuxAmd64InternalPoolImage
+  value: NetCore1ESPool-Interal
+- name: linuxAmd64InternalPoolName
+  value: 1es-ubuntu-2204
+
+- name: linuxArm64PublicPoolImage
+  value: Mariner-2-Docker-ARM64
+- name: linuxArm64PublicPoolName
+  value: Docker-Linux-Arm-Public
+- name: linuxArm64InternalPoolName
+  value: Docker-Linux-Arm-Internal
+
+- name: linuxArm32PublicPoolImage
+  value: Mariner-2-Docker-ARM64
+- name: linuxArm32PublicPoolName
+  value: Docker-Linux-Arm-Public
+- name: linuxArm32InternalPoolName
+  value: Docker-Linux-Arm-Internal
+
+- name: windowsServer2016InternalPoolImage
+  value: Server2016-NESDockerBuilds-PT
+- name: windowsServer2016PoolName
+  value: Docker-2016-${{ variables['System.TeamProject'] }}
+
+- name: windowsServer2019InternalPoolImage
+  value: Server2019-1809-NESDockerBuilds-1ESPT
+- name: windowsServer2019PoolName
+  value: Docker-1809-${{ variables['System.TeamProject'] }}
+
+- name: windowsServer2022InternalPoolImage
+  value: Server2022-NESDockerBuilds-1ESPT
+- name: windowsServer2022PoolName
+  value: Docker-2022-${{ variables['System.TeamProject'] }}
+
 - group: DotNet-Docker-Common
 - ${{ if eq(variables['System.TeamProject'], 'internal') }}:
   - group: DotNet-Docker-Secrets-WIF

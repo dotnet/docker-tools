@@ -23,9 +23,15 @@ parameters:
 - name: pool
   type: object
   default:
-    name: $(defaultInternalPoolName)
-    image: $(defaultInternalWindowsPoolImage)
-    os: $(defaultInternalWindowsOS)
+    name: $(default1ESInternalPoolName)
+    image: $(default1ESInternalPoolImage)
+    os: linux
+- name: sourceAnalysisPool
+  type: object
+  default:
+    name: $(defaultSourceAnalysisPoolName)
+    image: $(defaultSourceAnalysisPoolImage)
+    os: windows
 
 resources:
   repositories:

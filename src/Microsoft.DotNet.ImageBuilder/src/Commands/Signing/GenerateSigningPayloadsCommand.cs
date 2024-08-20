@@ -42,8 +42,9 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 
     public override async Task ExecuteAsync()
     {
+        // We want to accurately simulate creating the signing payloads, so this command should never be a dry-run.
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-            isDryRun: Options.IsDryRun,
+            isDryRun: false,
             action: ExecuteAsyncInternal,
             credentialsOptions: Options.RegistryCredentialsOptions,
             registryName: Options.RegistryOverrideOptions.RegistryOverride,
@@ -99,8 +100,17 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         string digestWithoutAlgorithm = payload.TargetArtifact.Digest.Split(':')[1];
         string fileName = $"{digestWithoutAlgorithm}.json";
         string payloadPath = Path.Combine(outputDirectory, fileName);
+
+        if (!Options.IsDryRun)
+        {
         await File.WriteAllTextAsync(payloadPath, payload.ToJson());
         _loggerService.WriteMessage($"Wrote signing payload to disk: {payloadPath}");
+        }
+        else
+        {
+            _loggerService.WriteMessage($"Dry run: Would have written signing payload to disk: {payloadPath}");
+        }
+
         return fileName;
     }
 
@@ -111,9 +121,11 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         return payloads.ToList();
     }
 
-    private Payload CreatePayload(string digest)
+    private Payload CreatePayload(string fullyQualifiedDigest)
     {
-        Descriptor descriptor = _orasClient.GetDescriptor(digest, Options.IsDryRun);
+        // Always reach out to the registry even if the command is a dry-run. This is needed to properly simulate
+        // generating signing payloads. Getting the descriptor does not have side effects.
+        Descriptor descriptor = _orasClient.GetDescriptor(fullyQualifiedDigest, isDryRun: false);
         return new Payload(TargetArtifact: descriptor);
     }
 }

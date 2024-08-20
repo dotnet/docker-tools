@@ -8,7 +8,6 @@ parameters:
 
 variables:
 - template: templates/variables/image-builder.yml
-- template: templates/variables/common.yml
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

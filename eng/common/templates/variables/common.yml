@@ -62,7 +62,7 @@ variables:
   value: 1es-ubuntu-2204
 
 - name: defaultSourceAnalysisPoolName
-  value: NetCore1ESPool-Interal
+  value: NetCore1ESPool-Internal
 - name: defaultSourceAnalysisPoolImage
   value: 1es-windows-2022
 

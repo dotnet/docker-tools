@@ -10,7 +10,6 @@ pr: none
 
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
-- template: /eng/pipelines/templates/variables/common.yml@self
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

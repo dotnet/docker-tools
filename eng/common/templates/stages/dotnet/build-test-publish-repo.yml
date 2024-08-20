@@ -98,6 +98,8 @@ stages:
     windows2016Pool:
       os: windows
       name: $(windowsServer2016PoolName)
+      ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
+        image: $(windowsServer2016PublicPoolImage)
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         image: $(windowsServer2016InternalPoolImage)
 
@@ -105,6 +107,8 @@ stages:
     windows1809Pool:
       os: windows
       name: $(windowsServer2019PoolName)
+      ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
+        image: $(windowsServer2019PublicPoolImage)
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         image: $(windowsServer2019InternalPoolImage)
 
@@ -112,5 +116,7 @@ stages:
     windows2022Pool:
       os: windows
       name: $(windowsServer2022PoolName)
+      ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
+        image: $(windowsServer2022PublicPoolImage)
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         image: $(windowsServer2022InternalPoolImage)

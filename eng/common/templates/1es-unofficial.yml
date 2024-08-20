@@ -56,4 +56,5 @@ extends:
         exclude:
         - repository: InternalVersionsRepo
         - repository: PublicVersionsRepo
+      sourceAnalysisPool: ${{ parameters.sourceAnalysisPool }}
     stages: ${{ parameters.stages }}

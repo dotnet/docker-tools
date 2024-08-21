@@ -30,12 +30,21 @@ jobs:
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet/*nightly/*"
+      repo: "public/dotnet/core*"
       subscription: $(acr.subscription)
       resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)
-      action: pruneDangling
-      age: 30
+      action: pruneEol
+      age: 15
+  - template: ../common/templates/steps/clean-acr-images.yml
+    parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
+      repo: "public/dotnet/nightly/*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
+      action: pruneEol
+      age: 15
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}

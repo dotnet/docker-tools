@@ -74,8 +74,10 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         _loggerService.WriteSubheading("Writing payloads to disk");
         IReadOnlyList<string> outputFiles = await WritePayloadsToDiskAsync(payloads, Options.PayloadOutputDirectory);
 
-        _loggerService.WriteMessage(
-            $"Done! Wrote {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}");
+        string taskCompletedMessage = Options.IsDryRun
+            ? $"Dry run: Done! Would have written {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}"
+            : $"Done! Wrote {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}";
+        _loggerService.WriteMessage(taskCompletedMessage);
     }
 
     private async Task<IReadOnlyList<string>> WritePayloadsToDiskAsync(
@@ -103,8 +105,8 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 
         if (!Options.IsDryRun)
         {
-        await File.WriteAllTextAsync(payloadPath, payload.ToJson());
-        _loggerService.WriteMessage($"Wrote signing payload to disk: {payloadPath}");
+            await File.WriteAllTextAsync(payloadPath, payload.ToJson());
+            _loggerService.WriteMessage($"Wrote signing payload to disk: {payloadPath}");
         }
         else
         {

@@ -83,7 +83,8 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             // need the previous version of the image info file to know that the repo had previously existed and so that repo is included in the scope for
             // the query of the digests.
             IEnumerable<string> repoNames = newImageArtifactDetails.Repos.Select(repo => repo.Repo)
-                .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo));
+                .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo))
+                .Select(name => Options.RepoPrefix + name);
             IEnumerable<(string Digest, string? Tag)> registryDigests = await GetAllImageDigestsFromRegistry(repoNames);
 
             IEnumerable<string> supportedDigests = GetSupportedDigests(newImageArtifactDetails);
@@ -129,24 +130,28 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             .Where(registryDigest => !supportedDigests.Contains(registryDigest.Digest))
             .Select(registryDigest => new EolDigestData(registryDigest.Digest) { Tag = registryDigest.Tag });
 
-    private static IEnumerable<string> GetSupportedDigests(ImageArtifactDetails newImageArtifactDetails) =>
+    private IEnumerable<string> GetSupportedDigests(ImageArtifactDetails newImageArtifactDetails) =>
         newImageArtifactDetails.Repos
             .SelectMany(repo => repo.Images)
             .SelectMany(GetImageDigests)
             .Select(digest => digest.Digest);
     
-    private static IEnumerable<(string Digest, string? Tag)> GetImageDigests(ImageData image)
+    private IEnumerable<(string Digest, string? Tag)> GetImageDigests(ImageData image)
     {
         if (image.Manifest is not null)
         {
-            yield return (image.Manifest.Digest, GetLongestTag(image.Manifest.SharedTags));
+            yield return (ReplaceMcrWithAcr(image.Manifest.Digest), GetLongestTag(image.Manifest.SharedTags));
         }
 
         foreach (PlatformData platform in image.Platforms)
         {
-            yield return (platform.Digest, GetLongestTag(platform.SimpleTags));
+            yield return (ReplaceMcrWithAcr(platform.Digest), GetLongestTag(platform.SimpleTags));
         }
     }
+
+    // This is used for transforming the image names in the image info file to match the image names in the ACR
+    private string ReplaceMcrWithAcr(string imageName) =>
+        imageName.Replace("mcr.microsoft.com/", $"{Options.RegistryName}/{Options.RepoPrefix}");
 
     private static string? GetLongestTag(IEnumerable<string> tags) =>
         tags.OrderByDescending(tag => tag.Length).FirstOrDefault();
@@ -182,9 +187,15 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         return digests;
     }
 
-    private static IEnumerable<EolDigestData> GetProductEolDigests(ImageData image, Dictionary<string, DateOnly> productEolDates)
+    private IEnumerable<EolDigestData> GetProductEolDigests(ImageData image, Dictionary<string, DateOnly> productEolDates)
     {
         if (image.ProductVersion == null)
+        {
+            return [];
+        }
+
+        // Check if the version has a pre-release label. If so, it's not EOL by definition.
+        if (image.ProductVersion.Contains("-"))
         {
             return [];
         }

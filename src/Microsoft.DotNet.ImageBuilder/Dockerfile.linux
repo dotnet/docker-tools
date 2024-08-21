@@ -3,13 +3,13 @@
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
 # build Microsoft.DotNet.ImageBuilder
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-alpine AS build-env
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:8.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
 
 # download oras package tarball
 WORKDIR /
 RUN oras_version=1.2.0 \
-    && wget https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz -O oras_linux.tar.gz \
+    && curl -fSL --output oras_linux.tar.gz https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz \
     && mkdir -p oras-install/ \
     && tar -zxf oras_linux.tar.gz -C oras-install/ \
     && rm -rf oras_linux.tar.gz
@@ -19,20 +19,23 @@ WORKDIR /image-builder
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore -r linux-musl-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj
+RUN dotnet restore -r linux-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish -r linux-musl-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true --no-restore -o out
+RUN dotnet publish -r linux-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true --no-restore -o out
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-alpine
+FROM mcr.microsoft.com/dotnet/runtime-deps:8.0-azurelinux3.0
 
 # install tooling
-RUN apk add --no-cache \
-        docker \
-        git
+RUN tdnf install -y \
+      moby-engine \
+      docker-cli \
+      docker-buildx \
+      git \
+    && tdnf clean all
 
 # install oras tool
 COPY --from=build-env ["/oras-install/oras", "/usr/local/bin"]

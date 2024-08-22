@@ -1205,6 +1205,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 registryClientFactory,
                 registryContentClientFactory,
                 Mock.Of<IAzureTokenCredentialProvider>(),
+                Mock.Of<IRegistryCredentialsProvider>(),
                 orasService);
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;

@@ -27,6 +27,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly IOrasService _orasService;
+    private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
     private readonly DateOnly _eolDate;
 
     [ImportingConstructor]
@@ -36,6 +37,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
+        IRegistryCredentialsProvider registryCredentialsProvider,
         IOrasService orasService)
     {
         _dotNetReleasesService = dotNetReleasesService ?? throw new ArgumentNullException(nameof(dotNetReleasesService));
@@ -43,6 +45,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
         _acrContentClientFactory = acrContentClientFactory ?? throw new ArgumentNullException(nameof(acrContentClientFactory));
         _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
+        _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
 
         _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
@@ -50,11 +53,15 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
     protected override string Description => "Generate EOL annotation data";
 
-    public override async Task ExecuteAsync()
-    {
-        List<EolDigestData> digestsToAnnotate = await GetDigestsToAnnotate();
-        WriteDigestDataJson(digestsToAnnotate);
-    }
+    public override async Task ExecuteAsync() =>
+        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun, async () =>
+            {
+                List<EolDigestData> digestsToAnnotate = await GetDigestsToAnnotate();
+                WriteDigestDataJson(digestsToAnnotate);
+            },
+            Options.CredentialsOptions,
+            Options.RegistryName,
+            Options.RegistryName);
 
     private void WriteDigestDataJson(List<EolDigestData> digestsToAnnotate)
     {

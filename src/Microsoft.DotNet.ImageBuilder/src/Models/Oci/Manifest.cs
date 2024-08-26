@@ -4,13 +4,15 @@
 
 using System;
 using System.Collections.Generic;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 public record Manifest
 {
+    private static readonly JsonSerializerOptions s_jsonOptions = new(JsonSerializerDefaults.Web);
+
     public string ArtifactType { get; init; } = string.Empty;
 
     public string Reference { get; init; } = string.Empty;
@@ -19,7 +21,7 @@ public record Manifest
 
     public static Manifest FromJson(string json)
     {
-        return JsonConvert.DeserializeObject<Manifest>(json) ??
-            throw new InvalidOperationException("Unable to deserialize manifest");
+        return JsonSerializer.Deserialize<Manifest>(json, s_jsonOptions)
+            ?? throw new InvalidOperationException("Unable to deserialize manifest");
     }   
 }

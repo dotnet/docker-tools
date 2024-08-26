@@ -73,29 +73,27 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         payloads = payloads.Distinct().ToList();
 
         _loggerService.WriteSubheading("Writing payloads to disk");
-        IReadOnlyList<string> outputFiles = await WritePayloadsToDiskAsync(payloads, Options.PayloadOutputDirectory);
-
-        string taskCompletedMessage = Options.IsDryRun
-            ? $"Dry run: Done! Would have written {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}"
-            : $"Done! Wrote {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}";
-        _loggerService.WriteMessage(taskCompletedMessage);
+        await WritePayloadsToDiskAsync(payloads, Options.PayloadOutputDirectory);
     }
 
-    private async Task<IReadOnlyList<string>> WritePayloadsToDiskAsync(
+    private async Task WritePayloadsToDiskAsync(
         IEnumerable<Payload> payloads,
         string outputDirectory)
     {
-        var outputs = new ConcurrentBag<string>();
+        var outputFiles = new ConcurrentBag<string>();
 
         await Parallel.ForEachAsync(
             payloads,
             async (payload, _) => 
                 {
                     string output = await WritePayloadToDiskAsync(payload, outputDirectory);
-                    outputs.Add(output);
+                    outputFiles.Add(output);
                 });
 
-        return outputs.ToList();
+        string taskCompletedMessage = Options.IsDryRun
+            ? $"Dry run: Done! Would have written {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}"
+            : $"Done! Wrote {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}";
+        _loggerService.WriteMessage(taskCompletedMessage);
     }
 
     private async Task<string> WritePayloadToDiskAsync(Payload payload, string outputDirectory)

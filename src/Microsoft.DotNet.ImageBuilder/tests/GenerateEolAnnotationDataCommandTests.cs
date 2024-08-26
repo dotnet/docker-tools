@@ -1200,18 +1200,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
             dotNetReleasesService = dotNetReleasesService ?? CreateDotNetReleasesService();
             GenerateEolAnnotationDataCommand command = new(
-                dotNetReleasesService,
-                loggerServiceMock.Object,
-                registryClientFactory,
-                registryContentClientFactory,
-                Mock.Of<IAzureTokenCredentialProvider>(),
-                Mock.Of<IRegistryCredentialsProvider>(),
-                lifecycleMetadataService);
+                dotNetReleasesService: dotNetReleasesService,
+                loggerService: loggerServiceMock.Object,
+                acrClientFactory: registryClientFactory,
+                acrContentClientFactory: registryContentClientFactory,
+                tokenCredentialProvider: Mock.Of<IAzureTokenCredentialProvider>(),
+                registryCredentialsProvider: Mock.Of<IRegistryCredentialsProvider>(),
+                lifecycleMetadataService: lifecycleMetadataService);
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
             command.Options.EolDigestsListPath = newEolDigestsListPath;
-            command.Options.RepoPrefix = repoPrefix;
-            command.Options.RegistryName = AcrName;
+            command.Options.RegistryOptions = new() { RepoPrefix = repoPrefix, Registry = AcrName };
             return command;
         }
 

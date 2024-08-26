@@ -225,6 +225,4 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
     }
 
     private static string TrimDigest(string fullDigest) => fullDigest.Split(':')[1];
-
-    private record ImageDigestInfo(string Digest, List<string> Tags, bool IsManifestList);
 }

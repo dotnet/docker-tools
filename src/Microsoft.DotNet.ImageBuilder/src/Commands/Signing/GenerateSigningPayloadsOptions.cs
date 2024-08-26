@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 #nullable enable
 public class GenerateSigningPayloadsOptions : Options
 {
-    public RegistryOverrideOptions RegistryOverrideOptions { get; set; } = new();
+    public RegistryOptions RegistryOptions { get; set; } = new();
     public RegistryCredentialsOptions RegistryCredentialsOptions { get; set; } = new();
 
     public string? ImageInfoPath { get; set; }
@@ -19,13 +19,12 @@ public class GenerateSigningPayloadsOptions : Options
 
 public class GenerateSigningPayloadsOptionsBuilder : CliOptionsBuilder
 {
-    private readonly RegistryOverrideOptionsBuilder _registryOverrideOptionsBuilder = new();
+    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: true);
     private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
 
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
-            .._registryOverrideOptionsBuilder.GetCliArguments(),
             .._registryCredentialsOptionsBuilder.GetCliArguments(),
 
             new Argument<string>(
@@ -40,7 +39,7 @@ public class GenerateSigningPayloadsOptionsBuilder : CliOptionsBuilder
     public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
-            .._registryOverrideOptionsBuilder.GetCliOptions(),
+            .._registryOptionsBuilder.GetCliOptions(),
             .._registryCredentialsOptionsBuilder.GetCliOptions()
         ];
 }

@@ -47,8 +47,8 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
             isDryRun: false,
             action: ExecuteAsyncInternal,
             credentialsOptions: Options.RegistryCredentialsOptions,
-            registryName: Options.RegistryOverrideOptions.RegistryOverride,
-            ownedAcr: Options.RegistryOverrideOptions.RegistryOverride);
+            registryName: Options.RegistryOptions.Registry,
+            ownedAcr: Options.RegistryOptions.Registry);
     }
 
     private async Task ExecuteAsyncInternal()
@@ -60,8 +60,9 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         _loggerService.WriteHeading("GENERATING SIGNING PAYLOADS");
 
         _loggerService.WriteSubheading("Reading digests from image info file");
-        ImageArtifactDetails imageInfo =
-            ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Options.RegistryOverrideOptions);
+        ImageArtifactDetails imageInfo = ImageInfoHelper
+            .DeserializeImageArtifactDetails(Options.ImageInfoPath)
+            .ApplyRegistryOverride(Options.RegistryOptions);
         IReadOnlyList<string> digests = ImageInfoHelper.GetAllDigests(imageInfo);
 
         _loggerService.WriteSubheading("Generating signing payloads");

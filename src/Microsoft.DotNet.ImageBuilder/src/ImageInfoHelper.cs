@@ -18,16 +18,106 @@ namespace Microsoft.DotNet.ImageBuilder
     public static class ImageInfoHelper
     {
         /// <summary>
+        /// Overrides all digests in the ImageArtifactDetails with the given registry options.
+        /// </summary>
+        /// <param name="imageInfo"></param>
+        /// <param name="overrideOptions"></param>
+        /// <returns></returns>
+        public static ImageArtifactDetails ApplyRegistryOverride(
+            this ImageArtifactDetails imageInfo,
+            RegistryOptions overrideOptions)
+        {
+            if (string.IsNullOrEmpty(overrideOptions.Registry)
+                && string.IsNullOrEmpty(overrideOptions.RepoPrefix))
+            {
+                return imageInfo;
+            }
+
+            foreach (RepoData repo in imageInfo.Repos)
+            {
+                foreach (ImageData imageData in repo.Images)
+                {
+                    if (imageData.Manifest is not null)
+                    {
+                        imageData.Manifest.Digest =
+                            overrideOptions.ApplyOverrideToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
+                    }
+
+                    foreach (PlatformData platformData in imageData.Platforms)
+                    {
+                        platformData.Digest =
+                            overrideOptions.ApplyOverrideToDigest(platformData.Digest, repoName: repo.Repo);
+                    }
+                }
+            }
+
+            return imageInfo;
+        }
+
+        /// <summary>
         /// Gets all of the digests listed in the given image info.
         /// </summary>
-        public static List<string> GetAllDigests(ImageArtifactDetails imageInfo)
+        public static List<string> GetAllDigests(this ImageArtifactDetails imageInfo)
         {
-            IEnumerable<string> digests =
-                imageInfo.Repos.SelectMany(
-                    repo => repo.Images.SelectMany(
-                        image => GetAllDigestsForImage(image)));
+            return imageInfo.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(GetAllDigests)
+                .ToList();
+        }
+
+        public static List<string> GetAllDigests(this ImageData imageData)
+        {
+            // Platform specific digests
+            IEnumerable<string> digests = imageData.Platforms.Select(platform => platform.Digest);
+
+            // Include manifest list digest if it exists
+            if (imageData.Manifest is not null)
+            {
+                digests = [ ..digests, imageData.Manifest.Digest ];
+            }
 
             return digests.ToList();
+        }
+
+        public static List<ImageDigestInfo> GetAllImageDigestInfos(this ImageArtifactDetails imageInfo)
+        {
+            return imageInfo.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(GetAllImageDigestInfos)
+                .ToList();
+        }
+
+        public static List<ImageDigestInfo> GetAllImageDigestInfos(this ImageData imageInfo)
+        {
+            List<ImageDigestInfo> imageDigestInfos = imageInfo.Platforms
+                .Select(platform => new ImageDigestInfo(
+                    Digest: platform.Digest,
+                    Tags: platform.SimpleTags,
+                    IsManifestList: false))
+                .ToList();
+
+            if (imageInfo.Manifest is not null)
+            {
+                imageDigestInfos.Add(new ImageDigestInfo(
+                    Digest: imageInfo.Manifest.Digest,
+                    Tags: imageInfo.Manifest.SharedTags,
+                    IsManifestList: true));
+            }
+
+            return imageDigestInfos;
+        }
+
+        /// <summary>
+        /// Loads an image info file as a parsed model directly with no validation or filtering.
+        /// </summary>
+        /// <param name="path">Path to the image info file.</param>
+        /// <exception cref="InvalidDataException"/>
+        public static ImageArtifactDetails DeserializeImageArtifactDetails(string path)
+        {
+            string imageInfoText = File.ReadAllText(path);
+
+            return JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
+                throw new InvalidDataException($"Unable to deserialize image info file {path}");
         }
 
         /// <summary>
@@ -104,21 +194,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation, useFilteredManifest);
         }
 
-        /// <summary>
-        /// Loads an image info file as a parsed model directly with no validation or filtering.
-        /// </summary>
-        /// <param name="path">Path to the image info file.</param>
-        /// <exception cref="InvalidDataException"/>
-        public static ImageArtifactDetails LoadFromFile(string path, RegistryOverrideOptions registryOverrideOptions)
-        {
-            string imageInfoText = File.ReadAllText(path);
-
-            ImageArtifactDetails imageInfo = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
-                throw new InvalidDataException($"Unable to deserialize image info file {path}");
-
-            return ApplyRegistryOverride(imageInfo, registryOverrideOptions);
-        }
-
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)
         {
             if (options == null)
@@ -127,37 +202,6 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             MergeData(src, target, options);
-        }
-
-        private static ImageArtifactDetails ApplyRegistryOverride(
-            ImageArtifactDetails imageInfo,
-            RegistryOverrideOptions overrideOptions)
-        {
-            if (string.IsNullOrEmpty(overrideOptions.RegistryOverride)
-                && string.IsNullOrEmpty(overrideOptions.RepoPrefix))
-            {
-                return imageInfo;
-            }
-
-            foreach (RepoData repo in imageInfo.Repos)
-            {
-                foreach (ImageData imageData in repo.Images)
-                {
-                    if (imageData.Manifest is not null)
-                    {
-                        imageData.Manifest.Digest =
-                            overrideOptions.ApplyToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
-                    }
-
-                    foreach (PlatformData platformData in imageData.Platforms)
-                    {
-                        platformData.Digest =
-                            overrideOptions.ApplyToDigest(platformData.Digest, repoName: repo.Repo);
-                    }
-                }
-            }
-
-            return imageInfo;
         }
 
         private static bool ArePlatformsEqual(PlatformData platformData, ImageData imageData, PlatformInfo platform, ImageInfo manifestImage)
@@ -182,20 +226,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return Version.TryParse(productVersion1, out Version version1) &&
                 Version.TryParse(productVersion2, out Version version2) &&
                 version1.ToString(2) == version2.ToString(2);
-        }
-
-        private static IEnumerable<string> GetAllDigestsForImage(ImageData imageData)
-        {
-            // Platform specific digests
-            IEnumerable<string> digests = imageData.Platforms.Select(platform => platform.Digest);
-
-            // Include manifest list digest if it exists
-            if (imageData.Manifest is not null)
-            {
-                digests = [ ..digests, imageData.Manifest.Digest ];
-            }
-
-            return digests;
         }
 
         private static void MergePropertyData(object srcObj, object targetObj, PropertyInfo property, ImageInfoMergeOptions options)

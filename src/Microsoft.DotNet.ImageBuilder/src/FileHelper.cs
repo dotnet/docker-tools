@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder
             Directory.Delete(path, true);
         }
 
-        public static void CreateDirectoryIfNotExists(string path)
+        public static void CreateDirectoryIfNotExists(string path, bool throwIfNotEmpty = false)
         {
             if (!Directory.Exists(path))
             {
@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 return;
             }
 
-            if (Directory.EnumerateFileSystemEntries(path).Any())
+            if (throwIfNotEmpty && Directory.EnumerateFileSystemEntries(path).Any())
             {
                 throw new IOException($"Directory '{path}' already exists and is not empty");
             }

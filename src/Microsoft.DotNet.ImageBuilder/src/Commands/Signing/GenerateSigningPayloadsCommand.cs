@@ -55,7 +55,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(Options.ImageInfoPath, nameof(Options.ImageInfoPath));
         ArgumentException.ThrowIfNullOrWhiteSpace(Options.PayloadOutputDirectory, nameof(Options.PayloadOutputDirectory));
-        FileHelper.CreateDirectoryIfNotExists(Options.PayloadOutputDirectory);
+        FileHelper.CreateDirectoryIfNotExists(Options.PayloadOutputDirectory, throwIfNotEmpty: true);
 
         _loggerService.WriteHeading("GENERATING SIGNING PAYLOADS");
 

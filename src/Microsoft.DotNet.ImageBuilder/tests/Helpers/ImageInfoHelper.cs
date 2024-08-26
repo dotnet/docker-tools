@@ -23,19 +23,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             return imageInfoPath;
         }
 
-        public static (ImageArtifactDetails, string) CreateImageInfoOnDisk(
-            TempFolderContext tempFolderContext,
-            string registry,
-            IEnumerable<string> repos,
-            IEnumerable<string> oses,
-            IEnumerable<string> archs,
-            IEnumerable<string> versions)
-        {
-            ImageArtifactDetails imageInfo = CreateImageInfo(registry, repos, oses, archs, versions);
-            string filePath = WriteImageInfoToDisk(imageInfo, directory: tempFolderContext.Path);
-            return (imageInfo, filePath);
-        }
-
         public static ImageArtifactDetails CreateImageInfo(
             string registry,
             IEnumerable<string> repos,

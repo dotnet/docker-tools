@@ -134,14 +134,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             return platform;
         }
 
-        private static List<string> GetSharedTags(string productVersion, string os)
-        {
-            return
-            [
-                productVersion,
-                $"{productVersion}-{os}"
-            ];
-        }
+        private static List<string> GetSharedTags(string productVersion, string os) =>
+            [ productVersion, $"{productVersion}-{os}" ];
 
         private static string GenerateFakeDigest(
             string registry,

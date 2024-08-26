@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IOrasService _orasService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
-        private const int MaxConcurrentDeleteRequestsPerRepo = 20;
+        private const int MaxConcurrentDeleteRequestsPerRepo = 10;
 
         [ImportingConstructor]
         public CleanAcrImagesCommand(

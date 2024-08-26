@@ -147,7 +147,7 @@ jobs:
     parameters:
       displayName: Generate EOL Annotation Data
       serviceConnection: $(publish.serviceConnectionName)
-      internalProjectName: ${{ parameters.internalProjectName }}
+      internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >
         generateEolAnnotationData
@@ -163,8 +163,8 @@ jobs:
       path: $(Build.ArtifactStagingDirectory)/eol-annotation-data
       artifactName: eol-annotation-data
       displayName: Publish EOL Annotation Data Artifact
-      internalProjectName: ${{ parameters.internalProjectName }}
-      publicProjectName: ${{ parameters.publicProjectName }}
+      internalProjectName: internal
+      publicProjectName: public
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
   - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
     parameters:

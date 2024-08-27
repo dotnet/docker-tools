@@ -11,7 +11,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Models.Oras;
+using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Polly;
 
@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-        private readonly IOrasService _orasService;
+        private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 10;
@@ -36,14 +36,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IContainerRegistryContentClientFactory acrContentClientFactory,
             ILoggerService loggerService,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IOrasService orasService,
+            ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
-            _orasService = orasService ?? throw new ArgumentNullException(nameof(orasService));
+            _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         }
 
@@ -277,10 +277,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
         {
-            if(_orasService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, isDryRun: false, out OciManifest? lifecycleArtifactManifest) &&
+            if(_lifecycleMetadataService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, isDryRun: false, out Manifest? lifecycleArtifactManifest) &&
                 lifecycleArtifactManifest?.Annotations != null)
             {
-                return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[OrasService.EndOfLifeAnnotation]), expirationDays);
+                return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation]), expirationDays);
             }
 
             return false;

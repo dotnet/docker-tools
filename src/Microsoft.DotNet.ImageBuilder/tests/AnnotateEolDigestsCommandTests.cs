@@ -8,7 +8,7 @@ using System.IO;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
-using Microsoft.DotNet.ImageBuilder.Models.Oras;
+using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
@@ -38,20 +38,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IOrasService> orasServiceMock;
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out orasServiceMock,
+                    out lifecycleMetadataServiceMock,
                     digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: true);
             await command.ExecuteAsync();
 
-            OciManifest manifest;
-            orasServiceMock.Verify(
+            Manifest manifest;
+            lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest));
-            orasServiceMock.Verify(
+            lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest));
 
             string[] expectedAnnotationDigests =
@@ -68,12 +68,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IOrasService> orasServiceMock;
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out orasServiceMock,
+                    out lifecycleMetadataServiceMock,
                     digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: false);
 
@@ -88,12 +88,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IOrasService> orasServiceMock;
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out orasServiceMock,
+                    out lifecycleMetadataServiceMock,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true,
                     useNonMatchingDate: true);
@@ -103,8 +103,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 $"(failed: 0, skipped: 2)",
                 ex.Message);
 
-            OciManifest manifest;
-            orasServiceMock.Verify(
+            Manifest manifest;
+            lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest),
                 Times.Never());
         }
@@ -114,26 +114,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IOrasService> orasServiceMock;
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock;
 
             AnnotateEolDigestsCommand command =
                 InitializeCommand(
                     tempFolderContext,
-                    out orasServiceMock,
+                    out lifecycleMetadataServiceMock,
                     digestAlreadyAnnotated: true,
                     digestAnnotationIsSuccessful: true);
 
             await command.ExecuteAsync();
 
-            OciManifest manifest;
-            orasServiceMock.Verify(
+            Manifest manifest;
+            lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest),
                 Times.Never());
         }
 
         private AnnotateEolDigestsCommand InitializeCommand(
             TempFolderContext tempFolderContext,
-            out Mock<IOrasService> orasServiceMock,
+            out Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock,
             bool digestAlreadyAnnotated = true,
             bool digestAnnotationIsSuccessful = true,
             bool useNonMatchingDate = false)
@@ -152,10 +152,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(eolDigestsListPath, JsonConvert.SerializeObject(eolAnnotations));
 
             Mock<ILoggerService> loggerServiceMock = new();
-            orasServiceMock = CreateOrasServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful, useNonMatchingDate);
+            lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful, useNonMatchingDate);
             AnnotateEolDigestsCommand command = new(
                 loggerServiceMock.Object,
-                orasServiceMock.Object,
+                lifecycleMetadataServiceMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>());
             command.Options.RepoPrefix = RepoPrefix;
             command.Options.AcrName = AcrName;
@@ -164,54 +164,54 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return command;
         }
 
-        private Mock<IOrasService> CreateOrasServiceMock(bool digestAlreadyAnnotated, bool digestAnnotationIsSuccessful, bool useNonMatchingDate)
+        private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(bool digestAlreadyAnnotated, bool digestAnnotationIsSuccessful, bool useNonMatchingDate)
         {
-            Mock<IOrasService> orasServiceMock = new();
-            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, "digest1", digestAlreadyAnnotated, _globalDate, useNonMatchingDate);
-            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, "digest2", digestAlreadyAnnotated, _specificDigestDate, useNonMatchingDate);
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
+            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, "digest1", digestAlreadyAnnotated, _globalDate, useNonMatchingDate);
+            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, "digest2", digestAlreadyAnnotated, _specificDigestDate, useNonMatchingDate);
 
-            OciManifest digest1Annotation = new()
+            Manifest digest1Annotation = new()
             {
                 Reference = $"{AcrName}/{RepoPrefix}@{AnnotationDigest1}"
             };
 
-            orasServiceMock
+            lifecycleMetadataServiceMock
                 .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out digest1Annotation))
                 .Returns(digestAnnotationIsSuccessful);
 
-            OciManifest digest2Annotation = new()
+            Manifest digest2Annotation = new()
             {
                 Reference = $"{AcrName}/{RepoPrefix}@{AnnotationDigest2}"
             };
 
-            orasServiceMock
+            lifecycleMetadataServiceMock
                 .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out digest2Annotation))
                 .Returns(digestAnnotationIsSuccessful);
 
-            return orasServiceMock;
+            return lifecycleMetadataServiceMock;
         }
 
-        private static void SetupIsDigestAnnotatedForEolMethod(Mock<IOrasService> orasServiceMock, string digest, bool digestAlreadyAnnotated, DateOnly eolDate, bool useNonMatchingDate)
+        private static void SetupIsDigestAnnotatedForEolMethod(Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock, string digest, bool digestAlreadyAnnotated, DateOnly eolDate, bool useNonMatchingDate)
         {
             if (useNonMatchingDate)
             {
                 eolDate = eolDate.AddDays(1);
             }
 
-            OciManifest manifest = null;
+            Manifest manifest = null;
             if (digestAlreadyAnnotated)
             {
-                manifest = new OciManifest
+                manifest = new Manifest
                 {
                     Annotations = new Dictionary<string, string>
                     {
-                        { OrasService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
+                        { LifecycleMetadataService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
                     },
                     Reference = $"{AcrName}/{RepoPrefix}repo@{digest}"
                 };
             }
 
-            orasServiceMock
+            lifecycleMetadataServiceMock
                 .Setup(o => o.IsDigestAnnotatedForEol(digest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest))
                 .Returns(digestAlreadyAnnotated);
         }

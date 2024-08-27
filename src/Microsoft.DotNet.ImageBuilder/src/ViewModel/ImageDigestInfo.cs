@@ -5,9 +5,6 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Oras;
+namespace Microsoft.DotNet.ImageBuilder;
 
-public class OrasDiscoverData
-{
-    public List<Oci.Manifest>? Manifests { get; set; }
-}
+public record ImageDigestInfo(string Digest, List<string> Tags, bool IsManifestList);

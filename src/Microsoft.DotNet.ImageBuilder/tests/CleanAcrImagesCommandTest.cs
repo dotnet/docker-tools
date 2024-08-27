@@ -13,7 +13,7 @@ using Azure;
 using Azure.Containers.ContainerRegistry;
 using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Oras;
+using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -225,7 +225,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -279,7 +279,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<IOrasService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -338,10 +338,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock]);
 
-            Mock<IOrasService> orasServiceMock = CreateOrasServiceMock(age, repo1Name);
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(age, repo1Name);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), orasServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), lifecycleMetadataServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -357,34 +357,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
         }
 
-        private Mock<IOrasService> CreateOrasServiceMock(int age, string repoName)
+        private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)
         {
             DateOnly dateToday = DateOnly.FromDateTime(DateTime.Now);
-            Mock<IOrasService> orasServiceMock = new();
-            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, repoName, "sha256:digest1", true, dateToday.AddDays(-age - 1));
-            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, repoName, "sha256:digest2", false, dateToday);
-            SetupIsDigestAnnotatedForEolMethod(orasServiceMock, repoName, "sha256:digest3", true, dateToday.AddDays(-age + 1));
-            return orasServiceMock;
+            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
+            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest1", true, dateToday.AddDays(-age - 1));
+            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest2", false, dateToday);
+            SetupIsDigestAnnotatedForEolMethod(lifecycleMetadataServiceMock, repoName, "sha256:digest3", true, dateToday.AddDays(-age + 1));
+            return lifecycleMetadataServiceMock;
         }
 
-        private static void SetupIsDigestAnnotatedForEolMethod(Mock<IOrasService> orasServiceMock, string repoName, string digest, bool digestAlreadyAnnotated, DateOnly eolDate)
+        private static void SetupIsDigestAnnotatedForEolMethod(Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock, string repoName, string digest, bool digestAlreadyAnnotated, DateOnly eolDate)
         {
             string reference = $"{AcrName}/{repoName}@{digest}";
 
-            OciManifest manifest = null;
+            Manifest manifest = null;
             if (digestAlreadyAnnotated)
             {
-                manifest = new OciManifest
+                manifest = new Manifest
                 {
                     Annotations = new Dictionary<string, string>
                     {
-                        { OrasService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
+                        { LifecycleMetadataService.EndOfLifeAnnotation, eolDate.ToString("yyyy-MM-dd") }
                     },
                     Reference = reference
                 };
             }
 
-            orasServiceMock
+            lifecycleMetadataServiceMock
                 .Setup(o => o.IsDigestAnnotatedForEol(reference, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest))
                 .Returns(digestAlreadyAnnotated);
         }

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
@@ -16,6 +17,109 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ImageInfoHelper
     {
+        /// <summary>
+        /// Overrides all digests in the ImageArtifactDetails with the given registry options.
+        /// </summary>
+        /// <param name="imageInfo"></param>
+        /// <param name="overrideOptions"></param>
+        /// <returns></returns>
+        public static ImageArtifactDetails ApplyRegistryOverride(
+            this ImageArtifactDetails imageInfo,
+            RegistryOptions overrideOptions)
+        {
+            if (string.IsNullOrEmpty(overrideOptions.Registry)
+                && string.IsNullOrEmpty(overrideOptions.RepoPrefix))
+            {
+                return imageInfo;
+            }
+
+            foreach (RepoData repo in imageInfo.Repos)
+            {
+                foreach (ImageData imageData in repo.Images)
+                {
+                    if (imageData.Manifest is not null)
+                    {
+                        imageData.Manifest.Digest =
+                            overrideOptions.ApplyOverrideToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
+                    }
+
+                    foreach (PlatformData platformData in imageData.Platforms)
+                    {
+                        platformData.Digest =
+                            overrideOptions.ApplyOverrideToDigest(platformData.Digest, repoName: repo.Repo);
+                    }
+                }
+            }
+
+            return imageInfo;
+        }
+
+        /// <summary>
+        /// Gets all of the digests listed in the given image info.
+        /// </summary>
+        public static List<string> GetAllDigests(this ImageArtifactDetails imageInfo)
+        {
+            return imageInfo.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(GetAllDigests)
+                .ToList();
+        }
+
+        public static List<string> GetAllDigests(this ImageData imageData)
+        {
+            // Platform specific digests
+            IEnumerable<string> digests = imageData.Platforms.Select(platform => platform.Digest);
+
+            // Include manifest list digest if it exists
+            if (imageData.Manifest is not null)
+            {
+                digests = [ ..digests, imageData.Manifest.Digest ];
+            }
+
+            return digests.ToList();
+        }
+
+        public static List<ImageDigestInfo> GetAllImageDigestInfos(this ImageArtifactDetails imageInfo)
+        {
+            return imageInfo.Repos
+                .SelectMany(repo => repo.Images)
+                .SelectMany(GetAllImageDigestInfos)
+                .ToList();
+        }
+
+        public static List<ImageDigestInfo> GetAllImageDigestInfos(this ImageData imageInfo)
+        {
+            List<ImageDigestInfo> imageDigestInfos = imageInfo.Platforms
+                .Select(platform => new ImageDigestInfo(
+                    Digest: platform.Digest,
+                    Tags: platform.SimpleTags,
+                    IsManifestList: false))
+                .ToList();
+
+            if (imageInfo.Manifest is not null)
+            {
+                imageDigestInfos.Add(new ImageDigestInfo(
+                    Digest: imageInfo.Manifest.Digest,
+                    Tags: imageInfo.Manifest.SharedTags,
+                    IsManifestList: true));
+            }
+
+            return imageDigestInfos;
+        }
+
+        /// <summary>
+        /// Loads an image info file as a parsed model directly with no validation or filtering.
+        /// </summary>
+        /// <param name="path">Path to the image info file.</param>
+        /// <exception cref="InvalidDataException"/>
+        public static ImageArtifactDetails DeserializeImageArtifactDetails(string path)
+        {
+            string imageInfoText = File.ReadAllText(path);
+
+            return JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
+                throw new InvalidDataException($"Unable to deserialize image info file {path}");
+        }
+
         /// <summary>
         /// Loads image info string content as a parsed model.
         /// </summary>
@@ -46,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                     foreach (PlatformData platformData in imageData.Platforms)
                     {
-                        foreach (ImageInfo manifestImage in (useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages))
+                        foreach (ImageInfo manifestImage in useFilteredManifest ? manifestRepo.FilteredImages : manifestRepo.AllImages)
                         {
                             PlatformInfo matchingManifestPlatform = (useFilteredManifest ? manifestImage.FilteredPlatforms : manifestImage.AllPlatforms)
                                 .FirstOrDefault(platform => ArePlatformsEqual(platformData, imageData, platform, manifestImage));

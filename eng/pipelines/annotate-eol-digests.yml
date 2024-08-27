@@ -8,6 +8,8 @@ parameters:
 
 variables:
 - template: templates/variables/image-builder.yml
+- name: publishEolAnnotations
+  value: true
 
 extends:
   template: /eng/common/templates/1es-official.yml@self
@@ -22,4 +24,4 @@ extends:
         - template: /eng/common/templates/steps/init-docker-linux.yml@self
         - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
           parameters:
-            dataFile: ${{ parameters.dataFile }}
+            dataFile: /repo/${{ parameters.dataFile }}

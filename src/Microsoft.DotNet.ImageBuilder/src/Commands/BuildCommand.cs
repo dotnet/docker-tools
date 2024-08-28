@@ -28,13 +28,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
+        private readonly IImageCacheService _imageCacheService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
         private readonly Lazy<ImageNameResolver> _imageNameResolver;
-
-        // Metadata about Dockerfiles whose images have been retrieved from the cache
-        private readonly Dictionary<string, PlatformData> _cachedPlatforms = new Dictionary<string, PlatformData>();
 
         /// <summary>
         /// Maps a source digest from the image info file to the corresponding digest in the copied location for image caching.
@@ -53,7 +51,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ICopyImageService copyImageService,
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
-            IAzureTokenCredentialProvider tokenCredentialProvider)
+            IAzureTokenCredentialProvider tokenCredentialProvider,
+            IImageCacheService imageCacheService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -62,6 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
+            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
 
             // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 registryName: Manifest.Registry,
                 ownedAcr: Options.RegistryOverride);
 
-            if (_processedTags.Any() || _cachedPlatforms.Any())
+            if (_processedTags.Any() || _imageCacheService.HasAnyCachedPlatforms)
             {
                 // Log in again to refresh token as it may have expired from a long build
                 await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
@@ -300,13 +300,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)
             {
-                RepoData? repoData = CreateRepoData(repoInfo);
+                RepoData repoData = CreateRepoData(repoInfo);
                 RepoData? srcRepoData = srcImageArtifactDetails?.Repos.FirstOrDefault(srcRepo => srcRepo.Repo == repoInfo.Name);
 
                 foreach (ImageInfo image in repoInfo.FilteredImages)
                 {
-                    ImageData? imageData = CreateImageData(image);
-                    repoData?.Images.Add(imageData);
+                    ImageData imageData = CreateImageData(image);
+                    repoData.Images.Add(imageData);
 
                     ImageData? srcImageData = srcRepoData?.Images.FirstOrDefault(srcImage => srcImage.ManifestImage == image);
 
@@ -323,11 +323,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             .Select(tag => tag.FullyQualifiedName)
                             .ToList();
 
-                        PlatformData? platformData = CreatePlatformData(image, platform);
-                        imageData?.Platforms.Add(platformData);
+                        PlatformData platformData = CreatePlatformData(image, platform);
+                        imageData.Platforms.Add(platformData);
 
-                        bool isCachedImage = !Options.NoCache &&
-                            await CheckForCachedImageAsync(srcImageData, repoInfo, platform, allTagInfos, platformData);
+                        bool isCachedImage = false;
+                        if (!Options.NoCache)
+                        {
+                            ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
+                                srcImageData, platformData, _imageDigestCache, _imageNameResolver.Value, Options.SourceRepoUrl, Options.IsDryRun);
+                            if (cacheResult.State == ImageCacheState.Cached || cacheResult.State == ImageCacheState.CachedWithMissingTags)
+                            {
+                                isCachedImage = true;
+                                if (platformData is not null)
+                                {
+                                    CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
+                                    platformData.IsUnchanged = cacheResult.State == ImageCacheState.Cached;
+                                }
+
+                                await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest);
+                            }
+                        }
 
                         if (!isCachedImage)
                         {
@@ -357,38 +372,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task<bool> CheckForCachedImageAsync(
-            ImageData? srcImageData, RepoInfo repo, PlatformInfo platform, IEnumerable<TagInfo> allTags, PlatformData? platformData)
-        {
-            PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platform);
-
-            string cacheKey = GetBuildCacheKey(platform);
-            if (platformData != null && _cachedPlatforms.TryGetValue(cacheKey, out PlatformData? cachedPlatform))
-            {
-                await OnCacheHitAsync(repo, allTags, pullImage: false, cachedPlatform.Digest);
-                CopyPlatformDataFromCachedPlatform(platformData, cachedPlatform);
-                platformData.IsUnchanged = srcPlatformData != null &&
-                    CachedPlatformHasAllTagsPublished(srcPlatformData);
-                return true;
-            }
-
-            bool isCachedImage = false;
-
-            // If this Dockerfile has been built and published before
-            if (srcPlatformData != null)
-            {
-                isCachedImage = await CheckForCachedImageFromImageInfoAsync(repo, platform, srcPlatformData, allTags);
-                if (platformData != null && isCachedImage)
-                {
-                    platformData.IsUnchanged = CachedPlatformHasAllTagsPublished(srcPlatformData);
-                    CopyPlatformDataFromCachedPlatform(platformData, srcPlatformData);
-                    _cachedPlatforms[cacheKey] = srcPlatformData;
-                }
-            }
-
-            return isCachedImage;
-        }
-
         private void CopyPlatformDataFromCachedPlatform(PlatformData dstPlatform, PlatformData srcPlatform)
         {
             // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
@@ -397,27 +380,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             dstPlatform.Layers = new List<string>(srcPlatform.Layers);
         }
 
-        private bool CachedPlatformHasAllTagsPublished(PlatformData srcPlatformData) =>
-            (srcPlatformData.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>())
-                .Where(tag => !tag.Model.IsLocal)
-                .Select(tag => tag.Name)
-                .AreEquivalent(srcPlatformData.SimpleTags);
-
-        private RepoData? CreateRepoData(RepoInfo repoInfo) =>
-            Options.ImageInfoOutputPath is null ? null :
-                new RepoData
-                {
-                    Repo = repoInfo.Name
-                };
-
-        private PlatformData? CreatePlatformData(ImageInfo image, PlatformInfo platform)
-        {
-            if (Options.ImageInfoOutputPath is null)
+        private RepoData CreateRepoData(RepoInfo repoInfo) =>
+            new RepoData
             {
-                return null;
-            }
+                Repo = repoInfo.Name
+            };
 
-            PlatformData? platformData = PlatformData.FromPlatformInfo(platform, image);
+        private PlatformData CreatePlatformData(ImageInfo image, PlatformInfo platform)
+        {
+            PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
             platformData.SimpleTags = GetPushTags(platform.Tags)
                 .Select(tag => tag.Name)
                 .OrderBy(name => name)
@@ -426,15 +397,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return platformData;
         }
 
-        private ImageData? CreateImageData(ImageInfo image)
+        private ImageData CreateImageData(ImageInfo image)
         {
-            ImageData? imageData = Options.ImageInfoOutputPath is null ? null :
+            ImageData imageData =
                 new ImageData
                 {
                     ProductVersion = image.ProductVersion
                 };
 
-            if (image.SharedTags.Any() && imageData != null)
+            if (image.SharedTags.Any())
             {
                 imageData.Manifest = new ManifestData
                 {
@@ -533,25 +504,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return buildArgs;
         }
 
-        private async Task<bool> CheckForCachedImageFromImageInfoAsync(
-            RepoInfo repo, PlatformInfo platform, PlatformData srcPlatformData, IEnumerable<TagInfo> allTags)
-        {
-            _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
-
-            // If the previously published image was based on an image that is still the latest version AND
-            // the Dockerfile hasn't changed since it was last published
-            if (await IsBaseImageDigestUpToDateAsync(platform, srcPlatformData) && IsDockerfileUpToDate(platform, srcPlatformData))
-            {
-                await OnCacheHitAsync(repo, allTags, pullImage: true, sourceDigest: srcPlatformData.Digest);
-                return true;
-            }
-
-            _loggerService.WriteMessage("CACHE MISS");
-            _loggerService.WriteMessage();
-
-            return false;
-        }
-
         private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
         {
             _loggerService.WriteMessage();
@@ -633,46 +585,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string destRepo = DockerHelper.GetRepo(DockerHelper.GetRepo(destTags.First()));
             sourceDigest = DockerHelper.GetImageName(Manifest.Registry, destRepo, digest: DockerHelper.GetDigestSha(sourceDigest));
             return sourceDigest;
-        }
-
-        private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData)
-        {
-            string currentCommitUrl = _gitService.GetDockerfileCommitUrl(platform, Options.SourceRepoUrl);
-            bool commitShaMatches = false;
-            if (srcPlatformData.CommitUrl is not null)
-            {
-                commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
-            }
-
-            _loggerService.WriteMessage();
-            _loggerService.WriteMessage($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
-            _loggerService.WriteMessage($"Latest Dockerfile commit: {currentCommitUrl}");
-            _loggerService.WriteMessage($"Dockerfile commits match: {commitShaMatches}");
-            return commitShaMatches;
-        }
-
-        private async Task<bool> IsBaseImageDigestUpToDateAsync(PlatformInfo platform, PlatformData srcPlatformData)
-        {
-            _loggerService.WriteMessage();
-
-            if (platform.FinalStageFromImage is null)
-            {
-                _loggerService.WriteMessage($"Image does not have a base image. By default, it is considered up-to-date.");
-                return true;
-            }
-
-            string? currentBaseImageDigest = await _imageDigestCache.GetImageDigestAsync(
-                _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage),
-                Options.IsDryRun);
-
-            string? baseSha = srcPlatformData.BaseImageDigest is not null ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) : null;
-            string? currentSha = currentBaseImageDigest is not null ? DockerHelper.GetDigestSha(currentBaseImageDigest) : null;
-            bool baseImageDigestMatches = baseSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
-
-            _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
-            _loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
-            _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
-            return baseImageDigestMatches;
         }
 
         private void InvokeBuildHook(string hookName, string buildContextPath)
@@ -847,22 +759,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             _loggerService.WriteMessage();
-        }
-
-        private static string GetBuildCacheKey(PlatformInfo platform) =>
-            $"{platform.DockerfilePathRelativeToManifest}-" +
-            string.Join('-', platform.BuildArgs.Select(kvp => $"{kvp.Key}={kvp.Value}").ToArray());
-
-        private class BuildCacheInfo
-        {
-            public BuildCacheInfo(string digest, string? baseImageDigest)
-            {
-                Digest = digest;
-                BaseImageDigest = baseImageDigest;
-            }
-
-            public string Digest { get; }
-            public string? BaseImageDigest { get; }
         }
     }
 }

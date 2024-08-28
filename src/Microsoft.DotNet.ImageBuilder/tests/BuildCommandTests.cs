@@ -148,7 +148,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Mock.Of<ICopyImageService>(),
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
-                    Mock.Of<IAzureTokenCredentialProvider>());
+                    Mock.Of<IAzureTokenCredentialProvider>(),
+                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
@@ -351,7 +352,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Mock.Of<ICopyImageService>(),
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
-                    Mock.Of<IAzureTokenCredentialProvider>());
+                    Mock.Of<IAzureTokenCredentialProvider>(),
+                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -480,7 +482,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -558,7 +561,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -610,7 +614,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.BuildArgs.Add("arg1", "val1");
             command.Options.BuildArgs.Add("arg2", "val2a");
@@ -669,7 +674,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 Mock.Of<IManifestServiceFactory>(),
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -770,7 +776,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -956,7 +963,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Mock.Of<ICopyImageService>(),
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
-                    Mock.Of<IAzureTokenCredentialProvider>());
+                    Mock.Of<IAzureTokenCredentialProvider>(),
+                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.SourceRepoUrl = "https://source";
@@ -1006,7 +1014,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
@@ -1168,7 +1177,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1480,7 +1490,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1794,7 +1805,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2088,7 +2100,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2293,7 +2306,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2534,7 +2548,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2755,7 +2770,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -3058,7 +3074,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 copyImageServiceMock.Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -3401,7 +3418,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3498,7 +3516,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock.Of<ICopyImageService>(),
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
-                Mock.Of<IAzureTokenCredentialProvider>());
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;

@@ -7,7 +7,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-internal class ImageNameResolver
+public class ImageNameResolver
 {
     private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
     private readonly ManifestInfo _manifest;

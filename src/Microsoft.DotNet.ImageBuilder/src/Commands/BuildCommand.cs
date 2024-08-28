@@ -374,15 +374,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (srcPlatformData != null)
             {
                 isCachedImage = await CheckForCachedImageFromImageInfoAsync(repo, platform, srcPlatformData, allTags);
-                if (platformData != null)
+                if (platformData != null && isCachedImage)
                 {
-                    platformData.IsUnchanged = isCachedImage &&
-                        CachedPlatformHasAllTagsPublished(srcPlatformData);
-                    if (isCachedImage)
-                    {
-                        CopyPlatformDataFromCachedPlatform(platformData, srcPlatformData);
-                        _cachedPlatforms[cacheKey] = srcPlatformData;
-                    }
+                    platformData.IsUnchanged = CachedPlatformHasAllTagsPublished(srcPlatformData);
+                    CopyPlatformDataFromCachedPlatform(platformData, srcPlatformData);
+                    _cachedPlatforms[cacheKey] = srcPlatformData;
                 }
             }
 

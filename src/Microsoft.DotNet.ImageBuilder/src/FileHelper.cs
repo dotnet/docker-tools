@@ -38,5 +38,19 @@ namespace Microsoft.DotNet.ImageBuilder
 
             Directory.Delete(path, true);
         }
+
+        public static void CreateDirectoryIfNotExists(string path, bool throwIfNotEmpty = false)
+        {
+            if (!Directory.Exists(path))
+            {
+                Directory.CreateDirectory(path);
+                return;
+            }
+
+            if (throwIfNotEmpty && Directory.EnumerateFileSystemEntries(path).Any())
+            {
+                throw new IOException($"Directory '{path}' already exists and is not empty");
+            }
+        }
     }
 }

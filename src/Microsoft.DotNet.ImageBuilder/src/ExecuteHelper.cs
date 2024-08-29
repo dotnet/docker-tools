@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private static readonly ILoggerService s_loggerService = new LoggerService();
 
-        public static string? Execute(
+        public static string Execute(
             string fileName,
             string args,
             bool isDryRun,
@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return Execute(new ProcessStartInfo(fileName, args), isDryRun, errorMessage, executeMessageOverride);
         }
 
-        public static string? Execute(
+        public static string Execute(
             ProcessStartInfo info,
             bool isDryRun,
             string? errorMessage = null,
@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return Execute(info, info => ExecuteProcess(info), isDryRun, errorMessage, executeMessageOverride);
         }
 
-        public static string? ExecuteWithRetry(
+        public static string ExecuteWithRetry(
             string fileName,
             string args,
             bool isDryRun,
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
-        public static string? ExecuteWithRetry(
+        public static string ExecuteWithRetry(
             ProcessStartInfo info,
             Action<Process>? processStartedCallback = null,
             bool isDryRun = false,
@@ -66,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder
             );
         }
 
-        private static string? Execute(
+        private static string Execute(
             ProcessStartInfo info,
             Func<ProcessStartInfo, ProcessResult> executor,
             bool isDryRun,
@@ -74,35 +74,30 @@ namespace Microsoft.DotNet.ImageBuilder
             string? executeMessageOverride = null)
         {
             info.RedirectStandardError = true;
-
-            ProcessResult? processResult = null;
-
-            if (executeMessageOverride == null)
-            {
-                executeMessageOverride = $"{info.FileName} {info.Arguments}";
-            }
-
+            executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
             s_loggerService.WriteSubheading($"EXECUTING: {executeMessageOverride}");
-            if (!isDryRun)
+
+            if (isDryRun)
             {
-                Stopwatch stopwatch = new Stopwatch();
-                stopwatch.Start();
-
-                processResult = executor(info);
-
-                stopwatch.Stop();
-                s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
-
-                if (processResult.Process.ExitCode != 0)
-                {
-                    string exceptionMsg = errorMessage ?? $"Failed to execute {info.FileName} {info.Arguments}";
-                    exceptionMsg += $"{Environment.NewLine}{Environment.NewLine}{processResult.StandardError}";
-
-                    throw new InvalidOperationException(exceptionMsg);
-                }
+                return string.Empty;
             }
 
-            return processResult?.StandardOutput;
+            Stopwatch stopwatch = new();
+            stopwatch.Start();
+            ProcessResult processResult = executor(info);
+            stopwatch.Stop();
+            s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+
+            if (processResult.Process.ExitCode != 0)
+            {
+                string exceptionMsg = errorMessage ?? $@"Failed to execute {info.FileName} {info.Arguments}
+                
+                {processResult.StandardError}";
+
+                throw new InvalidOperationException(exceptionMsg);
+            }
+
+            return processResult.StandardOutput;
         }
 
         private static ProcessResult ExecuteProcess(ProcessStartInfo info, Action<Process>? processStartedCallback = null)

@@ -20,15 +20,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class CliOptionsBuilder
     {
-        public virtual IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
+        /// <summary>
+        /// Arguments are positional, non-optional parameters that must be passed to the command.
+        /// </summary>
+        /// <returns>Collection of Arguments</returns>
+        public virtual IEnumerable<Argument> GetCliArguments() => [];
+
+        /// <summary>
+        /// Options are optional, non-positional parameters or flags that can be passed to the command by name.
+        /// </summary>
+        /// <returns>Collection of Options</returns>
         public virtual IEnumerable<Option> GetCliOptions() =>
-            new Option[]
-            {
-                CreateOption<bool>("dry-run", nameof(Options.IsDryRun),
-                    "Dry run of what images get built and order they would get built in"),
-                CreateOption<bool>("verbose", nameof(Options.IsVerbose),
-                    "Show details about the tasks run")
-            };
+            [
+                CreateOption<bool>(
+                    alias: "dry-run",
+                    propertyName: nameof(Options.IsDryRun),
+                    description: "Dry run of what images get built and order they would get built in"),
+                CreateOption<bool>(
+                    alias: "verbose",
+                    propertyName: nameof(Options.IsVerbose),
+                    description: "Show details about the tasks run")
+            ];
     }
 }
-#nullable disable

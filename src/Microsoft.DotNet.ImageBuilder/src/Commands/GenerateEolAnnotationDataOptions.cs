@@ -12,18 +12,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class GenerateEolAnnotationDataOptions : Options
 {
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
+    public RegistryOptions RegistryOptions { get; set; } = new();
 
     public string EolDigestsListPath { get; set; } = string.Empty;
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;
     public bool AnnotateEolProducts { get; set; }
-    public string RepoPrefix { get; set; } = string.Empty;
-    public string RegistryName { get; set; } = string.Empty;
 }
 
 public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
 {
     private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
 
     public override IEnumerable<Option> GetCliOptions() =>
         [
@@ -43,9 +43,6 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
                 "Old image-info file"),
             new Argument<string>(nameof(GenerateEolAnnotationDataOptions.NewImageInfoPath),
                 "New image-info file"),
-            new Argument<string>(nameof(GenerateEolAnnotationDataOptions.RepoPrefix),
-                "Prefix to add to the repo names specified in the manifest"),
-            new Argument<string>(nameof(GenerateEolAnnotationDataOptions.RegistryName),
-                "Name of the registry"),
+            .._registryOptionsBuilder.GetCliArguments(),
         ];
 }

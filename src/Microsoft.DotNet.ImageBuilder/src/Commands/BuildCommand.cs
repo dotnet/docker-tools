@@ -491,8 +491,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                InvokeBuildHook("pre-build", platform.BuildContextPath);
-
                 string? buildOutput = _dockerService.BuildImage(
                     dockerfilePath,
                     platform.BuildContextPath,
@@ -509,8 +507,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         "Any other image that's not accounted for means there's some kind of mistake in how things are " +
                         "configured or a bug in the code.");
                 }
-
-                InvokeBuildHook("post-build", platform.BuildContextPath);
             }
             finally
             {
@@ -673,37 +669,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
             _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
             return baseImageDigestMatches;
-        }
-
-        private void InvokeBuildHook(string hookName, string buildContextPath)
-        {
-            string buildHookFolder = Path.GetFullPath(Path.Combine(buildContextPath, "hooks"));
-            if (!Directory.Exists(buildHookFolder))
-            {
-                return;
-            }
-
-            string scriptPath = Path.Combine(buildHookFolder, hookName);
-            ProcessStartInfo startInfo;
-            if (File.Exists(scriptPath))
-            {
-                startInfo = new ProcessStartInfo(scriptPath);
-            }
-            else
-            {
-                scriptPath = Path.ChangeExtension(scriptPath, ".ps1");
-                if (!File.Exists(scriptPath))
-                {
-                    return;
-                }
-
-                startInfo = new ProcessStartInfo(
-                    RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "PowerShell" : "pwsh",
-                    $"-NoProfile -File \"{scriptPath}\"");
-            }
-
-            startInfo.WorkingDirectory = buildContextPath;
-            _processService.Execute(startInfo, Options.IsDryRun, $"Failed to execute build hook '{scriptPath}'");
         }
 
         /// <summary>

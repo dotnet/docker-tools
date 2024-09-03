@@ -10,6 +10,8 @@ variables:
 - template: templates/variables/image-builder.yml
 - name: publishEolAnnotations
   value: true
+- name: dryRunArg
+  value: ""
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

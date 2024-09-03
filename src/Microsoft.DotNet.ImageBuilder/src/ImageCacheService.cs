@@ -53,7 +53,8 @@ public class ImageCacheService : IImageCacheService
     {
         ImageCacheState cacheState = ImageCacheState.NotCached;
         bool isNewCacheHit = false;
-        PlatformData? srcPlatformData = srcImageData?.Platforms.FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platformData.PlatformInfo);
+        PlatformData? srcPlatformData = srcImageData?.Platforms
+            .FirstOrDefault(srcPlatform => srcPlatform.PlatformInfo == platformData.PlatformInfo);
 
         if (platformData.PlatformInfo is null)
         {
@@ -76,7 +77,12 @@ public class ImageCacheService : IImageCacheService
         if (srcPlatformData != null)
         {
             bool isCachedImage = await CheckForCachedImageFromImageInfoAsync(
-                platformData.PlatformInfo, srcPlatformData, imageDigestCache, imageNameResolver, sourceRepoUrl, isDryRun);
+                platformData.PlatformInfo,
+                srcPlatformData,
+                imageDigestCache,
+                imageNameResolver,
+                sourceRepoUrl,
+                isDryRun);
 
             if (isCachedImage)
             {
@@ -111,7 +117,8 @@ public class ImageCacheService : IImageCacheService
 
         // If the previously published image was based on an image that is still the latest version AND
         // the Dockerfile hasn't changed since it was last published
-        if (await IsBaseImageDigestUpToDateAsync(platform, srcPlatformData, imageDigestCache, imageNameResolver, isDryRun) &&
+        if (await IsBaseImageDigestUpToDateAsync(
+                platform, srcPlatformData, imageDigestCache, imageNameResolver, isDryRun) &&
             IsDockerfileUpToDate(platform, srcPlatformData, sourceRepoUrl))
         {
             return true;
@@ -124,7 +131,11 @@ public class ImageCacheService : IImageCacheService
     }
 
     private async Task<bool> IsBaseImageDigestUpToDateAsync(
-        PlatformInfo platform, PlatformData srcPlatformData, ImageDigestCache imageDigestCache, ImageNameResolver imageNameResolver, bool isDryRun)
+        PlatformInfo platform,
+        PlatformData srcPlatformData,
+        ImageDigestCache imageDigestCache,
+        ImageNameResolver imageNameResolver,
+        bool isDryRun)
     {
         _loggerService.WriteMessage();
 
@@ -138,8 +149,12 @@ public class ImageCacheService : IImageCacheService
             imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
             isDryRun);
 
-        string? baseSha = srcPlatformData.BaseImageDigest is not null ? DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) : null;
-        string? currentSha = currentBaseImageDigest is not null ? DockerHelper.GetDigestSha(currentBaseImageDigest) : null;
+        string? baseSha = srcPlatformData.BaseImageDigest is not null ?
+            DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
+            null;
+        string? currentSha = currentBaseImageDigest is not null ?
+            DockerHelper.GetDigestSha(currentBaseImageDigest) :
+            null;
         bool baseImageDigestMatches = baseSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
         _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");

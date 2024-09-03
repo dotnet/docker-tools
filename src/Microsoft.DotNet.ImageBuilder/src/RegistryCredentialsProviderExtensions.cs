@@ -20,8 +20,11 @@ internal static class RegistryCredentialsProviderExtensions
     {
         bool loggedIn = false;
 
-        RegistryCredentials? credentials = await credsProvider.GetCredentialsAsync(
-                registryName, ownedAcr, credentialsOptions);
+        RegistryCredentials? credentials = null;
+        if (!isDryRun)
+        {
+            credentials = await credsProvider.GetCredentialsAsync(registryName, ownedAcr, credentialsOptions);
+        }
 
         if (!string.IsNullOrEmpty(registryName) && credentials is not null)
         {

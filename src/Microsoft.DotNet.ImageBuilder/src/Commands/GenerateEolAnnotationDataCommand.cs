@@ -145,6 +145,11 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
     private async Task<IEnumerable<(string Digest, string? Tag)>> GetAllImageDigestsFromRegistry(IEnumerable<string> repoNames)
     {
+        if (Options.IsDryRun)
+        {
+            return [];
+        }
+
         IContainerRegistryClient acrClient =
             _acrClientFactory.Create(Options.RegistryOptions.Registry, _tokenCredentialProvider.GetCredential());
         IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();

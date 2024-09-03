@@ -10,17 +10,18 @@ namespace Microsoft.DotNet.ImageBuilder;
 public abstract class ImageNameResolver
 {
     private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
-    private readonly ManifestInfo _manifest;
     private readonly string? _repoPrefix;
     private readonly string? _sourceRepoPrefix;
 
     public ImageNameResolver(BaseImageOverrideOptions baseImageOverrideOptions, ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
     {
         _baseImageOverrideOptions = baseImageOverrideOptions;
-        _manifest = manifest;
+        Manifest = manifest;
         _repoPrefix = repoPrefix;
         _sourceRepoPrefix = sourceRepoPrefix;
     }
+
+    protected ManifestInfo Manifest { get; }
 
     /// <summary>
     /// Returns the tag to use for interacting with the image of a FROM instruction that has been pulled or built locally.
@@ -29,7 +30,7 @@ public abstract class ImageNameResolver
     public string GetFromImageLocalTag(string fromImage) =>
         // Provides the overridable value of the registry (e.g. dotnetdocker.azurecr.io) because that is the registry that
         // would be used for tags that exist locally.
-        GetFromImageTag(fromImage, _manifest.Registry);
+        GetFromImageTag(fromImage, Manifest.Registry);
 
     /// <summary>
     /// Returns the tag to use for pulling the image of a FROM instruction.
@@ -40,7 +41,7 @@ public abstract class ImageNameResolver
         // are classified as external within the model but they are owned internally and not mirrored. An example of
         // this is sample images. By comparing their base image tag to that raw registry value from the manifest, we
         // can know that these are owned internally and not to attempt to pull them from the mirror location.
-        GetFromImageTag(fromImage, _manifest.Model.Registry);
+        GetFromImageTag(fromImage, Manifest.Model.Registry);
 
     /// <summary>
     /// Returns the tag that represents the publicly available tag of a FROM instruction.
@@ -60,7 +61,7 @@ public abstract class ImageNameResolver
         }
         else
         {
-            return $"{_manifest.Model.Registry}/{trimmed}";
+            return $"{Manifest.Model.Registry}/{trimmed}";
         }
     }
 
@@ -79,24 +80,24 @@ public abstract class ImageNameResolver
         fromImage = _baseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
 
         if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
-            DockerHelper.IsInRegistry(fromImage, _manifest.Model.Registry)
+            DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
             || _sourceRepoPrefix is null)
         {
             return fromImage;
         }
 
         string srcImage = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(fromImage));
-        return $"{_manifest.Registry}/{_sourceRepoPrefix}{srcImage}";
+        return $"{Manifest.Registry}/{_sourceRepoPrefix}{srcImage}";
     }
 
-    private string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
+    protected string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
         IsInInternallyOwnedRegistry(imageTag) ?
             DockerHelper.TrimRegistry(imageTag).TrimStart(_repoPrefix) :
             imageTag;
 
     private bool IsInInternallyOwnedRegistry(string imageTag) =>
-        DockerHelper.IsInRegistry(imageTag, _manifest.Registry) ||
-        DockerHelper.IsInRegistry(imageTag, _manifest.Model.Registry);
+        DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
+        DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
 }
 
 public class ImageNameResolverForBuild : ImageNameResolver
@@ -122,6 +123,40 @@ public class ImageNameResolverForBuild : ImageNameResolver
         if (platform.IsInternalFromImage(imageName))
         {
             return imageName;
+        }
+        else
+        {
+            return GetFromImagePullTag(imageName);
+        }
+    }
+}
+
+public class ImageNameResolverForMatrix : ImageNameResolver
+{
+    public ImageNameResolverForMatrix(
+        BaseImageOverrideOptions baseImageOverrideOptions,
+        ManifestInfo manifest,
+        string? repoPrefix,
+        string? sourceRepoPrefix)
+        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
+    {
+    }
+
+    public override string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
+    {
+        // For matrix generation scenarios, we want to query for the digest of the image according
+        // to whether it's internal or not, just like we do for build. But the target location will
+        // be different. For internal images, we want to query mcr.microsoft.com (e.g.
+        // mcr.microsoft.com/dotnet/sdk/8.0). For external images,
+        // we want to query the mirror location in the ACR (e.g.
+        // dotnetdockerstaging.azurecr.io/mirror/amd64/alpine:3.20)
+
+        string imageName = platform.FinalStageFromImage ?? string.Empty;
+
+        if (platform.IsInternalFromImage(imageName))
+        {
+            string trimmedImageName = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(imageName));
+            return $"{Manifest.Model.Registry}/{trimmedImageName}";
         }
         else
         {

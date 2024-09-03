@@ -6,10 +6,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
@@ -29,11 +31,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData(null, "--path 2.1.1/runtime-deps/os --path 2.2/runtime/os", "2.1.1")]
         [InlineData("--path 2.2/runtime/os", "--path 2.2/runtime/os", "2.2")]
         [InlineData("--path 2.1.1/runtime-deps/os", "--path 2.1.1/runtime-deps/os", "2.1.1")]
-        public void GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
+        public async Task GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                GenerateBuildMatrixCommand command = CreateCommand();
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 command.Options.ProductVersionComponents = 3;
@@ -74,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
                 Assert.Single(matrixInfos);
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -97,11 +99,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData("--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64", "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64")]
         [InlineData("--path 1.0/sdk/os/amd64", "--path 1.0/sdk/os/amd64")]
         [InlineData("--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64", "--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
-        public void GenerateBuildMatrixCommand_PlatformDependencyGraph(string filterPaths, string expectedPaths)
+        public async Task GenerateBuildMatrixCommand_PlatformDependencyGraph(string filterPaths, string expectedPaths)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                GenerateBuildMatrixCommand command = CreateCommand();
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
                 if (filterPaths != null)
@@ -142,7 +144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
                 Assert.Single(matrixInfos);
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -153,15 +155,161 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
+        private static void SetCacheResult(Mock<IImageCacheService> imageCacheServiceMock, string dockerfilePath, ImageCacheState cacheState)
+        {
+            imageCacheServiceMock
+                .Setup(o => o.CheckForCachedImageAsync(
+                    It.IsAny<ImageData>(),
+                    It.Is<PlatformData>(platform => platform.Dockerfile == dockerfilePath),
+                    It.IsAny<ImageDigestCache>(),
+                    It.IsAny<ImageNameResolver>(),
+                    It.IsAny<string>(),
+                    It.IsAny<bool>()))
+                .ReturnsAsync(new ImageCacheResult(cacheState, false, null));
+        }
+
+        [Theory]
+        [InlineData(
+            ImageCacheState.NotCached,
+            ImageCacheState.NotCached,
+            "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
+        [InlineData(
+            ImageCacheState.Cached,
+            ImageCacheState.Cached,
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
+            null)]
+        [InlineData(
+            ImageCacheState.CachedWithMissingTags,
+            ImageCacheState.Cached,
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
+            null)]
+        [InlineData(
+            ImageCacheState.Cached,
+            ImageCacheState.NotCached,
+            "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
+        public async Task FilterOutCachedImages(
+            ImageCacheState runtime1CacheState,
+            ImageCacheState sdk1CacheState,
+            string leg1ExpectedPaths,
+            string leg2ExpectedPaths)
+        {
+            const string Runtime1RelativeDir = "1.0/runtime/os/amd64";
+            string dockerfileRuntime1Path;
+            const string Runtime2RelativeDir = "2.0/runtime/os/amd64";
+            string dockerfileRuntime2Path;
+
+            const string Sdk1RelativeDir = "1.0/sdk/os/amd64";
+            string dockerfileSdk1Path;
+            const string Sdk2RelativeDir = "2.0/sdk/os/amd64";
+            string dockerfileSdk2Path;
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        CreatePlatform(dockerfileRuntime1Path = CreateDockerfile(Runtime1RelativeDir, tempFolderContext, "base"), ["1.0"])),
+                    CreateImage(
+                        CreatePlatform(dockerfileRuntime2Path = CreateDockerfile(Runtime2RelativeDir, tempFolderContext, "base"), ["2.0"]))),
+                CreateRepo("sdk",
+                    CreateImage(
+                        CreatePlatform(dockerfileSdk1Path = CreateDockerfile(Sdk1RelativeDir, tempFolderContext, "runtime:1.0"), ["1.0"])),
+                    CreateImage(
+                        CreatePlatform(dockerfileSdk2Path = CreateDockerfile(Sdk2RelativeDir, tempFolderContext, "runtime:2.0"), ["2.0"])))
+            );
+
+            Mock<IImageCacheService> imageCacheServiceMock = new();
+            SetCacheResult(imageCacheServiceMock, dockerfileRuntime1Path, runtime1CacheState);
+            SetCacheResult(imageCacheServiceMock, dockerfileSdk1Path, sdk1CacheState);
+            SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
+            SetCacheResult(imageCacheServiceMock, dockerfileSdk2Path, ImageCacheState.NotCached);
+
+            GenerateBuildMatrixCommand command = new(imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
+            command.Options.TrimCachedImages = true;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(dockerfileRuntime1Path)
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(dockerfileRuntime2Path)
+                                }
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "sdk",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(dockerfileSdk1Path)
+                                }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(dockerfileSdk2Path)
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+            Assert.Single(matrixInfos);
+
+            BuildMatrixInfo matrixInfo = matrixInfos.First();
+            BuildLegInfo leg = matrixInfo.Legs.First();
+            string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+            Assert.Equal(leg1ExpectedPaths, imageBuilderPaths);
+
+            if (leg2ExpectedPaths is not null)
+            {
+                leg = matrixInfo.Legs.Skip(1).First();
+                imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal(leg2ExpectedPaths, imageBuilderPaths);
+            }
+        }
+
         /// <summary>
         /// Verifies that the correct matrix is generated when the DistinctMatrixOsVersion option is set.
         /// </summary>
         [Fact]
-        public void GenerateBuildMatrixCommand_CustomMatrixOsVersion()
+        public async Task GenerateBuildMatrixCommand_CustomMatrixOsVersion()
         {
             const string CustomMatrixOsVersion = "custom";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.DistinctMatrixOsVersions = new string[]
@@ -195,7 +343,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Equal(2, matrixInfos.Count());
 
             BuildMatrixInfo matrixInfo = matrixInfos.ElementAt(0);
@@ -223,12 +371,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Theory]
         [InlineData(CustomBuildLegDependencyType.Integral)]
         [InlineData(CustomBuildLegDependencyType.Supplemental)]
-        public void GenerateBuildMatrixCommand_CustomBuildLegGroupingParentGraph(CustomBuildLegDependencyType dependencyType)
+        public async Task GenerateBuildMatrixCommand_CustomBuildLegGroupingParentGraph(CustomBuildLegDependencyType dependencyType)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
                 const string customBuildLegGroup = "custom";
-                GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+                GenerateBuildMatrixCommand command = CreateCommand();
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.MatrixType = MatrixType.PlatformVersionedOs;
                 command.Options.ProductVersionComponents = 2;
@@ -286,7 +434,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 command.LoadManifest();
-                IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+                IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
                 Assert.Single(matrixInfos);
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -306,11 +454,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// those Dockerfiles should be built in the same job.
         /// </summary>
         [Fact]
-        public void GenerateBuildMatrixCommand_ServerCoreAndNanoServerDependency()
+        public async Task GenerateBuildMatrixCommand_ServerCoreAndNanoServerDependency()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             const string customBuildLegGroup = "custom";
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
@@ -376,7 +524,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -396,10 +544,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// tag that's outside the platform group.
         /// </summary>
         [Fact]
-        public void GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGroup()
+        public async Task GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGroup()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
@@ -446,7 +594,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -465,12 +613,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// when there are multiple custom build leg groups defined.
         /// </summary>
         [Fact]
-        public void GenerateBuildMatrixCommand_MultiBuildLegGroups()
+        public async Task GenerateBuildMatrixCommand_MultiBuildLegGroups()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             const string customBuildLegGroup1 = "custom1";
             const string customBuildLegGroup2 = "custom2";
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
@@ -546,7 +694,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -573,10 +721,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData(true, false, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
         [InlineData(true, true, false, "--path 1.0/sdk/os/Dockerfile")]
         [InlineData(true, true, true, null)]
-        public void PlatformVersionedOs_Cached(bool isRuntimeCached, bool isAspnetCached, bool isSdkCached, string expectedPaths)
+        public async Task PlatformVersionedOs_Cached(bool isRuntimeCached, bool isAspnetCached, bool isSdkCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -671,7 +819,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
 
             if (isRuntimeCached && isAspnetCached && isSdkCached)
             {
@@ -700,10 +848,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData(false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
         [InlineData(true, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
         [InlineData(true, true, "--path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
-        public void PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCached, string expectedPaths)
+        public async Task PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -851,7 +999,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
 
             Assert.Single(matrixInfos);
             Assert.Single(matrixInfos.First().Legs);
@@ -862,10 +1010,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Fact]
-        public void PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_SingleDockerfile()
+        public async Task PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_SingleDockerfile()
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
@@ -903,7 +1051,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -917,10 +1065,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Theory]
         [InlineData(MatrixType.PlatformVersionedOs)]
         [InlineData(MatrixType.PlatformDependencyGraph)]
-        public void CrossReferencedDockerfileFromMultipleRepos_ImageGraph(MatrixType matrixType)
+        public async Task CrossReferencedDockerfileFromMultipleRepos_ImageGraph(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = matrixType;
             command.Options.ProductVersionComponents = 2;
@@ -967,7 +1115,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
@@ -996,10 +1144,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Theory]
         [InlineData(MatrixType.PlatformVersionedOs)]
         [InlineData(MatrixType.PlatformDependencyGraph)]
-        public void NonDependentReposWithSameProductVersion(MatrixType matrixType)
+        public async Task NonDependentReposWithSameProductVersion(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = matrixType;
             command.Options.ProductVersionComponents = 2;
@@ -1028,7 +1176,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
@@ -1045,10 +1193,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Theory]
         [InlineData(MatrixType.PlatformVersionedOs)]
         [InlineData(MatrixType.PlatformDependencyGraph)]
-        public void DuplicatedPlatforms(MatrixType matrixType)
+        public async Task DuplicatedPlatforms(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new GenerateBuildMatrixCommand();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = matrixType;
             command.Options.ProductVersionComponents = 2;
@@ -1075,7 +1223,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1103,10 +1251,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// to a shared root Dockerfile.
         /// </summary>
         [Fact]
-        public void DuplicatedPlatforms_SubgraphConsolidation()
+        public async Task DuplicatedPlatforms_SubgraphConsolidation()
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
@@ -1141,7 +1289,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1158,10 +1306,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that legs that have common Dockerfiles are consolidated together.
         /// </summary>
         [Fact]
-        public void PlatformVersionedOs_ConsolidateCommonDockerfiles()
+        public async Task PlatformVersionedOs_ConsolidateCommonDockerfiles()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
@@ -1191,7 +1339,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
@@ -1213,10 +1361,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// in the 2.0 job. So both 1.0 and 2.0 had the same Dockerfile which leads to a conflict when publishing.
         /// </summary>
         [Fact]
-        public void PlatformDependencyGraph_MultiVersionSharedDockerfileGraphWithDockerfileThatHasMultiOsVersionDependencies()
+        public async Task PlatformDependencyGraph_MultiVersionSharedDockerfileGraphWithDockerfileThatHasMultiOsVersionDependencies()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            GenerateBuildMatrixCommand command = new();
+            GenerateBuildMatrixCommand command = CreateCommand();
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ProductVersionComponents = 2;
@@ -1314,7 +1462,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = command.GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
             Assert.Single(matrixInfos);
 
             BuildMatrixInfo matrix = matrixInfos.First();
@@ -1337,5 +1485,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             platform.IsUnchanged = isCached;
             return platform;
         }
+
+        private static GenerateBuildMatrixCommand CreateCommand() =>
+            new(Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>());
     }
 }

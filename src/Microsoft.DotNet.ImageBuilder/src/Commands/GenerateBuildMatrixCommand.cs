@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
@@ -23,9 +24,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
+        private readonly IImageCacheService _imageCacheService;
+        private readonly ImageDigestCache _imageDigestCache;
+        private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        public GenerateBuildMatrixCommand() : base()
+        [ImportingConstructor]
+        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory) : base()
         {
+            _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
                 if (Options.ImageInfoPath != null)
@@ -35,19 +41,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 return null;
             });
+            _imageDigestCache = new ImageDigestCache(
+                new Lazy<IManifestService>(
+                    () => manifestServiceFactory.Create(ownedAcr: Options.RegistryOverride, Options.CredentialsOptions)));
+            _imageNameResolver = new Lazy<ImageNameResolverForMatrix>(() =>
+                new ImageNameResolverForMatrix(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
         }
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("GENERATING BUILD MATRIX");
 
-            IEnumerable<BuildMatrixInfo> matrices = GenerateMatrixInfo();
+            IEnumerable<BuildMatrixInfo> matrices = await GenerateMatrixInfoAsync();
             LogDiagnostics(matrices);
             EmitVstsVariables(matrices);
-
-            return Task.CompletedTask;
         }
 
         private static IEnumerable<IEnumerable<PlatformInfo>> ConsolidateSubgraphs(
@@ -396,30 +405,85 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return allParts.First() + string.Join(string.Empty, allParts.Skip(1).Select(part => part.FirstCharToUpper()));
         }
 
-        private IEnumerable<PlatformInfo> GetPlatforms()
+        private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
         {
             if (_imageArtifactDetails.Value is null)
             {
                 return Manifest.GetFilteredPlatforms();
             }
 
-            IEnumerable<PlatformInfo>? platforms = _imageArtifactDetails.Value.Repos?
-                .SelectMany(repo => repo.Images)
-                .SelectMany(image => image.Platforms)
-                .Where(platform => !platform.IsUnchanged)
-                .Select(platform => platform.PlatformInfo)
-                .Where(platform => platform != null)
-                .Cast<PlatformInfo>();
+            IEnumerable<(PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData)> platformMappings =
+                _imageArtifactDetails.Value.Repos
+                    .SelectMany(repo => repo.Images)
+                    .SelectMany(image =>
+                        image.Platforms
+                            .Where(platform => !platform.IsUnchanged && platform.PlatformInfo is not null)
+                            .Select(platform => (platform.PlatformInfo!, image, platform)));
 
-            return platforms ?? Enumerable.Empty<PlatformInfo>();
+            if (!Options.TrimCachedImages)
+            {
+                return platformMappings.Select(platformMapping => platformMapping.PlatformInfo);
+            }
+
+            // Here we will trim the platforms based on their image cache state. This reduces the amount of jobs that need to
+            // be run. Otherwise, you may spin up a bunch of jobs that end up processing a bunch of cached images and
+            // essentially becomes a no-op.
+
+            // We need to group the platforms according to their parent dependency hierarchy. This is important because we must
+            // treat the hierarchy as a unit. For example, if runtime-deps is cached but runtime (which is a descendant of
+            // runtime-deps) is not, then we need to ensure that both runtime-deps and runtime is included. We do not want to
+            // trim just the runtime-deps platform in that case.
+            IEnumerable<IEnumerable<(PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData)>> subgraphs =
+                platformMappings.GetCompleteSubgraphs(
+                    platformGrouping =>
+                        Manifest.GetParents(
+                            platformGrouping.PlatformInfo,
+                            platformMappings.Select(m => m.PlatformInfo)
+                        ).Select(platformInfo => platformMappings.First(mapping => mapping.PlatformInfo == platformInfo)));
+
+            ConcurrentBag<PlatformInfo> nonCachedPlatforms = [];
+            await Parallel.ForEachAsync(subgraphs, async (subgraph, _) =>
+            {
+                ConcurrentBag<PlatformInfo> subgraphNonCachedPlatforms = [];
+                await Parallel.ForEachAsync(subgraph, async (platformMapping, _) =>
+                {
+                    ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
+                        platformMapping.ImageData,
+                        platformMapping.PlatformData,
+                        _imageDigestCache,
+                        _imageNameResolver.Value,
+                        Options.SourceRepoUrl,
+                        Options.IsDryRun);
+
+                    if (!cacheResult.State.HasFlag(ImageCacheState.Cached))
+                    {
+                        subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
+                    }
+                });
+
+                // As mentioned above, we need to treat the hierarchy as a unit so even though a subset of the platforms
+                // in the hierarchy may be cached, they all need to be included. Only in the case where they're all
+                // cached, should they be excluded. To determine what needs to be included, it can be simplified to just
+                // check whether there are any platforms identified within the hierarchy as not being cached. If so, then
+                // include the whole hierarchy as non-cached platforms.
+                if (!subgraphNonCachedPlatforms.IsEmpty)
+                {
+                    foreach ((PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData) platformMapping in subgraph)
+                    {
+                        nonCachedPlatforms.Add(platformMapping.PlatformInfo);
+                    }
+                }
+            });
+
+            return nonCachedPlatforms.OrderBy(platform => platform.DockerfilePath);
         }
 
-        public IEnumerable<BuildMatrixInfo> GenerateMatrixInfo()
+        public async Task<IEnumerable<BuildMatrixInfo>> GenerateMatrixInfoAsync()
         {
-            List<BuildMatrixInfo> matrices = new();
+            List<BuildMatrixInfo> matrices = [];
 
             // The sort order used here is arbitrary and simply helps the readability of the output.
-            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = GetPlatforms()
+            IOrderedEnumerable<IGrouping<PlatformId, PlatformInfo>> platformGroups = (await GetPlatformsAsync())
                 .GroupBy(platform => CreatePlatformId(platform))
                 .OrderBy(platformGroup => platformGroup.Key.OS)
                 .ThenByDescending(platformGroup => platformGroup.Key.OsVersion)

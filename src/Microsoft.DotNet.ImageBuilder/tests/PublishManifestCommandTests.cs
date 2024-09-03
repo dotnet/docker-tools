@@ -294,6 +294,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
+            manifestService
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(Guid.NewGuid().ToString());
+
             Mock<IDockerService> dockerServiceMock = new();
 
             PublishManifestCommand command = new PublishManifestCommand(

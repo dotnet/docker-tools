@@ -5,10 +5,8 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -32,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
-        private readonly Lazy<ImageNameResolver> _imageNameResolver;
+        private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
 
         /// <summary>
         /// Maps a source digest from the image info file to the corresponding digest in the copied location for image caching.
@@ -69,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 manifestServiceFactory.Create(ownedAcr: Options.RegistryOverride, Options.CredentialsOptions));
             _imageDigestCache = new ImageDigestCache(_manifestService);
 
-            _imageNameResolver = new Lazy<ImageNameResolver>(() =>
+            _imageNameResolver = new Lazy<ImageNameResolverForBuild>(() =>
                 new ImageNameResolverForBuild(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
         }
 

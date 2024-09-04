@@ -18,6 +18,61 @@ internal static class RegistryCredentialsProviderExtensions
         string registryName,
         string? ownedAcr)
     {
+        bool loggedIn = await LogInToRegistry(
+            credsProvider,
+            isDryRun,
+            credentialsOptions,
+            registryName,
+            ownedAcr);
+
+        try
+        {
+            await action();
+        }
+        finally
+        {
+            if (loggedIn && !string.IsNullOrEmpty(registryName))
+            {
+                DockerHelper.Logout(registryName, isDryRun);
+            }
+        }
+    }
+
+    public static async Task ExecuteWithCredentialsAsync(
+        this IRegistryCredentialsProvider credsProvider,
+        bool isDryRun,
+        Action action,
+        RegistryCredentialsOptions credentialsOptions,
+        string registryName,
+        string? ownedAcr)
+    {
+        bool loggedIn = await LogInToRegistry(
+            credsProvider,
+            isDryRun,
+            credentialsOptions,
+            registryName,
+            ownedAcr);
+
+        try
+        {
+            action();
+        }
+        finally
+        {
+            if (loggedIn && !string.IsNullOrEmpty(registryName))
+            {
+                DockerHelper.Logout(registryName, isDryRun);
+            }
+        }
+    }
+
+    private static async Task<bool> LogInToRegistry(
+        this IRegistryCredentialsProvider credsProvider,
+        bool isDryRun,
+        RegistryCredentialsOptions credentialsOptions,
+        string registryName,
+        string? ownedAcr)
+    {
         bool loggedIn = false;
 
         RegistryCredentials? credentials = null;
@@ -32,16 +87,6 @@ internal static class RegistryCredentialsProviderExtensions
             loggedIn = true;
         }
 
-        try
-        {
-            await action();
-        }
-        finally
-        {
-            if (loggedIn && !string.IsNullOrEmpty(registryName))
-            {
-                DockerHelper.Logout(registryName, isDryRun);
-            }
-        }
+        return loggedIn;
     }
 }

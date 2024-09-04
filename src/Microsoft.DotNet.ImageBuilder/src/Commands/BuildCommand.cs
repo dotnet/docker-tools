@@ -91,36 +91,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
             }
 
-            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                Options.IsDryRun,
-                async () =>
+            await ExecuteWithCredentialsAsync(async () =>
                 {
                     await PullBaseImagesAsync();
-
                     await BuildImagesAsync();
-                },
-                Options.CredentialsOptions,
-                registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
+                });
 
-            if (_processedTags.Any() || _imageCacheService.HasAnyCachedPlatforms)
+            if (_processedTags.Count > 0 || _imageCacheService.HasAnyCachedPlatforms)
             {
                 // Log in again to refresh token as it may have expired from a long build
-                await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                    Options.IsDryRun,
-                    async () =>
+                await ExecuteWithCredentialsAsync(async () =>
                     {
                         PushImages();
                         await PublishImageInfoAsync();
-                    },
-                    Options.CredentialsOptions,
-                    registryName: Manifest.Registry,
-                    ownedAcr: Options.RegistryOverride);
+                    });
             }
             
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
+        }
+
+        private async Task ExecuteWithCredentialsAsync(Func<Task> action)
+        {
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+                isDryRun: Options.IsDryRun,
+                action: action,
+                credentialsOptions: Options.CredentialsOptions,
+                registryName: Manifest.Registry,
+                ownedAcr: Options.RegistryOverride);
         }
 
         private void WriteBuiltImagesToOutputVar()

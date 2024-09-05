@@ -46,24 +46,16 @@ internal static class RegistryCredentialsProviderExtensions
         string registryName,
         string? ownedAcr)
     {
-        bool loggedIn = await LogInToRegistry(
-            credsProvider,
+        await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
+            () => {
+                action();
+                return Task.CompletedTask;
+            },
             credentialsOptions,
             registryName,
-            ownedAcr);
-
-        try
-        {
-            action();
-        }
-        finally
-        {
-            if (loggedIn && !string.IsNullOrEmpty(registryName))
-            {
-                DockerHelper.Logout(registryName, isDryRun);
-            }
-        }
+            ownedAcr
+        );
     }
 
     private static async Task<bool> LogInToRegistry(

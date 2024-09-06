@@ -145,21 +145,9 @@ public class ImageCacheService : IImageCacheService
             return true;
         }
 
-        string? currentSha;
-        if (!platform.IsInternalFromImage(platform.FinalStageFromImage))
-        {
-            currentSha = await imageDigestCache.GetManifestDigestShaAsync(
-                imageNameResolver.GetFromImagePullTag(platform.FinalStageFromImage), isDryRun);
-        }
-        else
-        {
-            string? currentBaseImageDigest = await imageDigestCache.GetLocalImageDigestAsync(
-                imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
-                isDryRun);
-            currentSha = currentBaseImageDigest is not null ?
-                DockerHelper.GetDigestSha(currentBaseImageDigest) :
-                null;
-        }
+        string? currentBaseImageDigest = await imageDigestCache.GetLocalImageDigestAsync(
+            imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
+            isDryRun);
 
         string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
             DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :

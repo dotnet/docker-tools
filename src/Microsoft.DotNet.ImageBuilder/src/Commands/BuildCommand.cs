@@ -91,37 +91,44 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
             }
 
-            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                Options.IsDryRun,
-                async () =>
-                {
-                    await PullBaseImagesAsync();
+            await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync);
+            await BuildImagesAsync();
 
-                    await BuildImagesAsync();
-                },
-                Options.CredentialsOptions,
-                registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
-
-            if (_processedTags.Any() || _imageCacheService.HasAnyCachedPlatforms)
+            if (_processedTags.Count > 0 || _imageCacheService.HasAnyCachedPlatforms)
             {
                 // Log in again to refresh token as it may have expired from a long build
-                await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
-                    Options.IsDryRun,
-                    async () =>
+                await ExecuteWithDockerCredentialsAsync(async () =>
                     {
                         PushImages();
                         await PublishImageInfoAsync();
-                    },
-                    Options.CredentialsOptions,
-                    registryName: Manifest.Registry,
-                    ownedAcr: Options.RegistryOverride);
+                    });
             }
             
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
         }
+
+        private async Task ExecuteWithDockerCredentialsAsync(Func<Task> action)
+        {
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+                isDryRun: Options.IsDryRun,
+                action: action,
+                credentialsOptions: Options.CredentialsOptions,
+                registryName: Manifest.Registry,
+                ownedAcr: Options.RegistryOverride);
+        }
+
+        private async Task ExecuteWithDockerCredentialsAsync(Action action)
+        {
+            await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+                isDryRun: Options.IsDryRun,
+                action: action,
+                credentialsOptions: Options.CredentialsOptions,
+                registryName: Manifest.Registry,
+                ownedAcr: Options.RegistryOverride);
+        }
+
 
         private void WriteBuiltImagesToOutputVar()
         {
@@ -522,9 +529,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Pull the image instead of building it
             if (pullImage)
             {
-                // Don't need to provide the platform because we're pulling by digest. No need to worry about multi-arch tags.
-                _dockerService.PullImage(copiedSourceDigest, null, Options.IsDryRun);
-                _sourceDigestCopyLocationMapping[sourceDigest] = copiedSourceDigest;
+                await ExecuteWithDockerCredentialsAsync(() =>
+                    {
+                        // Don't need to provide the platform because we're pulling by digest. No need to worry about multi-arch tags.
+                        _dockerService.PullImage(copiedSourceDigest, null, Options.IsDryRun);
+                        _sourceDigestCopyLocationMapping[sourceDigest] = copiedSourceDigest;
+                    });
             }
 
             // Tag the image as if it were locally built so that subsequent built images can reference it

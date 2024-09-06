@@ -49,7 +49,7 @@ internal static class ManifestServiceHelper
         foreach ((string image, string digest) in imageDigestResults)
         {
             manifestServiceMock
-                .Setup(o => o.GetImageDigestAsync(image, false))
+                .Setup(o => o.GetLocalImageDigestAsync(image, false))
                 .ReturnsAsync(digest);
         }
 

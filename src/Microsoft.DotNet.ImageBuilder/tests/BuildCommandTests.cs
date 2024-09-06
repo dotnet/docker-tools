@@ -1693,8 +1693,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(linuxBaseImageTag, false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(windowsBaseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(linuxBaseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(windowsBaseImageTag, false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{linuxTag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{windowsTag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{linuxTag}", false), Times.Once);
@@ -2010,7 +2010,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps3Repo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(It.IsAny<string>(), false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(It.IsAny<string>(), false));
 
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));
@@ -2237,9 +2237,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
 
@@ -2481,9 +2481,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Times.Once);
             }
 
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDepsRepo}:{tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{runtimeDeps2Repo}:{tag}", false));
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
 
@@ -2679,7 +2679,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
 
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
 
@@ -2944,7 +2944,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{newTag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(baseImageTag, false), Times.Once);
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false), Times.Once);
 
             dockerServiceMock.Verify(o => o.PullImage($"{overridePrefix}{runtimeDepsLinuxDigest}", null, false), Times.Once);
             dockerServiceMock.Verify(o => o.PullImage(baseImageTag, "linux/amd64", false), Times.Once);
@@ -3028,20 +3028,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceMock = CreateManifestServiceMock([], []);
 
                 manifestServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false))
+                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false))
                     .ReturnsAsync(callCount => callCount > 2 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}@{RuntimeDepsDigest}" : null);
 
                 manifestServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false))
+                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false))
                     .ReturnsAsync(callCount => callCount > 1 ? $"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}@{RuntimeDigest}" : null);
 
                 manifestServiceMock
-                    .Setup(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false))
+                    .Setup(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false))
                     .ReturnsAsync(callCount => callCount > 0 ? $"{RegistryOverride}/{RepoPrefix}{AspnetRepo}@{AspnetDigest}" : null);
             }
 
             manifestServiceMock
-                .Setup(o => o.GetImageDigestAsync(mirrorBaseTag, false))
+                .Setup(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false))
                 .ReturnsAsync(mirrorBaseImageDigest);
 
             DateTime createdDate = DateTime.Now.ToUniversalTime();
@@ -3334,12 +3334,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
-                manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
+                manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeDepsRepo}:{Tag}", false));
+                manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{RuntimeRepo}:{Tag}", false));
             }
 
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync(mirrorBaseTag, false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(mirrorBaseTag, false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{RepoPrefix}{AspnetRepo}:{Tag}", false));
 
             if (!hasCachedImage)
             {
@@ -3458,8 +3458,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>()));
 
             dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", "linux/amd64", false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{RuntimeRepo}:{Tag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{Tag}", false));
@@ -3602,8 +3602,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<bool>()));
 
             dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
-            manifestServiceMock.Verify(o => o.GetImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
             dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));

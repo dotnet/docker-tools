@@ -13,8 +13,8 @@ public class ManifestService(IInnerManifestService inner) : IManifestService
 {
     private readonly IInnerManifestService _inner = inner;
 
-    public Task<string?> GetImageDigestAsync(string image, bool isDryRun) =>
-        _inner.GetImageDigestAsync(image, isDryRun);
+    public Task<string?> GetLocalImageDigestAsync(string image, bool isDryRun) =>
+        _inner.GetLocalImageDigestAsync(image, isDryRun);
 
     public Task<IEnumerable<string>> GetImageLayersAsync(string tag, bool isDryRun) =>
         _inner.GetImageLayersAsync(tag, isDryRun);

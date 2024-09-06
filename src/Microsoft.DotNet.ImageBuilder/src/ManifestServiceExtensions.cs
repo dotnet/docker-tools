@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Reverse();
         }
 
-        public static async Task<string?> GetImageDigestAsync(
+        public static async Task<string?> GetLocalImageDigestAsync(
             this IInnerManifestService manifestService, string image, bool isDryRun)
         {
             IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);

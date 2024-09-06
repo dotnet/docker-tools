@@ -12,6 +12,6 @@ public interface IManifestService
 {
     Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun);
     Task<IEnumerable<string>> GetImageLayersAsync(string tag, bool isDryRun);
-    Task<string?> GetImageDigestAsync(string image, bool isDryRun);
+    Task<string?> GetLocalImageDigestAsync(string image, bool isDryRun);
     Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun);
 }

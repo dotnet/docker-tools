@@ -145,7 +145,7 @@ public class ImageCacheService : IImageCacheService
             return true;
         }
 
-        string? currentBaseImageDigest = await imageDigestCache.GetImageDigestAsync(
+        string? currentBaseImageDigest = await imageDigestCache.GetLocalImageDigestAsync(
             imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
             isDryRun);
 

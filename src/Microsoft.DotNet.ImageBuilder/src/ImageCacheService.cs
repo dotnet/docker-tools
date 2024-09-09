@@ -145,20 +145,30 @@ public class ImageCacheService : IImageCacheService
             return true;
         }
 
-        string? currentBaseImageDigest = await imageDigestCache.GetLocalImageDigestAsync(
-            imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
-            isDryRun);
+        string? currentSha;
+        if (!platform.IsInternalFromImage(platform.FinalStageFromImage))
+        {
+            currentSha = await imageDigestCache.GetManifestDigestShaAsync(
+                imageNameResolver.GetFromImagePullTag(platform.FinalStageFromImage), isDryRun);
+        }
+        else
+        {
+            string? currentBaseImageDigest = await imageDigestCache.GetLocalImageDigestAsync(
+                imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
+                isDryRun);
+            currentSha = currentBaseImageDigest is not null ?
+                DockerHelper.GetDigestSha(currentBaseImageDigest) :
+                null;
+        }
 
-        string? baseSha = srcPlatformData.BaseImageDigest is not null ?
+        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
             DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
             null;
-        string? currentSha = currentBaseImageDigest is not null ?
-            DockerHelper.GetDigestSha(currentBaseImageDigest) :
-            null;
-        bool baseImageDigestMatches = baseSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
+        
+        bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
-        _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
-        _loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
+        _loggerService.WriteMessage($"Image info's base image digest SHA: {imageInfoSha}");
+        _loggerService.WriteMessage($"Latest base image digest SHA: {currentSha}");
         _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
         return baseImageDigestMatches;
     }

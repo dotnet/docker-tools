@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string Subscription { get; set; }
         public string ResourceGroup { get; set; }
         public string RegistryName { get; set; }
+        public string[] ImagesToExclude { get; set; } = [];
     }
 
     public class CleanAcrImagesOptionsBuilder : CliOptionsBuilder
@@ -57,7 +58,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateOption("action", nameof(CleanAcrImagesOptions.Action),
                             EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction), DefaultCleanAcrImagesAction),
                         CreateOption("age", nameof(CleanAcrImagesOptions.Age),
-                            $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})", DefaultAge)
+                            $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})", DefaultAge),
+                        CreateMultiOption<string>("exclude", nameof(CleanAcrImagesOptions.ImagesToExclude),
+                            $"Name of image to exclude from cleaning (does not apply when using the '{nameof(CleanAcrImagesAction.Delete)}' action)"),
                     });
     }
 

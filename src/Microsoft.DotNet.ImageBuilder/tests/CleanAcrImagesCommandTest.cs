@@ -4,17 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
-using Azure;
 using Azure.Containers.ContainerRegistry;
-using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
 
@@ -355,6 +350,72 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(repo1Digest3), Times.Never);
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
+        }
+
+        [Fact]
+        public async Task ExcludedImages()
+        {
+            const string subscription = "my sub";
+            const string resourceGroup = "group";
+
+            const string publicRepo1Name = "public/dotnet/nightly/repo1";
+            const string publicRepo2Name = "public/dotnet/nightly/repo2";
+
+            const string repo1Digest1 = "sha256:repo1digest1";
+            const string repo1Digest2 = "sha256:repo1digest2";
+            const string repo2Digest3 = "sha256:repo1digest3";
+
+            ContainerRepository publicRepo1 = CreateContainerRepository(
+                publicRepo1Name,
+                CreateContainerRepositoryProperties(),
+                [
+                    CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60))),
+                    CreateArtifactManifestProperties(repositoryName: publicRepo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag"])
+                ]);
+
+            ContainerRepository publicRepo2 = CreateContainerRepository(
+                publicRepo2Name,
+                CreateContainerRepositoryProperties(),
+                [
+                    CreateArtifactManifestProperties(repositoryName: publicRepo2Name, digest: repo2Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag2"]),
+                ]);
+
+            Mock<IContainerRegistryClient> acrClientMock = CreateContainerRegistryClientMock([publicRepo1, publicRepo2]);
+
+            IContainerRegistryClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+
+            Mock<IContainerRegistryContentClient> repo1ContentClient = CreateContainerRegistryContentClientMock(publicRepo1Name);
+            Mock<IContainerRegistryContentClient> repo2ContentClient = CreateContainerRegistryContentClientMock(publicRepo2Name);
+
+            IContainerRegistryContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(
+                AcrName, [repo1ContentClient, repo2ContentClient]);
+
+            CleanAcrImagesCommand command = new(
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+            command.Options.Subscription = subscription;
+            command.Options.ResourceGroup = resourceGroup;
+            command.Options.RegistryName = AcrName;
+            command.Options.RepoName = "public/dotnet/nightly/*";
+            command.Options.Action = CleanAcrImagesAction.PruneAll;
+            command.Options.Age = 30;
+            command.Options.ImagesToExclude =
+                [
+                    $"{publicRepo1Name}@{repo1Digest2}",
+                    $"{publicRepo2Name}:tag2"
+                ];
+
+            await command.ExecuteAsync();
+
+            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest1));
+            repo1ContentClient.Verify(o => o.DeleteManifestAsync(repo1Digest2), Times.Never);
+            repo1ContentClient.Verify(o => o.RepositoryName);
+            repo1ContentClient.VerifyNoOtherCalls();
+
+            repo2ContentClient.Verify(o => o.DeleteManifestAsync(repo2Digest3), Times.Never);
+            repo2ContentClient.Verify(o => o.RepositoryName);
+            repo2ContentClient.VerifyNoOtherCalls();
+
+            acrClientMock.Verify(o => o.DeleteRepositoryAsync(It.IsAny<string>()), Times.Never);
         }
 
         private Mock<ILifecycleMetadataService> CreateLifecycleMetadataServiceMock(int age, string repoName)

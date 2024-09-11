@@ -51,6 +51,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
+            if (Options.ImagesToExclude.Any() && Options.Action == CleanAcrImagesAction.Delete)
+            {
+                throw new NotSupportedException("Excluding images is not supported when deleting repositories");
+            }
+
             Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
             _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");

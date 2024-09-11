@@ -13,7 +13,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public GitOptions GitOptions { get; set; } = new GitOptions();
 
+        /// <summary>
+        /// This will contain the content of the image info file from GitHub before it has been updated
+        /// by this command. It represents the full breadth of images supported by the repo. This differs
+        /// from the input image info file which only contains the images that were produced by the
+        /// current build.
+        /// </summary>
         public string? OriginalImageInfoOutputPath { get; set; }
+
+        /// <summary>
+        /// This will contain the content of the image info file from GitHub after it has been updated
+        /// by this command. It represents the full breadth of images supported by the repo. This differs
+        /// from the input image info file which only contains the images that were produced by the
+        /// current build.
+        /// </summary>
         public string? UpdatedImageInfoOutputPath { get; set; }
     }
 

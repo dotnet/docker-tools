@@ -51,6 +51,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
+            if (Options.ImagesToExclude.Any() && Options.Action == CleanAcrImagesAction.Delete)
+            {
+                throw new NotSupportedException("Excluding images is not supported when deleting repositories");
+            }
+
             Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
             _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
@@ -168,25 +173,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            ConcurrentBag<ArtifactManifestProperties> expiredTestImages = [];
+            ConcurrentBag<ArtifactManifestProperties> expiredImages = [];
             await Parallel.ForEachAsync(allManifests, async (manifest, token) =>
             {
-                if (await canDeleteManifest(manifest))
+                if (!IsExcludedManifest(manifest) && await canDeleteManifest(manifest))
                 {
-                    expiredTestImages.Add(manifest);
+                    expiredImages.Add(manifest);
                 }
             });
 
             // If all the images in the repo are expired, delete the whole repo instead of 
             // deleting each individual image.
-            if (expiredTestImages.Count == manifestCount)
+            if (expiredImages.Count == manifestCount)
             {
                 await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
                 return;
             }
 
-            await DeleteManifestsAsync(acrContentClient, deletedImages, repository, expiredTestImages);
+            await DeleteManifestsAsync(acrContentClient, deletedImages, repository, expiredImages);
         }
+
+        private bool IsExcludedManifest(ArtifactManifestProperties manifest) =>
+            Options.ImagesToExclude
+                .Select(exclusion => ImageName.Parse(exclusion))
+                .Any(exclusion => exclusion.Repo == manifest.RepositoryName && (exclusion.Digest == manifest.Digest || manifest.Tags.Contains(exclusion.Tag)));
 
         private async Task DeleteManifestsAsync(
             IContainerRegistryContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, IEnumerable<ArtifactManifestProperties> manifests)

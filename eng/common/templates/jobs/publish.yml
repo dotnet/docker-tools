@@ -28,8 +28,6 @@ jobs:
     value: $(artifactsPath)/imageInfo
   - name: sourceBuildIdOutputDir
     value: $(Build.ArtifactStagingDirectory)/sourceBuildId
-  - name: imageInfoRawContentUrl
-    value: https://raw.githubusercontent.com/$(gitHubVersionsRepoInfo.org)/$(gitHubVersionsRepoInfo.repo)/$(gitHubVersionsRepoInfo.branch)/$(gitHubImageInfoVersionsPath)
   - ${{ parameters.customPublishVariables }}
   steps:
   - template: /eng/common/templates/steps/retain-build.yml@self

@@ -98,7 +98,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Directory.CreateDirectory(imageInfoDir);
             }
 
+            if (Options.OriginalImageInfoOutputPath is not null)
+            {
+                File.Copy(imageInfoPath, Options.OriginalImageInfoOutputPath, overwrite: true);
+            }
+
             File.WriteAllText(imageInfoPath, imageInfoContent);
+
+            if (Options.UpdatedImageInfoOutputPath is not null)
+            {
+                File.Copy(imageInfoPath, Options.UpdatedImageInfoOutputPath, overwrite: true);
+            }
 
             _gitService.Stage(repo, imageInfoPath);
             Signature sig = new Signature(Options.GitOptions.Username, Options.GitOptions.Email, DateTimeOffset.Now);

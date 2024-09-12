@@ -416,6 +416,128 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
+        [Fact]
+        public async Task WriteImageInfoContentToOutputPaths()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        [
+                            CreatePlatform(repo1Image1DockerfilePath, ["newtag"])
+                        ],
+                        productVersion: "1.0"))
+            );
+
+            ImageArtifactDetails srcImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath, simpleTags: [ "newtag" ])
+                                },
+                                ProductVersion = "1.0"
+                            }
+                        }
+                    }
+                }
+            };
+
+            string file = Path.Combine(tempFolderContext.Path, "image-info.json");
+            File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
+
+            ImageArtifactDetails targetImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath, simpleTags: [ "oldtag" ])
+                                },
+                                ProductVersion = "1.0"
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath, simpleTags: [ "tag" ])
+                                },
+                                ProductVersion = "2.0"
+                            }
+                        }
+                    }
+                }
+            };
+
+            GitOptions gitOptions = new()
+            {
+                AuthToken = "token",
+                Repo = "myrepo",
+                Branch = "testBranch",
+                Path = "imageinfo.json",
+                Email = "test@contoso.com",
+                Username = "test"
+            };
+
+            AzdoOptions azdoOptions = new()
+            {
+                AccessToken = "azdo-token",
+                AzdoBranch = "testBranch",
+                AzdoRepo = "testRepo",
+                Organization = "azdo-org",
+                Project = "azdo-project",
+                AzdoPath = "imageinfo.json"
+            };
+
+            Mock<IRepository> repositoryMock = GetRepositoryMock();
+            Mock<IGitService> gitServiceMock = GetGitServiceMock(repositoryMock.Object, gitOptions.Path, targetImageArtifactDetails);
+
+            string actualImageArtifactDetailsContents = null;
+            gitServiceMock
+                .Setup(o => o.Stage(It.IsAny<IRepository>(), It.IsAny<string>()))
+                .Callback((IRepository repo, string path) =>
+                {
+                    actualImageArtifactDetailsContents = File.ReadAllText(path);
+                });
+
+            PublishImageInfoCommand command = new(gitServiceMock.Object, Mock.Of<ILoggerService>());
+            command.Options.ImageInfoPath = file;
+            command.Options.GitOptions = gitOptions;
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.OriginalImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "original-image-info.json");
+            command.Options.UpdatedImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "updated-image-info.json");
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            string actualOriginalImageInfoContent = File.ReadAllText(command.Options.OriginalImageInfoOutputPath);
+            string actualUpdatedImageInfoContent = File.ReadAllText(command.Options.UpdatedImageInfoOutputPath);
+
+            string expectedOriginalImageInfoContent = JsonHelper.SerializeObject(targetImageArtifactDetails);
+            string expectedUpdatedImageInfoContent = JsonHelper.SerializeObject(srcImageArtifactDetails);
+
+            Assert.Equal(expectedOriginalImageInfoContent, actualOriginalImageInfoContent);
+            Assert.Equal(expectedUpdatedImageInfoContent, actualUpdatedImageInfoContent.Trim());
+        }
+
         private static void VerifyMocks(Mock<IRepository> repositoryMock)
         {
             Mock<Network> networkMock = Mock.Get(repositoryMock.Object.Network);
@@ -476,7 +598,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Callback((string sourceUrl, string workdirPath, CloneOptions cloneOptions) =>
                 {
                     Directory.CreateDirectory(workdirPath);
-                    File.WriteAllText(Path.Combine(workdirPath, imageInfoPath), JsonConvert.SerializeObject(imageArtifactDetails));
+                    File.WriteAllText(Path.Combine(workdirPath, imageInfoPath), JsonHelper.SerializeObject(imageArtifactDetails));
                     foldersToDelete.Add(workdirPath);
                 })
                 .Returns(repository);

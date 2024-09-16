@@ -71,10 +71,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     $"The '{imageInfoPathIdentifier}' file has been updated with the following content:" +
                         Environment.NewLine + imageInfoContent + Environment.NewLine);
 
-                if (!Options.IsDryRun)
-                {
-                    UpdateGitRepos(imageInfoContent, repoPath, repo);
-                }
+                UpdateGitRepos(imageInfoContent, repoPath, repo);
             }
             finally
             {
@@ -108,6 +105,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (Options.UpdatedImageInfoOutputPath is not null)
             {
                 File.Copy(imageInfoPath, Options.UpdatedImageInfoOutputPath, overwrite: true);
+            }
+
+            if (Options.IsDryRun)
+            {
+                return;
             }
 
             _gitService.Stage(repo, imageInfoPath);

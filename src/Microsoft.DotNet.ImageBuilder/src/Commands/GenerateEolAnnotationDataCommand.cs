@@ -94,9 +94,14 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
                 .Select(name => Options.RegistryOptions.RepoPrefix + name);
             IEnumerable<(string Digest, string? Tag)> registryDigests = await GetAllImageDigestsFromRegistry(repoNames);
 
-            IEnumerable<string> supportedDigests = newImageArtifactDetails
-                .ApplyRegistryOverride(Options.RegistryOptions)
-                .GetAllDigests();
+            if (!Options.IsDryRun)
+            {
+                // Only apply the registry override if it's not a dry run. This is because it relies on the input image info file
+                // to have populated digest values but that won't be the case in a dry run.
+                newImageArtifactDetails = newImageArtifactDetails.ApplyRegistryOverride(Options.RegistryOptions);
+            }
+
+            IEnumerable<string> supportedDigests = newImageArtifactDetails.GetAllDigests();
 
             IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryDigests, supportedDigests);
 

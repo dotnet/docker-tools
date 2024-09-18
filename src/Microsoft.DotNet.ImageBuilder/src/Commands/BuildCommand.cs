@@ -103,7 +103,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         await PublishImageInfoAsync();
                     });
             }
-            
 
             WriteBuildSummary();
             WriteBuiltImagesToOutputVar();
@@ -128,7 +127,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 registryName: Manifest.Registry,
                 ownedAcr: Options.RegistryOverride);
         }
-
 
         private void WriteBuiltImagesToOutputVar()
         {
@@ -337,15 +335,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         if (!Options.NoCache)
                         {
                             ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
-                                srcImageData, platformData, _imageDigestCache, _imageNameResolver.Value, Options.SourceRepoUrl, Options.IsDryRun);
-                            if (cacheResult.State == ImageCacheState.Cached || cacheResult.State == ImageCacheState.CachedWithMissingTags)
+                                srcImageData,
+                                platformData,
+                                _imageDigestCache,
+                                _imageNameResolver.Value,
+                                sourceRepoUrl: Options.SourceRepoUrl,
+                                isDryRun: Options.IsDryRun);
+
+                            if (cacheResult.State == ImageCacheState.Cached
+                                || cacheResult.State == ImageCacheState.CachedWithMissingTags)
                             {
                                 isCachedImage = true;
-                                if (platformData is not null)
-                                {
-                                    CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
-                                    platformData.IsUnchanged = cacheResult.State == ImageCacheState.Cached;
-                                }
+
+                                CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
+                                platformData.IsUnchanged = cacheResult.State == ImageCacheState.Cached;
 
                                 await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest);
                             }
@@ -356,17 +359,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             _processedTags.AddRange(allTagInfos);
 
                             BuildImage(platform, allTags);
+                            _builtPlatforms.Add(platformData);
 
-                            if (platformData is not null)
-                            {
-                                _builtPlatforms.Add(platformData);
-                            }
-
-                            if (platformData is not null && platform.FinalStageFromImage is not null)
+                            if (Options.IsPushEnabled && platform.FinalStageFromImage is not null)
                             {
                                 platformData.BaseImageDigest =
-                                   await _imageDigestCache.GetImageDigestAsync(
-                                       _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+                                await _imageDigestCache.GetImageDigestAsync(
+                                    _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
                             }
                         }
                     }

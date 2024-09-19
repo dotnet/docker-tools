@@ -363,9 +363,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                             if (Options.IsPushEnabled && platform.FinalStageFromImage is not null)
                             {
-                                platformData.BaseImageDigest =
-                                await _imageDigestCache.GetImageDigestAsync(
-                                    _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+                                platformData.BaseImageDigest = await _imageDigestCache.GetImageDigestAsync(
+                                    tag: _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage),
+                                    Options.IsDryRun);
                             }
                         }
                     }

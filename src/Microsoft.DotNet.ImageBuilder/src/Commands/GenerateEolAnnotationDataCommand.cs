@@ -75,6 +75,13 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private async Task<List<EolDigestData>> GetDigestsToAnnotate()
     {
         Dictionary<string, DateOnly> productEolDates = await _dotNetReleasesService.GetProductEolDatesFromReleasesJson();
+
+        if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
+        {
+            _loggerService.WriteMessage("No digests to annotate because no image info files were provided.");
+            return [];
+        }
+
         ImageArtifactDetails oldImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(Options.OldImageInfoPath);
         ImageArtifactDetails newImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(Options.NewImageInfoPath);
 
@@ -109,6 +116,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             ConcurrentBag<EolDigestData> digetsToAnnotate = [];
             Parallel.ForEach(unsupportedDigests, digest =>
             {
+                _loggerService.WriteMessage($"Checking digest for existing annotation: {digest.Digest}");
                 if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun, out _))
                 {
                     digetsToAnnotate.Add(digest);
@@ -150,6 +158,8 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
     private async Task<IEnumerable<(string Digest, string? Tag)>> GetAllImageDigestsFromRegistry(IEnumerable<string> repoNames)
     {
+        _loggerService.WriteMessage("Querying registry for all image digests...");
+
         if (Options.IsDryRun)
         {
             return [];

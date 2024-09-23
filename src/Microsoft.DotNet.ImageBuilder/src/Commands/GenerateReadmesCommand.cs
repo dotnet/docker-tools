@@ -43,24 +43,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // Generate Product Family Readme
             await GenerateArtifactsAsync(
-                new ManifestInfo[] { Manifest },
-                (manifest) => manifest.ReadmeTemplatePath,
-                (manifest) => manifest.ReadmePath,
-                (manifest, templatePath, indent) => GetTemplateState(manifest, templatePath, indent),
-                nameof(Readme.TemplatePath),
-                ArtifactName);
+                contexts: new ManifestInfo[] { Manifest },
+                getTemplatePath: (manifest) => manifest.ReadmeTemplatePath,
+                getArtifactPath: (manifest) => manifest.ReadmePath,
+                getState: (manifest, templatePath, indent) => GetTemplateState(manifest, templatePath, indent),
+                templatePropertyName: nameof(Readme.TemplatePath),
+                artifactName: ArtifactName);
 
             // Generate Repo Readmes
             await GenerateArtifactsAsync(
-                Manifest.FilteredRepos
+                contexts: Manifest.FilteredRepos
                     .Select(repo => repo.Readmes.Select(readme => (repo, readme)))
                     .SelectMany(repoReadme => repoReadme),
-                ((RepoInfo repo, Readme readme) context) => context.readme.TemplatePath,
-                ((RepoInfo repo, Readme readme) context) => context.readme.Path,
-                ((RepoInfo repo, Readme readme) context, string templatePath, string indent) => GetTemplateState(context.repo, templatePath, indent),
-                nameof(Readme.TemplatePath),
-                ArtifactName,
-                (string readmeContent, (RepoInfo repo, Readme readme) context) => UpdateTagsListing(readmeContent, context.repo));
+                getTemplatePath: ((RepoInfo repo, Readme readme) context) => context.readme.TemplatePath,
+                getArtifactPath: ((RepoInfo repo, Readme readme) context) => context.readme.Path,
+                getState: ((RepoInfo repo, Readme readme) context, string templatePath, string indent) =>
+                    GetTemplateState(context.repo, templatePath, indent),
+                templatePropertyName: nameof(Readme.TemplatePath),
+                artifactName: ArtifactName,
+                postProcess: (string readmeContent, (RepoInfo repo, Readme readme) context) =>
+                    UpdateTagsListing(readmeContent, context.repo, useRelativeLinks: context.readme.UseRelativeLinks));
 
             ValidateArtifacts();
         }
@@ -108,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return lastSlashIndex == -1 ? repo.Name : repo.Name.Substring(lastSlashIndex + 1);
         }
 
-        private string UpdateTagsListing(string readme, RepoInfo repo)
+        private string UpdateTagsListing(string readme, RepoInfo repo, bool useRelativeLinks = false)
         {
             if (repo.Model.McrTagsMetadataTemplate == null)
             {
@@ -116,7 +118,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string tagsMetadata = McrTagsMetadataGenerator.Execute(
-                _gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch);
+                _gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch, useRelativeLinks);
             string tagsListing = GenerateTagsListing(repo.Name, tagsMetadata);
             return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
         }

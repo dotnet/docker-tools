@@ -23,16 +23,24 @@ namespace Microsoft.DotNet.ImageBuilder
         private string _sourceRepoUrl;
         private string _sourceBranch;
         private List<ImageDocumentationInfo> _imageDocInfos;
+        private bool _useRelativeLinks;
 
-        public static string Execute(IGitService gitService, ManifestInfo manifest, RepoInfo repo, string sourceRepoUrl, string sourceBranch = null)
+        public static string Execute(
+            IGitService gitService,
+            ManifestInfo manifest,
+            RepoInfo repo,
+            string sourceRepoUrl,
+            string sourceBranch = null,
+            bool useRelativeLinks = false)
         {
-            McrTagsMetadataGenerator generator = new McrTagsMetadataGenerator()
+            McrTagsMetadataGenerator generator = new()
             {
                 _gitService = gitService,
                 _manifest = manifest,
                 _repo = repo,
                 _sourceRepoUrl = sourceRepoUrl,
                 _sourceBranch = sourceBranch,
+                _useRelativeLinks = useRelativeLinks,
             };
 
             return generator.Execute();
@@ -92,7 +100,9 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ImageDocumentationInfo firstInfo = infos.First();
 
-            string dockerfilePath = _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch);
+            string dockerfilePath = _useRelativeLinks
+                ? firstInfo.Platform.DockerfilePathRelativeToManifest
+                : _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch);
 
             // Generate a list of tags that have this sorting convention:
             // <concrete tags>, <shared tags of platforms that have no concrete tags>, <shared tags of platforms that have concrete tags>
@@ -148,7 +158,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     {
                         _imageDocInfos.Remove(docInfo);
                     }
-                    
+
                     variableValue = GetTagGroupYaml(matchingDocInfos);
                 }
             }

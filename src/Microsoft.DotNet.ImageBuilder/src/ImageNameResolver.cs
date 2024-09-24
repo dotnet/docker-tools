@@ -7,7 +7,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class ImageNameResolver
+public abstract class ImageNameResolver
 {
     private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
     private readonly ManifestInfo _manifest;
@@ -64,6 +64,8 @@ public class ImageNameResolver
         }
     }
 
+    public abstract string GetFinalStageImageNameForDigestQuery(PlatformInfo platform);
+
     /// <summary>
     /// Gets the tag to use for the image of a FROM instruction.
     /// </summary>
@@ -95,4 +97,35 @@ public class ImageNameResolver
     private bool IsInInternallyOwnedRegistry(string imageTag) =>
         DockerHelper.IsInRegistry(imageTag, _manifest.Registry) ||
         DockerHelper.IsInRegistry(imageTag, _manifest.Model.Registry);
+}
+
+public class ImageNameResolverForBuild : ImageNameResolver
+{
+    public ImageNameResolverForBuild(
+        BaseImageOverrideOptions baseImageOverrideOptions,
+        ManifestInfo manifest,
+        string? repoPrefix,
+        string? sourceRepoPrefix)
+        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
+    {
+    }
+
+    public override string GetFinalStageImageNameForDigestQuery(PlatformInfo platform)
+    {
+        // For build scenarios, we want to query for the digest of the image according to whether it's internal or not.
+        // An internal image will already be formatted with the registry and staging repo prefix, so we can use it as is
+        // (e.g. dotnetdocker.azurecr.io/dotnet-staging/12345/sdk:8.0). An external image should be formatted to target
+        // the mirror location in the ACR (e.g. dotnetdocker.azurecr.io/mirror/amd64/alpine:3.20).
+
+        string imageName = platform.FinalStageFromImage ?? string.Empty;
+
+        if (platform.IsInternalFromImage(imageName))
+        {
+            return imageName;
+        }
+        else
+        {
+            return GetFromImagePullTag(imageName);
+        }
+    }
 }

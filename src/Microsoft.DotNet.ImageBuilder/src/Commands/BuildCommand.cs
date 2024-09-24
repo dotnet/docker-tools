@@ -70,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _imageDigestCache = new ImageDigestCache(_manifestService);
 
             _imageNameResolver = new Lazy<ImageNameResolver>(() =>
-                new ImageNameResolver(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
+                new ImageNameResolverForBuild(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
         }
 
         protected override string Description => "Builds Dockerfiles";
@@ -342,13 +342,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 sourceRepoUrl: Options.SourceRepoUrl,
                                 isDryRun: Options.IsDryRun);
 
-                            if (cacheResult.State == ImageCacheState.Cached
-                                || cacheResult.State == ImageCacheState.CachedWithMissingTags)
+                            if (cacheResult.State.HasFlag(ImageCacheState.Cached))
                             {
                                 isCachedImage = true;
 
                                 CopyPlatformDataFromCachedPlatform(platformData, cacheResult.Platform!);
-                                platformData.IsUnchanged = cacheResult.State == ImageCacheState.Cached;
+                                platformData.IsUnchanged = cacheResult.State != ImageCacheState.CachedWithMissingTags;
 
                                 await OnCacheHitAsync(repoInfo, allTagInfos, pullImage: cacheResult.IsNewCacheHit, cacheResult.Platform!.Digest);
                             }

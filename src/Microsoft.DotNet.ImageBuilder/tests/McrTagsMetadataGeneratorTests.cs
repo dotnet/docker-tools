@@ -22,16 +22,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class McrTagsMetadataGeneratorTests
     {
         /// <summary>
-        /// Verfies the Dockerfile path is set correctly 
+        /// Verfies the Dockerfile path is set correctly
         /// </summary>
         /// <remarks>
         /// If the source branch isn't set, the commit SHA of the Dockerfile will be used in the URL
         /// See https://github.com/dotnet/dotnet-docker/issues/1436
         /// </remarks>
         [Theory]
-        [InlineData("branch")]
-        [InlineData(null)]
-        public void DockerfileUrl(string sourceRepoBranch)
+        [InlineData(true, "branch")]
+        [InlineData(true, null)]
+        [InlineData(false, "branch")]
+        [InlineData(false, null)]
+        public static void DockerfileLink(bool generateGitHubLinks, string sourceRepoBranch)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -42,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             // Create Dockerfile
             string DockerfileDir = $"1.0/{RepoName}/os";
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, DockerfileDir));
-            string dockerfileRelativePath = Path.Combine(DockerfileDir, "Dockerfile");
+            string dockerfileRelativePath = DockerfileDir + '/' + "Dockerfile";
             string dockerfileFullPath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
             File.WriteAllText(dockerfileFullPath, "FROM base:tag");
 
@@ -89,7 +91,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Execute generator
             string result = McrTagsMetadataGenerator.Execute(
-                gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, sourceRepoBranch);
+                manifestInfo,
+                repo,
+                generateGitHubLinks: generateGitHubLinks,
+                gitService: gitServiceMock.Object,
+                sourceRepoUrl: SourceRepoUrl,
+                sourceBranch: sourceRepoBranch);
 
             TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -97,8 +104,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Deserialize<TagsMetadata>(result);
 
             string branchOrSha = sourceRepoBranch ?? DockerfileSha;
-            Assert.Equal($"{SourceRepoUrl}/blob/{branchOrSha}/{DockerfileDir}/Dockerfile",
-                tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
+
+            string expectedUrl = generateGitHubLinks
+                ? $"{SourceRepoUrl}/blob/{branchOrSha}/{DockerfileDir}/Dockerfile"
+                : dockerfileRelativePath;
+
+            Assert.Equal(expectedUrl, tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
         }
 
         /// <summary>
@@ -183,7 +194,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Execute generator
             string result = McrTagsMetadataGenerator.Execute(
-                gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, SourceBranch);
+                manifestInfo,
+                repo,
+                generateGitHubLinks: true,
+                gitService: gitServiceMock.Object,
+                sourceRepoUrl: SourceRepoUrl,
+                sourceBranch: SourceBranch);
 
             TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
@@ -279,7 +295,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Execute generator
             string result = McrTagsMetadataGenerator.Execute(
-                gitServiceMock.Object, manifestInfo, repo, SourceRepoUrl, SourceBranch);
+                manifestInfo,
+                repo,
+                generateGitHubLinks: true,
+                gitService: gitServiceMock.Object,
+                sourceRepoUrl: SourceRepoUrl,
+                sourceBranch: SourceBranch);
+
 
             TagsMetadata tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)

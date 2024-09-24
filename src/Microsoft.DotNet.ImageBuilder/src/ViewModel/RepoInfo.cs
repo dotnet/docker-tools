@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         /// </summary>
         public IEnumerable<ImageInfo> FilteredImages { get; private set; }
 
-        public string FullModelName { get; private set; }
+        public string FullModelName { get; private set; }    
         public string Id { get; private set; }
         public string QualifiedName { get; private set; }
         public string Name => Model.Name;
@@ -51,14 +51,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             registry = string.IsNullOrEmpty(registry) ? string.Empty : $"{registry}/";
             repoInfo.QualifiedName = registry + options.RepoPrefix + model.Name;
 
-            repoInfo.Readmes = model.Readmes?
-                .Select(readme =>
-                    readme with
-                    {
-                        Path = Path.Combine(baseDirectory, readme.Path),
-                        TemplatePath = Path.Combine(baseDirectory, readme.TemplatePath)
-                    })
-                ?? [];
+            repoInfo.Readmes = model.Readmes
+                ?.Select(readme => new Readme(Path.Combine(baseDirectory, readme.Path), Path.Combine(baseDirectory, readme.TemplatePath)))
+                ?? Enumerable.Empty<Readme>();
 
             repoInfo.AllImages = model.Images
                 .Select(image => ImageInfo.Create(image, repoInfo.FullModelName, repoInfo.QualifiedName, manifestFilter, variableHelper, baseDirectory))

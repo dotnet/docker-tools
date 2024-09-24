@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 templatePropertyName: nameof(Readme.TemplatePath),
                 artifactName: ArtifactName,
                 postProcess: (string readmeContent, (RepoInfo repo, Readme readme) context) =>
-                    UpdateTagsListing(readmeContent, context.repo, useRelativeLinks: context.readme.UseRelativeLinks));
+                    UpdateTagsListing(readmeContent, context.repo));
 
             ValidateArtifacts();
         }
@@ -110,15 +110,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return lastSlashIndex == -1 ? repo.Name : repo.Name.Substring(lastSlashIndex + 1);
         }
 
-        private string UpdateTagsListing(string readme, RepoInfo repo, bool useRelativeLinks = false)
+        private string UpdateTagsListing(string readme, RepoInfo repo)
         {
             if (repo.Model.McrTagsMetadataTemplate == null)
             {
                 return readme;
             }
 
-            string tagsMetadata = McrTagsMetadataGenerator.Execute(
-                _gitService, Manifest, repo, Options.SourceRepoUrl, Options.SourceRepoBranch, useRelativeLinks);
+            string tagsMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo);
             string tagsListing = GenerateTagsListing(repo.Name, tagsMetadata);
             return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
         }

@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 #nullable enable
-public record Readme
+public class Readme
 {
     [Description(
             "Relative path to the GitHub readme Markdown file associated with the " +
@@ -22,20 +22,14 @@ public record Readme
             )]
     public string? TemplatePath { get; set; }
 
-    [Description(
-            "Whether to use relative links to refer to Dockerfiles"
-            )]
-    public bool UseRelativeLinks { get; set; } = false;
-
     public Readme()
     {
     }
 
-    public Readme(string path, string? templatePath, bool useRelativeLinks = false)
+    public Readme(string path, string? templatePath)
     {
         Path = path;
         TemplatePath = templatePath;
-        UseRelativeLinks = useRelativeLinks;
     }
 }
 #nullable disable

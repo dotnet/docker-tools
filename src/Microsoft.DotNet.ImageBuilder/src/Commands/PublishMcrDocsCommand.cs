@@ -167,7 +167,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (string readmePath in readmePaths)
             {
                 string fullPath = Path.Combine(Manifest.Directory, readmePath);
-                
+
                 string updatedReadMe = File.ReadAllText(fullPath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
                 readmes.Add(GetGitObject(productRepo, fullPath, updatedReadMe));
@@ -182,7 +182,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
-                string updatedMetadata = McrTagsMetadataGenerator.Execute(_gitService, Manifest, repo, Options.SourceRepoUrl);
+                string updatedMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, generateGitHubLinks: true, _gitService, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
                 metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
             }

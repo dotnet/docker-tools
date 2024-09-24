@@ -23,24 +23,30 @@ namespace Microsoft.DotNet.ImageBuilder
         private string _sourceRepoUrl;
         private string _sourceBranch;
         private List<ImageDocumentationInfo> _imageDocInfos;
-        private bool _useRelativeLinks;
+        private bool _generateGitHubLinks;
 
         public static string Execute(
-            IGitService gitService,
             ManifestInfo manifest,
             RepoInfo repo,
-            string sourceRepoUrl,
-            string sourceBranch = null,
-            bool useRelativeLinks = false)
+            bool generateGitHubLinks = false,
+            IGitService gitService = null,
+            string sourceRepoUrl = null,
+            string sourceBranch = null)
         {
+            // Generating GitHub permalinks requires gitService
+            if (generateGitHubLinks == true)
+            {
+                ArgumentNullException.ThrowIfNull(gitService);
+            }
+
             McrTagsMetadataGenerator generator = new()
             {
-                _gitService = gitService,
                 _manifest = manifest,
                 _repo = repo,
+                _generateGitHubLinks = generateGitHubLinks,
+                _gitService = gitService,
                 _sourceRepoUrl = sourceRepoUrl,
                 _sourceBranch = sourceBranch,
-                _useRelativeLinks = useRelativeLinks,
             };
 
             return generator.Execute();
@@ -100,9 +106,9 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             ImageDocumentationInfo firstInfo = infos.First();
 
-            string dockerfilePath = _useRelativeLinks
-                ? firstInfo.Platform.DockerfilePathRelativeToManifest
-                : _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch);
+            string dockerfilePath = _generateGitHubLinks
+                ? _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch)
+                : firstInfo.Platform.DockerfilePathRelativeToManifest;
 
             // Generate a list of tags that have this sorting convention:
             // <concrete tags>, <shared tags of platforms that have no concrete tags>, <shared tags of platforms that have concrete tags>

@@ -101,7 +101,6 @@ public class ImageCacheService : IImageCacheService
 
     private static bool CachedPlatformHasAllTagsPublished(PlatformData srcPlatformData) =>
         (srcPlatformData.PlatformInfo?.Tags ?? [])
-            .Where(tag => !tag.Model.IsLocal)
             .Select(tag => tag.Name)
             .AreEquivalent(srcPlatformData.SimpleTags);
 

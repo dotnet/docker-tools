@@ -19,13 +19,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
         public string DocumentationGroup { get; set; }
 
         [Description(
-            "Indicates whether the image should only be tagged with this tag on the " +
-            "local machine that builds the image. The published image will not include " +
-            "this tag. This is only used for advanced build dependency scenarios."
-            )]
-        public bool IsLocal { get; set; }
-
-        [Description(
             "Indicates how this tag should not be documented in the readme file. Regardless of the " +
             "setting, the image will still be tagged with this tag and will still be published. " +
             "This is useful when deprecating a tag that still needs to be kept up-to-date " +

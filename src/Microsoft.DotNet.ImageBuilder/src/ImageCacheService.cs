@@ -31,6 +31,8 @@ public class ImageCacheService : IImageCacheService
     private readonly ILoggerService _loggerService;
     private readonly IGitService _gitService;
 
+    private readonly object _cachedPlatformsLock = new();
+
     // Metadata about Dockerfiles whose images have been retrieved from the cache
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
 
@@ -41,7 +43,16 @@ public class ImageCacheService : IImageCacheService
         _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
     }
 
-    public bool HasAnyCachedPlatforms => _cachedPlatforms.Any();
+    public bool HasAnyCachedPlatforms
+    {
+        get
+        {
+            lock (_cachedPlatformsLock)
+            {
+                return _cachedPlatforms.Any();
+            }
+        }
+    }
 
     public async Task<ImageCacheResult> CheckForCachedImageAsync(
         ImageData? srcImageData,
@@ -62,15 +73,18 @@ public class ImageCacheService : IImageCacheService
         }
 
         string cacheKey = GetBuildCacheKey(platformData.PlatformInfo);
-        if (_cachedPlatforms.TryGetValue(cacheKey, out PlatformData? cachedPlatform))
+        lock (_cachedPlatformsLock)
         {
-            cacheState = ImageCacheState.Cached;
-            if (srcPlatformData is null ||
-                !CachedPlatformHasAllTagsPublished(srcPlatformData))
+            if (_cachedPlatforms.TryGetValue(cacheKey, out PlatformData? cachedPlatform))
             {
-                cacheState = ImageCacheState.CachedWithMissingTags;
+                cacheState = ImageCacheState.Cached;
+                if (srcPlatformData is null ||
+                    !CachedPlatformHasAllTagsPublished(srcPlatformData))
+                {
+                    cacheState = ImageCacheState.CachedWithMissingTags;
+                }
+                return new ImageCacheResult(cacheState, isNewCacheHit, cachedPlatform);
             }
-            return new ImageCacheResult(cacheState, isNewCacheHit, cachedPlatform);
         }
 
         // If this Dockerfile has been built and published before
@@ -92,7 +106,10 @@ public class ImageCacheService : IImageCacheService
                 {
                     cacheState = ImageCacheState.CachedWithMissingTags;
                 }
-                _cachedPlatforms[cacheKey] = srcPlatformData;
+                lock (_cachedPlatformsLock)
+                {
+                    _cachedPlatforms[cacheKey] = srcPlatformData;
+                }
             }
         }
 
@@ -144,20 +161,27 @@ public class ImageCacheService : IImageCacheService
             return true;
         }
 
-        string? currentBaseImageDigest = await imageDigestCache.GetImageDigestAsync(
-            imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage),
-            isDryRun);
+        string queryImage = imageNameResolver.GetFinalStageImageNameForDigestQuery(platform);
 
-        string? baseSha = srcPlatformData.BaseImageDigest is not null ?
+        string? currentSha;
+        try
+        {
+            currentSha = await imageDigestCache.GetManifestDigestShaAsync(queryImage, isDryRun);
+        }
+        // Handle cases where the image is not found in the registry yet
+        catch (Exception)
+        {
+            currentSha = null;
+        }
+
+        string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
             DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
             null;
-        string? currentSha = currentBaseImageDigest is not null ?
-            DockerHelper.GetDigestSha(currentBaseImageDigest) :
-            null;
-        bool baseImageDigestMatches = baseSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
+        
+        bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
-        _loggerService.WriteMessage($"Image info's base image digest: {srcPlatformData.BaseImageDigest}");
-        _loggerService.WriteMessage($"Latest base image digest: {currentBaseImageDigest}");
+        _loggerService.WriteMessage($"Image info's base image digest SHA: {imageInfoSha}");
+        _loggerService.WriteMessage($"Latest base image digest SHA: {currentSha}");
         _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
         return baseImageDigestMatches;
     }
@@ -183,22 +207,23 @@ public class ImageCacheService : IImageCacheService
         string.Join('-', platform.BuildArgs.Select(kvp => $"{kvp.Key}={kvp.Value}").ToArray());
 }
 
+[Flags]
 public enum ImageCacheState
 {
     /// <summary>
     /// Indicates a previously built image was not found in the registry.
     /// </summary>
-    NotCached,
+    NotCached = 0,
 
     /// <summary>
     /// Indicates a previously built image was found in the registry.
     /// </summary>
-    Cached,
+    Cached = 1,
 
     /// <summary>
     /// Indicates a previously built image was found in the registry but is missing new tags.
     /// </summary>
-    CachedWithMissingTags
+    CachedWithMissingTags = Cached | 2
 }
 
 public record ImageCacheResult(ImageCacheState State, bool IsNewCacheHit, PlatformData? Platform);

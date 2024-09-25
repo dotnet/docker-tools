@@ -171,7 +171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (PlatformData platform in processedPlatforms)
             {
-                IEnumerable<TagInfo> pushTags = GetPushTags(platform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>());
+                IEnumerable<TagInfo> pushTags = platform.PlatformInfo?.Tags ?? [];
 
                 foreach (TagInfo tag in pushTags)
                 {
@@ -200,7 +200,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             foreach (PlatformData platform in platformsWithNoPushTags)
             {
                 PlatformData matchingBuiltPlatform = processedPlatforms.First(builtPlatform =>
-                    GetPushTags(builtPlatform.PlatformInfo?.Tags ?? Enumerable.Empty<TagInfo>()).Any() &&
+                    (builtPlatform.PlatformInfo?.Tags ?? []).Any() &&
                     platform.ImageInfo is not null &&
                     platform.PlatformInfo is not null &&
                     builtPlatform.ImageInfo is not null &&
@@ -394,7 +394,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private PlatformData CreatePlatformData(ImageInfo image, PlatformInfo platform)
         {
             PlatformData platformData = PlatformData.FromPlatformInfo(platform, image);
-            platformData.SimpleTags = GetPushTags(platform.Tags)
+            platformData.SimpleTags = platform.Tags
                 .Select(tag => tag.Name)
                 .OrderBy(name => name)
                 .ToList();
@@ -571,7 +571,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 throw new InvalidDataException("Resource group option must be set.");
             }
 
-            string[] destTags = GetPushTags(allTags)
+            string[] destTags = allTags
                                 .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
                                 .ToArray();
             string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
@@ -671,15 +671,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 _loggerService.WriteHeading("PUSHING BUILT IMAGES");
 
-                foreach (TagInfo tag in GetPushTags(_processedTags))
+                foreach (TagInfo tag in _processedTags)
                 {
                     _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
                 }
             }
         }
-
-        private static IEnumerable<TagInfo> GetPushTags(IEnumerable<TagInfo> buildTags) =>
-            buildTags.Where(tag => !tag.Model.IsLocal);
 
         private bool UpdateDockerfileFromCommands(PlatformInfo platform, out string dockerfilePath)
         {

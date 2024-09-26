@@ -6,19 +6,19 @@ ImageBuilder is a tool used to build and publish Docker images.
 
 All commands are relative to the root of the repo.
 
-### Linux
+### Build a single-platform image
 
-#### Build a single-platform Linux image
+Using Linux or Windows, simply run the build script:
 
 ```pwsh
-# Build the image
-docker build -t "${REPO}:${TAG}-linux-amd64" -f .\src\Microsoft.DotNet.ImageBuilder\Dockerfile.linux .\src\Microsoft.DotNet.ImageBuilder\
+# From src/Microsoft.DotNet.ImageBuilder
+pwsh -f build.ps1
 
-# Push the tag
-docker push "${REPO}:${TAG}-linux-amd64"
+# From the root of the repo
+pwsh -wd ./src/Microsoft.DotNet.ImageBuilder/ -f src/Microsoft.DotNet.ImageBuilder/build.ps1
 ```
 
-#### Build a multi-arch Linux image
+### Build a multi-arch Linux image
 
 If you don't need to test on Windows, this is the easiest way to create a multi-arch manifest list.
 
@@ -27,22 +27,9 @@ If you don't need to test on Windows, this is the easiest way to create a multi-
 docker buildx build [--push,--load] --platform [linux/amd64,linux/arm64] -t "${REPO}:${TAG}" -f .\src\Microsoft.DotNet.ImageBuilder\Dockerfile.linux .\src\Microsoft.DotNet.ImageBuilder\
 ```
 
-### Windows
-
-```pwsh
-# Choose one of each
-$WINDOWS_BASE=["servercore:ltsc2016-amd64","nanoserver:1809-amd64","nanoserver:ltsc2022-amd64"]
-$WINDOWS_SDK=["nanoserver-1809","nanoserver-ltsc2022"]
-
-docker build --build-arg WINDOWS_BASE="${WINDOWS_BASE}" --build-arg WINDOWS_SDK="${WINDOWS_SDK}" -t "${REPO}:${TAG}-windows-amd64" -f .\src\Microsoft.DotNet.ImageBuilder\Dockerfile.windows .\src\Microsoft.DotNet.ImageBuilder\
-
-# Push the tag
-docker push "${REPO}:${TAG}-windows-amd64"
-```
-
 ### Create a multi-platform manifest list
 
-First, build Linux and Windows images separately.
+First, build and push Linux and Windows images separately.
 Gather the specific digests for the images you want to put into one manifest list.
 Then, create the manifest list and push it:
 

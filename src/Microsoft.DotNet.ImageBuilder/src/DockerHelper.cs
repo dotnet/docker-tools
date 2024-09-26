@@ -71,31 +71,19 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void Login(RegistryCredentials credentials, string server, bool isDryRun)
         {
-            Version? clientVersion = GetClientVersion();
-            if (clientVersion >= new Version(17, 7))
+            ProcessStartInfo startInfo = new(
+                "docker", $"login -u {credentials.Username} --password-stdin {server}")
             {
-                ProcessStartInfo startInfo = new(
-                    "docker", $"login -u {credentials.Username} --password-stdin {server}")
+                RedirectStandardInput = true
+            };
+            ExecuteHelper.ExecuteWithRetry(
+                startInfo,
+                process =>
                 {
-                    RedirectStandardInput = true
-                };
-                ExecuteHelper.ExecuteWithRetry(
-                    startInfo,
-                    process =>
-                    {
-                        process.StandardInput.WriteLine(credentials.Password);
-                        process.StandardInput.Close();
-                    },
-                    isDryRun);
-            }
-            else
-            {
-                ExecuteHelper.ExecuteWithRetry(
-                    "docker",
-                    $"login -u {credentials.Username} -p {credentials.Password} {server}",
-                    isDryRun,
-                    executeMessageOverride: $"login -u {credentials.Username} -p ******** {server}");
-            }
+                    process.StandardInput.WriteLine(credentials.Password);
+                    process.StandardInput.Close();
+                },
+                isDryRun);
         }
 
         public static void Logout(string server, bool isDryRun) =>
@@ -218,20 +206,6 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return os;
-        }
-
-        private static Version? GetClientVersion()
-        {
-            // Docker version string format - <major>.<minor>.<patch>-[ce,ee]
-            string versionString = ExecuteCommandWithFormat("version", ".Client.Version", "Failed to retrieve Docker version");
-
-            if (versionString.Contains('-'))
-            {
-                // Trim off the '-ce' or '-ee' suffix
-                versionString = versionString.Substring(0, versionString.IndexOf('-'));
-            }
-
-            return Version.TryParse(versionString, out Version? version) ? version : null;
         }
 
         private static bool ResourceExists(ManagementType type, string filterArg, bool isDryRun)

@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source.Substring(1);
 
-        public static string TrimEnd(this string source, string trimString)
+        public static string TrimEndString(this string source, string trimString)
         {
             if (string.IsNullOrEmpty(trimString))
             {
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetLineEndingFormat(this string value) => value.Contains("\r\n") ? "\r\n" : "\n";
 
-        public static string TrimStart(this string source, string trimString)
+        public static string TrimStartString(this string source, string trimString)
         {
             if (string.IsNullOrEmpty(trimString))
             {

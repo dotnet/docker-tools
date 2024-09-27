@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public static PlatformInfo Create(Platform model, string fullRepoModelName, string repoName, VariableHelper variableHelper, string baseDirectory) =>
             new(
                 model,
-                model.OsVersion.TrimEnd("-slim"),
+                model.OsVersion.TrimEndString("-slim"),
                 fullRepoModelName,
                 repoName,
                 variableHelper,
@@ -267,7 +267,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             if (version.StartsWith("ltsc"))
             {
-                return $"{windowsName} {version.TrimStart("ltsc")}";
+                return $"{windowsName} {version.TrimStartString("ltsc")}";
             }
             else
             {

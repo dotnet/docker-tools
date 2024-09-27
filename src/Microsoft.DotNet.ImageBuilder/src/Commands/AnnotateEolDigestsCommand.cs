@@ -147,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     // Reference is a fully-qualified digest name. We want to remove the registry and repo prefix from the name to reflect the repo-qualified
                     // name that exists in MAR.
-                    string refDigest = existingAnnotationManifest.Reference.TrimStart($"{Options.AcrName}/{Options.RepoPrefix}");
+                    string refDigest = existingAnnotationManifest.Reference.TrimStartString($"{Options.AcrName}/{Options.RepoPrefix}");
                     _existingAnnotationDigests.Add(refDigest);
                 }
             }

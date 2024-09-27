@@ -167,7 +167,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string TrimRegistry(string tag) => TrimRegistry(tag, GetRegistry(tag));
 
-        public static string TrimRegistry(string tag, string? registry) => tag.TrimStart($"{registry}/");
+        public static string TrimRegistry(string tag, string? registry) => tag.TrimStartString($"{registry}/");
 
         public static bool IsInRegistry(string tag, string registry) => registry is not null && tag.StartsWith(registry);
 

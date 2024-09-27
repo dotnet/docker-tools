@@ -108,7 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             // Kusto ingest API does not handle an empty line, therefore the last line must be trimmed.
-            return (imageInfo.ToString().TrimEnd(Environment.NewLine), layerInfo.ToString().TrimEnd(Environment.NewLine));
+            return (imageInfo.ToString().TrimEndString(Environment.NewLine), layerInfo.ToString().TrimEndString(Environment.NewLine));
         }
 
         private static string FormatImageCsv(string imageId, PlatformData platform, ImageData image, string repo, string timestamp) =>

@@ -91,7 +91,7 @@ public abstract class ImageNameResolver
 
     private string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
         IsInInternallyOwnedRegistry(imageTag) ?
-            DockerHelper.TrimRegistry(imageTag).TrimStart(_repoPrefix) :
+            DockerHelper.TrimRegistry(imageTag).TrimStartString(_repoPrefix) :
             imageTag;
 
     private bool IsInInternallyOwnedRegistry(string imageTag) =>

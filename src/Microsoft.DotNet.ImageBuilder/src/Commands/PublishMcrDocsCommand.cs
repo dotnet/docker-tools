@@ -145,7 +145,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private string GetProductRepo()
         {
             string firstRepoName = Manifest.AllRepos.First().QualifiedName
-                .TrimStart($"{Manifest.Registry}/");
+                .TrimStartString($"{Manifest.Registry}/");
             return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
         }
 

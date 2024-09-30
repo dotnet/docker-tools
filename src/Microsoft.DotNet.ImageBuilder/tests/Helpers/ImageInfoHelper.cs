@@ -47,11 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             IEnumerable<string> archs,
             IEnumerable<string> versions)
         {
-            IEnumerable<ImageData> imageDatas = 
+            IEnumerable<ImageData> imageDatas =
                 from version in versions
                 from os in oses
                 select CreateImage(registry, repoName, version, os, archs);
-            
+
             return new RepoData
             {
                 Repo = repoName,
@@ -90,7 +90,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string arch)
         {
             return CreatePlatform(
-                dockerfile: string.Join('/', [repoName, productVersion, os, arch, "Dockerfile"]),
+                // Workaround for ambiguous method call, will be fixed with https://github.com/dotnet/csharplang/issues/8374
+                dockerfile: string.Join('/', new string[] { repoName, productVersion, os, arch, "Dockerfile" }),
                 digest: GenerateFakeDigest(registry, repoName, productVersion, os, arch),
                 architecture: arch,
                 osVersion: os,

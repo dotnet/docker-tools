@@ -42,7 +42,7 @@ public class CopyImageService : ICopyImageService
         _armClient = new(() => new ArmClient(tokenCredentialProvider.GetCredential()));
     }
 
-    public static string GetBaseAcrName(string registry) => registry.TrimEnd(DockerHelper.AcrDomain);
+    public static string GetBaseAcrName(string registry) => registry.TrimEndString(DockerHelper.AcrDomain);
 
     public async Task ImportImageAsync(
         string subscription,

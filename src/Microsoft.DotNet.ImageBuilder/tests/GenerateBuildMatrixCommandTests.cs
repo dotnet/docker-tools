@@ -177,24 +177,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData(
             ImageCacheState.Cached,
             ImageCacheState.Cached,
-            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
-            null)]
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [InlineData(
             ImageCacheState.CachedWithMissingTags,
             ImageCacheState.Cached,
-            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
-            null)]
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [InlineData(
             ImageCacheState.Cached,
             ImageCacheState.NotCached,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
+        [InlineData(
+            ImageCacheState.NotCached,
+            ImageCacheState.NotCached,
+            "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
+            "--path 1.0/standalone/os/amd64/Dockerfile",
+            "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile",
+            "")] // Clear out the path filters to ensure all images are included
         public async Task FilterOutCachedImages(
             ImageCacheState runtime1CacheState,
             ImageCacheState sdk1CacheState,
             string leg1ExpectedPaths,
-            string leg2ExpectedPaths)
+            string? leg2ExpectedPaths = null,
+            string? leg3ExpectedPaths = null,
+            string inputPathFilters = "*runtime* *sdk*")
         {
+            const string StandaloneRelativeDir = "1.0/standalone/os/amd64";
+            string dockerfileStandalonePath;
+
             const string Runtime1RelativeDir = "1.0/runtime/os/amd64";
             string dockerfileRuntime1Path;
             const string Runtime2RelativeDir = "2.0/runtime/os/amd64";
@@ -208,6 +218,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
             Manifest manifest = CreateManifest(
+                CreateRepo("standalone",
+                    CreateImage(
+                        CreatePlatform(dockerfileStandalonePath = CreateDockerfile(StandaloneRelativeDir, tempFolderContext), ["1.0"]))),
                 CreateRepo("runtime",
                     CreateImage(
                         CreatePlatform(dockerfileRuntime1Path = CreateDockerfile(Runtime1RelativeDir, tempFolderContext, "base"), ["1.0"])),
@@ -221,6 +234,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             );
 
             Mock<IImageCacheService> imageCacheServiceMock = new();
+            SetCacheResult(imageCacheServiceMock, dockerfileStandalonePath, ImageCacheState.NotCached);
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime1Path, runtime1CacheState);
             SetCacheResult(imageCacheServiceMock, dockerfileSdk1Path, sdk1CacheState);
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
@@ -231,6 +245,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
             command.Options.TrimCachedImages = true;
+            command.Options.FilterOptions.Paths = inputPathFilters.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -238,6 +253,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Repos =
                 {
+                    new RepoData
+                    {
+                        Repo = "standalone",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreateSimplePlatformData(dockerfileStandalonePath)
+                                }
+                            }
+                        }
+                    },
                     new RepoData
                     {
                         Repo = "runtime",
@@ -298,6 +327,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 leg = matrixInfo.Legs.Skip(1).First();
                 imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal(leg2ExpectedPaths, imageBuilderPaths);
+            }
+
+            if (leg3ExpectedPaths is not null)
+            {
+                leg = matrixInfo.Legs.Skip(2).First();
+                imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
+                Assert.Equal(leg3ExpectedPaths, imageBuilderPaths);
             }
         }
 

@@ -407,9 +407,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
         {
+            IEnumerable<PlatformInfo> filteredPlatforms = Manifest.GetFilteredPlatforms().ToList();
+
             if (_imageArtifactDetails.Value is null)
             {
-                return Manifest.GetFilteredPlatforms();
+                return filteredPlatforms;
             }
 
             IEnumerable<(PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData)> platformMappings =
@@ -417,7 +419,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .SelectMany(repo => repo.Images)
                     .SelectMany(image =>
                         image.Platforms
-                            .Where(platform => !platform.IsUnchanged && platform.PlatformInfo is not null)
+                            .Where(platform =>
+                                !platform.IsUnchanged &&
+                                platform.PlatformInfo is not null &&
+                                filteredPlatforms.Contains(platform.PlatformInfo))
                             .Select(platform => (platform.PlatformInfo!, image, platform)));
 
             if (!Options.TrimCachedImages)

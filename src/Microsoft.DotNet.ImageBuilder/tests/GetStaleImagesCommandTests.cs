@@ -666,7 +666,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 context.Verify(expectedPathsBySubscription);
 
-                context.InnerManifestServiceMock
+                context.ManifestServiceMock
                     .Verify(o => o.GetManifestAsync(baseImage, false), Times.Once);
             }
         }
@@ -1672,7 +1672,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private const string VariableName = "my-var";
 
-            public Mock<IInnerManifestService> InnerManifestServiceMock { get; }
+            public Mock<IManifestService> ManifestServiceMock { get; }
 
             public Mock<IManifestServiceFactory> ManifestServiceFactoryMock { get; }
 
@@ -1713,7 +1713,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
                 this.octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
-                (ManifestServiceFactoryMock, InnerManifestServiceMock) = CreateManifestServiceMocks();
+                (ManifestServiceFactoryMock, ManifestServiceMock) = CreateManifestServiceMocks();
 
                 this.command = this.CreateCommand();
             }
@@ -1917,20 +1917,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Path.Combine(dockerfilePath, Path.GetFileName(dockerfileInfo.DockerfilePath)), dockerfileContents);
             }
 
-            private (Mock<IManifestServiceFactory>, Mock<IInnerManifestService>) CreateManifestServiceMocks()
+            private (Mock<IManifestServiceFactory>, Mock<IManifestService>) CreateManifestServiceMocks()
             {
-                Mock<IInnerManifestService> innerManifestServiceMock = new Mock<IInnerManifestService>();
-                innerManifestServiceMock
+                Mock<IManifestService> manifestServiceMock = new()
+                {
+                    CallBase = true
+                };
+
+                manifestServiceMock
                     .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
                     .ReturnsAsync((string image, bool isDryRun) =>
                         new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
 
-                IManifestService manifestService = new ManifestService(innerManifestServiceMock.Object);
-
                 Mock<IManifestServiceFactory> manifestServiceFactoryMock =
-                    ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestService);
+                    ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock.Object);
 
-                return (manifestServiceFactoryMock, innerManifestServiceMock);
+                return (manifestServiceFactoryMock, manifestServiceMock);
             }
 
             /// <summary>

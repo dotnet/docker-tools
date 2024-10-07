@@ -23,10 +23,6 @@ internal static class ManifestServiceHelper
                 CreateManifestServiceMock(localImageDigestResults, externalImageDigestResults, imageLayersResults));
 
     public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
-        Mock<IInnerManifestService> innerManifestService) =>
-            CreateManifestServiceFactoryMock(new ManifestService(innerManifestService.Object));
-
-    public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
         Mock<IManifestService> manifestServiceMock) =>
             CreateManifestServiceFactoryMock(manifestServiceMock.Object);
 

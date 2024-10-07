@@ -2,26 +2,39 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
+using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
-// Wrapper for ManifestService extension methods required for unit testing 
-public class ManifestService(IInnerManifestService inner) : IManifestService
+internal class ManifestService : IManifestService
 {
-    private readonly IInnerManifestService _inner = inner;
+    private readonly IRegistryContentClientFactory _registryClientFactory;
+    private readonly string? _ownedAcr;
+    private readonly IRegistryCredentialsHost? _credsHost;
 
-    public Task<string?> GetLocalImageDigestAsync(string image, bool isDryRun) =>
-        _inner.GetLocalImageDigestAsync(image, isDryRun);
+    public ManifestService(
+        IRegistryContentClientFactory registryClientFactory,
+        string? ownedAcr = null,
+        IRegistryCredentialsHost? credsHost = null)
+    {
+        _registryClientFactory = registryClientFactory;
+        _ownedAcr = ownedAcr;
+        _credsHost = credsHost;
+    }
 
-    public Task<IEnumerable<string>> GetImageLayersAsync(string tag, bool isDryRun) =>
-        _inner.GetImageLayersAsync(tag, isDryRun);
+    public Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun)
+    {
+        if (isDryRun)
+        {
+            return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
+        }
 
-    public Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun) =>
-        _inner.GetManifestAsync(image, isDryRun);
+        ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
-    public Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun) =>
-        _inner.GetManifestDigestShaAsync(tag, isDryRun);
+        IRegistryContentClient registryClient = _registryClientFactory.Create(
+            imageName.Registry!, imageName.Repo, _ownedAcr, _credsHost);
+        return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
+    }
 }

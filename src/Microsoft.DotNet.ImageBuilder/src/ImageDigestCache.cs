@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder
             LockHelper.DoubleCheckedLockLookupAsync(_localDigestCacheLock, _localDigestCache, tag,
                 () => _inner.Value.GetLocalImageDigestAsync(tag, isDryRun),
                 // Don't allow null digests to be cached. A locally built image won't have a digest until
-                // it is pushed so if its digest is retrieved before pushing, we don't want that 
+                // it is pushed so if its digest is retrieved before pushing, we don't want that
                 // null to be cached.
                 val => !string.IsNullOrEmpty(val));
 

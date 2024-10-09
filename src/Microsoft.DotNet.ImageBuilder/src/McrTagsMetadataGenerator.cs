@@ -57,20 +57,21 @@ namespace Microsoft.DotNet.ImageBuilder
             Logger.WriteHeading("GENERATING MCR TAGS METADATA");
 
             _imageDocInfos = _repo.FilteredImages
-                .SelectMany(image =>
-                    image.AllPlatforms.SelectMany(platform => ImageDocumentationInfo.Create(image, platform)))
-                .Where(info => info.DocumentedTags.Any())
+                .SelectMany(image => image.AllPlatforms
+                    .Select(platform => new ImageDocumentationInfo(image, platform)))
                 .ToList();
 
             StringBuilder yaml = new StringBuilder();
             yaml.AppendLine("repos:");
 
             string templatePath = Path.Combine(_manifest.Directory, _repo.Model.McrTagsMetadataTemplate);
-
             string template = File.ReadAllText(templatePath);
+
+            // GetVariableValue removes imageDocInfos from the list as they are used,
+            // leaving us with a list of imageDocInfos that were not used in metadata generation
             yaml.Append(_manifest.VariableHelper.SubstituteValues(template, GetVariableValue));
 
-            if (_imageDocInfos.Any())
+            if (_imageDocInfos.Count > 0)
             {
                 string missingTags = string.Join(
                     Environment.NewLine, _imageDocInfos.Select(info => info.FormattedDocumentedTags));
@@ -102,13 +103,9 @@ namespace Microsoft.DotNet.ImageBuilder
             return yaml.ToString();
         }
 
-        private string GetTagGroupYaml(IEnumerable<ImageDocumentationInfo> infos)
+        private string GetTagGroupYaml(IEnumerable<ImageDocumentationInfo> infos, string customSubTableTitle)
         {
             ImageDocumentationInfo firstInfo = infos.First();
-
-            string dockerfilePath = _generateGitHubLinks
-                ? _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch)
-                : firstInfo.Platform.DockerfilePathRelativeToManifest;
 
             // Generate a list of tags that have this sorting convention:
             // <concrete tags>, <shared tags of platforms that have no concrete tags>, <shared tags of platforms that have concrete tags>
@@ -132,89 +129,131 @@ namespace Microsoft.DotNet.ImageBuilder
             yaml.AppendLine($"    architecture: {firstInfo.Platform.Model.Architecture.GetDisplayName()}");
             yaml.AppendLine($"    os: {firstInfo.Platform.Model.OS.GetDockerName()}");
             yaml.AppendLine($"    osVersion: {firstInfo.Platform.GetOSDisplayName()}");
-            yaml.Append($"    dockerfile: {dockerfilePath}");
+            yaml.Append($"    dockerfile: {GetDockerfilePath(firstInfo)}");
+
+            if (!string.IsNullOrWhiteSpace(customSubTableTitle))
+            {
+                yaml.AppendLine();
+                yaml.Append($"    customSubTableTitle: {customSubTableTitle}");
+            }
 
             return yaml.ToString();
         }
 
+        private string GetDockerfilePath(ImageDocumentationInfo firstInfo) => _generateGitHubLinks
+            ? _gitService.GetDockerfileCommitUrl(firstInfo.Platform, _sourceRepoUrl, _sourceBranch)
+            : firstInfo.Platform.DockerfilePathRelativeToManifest;
+
         private string GetVariableValue(string variableType, string variableName)
         {
-            string variableValue = null;
-
             if (string.Equals(variableType, VariableHelper.McrTagsYmlRepoTypeId, StringComparison.Ordinal))
             {
                 RepoInfo repo = _manifest.GetFilteredRepoById(variableName);
-                variableValue = GetRepoYaml(repo);
+                return GetRepoYaml(repo);
             }
-            else if (string.Equals(variableType, VariableHelper.McrTagsYmlTagGroupTypeId, StringComparison.Ordinal))
+
+            if (string.Equals(variableType, VariableHelper.McrTagsYmlTagGroupTypeId, StringComparison.Ordinal))
             {
-                ImageDocumentationInfo info = _imageDocInfos
-                    .FirstOrDefault(idi => idi.DocumentedTags.Any(tag => tag.Name == variableName));
-                if (info != null)
+                // Custom tag tables can be specified by inserting a `|` delimiter. Specifying it inline with the
+                // variable ensures that it gets applied to all architectures of any multi-arch tags.
+                string[] variableParts = variableName.Split('|', 2);
+                string thisTag = variableParts[0];
+                string customSubTableTitle = variableParts.Length == 2 ? variableParts[1] : "";
+
+                // Check if we're dealing with a multi-arch linux tag by looking at all shared tags and seeing if any match.
+                List<ImageDocumentationInfo> matchingSharedTags = _imageDocInfos
+                    .Where(imageDocInfo => !imageDocInfo.Platform.IsWindows)
+                    .Where(imageDocInfo => imageDocInfo.SharedTags.Any(tagInfo => tagInfo.Name == thisTag))
+                    .ToList();
+
+                // If the tag is multi-arch, add a separate tag group yaml for each architecture that it refers to.
+                if (matchingSharedTags.Count > 0)
                 {
+                    var yaml = new StringBuilder();
+
                     // Find all other doc infos that match this one. This accounts for scenarios where a platform is
                     // duplicated in another image in order to associate it within a distinct set of shared tags.
-                    IEnumerable<ImageDocumentationInfo> matchingDocInfos = _imageDocInfos
-                        .Where(docInfo => docInfo.Platform != info.Platform &&
-                            PlatformInfo.AreMatchingPlatforms(docInfo.Image, docInfo.Platform, info.Image, info.Platform))
-                        .Prepend(info)
-                        .ToArray();
+                    matchingSharedTags = matchingSharedTags.SelectMany(GetMatchingDocInfos).ToList();
 
-                    foreach (ImageDocumentationInfo docInfo in matchingDocInfos)
+                    List<IGrouping<string, ImageDocumentationInfo>> platformGroups = matchingSharedTags
+                        .GroupBy(imageDocInfo => imageDocInfo.Platform.GetUniqueKey(imageDocInfo.Image))
+                        .ToList();
+
+                    platformGroups.ForEach(imageDocInfos =>
+                        yaml.AppendLine(GetTagGroupYaml(imageDocInfos, customSubTableTitle)));
+
+                    // Remove used imageDocInfos from the list
+                    foreach(ImageDocumentationInfo imageDocInfo in matchingSharedTags)
                     {
-                        _imageDocInfos.Remove(docInfo);
+                        _imageDocInfos.Remove(imageDocInfo);
                     }
 
-                    variableValue = GetTagGroupYaml(matchingDocInfos);
+                    return yaml.ToString().TrimEndString(Environment.NewLine);
                 }
+
+                // Otherwise, get the single platform tag that matches here
+                ImageDocumentationInfo info = _imageDocInfos
+                    .FirstOrDefault(idi => idi.PlatformTags.Any(tagInfo => tagInfo.Name == thisTag));
+
+                if (info is null)
+                {
+                    return null;
+                }
+
+                // Find all other doc infos that match this one. This accounts for scenarios where a platform is
+                // duplicated in another image in order to associate it within a distinct set of shared tags.
+                IEnumerable<ImageDocumentationInfo> matchingDocInfos = GetMatchingDocInfos(info);
+
+                foreach (ImageDocumentationInfo docInfo in matchingDocInfos)
+                {
+                    _imageDocInfos.Remove(docInfo);
+                }
+
+                return GetTagGroupYaml(matchingDocInfos, customSubTableTitle);
             }
 
-            return variableValue;
+            return null;
         }
 
+        private List<ImageDocumentationInfo> GetMatchingDocInfos(ImageDocumentationInfo info) =>
+            _imageDocInfos
+                .Where(docInfo => docInfo.Platform != info.Platform
+                    && PlatformInfo.AreMatchingPlatforms(docInfo.Image, docInfo.Platform, info.Image, info.Platform))
+                .Prepend(info)
+                .ToList();
+
+        #nullable enable
         private class ImageDocumentationInfo
         {
-            public IEnumerable<TagInfo> DocumentedTags { get; }
-            public string FormattedDocumentedTags { get; }
             public PlatformInfo Platform { get; }
             public ImageInfo Image { get; }
-            public IEnumerable<TagInfo> DocumentedPlatformTags { get; }
+            public IEnumerable<TagInfo> SharedTags { get; }
+            public IEnumerable<TagInfo> PlatformTags { get; }
+            public IEnumerable<TagInfo> AllTags { get; }
             public IEnumerable<TagInfo> DocumentedSharedTags { get; }
+            public IEnumerable<TagInfo> DocumentedPlatformTags { get; }
+            public IEnumerable<TagInfo> DocumentedTags { get; }
+            public string FormattedDocumentedTags { get; }
 
-            private ImageDocumentationInfo(ImageInfo image, PlatformInfo platform, string documentationGroup)
+            public ImageDocumentationInfo(ImageInfo image, PlatformInfo platform)
             {
                 Image = image;
                 Platform = platform;
-                DocumentedPlatformTags = GetDocumentedTags(Platform.Tags, documentationGroup).ToArray();
-                DocumentedSharedTags = GetDocumentedTags(image.SharedTags, documentationGroup, DocumentedPlatformTags);
-                DocumentedTags = DocumentedPlatformTags
-                    .Concat(DocumentedSharedTags)
-                    .ToArray();
-                FormattedDocumentedTags = string.Join(
-                    ", ",
-                    DocumentedTags
-                        .Select(tag => tag.Name)
-                        .ToArray());
+
+                SharedTags = Image.SharedTags;
+                PlatformTags = Platform.Tags;
+                AllTags = [..PlatformTags, ..SharedTags];
+
+                DocumentedSharedTags = FilterUndocumentedTags(SharedTags).ToList();
+                DocumentedPlatformTags = FilterUndocumentedTags(PlatformTags).ToList();
+                DocumentedTags = FilterUndocumentedTags(AllTags).ToList();
+
+                FormattedDocumentedTags = string.Join(", ", DocumentedTags.Select(tag => tag.Name));
             }
 
-            public static IEnumerable<ImageDocumentationInfo> Create(ImageInfo image, PlatformInfo platform)
-            {
-                IEnumerable<string> documentationGroups = image.SharedTags
-                    .Concat(platform.Tags)
-                    .Select(tag => tag.Model.DocumentationGroup)
-                    .Distinct();
-                foreach (string documentationGroup in documentationGroups)
-                {
-                    yield return new ImageDocumentationInfo(image, platform, documentationGroup);
-                }
-            }
-
-            private static IEnumerable<TagInfo> GetDocumentedTags(
-                IEnumerable<TagInfo> tagInfos, string documentationGroup, IEnumerable<TagInfo> documentedPlatformTags = null) =>
-                    tagInfos.Where(tag =>
-                        tag.Model.DocumentationGroup == documentationGroup &&
-                            (tag.Model.DocType == TagDocumentationType.Documented ||
-                                (tag.Model.DocType == TagDocumentationType.PlatformDocumented && documentedPlatformTags?.Any() == true)));
+            private static IEnumerable<TagInfo> FilterUndocumentedTags(IEnumerable<TagInfo> tags) =>
+                tags.Where(tag => tag.Model.DocType != TagDocumentationType.Undocumented);
         }
+        #nullable disable
     }
 }

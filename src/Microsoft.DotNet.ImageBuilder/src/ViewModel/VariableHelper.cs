@@ -18,8 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public const string RepoVariableTypeId = "Repo";
         private const string VariableGroupName = "variable";
 
-        private static readonly string s_tagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.|]+)\\)";
-        private static readonly string s_timeStamp = DateTime.UtcNow.ToString("yyyyMMddHHmmss");
+        private static readonly string s_tagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.| ]+)\\)";
 
         private Func<string, RepoInfo> GetRepoById { get; set; }
         private Manifest Manifest { get; set; }

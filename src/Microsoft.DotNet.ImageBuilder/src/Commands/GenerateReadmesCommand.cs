@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cottle;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -20,13 +21,19 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateReadmesCommand : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>
+    public partial class GenerateReadmesCommand : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>
     {
         private const string ArtifactName = "Readme";
         private const string LinuxTableHeader = "Tags | Dockerfile | OS Version\n-----------| -------------| -------------";
         private const string WindowsTableHeader = "Tag | Dockerfile\n---------| ---------------";
 
         private readonly IGitService _gitService;
+
+        private static Dictionary<string, int> ArchSortKeys = new() {
+            { "amd64", 0 },
+            { "arm64", 1 },
+            { "arm32", 2 }
+        };
 
         [ImportingConstructor]
         public GenerateReadmesCommand(IEnvironmentService environmentService, IGitService gitService) : base(environmentService)
@@ -36,6 +43,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
+
+        [GeneratedRegex(@"\d{4}")]
+        private static partial Regex WindowsVersionRegex { get; }
 
         public override async Task ExecuteAsync()
         {
@@ -153,10 +163,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static string GenerateTables(IEnumerable<TagGroup> tagGroups)
         {
             StringBuilder tables = new();
-            IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch = tagGroups
-                .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
-            bool isFirstTable = true;
 
+            IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch =
+                tagGroups
+                    // Linux should be listed before Windows, then sort by Windows versions
+                    .OrderByDescending(tg => tg.OS == "linux"
+                        ? int.MaxValue
+                        : GetWindowsVersionSortingKey(tg.OsVersion ?? string.Empty))
+                    // amd64 > arm64 > arm32
+                    .OrderBy(tg => ArchSortKeys.GetValueOrDefault(tg.Architecture, int.MaxValue))
+                    .OrderBy(tg => tg.OS == "linux" ? 0 : 1)
+                    .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
+
+            bool isFirstTable = true;
             foreach (IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup> groupedTagGroups in tagGroupsGroupedByOsArch)
             {
                 if (isFirstTable)
@@ -191,7 +210,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // Group tags by custom sub table title (e.g. Preview tags). Those tags without a custom sub table title will be listed first.
             List<IGrouping<string, TagGroup>> tagGroupGroupings = tagGroups
-                .GroupBy(tg => tg.CustomSubTableTitle)
+                .GroupBy(tagGroup => tagGroup.CustomSubTableTitle)
                 .OrderBy(group => group.Key)
                 .ToList();
 
@@ -234,6 +253,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return row;
+        }
+
+        private static int GetWindowsVersionSortingKey(string osVersion)
+        {
+            int version = int.Parse(WindowsVersionRegex.Match(osVersion).Value);
+            return version == 1809 ? 2019 : version;
         }
 
         private class TagMetadataManifest

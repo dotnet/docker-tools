@@ -29,14 +29,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ImageInfoTagOutput()
         {
-            Mock<IInnerManifestService> innerManifestServiceMock = new();
-            innerManifestServiceMock
+            Mock<IManifestService> manifestServiceMock = new()
+            {
+                CallBase = true
+            };
+
+            manifestServiceMock
                 .Setup(o => o.GetManifestAsync("repo1:sharedtag2", false))
                 .ReturnsAsync(new ManifestQueryResult("digest1", new JsonObject()));
-            innerManifestServiceMock
+            manifestServiceMock
                 .Setup(o => o.GetManifestAsync("repo2:sharedtag3", false))
                 .ReturnsAsync(new ManifestQueryResult("digest2", new JsonObject()));
-            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(innerManifestServiceMock);
+
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock =
+                CreateManifestServiceFactoryMock(manifestServiceMock);
 
             DateTime manifestCreatedDate = DateTime.UtcNow;
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
@@ -414,9 +420,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task SyndicatedTag()
         {
-            Mock<IInnerManifestService> innerManifestServiceMock = new();
-            Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(innerManifestServiceMock);
-            innerManifestServiceMock
+            Mock<IManifestService> manifestServiceMock = new()
+            {
+                CallBase = true
+            };
+
+            Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
+            manifestServiceMock
                 .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 

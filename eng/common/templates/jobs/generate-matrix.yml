@@ -53,15 +53,10 @@ jobs:
       $(commonMatrixAndBuildOptions)
       $(additionalGenerateBuildMatrixOptions)"
     displayName: Set GenerateBuildMatrix Command
-  - ${{ if eq(parameters.isTestStage, false) }}:
-    - template: /eng/common/templates/steps/run-imagebuilder.yml@self
-      parameters:
-        name: matrix
-        displayName: Generate ${{ parameters.matrixType }} Matrix
-        serviceConnection: $(build.serviceConnectionName)
-        internalProjectName: internal
-        args: $(generateBuildMatrixCommand)
-  - ${{ else }}:
-    - script: $(generateBuildMatrixCommand)
-      displayName: Generate ${{ parameters.matrixType }} Matrix
+  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+    parameters:
       name: matrix
+      displayName: Generate ${{ parameters.matrixType }} Matrix
+      serviceConnection: $(build.serviceConnectionName)
+      internalProjectName: internal
+      args: $(generateBuildMatrixCommand)

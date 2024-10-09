@@ -257,6 +257,12 @@ stages:
         isTestStage: true
         internalProjectName: ${{ parameters.internalProjectName }}
         publicProjectName: ${{ parameters.publicProjectName }}
+        commonInitStepsForMatrixAndBuild:
+        - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+          parameters:
+            noCache: ${{ parameters.noCache }}
+            internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
+            publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
     - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
       parameters:
         name: Linux_amd64

@@ -63,6 +63,16 @@ jobs:
       acr: $(acr.server)
       action: pruneDangling
       age: 0
+  - template: ../common/templates/steps/clean-acr-images.yml
+    parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
+      repo: "public/dotnet-buildtools/prereqs"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
+      action: pruneEol
+      age: 15
+      customArgs: --exclude $(excludedBuildToolsPrereqsImage)
   # Disabled due to https://github.com/dotnet/docker-tools/issues/797
   # - template: ../common/templates/steps/clean-acr-images.yml
   #   parameters:

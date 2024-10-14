@@ -198,13 +198,12 @@ ABC-123";
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
             _environmentServiceMock = new Mock<IEnvironmentService>();
             _environmentServiceMock
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object, gitServiceMock.Object);
+            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object);
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

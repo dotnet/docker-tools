@@ -25,6 +25,12 @@ namespace Microsoft.DotNet.ImageBuilder
         private List<ImageDocumentationInfo> _imageDocInfos;
         private bool _generateGitHubLinks;
 
+        private static readonly Dictionary<Architecture, int> s_archSortKeys = new() {
+            { Architecture.AMD64, 0 },
+            { Architecture.ARM64, 1 },
+            { Architecture.ARM, 2 }
+        };
+
         public static string Execute(
             ManifestInfo manifest,
             RepoInfo repo,
@@ -161,19 +167,25 @@ namespace Microsoft.DotNet.ImageBuilder
                 string customSubTableTitle = variableParts.Length == 2 ? variableParts[1] : "";
 
                 // Check if we're dealing with a multi-arch linux tag by looking at all shared tags and seeing if any match.
-                List<ImageDocumentationInfo> matchingSharedTags = _imageDocInfos
+                IEnumerable<ImageDocumentationInfo> matchingSharedTags = _imageDocInfos
                     .Where(imageDocInfo => !imageDocInfo.Platform.IsWindows)
-                    .Where(imageDocInfo => imageDocInfo.SharedTags.Any(tagInfo => tagInfo.Name == thisTag))
-                    .ToList();
+                    .Where(imageDocInfo => imageDocInfo.SharedTags.Any(tagInfo => tagInfo.Name == thisTag));
 
                 // If the tag is multi-arch, add a separate tag group yaml for each architecture that it refers to.
-                if (matchingSharedTags.Count > 0)
+                if (matchingSharedTags.Any())
                 {
                     var yaml = new StringBuilder();
 
                     // Find all other doc infos that match this one. This accounts for scenarios where a platform is
                     // duplicated in another image in order to associate it within a distinct set of shared tags.
-                    matchingSharedTags = matchingSharedTags.SelectMany(GetMatchingDocInfos).ToList();
+                    matchingSharedTags = matchingSharedTags.SelectMany(GetMatchingDocInfos);
+
+                    // Sort the matching shared tags by architecture since we can't specify the order in the template
+                    // when using multi-arch (shared) tags.
+                    matchingSharedTags = matchingSharedTags
+                        .Distinct()
+                        .OrderBy(docInfo =>
+                            s_archSortKeys.GetValueOrDefault(docInfo.Platform.Model.Architecture, int.MaxValue));
 
                     List<IGrouping<string, ImageDocumentationInfo>> platformGroups = matchingSharedTags
                         .GroupBy(imageDocInfo => imageDocInfo.Platform.GetUniqueKey(imageDocInfo.Image))

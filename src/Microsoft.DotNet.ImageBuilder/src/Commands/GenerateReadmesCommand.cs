@@ -29,12 +29,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private const string LinuxTableHeader = "Tags | Dockerfile | OS Version\n-----------| -------------| -------------";
         private const string WindowsTableHeader = "Tag | Dockerfile\n---------| ---------------";
 
-        private static Dictionary<string, int> ArchSortKeys = new() {
-            { "amd64", 0 },
-            { "arm64", 1 },
-            { "arm32", 2 }
-        };
-
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
 
@@ -159,15 +153,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             StringBuilder tables = new();
 
             IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch =
-                tagGroups
-                    // Linux should be listed before Windows, then sort by Windows versions
-                    .OrderByDescending(tg => tg.OS == "linux"
-                        ? int.MaxValue
-                        : GetWindowsVersionSortingKey(tg.OsVersion ?? string.Empty))
-                    // amd64 > arm64 > arm32
-                    .OrderBy(tg => ArchSortKeys.GetValueOrDefault(tg.Architecture, int.MaxValue))
-                    .OrderBy(tg => tg.OS == "linux" ? 0 : 1)
-                    .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
+                tagGroups.GroupBy(tagGroup =>
+                    (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
 
             bool isFirstTable = true;
             foreach (IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup> groupedTagGroups in tagGroupsGroupedByOsArch)

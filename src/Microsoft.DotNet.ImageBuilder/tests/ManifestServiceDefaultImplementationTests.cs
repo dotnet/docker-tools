@@ -12,7 +12,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class ManifestServiceExtensionsTests
+    public class ManifestServiceDefaultImplementationTests
     {
         private const string ManifestDigest = "manifest-digest";
         private const string ManifestListDigest = "manifest-list-digest";
@@ -29,7 +29,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     { "docker.io", new RegistryCredentials("user", "pwd") }
                 }
             };
-            Mock<IInnerManifestService> manifestService = new();
+
+            Mock<IManifestService> manifestService = new()
+            {
+                CallBase = true
+            };
+
             manifestService
                 .Setup(o => o.GetManifestAsync("tag1", false))
                 .ReturnsAsync(new ManifestQueryResult(ManifestDigest, new JsonObject()));
@@ -37,8 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.GetManifestAsync("tag2", false))
                 .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
 
-            string digestSha = await ManifestServiceExtensions.GetManifestDigestShaAsync(
-                manifestService.Object, tag, false);
+            string digestSha = await manifestService.Object.GetManifestDigestShaAsync(tag, false);
             Assert.Equal(expectedDigestSha, digestSha);
         }
     }

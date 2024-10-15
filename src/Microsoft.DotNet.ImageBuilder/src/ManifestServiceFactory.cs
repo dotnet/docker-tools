@@ -14,6 +14,6 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IRegistryContentClientFactory _registryClientFactory = registryClientFactory;
 
         public IManifestService Create(string? ownedAcr = null, IRegistryCredentialsHost? credsHost = null)
-            => new ManifestService(new InnerManifestService(_registryClientFactory, ownedAcr, credsHost));
+            => new ManifestService(_registryClientFactory, ownedAcr, credsHost);
     }
 }

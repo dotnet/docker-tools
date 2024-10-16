@@ -234,7 +234,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private List<ImageDocumentationInfo> GetMatchingDocInfos(ImageDocumentationInfo info) =>
             _imageDocInfos
-                .Where(docInfo => docInfo.Platform != info.Platform
+                .Where(docInfo => !ReferenceEquals(docInfo.Platform, info.Platform)
                     && PlatformInfo.AreMatchingPlatforms(docInfo.Image, docInfo.Platform, info.Image, info.Platform))
                 .Prepend(info)
                 .ToList();
@@ -261,15 +261,20 @@ namespace Microsoft.DotNet.ImageBuilder
                 PlatformTags = Platform.Tags;
                 AllTags = [..PlatformTags, ..SharedTags];
 
-                DocumentedSharedTags = FilterUndocumentedTags(SharedTags).ToList();
-                DocumentedPlatformTags = FilterUndocumentedTags(PlatformTags).ToList();
-                DocumentedTags = FilterUndocumentedTags(AllTags).ToList();
+                DocumentedPlatformTags = PlatformTags.Where(TagIsDocumented);
+                DocumentedSharedTags = SharedTags.Where(tag =>
+                    TagIsDocumented(tag) || TagIsPlatformDocumented(tag, DocumentedPlatformTags));
+                DocumentedTags = [..DocumentedPlatformTags, ..DocumentedSharedTags];
 
                 FormattedDocumentedTags = string.Join(", ", DocumentedTags.Select(tag => tag.Name));
             }
 
-            private static IEnumerable<TagInfo> FilterUndocumentedTags(IEnumerable<TagInfo> tags) =>
-                tags.Where(tag => tag.Model.DocType != TagDocumentationType.Undocumented);
+            private static bool TagIsDocumented(TagInfo tag) =>
+                tag.Model.DocType == TagDocumentationType.Documented;
+
+            private static bool TagIsPlatformDocumented(TagInfo tag, IEnumerable<TagInfo> documentedPlatformTags) =>
+                tag.Model.DocType == TagDocumentationType.PlatformDocumented
+                    && documentedPlatformTags?.Any() == true;
         }
         #nullable disable
     }

@@ -68,6 +68,6 @@ steps:
   - task: CopyFiles@2
     displayName: Copy TSA Config
     inputs:
-      SourceFolder: '$(Build.Repository.LocalPath)/$(Build.Repository.Name)'
+      SourceFolder: '$(Build.Repository.LocalPath)/$(buildRepoName)'
       Contents: '.config/tsaoptions.json'
       TargetFolder: '$(Build.SourcesDirectory)'

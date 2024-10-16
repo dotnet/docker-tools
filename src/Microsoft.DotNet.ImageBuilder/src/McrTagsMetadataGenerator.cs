@@ -77,10 +77,15 @@ namespace Microsoft.DotNet.ImageBuilder
             // leaving us with a list of imageDocInfos that were not used in metadata generation
             yaml.Append(_manifest.VariableHelper.SubstituteValues(template, GetVariableValue));
 
-            if (_imageDocInfos.Count > 0)
+            IReadOnlyList<ImageDocumentationInfo> missingTags = _imageDocInfos
+                .Where(docInfo => docInfo.DocumentedTags.Any())
+                .ToList();
+
+            if (missingTags.Count > 0)
             {
-                string missingTags = string.Join(
-                    Environment.NewLine, _imageDocInfos.Select(info => info.FormattedDocumentedTags));
+                string missingTagsString =
+                    string.Join(Environment.NewLine, missingTags.Select(info => info.FormattedDocumentedTags));
+
                 throw new InvalidOperationException(
                     $"The following tags are not included in the tags metadata: {Environment.NewLine}{missingTags}");
             }

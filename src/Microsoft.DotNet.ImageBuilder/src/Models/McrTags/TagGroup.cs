@@ -3,10 +3,12 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using YamlDotNet.Serialization;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.McrTags
 {
+    [DebuggerDisplay("{OS}-{Architecture}-{OsVersion}")]
     public class TagGroup
     {
         public List<string> Tags { get; set; }

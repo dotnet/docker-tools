@@ -36,6 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public string? FinalStageFromImage { get; private set; } = string.Empty;
         public IEnumerable<string> ExternalFromImages { get; private set; } = Enumerable.Empty<string>();
         public IEnumerable<string> InternalFromImages { get; private set; } = Enumerable.Empty<string>();
+        public bool IsWindows => Model.OS == OS.Windows;
         public Platform Model { get; private set; }
         public IEnumerable<string> OverriddenFromImages { get => _overriddenFromImages; }
         public string FullRepoModelName { get; set; }

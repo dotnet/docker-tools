@@ -32,9 +32,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
 
-        [GeneratedRegex(@"\d{4}")]
-        private static partial Regex WindowsVersionRegex { get; }
-
         public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("GENERATING READMES");
@@ -151,12 +148,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static string GenerateTables(IEnumerable<TagGroup> tagGroups)
         {
             StringBuilder tables = new();
-
-            IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch =
-                tagGroups.GroupBy(tagGroup =>
-                    (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
-
+            IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch = tagGroups
+                .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
             bool isFirstTable = true;
+
             foreach (IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup> groupedTagGroups in tagGroupsGroupedByOsArch)
             {
                 if (isFirstTable)
@@ -191,7 +186,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // Group tags by custom sub table title (e.g. Preview tags). Those tags without a custom sub table title will be listed first.
             List<IGrouping<string, TagGroup>> tagGroupGroupings = tagGroups
-                .GroupBy(tagGroup => tagGroup.CustomSubTableTitle)
+                .GroupBy(tg => tg.CustomSubTableTitle)
                 .OrderBy(group => group.Key)
                 .ToList();
 
@@ -234,12 +229,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return row;
-        }
-
-        private static int GetWindowsVersionSortingKey(string osVersion)
-        {
-            int version = int.Parse(WindowsVersionRegex.Match(osVersion).Value);
-            return version == 1809 ? 2019 : version;
         }
 
         private class TagMetadataManifest

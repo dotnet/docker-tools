@@ -13,22 +13,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
     public static class ManifestHelper
     {
-        public static Manifest CreateManifest(params Repo[] repos)
+        public static Manifest CreateManifest(params IEnumerable<Repo> repos)
         {
             return new Manifest
             {
-                Repos = repos
+                Repos = repos.ToArray()
             };
         }
 
-        public static Repo CreateRepo(string name, params Image[] images)
+        public static Repo CreateRepo(string name, params IEnumerable<Image> images)
         {
             return CreateRepo(name, images, readme: null);
         }
 
         public static Repo CreateRepo(
             string name,
-            Image[] images,
+            IEnumerable<Image> images,
             string readme = null,
             string readmeTemplate = null,
             string mcrTagsMetadataTemplate = null)
@@ -46,20 +46,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             {
                 Name = name,
                 Id = name,
-                Images = images,
+                Images = images.ToArray(),
                 McrTagsMetadataTemplate = mcrTagsMetadataTemplate,
                 Readmes = readmes
             };
         }
 
-        public static Image CreateImage(params Platform[] platforms) =>
+        public static Image CreateImage(params IEnumerable<Platform> platforms) =>
             CreateImage(platforms, (IDictionary<string, Tag>)null);
 
-        public static Image CreateImage(Platform[] platforms, IDictionary<string, Tag> sharedTags = null, string productVersion = null)
+        public static Image CreateImage(IEnumerable<Platform> platforms, IDictionary<string, Tag> sharedTags = null, string productVersion = null)
         {
             return new Image
             {
-                Platforms = platforms,
+                Platforms = platforms.ToArray(),
                 SharedTags = sharedTags,
                 ProductVersion = productVersion
             };
@@ -73,7 +73,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             Architecture architecture = Architecture.AMD64,
             string variant = null,
             CustomBuildLegGroup[] customBuildLegGroups = null,
-            string dockerfileTemplatePath = null)
+            string dockerfileTemplatePath = null,
+            TagDocumentationType tagDocumentationType = TagDocumentationType.Documented)
         {
             return new Platform
             {
@@ -81,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 DockerfileTemplate = dockerfileTemplatePath,
                 OsVersion = osVersion,
                 OS = os,
-                Tags = tags.ToDictionary(tag => tag, tag => new Tag()),
+                Tags = tags.ToDictionary(tag => tag, tag => new Tag() { DocType = tagDocumentationType }),
                 Architecture = architecture,
                 Variant = variant,
                 CustomBuildLegGroups = customBuildLegGroups ?? Array.Empty<CustomBuildLegGroup>()

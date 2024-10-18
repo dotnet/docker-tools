@@ -11,11 +11,14 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -324,6 +327,147 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             Assert.Equal(expectedTags, tagsMetadata.Repos[0].TagGroups[0].Tags);
+        }
+
+        public class MultiPlatformTags : IDisposable
+        {
+            private const string EmptyFileName = "emptyFile.md";
+            private const string TagsMetadataTemplateName = "tags.yml";
+            private const string ManifestFileName = "manifest.json";
+            private const string RepoName = "repo";
+            private const string SharedTagName = "sharedTag";
+
+            private readonly TempFolderContext _tempFolderContext = TestHelper.UseTempFolder();
+
+            public MultiPlatformTags()
+            {
+                File.WriteAllText(EmptyFilePath, string.Empty);
+            }
+
+            private string EmptyFilePath =>
+                Path.Combine(_tempFolderContext.Path, EmptyFileName);
+
+            private string TagsMetadataTemplateFilePath =>
+                Path.Combine(_tempFolderContext.Path, TagsMetadataTemplateName);
+
+            private string ManifestFilePath =>
+                Path.Combine(_tempFolderContext.Path, ManifestFileName);
+
+            private IEnumerable<Platform> CreatePlatforms(
+                IEnumerable<string> tags,
+                IEnumerable<Architecture> architectures,
+                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented)
+            {
+                return architectures.Select(arch =>
+                    CreatePlatform(
+                        dockerfilePath: DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os/{arch}", _tempFolderContext),
+                        tags: GetTags(tags, arch).ToArray(),
+                        architecture: arch,
+                        tagDocumentationType: tagDocumentationType));
+            }
+
+            private static string[] GetTags(IEnumerable<string> tags, Architecture arch) =>
+                tags.Select(tag => $"{tag}-{arch}").ToArray();
+
+            [Fact]
+            public void DocumentedPlatformTags()
+            {
+                const string tagsMetadataTemplate = $"""
+                $(McrTagsYmlRepo:{RepoName})
+                $(McrTagsYmlTagGroup:{SharedTagName})
+                """;
+                File.WriteAllText(TagsMetadataTemplateFilePath, tagsMetadataTemplate);
+
+                IEnumerable<Architecture> architectures = [Architecture.AMD64, Architecture.ARM64, Architecture.ARM];
+                IEnumerable<string> tags = ["tag1", "tag2"];
+                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented;
+
+                RunTest(architectures, tags, tagDocumentationType);
+            }
+
+            [Fact]
+            public void UndocumentedPlatformTags()
+            {
+                const string tagsMetadataTemplate = $"""
+                $(McrTagsYmlRepo:{RepoName})
+                $(McrTagsYmlTagGroup:{SharedTagName})
+                """;
+                File.WriteAllText(TagsMetadataTemplateFilePath, tagsMetadataTemplate);
+
+                IEnumerable<Architecture> architectures = [Architecture.AMD64, Architecture.ARM64, Architecture.ARM];
+                IEnumerable<string> tags = ["tag1", "tag2"];
+                TagDocumentationType tagDocumentationType = TagDocumentationType.Undocumented;
+
+                RunTest(architectures, tags, tagDocumentationType);
+            }
+
+            [Fact]
+            public void NoPlatformTags()
+            {
+                const string tagsMetadataTemplate = $"""
+                $(McrTagsYmlRepo:{RepoName})
+                $(McrTagsYmlTagGroup:{SharedTagName})
+                """;
+                File.WriteAllText(TagsMetadataTemplateFilePath, tagsMetadataTemplate);
+
+                IEnumerable<Architecture> architectures = [Architecture.AMD64, Architecture.ARM64, Architecture.ARM];
+                IEnumerable<string> tags = [];
+
+                RunTest(architectures, tags);
+            }
+
+            private void RunTest(
+                IEnumerable<Architecture> architectures,
+                IEnumerable<string> tags,
+                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented)
+            {
+                Manifest manifest =
+                    CreateManifest(
+                        CreateRepo(
+                            name: RepoName,
+                            images:
+                            [
+                                CreateImage(
+                                    platforms: CreatePlatforms(tags, architectures, tagDocumentationType),
+                                    sharedTags: new Dictionary<string, Tag>() { [SharedTagName] = new Tag() })
+                            ],
+                            mcrTagsMetadataTemplate: Path.GetFileName(TagsMetadataTemplateFilePath),
+                            readme: EmptyFileName,
+                            readmeTemplate: EmptyFileName));
+
+                File.WriteAllText(ManifestFilePath, JsonConvert.SerializeObject(manifest));
+
+                // Load manifest
+                IManifestOptionsInfo manifestOptions = GetManifestOptions(ManifestFilePath);
+                ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+                RepoInfo repo = manifestInfo.AllRepos.First();
+
+                // Execute generator
+                string result = McrTagsMetadataGenerator.Execute(manifestInfo, repo);
+
+                TagsMetadata tagsMetadata = new DeserializerBuilder()
+                    .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                    .Build()
+                    .Deserialize<TagsMetadata>(result);
+
+                // Get expected tags. Shared tag should always show up.
+                // If platform tags are documented, then they should also show up for all architectures
+                string[] sharedTags = [SharedTagName];
+                IEnumerable<IEnumerable<string>> expectedTags = tagDocumentationType == TagDocumentationType.Documented
+                    ? architectures.Select(arch => sharedTags.Concat(GetTags(tags, arch)))
+                    : architectures.Select(_ => sharedTags);
+
+                IEnumerable<IEnumerable<string>> actualTags =
+                    tagsMetadata.Repos[0].TagGroups.Select(group => group.Tags);
+
+                expectedTags.Should().BeEquivalentTo(actualTags);
+            }
+
+            public void Dispose()
+            {
+                _tempFolderContext.Dispose();
+                GC.SuppressFinalize(this);
+            }
         }
     }
 }

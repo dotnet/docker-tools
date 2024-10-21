@@ -66,6 +66,15 @@ jobs:
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
+      repo: "public/dotnet/framework/*"
+      subscription: $(acr.subscription)
+      resourceGroup: $(acr.resourceGroup)
+      acr: $(acr.server)
+      action: pruneEol
+      age: 15
+  - template: ../common/templates/steps/clean-acr-images.yml
+    parameters:
+      internalProjectName: ${{ variables.internalProjectName }}
       repo: "public/dotnet-buildtools/prereqs"
       subscription: $(acr.subscription)
       resourceGroup: $(acr.resourceGroup)

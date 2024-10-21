@@ -8,6 +8,7 @@ using System.ComponentModel.Composition;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cottle;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -20,19 +21,13 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class GenerateReadmesCommand : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>
+    [method: ImportingConstructor]
+    public partial class GenerateReadmesCommand(IEnvironmentService environmentService)
+        : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService)
     {
         private const string ArtifactName = "Readme";
         private const string LinuxTableHeader = "Tags | Dockerfile | OS Version\n-----------| -------------| -------------";
         private const string WindowsTableHeader = "Tag | Dockerfile\n---------| ---------------";
-
-        private readonly IGitService _gitService;
-
-        [ImportingConstructor]
-        public GenerateReadmesCommand(IEnvironmentService environmentService, IGitService gitService) : base(environmentService)
-        {
-            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-        }
 
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";

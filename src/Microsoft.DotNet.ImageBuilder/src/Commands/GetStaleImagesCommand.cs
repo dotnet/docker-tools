@@ -96,12 +96,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .SelectMany(image => image.FilteredPlatforms)
                     .Where(platform => platform.FinalStageFromImage is not null && !platform.IsInternalFromImage(platform.FinalStageFromImage));
 
-                RepoData? repoData = imageArtifactDetails.Repos
-                    .FirstOrDefault(s => s.Repo == repo.Name);
-
                 foreach (PlatformInfo platform in platforms)
                 {
-                    pathsToRebuild.AddRange(await GetPathsToRebuildAsync(manifest, platform, repoData));
+                    pathsToRebuild.AddRange(await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails));
                 }
             }
 
@@ -113,74 +110,50 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Prepend(platform);
 
         private async Task<List<string>> GetPathsToRebuildAsync(
-            ManifestInfo manifest, PlatformInfo platform, RepoData? repoData)
+            ManifestInfo manifest, PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
         {
-            bool foundImageInfo = false;
+            string? fromImage = platform.FinalStageFromImage;
+            if (fromImage is null)
+            {
+                _loggerService.WriteMessage(
+                    $"There is no base image for '{platform.DockerfilePath}'. By default, it is considered up-to-date.");
+                return [];
+            }
 
-            List<string> pathsToRebuild = new();
+            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
 
-            void processPlatformWithMissingImageInfo(PlatformInfo platform)
+            if (matchingPlatform is null)
             {
                 _loggerService.WriteMessage(
                     $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
                 IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
-                pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));
+                return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();
             }
 
-            if (repoData == null || repoData.Images == null)
-            {
-                processPlatformWithMissingImageInfo(platform);
-                return pathsToRebuild;
-            }
+            fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
 
-            foreach (ImageData imageData in repoData.Images)
-            {
-                PlatformData? platformData = imageData.Platforms
-                    .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
-                if (platformData != null)
+            string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
+                async () =>
                 {
-                    foundImageInfo = true;
-                    string? fromImage = platform.FinalStageFromImage;
-                    if (fromImage is null)
-                    {
-                        _loggerService.WriteMessage(
-                            $"There is no base image for '{platform.DockerfilePath}'. By default, it is considered up-to-date.");
-                        break;
-                    }
+                    string digest = await _manifestService.Value.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
+                    return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
+                });
 
-                    fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
+            bool rebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentDigest;
 
-                    string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
-                        async () =>
-                        {
-                            string digest = await _manifestService.Value.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
-                            return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
-                        });
+            _loggerService.WriteMessage(
+                $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
+                + $"\tLast build digest:    {matchingPlatform.Value.Platform.BaseImageDigest}{Environment.NewLine}"
+                + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
+                + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");
 
-                    bool rebuildImage = platformData.BaseImageDigest != currentDigest;
-
-                    _loggerService.WriteMessage(
-                        $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
-                        + $"\tLast build digest:    {platformData.BaseImageDigest}{Environment.NewLine}"
-                        + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
-                        + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");
-
-                    if (rebuildImage)
-                    {
-                        IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
-                        pathsToRebuild.AddRange(dependentPlatforms.Select(p => p.Model.Dockerfile));
-                    }
-
-                    break;
-                }
-            }
-
-            if (!foundImageInfo)
+            if (rebuildImage)
             {
-                processPlatformWithMissingImageInfo(platform);
+                IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
+                return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();
             }
 
-            return pathsToRebuild;
+            return [];
         }
 
         private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)

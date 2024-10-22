@@ -194,6 +194,33 @@ namespace Microsoft.DotNet.ImageBuilder
             return LoadFromContent(File.ReadAllText(path), manifest, skipManifestValidation, useFilteredManifest);
         }
 
+        /// <summary>
+        /// Finds the <see cref="PlatformData"/> that matches the given <see cref="PlatformInfo"/>.
+        /// </summary>
+        /// <param name="platform">Platform being searched.</param>
+        /// <param name="repo">Repo that corresponds to the platform.</param>
+        /// <param name="imageArtifactDetails">Image info content.</param>
+        public static (PlatformData Platform, ImageData Image)? GetMatchingPlatformData(PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
+        {
+            RepoData? repoData = imageArtifactDetails.Repos.FirstOrDefault(s => s.Repo == repo.Name);
+            if (repoData == null || repoData.Images == null)
+            {
+                return null;
+            }
+
+            foreach (ImageData imageData in repoData.Images)
+            {
+                PlatformData? platformData = imageData.Platforms
+                    .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
+                if (platformData != null)
+                {
+                    return (platformData, imageData);
+                }
+            }
+
+            return null;
+        }
+
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)
         {
             if (options == null)

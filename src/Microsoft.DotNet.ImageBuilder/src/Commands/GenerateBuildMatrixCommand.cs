@@ -25,13 +25,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
         private readonly IImageCacheService _imageCacheService;
+        private readonly ILoggerService _loggerService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
         [ImportingConstructor]
-        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory) : base()
+        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILoggerService loggerService) : base()
         {
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
                 if (Options.ImageInfoPath != null)
@@ -407,28 +409,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
         {
-            IEnumerable<PlatformInfo> filteredPlatforms = Manifest.GetFilteredPlatforms().ToList();
+            IEnumerable<RepoInfo> filteredRepos = Manifest.FilteredRepos.ToList();
 
             if (_imageArtifactDetails.Value is null)
             {
-                return filteredPlatforms;
+                return filteredRepos.SelectMany(repo => repo.FilteredImages).SelectMany(image => image.FilteredPlatforms);
             }
 
-            IEnumerable<(PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData)> platformMappings =
-                _imageArtifactDetails.Value.Repos
-                    .SelectMany(repo => repo.Images)
-                    .SelectMany(image =>
-                        image.Platforms
-                            .Where(platform =>
-                                !platform.IsUnchanged &&
-                                platform.PlatformInfo is not null &&
-                                filteredPlatforms.Contains(platform.PlatformInfo))
-                            .Select(platform => (platform.PlatformInfo!, image, platform)));
+            IEnumerable<(PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData)> platformMappings =
+                filteredRepos.SelectMany(repo =>
+                    repo.FilteredImages
+                        .SelectMany(image => image.FilteredPlatforms)
+                        .Select(platform =>
+                        {
+                            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, _imageArtifactDetails.Value);
+                            return (platform, matchingPlatform?.Image, matchingPlatform?.Platform);
+                        })
+                        .Where(platformMapping => platformMapping.Platform is null || !platformMapping.Platform.IsUnchanged));
 
             if (!Options.TrimCachedImages)
             {
                 return platformMappings.Select(platformMapping => platformMapping.PlatformInfo);
             }
+
+            Logger.WriteMessage("Trimming platforms based on image cache state...");
 
             // Here we will trim the platforms based on their image cache state. This reduces the amount of jobs that need to
             // be run. Otherwise, you may spin up a bunch of jobs that end up processing a bunch of cached images and
@@ -438,7 +442,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // treat the hierarchy as a unit. For example, if runtime-deps is cached but runtime (which is a descendant of
             // runtime-deps) is not, then we need to ensure that both runtime-deps and runtime is included. We do not want to
             // trim just the runtime-deps platform in that case.
-            IEnumerable<IEnumerable<(PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData)>> subgraphs =
+            IEnumerable<IEnumerable<(PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData)>> subgraphs =
                 platformMappings.GetCompleteSubgraphs(
                     platformGrouping =>
                         Manifest.GetParents(
@@ -452,6 +456,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ConcurrentBag<PlatformInfo> subgraphNonCachedPlatforms = [];
                 await Parallel.ForEachAsync(subgraph, async (platformMapping, _) =>
                 {
+                    if (platformMapping.PlatformData is null)
+                    {
+                        _loggerService.WriteMessage($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
+                        subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
+                        return;
+                    }
+
                     ImageCacheResult cacheResult = await _imageCacheService.CheckForCachedImageAsync(
                         platformMapping.ImageData,
                         platformMapping.PlatformData,
@@ -460,7 +471,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Options.SourceRepoUrl,
                         Options.IsDryRun);
 
-                    if (!cacheResult.State.HasFlag(ImageCacheState.Cached))
+                    bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
+
+                    _loggerService.WriteMessage(
+                        $"Image '{platformMapping.PlatformInfo.DockerfilePath}' cache state is {cacheResult.State}. Included in matrix: {includePlatformInMatrix}");
+
+                    if (includePlatformInMatrix)
                     {
                         subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
                     }
@@ -473,7 +489,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // include the whole hierarchy as non-cached platforms.
                 if (!subgraphNonCachedPlatforms.IsEmpty)
                 {
-                    foreach ((PlatformInfo PlatformInfo, ImageData ImageData, PlatformData PlatformData) platformMapping in subgraph)
+                    foreach ((PlatformInfo PlatformInfo, ImageData? ImageData, PlatformData? PlatformData) platformMapping in subgraph)
                     {
                         nonCachedPlatforms.Add(platformMapping.PlatformInfo);
                     }

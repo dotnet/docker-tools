@@ -179,6 +179,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageCacheState.Cached,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
         [InlineData(
+            ImageCacheState.Cached,
+            ImageCacheState.Cached,
+            "--path 1.0/standalone/os/amd64/Dockerfile",
+            "--path 2.0/standalone/os/amd64/Dockerfile",
+            null,
+            "*standalone*")]
+        [InlineData(
             ImageCacheState.CachedWithMissingTags,
             ImageCacheState.Cached,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
@@ -202,8 +209,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string? leg3ExpectedPaths = null,
             string inputPathFilters = "*runtime* *sdk*")
         {
-            const string StandaloneRelativeDir = "1.0/standalone/os/amd64";
-            string dockerfileStandalonePath;
+            const string Standalone1RelativeDir = "1.0/standalone/os/amd64";
+            string dockerfileStandalone1Path;
+            const string Standalone2RelativeDir = "2.0/standalone/os/amd64";
+            string dockerfileStandalone2Path;
 
             const string Runtime1RelativeDir = "1.0/runtime/os/amd64";
             string dockerfileRuntime1Path;
@@ -220,7 +229,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Manifest manifest = CreateManifest(
                 CreateRepo("standalone",
                     CreateImage(
-                        CreatePlatform(dockerfileStandalonePath = CreateDockerfile(StandaloneRelativeDir, tempFolderContext), ["1.0"]))),
+                        CreatePlatform(dockerfileStandalone1Path = CreateDockerfile(Standalone1RelativeDir, tempFolderContext), ["1.0"])),
+                    CreateImage(
+                        // This image will not be included in the image info file. It is intended to be a newly added Dockerfile that hasn't
+                        // been published yet.
+                        CreatePlatform(dockerfileStandalone2Path = CreateDockerfile(Standalone2RelativeDir, tempFolderContext), ["2.0"]))),
                 CreateRepo("runtime",
                     CreateImage(
                         CreatePlatform(dockerfileRuntime1Path = CreateDockerfile(Runtime1RelativeDir, tempFolderContext, "base"), ["1.0"])),
@@ -234,13 +247,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             );
 
             Mock<IImageCacheService> imageCacheServiceMock = new();
-            SetCacheResult(imageCacheServiceMock, dockerfileStandalonePath, ImageCacheState.NotCached);
+            SetCacheResult(imageCacheServiceMock, dockerfileStandalone1Path, ImageCacheState.NotCached);
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime1Path, runtime1CacheState);
             SetCacheResult(imageCacheServiceMock, dockerfileSdk1Path, sdk1CacheState);
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
             SetCacheResult(imageCacheServiceMock, dockerfileSdk2Path, ImageCacheState.NotCached);
 
-            GenerateBuildMatrixCommand command = new(imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>());
+            GenerateBuildMatrixCommand command = new(imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -262,7 +275,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             {
                                 Platforms =
                                 {
-                                    CreateSimplePlatformData(dockerfileStandalonePath)
+                                    CreateSimplePlatformData(dockerfileStandalone1Path)
                                 }
                             }
                         }
@@ -1523,6 +1536,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         private static GenerateBuildMatrixCommand CreateCommand() =>
-            new(Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>());
+            new(Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILoggerService>());
     }
 }

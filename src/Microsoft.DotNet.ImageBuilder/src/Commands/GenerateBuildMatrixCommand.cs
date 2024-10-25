@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 if (Options.ImageInfoPath != null)
                 {
-                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
+                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest, skipManifestValidation: true);
                 }
 
                 return null;

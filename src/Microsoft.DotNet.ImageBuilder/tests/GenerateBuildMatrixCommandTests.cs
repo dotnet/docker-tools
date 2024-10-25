@@ -277,6 +277,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 {
                                     CreateSimplePlatformData(dockerfileStandalone1Path)
                                 }
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    // Include a Dockerfile which doesn't exist in the manifest to simulate a deleted Dockerfile
+                                    CreateSimplePlatformData("0.0/standalone/os/amd64/Dockerfile"),
+                                }
                             }
                         }
                     },

@@ -646,5 +646,343 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
             }
         }
+
+        /// <summary>
+        /// Verifies the command will replace any existing tags or syndicated digests of a merged image.
+        /// </summary>
+        /// <remarks>
+        /// See https://github.com/dotnet/docker-tools/pull/269
+        /// </remarks>
+        [Fact]
+        public async Task MergeImageInfoFilesCommand_Publish_ReplaceContent()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repo1Image1DockerfilePath = CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            string repo2Image2DockerfilePath = CreateDockerfile("2.0/runtime/os", tempFolderContext);
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        [
+                            CreatePlatform(repo1Image1DockerfilePath, [ "tag1" ])
+                        ],
+                        productVersion: "1.0")),
+                CreateRepo("repo2",
+                    CreateImage(
+                        [
+                            CreatePlatform(repo2Image2DockerfilePath, [ "tag1" ])
+                        ],
+                        productVersion: "2.0"))
+            );
+
+            RepoData repo2;
+
+            ImageArtifactDetails srcImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "newtag"
+                                        ])
+                                },
+                                ProductVersion = "1.0",
+                                Manifest = new ManifestData
+                                {
+                                    SyndicatedDigests =
+                                    [
+                                        "newdigest1",
+                                        "newdigest2"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    {
+                        repo2 = new RepoData
+                        {
+                            Repo = "repo2",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(repo2Image2DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "tag1"
+                                        ])
+                                    },
+                                    ProductVersion = "2.0"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string file = Path.Combine(tempFolderContext.Path, "image-info.json");
+            File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
+
+            ImageArtifactDetails targetImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "oldtag"
+                                        ])
+                                },
+                                ProductVersion = "1.0",
+                                Manifest = new ManifestData
+                                {
+                                    SyndicatedDigests =
+                                    [
+                                        "olddigest1",
+                                        "olddigest2"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            MergeImageInfoCommand command = new();
+            command.Options.SourceImageInfoFolderPath = Path.Combine(tempFolderContext.Path, "image-infos");
+            command.Options.DestinationImageInfoPath = Path.Combine(tempFolderContext.Path, "output.json");
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.IsPublishScenario = true;
+
+            Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
+
+            string srcImageArtifactDetailsPath = Path.Combine(command.Options.SourceImageInfoFolderPath, "src.json");
+            File.WriteAllText(srcImageArtifactDetailsPath, JsonHelper.SerializeObject(srcImageArtifactDetails));
+
+            string targetImageArtifactDetailsPath = Path.Combine(command.Options.SourceImageInfoFolderPath, "target.json");
+            File.WriteAllText(targetImageArtifactDetailsPath, JsonHelper.SerializeObject(targetImageArtifactDetails));
+
+            command.Options.InitialImageInfoPath = targetImageArtifactDetailsPath;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            ImageArtifactDetails expectedImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags:
+                                        [
+                                            "newtag"
+                                        ])
+                                },
+                                ProductVersion = "1.0",
+                                Manifest = new ManifestData
+                                {
+                                    SyndicatedDigests =
+                                    [
+                                        "newdigest1",
+                                        "newdigest2"
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    repo2
+                }
+            };
+
+            string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+            ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
+
+            ImageInfoHelperTests.CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
+        }
+
+        /// <summary>
+        /// Verifies the command will remove any out-of-date content that exists within the target image info file,
+        /// meaning that it has content which isn't reflected in the manifest.
+        /// </summary>
+        [Fact]
+        public async Task MergeImageInfoFilesCommand_Publish_RemoveOutOfDateContent()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repo1Image1DockerfilePath = CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            string repo2Image2DockerfilePath = CreateDockerfile("2.0/runtime/os", tempFolderContext);
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo1",
+                    CreateImage(
+                        [
+                            CreatePlatform(repo1Image1DockerfilePath, [])
+                        ],
+                        productVersion: "1.0")),
+                CreateRepo("repo2",
+                    CreateImage(
+                        [
+                            CreatePlatform(repo2Image2DockerfilePath, [])
+                        ],
+                        productVersion: "2.0"))
+            );
+            manifest.Registry = "mcr.microsoft.com";
+
+            RepoData repo2;
+
+            ImageArtifactDetails srcImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(repo1Image1DockerfilePath)
+                                },
+                                ProductVersion = "1.0"
+                            }
+                        }
+                    },
+                    {
+                        repo2 = new RepoData
+                        {
+                            Repo = "repo2",
+                            Images =
+                            {
+                                new ImageData
+                                {
+                                    Platforms =
+                                    {
+                                        CreatePlatform(repo2Image2DockerfilePath)
+                                    },
+                                    ProductVersion = "2.0"
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string file = Path.Combine(tempFolderContext.Path, "image-info.json");
+            File.WriteAllText(file, JsonHelper.SerializeObject(srcImageArtifactDetails));
+
+            ImageArtifactDetails targetImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(repo1Image1DockerfilePath)
+                                },
+                                ProductVersion = "1.0"
+                            },
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(
+                                        CreateDockerfile("1.0/runtime2/os", tempFolderContext))
+                                },
+                                ProductVersion = "1.0"
+                            }
+                        }
+                    },
+                    new RepoData
+                    {
+                        Repo = "repo4"
+                    }
+                }
+            };
+
+            MergeImageInfoCommand command = new();
+            command.Options.SourceImageInfoFolderPath = Path.Combine(tempFolderContext.Path, "image-infos");
+            command.Options.DestinationImageInfoPath = Path.Combine(tempFolderContext.Path, "output.json");
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.IsPublishScenario = true;
+
+            Directory.CreateDirectory(command.Options.SourceImageInfoFolderPath);
+
+            string srcImageArtifactDetailsPath = Path.Combine(command.Options.SourceImageInfoFolderPath, "src.json");
+            File.WriteAllText(srcImageArtifactDetailsPath, JsonHelper.SerializeObject(srcImageArtifactDetails));
+
+            string targetImageArtifactDetailsPath = Path.Combine(command.Options.SourceImageInfoFolderPath, "target.json");
+            File.WriteAllText(targetImageArtifactDetailsPath, JsonHelper.SerializeObject(targetImageArtifactDetails));
+
+            command.Options.InitialImageInfoPath = targetImageArtifactDetailsPath;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            ImageArtifactDetails expectedImageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(repo1Image1DockerfilePath)
+                                },
+                                ProductVersion = "1.0"
+                            }
+                        }
+                    },
+                    repo2
+                }
+            };
+
+            string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
+            ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
+
+            ImageInfoHelperTests.CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
+        }
     }
 }

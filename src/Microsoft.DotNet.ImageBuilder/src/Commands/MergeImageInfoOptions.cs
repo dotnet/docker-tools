@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -14,21 +14,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string SourceImageInfoFolderPath { get; set; } = string.Empty;
 
         public string DestinationImageInfoPath { get; set; } = string.Empty;
+
+        public string? InitialImageInfoPath { get; set; }
+
+        public bool IsPublishScenario { get; set; }
     }
 
     public class MergeImageInfoOptionsBuilder : ManifestOptionsBuilder
     {
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(MergeImageInfoOptions.SourceImageInfoFolderPath),
-                            "Folder path containing image info files"),
-                        new Argument<string>(nameof(MergeImageInfoOptions.DestinationImageInfoPath),
-                            "Path to store the merged image info content"),
-                    }
-                );
+            [
+                ..base.GetCliArguments(),
+                new Argument<string>(nameof(MergeImageInfoOptions.SourceImageInfoFolderPath),
+                    "Folder path containing image info files"),
+                new Argument<string>(nameof(MergeImageInfoOptions.DestinationImageInfoPath),
+                    "Path to store the merged image info content")
+            ];
+
+        public override IEnumerable<Option> GetCliOptions() =>
+            [
+                ..base.GetCliOptions(),
+                CreateOption<bool>("publish", nameof(MergeImageInfoOptions.IsPublishScenario),
+                    "Whether the files are being merged as part of publishing to a repo"),
+                CreateOption<string?>("initial-image-info-path", nameof(MergeImageInfoOptions.InitialImageInfoPath),
+                    "Path to the image info file to be used as the initial merge target"),
+            ];
     }
 }
-#nullable disable

@@ -28,7 +28,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             List<(string Path, ImageArtifactDetails ImageArtifactDetails)> srcImageArtifactDetailsList = imageInfoFiles
                 .OrderBy(file => file) // Ensure the files are ordered for testing consistency between OS's.
-                .Select(imageDataPath => (imageDataPath, ImageInfoHelper.LoadFromFile(imageDataPath, Manifest, skipManifestValidation: Options.IsPublishScenario)))
+                .Select(imageDataPath =>
+                    (imageDataPath, ImageInfoHelper.LoadFromFile(
+                                        imageDataPath,
+                                        Manifest,
+                                        skipManifestValidation: Options.IsPublishScenario)))
                 .ToList();
 
             if (!srcImageArtifactDetailsList.Any())

@@ -123,13 +123,6 @@ jobs:
       --initial-image-info-path $(imageInfoContainerDir)/full-image-info-orig.json
     condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
     displayName: Merge Image Info
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
-    parameters:
-      path: $(imageInfoHostDir)
-      artifactName: image-info-temp-$(System.JobAttempt)
-      displayName: Publish Image Info File Artifact
-      internalProjectName: ${{ parameters.internalProjectName }}
-      publicProjectName: ${{ parameters.publicProjectName }}
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Ingest Kusto Image Info

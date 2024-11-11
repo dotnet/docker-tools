@@ -44,6 +44,15 @@ jobs:
     parameters:
       targetPath: $(imageInfoHostDir)
       artifactName: image-info
+  - script: |
+      if [ -f $(imageInfoHostDir)/$(noImageInfoFlagFile) ]; then
+        echo "No image info file found."
+        echo "##vso[task.setvariable variable=noImagesToPublish]true"
+
+        # Remove the flag file so it doesn't get interpreted as an image info file by later processing
+        rm $(imageInfoHostDir)/$(noImageInfoFlagFile)
+      fi
+    displayName: Set Image Info Flag
   - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
     parameters:
       publicSourceBranch: $(publicSourceBranch)
@@ -54,11 +63,13 @@ jobs:
       $(runImageBuilderCmd) trimUnchangedPlatforms
       '$(imageInfoContainerDir)/image-info.json'
     displayName: Trim Unchanged Images
+    condition: ne(variables.noImagesToPublish, 'true')
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Copy Images
       serviceConnection: $(publish.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
+      condition: ne(variables.noImagesToPublish, 'true')
       args: >
         copyAcrImages
         '$(acr.subscription)'
@@ -78,6 +89,7 @@ jobs:
       serviceConnection: $(publish.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
       dockerClientOS: ${{ parameters.dockerClientOS }}
+      condition: ne(variables.noImagesToPublish, 'true')
       args: >
         publishManifest
         '$(imageInfoContainerDir)/image-info.json'
@@ -94,12 +106,13 @@ jobs:
       displayName: Publish Image Info File Artifact
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
+      condition: ne(variables.noImagesToPublish, 'true')
   - template: /eng/common/templates/steps/wait-for-mcr-image-ingestion.yml@self
     parameters:
       imageInfoPath: '$(imageinfoContainerDir)/image-info.json'
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)
-      condition: succeeded()
+      condition: ne(variables.noImagesToPublish, 'true')
   - template: /eng/common/templates/steps/publish-readmes.yml@self
     parameters:
       dryRunArg: $(dryRunArg)
@@ -128,7 +141,7 @@ jobs:
       displayName: Ingest Kusto Image Info
       serviceConnection: $(kusto.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
-      condition: and(succeeded(), eq(variables['ingestKustoImageInfo'], 'true'))
+      condition: and(succeeded(), ne(variables.noImagesToPublish, 'true'), eq(variables['ingestKustoImageInfo'], 'true'))
       args: >
         ingestKustoImageInfo
         '$(imageInfoContainerDir)/image-info.json'

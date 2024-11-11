@@ -55,13 +55,17 @@ jobs:
     displayName: Prune Publish Artifacts
   - powershell: |
       $imageInfoFiles = Get-ChildItem "$(imageInfosHostDir)"
+      New-Item -ItemType Directory -Path $(imageInfosHostDir)$(imageInfosOutputSubDir) -Force
       if ($imageInfoFiles.Count -eq 0) {
         echo "No image info files found."
         echo "##vso[task.setvariable variable=noImageInfos;isOutput=true]true"
+
+        # Create a flag file to indicate that no image info files were found
+        Set-Content $(imageInfosHostDir)$(imageInfosOutputSubDir)/$(noImageInfoFlagFile) 1
+
         exit 0
       }
 
-      New-Item -ItemType Directory -Path $(imageInfosHostDir)$(imageInfosOutputSubDir) -Force
       $(runImageBuilderCmd) mergeImageInfo `
         --manifest $(manifest) `
         $(imageInfosContainerDir) `
@@ -79,7 +83,6 @@ jobs:
       publicProjectName: ${{ parameters.publicProjectName }}
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
-      condition: and(succeeded(), ne(variables['MergeImageInfoFiles.noImageInfos'], 'true'))
       path: $(imageInfosHostDir)$(imageInfosOutputSubDir)
       artifactName: image-info
       displayName: Publish Image Info File Artifact

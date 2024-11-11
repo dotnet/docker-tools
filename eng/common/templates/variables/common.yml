@@ -48,6 +48,8 @@ variables:
   value: ""
 - name: trimCachedImagesForMatrix
   value: false
+- name: noImageInfoFlagFile
+  value: .no-image-info-flag
 
 - name: defaultLinuxAmd64PoolImage
   value: ubuntu-latest

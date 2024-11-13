@@ -336,6 +336,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private const string ManifestFileName = "manifest.json";
             private const string RepoName = "repo";
             private const string SharedTagName = "sharedTag";
+            private const string LinuxOsName = "noble";
+            private const string WindowsOsName = "nanoserver-ltsc2025";
 
             private readonly TempFolderContext _tempFolderContext = TestHelper.UseTempFolder();
 
@@ -356,18 +358,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private IEnumerable<Platform> CreatePlatforms(
                 IEnumerable<string> tags,
                 IEnumerable<Architecture> architectures,
-                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented)
+                TagDocumentationType tagDocumentationType,
+                OS os)
             {
+                string osVersion = os == OS.Windows ? WindowsOsName : LinuxOsName;
                 return architectures.Select(arch =>
                     CreatePlatform(
-                        dockerfilePath: DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os/{arch}", _tempFolderContext),
-                        tags: GetTags(tags, arch).ToArray(),
+                        DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/{osVersion}/{arch}", _tempFolderContext),
+                        GetTags(tags, osVersion, arch),
+                        os: os,
+                        osVersion: osVersion,
                         architecture: arch,
                         tagDocumentationType: tagDocumentationType));
             }
 
-            private static string[] GetTags(IEnumerable<string> tags, Architecture arch) =>
-                tags.Select(tag => $"{tag}-{arch}").ToArray();
+            private static string[] GetTags(IEnumerable<string> tags, string osVersion, Architecture arch) =>
+                tags.Select(tag => $"{tag}-{osVersion}-{arch.ToString().ToLowerInvariant()}").ToArray();
 
             [Fact]
             public void DocumentedPlatformTags()
@@ -381,8 +387,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IEnumerable<Architecture> architectures = [Architecture.AMD64, Architecture.ARM64, Architecture.ARM];
                 IEnumerable<string> tags = ["tag1", "tag2"];
                 TagDocumentationType tagDocumentationType = TagDocumentationType.Documented;
+                IEnumerable<Platform> platforms = CreatePlatforms(tags, architectures, tagDocumentationType, OS.Linux);
 
-                RunTest(architectures, tags, tagDocumentationType);
+                ValidateMetadataGeneratorOutput(platforms);
             }
 
             [Fact]
@@ -397,8 +404,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IEnumerable<Architecture> architectures = [Architecture.AMD64, Architecture.ARM64, Architecture.ARM];
                 IEnumerable<string> tags = ["tag1", "tag2"];
                 TagDocumentationType tagDocumentationType = TagDocumentationType.Undocumented;
+                IEnumerable<Platform> platforms = CreatePlatforms(tags, architectures, tagDocumentationType, OS.Linux);
 
-                RunTest(architectures, tags, tagDocumentationType);
+                ValidateMetadataGeneratorOutput(platforms);
             }
 
             [Fact]
@@ -412,15 +420,46 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 IEnumerable<Architecture> architectures = [Architecture.AMD64, Architecture.ARM64, Architecture.ARM];
                 IEnumerable<string> tags = [];
+                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented;
+                IEnumerable<Platform> platforms = CreatePlatforms(tags, architectures, tagDocumentationType, OS.Linux);
 
-                RunTest(architectures, tags);
+                ValidateMetadataGeneratorOutput(platforms);
             }
 
-            private void RunTest(
-                IEnumerable<Architecture> architectures,
-                IEnumerable<string> tags,
-                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented)
+            [Fact]
+            public void SharedLinuxAndWindowsTags()
             {
+                // Windows images should be excluded from computation of multi-arch tags
+                const string tagsMetadataTemplate = $"""
+                $(McrTagsYmlRepo:{RepoName})
+                $(McrTagsYmlTagGroup:{SharedTagName})
+                $(McrTagsYmlTagGroup:tag1-{WindowsOsName}-amd64)
+                """;
+                File.WriteAllText(TagsMetadataTemplateFilePath, tagsMetadataTemplate);
+
+                IEnumerable<string> tags = ["tag1", "tag2"];
+                TagDocumentationType tagDocumentationType = TagDocumentationType.Documented;
+
+                IEnumerable<Platform> platforms =
+                [
+                    ..CreatePlatforms(
+                        tags,
+                        [Architecture.AMD64, Architecture.ARM64, Architecture.ARM],
+                        tagDocumentationType,
+                        OS.Linux),
+                    ..CreatePlatforms(
+                        tags,
+                        [Architecture.AMD64],
+                        tagDocumentationType,
+                        OS.Windows)
+                ];
+
+                ValidateMetadataGeneratorOutput(platforms);
+            }
+
+            private void ValidateMetadataGeneratorOutput(IEnumerable<Platform> platforms)
+            {
+                // Create Manifest with a single image and the provided platforms
                 Manifest manifest =
                     CreateManifest(
                         CreateRepo(
@@ -428,7 +467,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             images:
                             [
                                 CreateImage(
-                                    platforms: CreatePlatforms(tags, architectures, tagDocumentationType),
+                                    platforms: platforms,
                                     sharedTags: new Dictionary<string, Tag>() { [SharedTagName] = new Tag() })
                             ],
                             mcrTagsMetadataTemplate: Path.GetFileName(TagsMetadataTemplateFilePath),
@@ -442,20 +481,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
                 RepoInfo repo = manifestInfo.AllRepos.First();
 
-                // Execute generator
+                // Execute tags metadata generator and deserialize its output
                 string result = McrTagsMetadataGenerator.Execute(manifestInfo, repo);
-
                 TagsMetadata tagsMetadata = new DeserializerBuilder()
                     .WithNamingConvention(CamelCaseNamingConvention.Instance)
                     .Build()
                     .Deserialize<TagsMetadata>(result);
 
-                // Get expected tags. Shared tag should always show up.
-                // If platform tags are documented, then they should also show up for all architectures
-                string[] sharedTags = [SharedTagName];
-                IEnumerable<IEnumerable<string>> expectedTags = tagDocumentationType == TagDocumentationType.Documented
-                    ? architectures.Select(arch => sharedTags.Concat(GetTags(tags, arch)))
-                    : architectures.Select(_ => sharedTags);
+                // Now, check the output of the metadata generator against the tags that were passed in via `platforms`.
+                // The shared tag should always show up.
+                // Get the platform-specific tags from the platforms that were passed in.
+                IEnumerable<IEnumerable<string>> expectedTags = platforms
+                    .Select(platform => platform.Tags
+                        .Where(tag => tag.Value.DocType != TagDocumentationType.Undocumented)
+                        .Select(tag => tag.Key)
+                        .Concat([SharedTagName]));
 
                 IEnumerable<IEnumerable<string>> actualTags =
                     tagsMetadata.Repos[0].TagGroups.Select(group => group.Tags);

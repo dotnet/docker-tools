@@ -83,11 +83,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
             if (missingTags.Count > 0)
             {
-                string missingTagsString =
-                    string.Join(Environment.NewLine, missingTags.Select(info => info.FormattedDocumentedTags));
+                IEnumerable<string> missingTagsPerImage = missingTags.Select(imageDocInfo =>
+                    $"""
+                    Repo: {_repo.Name}, Platform: {imageDocInfo.Platform.GetOSDisplayName()} {imageDocInfo.Platform.Model.Architecture}
+                    Missing Tags: {imageDocInfo.FormattedDocumentedTags}
+                    """);
+
+                string missingTagsString = string.Join(Environment.NewLine, missingTagsPerImage);
 
                 throw new InvalidOperationException(
-                    $"The following tags are not included in the tags metadata: {Environment.NewLine}{missingTags}");
+                    $"The following tags are not included in the tags metadata: {Environment.NewLine}{missingTagsString}{Environment.NewLine}");
             }
 
             string metadata = yaml.ToString();

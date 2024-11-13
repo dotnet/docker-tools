@@ -112,7 +112,7 @@ jobs:
       imageInfoPath: '$(imageinfoContainerDir)/image-info.json'
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)
-      condition: ne(variables.noImagesToPublish, 'true')
+      condition: and(succeeded(), ne(variables.noImagesToPublish, 'true'))
   - template: /eng/common/templates/steps/publish-readmes.yml@self
     parameters:
       dryRunArg: $(dryRunArg)

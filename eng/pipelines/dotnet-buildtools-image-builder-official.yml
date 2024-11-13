@@ -10,6 +10,8 @@ pr: none
 
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
+- name: publishEolAnnotations
+  value: true
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

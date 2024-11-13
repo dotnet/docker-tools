@@ -75,7 +75,7 @@ jobs:
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet-buildtools/prereqs"
+      repo: "public/dotnet-buildtools/*"
       subscription: $(acr.subscription)
       resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)

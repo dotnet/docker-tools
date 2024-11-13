@@ -111,6 +111,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void AnnotateDigest(EolDigestData digestData, DateOnly? globalEolDate)
         {
+            if (Options.IsDryRun)
+            {
+                _loggerService.WriteMessage($"[DRY RUN] Set EOL annotation for digest '{digestData.Digest}'");
+                return;
+            }
+
             DateOnly? eolDate = digestData.EolDate ?? globalEolDate;
             if (eolDate is null)
             {

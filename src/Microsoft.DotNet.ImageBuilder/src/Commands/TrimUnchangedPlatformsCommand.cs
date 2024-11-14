@@ -29,6 +29,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("TRIMMING UNCHANGED PLATFORMS");
 
+            if (!File.Exists(Options.ImageInfoPath))
+            {
+                _loggerService.WriteMessage("Image info file not found. Skipping trimming unchanged platforms.");
+            }
+
             string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
             ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContents);
             RemoveUnchangedPlatforms(imageArtifactDetails);

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -32,6 +33,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             _loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
+
+            if (!File.Exists(Options.ImageInfoPath))
+            {
+                _loggerService.WriteMessage("Image info file not found. Skipping image ingestion wait.");
+            }
 
             if (!Options.IsDryRun)
             {

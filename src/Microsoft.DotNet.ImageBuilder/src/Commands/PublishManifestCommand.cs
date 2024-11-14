@@ -53,6 +53,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _loggerService.WriteHeading("GENERATING MANIFESTS");
 
+            if (!File.Exists(Options.ImageInfoPath))
+            {
+                _loggerService.WriteMessage("Image info file not found. Skipping manifest publishing.");
+            }
+
             // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we
             // need to query the registry at the end of the command.
             if (!Options.IsDryRun)

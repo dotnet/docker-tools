@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Core;
@@ -40,6 +41,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             LoggerService.WriteHeading("COPYING IMAGES");
+
+            if (!File.Exists(Options.ImageInfoPath))
+            {
+                LoggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping image copy."));
+                return;
+            }
 
             ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
                 Options.Subscription, Options.ResourceGroup, CopyImageService.GetBaseAcrName(Options.SourceRegistry));

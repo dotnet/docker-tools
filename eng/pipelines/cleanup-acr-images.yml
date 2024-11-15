@@ -30,16 +30,7 @@ jobs:
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet/core*"
-      subscription: $(acr.subscription)
-      resourceGroup: $(acr.resourceGroup)
-      acr: $(acr.server)
-      action: pruneEol
-      age: 15
-  - template: ../common/templates/steps/clean-acr-images.yml
-    parameters:
-      internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet/nightly/*"
+      repo: "public/dotnet/*"
       subscription: $(acr.subscription)
       resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)
@@ -57,25 +48,7 @@ jobs:
   - template: ../common/templates/steps/clean-acr-images.yml
     parameters:
       internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet*/samples*"
-      subscription: $(acr.subscription)
-      resourceGroup: $(acr.resourceGroup)
-      acr: $(acr.server)
-      action: pruneDangling
-      age: 0
-  - template: ../common/templates/steps/clean-acr-images.yml
-    parameters:
-      internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet/framework/*"
-      subscription: $(acr.subscription)
-      resourceGroup: $(acr.resourceGroup)
-      acr: $(acr.server)
-      action: pruneEol
-      age: 15
-  - template: ../common/templates/steps/clean-acr-images.yml
-    parameters:
-      internalProjectName: ${{ variables.internalProjectName }}
-      repo: "public/dotnet-buildtools/prereqs"
+      repo: "public/dotnet-buildtools/*"
       subscription: $(acr.subscription)
       resourceGroup: $(acr.resourceGroup)
       acr: $(acr.server)

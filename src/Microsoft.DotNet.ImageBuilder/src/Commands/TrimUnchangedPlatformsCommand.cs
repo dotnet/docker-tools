@@ -31,7 +31,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage("Image info file not found. Skipping trimming unchanged platforms.");
+                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping trimming unchanged platforms."));
+                return;
             }
 
             string imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);

@@ -36,7 +36,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage("Image info file not found. Skipping image ingestion wait.");
+                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping image ingestion wait."));
+                return;
             }
 
             if (!Options.IsDryRun)

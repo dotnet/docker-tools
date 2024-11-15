@@ -44,7 +44,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                LoggerService.WriteMessage("Image info file not found. Skipping image copy.");
+                LoggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping image copy."));
+                return;
             }
 
             ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(

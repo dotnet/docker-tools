@@ -55,7 +55,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage("Image info file not found. Skipping manifest publishing.");
+                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                    "Image info file not found. Skipping manifest publishing."));
+                return;
             }
 
             // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we

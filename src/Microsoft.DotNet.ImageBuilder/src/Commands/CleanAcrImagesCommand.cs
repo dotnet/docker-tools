@@ -28,7 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
-        private const int MaxConcurrentDeleteRequestsPerRepo = 10;
+        private const int MaxConcurrentDeleteRequestsPerRepo = 5;
 
         [ImportingConstructor]
         public CleanAcrImagesCommand(

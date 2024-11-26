@@ -42,6 +42,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             cmd.Handler = CommandHandler.Create<TOptions>(options =>
             {
+                if (Options.CIMode)
+                {
+                    LogDockerVersions();
+                }
+
                 Initialize(options);
                 return ExecuteAsync();
             });
@@ -52,6 +57,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected virtual void Initialize(TOptions options)
         {
             Options = options;
+        }
+
+        private static void LogDockerVersions()
+        {
+            // Capture the Docker version and info in the output.
+            ExecuteHelper.Execute(fileName: "docker", args: "version", isDryRun: false);
+            ExecuteHelper.Execute(fileName: "docker", args: "info", isDryRun: false);
         }
 
         public abstract Task ExecuteAsync();

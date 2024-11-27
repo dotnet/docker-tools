@@ -13,16 +13,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public PlatformFilterOptions Platform { get; set; } = new();
 
         public DockerfileFilterOptions Dockerfile { get; set; } = new();
-
-        public string Architecture => Platform.Architecture;
-
-        public string OsType => Platform.OsType;
-
-        public IEnumerable<string> OsVersions => Platform.OsVersions;
-
-        public IEnumerable<string> Paths => Dockerfile.Paths;
-
-        public IEnumerable<string> ProductVersions => Dockerfile.ProductVersions;
     }
 
     public class ManifestFilterOptionsBuilder

@@ -28,11 +28,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (this is IFilterableOptions options)
             {
                 ManifestFilterOptions filterOptions = options.FilterOptions;
-                filter.IncludeArchitecture = filterOptions.Architecture;
-                filter.IncludeOsType = filterOptions.OsType;
-                filter.IncludeOsVersions = filterOptions.OsVersions;
-                filter.IncludePaths = filterOptions.Paths;
-                filter.IncludeProductVersions = filterOptions.ProductVersions;
+                filter.IncludeArchitecture = filterOptions.Platform.Architecture;
+                filter.IncludeOsType = filterOptions.Platform.OsType;
+                filter.IncludeOsVersions = filterOptions.Platform.OsVersions;
+                filter.IncludePaths = filterOptions.Dockerfile.Paths;
+                filter.IncludeProductVersions = filterOptions.Dockerfile.ProductVersions;
             }
 
             return filter;

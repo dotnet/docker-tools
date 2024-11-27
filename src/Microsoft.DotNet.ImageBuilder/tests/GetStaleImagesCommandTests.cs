@@ -1768,7 +1768,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     this.ManifestServiceFactoryMock.Object, this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
-                command.Options.FilterOptions.OsType = this.osType;
+                command.Options.FilterOptions.Platform.OsType = this.osType;
                 command.Options.GitOptions.Email = "test";
                 command.Options.GitOptions.Username = "test";
                 command.Options.GitOptions.AuthToken = "test";

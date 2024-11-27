@@ -21,6 +21,7 @@ public class PlatformFilterOptions
 public class PlatformFilterOptionsBuilder
 {
     public const string OsVersionOptionName = "os-version";
+
     public IEnumerable<Option> GetCliOptions() =>
         [
             CreateOption(

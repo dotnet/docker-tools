@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // This data comes from the GetStaleImagesCommand and represents a mapping of a subscription to the Dockerfile paths
             // of the images that need to be built. A given subscription may have images that are spread across Linux/Windows, AMD64/ARM
-            // which means that the paths collected for that subscription were spread across multiple jobs.  Each of the items in the 
+            // which means that the paths collected for that subscription were spread across multiple jobs.  Each of the items in the
             // Enumerable here represents the data collected by one job.  We need to consolidate the paths for a given subscription since
             // they could be spread across multiple items in the Enumerable.
             return Options.AllSubscriptionImagePaths
@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             string formattedPathsToRebuild = pathsToRebuild
-                .Select(path => $"{CliHelper.FormatAlias(ManifestFilterOptionsBuilder.PathOptionName)} '{path}'")
+                .Select(path => $"{CliHelper.FormatAlias(DockerfileFilterOptionsBuilder.PathOptionName)} '{path}'")
                 .Aggregate((p1, p2) => $"{p1} {p2}");
 
             string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedPathsToRebuild + "\"}";

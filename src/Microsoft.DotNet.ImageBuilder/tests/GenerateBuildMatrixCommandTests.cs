@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.ProductVersionComponents = 3;
                 if (filterPaths != null)
                 {
-                    command.Options.FilterOptions.Paths = filterPaths.Replace("--path ", "").Split(" ");
+                    command.Options.FilterOptions.Dockerfile.Paths = filterPaths.Replace("--path ", "").Split(" ");
                 }
 
                 const string runtimeDepsRelativeDir = "2.1.1/runtime-deps/os";
@@ -108,7 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
                 if (filterPaths != null)
                 {
-                    command.Options.FilterOptions.Paths = filterPaths.Replace("--path ", "").Split(" ");
+                    command.Options.FilterOptions.Dockerfile.Paths = filterPaths.Replace("--path ", "").Split(" ");
                 }
 
                 const string runtimeDepsRelativeDir = "1.0/runtimedeps/os/amd64";
@@ -258,7 +258,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
             command.Options.TrimCachedImages = true;
-            command.Options.FilterOptions.Paths = inputPathFilters.Split(" ", StringSplitOptions.RemoveEmptyEntries);
+            command.Options.FilterOptions.Dockerfile.Paths = inputPathFilters.Split(" ", StringSplitOptions.RemoveEmptyEntries);
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 

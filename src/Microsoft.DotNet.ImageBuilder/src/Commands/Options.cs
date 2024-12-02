@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public bool IsDryRun { get; set; }
         public bool IsVerbose { get; set; }
-        public bool CIMode { get; set; }
+        public bool NoVersionLogging { get; set; }
     }
 
     public class CliOptionsBuilder
@@ -42,9 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     propertyName: nameof(Options.IsVerbose),
                     description: "Show details about the tasks run"),
                 CreateOption<bool>(
-                    alias: "ci",
-                    propertyName: nameof(Options.CIMode),
-                    description: "Enable additional logging useful for CI scenarios")
+                    alias: "no-version-logging",
+                    propertyName: nameof(Options.NoVersionLogging),
+                    description: "Disable automatic logging of Docker version information")
             ];
     }
 }

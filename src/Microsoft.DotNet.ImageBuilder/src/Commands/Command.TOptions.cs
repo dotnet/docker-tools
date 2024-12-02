@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             cmd.Handler = CommandHandler.Create<TOptions>(options =>
             {
-                if (Options.CIMode)
+                if (!Options.NoVersionLogging)
                 {
                     LogDockerVersions();
                 }

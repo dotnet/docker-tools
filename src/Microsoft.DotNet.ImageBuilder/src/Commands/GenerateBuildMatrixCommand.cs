@@ -213,7 +213,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string pathArgs = dockerfilePaths
                 .Distinct()
-                .Select(path => $"{CliHelper.FormatAlias(ManifestFilterOptionsBuilder.PathOptionName)} {path}")
+                .Select(path => $"{CliHelper.FormatAlias(DockerfileFilterOptionsBuilder.PathOptionName)} {path}")
                 .Aggregate((working, next) => $"{working} {next}");
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
@@ -231,7 +231,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
 
             string[] osVersions = subgraph
-                .Select(platform => $"{CliHelper.FormatAlias(ManifestFilterOptionsBuilder.OsVersionOptionName)} {platform.Model.OsVersion}")
+                .Select(platform => $"{CliHelper.FormatAlias(PlatformFilterOptionsBuilder.OsVersionOptionName)} {platform.Model.OsVersion}")
                 .Distinct()
                 .ToArray();
             leg.Variables.Add(("osVersions", string.Join(" ", osVersions)));

@@ -4,14 +4,13 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateDockerfilesOptions : GenerateArtifactsOptions, IFilterableOptions
+    public class GenerateDockerfilesOptions : GenerateArtifactsOptions, IDockerfileFilterableOptions
     {
-        public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
+        public DockerfileFilterOptions Dockerfile { get; set; } = new DockerfileFilterOptions();
 
         public GenerateDockerfilesOptions() : base()
         {
@@ -20,16 +19,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class GenerateDockerfilesOptionsBuilder : GenerateArtifactsOptionsBuilder
     {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
-            new ManifestFilterOptionsBuilder();
+        private readonly DockerfileFilterOptionsBuilder _dockerfileFilterOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+        [
+            ..base.GetCliOptions(),
+            .._dockerfileFilterOptionsBuilder.GetCliOptions(),
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
+        [
+            ..base.GetCliArguments(),
+            .._dockerfileFilterOptionsBuilder.GetCliArguments(),
+        ];
     }
 }
-#nullable disable

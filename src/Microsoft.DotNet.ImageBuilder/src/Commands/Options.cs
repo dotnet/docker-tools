@@ -16,6 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public bool IsDryRun { get; set; }
         public bool IsVerbose { get; set; }
+        public bool NoVersionLogging { get; set; }
     }
 
     public class CliOptionsBuilder
@@ -39,7 +40,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 CreateOption<bool>(
                     alias: "verbose",
                     propertyName: nameof(Options.IsVerbose),
-                    description: "Show details about the tasks run")
+                    description: "Show details about the tasks run"),
+                CreateOption<bool>(
+                    alias: "no-version-logging",
+                    propertyName: nameof(Options.NoVersionLogging),
+                    description: "Disable automatic logging of Docker version information")
             ];
     }
 }

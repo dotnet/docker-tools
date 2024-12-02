@@ -27,14 +27,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (this is IFilterableOptions options)
             {
-                ManifestFilterOptions filterOptions = options.FilterOptions;
-                filter.IncludeArchitecture = filterOptions.Architecture;
-                filter.IncludeOsType = filterOptions.OsType;
-                filter.IncludeOsVersions = filterOptions.OsVersions;
-                filter.IncludePaths = filterOptions.Paths;
-                filter.IncludeProductVersions = filterOptions.ProductVersions;
+                filter = SetPlatformFilters(filter, options.FilterOptions.Platform);
+                filter = SetDockerfileFilters(filter, options.FilterOptions.Dockerfile);
             }
 
+            if (this is IPlatformFilterableOptions platformFilterOptions)
+            {
+                filter = SetPlatformFilters(filter, platformFilterOptions.Platform);
+            }
+
+            if (this is IDockerfileFilterableOptions dockerfileFilterOptions)
+            {
+                filter = SetDockerfileFilters(filter, dockerfileFilterOptions.Dockerfile);
+            }
+
+            return filter;
+        }
+
+        private static ManifestFilter SetDockerfileFilters(ManifestFilter filter, DockerfileFilterOptions options)
+        {
+            filter.IncludePaths = options.Paths;
+            filter.IncludeProductVersions = options.ProductVersions;
+            return filter;
+        }
+
+        private static ManifestFilter SetPlatformFilters(ManifestFilter filter, PlatformFilterOptions options)
+        {
+            filter.IncludeArchitecture = options.Architecture;
+            filter.IncludeOsType = options.OsType;
+            filter.IncludeOsVersions = options.OsVersions;
             return filter;
         }
     }

@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
             // then there are no images that need to be inspected.
-            string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(filterOptions.OsType);
+            string osTypeRegexPattern = ManifestFilter.GetFilterRegexPattern(filterOptions.Platform.OsType);
             if (!string.IsNullOrEmpty(subscription.OsType) &&
                 !Regex.IsMatch(subscription.OsType, osTypeRegexPattern, RegexOptions.IgnoreCase))
             {

@@ -99,7 +99,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             IEnumerable<string> repoNames = newImageArtifactDetails.Repos.Select(repo => repo.Repo)
                 .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo))
                 .Select(name => Options.RegistryOptions.RepoPrefix + name);
-            IEnumerable<(string Digest, string? Tag)> registryDigests = await GetAllImageDigestsFromRegistry(repoNames);
+            Dictionary<string, string?> registryTagsByDigest = await GetAllImageDigestsFromRegistry(repoNames);
 
             if (!Options.IsDryRun)
             {
@@ -110,7 +110,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
             IEnumerable<string> supportedDigests = newImageArtifactDetails.GetAllDigests();
 
-            IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryDigests, supportedDigests);
+            IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryTagsByDigest, supportedDigests);
 
             // Annotate digests that are not already annotated for EOL
             ConcurrentBag<EolDigestData> digetsToAnnotate = [];
@@ -127,11 +127,16 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
             if (Options.AnnotateEolProducts)
             {
-                // Annotate images for eol products in new image info
-                foreach (ImageData image in newImageArtifactDetails.Repos.SelectMany(repo => repo.Images))
-                {
-                    digestDataList.AddRange(GetProductEolDigests(image, productEolDates));
-                }
+                // Annotate images for EOL products in new image info
+                // Only do so for those digests that actually exist in the registry (they may have been cleaned up
+                // because they are EOL).
+                IEnumerable<EolDigestData> eolDigests =
+                    newImageArtifactDetails.Repos
+                        .SelectMany(repo =>
+                            repo.Images
+                                .SelectMany(image => GetProductEolDigests(image, productEolDates)))
+                        .Where(digestData => registryTagsByDigest.ContainsKey(digestData.Digest));
+                digestDataList.AddRange(eolDigests);
             }
         }
         catch (Exception e)
@@ -148,15 +153,16 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     /// <summary>
     /// Finds all the digests that are in the registry but not in the supported digests list.
     /// </summary>
-    private static IEnumerable<EolDigestData> GetUnsupportedDigests(IEnumerable<(string Digest, string? Tag)> registryDigests, IEnumerable<string> supportedDigests) =>
-        registryDigests
-            .Where(registryDigest => !supportedDigests.Contains(registryDigest.Digest))
-            .Select(registryDigest => new EolDigestData(registryDigest.Digest) { Tag = registryDigest.Tag });
+    private static IEnumerable<EolDigestData> GetUnsupportedDigests(
+        Dictionary<string, string?> registryTagsByDigest, IEnumerable<string> supportedDigests) =>
+        registryTagsByDigest
+            .Where(registryDigest => !supportedDigests.Contains(registryDigest.Key))
+            .Select(registryDigest => new EolDigestData(registryDigest.Key) { Tag = registryDigest.Value });
 
     private static string? GetLongestTag(IEnumerable<string> tags) =>
         tags.OrderByDescending(tag => tag.Length).FirstOrDefault();
 
-    private async Task<IEnumerable<(string Digest, string? Tag)>> GetAllImageDigestsFromRegistry(IEnumerable<string> repoNames)
+    private async Task<Dictionary<string, string?>> GetAllImageDigestsFromRegistry(IEnumerable<string> repoNames)
     {
         _loggerService.WriteMessage("Querying registry for all image digests...");
 
@@ -198,7 +204,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             }
         }
 
-        return digests;
+        return digests.ToDictionary(val => val.Digest, val => val.Tag);
     }
 
     private IEnumerable<EolDigestData> GetProductEolDigests(ImageData image, Dictionary<string, DateOnly> productEolDates)

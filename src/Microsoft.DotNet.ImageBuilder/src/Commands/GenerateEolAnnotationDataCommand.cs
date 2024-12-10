@@ -130,15 +130,13 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
                 // Annotate images for EOL products in new image info
                 // Only do so for those digests that actually exist in the registry (they may have been cleaned up
                 // because they are EOL).
-                foreach (EolDigestData eolDigest in
+                IEnumerable<EolDigestData> eolDigests =
                     newImageArtifactDetails.Repos
                         .SelectMany(repo =>
                             repo.Images
                                 .SelectMany(image => GetProductEolDigests(image, productEolDates)))
-                        .Where(digestData => registryTagsByDigest.ContainsKey(digestData.Digest)))
-                {
-                    digestDataList.Add(eolDigest);
-                }
+                        .Where(digestData => registryTagsByDigest.ContainsKey(digestData.Digest));
+                digestDataList.AddRange(eolDigests);
             }
         }
         catch (Exception e)

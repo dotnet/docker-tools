@@ -469,6 +469,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         _imageDigestCache,
                         _imageNameResolver.Value,
                         Options.SourceRepoUrl,
+                        isLocalBaseImageExpected: false,
                         Options.IsDryRun);
 
                     bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);

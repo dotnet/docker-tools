@@ -22,6 +22,7 @@ public interface IImageCacheService
         ImageDigestCache imageDigestCache,
         ImageNameResolver imageNameResolver,
         string? sourceRepoUrl,
+        bool isLocalBaseImageExpected,
         bool isDryRun);
 }
 
@@ -60,6 +61,7 @@ public class ImageCacheService : IImageCacheService
         ImageDigestCache imageDigestCache,
         ImageNameResolver imageNameResolver,
         string? sourceRepoUrl,
+        bool isLocalBaseImageExpected,
         bool isDryRun)
     {
         ImageCacheState cacheState = ImageCacheState.NotCached;
@@ -96,6 +98,7 @@ public class ImageCacheService : IImageCacheService
                 imageDigestCache,
                 imageNameResolver,
                 sourceRepoUrl,
+                isLocalBaseImageExpected,
                 isDryRun);
 
             if (isCachedImage)
@@ -127,6 +130,7 @@ public class ImageCacheService : IImageCacheService
         ImageDigestCache imageDigestCache,
         ImageNameResolver imageNameResolver,
         string? sourceRepoUrl,
+        bool isLocalBaseImageExpected,
         bool isDryRun)
     {
         _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
@@ -134,7 +138,7 @@ public class ImageCacheService : IImageCacheService
         // If the previously published image was based on an image that is still the latest version AND
         // the Dockerfile hasn't changed since it was last published
         if (await IsBaseImageDigestUpToDateAsync(
-                platform, srcPlatformData, imageDigestCache, imageNameResolver, isDryRun) &&
+                platform, srcPlatformData, imageDigestCache, imageNameResolver, isLocalBaseImageExpected, isDryRun) &&
             IsDockerfileUpToDate(platform, srcPlatformData, sourceRepoUrl))
         {
             return true;
@@ -151,6 +155,7 @@ public class ImageCacheService : IImageCacheService
         PlatformData srcPlatformData,
         ImageDigestCache imageDigestCache,
         ImageNameResolver imageNameResolver,
+        bool isLocalImageExpected,
         bool isDryRun)
     {
         _loggerService.WriteMessage();
@@ -164,14 +169,26 @@ public class ImageCacheService : IImageCacheService
         string queryImage = imageNameResolver.GetFinalStageImageNameForDigestQuery(platform);
 
         string? currentSha;
-        try
+        if (isLocalImageExpected)
         {
-            currentSha = await imageDigestCache.GetManifestDigestShaAsync(queryImage, isDryRun);
+            currentSha = await imageDigestCache.GetLocalImageDigestAsync(
+                imageNameResolver.GetFromImageLocalTag(platform.FinalStageFromImage), isDryRun);
+            if (currentSha is not null)
+            {
+                currentSha = DockerHelper.GetDigestSha(currentSha);
+            }
         }
-        // Handle cases where the image is not found in the registry yet
-        catch (Exception)
+        else
         {
-            currentSha = null;
+            try
+            {
+                currentSha = await imageDigestCache.GetManifestDigestShaAsync(queryImage, isDryRun);
+            }
+            // Handle cases where the image is not found in the registry yet
+            catch (Exception)
+            {
+                currentSha = null;
+            }
         }
 
         string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?

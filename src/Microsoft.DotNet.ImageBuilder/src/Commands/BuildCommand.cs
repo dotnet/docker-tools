@@ -338,6 +338,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 _imageDigestCache,
                                 _imageNameResolver.Value,
                                 sourceRepoUrl: Options.SourceRepoUrl,
+                                isLocalBaseImageExpected: true,
                                 isDryRun: Options.IsDryRun);
 
                             if (cacheResult.State.HasFlag(ImageCacheState.Cached))

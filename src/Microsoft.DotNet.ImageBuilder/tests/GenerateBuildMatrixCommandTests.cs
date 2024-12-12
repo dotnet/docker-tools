@@ -164,6 +164,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<ImageDigestCache>(),
                     It.IsAny<ImageNameResolver>(),
                     It.IsAny<string>(),
+                    It.IsAny<bool>(),
                     It.IsAny<bool>()))
                 .ReturnsAsync(new ImageCacheResult(cacheState, false, null));
         }

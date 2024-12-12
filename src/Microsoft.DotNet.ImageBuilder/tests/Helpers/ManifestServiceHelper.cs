@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 
 internal static class ManifestServiceHelper
 {
-    public record ImageDigestResults(string Image, string Digest);
+    public record ImageDigestResults(string Image, string Digest, int OnCallCount = 1);
 
     public record ImageLayersResults(string Image, IEnumerable<string> Layers);
 
@@ -53,18 +53,18 @@ internal static class ManifestServiceHelper
         externalImageDigestResults ??= [];
         imageLayersResults ??= [];
 
-        foreach ((string image, string digest) in localImageDigestResults)
+        foreach ((string image, string digest, int onCallCount) in localImageDigestResults)
         {
             manifestServiceMock
                 .Setup(o => o.GetLocalImageDigestAsync(image, false))
-                .ReturnsAsync(digest);
+                .ReturnsAsync(callCount => callCount >= onCallCount ? digest : null);
         }
 
-        foreach ((string image, string digest) in externalImageDigestResults)
+        foreach ((string image, string digest, int onCallIndex) in externalImageDigestResults)
         {
             manifestServiceMock
                 .Setup(o => o.GetManifestDigestShaAsync(image, false))
-                .ReturnsAsync(digest);
+                .ReturnsAsync(callIndex => callIndex >= onCallIndex ? digest : throw new Exception());
         }
 
         foreach ((string image, IEnumerable<string> layers) in imageLayersResults)

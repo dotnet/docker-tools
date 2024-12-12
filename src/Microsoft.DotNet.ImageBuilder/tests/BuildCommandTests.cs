@@ -1085,6 +1085,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             null, "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
             false, false)]
+        [InlineData(
+            "All previously published, commit diff for runtime-deps",
+            "sha256:baseImageSha", "sha256:baseImageSha",
+            "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
+            "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
+            "runtimeCommitSha", "runtimeCommitSha",
+            false, false)]
         public async Task BuildCommand_Caching(
             string scenario,
             string sourceBaseImageSha,
@@ -1125,7 +1132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 localImageDigestResults:
                 [
                     new($"{runtimeDepsRepoQualified}:{tag}", runtimeDepsDigest),
-                    new($"{overridePrefix}{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{overridePrefix}{runtimeDepsRepo}:{tag}", runtimeDepsDigest, OnCallCount: 2),
                     new($"{runtimeRepoQualified}:{tag}", runtimeDigest),
                     new($"{overridePrefix}{runtimeRepo}:{tag}", runtimeDigest),
                     new(baseImageTag, runtimeDepsBaseImageDigest),
@@ -1443,11 +1450,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new($"{runtimeDepsRepo}:{linuxTag}", runtimeDepsLinuxDigest),
                     new($"{runtimeDepsRepo}:{windowsTag}", runtimeDepsWindowsDigest),
                     new($"{runtimeDeps2Repo}:{linuxTag}", runtimeDeps2Digest),
-                ],
-                externalImageDigestResults:
-                [
-                    new(linuxBaseImageTag, runtimeDepsLinuxBaseImageDigestSha),
-                    new(windowsBaseImageTag, runtimeDepsWindowsBaseImageDigestSha),
+                    new(linuxBaseImageTag, runtimeDepsLinuxBaseImageDigest),
+                    new(windowsBaseImageTag, runtimeDepsWindowsBaseImageDigest),
                 ]);
             Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(manifestServiceMock);
 
@@ -2516,10 +2520,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 localImageDigestResults:
                 [
                     new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
-                ],
-                externalImageDigestResults:
-                [
-                    new(baseImageTag, runtimeDepsLinuxBaseImageDigestSha),
+                    new(baseImageTag, runtimeDepsLinuxBaseImageDigest),
                 ]);
 
             DateTime createdDate = DateTime.Now;
@@ -2740,10 +2741,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 [
                     new($"{runtimeDepsRepo}:{tag}", runtimeDepsLinuxDigest),
                     new($"{runtimeDeps2Repo}:{tag}", runtimeDeps2Digest),
-                ],
-                externalImageDigestResults:
-                [
-                    new(baseImageTag, runtimeDepsLinuxBaseImageDigestSha),
+                    new(baseImageTag, runtimeDepsLinuxBaseImageDigest),
                 ]);
 
             DateTime createdDate = DateTime.Now;

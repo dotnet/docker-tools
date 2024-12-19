@@ -422,9 +422,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .SelectMany(image => image.FilteredPlatforms)
                         .Select(platform =>
                         {
-                            (PlatformData? Platform, ImageData? Image) matchingPlatform =
-                                ImageInfoHelper.GetMatchingPlatformData(platform, repo, _imageArtifactDetails.Value);
-                            return (platform, matchingPlatform.Image, matchingPlatform.Platform);
+                            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, _imageArtifactDetails.Value);
+                            return (platform, matchingPlatform?.Image, matchingPlatform?.Platform);
                         })
                         .Where(platformMapping => platformMapping.Platform is null || !platformMapping.Platform.IsUnchanged));
 

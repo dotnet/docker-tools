@@ -120,10 +120,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return [];
             }
 
-            (PlatformData? Platform, ImageData? Image) matchingPlatform =
-                ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
+            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
 
-            if (matchingPlatform.Platform is null || matchingPlatform.Image is null)
+            if (matchingPlatform is null)
             {
                 _loggerService.WriteMessage(
                     $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");

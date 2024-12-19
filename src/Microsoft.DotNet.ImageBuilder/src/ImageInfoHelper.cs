@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder
                                 {
                                     imageData.ManifestImage = manifestImage;
                                 }
-
+                                
                                 platformData.PlatformInfo = matchingManifestPlatform;
                                 platformData.ImageInfo = manifestImage;
                                 break;
@@ -200,13 +200,12 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <param name="platform">Platform being searched.</param>
         /// <param name="repo">Repo that corresponds to the platform.</param>
         /// <param name="imageArtifactDetails">Image info content.</param>
-        #nullable enable
-        public static (PlatformData? Platform, ImageData? Image) GetMatchingPlatformData(PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
+        public static (PlatformData Platform, ImageData Image)? GetMatchingPlatformData(PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
         {
             RepoData? repoData = imageArtifactDetails.Repos.FirstOrDefault(s => s.Repo == repo.Name);
             if (repoData == null || repoData.Images == null)
             {
-                return (null, null);
+                return null;
             }
 
             foreach (ImageData imageData in repoData.Images)
@@ -219,9 +218,8 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
 
-            return (null, null);
+            return null;
         }
-        #nullable disable
 
         public static void MergeImageArtifactDetails(ImageArtifactDetails src, ImageArtifactDetails target, ImageInfoMergeOptions options = null)
         {

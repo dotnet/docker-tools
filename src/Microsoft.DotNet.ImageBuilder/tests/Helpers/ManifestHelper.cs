@@ -55,6 +55,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         public static Image CreateImage(params IEnumerable<Platform> platforms) =>
             CreateImage(platforms, (IDictionary<string, Tag>)null);
 
+        public static Image CreateImage(IEnumerable<string> sharedTags, params IEnumerable<Platform> platforms) =>
+            CreateImage(
+                platforms,
+                sharedTags.ToDictionary(
+                    keySelector: tag => tag,
+                    elementSelector: tag => new Tag()));
+
         public static Image CreateImage(IEnumerable<Platform> platforms, IDictionary<string, Tag> sharedTags = null, string productVersion = null)
         {
             return new Image

@@ -77,7 +77,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .SelectMany(repo =>
                             repo.FilteredImages
                                 .Where(image => image.SharedTags.Any())
-                                .Select(image => (repo, image)));
+                                .Where(image => image.AllPlatforms
+                                    .Select(platform =>
+                                        ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails))
+                                    .Where(platformMapping => platformMapping.Platform != null)
+                                    .Any(t => !t.Platform!.IsUnchanged))
+                                .Select(image => (repo, image)))
+                        .ToList();
 
                     Parallel.ForEach(manifests, ((RepoInfo Repo, ImageInfo Image) repoImage) =>
                     {

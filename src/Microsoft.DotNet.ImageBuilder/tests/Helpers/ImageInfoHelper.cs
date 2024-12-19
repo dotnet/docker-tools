@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -108,7 +108,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             List<string> simpleTags = null,
             string baseImageDigest = null,
             DateTime? created = null,
-            List<string> layers = null)
+            List<string> layers = null,
+            bool isUnchanged = false)
         {
             if (digest is null)
             {
@@ -125,6 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 SimpleTags = simpleTags ?? new List<string>(),
                 Layers = layers ?? new List<string>(),
                 BaseImageDigest = baseImageDigest,
+                IsUnchanged = isUnchanged,
             };
 
             if (created.HasValue)

@@ -80,8 +80,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 .Where(image => image.AllPlatforms
                                     .Select(platform =>
                                         ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails))
-                                    .Where(platformMapping => platformMapping.Platform != null)
-                                    .Any(t => !t.Platform!.IsUnchanged))
+                                    .Where(platformMapping => platformMapping != null)
+                                    .Any(platformMapping => !platformMapping?.Platform.IsUnchanged ?? false))
                                 .Select(image => (repo, image)))
                         .ToList();
 

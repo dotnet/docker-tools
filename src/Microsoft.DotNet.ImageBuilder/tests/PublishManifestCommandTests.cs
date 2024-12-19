@@ -603,5 +603,91 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedOutput, actualOutput);
         }
+
+        /// <summary>
+        /// Verifies that manifests lists that don't contain any changed images aren't created/pushed.
+        /// </summary>
+        [Fact]
+        public async Task UnchangedManifestList()
+        {
+            Mock<IManifestService> manifestServiceMock = new()
+            {
+                CallBase = true
+            };
+
+            Mock<IManifestService> manifestService = CreateManifestServiceMock();
+            Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestService);
+            manifestService
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(Guid.NewGuid().ToString());
+
+            Mock<IDockerService> dockerServiceMock = new();
+
+            DateTime manifestCreatedDate = DateTime.UtcNow;
+            IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
+
+            PublishManifestCommand command = new(
+                manifestServiceFactory.Object,
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                dateTimeService,
+                Mock.Of<IRegistryCredentialsProvider>(),
+                Mock.Of<IAzureTokenCredentialProvider>());
+
+            using TempFolderContext tempFolderContext = new();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
+
+            string dockerfile1 = CreateDockerfile("1.0/repo1/changedPlatform", tempFolderContext);
+            string dockerfile2 = CreateDockerfile("1.0/repo1/unchangedPlatform", tempFolderContext);
+
+            Manifest manifest =
+                CreateManifest(
+                    CreateRepo("repo1",
+                        CreateImage(
+                            sharedTags: ["changedPlatform-sharedtag"],
+                            CreatePlatform(dockerfile1, ["changedPlatform"])),
+                        CreateImage(
+                            sharedTags: ["unchangedPlatform-sharedtag"],
+                            CreatePlatform(dockerfile2, ["unchangedPlatform"]))));
+
+            ImageArtifactDetails imageArtifactDetails =
+                CreateImageArtifactDetails(
+                    CreateRepoData("repo1",
+                        CreateImageData(
+                            sharedTags: ["changedPlatform-sharedtag"],
+                            CreatePlatform(
+                                dockerfile: dockerfile1,
+                                simpleTags: ["changedPlatform"])),
+                        CreateImageData(
+                            sharedTags: ["unchangedPlatform-sharedtag"],
+                            CreatePlatform(
+                                dockerfile: dockerfile1,
+                                simpleTags: ["unchangedPlatform"],
+                                isUnchanged: true))));
+
+            File.WriteAllText(command.Options.Manifest, JsonHelper.SerializeObject(manifest));
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            // Verify that the changed platform's shared tag was created
+            dockerServiceMock.Verify(o =>
+                o.CreateManifestList(
+                    "repo1:changedPlatform-sharedtag",
+                    new string[] { "repo1:changedPlatform" },
+                    false),
+                Times.Once);
+
+            // Verify that the unchanged platform's shared tag was not created
+            dockerServiceMock.Verify(o =>
+                o.CreateManifestList(
+                    "repo1:unchangedPlatform-sharedtag",
+                    new string[] { "repo1:unchangedPlatform" },
+                    false),
+                Times.Never);
+        }
+
     }
 }

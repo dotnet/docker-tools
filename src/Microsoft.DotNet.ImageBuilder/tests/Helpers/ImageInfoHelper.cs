@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -40,6 +40,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
+        public static ImageArtifactDetails CreateImageArtifactDetails(params List<RepoData> repos) =>
+            new()
+            {
+                Repos = repos,
+            };
+
         private static RepoData CreateRepo(
             string registry,
             string repoName,
@@ -58,6 +64,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Images = imageDatas.ToList()
             };
         }
+
+        public static RepoData CreateRepoData(string name, params List<ImageData> imageDatas) =>
+            new()
+            {
+                Repo = name,
+                Images = imageDatas,
+            };
 
         private static ImageData CreateImage(
             string registry,
@@ -81,6 +94,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 }
             };
         }
+
+        public static ImageData CreateImageData(List<string> sharedTags, params List<PlatformData> platforms) =>
+            new()
+            {
+                Platforms = platforms,
+                Manifest = new ManifestData
+                {
+                    SharedTags = sharedTags,
+                }
+            };
 
         private static PlatformData CreatePlatformSimple(
             string registry,

@@ -8,7 +8,7 @@ ARG TARGETARCH
 
 # download oras package tarball
 WORKDIR /
-RUN oras_version=1.2.1 \
+RUN oras_version=1.2.2 \
     && curl -fSL --output oras_linux.tar.gz https://github.com/oras-project/oras/releases/download/v${oras_version}/oras_${oras_version}_linux_${TARGETARCH}.tar.gz \
     && mkdir -p oras-install/ \
     && tar -zxf oras_linux.tar.gz -C oras-install/ \

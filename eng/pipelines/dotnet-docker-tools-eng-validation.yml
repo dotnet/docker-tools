@@ -13,7 +13,7 @@ variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
 
 extends:
-  template: /eng/common/templates/1es-unofficial.yml@self
+  template: /eng/common/templates/1es-official.yml@self
   parameters:
     stages:
     - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self

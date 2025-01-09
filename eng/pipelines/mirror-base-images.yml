@@ -21,7 +21,7 @@ variables:
   value: ""
 
 extends:
-  template: /eng/common/templates/1es-unofficial.yml@self
+  template: /eng/common/templates/1es-official.yml@self
   parameters:
     stages:
     - stage: MirrorBaseImages

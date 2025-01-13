@@ -1110,6 +1110,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             false, false)]
+        [InlineData(
+            "All unchanged, noCache set to true",
+            "sha256:baseImageSha", "sha256:baseImageSha",
+            "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
+            "runtimeDepsCommitSha", "runtimeDepsCommitSha",
+            "runtimeCommitSha", "runtimeCommitSha",
+            new string[] {},
+            true,
+            false, false)]
+        // Test failing due to https://github.com/dotnet/docker-tools/issues/1185
+        // [InlineData(
+        //     "All unchanged, noCache set to true, path filter set to runtime",
+        //     "sha256:baseImageSha", "sha256:baseImageSha",
+        //     "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
+        //     "runtimeDepsCommitSha", "runtimeDepsCommitSha",
+        //     "runtimeCommitSha", "runtimeCommitSha",
+        //     new string[] { "*1.0/runtime/os*" },
+        //     true,
+        //     true, false)]
         public async Task BuildCommand_Caching(
             string scenario,
             string sourceBaseImageSha,

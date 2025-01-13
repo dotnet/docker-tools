@@ -1230,11 +1230,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
             // Set up source image info file
+            ImageArtifactDetails sourceImageArtifactDetails = new();
 
-            List<RepoData> sourceRepos = [];
             if (sourceBaseImageSha != null)
             {
-                sourceRepos.Add(
+                sourceImageArtifactDetails.Repos.Add(
                     CreateRepoData(
                         runtimeDepsRepo,
                         CreateImageData(
@@ -1250,7 +1250,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (sourceRuntimeDepsImageSha != null)
             {
-                sourceRepos.Add(
+                sourceImageArtifactDetails.Repos.Add(
                     CreateRepoData(
                         runtimeRepo,
                         CreateImageData(
@@ -1262,11 +1262,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 simpleTags: [tag],
                                 commitUrl: $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeCommitSha}/{runtimeDockerfileRelativePath}"))));
             }
-
-            ImageArtifactDetails sourceImageArtifactDetails = new()
-            {
-                Repos = [.. sourceRepos],
-            };
 
             string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
             File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
@@ -1321,7 +1316,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             if (isRuntimeDepsCached)
             {
                 VerifyImportImage(copyImageServiceMock, command,
-                    new string[] { $"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared" },
+                    [$"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared"],
                     DockerHelper.TrimRegistry(runtimeDepsDigest),
                     registryOverride,
                     registry);
@@ -1330,7 +1325,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             if (isRuntimeCached)
             {
                 VerifyImportImage(copyImageServiceMock, command,
-                    new string[] { $"{repoPrefixOverride}{runtimeRepo}:{tag}" },
+                    [$"{repoPrefixOverride}{runtimeRepo}:{tag}"],
                     DockerHelper.TrimRegistry(runtimeDigest),
                     registryOverride,
                     registry);

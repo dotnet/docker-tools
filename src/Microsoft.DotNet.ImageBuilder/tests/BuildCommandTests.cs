@@ -1044,7 +1044,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
-            "",
+            new string[] {},
             false,
             true, true)]
         [InlineData(
@@ -1053,7 +1053,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
             "runtimeCommitSha-1", "runtimeCommitSha-2",
-            "",
+            new string[] {},
             false,
             false, false)]
         [InlineData(
@@ -1062,7 +1062,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
-            "",
+            new string[] {},
             false,
             true, false)]
         [InlineData(
@@ -1071,7 +1071,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-2",
-            "",
+            new string[] {},
             false,
             true, false)]
         [InlineData(
@@ -1080,7 +1080,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
-            "",
+            new string[] {},
             false,
             false, false)]
         [InlineData(
@@ -1089,7 +1089,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
-            "",
+            new string[] {},
             false,
             true, false)]
         [InlineData(
@@ -1098,7 +1098,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             null, "sha256:runtimeDepsImageSha-1",
             null, "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
-            "",
+            new string[] {},
             false,
             false, false)]
         [InlineData(
@@ -1107,7 +1107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
             "runtimeCommitSha", "runtimeCommitSha",
-            "",
+            new string[] {},
             false,
             false, false)]
         public async Task BuildCommand_Caching(
@@ -1120,7 +1120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string currentRuntimeDepsCommitSha,
             string sourceRuntimeCommitSha,
             string currentRuntimeCommitSha,
-            string pathArgs,
+            string[] pathArgs,
             bool noCache,
             bool isRuntimeDepsCached,
             bool isRuntimeCached)
@@ -1210,6 +1210,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
             command.Options.NoCache = noCache;
+            command.Options.FilterOptions.Dockerfile.Paths = pathArgs;
 
             // Set up manifest
             Manifest manifest = CreateManifest(

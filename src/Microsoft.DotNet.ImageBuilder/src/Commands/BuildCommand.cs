@@ -607,7 +607,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> platformExternalFromImages = platform.ExternalFromImages.Distinct();
                 externalFromImages.UnionWith(platformExternalFromImages);
 
-                var tagsToPull = platformExternalFromImages.Select(_imageNameResolver.Value.GetFromImagePullTag);
+                IEnumerable<string> tagsToPull =
+                    platformExternalFromImages.Select(_imageNameResolver.Value.GetFromImagePullTag);
                 foreach (string pullTag in tagsToPull)
                 {
                     if (pulledTags.Add(pullTag))

@@ -141,10 +141,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             bool isUnchanged = false,
             string commitUrl = "")
         {
-            if (digest is null)
-            {
-                digest = $"sha256:{new string(Enumerable.Repeat('0', 64).ToArray())}";
-            }
+            digest ??= $"sha256:{new string(Enumerable.Repeat('0', 64).ToArray())}";
 
             PlatformData platform = new()
             {
@@ -153,8 +150,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Architecture = architecture,
                 OsType = osType,
                 OsVersion = osVersion,
-                SimpleTags = simpleTags ?? new List<string>(),
-                Layers = layers ?? new List<string>(),
+                SimpleTags = simpleTags ?? [],
+                Layers = layers ?? [],
                 BaseImageDigest = baseImageDigest,
                 IsUnchanged = isUnchanged,
                 CommitUrl = commitUrl

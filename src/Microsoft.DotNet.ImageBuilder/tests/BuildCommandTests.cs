@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
+using FluentAssertions;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -17,6 +18,7 @@ using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 
@@ -1042,6 +1044,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
+            new string[] {},
+            false,
             true, true)]
         [InlineData(
             "All previously published, diffs for all image digests and commit SHAs",
@@ -1049,6 +1053,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
             "runtimeCommitSha-1", "runtimeCommitSha-2",
+            new string[] {},
+            false,
             false, false)]
         [InlineData(
             "All previously published, diff for runtimeDeps image digest",
@@ -1056,6 +1062,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
+            new string[] {},
+            false,
             true, false)]
         [InlineData(
             "All previously published, diff for runtime commit SHA",
@@ -1063,6 +1071,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-2",
+            new string[] {},
+            false,
             true, false)]
         [InlineData(
             "All previously published, diff for base image digest",
@@ -1070,6 +1080,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
+            new string[] {},
+            false,
             false, false)]
         [InlineData(
             "Runtime not previously published",
@@ -1077,6 +1089,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
+            new string[] {},
+            false,
             true, false)]
         [InlineData(
             "No images previously published",
@@ -1084,6 +1098,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             null, "sha256:runtimeDepsImageSha-1",
             null, "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
+            new string[] {},
+            false,
             false, false)]
         [InlineData(
             "All previously published, commit diff for runtime-deps",
@@ -1091,7 +1107,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
             "runtimeCommitSha", "runtimeCommitSha",
+            new string[] {},
+            false,
             false, false)]
+        [InlineData(
+            "All unchanged, noCache set to true",
+            "sha256:baseImageSha", "sha256:baseImageSha",
+            "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
+            "runtimeDepsCommitSha", "runtimeDepsCommitSha",
+            "runtimeCommitSha", "runtimeCommitSha",
+            new string[] {},
+            true,
+            false, false)]
+        // Test failing due to https://github.com/dotnet/docker-tools/issues/1185
+        // [InlineData(
+        //     "All unchanged, noCache set to true, path filter set to runtime",
+        //     "sha256:baseImageSha", "sha256:baseImageSha",
+        //     "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
+        //     "runtimeDepsCommitSha", "runtimeDepsCommitSha",
+        //     "runtimeCommitSha", "runtimeCommitSha",
+        //     new string[] { "*1.0/runtime/os*" },
+        //     true,
+        //     true, false)]
         public async Task BuildCommand_Caching(
             string scenario,
             string sourceBaseImageSha,
@@ -1102,6 +1139,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string currentRuntimeDepsCommitSha,
             string sourceRuntimeCommitSha,
             string currentRuntimeCommitSha,
+            string[] pathArgs,
+            bool noCache,
             bool isRuntimeDepsCached,
             bool isRuntimeCached)
         {
@@ -1160,7 +1199,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string runtimeDockerfileRelativePath = DockerfileHelper.CreateDockerfile(
                 "1.0/runtime/os", tempFolderContext, $"$REPO:{tag}");
 
-            Mock<IGitService> gitServiceMock = new Mock<IGitService>();
+            Mock<IGitService> gitServiceMock = new();
             gitServiceMock
                 .Setup(o => o.GetCommitSha(PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, runtimeDepsDockerfileRelativePath)), It.IsAny<bool>()))
                 .Returns(currentRuntimeDepsCommitSha);
@@ -1189,198 +1228,99 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.RepoPrefix = repoPrefixOverride;
             command.Options.Subscription = "my-sub";
             command.Options.ResourceGroup = "resource-group";
+            command.Options.NoCache = noCache;
+            command.Options.FilterOptions.Dockerfile.Paths = pathArgs;
 
-            const string ProductVersion = "1.0.1";
+            // Set up manifest
+            Manifest manifest = CreateManifest(
+                CreateRepo(runtimeDepsRepo,
+                    CreateImage(
+                        sharedTags: ["shared"],
+                        CreatePlatform(
+                            runtimeDepsDockerfileRelativePath,
+                            tags: [tag]))),
+                CreateRepo(runtimeRepo,
+                    CreateImage(
+                        sharedTags: [],
+                        CreatePlatformWithRepoBuildArg(
+                            runtimeDockerfileRelativePath,
+                            repo: $"$(Repo:{runtimeDepsRepo})",
+                            tags: [tag]))));
+            manifest.Registry = registry;
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
-            List<RepoData> sourceRepos = new List<RepoData>();
+            // Set up source image info file
+            ImageArtifactDetails sourceImageArtifactDetails = new();
+
             if (sourceBaseImageSha != null)
             {
-                sourceRepos.Add(
-                    new RepoData
-                    {
-                        Repo = runtimeDepsRepo,
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = ProductVersion,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = runtimeDepsDockerfileRelativePath,
-                                        Architecture = "amd64",
-                                        OsType = "Linux",
-                                        OsVersion = "focal",
-                                        Digest = runtimeDepsDigest,
-                                        BaseImageDigest = $"{baseImageRepo}@{sourceBaseImageSha}",
-                                        Created = createdDate.ToUniversalTime(),
-                                        SimpleTags =
-                                        {
-                                            tag
-                                        },
-                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                    }
-                                },
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    {
-                                        "shared"
-                                    }
-                                }
-                            }
-                        }
-                    });
+                sourceImageArtifactDetails.Repos.Add(
+                    CreateRepoData(
+                        runtimeDepsRepo,
+                        CreateImageData(
+                            sharedTags: ["shared"],
+                            CreatePlatform(
+                                dockerfile: runtimeDepsDockerfileRelativePath,
+                                digest: runtimeDepsDigest,
+                                baseImageDigest: $"{baseImageRepo}@{sourceBaseImageSha}",
+                                created: createdDate.ToUniversalTime(),
+                                simpleTags: [tag],
+                                commitUrl: $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}"))));
             }
 
             if (sourceRuntimeDepsImageSha != null)
             {
-                sourceRepos.Add(
-                    new RepoData
-                    {
-                        Repo = runtimeRepo,
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = ProductVersion,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = runtimeDockerfileRelativePath,
-                                        Architecture = "amd64",
-                                        OsType = "Linux",
-                                        OsVersion = "focal",
-                                        Digest = runtimeDigest,
-                                        BaseImageDigest = $"{runtimeDepsRepoQualified}@{sourceRuntimeDepsImageSha}",
-                                        Created = createdDate.ToUniversalTime(),
-                                        SimpleTags =
-                                        {
-                                            tag
-                                        },
-                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
-                                    }
-                                }
-                            }
-                        }
-                    });
+                sourceImageArtifactDetails.Repos.Add(
+                    CreateRepoData(
+                        runtimeRepo,
+                        CreateImageData(
+                            CreatePlatform(
+                                dockerfile: runtimeDockerfileRelativePath,
+                                digest: runtimeDigest,
+                                baseImageDigest: $"{runtimeDepsRepoQualified}@{sourceRuntimeDepsImageSha}",
+                                created: createdDate.ToUniversalTime(),
+                                simpleTags: [tag],
+                                commitUrl: $"{command.Options.SourceRepoUrl}/blob/{sourceRuntimeCommitSha}/{runtimeDockerfileRelativePath}"))));
             }
-
-            ImageArtifactDetails sourceImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos = sourceRepos.ToList()
-            };
 
             string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
             File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
 
-            Manifest manifest = CreateManifest(
-                CreateRepo(runtimeDepsRepo,
-                    CreateImage(
-                        new Platform[]
-                        {
-                                CreatePlatform(runtimeDepsDockerfileRelativePath, new string[] { tag })
-                        },
-                        new Dictionary<string, Tag>
-                        {
-                                { "shared", new Tag() }
-                        },
-                        ProductVersion)),
-                CreateRepo(runtimeRepo,
-                    CreateImage(
-                        new Platform[]
-                        {
-                                CreatePlatformWithRepoBuildArg(runtimeDockerfileRelativePath, $"$(Repo:{runtimeDepsRepo})", new string[] { tag })
-                        },
-                        productVersion: ProductVersion))
-            );
-            manifest.Registry = registry;
+            // Set up expected output image info
+            ImageArtifactDetails expectedOutputImageArtifactDetails =
+                CreateImageArtifactDetails(
+                    CreateRepoData(
+                        runtimeDepsRepo,
+                        CreateImageData(
+                            sharedTags: ["shared"],
+                            CreatePlatform(
+                                dockerfile: runtimeDepsDockerfileRelativePath,
+                                digest: runtimeDepsDigest,
+                                baseImageDigest: runtimeDepsBaseImageDigest,
+                                created: createdDate.ToUniversalTime(),
+                                simpleTags: [tag],
+                                commitUrl: $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
+                                isUnchanged: isRuntimeDepsCached))),
+                    CreateRepoData(
+                        runtimeRepo,
+                        CreateImageData(
+                            CreatePlatform(
+                                dockerfile: runtimeDockerfileRelativePath,
+                                digest: runtimeDigest,
+                                baseImageDigest: runtimeDepsDigest,
+                                created: createdDate.ToUniversalTime(),
+                                simpleTags: [tag],
+                                commitUrl: $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
+                                isUnchanged: isRuntimeCached))));
 
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
+            // Run command
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            ImageArtifactDetails expectedOutputImageArtifactDetails = new ImageArtifactDetails
-            {
-                Repos = new List<RepoData>
-                {
-                    new RepoData
-                    {
-                        Repo = runtimeDepsRepo,
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = ProductVersion,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = runtimeDepsDockerfileRelativePath,
-                                        Architecture = "amd64",
-                                        OsType = "Linux",
-                                        OsVersion = "focal",
-                                        Digest = runtimeDepsDigest,
-                                        BaseImageDigest = runtimeDepsBaseImageDigest,
-                                        Created = createdDate.ToUniversalTime(),
-                                        SimpleTags =
-                                        {
-                                            tag
-                                        },
-                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeDepsCommitSha}/{runtimeDepsDockerfileRelativePath}",
-                                        IsUnchanged = isRuntimeDepsCached,
-                                    }
-                                },
-                                Manifest = new ManifestData
-                                {
-                                    SharedTags =
-                                    {
-                                        "shared"
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    new RepoData
-                    {
-                        Repo = runtimeRepo,
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = ProductVersion,
-                                Platforms =
-                                {
-                                    new PlatformData
-                                    {
-                                        Dockerfile = runtimeDockerfileRelativePath,
-                                        Architecture = "amd64",
-                                        OsType = "Linux",
-                                        OsVersion = "focal",
-                                        Digest = runtimeDigest,
-                                        BaseImageDigest = runtimeDepsDigest,
-                                        Created = createdDate.ToUniversalTime(),
-                                        SimpleTags =
-                                        {
-                                            tag
-                                        },
-                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentRuntimeCommitSha}/{runtimeDockerfileRelativePath}",
-                                        IsUnchanged = isRuntimeCached,
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
-            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
-
-            Assert.Equal(expectedOutput, actualOutput);
+            // Validate
+            string actualOutputText = File.ReadAllText(command.Options.ImageInfoOutputPath);
+            ImageArtifactDetails actualOutput = JsonConvert.DeserializeObject<ImageArtifactDetails>(actualOutputText);
+            actualOutput.Should().BeEquivalentTo(expectedOutputImageArtifactDetails);
 
             string runtimeDepsDigestDestCache = $"{overridePrefix}{DockerHelper.TrimRegistry(runtimeDepsDigest)}";
             Times expectedTimes = isRuntimeDepsCached ? Times.Once() : Times.Never();
@@ -1396,7 +1336,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             if (isRuntimeDepsCached)
             {
                 VerifyImportImage(copyImageServiceMock, command,
-                    new string[] { $"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared" },
+                    [$"{repoPrefixOverride}{runtimeDepsRepo}:{tag}", $"{repoPrefixOverride}{runtimeDepsRepo}:shared"],
                     DockerHelper.TrimRegistry(runtimeDepsDigest),
                     registryOverride,
                     registry);
@@ -1405,7 +1345,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             if (isRuntimeCached)
             {
                 VerifyImportImage(copyImageServiceMock, command,
-                    new string[] { $"{repoPrefixOverride}{runtimeRepo}:{tag}" },
+                    [$"{repoPrefixOverride}{runtimeRepo}:{tag}"],
                     DockerHelper.TrimRegistry(runtimeDigest),
                     registryOverride,
                     registry);

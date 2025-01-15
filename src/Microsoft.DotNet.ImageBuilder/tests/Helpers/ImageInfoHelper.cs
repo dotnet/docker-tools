@@ -95,6 +95,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
+        public static ImageData CreateImageData(params List<PlatformData> platforms) =>
+            new()
+            {
+                Platforms = platforms
+            };
+
         public static ImageData CreateImageData(List<string> sharedTags, params List<PlatformData> platforms) =>
             new()
             {
@@ -132,12 +138,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string baseImageDigest = null,
             DateTime? created = null,
             List<string> layers = null,
-            bool isUnchanged = false)
+            bool isUnchanged = false,
+            string commitUrl = "")
         {
-            if (digest is null)
-            {
-                digest = $"sha256:{new string(Enumerable.Repeat('0', 64).ToArray())}";
-            }
+            digest ??= $"sha256:{new string(Enumerable.Repeat('0', 64).ToArray())}";
 
             PlatformData platform = new()
             {
@@ -146,10 +150,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Architecture = architecture,
                 OsType = osType,
                 OsVersion = osVersion,
-                SimpleTags = simpleTags ?? new List<string>(),
-                Layers = layers ?? new List<string>(),
+                SimpleTags = simpleTags ?? [],
+                Layers = layers ?? [],
                 BaseImageDigest = baseImageDigest,
                 IsUnchanged = isUnchanged,
+                CommitUrl = commitUrl
             };
 
             if (created.HasValue)

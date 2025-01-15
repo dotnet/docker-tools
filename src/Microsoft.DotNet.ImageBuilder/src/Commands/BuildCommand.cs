@@ -592,70 +592,75 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task PullBaseImagesAsync()
         {
-            if (!Options.IsSkipPullingEnabled)
+            Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+
+            if (Options.IsSkipPullingEnabled)
             {
-                Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+                Logger.WriteMessage("No external base images to pull");
+                return;
+            }
 
-                HashSet<string> pulledTags = new();
-                HashSet<string> externalFromImages = new();
+            HashSet<string> pulledTags = [];
+            HashSet<string> externalFromImages = [];
+            foreach (PlatformInfo platform in Manifest.GetFilteredPlatforms())
+            {
+                IEnumerable<string> platformExternalFromImages = platform.ExternalFromImages.Distinct();
+                externalFromImages.UnionWith(platformExternalFromImages);
 
-                foreach (PlatformInfo platform in Manifest.GetFilteredPlatforms())
+                IEnumerable<string> tagsToPull =
+                    platformExternalFromImages.Select(_imageNameResolver.Value.GetFromImagePullTag);
+                foreach (string pullTag in tagsToPull)
                 {
-                    IEnumerable<string> platformExternalFromImages = platform.ExternalFromImages.Distinct();
-                    externalFromImages.UnionWith(platformExternalFromImages);
-
-                    foreach (string pullTag in platformExternalFromImages.Select(tag => _imageNameResolver.Value.GetFromImagePullTag(tag)))
+                    if (pulledTags.Add(pullTag))
                     {
-                        if (!pulledTags.Contains(pullTag))
-                        {
-                            pulledTags.Add(pullTag);
-
-                            // Pull the image, specifying its platform to ensure we get the necessary image in the case of a
-                            // multi-arch tag.
-                            _dockerService.PullImage(pullTag, platform.PlatformLabel, Options.IsDryRun);
-                        }
+                        // Pull the image, specifying its platform to ensure we get the necessary image in the case of
+                        // a multi-arch tag.
+                        _dockerService.PullImage(pullTag, platform.PlatformLabel, Options.IsDryRun);
                     }
-                }
-
-                if (pulledTags.Any())
-                {
-                    IEnumerable<string> finalStageExternalFromImages = Manifest.GetFilteredPlatforms()
-                        .Where(platform => platform.FinalStageFromImage is not null && !platform.IsInternalFromImage(platform.FinalStageFromImage))
-                        .Select(platform => _imageNameResolver.Value.GetFromImagePullTag(platform.FinalStageFromImage!))
-                        .Distinct();
-
-                    if (!finalStageExternalFromImages.IsSubsetOf(pulledTags))
-                    {
-                        throw new InvalidOperationException(
-                            "The following tags are identified as final stage tags but were not pulled:" +
-                            Environment.NewLine +
-                            string.Join(", ", finalStageExternalFromImages.Except(pulledTags).ToArray()));
-                    }
-
-                    await Parallel.ForEachAsync(finalStageExternalFromImages, async (fromImage, cancellationToken) =>
-                    {
-                        // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
-                        // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
-                        // greater chance the tag could be updated resulting in a different digest returned than what was
-                        // originally pulled.
-                        await _imageDigestCache.GetLocalImageDigestAsync(fromImage, Options.IsDryRun);
-                    });
-
-                    // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles
-                    Parallel.ForEach(externalFromImages, fromImage =>
-                    {
-                        string pullTag = _imageNameResolver.Value.GetFromImagePullTag(fromImage);
-                        if (pullTag != fromImage)
-                        {
-                            _dockerService.CreateTag(pullTag, fromImage, Options.IsDryRun);
-                        }
-                    });
-                }
-                else
-                {
-                    Logger.WriteMessage("No external base images to pull");
                 }
             }
+
+            if (pulledTags.Count <= 0)
+            {
+                Logger.WriteMessage("No external base images to pull");
+                return;
+            }
+
+            IEnumerable<string> finalStageExternalFromImages =
+                Manifest.GetFilteredPlatforms()
+                    .Where(platform =>
+                        platform.FinalStageFromImage is not null &&
+                        !platform.IsInternalFromImage(platform.FinalStageFromImage))
+                    .Select(platform =>
+                        _imageNameResolver.Value.GetFromImagePullTag(platform.FinalStageFromImage!))
+                    .Distinct();
+
+            if (!finalStageExternalFromImages.IsSubsetOf(pulledTags))
+            {
+                throw new InvalidOperationException(
+                    "The following tags are identified as final stage tags but were not pulled:" +
+                    Environment.NewLine +
+                    string.Join(", ", finalStageExternalFromImages.Except(pulledTags).ToArray()));
+            }
+
+            await Parallel.ForEachAsync(finalStageExternalFromImages, async (fromImage, cancellationToken) =>
+            {
+                // Ensure the digest of the pulled image is retrieved right away after pulling so it's available in
+                // the DockerServiceCache for later use.  The longer we wait to get the digest after pulling, the
+                // greater chance the tag could be updated resulting in a different digest returned than what was
+                // originally pulled.
+                await _imageDigestCache.GetLocalImageDigestAsync(fromImage, Options.IsDryRun);
+            });
+
+            // Tag the images that were pulled from the mirror as they are referenced in the Dockerfiles
+            Parallel.ForEach(externalFromImages, fromImage =>
+            {
+                string pullTag = _imageNameResolver.Value.GetFromImagePullTag(fromImage);
+                if (pullTag != fromImage)
+                {
+                    _dockerService.CreateTag(pullTag, fromImage, Options.IsDryRun);
+                }
+            });
         }
 
         private IEnumerable<PlatformData> GetProcessedPlatforms() => _imageArtifactDetails?.Repos

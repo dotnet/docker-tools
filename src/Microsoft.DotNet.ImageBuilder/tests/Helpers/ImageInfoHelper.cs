@@ -95,6 +95,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             };
         }
 
+        public static ImageData CreateImageData(params List<PlatformData> platforms) =>
+            new()
+            {
+                Platforms = platforms
+            };
+
         public static ImageData CreateImageData(List<string> sharedTags, params List<PlatformData> platforms) =>
             new()
             {
@@ -132,7 +138,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string baseImageDigest = null,
             DateTime? created = null,
             List<string> layers = null,
-            bool isUnchanged = false)
+            bool isUnchanged = false,
+            string commitUrl = null)
         {
             if (digest is null)
             {
@@ -150,6 +157,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 Layers = layers ?? new List<string>(),
                 BaseImageDigest = baseImageDigest,
                 IsUnchanged = isUnchanged,
+                CommitUrl = commitUrl
             };
 
             if (created.HasValue)

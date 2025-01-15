@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             DateTime? created = null,
             List<string> layers = null,
             bool isUnchanged = false,
-            string commitUrl = null)
+            string commitUrl = "")
         {
             if (digest is null)
             {

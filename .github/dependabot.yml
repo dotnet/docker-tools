@@ -4,14 +4,12 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directory: "/src/Microsoft.DotNet.ImageBuilder/src/"
+    directories:
+      - "/src/Microsoft.DotNet.ImageBuilder/src/"
+      - "/src/Microsoft.DotNet.ImageBuilder/tests/"
+      - "/eng/src/file-pusher/"
+      - "/eng/src/yaml-updater/"
     schedule:
       interval: "daily"
-  - package-ecosystem: "nuget"
-    directory: "/eng/src/file-pusher/"
-    schedule:
-      interval: "daily"
-  - package-ecosystem: "nuget"
-    directory: "/eng/src/yaml-updater/"
-    schedule:
-      interval: "daily"
+    commit-message:
+      prefix: "[dependabot]"

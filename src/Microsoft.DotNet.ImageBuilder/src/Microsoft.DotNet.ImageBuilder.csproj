@@ -27,8 +27,6 @@
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="YamlDotNet" Version="16.2.1" />
 
-    <!-- Upgrade implicit Azure.Core reference due to https://github.com/Azure/azure-sdk-for-net/issues/44901 -->
-    <PackageReference Include="Azure.Core" Version="1.41.0" />
     <!-- CVE-2024-0056: Upgrade System.Data.SqlClient implicitly referenced by Microsoft.TeamFoundationServer.Client -->
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
     <!-- CVE-2024-38095: Upgrade version of System.Formats.Asn1 implicitly referenced by Microsoft.DotNet.VersionTools -->

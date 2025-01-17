@@ -5,10 +5,8 @@ version: 2
 updates:
   - package-ecosystem: "nuget"
     directories:
-      - "/src/Microsoft.DotNet.ImageBuilder/src/"
-      - "/src/Microsoft.DotNet.ImageBuilder/tests/"
-      - "/eng/src/file-pusher/"
-      - "/eng/src/yaml-updater/"
+      - "/src/Microsoft.DotNet.ImageBuilder/"
+      - "/eng/src/"
     schedule:
       interval: "daily"
     commit-message:

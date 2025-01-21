@@ -12,7 +12,7 @@
     <PackageReference Include="Azure.Identity" Version="1.12.0" />
     <PackageReference Include="Azure.ResourceManager.ContainerRegistry" Version="1.2.1" />
     <PackageReference Include="Cottle" Version="2.0.10" />
-    <PackageReference Include="LibGit2Sharp" Version="0.29.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="13.0.0" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.0" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.24379.1" />

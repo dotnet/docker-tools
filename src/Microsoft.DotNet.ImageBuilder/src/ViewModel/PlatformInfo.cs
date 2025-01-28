@@ -178,21 +178,10 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return os switch
             {
                 string s when s.Contains("debian") => "Debian",
-                string s when s.Contains("sid") => "Debian Unstable",
-                string s when s.Contains("jessie") => "Debian 8",
-                string s when s.Contains("stretch") => "Debian 9",
-                string s when s.Contains("buster") => "Debian 10",
-                string s when s.Contains("bullseye") => "Debian 11",
                 string s when s.Contains("bookworm") => "Debian 12",
                 string s when s.Contains("trixie") => "Debian 13",
                 string s when s.Contains("forky") => "Debian 14",
                 string s when s.Contains("duke") => "Debian 15",
-                string s when s.Contains("xenial") => "Ubuntu 16.04",
-                string s when s.Contains("bionic") => "Ubuntu 18.04",
-                string s when s.Contains("disco") => "Ubuntu 19.04",
-                string s when s.Contains("focal") => "Ubuntu 20.04",
-                string s when s.Contains("hirsute") => "Ubuntu 21.04",
-                string s when s.Contains("impish") => "Ubuntu 21.10",
                 string s when s.Contains("jammy") => "Ubuntu 22.04",
                 string s when s.Contains("noble") => "Ubuntu 24.04",
                 string s when s.Contains("azurelinux") =>

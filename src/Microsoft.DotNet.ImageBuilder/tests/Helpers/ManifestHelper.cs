@@ -76,7 +76,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string dockerfilePath,
             string[] tags,
             OS os = OS.Linux,
-            string osVersion = "focal",
+            string osVersion = "noble",
             Architecture architecture = Architecture.AMD64,
             string variant = null,
             CustomBuildLegGroup[] customBuildLegGroups = null,

@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
             "This means the dependent image will have its own dependency graph considered for build leg " +
             "generation. An example of this is when a custom build leg dependency is defined to " +
             "include an SDK image supported on a particular architecture in order to test a runtime OS " +
-            "that doesn't its own SDK on that architecture (Buster ARM SDK to test Alpine ARM runtime); " +
+            "that doesn't its own SDK on that architecture (Trixie ARM SDK to test Alpine ARM runtime); " +
             "in that case, the SDK will be included in a leg together with the runtime and the SDK will " +
             "still have have its own leg."
             )]

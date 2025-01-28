@@ -24,12 +24,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ImageInfo = CreateImage(productVersion),
                 Architecture = "amd64",
                 OsType = "linux",
-                OsVersion = "focal",
+                OsVersion = "noble",
                 Dockerfile = "path"
             };
 
             string identifier = platform.GetIdentifier();
-            Assert.Equal($"path-amd64-linux-focal-{expectedVersion}", identifier);
+            Assert.Equal($"path-amd64-linux-noble-{expectedVersion}", identifier);
         }
 
         private static ImageInfo CreateImage(string productVersion) =>

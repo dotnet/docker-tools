@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
     public class ManifestInfoTests
     {
         private static string s_dockerfilePath = "testDockerfile";
-        private static string s_repoJson = 
+        private static string s_repoJson =
 $@"
   ""repos"": [
     {CreateRepo("testRepo", s_dockerfilePath)}
@@ -179,7 +179,7 @@ $@"
         {{
             ""dockerfile"": ""{dockerfilePath}"",
             ""os"": ""linux"",
-            ""osVersion"": ""stretch"",
+            ""osVersion"": ""trixie"",
             ""tags"": {{
                 ""{tag}"": {{}}
             }}

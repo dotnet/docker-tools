@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/repo1/os/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Digest = digest1,
                                         SimpleTags = new List<string> { "tag1" }
@@ -238,7 +238,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/repo2/os/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Digest = digest2,
                                         SimpleTags = new List<string> { "tag2" }
@@ -270,7 +270,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/repo3/os/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Digest = digest3,
                                         SimpleTags = new List<string> { "tag3" }

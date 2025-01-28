@@ -1,4 +1,4 @@
 $(McrTagsYmlRepo:test)
-$(McrTagsYmlTagGroup:focal)
-$(McrTagsYmlTagGroup:focal-arm64)
+$(McrTagsYmlTagGroup:noble)
+$(McrTagsYmlTagGroup:noble-arm64)
 $(McrTagsYmlTagGroup:nanoserver-1809)

@@ -24,10 +24,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private const string DockerfileTemplatePath = "Dockerfile.Template";
         private const string DefaultDockerfileTemplate =
 @"FROM Repo:2.1-{{OS_VERSION_BASE}}
-ENV TEST1 {{if OS_VERSION = ""buster-slim"":IfWorks}}
+ENV TEST1 {{if OS_VERSION = ""trixie-slim"":IfWorks}}
 ENV TEST2 {{VARIABLES[""Variable1""]}}";
         private const string ExpectedDockerfile =
-@"FROM Repo:2.1-buster
+@"FROM Repo:2.1-trixie
 ENV TEST1 IfWorks
 ENV TEST2 Value1";
 
@@ -156,18 +156,18 @@ ENV TEST2 Value1";
         [InlineData("repo1:tag2", "ARCH_TAG_SUFFIX", "-amd64")]
         [InlineData("repo1:tag3", "ARCH_TAG_SUFFIX", "-amd64")]
         [InlineData("repo1:tag1", "PRODUCT_VERSION", "1.2.3")]
-        [InlineData("repo1:tag1", "OS_VERSION", "buster-slim")]
+        [InlineData("repo1:tag1", "OS_VERSION", "trixie-slim")]
         [InlineData("repo1:tag2", "OS_VERSION", "nanoserver-1903")]
         [InlineData("repo1:tag3", "OS_VERSION", "windowsservercore-1903")]
         [InlineData("repo1:tag4", "OS_VERSION", "windowsservercore-ltsc2019")]
-        [InlineData("repo1:tag1", "OS_VERSION_BASE", "buster")]
+        [InlineData("repo1:tag1", "OS_VERSION_BASE", "trixie")]
         [InlineData("repo1:tag1", "OS_VERSION_NUMBER", "")]
         [InlineData("repo1:tag2", "OS_VERSION_NUMBER", "1903")]
         [InlineData("repo1:tag3", "OS_VERSION_NUMBER", "1903")]
         [InlineData("repo1:tag4", "OS_VERSION_NUMBER", "ltsc2019")]
         [InlineData("repo1:tag5", "OS_VERSION_NUMBER", "3.12")]
         [InlineData("repo1:tag6", "OS_VERSION_NUMBER", "1.0")]
-        [InlineData("repo1:tag1", "OS_ARCH_HYPHENATED", "Debian-10-arm32")]
+        [InlineData("repo1:tag1", "OS_ARCH_HYPHENATED", "Debian-13-arm32")]
         [InlineData("repo1:tag2", "OS_ARCH_HYPHENATED", "NanoServer-1903")]
         [InlineData("repo1:tag3", "OS_ARCH_HYPHENATED", "WindowsServerCore-1903")]
         [InlineData("repo1:tag4", "OS_ARCH_HYPHENATED", "WindowsServerCore-ltsc2019")]
@@ -220,7 +220,7 @@ ENV TEST2 Value1";
                                 DockerfilePath,
                                 new string[] { "tag1" },
                                 OS.Linux,
-                                "buster-slim",
+                                "trixie-slim",
                                 Architecture.ARM,
                                 "v7",
                                 dockerfileTemplatePath: templatePath),

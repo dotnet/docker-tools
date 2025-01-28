@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string> { "linux" }
                                     },
@@ -77,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 CreateDockerfile("1.0/runtime/linux", tempFolderContext),
                                 new string[] { "linux" },
                                 OS.Linux,
-                                "focal"),
+                                "noble"),
                             CreatePlatform(
                                 CreateDockerfile("1.0/runtime/windows", tempFolderContext),
                                 new string[] { "windows" },
@@ -132,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string> { "linux" }
                                     }
@@ -154,7 +154,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 CreateDockerfile("1.0/runtime/linux", tempFolderContext),
                                 new string[] { "linux" },
                                 OS.Linux,
-                                "focal")
+                                "noble")
                         },
                         productVersion: "1.0.1"))
             );
@@ -200,7 +200,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string> { "linux" }
                                     }
@@ -214,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     {
                                         Dockerfile = "1.0/runtime/linux/Dockerfile",
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         SimpleTags = new List<string>()
                                     }
@@ -237,7 +237,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 dockerfile,
                                 new string[] { "linux" },
                                 OS.Linux,
-                                "focal")
+                                "noble")
                         }),
                     CreateImage(
                         new Platform[]
@@ -246,7 +246,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 dockerfile,
                                 new string[0],
                                 OS.Linux,
-                                "focal")
+                                "noble")
                         }))
             );
 
@@ -973,7 +973,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>
@@ -1006,7 +1006,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>
@@ -1038,7 +1038,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>
@@ -1056,7 +1056,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                     new PlatformData
                                     {
                                         OsType = "Linux",
-                                        OsVersion = "focal",
+                                        OsVersion = "noble",
                                         Architecture = "amd64",
                                         Dockerfile = "1.0/runtime/os/Dockerfile",
                                         SimpleTags = new List<string>

@@ -156,125 +156,63 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return _internalRepos.Any(repo => fromImage.StartsWith($"{repo}:"));
         }
 
-        public string GetOSDisplayName()
+        public string GetOSDisplayName() => Model.OS switch
         {
-            string displayName;
-            string os = BaseOsVersion;
+            OS.Windows => GetWindowsOSDisplayName(BaseOsVersion),
+            _ => GetLinuxOSDisplayName(BaseOsVersion)
+        };
 
-            if (Model.OS == OS.Windows)
+        private static string GetWindowsOSDisplayName(string os)
+        {
+            string version = os.Split('-')[1];
+            return os switch
             {
-                string version = os.Split('-')[1];
-                if (os.StartsWith("nanoserver"))
-                {
-                    displayName = GetWindowsVersionDisplayName("Nano Server", version);
-                }
-                else if (os.StartsWith("windowsservercore"))
-                {
-                    displayName = GetWindowsVersionDisplayName("Windows Server Core", version);
-                }
-                else
-                {
-                    throw new NotSupportedException($"The OS version '{os}' is not supported.");
-                }
-            }
-            else
-            {
-                if (os.Contains("debian"))
-                {
-                    displayName = "Debian";
-                }
-                else if (os.Contains("jessie"))
-                {
-                    displayName = "Debian 8";
-                }
-                else if (os.Contains("stretch"))
-                {
-                    displayName = "Debian 9";
-                }
-                else if (os.Contains("buster"))
-                {
-                    displayName = "Debian 10";
-                }
-                else if (os.Contains("bullseye"))
-                {
-                    displayName = "Debian 11";
-                }
-                else if (os.Contains("bookworm"))
-                {
-                    displayName = "Debian 12";
-                }
-                else if (os.Contains("xenial"))
-                {
-                    displayName = "Ubuntu 16.04";
-                }
-                else if (os.Contains("bionic"))
-                {
-                    displayName = "Ubuntu 18.04";
-                }
-                else if (os.Contains("disco"))
-                {
-                    displayName = "Ubuntu 19.04";
-                }
-                else if (os.Contains("focal"))
-                {
-                    displayName = "Ubuntu 20.04";
-                }
-                else if (os.Contains("hirsute"))
-                {
-                    displayName = "Ubuntu 21.04";
-                }
-                else if (os.Contains("impish"))
-                {
-                    displayName = "Ubuntu 21.10";
-                }
-                else if (os.Contains("jammy"))
-                {
-                    displayName = "Ubuntu 22.04";
-                }
-                else if (os.Contains("noble"))
-                {
-                    displayName = "Ubuntu 24.04";
-                }
-                else if (os.Contains("alpine") || os.Contains("centos") || os.Contains("fedora"))
-                {
-                    displayName = FormatVersionableOsName(os, name => name.FirstCharToUpper());
-                }
-                else if (os.Contains("azurelinux"))
-                {
-                    displayName = FormatVersionableOsName(os, name => "Azure Linux");
-                }
-                else if (os.Contains("cbl-mariner"))
-                {
-                    displayName = FormatVersionableOsName(os, name => "CBL-Mariner");
-                }
-                else if (os.Contains("leap"))
-                {
-                    displayName = FormatVersionableOsName(os, name => "openSUSE Leap");
-                }
-                else if (os.Contains("ubuntu"))
-                {
-                    displayName = FormatVersionableOsName(os, name => "Ubuntu");
-                }
-                else
-                {
-                    throw new NotSupportedException($"The OS version '{os}' is not supported.");
-                }
-            }
-
-            return displayName;
+                var s when s.StartsWith("nanoserver") => GetWindowsVersionDisplayName("Nano Server", version),
+                var s when s.StartsWith("windowsservercore") => GetWindowsVersionDisplayName("Windows Server Core", version),
+                _ => throw new NotSupportedException($"The OS version '{os}' is not supported.")
+            };
         }
 
-        private static string GetWindowsVersionDisplayName(string windowsName, string version)
+        private static string GetLinuxOSDisplayName(string os)
         {
-            if (version.StartsWith("ltsc"))
+            return os switch
             {
-                return $"{windowsName} {version.TrimStartString("ltsc")}";
-            }
-            else
-            {
-                return $"{windowsName}, version {version}";
-            }
+                string s when s.Contains("debian") => "Debian",
+                string s when s.Contains("jessie") => "Debian 8",
+                string s when s.Contains("stretch") => "Debian 9",
+                string s when s.Contains("buster") => "Debian 10",
+                string s when s.Contains("bullseye") => "Debian 11",
+                string s when s.Contains("bookworm") => "Debian 12",
+                string s when s.Contains("xenial") => "Ubuntu 16.04",
+                string s when s.Contains("bionic") => "Ubuntu 18.04",
+                string s when s.Contains("disco") => "Ubuntu 19.04",
+                string s when s.Contains("focal") => "Ubuntu 20.04",
+                string s when s.Contains("hirsute") => "Ubuntu 21.04",
+                string s when s.Contains("impish") => "Ubuntu 21.10",
+                string s when s.Contains("jammy") => "Ubuntu 22.04",
+                string s when s.Contains("noble") => "Ubuntu 24.04",
+                string s when s.Contains("azurelinux") =>
+                    FormatVersionableOsName(os, name => "Azure Linux"),
+                string s when s.Contains("cbl-mariner") =>
+                    FormatVersionableOsName(os, name => "CBL-Mariner"),
+                string s when s.Contains("leap") =>
+                    FormatVersionableOsName(os, name => "openSUSE Leap"),
+                string s when s.Contains("ubuntu") =>
+                    FormatVersionableOsName(os, name => "Ubuntu"),
+                string s when s.Contains("alpine")
+                    || s.Contains("centos")
+                    || s.Contains("fedora") =>
+                        FormatVersionableOsName(os, name => name.FirstCharToUpper()),
+                _ => throw new NotSupportedException($"The OS version '{os}' is not supported.")
+            };
         }
+
+        private static string GetWindowsVersionDisplayName(string windowsName, string version) =>
+            version.StartsWith("ltsc") switch
+            {
+                true => $"{windowsName} {version.TrimStartString("ltsc")}",
+                false => $"{windowsName}, version {version}"
+            };
 
         public static bool AreMatchingPlatforms(ImageInfo image1, PlatformInfo platform1, ImageInfo image2, PlatformInfo platform2) =>
             platform1.GetUniqueKey(image1) == platform2.GetUniqueKey(image2);

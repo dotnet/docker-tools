@@ -11,7 +11,7 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "00:00"
-      tz: "America/Los_Angeles"
+      timezone: "America/Los_Angeles"
     commit-message:
       prefix: "[dependabot]"
   - package-ecosystem: "github-actions"
@@ -20,4 +20,4 @@ updates:
       interval: "weekly"
       day: "monday"
       time: "00:00"
-      tz: "America/Los_Angeles"
+      timezone: "America/Los_Angeles"

@@ -322,7 +322,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             const string OsType = "Linux";
             const string Os1 = "bionic";
-            const string Os2 = "focal";
+            const string Os2 = "noble";
 
             using (TempFolderContext context = TestHelper.UseTempFolder())
             {
@@ -635,7 +635,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new RepoData { Repo = "repo" }
                     }
                 };
-                        
+
                 // Store the content in a .txt file which the command should NOT be looking for.
                 File.WriteAllText("image-info.txt", JsonHelper.SerializeObject(imageArtifactDetails));
 

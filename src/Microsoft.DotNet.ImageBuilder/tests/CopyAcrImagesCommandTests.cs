@@ -248,13 +248,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(dockerfileRelativePath, new string[] { "3.1" }, osVersion: "focal")
+                            CreatePlatform(dockerfileRelativePath, new string[] { "3.1" }, osVersion: "noble")
                         },
                         productVersion: "3.1"),
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(dockerfileRelativePath, new string[] { "5.0" }, osVersion: "focal")
+                            CreatePlatform(dockerfileRelativePath, new string[] { "5.0" }, osVersion: "noble")
                         },
                         productVersion: "5.0"))
             );
@@ -284,7 +284,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "3.1"
                                             },
-                                            osVersion: "focal")
+                                            osVersion: "noble")
                                     },
                                     ProductVersion = "3.1"
                                 },
@@ -298,7 +298,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "5.0"
                                             },
-                                            osVersion: "focal")
+                                            osVersion: "noble")
                                     },
                                     ProductVersion = "5.0"
                                 }

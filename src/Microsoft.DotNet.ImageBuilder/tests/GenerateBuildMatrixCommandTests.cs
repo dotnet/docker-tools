@@ -477,14 +477,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "buster-slim")
+                                CreatePlatform(dockerfileRuntime2FullPath, new string[] { "tag" }, osVersion: "trixie-slim")
                             },
                             productVersion: "2.0")),
                     CreateRepo("sdk2",
                         CreateImage(
                             new Platform[]
                             {
-                                CreatePlatform(dockerfileSdk2FullPath, new string[] { "tag" }, osVersion: "buster")
+                                CreatePlatform(dockerfileSdk2FullPath, new string[] { "tag" }, osVersion: "trixie")
                             },
                             productVersion: "2.0"))
                 );
@@ -501,7 +501,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
                 string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                Assert.Equal("--os-version focal --os-version buster --os-version buster-slim", osVersions);
+                Assert.Equal("--os-version noble --os-version trixie --os-version trixie-slim", osVersions);
             }
         }
 
@@ -623,7 +623,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateImage(
                         new Platform[]
                         {
-                            CreatePlatform(dockerfileRuntimeFullPath, new string[] { "tag" }, osVersion: "buster")
+                            CreatePlatform(dockerfileRuntimeFullPath, new string[] { "tag" }, osVersion: "trixie")
                         },
                         productVersion: "1.0")),
                 CreateRepo("runtime2",
@@ -700,7 +700,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreatePlatform(
                                 DockerfileHelper.CreateDockerfile("1.0/repo2/os", tempFolderContext),
                                 new string[] { "tag" },
-                                osVersion: "focal",
+                                osVersion: "noble",
                                 customBuildLegGroups: new CustomBuildLegGroup[]
                                 {
                                     new CustomBuildLegGroup
@@ -722,7 +722,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreatePlatform(
                                 DockerfileHelper.CreateDockerfile("1.0/repo3/os", tempFolderContext),
                                 new string[] { "tag" },
-                                osVersion: "buster")
+                                osVersion: "trixie")
                         },
                         productVersion: "1.0")),
                 CreateRepo("repo4",
@@ -1189,11 +1189,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Assert.Equal(2, matrixInfo.Legs.Count);
 
-                Assert.Equal("3.1-focal-core-runtime-deps", matrixInfo.Legs[0].Name);
+                Assert.Equal("3.1-noble-core-runtime-deps", matrixInfo.Legs[0].Name);
                 string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
 
-                Assert.Equal("5.0-focal-runtime-deps", matrixInfo.Legs[1].Name);
+                Assert.Equal("5.0-noble-runtime-deps", matrixInfo.Legs[1].Name);
                 imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
                 Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
             }
@@ -1239,11 +1239,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
             Assert.Equal(2, matrixInfo.Legs.Count);
-            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo1-os-Dockerfile" : "1.0-focal-repo1", matrixInfo.Legs[0].Name);
+            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo1-os-Dockerfile" : "1.0-noble-repo1", matrixInfo.Legs[0].Name);
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal($"--path 1.0/repo1/os/Dockerfile", imageBuilderPaths);
 
-            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo2-os-Dockerfile" : "1.0-focal-repo2", matrixInfo.Legs[1].Name);
+            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo2-os-Dockerfile" : "1.0-noble-repo2", matrixInfo.Legs[1].Name);
             imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
             Assert.Equal($"--path 1.0/repo2/os/Dockerfile", imageBuilderPaths);
         }
@@ -1295,7 +1295,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                expectedLegName = "3.1-focal-runtime";
+                expectedLegName = "3.1-noble-runtime";
             }
 
             Assert.Equal(expectedLegName, matrixInfo.Legs[0].Name);

@@ -1,1 +1,1 @@
-FROM ubuntu.azurecr.io/ubuntu:focal
+FROM ubuntu.azurecr.io/ubuntu:noble

@@ -11,20 +11,20 @@
         {
           "platforms": [
             {
-              "dockerfile": "1.0/focal/amd64",
+              "dockerfile": "1.0/noble/amd64",
               "os": "linux",
-              "osVersion": "focal",
+              "osVersion": "noble",
               "tags": {
-                "focal": {}
+                "noble": {}
               }
             },
             {
               "architecture": "arm64",
-              "dockerfile": "1.0/focal/arm64v8",
+              "dockerfile": "1.0/noble/arm64v8",
               "os": "linux",
-              "osVersion": "focal",
+              "osVersion": "noble",
               "tags": {
-                "focal-arm64": {}
+                "noble-arm64": {}
               },
               "variant": "v8"
             },

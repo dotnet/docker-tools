@@ -178,6 +178,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             return os switch
             {
                 string s when s.Contains("debian") => "Debian",
+                string s when s.Contains("sid") => "Debian Unstable",
                 string s when s.Contains("jessie") => "Debian 8",
                 string s when s.Contains("stretch") => "Debian 9",
                 string s when s.Contains("buster") => "Debian 10",

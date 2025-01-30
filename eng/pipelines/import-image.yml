@@ -1,0 +1,43 @@
+# Imports an image from a 3rd party registry to the public mirror registry
+
+trigger: none
+pr: none
+
+parameters:
+- name: imageName
+  displayName: Name of the image to be imported from 3rd party registry
+  type: string
+- name: isDockerHubImage
+  displayName: Is the image from Docker Hub?
+  type: boolean
+  default: true
+
+variables:
+- template: /eng/pipelines/templates/variables/common.yml@self
+
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    stages:
+    - stage: Import
+      jobs:
+      - job: Import
+        steps:
+        - pwsh: |
+            $normalizedImageName = '${{ parameters.imageName }}'
+            if ('${{ parameters.isDockerHubImage }}' -eq 'true') {
+              $normalizedImageName = 'docker.io/' + $normalizedImageName
+            }
+            Write-Output "##vso[task.setvariable variable=normalizedImageName]$normalizedImageName"
+          displayName: Normalize image name
+        - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
+          parameters:
+            displayName: Import image
+            serviceConnection: $(public-mirror.serviceConnectionName)
+            command: >
+              az acr import
+              --subscription $(public-mirror.subscription)
+              --resource-group $(public-mirror.resourceGroup)
+              --name $(public-mirror.server)
+              --source $(normalizedImageName)
+              --image ${{ parameters.imageName }}

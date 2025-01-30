@@ -5,7 +5,7 @@ pr: none
 
 parameters:
 - name: imageName
-  displayName: Name of the image to be imported from 3rd party registry
+  displayName: Image name to be imported (for Docker Hub, use <repo>:<tag>; for others, use <registry>/<repo>:<tag>)
   type: string
 - name: isDockerHubImage
   displayName: Is the image from Docker Hub?

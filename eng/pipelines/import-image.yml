@@ -14,6 +14,16 @@ parameters:
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
+- ${{ if eq(parameters.isDockerHubImage, 'true') }}:
+  - name: normalizedImageName
+    value: ${{ format('docker.io/{0}', parameters.imageName) }}
+  - name: extraImportOptions
+    value: --username $(dotnetDockerHubBot.userName) --password $(BotAccount-dotnet-dockerhub-bot-PAT)
+- ${{ else }}:
+  - name: normalizedImageName
+    value: ${{ parameters.imageName }}
+  - name: extraImportOptions
+    value: ''
 
 extends:
   template: /eng/common/templates/1es-official.yml@self
@@ -23,13 +33,6 @@ extends:
       jobs:
       - job: Import
         steps:
-        - pwsh: |
-            $normalizedImageName = '${{ parameters.imageName }}'
-            if ('${{ parameters.isDockerHubImage }}' -eq 'true') {
-              $normalizedImageName = 'docker.io/' + $normalizedImageName
-            }
-            Write-Output "##vso[task.setvariable variable=normalizedImageName]$normalizedImageName"
-          displayName: Normalize image name
         - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
           parameters:
             displayName: Import image
@@ -41,3 +44,4 @@ extends:
               --name $(public-mirror.server)
               --source $(normalizedImageName)
               --image ${{ parameters.imageName }}
+              $(extraImportOptions)

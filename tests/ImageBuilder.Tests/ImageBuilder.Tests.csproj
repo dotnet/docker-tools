@@ -1,8 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
+
+    <!-- https://github.com/dotnet/docker-tools/issues/327 -->
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

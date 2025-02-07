@@ -3,8 +3,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <PublishTrimmed>False</PublishTrimmed>
-    <TargetFramework>net9.0</TargetFramework>
-    <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
+
+    <!-- https://github.com/dotnet/docker-tools/issues/327 -->
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

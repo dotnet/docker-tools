@@ -15,7 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\file-pusher\file-pusher.csproj" />
+    <ProjectReference Include="..\FilePusher\FilePusher.csproj" />
   </ItemGroup>
 
 </Project>

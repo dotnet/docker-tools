@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.DotNet.ImageBuilder.csproj" />
+    <ProjectReference Include="..\..\src\ImageBuilder\ImageBuilder.csproj" />
   </ItemGroup>
 
 </Project>

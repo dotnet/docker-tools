@@ -8,7 +8,7 @@ using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class RetryHelper
     {

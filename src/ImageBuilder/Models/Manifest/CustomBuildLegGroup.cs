@@ -6,7 +6,7 @@ using System;
 using System.ComponentModel;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest
 {
     [Description(
         "This object describes the tag dependencies of the image for a specific named scenario. This is " +

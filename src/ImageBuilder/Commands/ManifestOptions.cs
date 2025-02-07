@@ -5,11 +5,11 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public abstract class ManifestOptions : Options, IManifestOptionsInfo
     {

@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IGitHubClientFactory))]
     internal class GitHubClientFactory : IGitHubClientFactory

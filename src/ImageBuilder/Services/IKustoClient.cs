@@ -4,7 +4,7 @@
 
 using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     public interface IKustoClient
     {

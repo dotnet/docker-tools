@@ -4,7 +4,7 @@
 
 using System.ComponentModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest
 {
     [Description(
         "A tag object contains metadata about a Docker tag. It is a JSON object " +

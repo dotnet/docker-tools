@@ -7,8 +7,9 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Linq;
 
+
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public static class CliHelper
     {
@@ -30,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public static Option<T> CreateOption<T>(string alias, string propertyName, string description, Func<string, T> convert,
             T defaultValue = default!) =>
             new Option<T>(FormatAlias(alias), description: description,
-                parseArgument: resultArg => convert(GetTokenValue(resultArg)))
+                parseArgument: resultArg => convert(resultArg.GetTokenValue()))
             {
                 Argument = new Argument<T>(() => defaultValue!),
                 Name = propertyName

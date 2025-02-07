@@ -8,12 +8,12 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.Services.WebApi;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     public interface IBuildHttpClient : IDisposable
     {
         Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag);
-        
+
         Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId);
 
         Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null);

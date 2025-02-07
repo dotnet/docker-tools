@@ -6,18 +6,19 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.DockerfileHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class ValidateImageSizeCommandTests
     {
@@ -42,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task NoSizeDifferences()
         {
-            ImageSizeData[] imageSizes = new []
+            ImageSizeData[] imageSizes = new[]
             {
                 new ImageSizeData(RuntimeDepsRepo, RuntimeDeps1RelativeDir, RuntimeDeps1Tag, 1, 1),
                 new ImageSizeData(RuntimeDepsRepo, RuntimeDeps2RelativeDir, RuntimeDeps2Tag, 2, 2),
@@ -273,7 +274,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.allowedVariance = allowedVariance;
                 this.validationMode = validationMode;
                 this.localImagesExist = localImagesExist == true;
-                this.environmentServiceMock = new Mock<IEnvironmentService>();
+                environmentServiceMock = new Mock<IEnvironmentService>();
             }
 
             public async Task<ValidateImageSizeCommand> RunTestAsync()
@@ -282,27 +283,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 // Use the image size data defined by the test case to generate a baseline file
                 string baselinePath = Path.Combine(tempFolderContext.Path, "baseline.json");
-                CreateBaselineFile(baselinePath, this.imageSizes);
+                CreateBaselineFile(baselinePath, imageSizes);
 
                 // Use the image size data defined by the test to provide mock values for the image sizes
                 // from the DockerService.
                 Mock<IDockerService> dockerServiceMock = new Mock<IDockerService>();
                 dockerServiceMock
                     .Setup(o => o.LocalImageExists(It.IsAny<string>(), It.IsAny<bool>()))
-                    .Returns(this.localImagesExist);
-                SetupDockerServiceImageSizes(dockerServiceMock, this.imageSizes);
+                    .Returns(localImagesExist);
+                SetupDockerServiceImageSizes(dockerServiceMock, imageSizes);
 
                 // Setup the command
                 ValidateImageSizeCommand command = new ValidateImageSizeCommand(
                     dockerServiceMock.Object, Mock.Of<ILoggerService>(), environmentServiceMock.Object);
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.BaselinePath = baselinePath;
-                command.Options.AllowedVariance = this.allowedVariance ?? 0;
-                command.Options.Mode = this.validationMode;
+                command.Options.AllowedVariance = allowedVariance ?? 0;
+                command.Options.Mode = validationMode;
                 command.Options.IsPullEnabled = false;
 
                 // Use the image size data defined by the test to generate a manifest file
-                Manifest manifest = CreateTestManifest(tempFolderContext, this.imageSizes);
+                Manifest manifest = CreateTestManifest(tempFolderContext, imageSizes);
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
                 // Execute the command
@@ -314,7 +315,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public void Verify(bool isValidationErrorExpected)
             {
-                this.environmentServiceMock.Verify(
+                environmentServiceMock.Verify(
                     o => o.Exit(It.IsAny<int>()), isValidationErrorExpected ? Times.Once() : Times.Never());
             }
         }

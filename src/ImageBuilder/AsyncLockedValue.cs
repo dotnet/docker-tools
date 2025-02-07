@@ -6,7 +6,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public class AsyncLockedValue<T> : IDisposable
     {
@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public async Task<T> GetValueAsync(Func<Task<T>> valueInitializer)
         {
-            return await _semaphore.DoubleCheckedLockAsync<T>(
+            return await _semaphore.DoubleCheckedLockAsync(
                 () => _value,
                 val => val is null,
                 async () => _value = await valueInitializer());

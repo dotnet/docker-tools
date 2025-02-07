@@ -1,10 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 public abstract class ImageNameResolver
@@ -79,7 +79,7 @@ public abstract class ImageNameResolver
     {
         fromImage = _baseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
 
-        if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
+        if (registry is not null && DockerHelper.IsInRegistry(fromImage, registry) ||
             DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
             || _sourceRepoPrefix is null)
         {

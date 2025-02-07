@@ -7,7 +7,7 @@ using System.CommandLine;
 using System.Linq;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public class ShowImageStatsOptions : ManifestOptions, IFilterableOptions
     {

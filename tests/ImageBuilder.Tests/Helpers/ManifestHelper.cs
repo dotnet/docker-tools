@@ -5,11 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Moq;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers
 {
     public static class ManifestHelper
     {
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         public static Image CreateImage(params IEnumerable<Platform> platforms) =>
-            CreateImage(platforms, (IDictionary<string, Tag>)null);
+            CreateImage(platforms, null);
 
         public static Image CreateImage(IEnumerable<string> sharedTags, params IEnumerable<Platform> platforms) =>
             CreateImage(
@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
         public static Platform CreatePlatformWithRepoBuildArg(string dockerfilePath, string repo, string[] tags, OS os = OS.Linux)
         {
-            Platform platform = ManifestHelper.CreatePlatform(dockerfilePath, tags, os);
+            Platform platform = CreatePlatform(dockerfilePath, tags, os);
             platform.BuildArgs = new Dictionary<string, string>
             {
                 { "REPO", repo }

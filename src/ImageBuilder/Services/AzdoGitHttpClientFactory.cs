@@ -9,7 +9,7 @@ using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     [Export(typeof(IAzdoGitHttpClientFactory))]
     public class AzdoGitHttpClientFactory : IAzdoGitHttpClientFactory

@@ -4,7 +4,7 @@
 using System.ComponentModel;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 
 #nullable enable
 public class Readme

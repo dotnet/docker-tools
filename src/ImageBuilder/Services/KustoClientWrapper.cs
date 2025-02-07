@@ -14,7 +14,7 @@ using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     [Export(typeof(IKustoClient))]
     internal class KustoClientWrapper : IKustoClient
@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                         ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                     }
 
-                    if (ingestionStatus.Status == Status.Pending) 
+                    if (ingestionStatus.Status == Status.Pending)
                     {
                         throw new InvalidOperationException($"Timeout while ingesting Kusto data.");
                     }

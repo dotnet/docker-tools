@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Azure;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
 public class AsyncPageableMock<T>(IEnumerable<T> items) : AsyncPageable<T>
 {

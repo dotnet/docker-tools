@@ -6,7 +6,7 @@ using System.Reflection;
 using Octokit;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IOctokitClientFactory))]
     public class OctokitClientFactory : IOctokitClientFactory

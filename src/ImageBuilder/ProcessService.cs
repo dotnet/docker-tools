@@ -5,7 +5,7 @@ using System.ComponentModel.Composition;
 using System.Diagnostics;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IProcessService))]
     public class ProcessService : IProcessService

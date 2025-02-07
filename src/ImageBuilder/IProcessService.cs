@@ -4,7 +4,7 @@
 using System.Diagnostics;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public interface IProcessService
     {

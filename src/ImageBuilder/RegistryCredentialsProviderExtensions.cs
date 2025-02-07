@@ -3,9 +3,9 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 internal static class RegistryCredentialsProviderExtensions
@@ -18,8 +18,7 @@ internal static class RegistryCredentialsProviderExtensions
         string registryName,
         string? ownedAcr)
     {
-        bool loggedIn = await LogInToRegistry(
-            credsProvider,
+        bool loggedIn = await credsProvider.LogInToRegistry(
             isDryRun,
             credentialsOptions,
             registryName,
@@ -48,7 +47,8 @@ internal static class RegistryCredentialsProviderExtensions
     {
         await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
-            () => {
+            () =>
+            {
                 action();
                 return Task.CompletedTask;
             },

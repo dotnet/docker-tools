@@ -6,7 +6,7 @@ using System;
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Annotations
 {
     public class EolAnnotationsData
     {

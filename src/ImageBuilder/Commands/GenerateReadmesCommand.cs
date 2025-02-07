@@ -11,14 +11,15 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Cottle;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Models.McrTags;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrTags;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     [method: ImportingConstructor]
@@ -50,13 +51,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 contexts: Manifest.FilteredRepos
                     .Select(repo => repo.Readmes.Select(readme => (repo, readme)))
                     .SelectMany(repoReadme => repoReadme),
-                getTemplatePath: ((RepoInfo repo, Readme readme) context) => context.readme.TemplatePath,
-                getArtifactPath: ((RepoInfo repo, Readme readme) context) => context.readme.Path,
-                getState: ((RepoInfo repo, Readme readme) context, string templatePath, string indent) =>
+                getTemplatePath: (context) => context.readme.TemplatePath,
+                getArtifactPath: (context) => context.readme.Path,
+                getState: (context, templatePath, indent) =>
                     GetTemplateState(context.repo, templatePath, indent),
                 templatePropertyName: nameof(Readme.TemplatePath),
                 artifactName: ArtifactName,
-                postProcess: (string readmeContent, (RepoInfo repo, Readme readme) context) =>
+                postProcess: (readmeContent, context) =>
                     UpdateTagsListing(readmeContent, context.repo));
 
             ValidateArtifacts();

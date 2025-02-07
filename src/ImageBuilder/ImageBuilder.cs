@@ -11,10 +11,10 @@ using System.ComponentModel.Composition.Hosting;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using ICommand = Microsoft.DotNet.DockerTools.ImageBuilder.Commands.ICommand;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class ImageBuilder
     {

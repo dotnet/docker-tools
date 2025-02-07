@@ -3,7 +3,7 @@
 
 using System.ComponentModel.Composition;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 [Export(typeof(IRegistryContentClientFactory))]

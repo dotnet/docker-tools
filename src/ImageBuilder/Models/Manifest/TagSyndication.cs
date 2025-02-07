@@ -4,7 +4,7 @@
 
 using System.ComponentModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest
 {
     [Description(
         "A description of where a tag should be syndicated to."

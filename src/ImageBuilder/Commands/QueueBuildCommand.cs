@@ -9,9 +9,9 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.QueueNotification;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
-using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.QueueNotification;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Subscription;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Services;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildOptionsBuilder>
@@ -279,7 +279,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return builds.Select(build => build.GetWebLink());
         }
 
-		private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
+        private static async Task<(bool ShouldSkipBuild, IEnumerable<string> RecentFailedBuilds)> ShouldDisallowBuildDueToRecentFailuresAsync(
             IBuildHttpClient client, int pipelineId, Guid projectId)
         {
             List<WebApi.Build> autoBuilderBuilds = (await client.GetBuildsAsync(projectId, definitions: new int[] { pipelineId }))

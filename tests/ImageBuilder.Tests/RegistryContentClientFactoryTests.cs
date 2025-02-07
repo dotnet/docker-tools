@@ -4,11 +4,12 @@
 using System;
 using System.Collections.Generic;
 using Azure.Core;
-using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 using Moq;
 using Xunit;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests;
 
 public class RegistryContentClientFactoryTests
 {

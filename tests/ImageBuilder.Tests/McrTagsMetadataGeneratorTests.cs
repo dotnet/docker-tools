@@ -7,10 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Models.McrTags;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
@@ -18,9 +14,14 @@ using Xunit;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrTags;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class McrTagsMetadataGeneratorTests
     {
@@ -63,12 +64,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(emptyFilePath, string.Empty);
 
             // Create manifest
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo(RepoName,
+            Manifest manifest = CreateManifest(
+                CreateRepo(RepoName,
                     new Image[]
                     {
-                        ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { TagName }))
+                        CreateImage(
+                            CreatePlatform(dockerfileRelativePath, new string[] { TagName }))
                     },
                     readme: emptyFileName,
                     readmeTemplate: emptyFileName,
@@ -78,7 +79,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
             // Load manifest
-            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
             ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
@@ -141,7 +142,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string emptyFilePath = Path.Combine(tempFolderContext.Path, emptyFileName);
             File.WriteAllText(emptyFilePath, string.Empty);
 
-            Platform platform = ManifestHelper.CreatePlatform(
+            Platform platform = CreatePlatform(
                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
                 Array.Empty<string>());
             platform.Tags = new Dictionary<string, Tag>
@@ -158,13 +159,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Image image;
 
             // Create manifest
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo(RepoName,
+            Manifest manifest = CreateManifest(
+                CreateRepo(RepoName,
                     new Image[]
                     {
-                        image = ManifestHelper.CreateImage(
+                        image = CreateImage(
                             platform,
-                            ManifestHelper.CreatePlatform(
+                            CreatePlatform(
                                 DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os2", tempFolderContext),
                                 new string[] { "tag1a", "tag1b" }))
                     },
@@ -189,7 +190,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
             // Load manifest
-            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
             ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
@@ -253,14 +254,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(emptyFilePath, string.Empty);
 
             // Create manifest
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo(RepoName,
+            Manifest manifest = CreateManifest(
+                CreateRepo(RepoName,
                     new Image[]
                     {
-                        ManifestHelper.CreateImage(
+                        CreateImage(
                             new Platform[]
                             {
-                                ManifestHelper.CreatePlatform(
+                                CreatePlatform(
                                     DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
                                     new string[] { "concreteTagZ", "concreteTagA" })
                             },
@@ -269,10 +270,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                 { "shared1", new Tag() },
                                 { "latest", new Tag() },
                             }),
-                        ManifestHelper.CreateImage(
+                        CreateImage(
                             new Platform[]
                             {
-                                ManifestHelper.CreatePlatform(
+                                CreatePlatform(
                                     DockerfileHelper.CreateDockerfile($"1.0/{RepoName}/os", tempFolderContext),
                                     Array.Empty<string>())
                             },
@@ -290,7 +291,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
             // Load manifest
-            IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
+            IManifestOptionsInfo manifestOptions = GetManifestOptions(manifestPath);
             ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 

@@ -3,11 +3,11 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.MarBulkDeletion;
 
 #nullable enable
 internal record BulkDeletionDescription
 {
     public string RegistryType { get; init; } = "public";
-    public List<string> Digests { get; init;} = [];
+    public List<string> Digests { get; init; } = [];
 }

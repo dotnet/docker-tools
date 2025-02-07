@@ -8,7 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public class ImageDigestCache(Lazy<IManifestService> manifestService)
     {
@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         public Task<string?> GetLocalImageDigestAsync(string tag, bool isDryRun) =>
-            LockHelper.DoubleCheckedLockLookupAsync(_localDigestCacheLock, _localDigestCache, tag,
+            _localDigestCacheLock.DoubleCheckedLockLookupAsync(_localDigestCache, tag,
                 () => _inner.Value.GetLocalImageDigestAsync(tag, isDryRun),
                 // Don't allow null digests to be cached. A locally built image won't have a digest until
                 // it is pushed so if its digest is retrieved before pushing, we don't want that
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 val => !string.IsNullOrEmpty(val));
 
         public Task<string> GetManifestDigestShaAsync(string tag, bool isDryRun) =>
-            LockHelper.DoubleCheckedLockLookupAsync(_manifestDigestCacheLock, _manifestDigestCache, tag,
+            _manifestDigestCacheLock.DoubleCheckedLockLookupAsync(_manifestDigestCache, tag,
                 () => _inner.Value.GetManifestDigestShaAsync(tag, isDryRun));
     }
 }

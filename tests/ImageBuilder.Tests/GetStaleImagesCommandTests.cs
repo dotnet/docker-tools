@@ -11,11 +11,11 @@ using System.Text;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using LibGit2Sharp;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Subscription;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -23,11 +23,11 @@ using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ImageInfoHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class GetStaleImagesCommandTests
     {
@@ -329,8 +329,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
-                {
-                };
+                    {
+                    };
 
                 context.Verify(expectedPathsBySubscription);
             }
@@ -1645,9 +1645,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ImageInfo = new GitFile
                 {
 
-                    Owner = GetStaleImagesCommandTests.GitHubOwner,
-                    Repo = GetStaleImagesCommandTests.GitHubRepo,
-                    Branch = GetStaleImagesCommandTests.GitHubBranch,
+                    Owner = GitHubOwner,
+                    Repo = GitHubRepo,
+                    Branch = GitHubBranch,
                     Path = "docker/image-info.json"
                 },
                 OsType = osType
@@ -1692,7 +1692,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string osType = "*")
             {
                 this.osType = osType;
-                this.subscriptionsPath = this.SerializeJsonObjectToTempFile(
+                subscriptionsPath = SerializeJsonObjectToTempFile(
                     subscriptionInfos.Select(tuple => tuple.Subscription).ToArray());
 
                 // Cache image digests lookup
@@ -1701,7 +1701,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     if (fromImage.Name != null)
                     {
-                        this.imageDigests[fromImage.Name] = fromImage.Digest;
+                        imageDigests[fromImage.Name] = fromImage.Digest;
                     }
                 }
 
@@ -1710,17 +1710,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Id = Guid.NewGuid()
                 };
 
-                this.gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
-                this.octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
+                gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
+                octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
                 (ManifestServiceFactoryMock, ManifestServiceMock) = CreateManifestServiceMocks();
 
-                this.command = this.CreateCommand();
+                command = CreateCommand();
             }
 
             public Task ExecuteCommandAsync()
             {
-                return this.command.ExecuteAsync();
+                return command.ExecuteAsync();
             }
 
             /// <summary>
@@ -1728,7 +1728,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             /// </summary>
             public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
             {
-                IInvocation invocation = this.loggerServiceMock.Invocations
+                IInvocation invocation = loggerServiceMock.Invocations
                     .First(invocation => invocation.Method.Name == nameof(ILoggerService.WriteMessage) &&
                         invocation.Arguments[0].ToString().StartsWith("##vso"));
 
@@ -1758,17 +1758,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 string path = Path.GetTempFileName();
                 File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-                this.filesToCleanup.Add(path);
+                filesToCleanup.Add(path);
                 return path;
             }
 
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestServiceFactoryMock.Object, this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
-                command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
+                    ManifestServiceFactoryMock.Object, loggerServiceMock.Object, octokitClientFactory, gitService);
+                command.Options.SubscriptionOptions.SubscriptionsPath = subscriptionsPath;
                 command.Options.VariableName = VariableName;
-                command.Options.FilterOptions.Platform.OsType = this.osType;
+                command.Options.FilterOptions.Platform.OsType = osType;
                 command.Options.GitOptions.Email = "test";
                 command.Options.GitOptions.Username = "test";
                 command.Options.GitOptions.AuthToken = "test";
@@ -1927,7 +1927,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceMock
                     .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
                     .ReturnsAsync((string image, bool isDryRun) =>
-                        new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
+                        new ManifestQueryResult(imageDigests[image], new JsonObject()));
 
                 Mock<IManifestServiceFactory> manifestServiceFactoryMock =
                     ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock.Object);
@@ -1967,12 +1967,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public void Dispose()
             {
-                foreach (string file in this.filesToCleanup)
+                foreach (string file in filesToCleanup)
                 {
                     File.Delete(file);
                 }
 
-                foreach (string folder in this.foldersToCleanup)
+                foreach (string folder in foldersToCleanup)
                 {
                     Directory.Delete(folder, true);
                 }
@@ -1983,8 +1983,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             public DockerfileInfo(string dockerfilePath, params FromImageInfo[] fromImages)
             {
-                this.DockerfilePath = dockerfilePath;
-                this.FromImages = fromImages;
+                DockerfilePath = dockerfilePath;
+                FromImages = fromImages;
             }
 
             public string DockerfilePath { get; }
@@ -1993,7 +1993,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class FromImageInfo
         {
-            public FromImageInfo (string name, string digest)
+            public FromImageInfo(string name, string digest)
             {
                 Name = name;
                 Digest = digest;
@@ -2014,14 +2014,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class SubscriptionInfo
         {
-            public SubscriptionInfo(Models.Subscription.Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
+            public SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
             {
                 Subscription = subscription;
                 Manifest = manifest;
                 ImageInfo = imageInfo;
             }
 
-            public Models.Subscription.Subscription Subscription { get; }
+            public Subscription Subscription { get; }
             public Manifest Manifest { get; }
             public ImageArtifactDetails ImageInfo { get; }
         }

@@ -3,7 +3,9 @@
 
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.QueueNotification
+using Microsoft;
+
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.QueueNotification
 {
     public class QueueInfo
     {

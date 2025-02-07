@@ -5,7 +5,7 @@
 using System.ComponentModel.Composition;
 using LibGit2Sharp;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IGitService))]
     public class GitService : IGitService

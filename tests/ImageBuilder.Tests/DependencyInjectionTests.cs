@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 using Xunit;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests;
 
 public class DependencyInjectionTests
 {

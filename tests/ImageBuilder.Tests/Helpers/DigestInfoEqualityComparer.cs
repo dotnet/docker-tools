@@ -5,8 +5,9 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
 public class DigestInfoEqualityComparer : IEqualityComparer<DigestInfo>
 {

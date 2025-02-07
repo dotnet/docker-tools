@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.Deployment.DotNet.Releases;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IDotNetReleasesService))]
     public class DotNetReleasesService : IDotNetReleasesService

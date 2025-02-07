@@ -8,14 +8,15 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
 using Moq;
 using Xunit;
 
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class CleanAcrImagesCommandTest
     {

@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrTags
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrTags
 {
     public class TagsMetadata
     {

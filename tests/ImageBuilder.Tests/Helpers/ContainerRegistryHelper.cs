@@ -11,7 +11,7 @@ using Azure.Containers.ContainerRegistry;
 using Azure.Core;
 using Moq;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
 #nullable enable
 internal static class ContainerRegistryHelper
@@ -44,7 +44,7 @@ internal static class ContainerRegistryHelper
                 acrClientContentMock.Setup(o => o.GetManifestAsync(kvp.Key)).ReturnsAsync(kvp.Value);
             }
         }
-        
+
         return acrClientContentMock;
     }
 

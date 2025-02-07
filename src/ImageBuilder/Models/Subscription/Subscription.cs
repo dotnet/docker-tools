@@ -4,7 +4,7 @@
 
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Subscription
 {
     public class Subscription
     {

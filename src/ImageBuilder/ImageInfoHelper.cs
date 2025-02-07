@@ -8,12 +8,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class ImageInfoHelper
     {
@@ -73,7 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Include manifest list digest if it exists
             if (imageData.Manifest is not null)
             {
-                digests = [ ..digests, imageData.Manifest.Digest ];
+                digests = [.. digests, imageData.Manifest.Digest];
             }
 
             return digests.ToList();
@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder
                                 {
                                     imageData.ManifestImage = manifestImage;
                                 }
-                                
+
                                 platformData.PlatformInfo = matchingManifestPlatform;
                                 platformData.ImageInfo = manifestImage;
                                 break;
@@ -202,7 +202,7 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <param name="imageArtifactDetails">Image info content.</param>
         public static (PlatformData Platform, ImageData Image)? GetMatchingPlatformData(PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
         {
-            RepoData? repoData = imageArtifactDetails.Repos.FirstOrDefault(s => s.Repo == repo.Name);
+            RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(s => s.Repo == repo.Name);
             if (repoData == null || repoData.Images == null)
             {
                 return null;
@@ -210,7 +210,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (ImageData imageData in repoData.Images)
             {
-                PlatformData? platformData = imageData.Platforms
+                PlatformData platformData = imageData.Platforms
                     .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
                 if (platformData != null)
                 {
@@ -275,7 +275,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static void MergeData(object srcObj, object targetObj, ImageInfoMergeOptions options)
         {
-            if (!((srcObj is null && targetObj is null) || (!(srcObj is null) && !(targetObj is null))))
+            if (!(srcObj is null && targetObj is null || !(srcObj is null) && !(targetObj is null)))
             {
                 throw new InvalidOperationException("The src and target objects must either be both null or both non-null.");
             }
@@ -362,17 +362,17 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private static bool IsReplaceableValueProperty(object srcObj, PropertyInfo property) =>
-            (
+
                 srcObj is PlatformData &&
                 property.Name == nameof(PlatformData.SimpleTags)
-            ) ||
-            (
+             ||
+
                 srcObj is ManifestData &&
                 (
                     property.Name == nameof(ManifestData.SharedTags) ||
                     property.Name == nameof(ManifestData.SyndicatedDigests)
                 )
-            );
+            ;
 
         private static void ReplaceValue(PropertyInfo property, object srcObj, object targetObj, bool skipListSorting = false)
         {
@@ -381,7 +381,7 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 value = stringList
                     .OrderBy(item => item)
-                    .ToList<string>();
+                    .ToList();
             }
 
             property.SetValue(targetObj, value);

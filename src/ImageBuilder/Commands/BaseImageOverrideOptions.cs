@@ -6,9 +6,9 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 using System.Text.RegularExpressions;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Commands.CliHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 
 /// <summary>
 /// Defines options that allow the caller to configure whether and how base image tags defined in a Dockerfile
@@ -30,7 +30,7 @@ public class BaseImageOverrideOptions
 
     public void Validate()
     {
-        if ((RegexPattern is null) != (Substitution is null))
+        if (RegexPattern is null != Substitution is null)
         {
             throw new InvalidOperationException(
                 $"The '{BaseOverrideRegexName}' and '{BaseOverrideSubName}' options must both be set.");

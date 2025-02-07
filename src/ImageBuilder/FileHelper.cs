@@ -4,7 +4,7 @@
 using System.IO;
 using System.Linq;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class FileHelper
     {

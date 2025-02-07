@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Cottle;
 using Cottle.Exceptions;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public delegate (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState<TContext>(
         TContext context, string templatePath, string indent);
@@ -114,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 else if (Options.Validate)
                 {
-                    int differIndex = StringExtensions.DiffersAtIndex(currentArtifact, generatedArtifact);
+                    int differIndex = currentArtifact.DiffersAtIndex(generatedArtifact);
                     Logger.WriteError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
                         + $"Current:   '{GetSnippet(currentArtifact, differIndex)}'{Environment.NewLine}"
                         + $"Generated: '{GetSnippet(generatedArtifact, differIndex)}'");
@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;                
+                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
                 artifact = document.Render(Context.CreateBuiltin(symbols));
 
                 if (Options.IsVerbose)

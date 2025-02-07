@@ -5,7 +5,7 @@
 using System;
 using System.IO;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class PathHelper
     {
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetNormalizedDirectory(string path)
         {
-            return PathHelper.NormalizePath(Path.GetDirectoryName(path));
+            return NormalizePath(Path.GetDirectoryName(path));
         }
     }
 }

@@ -8,7 +8,7 @@ using System.Linq;
 using Azure.Core;
 using Azure.ResourceManager;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class AuthHelper
     {

@@ -6,7 +6,7 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.TeamFoundation.Core.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     public interface IProjectHttpClient : IDisposable
     {

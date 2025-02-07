@@ -4,7 +4,7 @@
 
 using System.ComponentModel.Composition;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(ILoggerService))]
     internal class LoggerService : ILoggerService

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public class ImageSizeInfo
     {

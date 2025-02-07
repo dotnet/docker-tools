@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Subscription
 {
     public class SubscriptionManifest : GitFile
     {

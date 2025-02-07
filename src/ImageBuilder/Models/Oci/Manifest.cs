@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Text.Json;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Oci;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
 
 public record Manifest
 {
@@ -23,5 +23,5 @@ public record Manifest
     {
         return JsonSerializer.Deserialize<Manifest>(json, s_jsonOptions)
             ?? throw new InvalidOperationException("Unable to deserialize manifest");
-    }   
+    }
 }

@@ -4,7 +4,7 @@
 
 using System.Text.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Oci;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
 
 /// <summary>
 /// Subset of OCI Descriptor spec containing only required properties:

@@ -9,11 +9,12 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
@@ -432,19 +433,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string baseImageTag = _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage);
 
             // Base image should already be pulled or built so it's ok to inspect it
-            (Models.Manifest.Architecture baseImageArch, string? baseImageVariant) =
+            (Architecture baseImageArch, string? baseImageVariant) =
                 _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
 
             // Containerd normalizes arm64/v8 to arm64 with no variant.
             // In other words, arm64/v8 and arm64/ are compatible.
             // We still want to check variants if either variant is not "v8" or empty.
             // See https://github.com/moby/buildkit/issues/4039
-            bool skipVariantCheck = platform.Model.Architecture == Models.Manifest.Architecture.ARM64
-                && baseImageArch == Models.Manifest.Architecture.ARM64
-                && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
-                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant)));
+            bool skipVariantCheck = platform.Model.Architecture == Architecture.ARM64
+                && baseImageArch == Architecture.ARM64
+                && (platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
+                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant));
 
-            if (platform.Model.Architecture != baseImageArch || (!skipVariantCheck && platform.Model.Variant != baseImageVariant))
+            if (platform.Model.Architecture != baseImageArch || !skipVariantCheck && platform.Model.Variant != baseImageVariant)
             {
                 throw new InvalidOperationException(
                     $"Platform '{platform.DockerfilePathRelativeToManifest}' is configured with an architecture that is not compatible with " +

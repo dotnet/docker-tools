@@ -7,15 +7,15 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrStatus;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 
 public interface IMarImageIngestionReporter
 {
-   Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime);
+    Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime);
 }
 
 [Export(typeof(IMarImageIngestionReporter))]
@@ -70,7 +70,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo)
         {
-            return await (await ReportImageStatusCoreAsync(digestInfo)
+            return await await ReportImageStatusCoreAsync(digestInfo)
                 .ContinueWith(async task =>
                 {
                     if (task.IsCompletedSuccessfully)
@@ -91,7 +91,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
 
                     throw new NotSupportedException();
-                }));
+                });
         }
 
         private async Task<ImageResultInfo> ReportImageStatusCoreAsync(DigestInfo digestInfo)
@@ -161,7 +161,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             {
                 digestInfo.RemainingTags.Remove(tag);
             }
-            
+
             if (digestInfo.RemainingTags.Count == 0)
             {
                 digestInfo.IsComplete = true;

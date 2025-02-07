@@ -3,7 +3,7 @@
 
 using Azure.Core;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 public interface IAzureTokenCredentialProvider

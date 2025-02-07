@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class UpdateImageSizeBaselineCommand : ImageSizeCommand<UpdateImageSizeBaselineOptions, UpdateImageSizeBaselineOptionsBuilder>

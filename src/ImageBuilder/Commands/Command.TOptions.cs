@@ -6,8 +6,9 @@ using System.CommandLine;
 using System.CommandLine.Invocation;
 using System.Threading.Tasks;
 
+
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public abstract class Command<TOptions, TOptionsBuilder> : ICommand
         where TOptions : Options, new()

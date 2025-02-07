@@ -5,12 +5,13 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
 using Microsoft.DotNet.VersionTools.Automation;
 using Octokit;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public class GitOptions : IGitHubFileRef
     {
@@ -107,7 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                _options.Add(CreateOption<T>(alias, propertyName, description, defaultValue is null ? default! : defaultValue));
+                _options.Add(CreateOption(alias, propertyName, description, defaultValue is null ? default! : defaultValue));
             }
 
             return this;

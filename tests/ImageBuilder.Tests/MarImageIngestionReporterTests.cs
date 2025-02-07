@@ -5,12 +5,11 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrStatus;
 using Moq;
 using Xunit;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class MarImageIngestionReporterTests
     {
@@ -184,8 +183,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         return enumerator.Current;
                     }
-
-                    
 
                     return null;
                 });

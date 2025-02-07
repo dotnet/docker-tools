@@ -5,7 +5,7 @@
 using System;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrStatus
 {
     public class ImageResultDetailed
     {

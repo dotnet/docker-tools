@@ -6,12 +6,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests;
 
 public class WaitForMarAnnotationIngestionCommandTests
 {

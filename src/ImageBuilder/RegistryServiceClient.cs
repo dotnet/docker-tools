@@ -11,7 +11,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.Services.Common;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 /// <summary>

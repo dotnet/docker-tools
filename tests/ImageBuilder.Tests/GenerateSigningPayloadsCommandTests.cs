@@ -9,17 +9,19 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Kusto.Cloud.Platform.Utils;
-using Microsoft.DotNet.ImageBuilder.Commands.Signing;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Notary;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands.Signing;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Notary;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Tests;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests;
 
 public sealed class GenerateSigningPayloadsCommandTests : IDisposable
 {
@@ -85,7 +87,7 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         Assert.Equal(orderedImageDigestInfos.Length, orderedPayloadFilePaths.Length);
 
         // Compare expected and actual results pairwise
-        IEnumerable<(ImageDigestInfo DigestInfo, string Path)> pairs = 
+        IEnumerable<(ImageDigestInfo DigestInfo, string Path)> pairs =
             orderedImageDigestInfos.Zip(orderedPayloadFilePaths);
         await Parallel.ForEachAsync(pairs, (p, _) => ValidatePayloadContentsAsync(p.DigestInfo, p.Path));
     }
@@ -111,10 +113,11 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         string payloadOutputDir)
     {
         return imageDigestInfos
-            .Select(digestInfo => {
-                    string fileName = TrimDigest(digestInfo.Digest) + ".json";
-                    return Path.Combine(payloadOutputDir, fileName);
-                })
+            .Select(digestInfo =>
+            {
+                string fileName = TrimDigest(digestInfo.Digest) + ".json";
+                return Path.Combine(payloadOutputDir, fileName);
+            })
             .Distinct();
     }
 
@@ -154,7 +157,7 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         orasClientMock
             .Setup(o => o.GetDescriptor(digestInfo.Digest, false))
             .Returns(descriptor);
-        
+
         foreach (string tag in digestInfo.Tags)
         {
             orasClientMock
@@ -180,10 +183,10 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
     private static ImageArtifactDetails CreateImageInfo()
     {
         string registry = "myregistry.azurecr.io";
-        string[] repos = [ "runtime-deps", "runtime" ];
-        string[] oses = [ "foolinux", "barlinux" ];
-        string[] archs = [ "amd64", "arm64v8", "arm32v7" ];
-        string[] versions = [ "2.0", "99.0" ];
+        string[] repos = ["runtime-deps", "runtime"];
+        string[] oses = ["foolinux", "barlinux"];
+        string[] archs = ["amd64", "arm64v8", "arm32v7"];
+        string[] versions = ["2.0", "99.0"];
 
         return Helpers.ImageInfoHelper.CreateImageInfo(registry, repos, oses, archs, versions);
     }
@@ -211,7 +214,7 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
                         Tags: platform.SimpleTags,
                         IsManifestList: false));
 
-        IEnumerable<ImageDigestInfo> manifestListDigestsAndTags = 
+        IEnumerable<ImageDigestInfo> manifestListDigestsAndTags =
             allImages
                 .Select(image => image.Manifest)
                 .Where(manifest => manifest is not null)
@@ -221,7 +224,7 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
                         Tags: manifestList.SharedTags,
                         IsManifestList: true));
 
-        return [..platformDigestsAndTags, ..manifestListDigestsAndTags];
+        return [.. platformDigestsAndTags, .. manifestListDigestsAndTags];
     }
 
     private static string TrimDigest(string fullDigest) => fullDigest.Split(':')[1];

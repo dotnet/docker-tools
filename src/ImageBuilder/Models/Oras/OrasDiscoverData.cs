@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Oras;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oras;
 
 public class OrasDiscoverData
 {

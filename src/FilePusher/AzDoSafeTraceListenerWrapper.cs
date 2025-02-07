@@ -4,7 +4,7 @@
 
 using System.Diagnostics;
 
-namespace FilePusher;
+namespace Microsoft.DotNet.DockerTools.FilePusher;
 
 public class AzDoSafeTraceListenerWrapper(TraceListener innerTraceListener) : TraceListener
 {

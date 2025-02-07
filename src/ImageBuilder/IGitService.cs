@@ -4,7 +4,7 @@
 
 using LibGit2Sharp;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public interface IGitService
     {

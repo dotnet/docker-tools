@@ -7,10 +7,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel
 {
     public class ManifestInfo
     {
@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             Logger.WriteHeading("READING MANIFEST");
 
-            ManifestInfo manifest = ManifestInfo.Create(
+            ManifestInfo manifest = Create(
                 options.Manifest,
                 options.GetManifestFilter(),
                 options);
@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public IEnumerable<ImageInfo> GetAllImages() => AllRepos.SelectMany(repo => repo.AllImages);
-        
+
         public ImageInfo GetImageByPlatform(PlatformInfo platform) =>
             GetAllImages()
                 .FirstOrDefault(image => image.AllPlatforms.Contains(platform));

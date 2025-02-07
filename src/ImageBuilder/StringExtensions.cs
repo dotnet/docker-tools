@@ -5,7 +5,7 @@
 using System;
 using System.Linq;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class StringExtensions
     {
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 index++;
             }
 
-            return (index == min && s1.Length == s2.Length) ? -1 : index;
+            return index == min && s1.Length == s2.Length ? -1 : index;
         }
 
         public static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source.Substring(1);

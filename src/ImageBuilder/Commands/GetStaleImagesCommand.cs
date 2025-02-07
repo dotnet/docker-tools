@@ -8,13 +8,13 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using Octokit;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>
@@ -132,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
 
-            string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
+            string currentDigest = await _imageDigestsLock.DoubleCheckedLockLookupAsync(_imageDigests, fromImage,
                 async () =>
                 {
                     string digest = await _manifestService.Value.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);

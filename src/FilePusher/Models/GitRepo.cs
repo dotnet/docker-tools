@@ -4,7 +4,7 @@
 
 using Newtonsoft.Json;
 
-namespace FilePusher.Models
+namespace Microsoft.DotNet.DockerTools.FilePusher.Models
 {
     public class GitRepo
     {

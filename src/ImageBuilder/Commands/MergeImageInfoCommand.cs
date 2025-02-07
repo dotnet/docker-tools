@@ -8,11 +8,13 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
+
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>

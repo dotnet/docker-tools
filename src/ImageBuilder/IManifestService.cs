@@ -9,7 +9,7 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 public interface IManifestService
 {
@@ -57,7 +57,7 @@ public interface IManifestService
         {
             throw new InvalidOperationException(
                 $"Found published digest '{digestSha}' for tag '{image}' but could not find a matching digest value from " +
-                $"the set of locally pulled digests for this tag: { string.Join(", ", digests) }. This most likely means that " +
+                $"the set of locally pulled digests for this tag: {string.Join(", ", digests)}. This most likely means that " +
                 "this tag has been updated since it was last pulled.");
         }
 

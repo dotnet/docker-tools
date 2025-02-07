@@ -6,7 +6,7 @@ using System;
 using Newtonsoft.Json;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrStatus
 {
     public class ImageStatus
     {

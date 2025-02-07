@@ -6,11 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Models.Image
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image
 {
     public class PlatformData : IComparable<PlatformData>
     {
@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 1;
             }
 
-            
+
             if (HasDifferentTagState(other))
             {
                 return 1;
@@ -94,8 +94,8 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
         public bool HasDifferentTagState(PlatformData other) =>
             // If either of the platforms has no simple tags while the other does have simple tags, they are not equal
-            (IsNullOrEmpty(SimpleTags) && !IsNullOrEmpty(other.SimpleTags)) ||
-            (!IsNullOrEmpty(SimpleTags) && IsNullOrEmpty(other.SimpleTags));
+            IsNullOrEmpty(SimpleTags) && !IsNullOrEmpty(other.SimpleTags) ||
+            !IsNullOrEmpty(SimpleTags) && IsNullOrEmpty(other.SimpleTags);
 
         public static PlatformData FromPlatformInfo(PlatformInfo platform, ImageInfo image) =>
             new PlatformData(image, platform)

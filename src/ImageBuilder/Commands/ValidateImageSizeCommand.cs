@@ -8,9 +8,10 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class ValidateImageSizeCommand : ImageSizeCommand<ValidateImageSizeOptions, ValidateImageSizeOptionsBuilder>

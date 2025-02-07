@@ -5,9 +5,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel
 {
     public class RepoInfo
     {
@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         /// </summary>
         public IEnumerable<ImageInfo> FilteredImages { get; private set; }
 
-        public string FullModelName { get; private set; }    
+        public string FullModelName { get; private set; }
         public string Id { get; private set; }
         public string QualifiedName { get; private set; }
         public string Name => Model.Name;

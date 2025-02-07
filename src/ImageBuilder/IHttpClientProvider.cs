@@ -4,7 +4,7 @@
 
 using System.Net.Http;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public interface IHttpClientProvider
     {

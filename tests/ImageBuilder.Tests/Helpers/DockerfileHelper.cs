@@ -4,8 +4,9 @@
 
 using System;
 using System.IO;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers
 {
     public static class DockerfileHelper
     {

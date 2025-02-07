@@ -6,10 +6,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class DockerHelper
     {
@@ -105,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void CreateTag(string image, string tag, bool isDryRun)
         {
-            DockerHelper.ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
+            ExecuteCommand("tag", "Failed to create tag", $"{image} {tag}", isDryRun);
         }
 
         public static string GetCreatedDate(string image, bool isDryRun)

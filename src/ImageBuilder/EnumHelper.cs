@@ -5,7 +5,7 @@
 using System;
 using System.Linq;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class EnumHelper
     {

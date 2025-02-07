@@ -4,7 +4,7 @@
 
 using System.Text;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrStatus
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrStatus
 {
     public class ContentSubstatus
     {

@@ -4,9 +4,9 @@
 
 using System;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 
-namespace Microsoft.DotNet.ImageBuilder.ViewModel
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel
 {
     public class TagInfo
     {

@@ -6,13 +6,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
 using LibGit2Sharp;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Subscription;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class SubscriptionHelper
     {

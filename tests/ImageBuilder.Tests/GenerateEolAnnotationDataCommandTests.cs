@@ -7,18 +7,18 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
 
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class GenerateEolAnnotationDataTests
     {
@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         // Additional test scenarios:
         // *  exclusion of digests which are already annotated
-        // * 
+        // *
 
         [Fact]
         public async Task GenerateEolAnnotationData_RepoRemoved()
@@ -1064,12 +1064,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns(false);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
-            { 
+            {
                 lifecycleMetadataServiceMock
                     .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                     .Returns(digestAnnotated.Value);
             }
-            
+
             return lifecycleMetadataServiceMock.Object;
         }
 

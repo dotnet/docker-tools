@@ -9,7 +9,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
-using FilePusher;
+using Microsoft.DotNet.DockerTools.FilePusher;
+using Microsoft.DotNet.DockerTools.FilePusher.Models;
 using Newtonsoft.Json;
 using YamlDotNet.Core;
 using YamlDotNet.Core.Events;
@@ -41,21 +42,21 @@ namespace YamlUpdater
             Trace.Listeners.Add(safeTraceListener);
 
             string configJson = File.ReadAllText(options.ConfigPath);
-            FilePusher.Models.Config config = JsonConvert.DeserializeObject<FilePusher.Models.Config>(configJson);
+            Config config = JsonConvert.DeserializeObject<Config>(configJson);
 
             UpdateYamlFile(options, config);
 
-            FilePusher.Options filePusherOptions = new()
+            Microsoft.DotNet.DockerTools.FilePusher.Options filePusherOptions = new()
             {
                 GitAuthToken = options.GitAuthToken,
                 GitEmail = options.GitEmail,
                 GitUser = options.GitUser
             };
 
-            await FilePusher.FilePusher.PushFilesAsync(filePusherOptions, config);
+            await FilePusher.PushFilesAsync(filePusherOptions, config);
         }
 
-        private static void UpdateYamlFile(Options options, FilePusher.Models.Config config)
+        private static void UpdateYamlFile(Options options, Config config)
         {
             YamlStream yamlStream = new();
             using (StreamReader streamReader = new(config.SourcePath))

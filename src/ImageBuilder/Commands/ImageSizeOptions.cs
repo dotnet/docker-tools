@@ -5,9 +5,9 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Commands.CliHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public abstract class ImageSizeOptions : ManifestOptions, IFilterableOptions
     {

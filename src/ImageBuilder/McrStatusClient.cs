@@ -6,12 +6,12 @@ using System;
 using System.ComponentModel.Composition;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IMcrStatusClient))]
     public class McrStatusClient : IMcrStatusClient

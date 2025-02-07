@@ -9,20 +9,20 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using FluentAssertions;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
 using Xunit.Abstractions;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ImageInfoHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class BuildCommandTests
     {
@@ -1044,7 +1044,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
-            new string[] {},
+            new string[] { },
             false,
             true, true)]
         [InlineData(
@@ -1053,7 +1053,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
             "runtimeCommitSha-1", "runtimeCommitSha-2",
-            new string[] {},
+            new string[] { },
             false,
             false, false)]
         [InlineData(
@@ -1062,7 +1062,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
-            new string[] {},
+            new string[] { },
             false,
             true, false)]
         [InlineData(
@@ -1071,7 +1071,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-2",
-            new string[] {},
+            new string[] { },
             false,
             true, false)]
         [InlineData(
@@ -1080,7 +1080,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             "runtimeCommitSha-1", "runtimeCommitSha-1",
-            new string[] {},
+            new string[] { },
             false,
             false, false)]
         [InlineData(
@@ -1089,7 +1089,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
-            new string[] {},
+            new string[] { },
             false,
             true, false)]
         [InlineData(
@@ -1098,7 +1098,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             null, "sha256:runtimeDepsImageSha-1",
             null, "runtimeDepsCommitSha-1",
             null, "runtimeCommitSha-1",
-            new string[] {},
+            new string[] { },
             false,
             false, false)]
         [InlineData(
@@ -1107,7 +1107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
             "runtimeDepsCommitSha-1", "runtimeDepsCommitSha-2",
             "runtimeCommitSha", "runtimeCommitSha",
-            new string[] {},
+            new string[] { },
             false,
             false, false)]
         [InlineData(
@@ -1116,7 +1116,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
             "runtimeDepsCommitSha", "runtimeDepsCommitSha",
             "runtimeCommitSha", "runtimeCommitSha",
-            new string[] {},
+            new string[] { },
             true,
             false, false)]
         // Test failing due to https://github.com/dotnet/docker-tools/issues/1185

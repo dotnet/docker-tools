@@ -5,7 +5,7 @@
 using System;
 using System.ComponentModel.Composition;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IEnvironmentService))]
     internal class EnvironmentService : IEnvironmentService

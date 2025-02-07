@@ -7,17 +7,18 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ImageInfoHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class CopyAcrImagesCommandTests
     {
@@ -46,10 +47,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-                Manifest manifest = ManifestHelper.CreateManifest(
-                    ManifestHelper.CreateRepo("runtime",
-                        ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
+                Manifest manifest = CreateManifest(
+                    CreateRepo("runtime",
+                        CreateImage(
+                            CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
                 );
                 manifest.Registry = "mcr.microsoft.com";
 
@@ -140,11 +141,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-                Manifest manifest = ManifestHelper.CreateManifest(
-                    ManifestHelper.CreateRepo("runtime",
-                        ManifestHelper.CreateImage(
-                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
-                            ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
+                Manifest manifest = CreateManifest(
+                    CreateRepo("runtime",
+                        CreateImage(
+                            CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
+                            CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
                 );
                 manifest.Registry = "mcr.microsoft.com";
 
@@ -363,10 +364,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
             File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
 
-            Manifest manifest = ManifestHelper.CreateManifest(
-                ManifestHelper.CreateRepo("runtime",
-                    ManifestHelper.CreateImage(
-                        ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2", "tag3" })))
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2", "tag3" })))
             );
             manifest.Registry = "mcr.microsoft.com";
 

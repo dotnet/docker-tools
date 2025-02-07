@@ -3,11 +3,12 @@
 
 using System;
 using System.Collections.Generic;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 using Moq;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
 internal static class ManifestServiceHelper
 {

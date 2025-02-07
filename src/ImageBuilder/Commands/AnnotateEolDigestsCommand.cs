@@ -10,12 +10,12 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
-using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.MarBulkDeletion;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>

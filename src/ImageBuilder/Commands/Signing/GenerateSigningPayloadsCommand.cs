@@ -9,11 +9,11 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Notary;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Notary;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands.Signing;
 
 #nullable enable
 [Export(typeof(ICommand))]
@@ -63,7 +63,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         ImageArtifactDetails imageInfo = ImageInfoHelper
             .DeserializeImageArtifactDetails(Options.ImageInfoPath)
             .ApplyRegistryOverride(Options.RegistryOptions);
-        IReadOnlyList<string> digests = ImageInfoHelper.GetAllDigests(imageInfo);
+        IReadOnlyList<string> digests = imageInfo.GetAllDigests();
 
         _loggerService.WriteSubheading("Generating signing payloads");
         IReadOnlyList<Payload> payloads = CreatePayloads(digests);
@@ -84,7 +84,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 
         await Parallel.ForEachAsync(
             payloads,
-            async (payload, _) => 
+            async (payload, _) =>
                 {
                     string output = await WritePayloadToDiskAsync(payload, outputDirectory);
                     outputFiles.Add(output);

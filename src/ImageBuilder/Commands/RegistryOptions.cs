@@ -8,9 +8,9 @@ using System.CommandLine;
 using System.Text;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Kusto.Cloud.Platform.Utils;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Commands.CliHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 
 #nullable enable
 public class RegistryOptions
@@ -57,7 +57,7 @@ public class RegistryOptions
 
 public class RegistryOptionsBuilder(bool isOverride)
 {
-    private bool _isOverride = isOverride; 
+    private bool _isOverride = isOverride;
 
     // Choose one of either CliOptions or CliArguments - not both. Use CliArguments in the case that
     // the registry options are required. Otherwise, use CliOptions.

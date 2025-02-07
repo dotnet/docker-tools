@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Image
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image
 {
     public class ImageArtifactDetails
     {

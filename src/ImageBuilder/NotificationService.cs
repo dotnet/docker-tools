@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 using Octokit;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(INotificationService))]
     public class NotificationService : INotificationService
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     foreach (string comment in comments)
                     {
-                        IssueComment postedComment = 
+                        IssueComment postedComment =
                             await github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment);
                     }
                 }

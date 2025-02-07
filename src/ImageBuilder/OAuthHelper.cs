@@ -12,7 +12,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 public static class OAuthHelper
 {

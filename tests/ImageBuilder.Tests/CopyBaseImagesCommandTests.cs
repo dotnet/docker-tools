@@ -5,16 +5,17 @@
 using System.IO;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.DockerfileHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class CopyBaseImagesCommandTests
     {
@@ -156,7 +157,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            var expectedTagInfos = new(string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
+            var expectedTagInfos = new (string SourceImage, string TargetTag, string Registry, string Username, string Password)[]
             {
                 ( $"os:tag", $"{command.Options.RepoPrefix}{CustomRegistry}/os:tag", CustomRegistry, null, null),
                 ( "arm32v7/os2:tag", $"{command.Options.RepoPrefix}arm32v7/os2:tag", "docker.io", "user", "pass" ),
@@ -173,7 +174,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             expectedTagInfo.SourceImage,
                             expectedTagInfo.Registry,
                             null,
-                            It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
+                            It.Is<ContainerRegistryImportSourceCredentials>(creds => creds == null && expectedTagInfo.Username == null || creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
                             false));
             }
         }

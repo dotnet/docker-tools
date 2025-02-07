@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 public interface IContainerRegistryClient

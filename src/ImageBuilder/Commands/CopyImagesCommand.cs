@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
 
+
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 
 public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
     where TOptions : CopyImagesOptions, new()
@@ -33,7 +34,7 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCom
             _copyImageService.ImportImageAsync(
                 Options.Subscription,
                 Options.ResourceGroup,
-                [ destTagName ],
+                [destTagName],
                 destRegistryName,
                 srcTagName,
                 srcRegistryName,

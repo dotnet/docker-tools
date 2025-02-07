@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public class AnnotateEolDigestsOptions : Options
     {

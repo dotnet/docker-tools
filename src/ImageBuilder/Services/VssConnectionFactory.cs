@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     [Export(typeof(IVssConnectionFactory))]
     internal class VssConnectionFactory : IVssConnectionFactory

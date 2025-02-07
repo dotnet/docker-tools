@@ -10,11 +10,11 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class GitHelper
     {

@@ -12,12 +12,12 @@ using System.Linq;
 using System.Net.Http;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using FilePusher.Models;
+using Microsoft.DotNet.DockerTools.FilePusher.Models;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 using Newtonsoft.Json;
 
-namespace FilePusher
+namespace Microsoft.DotNet.DockerTools.FilePusher
 {
     public class FilePusher
     {
@@ -75,7 +75,7 @@ namespace FilePusher
                 updatedContent = updatedContent.Replace("\r\n", "\n");
             }
 
-            filePath = filePath.Replace('\\','/');
+            filePath = filePath.Replace('\\', '/');
             string currentContent = await client.GetGitHubFileContentsAsync(filePath, branch);
 
             if (currentContent == updatedContent)
@@ -191,7 +191,7 @@ namespace FilePusher
 
                         break;
                     }
-                    catch (HttpRequestException ex) when (i < (maxTries - 1))
+                    catch (HttpRequestException ex) when (i < maxTries - 1)
                     {
                         Console.WriteLine($"Encountered exception interacting with GitHub: {ex.Message}");
                         Console.WriteLine($"Trying again in {retryMillisecondsDelay}ms. {maxTries - i - 1} tries left.");

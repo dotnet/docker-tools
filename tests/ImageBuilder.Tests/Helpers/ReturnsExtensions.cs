@@ -3,11 +3,12 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 using Moq;
 using Moq.Language;
 using Moq.Language.Flow;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers
 {
     public static class ReturnsExtensions
     {

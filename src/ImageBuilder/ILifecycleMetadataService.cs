@@ -4,10 +4,11 @@
 
 using System;
 using System.Diagnostics.CodeAnalysis;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
+
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 public interface ILifecycleMetadataService
 {

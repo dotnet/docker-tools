@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Threading;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IHttpClientProvider))]
     internal class HttpClientProvider : IHttpClientProvider

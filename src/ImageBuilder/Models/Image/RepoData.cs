@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Image
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image
 {
     public class RepoData : IComparable<RepoData>
     {

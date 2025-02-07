@@ -5,6 +5,6 @@
 using System.Collections.Generic;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 
 public record ImageDigestInfo(string Digest, List<string> Tags, bool IsManifestList);

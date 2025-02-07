@@ -7,17 +7,17 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.DockerfileHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class GenerateBuildMatrixCommandTests
     {
@@ -206,8 +206,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageCacheState runtime1CacheState,
             ImageCacheState sdk1CacheState,
             string leg1ExpectedPaths,
-            string? leg2ExpectedPaths = null,
-            string? leg3ExpectedPaths = null,
+            string leg2ExpectedPaths = null,
+            string leg3ExpectedPaths = null,
             string inputPathFilters = "*runtime* *sdk*")
         {
             const string Standalone1RelativeDir = "1.0/standalone/os/amd64";
@@ -440,11 +440,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.ProductVersionComponents = 2;
                 command.Options.CustomBuildLegGroups = new string[] { customBuildLegGroup };
 
-                string dockerfileRuntimeDepsFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
-                string dockerfileRuntimePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
+                string dockerfileRuntimeDepsFullPath = CreateDockerfile("1.0/runtime-deps/os", tempFolderContext);
+                string dockerfileRuntimePath = CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag");
 
-                string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("2.0/runtime/os2", tempFolderContext);
-                string dockerfileSdk2FullPath = DockerfileHelper.CreateDockerfile("2.0/sdk/os2", tempFolderContext, "runtime2:tag");
+                string dockerfileRuntime2FullPath = CreateDockerfile("2.0/runtime/os2", tempFolderContext);
+                string dockerfileSdk2FullPath = CreateDockerfile("2.0/sdk/os2", tempFolderContext, "runtime2:tag");
 
                 Manifest manifest = CreateManifest(
                     CreateRepo("runtime-deps",
@@ -528,7 +528,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/runtime/nanoserver-1909", tempFolderContext),
+                                CreateDockerfile("1.0/runtime/nanoserver-1909", tempFolderContext),
                                 new string[] { "nanoserver-1909" },
                                 os: OS.Windows,
                                 osVersion: "nanoserver-1909")
@@ -538,7 +538,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/runtime/windowsservercore-1909", tempFolderContext),
+                                CreateDockerfile("1.0/runtime/windowsservercore-1909", tempFolderContext),
                                 new string[] { "windowsservercore-1909" },
                                 os: OS.Windows,
                                 osVersion: "windowsservercore-1909")
@@ -549,7 +549,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/aspnet/nanoserver-1909", tempFolderContext, "runtime:nanoserver-1909"),
+                                CreateDockerfile("1.0/aspnet/nanoserver-1909", tempFolderContext, "runtime:nanoserver-1909"),
                                 new string[] { "nanoserver-1909" },
                                 os: OS.Windows,
                                 osVersion: "nanoserver-1909")
@@ -559,7 +559,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/aspnet/windowsservercore-1909", tempFolderContext, "runtime:windowsservercore-1909"),
+                                CreateDockerfile("1.0/aspnet/windowsservercore-1909", tempFolderContext, "runtime:windowsservercore-1909"),
                                 new string[] { "windowsservercore-1909" },
                                 os: OS.Windows,
                                 osVersion: "windowsservercore-1909",
@@ -610,11 +610,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
 
-            string dockerfileRuntimeFullPath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            string dockerfileRuntime2FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
+            string dockerfileRuntimeFullPath = CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            string dockerfileRuntime2FullPath = CreateDockerfile("1.0/runtime2/os", tempFolderContext, "sdk3:tag");
 
-            string dockerfileRuntime3FullPath = DockerfileHelper.CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
-            string dockerfileSdk3FullPath = DockerfileHelper.CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
+            string dockerfileRuntime3FullPath = CreateDockerfile("1.0/runtime3/os2", tempFolderContext);
+            string dockerfileSdk3FullPath = CreateDockerfile("1.0/sdk3/os2", tempFolderContext, "runtime3:tag");
 
             Manifest manifest = CreateManifest(
                 // Define a Dockerfile that has the same OS version and product version as runtime2 but no actual dependency to
@@ -688,7 +688,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/repo1/os", tempFolderContext),
+                                CreateDockerfile("1.0/repo1/os", tempFolderContext),
                                 new string[] { "tag" },
                                 osVersion: "bionic")
                         },
@@ -698,7 +698,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/repo2/os", tempFolderContext),
+                                CreateDockerfile("1.0/repo2/os", tempFolderContext),
                                 new string[] { "tag" },
                                 osVersion: "noble",
                                 customBuildLegGroups: new CustomBuildLegGroup[]
@@ -720,7 +720,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/repo3/os", tempFolderContext),
+                                CreateDockerfile("1.0/repo3/os", tempFolderContext),
                                 new string[] { "tag" },
                                 osVersion: "trixie")
                         },
@@ -730,7 +730,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("1.0/repo4/os", tempFolderContext),
+                                CreateDockerfile("1.0/repo4/os", tempFolderContext),
                                 new string[] { "tag" },
                                 osVersion: "bullseye",
                                 customBuildLegGroups: new CustomBuildLegGroup[]
@@ -797,7 +797,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext),
+                                runtimeDockerfilePath = CreateDockerfile("1.0/runtime/os", tempFolderContext),
                                 new string[] { "tag" })
                         },
                         productVersion: "1.0")),
@@ -806,7 +806,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                               CreatePlatform(
-                                  aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
+                                  aspnetDockerfilePath = CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
                                   new string[] { "tag" })
                         },
                         productVersion: "1.0")),
@@ -815,7 +815,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                               CreatePlatform(
-                                  sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
+                                  sdkDockerfilePath = CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
                                   new string[] { "tag" })
                         },
                         productVersion: "1.0"))
@@ -927,7 +927,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                runtimeDepsDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime-deps/os", tempFolderContext),
+                                runtimeDepsDockerfilePath = CreateDockerfile("1.0/runtime-deps/os", tempFolderContext),
                                 new string[] { "tag" })
                         },
                         productVersion: "1.0")),
@@ -936,7 +936,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                runtimeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
+                                runtimeDockerfilePath = CreateDockerfile("1.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
                                 new string[] { "tag" })
                         },
                         productVersion: "1.0")),
@@ -946,7 +946,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new Platform[]
                             {
                                 CreatePlatform(
-                                    aspnetDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
+                                    aspnetDockerfilePath = CreateDockerfile("1.0/aspnet/os", tempFolderContext, "runtime:tag"),
                                     new string[] { "tag" })
                             },
                             productVersion: "1.0"),
@@ -954,7 +954,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                               CreatePlatform(
-                                  aspnetCompositeDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/aspnet/os-composite", tempFolderContext, "runtime-deps:tag"),
+                                  aspnetCompositeDockerfilePath = CreateDockerfile("1.0/aspnet/os-composite", tempFolderContext, "runtime-deps:tag"),
                                   new string[] { "tag-composite" })
                         },
                         productVersion: "1.0")
@@ -964,7 +964,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                sdkDockerfilePath = DockerfileHelper.CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
+                                sdkDockerfilePath = CreateDockerfile("1.0/sdk/os", tempFolderContext, "aspnet:tag"),
                                 new string[] { "tag" })
                         },
                         productVersion: "1.0"))
@@ -1137,7 +1137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
+                                CreateDockerfile("3.1/runtime-deps/os", tempFolderContext),
                                 new string[] { "tag" })
                         },
                         productVersion: "3.1")),
@@ -1146,7 +1146,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext, "core/runtime-deps:tag"),
+                                CreateDockerfile("3.1/runtime/os", tempFolderContext, "core/runtime-deps:tag"),
                                 new string[] { "tag" })
                         },
                         productVersion: "3.1")),
@@ -1164,7 +1164,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("5.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
+                                CreateDockerfile("5.0/runtime/os", tempFolderContext, "runtime-deps:tag"),
                                 new string[] { "tag" })
                         },
                         productVersion: "5.0"))
@@ -1265,7 +1265,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
+                                CreateDockerfile("3.1/runtime/os", tempFolderContext),
                                 new string[] { "tag" })
                         },
                         productVersion: "3.1"),
@@ -1273,7 +1273,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         new Platform[]
                         {
                             CreatePlatform(
-                                DockerfileHelper.CreateDockerfile("3.1/runtime/os", tempFolderContext),
+                                CreateDockerfile("3.1/runtime/os", tempFolderContext),
                                 Array.Empty<string>())
                         },
                         productVersion: "3.1")));

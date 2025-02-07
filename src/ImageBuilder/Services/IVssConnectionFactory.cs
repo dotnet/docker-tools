@@ -5,7 +5,7 @@
 using System;
 using Microsoft.VisualStudio.Services.Common;
 
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     public interface IVssConnectionFactory
     {

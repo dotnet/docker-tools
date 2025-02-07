@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using YamlDotNet.Serialization;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.McrTags
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrTags
 {
     public class TagGroup
     {

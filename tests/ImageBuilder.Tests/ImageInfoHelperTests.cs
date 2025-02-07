@@ -6,17 +6,17 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using Moq;
 using Xunit;
 
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.DockerfileHelper;
+using static Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers.ManifestHelper;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class ImageInfoHelperTests
     {

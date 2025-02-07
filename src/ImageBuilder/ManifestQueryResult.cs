@@ -3,7 +3,7 @@
 
 using System.Text.Json.Nodes;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 /// <summary>

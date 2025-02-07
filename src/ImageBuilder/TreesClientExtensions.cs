@@ -9,7 +9,7 @@ using System.Web;
 using Octokit;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public static class TreesClientExtensions
     {

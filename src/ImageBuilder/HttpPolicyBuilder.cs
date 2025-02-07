@@ -14,7 +14,7 @@ using Polly;
 using Polly.Contrib.WaitAndRetry;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public class HttpPolicyBuilder
     {

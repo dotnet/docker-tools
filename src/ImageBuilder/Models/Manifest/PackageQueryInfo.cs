@@ -4,7 +4,7 @@
 #nullable enable
 using System.ComponentModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest
 {
     [Description(
         "Relative path to the template the Dockerfile is generated from."

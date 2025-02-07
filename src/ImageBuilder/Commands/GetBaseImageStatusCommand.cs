@@ -9,7 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusOptionsBuilder>
@@ -69,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             var statuses = platformTags
                 .Select(imageTag => new
                 {
-                    Tag = imageTag.Tag,
+                    imageTag.Tag,
                     DateCreated = _dockerService.GetCreatedDate(imageTag.Tag, Options.IsDryRun)
                 })
                 .ToList();

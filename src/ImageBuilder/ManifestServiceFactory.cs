@@ -5,7 +5,7 @@
 using System.ComponentModel.Composition;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     [Export(typeof(IManifestServiceFactory))]
     [method: ImportingConstructor]

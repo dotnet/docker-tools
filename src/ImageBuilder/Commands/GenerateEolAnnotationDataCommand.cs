@@ -11,12 +11,13 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
 using Kusto.Cloud.Platform.Utils;
-using Microsoft.DotNet.ImageBuilder.Models.Annotations;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
 
 [Export(typeof(ICommand))]
 public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>

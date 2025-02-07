@@ -8,9 +8,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Models.Subscription;
-using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Commands;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Subscription;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Services;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -18,10 +18,10 @@ using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Xunit;
-using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
+using IVssConnection = Microsoft.DotNet.DockerTools.ImageBuilder.Services.IVssConnection;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests
 {
     public class QueueBuildCommandTests
     {
@@ -512,7 +512,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 this.inProgressBuilds = inProgressBuilds;
                 this.allBuilds = allBuilds;
 
-                this.subscriptionsPath = this.SerializeJsonObjectToTempFile(subscriptions);
+                subscriptionsPath = SerializeJsonObjectToTempFile(subscriptions);
 
                 TeamProject project = new TeamProject
                 {
@@ -520,18 +520,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 };
 
                 Mock<IProjectHttpClient> projectHttpClientMock = CreateProjectHttpClientMock(project);
-                this.buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
+                buildHttpClientMock = CreateBuildHttpClientMock(project, this.inProgressBuilds, this.allBuilds);
                 Mock<IVssConnectionFactory> connectionFactoryMock = CreateVssConnectionFactoryMock(
-                    projectHttpClientMock, this.buildHttpClientMock);
+                    projectHttpClientMock, buildHttpClientMock);
 
                 _notificationServiceMock = new Mock<INotificationService>();
 
-                this.command = this.CreateCommand(connectionFactoryMock);
+                command = CreateCommand(connectionFactoryMock);
             }
 
             public Task ExecuteCommandAsync()
             {
-                return this.command.ExecuteAsync();
+                return command.ExecuteAsync();
             }
 
             /// <summary>
@@ -562,7 +562,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 if (!isQueuedBuildExpected)
                 {
-                    this.buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
+                    buildHttpClientMock.Verify(o => o.QueueBuildAsync(It.IsAny<WebApi.Build>()), Times.Never);
                 }
                 else
                 {
@@ -575,7 +575,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     {
                         if (kvp.Value.Any())
                         {
-                            this.buildHttpClientMock
+                            buildHttpClientMock
                                 .Verify(o =>
                                     o.QueueBuildAsync(
                                         It.Is<WebApi.Build>(build => FilterBuildToSubscription(build, kvp.Key, kvp.Value))));
@@ -588,7 +588,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 string path = Path.GetTempFileName();
                 File.WriteAllText(path, JsonConvert.SerializeObject(jsonObject));
-                this.filesToCleanup.Add(path);
+                filesToCleanup.Add(path);
                 return path;
             }
 
@@ -599,8 +599,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
                 command.Options.AzdoOptions.Organization = BuildOrganization;
                 command.Options.AzdoOptions.AccessToken = "testToken";
-                command.Options.SubscriptionsPath = this.subscriptionsPath;
-                command.Options.AllSubscriptionImagePaths = this.allSubscriptionImagePaths
+                command.Options.SubscriptionsPath = subscriptionsPath;
+                command.Options.AllSubscriptionImagePaths = allSubscriptionImagePaths
                     .Select(subscriptionImagePaths => JsonConvert.SerializeObject(subscriptionImagePaths.ToArray()));
 
                 command.Options.GitOptions.Owner = GitOwner;
@@ -694,7 +694,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IList<string> paths = pathString
                     .Split(" ", StringSplitOptions.RemoveEmptyEntries)
                     .Select(p => p.Trim().Trim('\''))
-                    .Except([ CliHelper.FormatAlias(DockerfileFilterOptionsBuilder.PathOptionName) ])
+                    .Except([CliHelper.FormatAlias(DockerfileFilterOptionsBuilder.PathOptionName)])
                     .ToList();
                 return CompareLists(expectedPaths, paths);
             }
@@ -729,12 +729,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             public void Dispose()
             {
-                foreach (string file in this.filesToCleanup)
+                foreach (string file in filesToCleanup)
                 {
                     File.Delete(file);
                 }
 
-                foreach (string folder in this.foldersToCleanup)
+                foreach (string folder in foldersToCleanup)
                 {
                     Directory.Delete(folder, true);
                 }

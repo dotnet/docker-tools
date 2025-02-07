@@ -5,7 +5,7 @@ using System.ComponentModel.Composition;
 using Azure.Containers.ContainerRegistry;
 using Azure.Core;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 [Export(typeof(IContainerRegistryContentClientFactory))]

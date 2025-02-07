@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
-namespace FilePusher
+namespace Microsoft.DotNet.DockerTools.FilePusher
 {
     public class Options
     {

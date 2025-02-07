@@ -3,9 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Text.Json;
-using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Oci;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Notary;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Notary;
 
 /// <summary>
 /// Notary Signature Envelope Payload spec:

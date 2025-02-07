@@ -5,7 +5,7 @@
 using System.CommandLine;
 using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     public interface ICommand
     {

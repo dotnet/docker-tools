@@ -5,7 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands.Signing;
 
 #nullable enable
 public class GenerateSigningPayloadsOptions : Options

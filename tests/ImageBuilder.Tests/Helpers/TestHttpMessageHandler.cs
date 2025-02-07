@@ -8,7 +8,7 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers
 {
     /// <summary>
     /// A custom <see cref="HttpMessageHandler"/> that bypass networks calls and returns back custom responses.
@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            return Task.FromResult(this.responses[request.RequestUri.ToString()]);
+            return Task.FromResult(responses[request.RequestUri.ToString()]);
         }
     }
 }

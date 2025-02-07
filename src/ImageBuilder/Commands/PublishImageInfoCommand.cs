@@ -8,8 +8,9 @@ using System.IO;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 
+
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
     public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoOptionsBuilder>
@@ -48,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Password = string.Empty
                 };
 
-                using IRepository repo =_gitService.CloneRepository(
+                using IRepository repo = _gitService.CloneRepository(
                     $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
                     repoPath,
                     cloneOptions);

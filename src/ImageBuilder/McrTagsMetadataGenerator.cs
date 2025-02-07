@@ -7,13 +7,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Microsoft.DotNet.ImageBuilder.Models.McrTags;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.McrTags;
+using Microsoft.DotNet.DockerTools.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     public class McrTagsMetadataGenerator
     {
@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.ImageBuilder
                         yaml.AppendLine(GetTagGroupYaml(imageDocInfos, customSubTableTitle)));
 
                     // Remove used imageDocInfos from the list
-                    foreach(ImageDocumentationInfo imageDocInfo in matchingSharedTags)
+                    foreach (ImageDocumentationInfo imageDocInfo in matchingSharedTags)
                     {
                         _imageDocInfos.Remove(imageDocInfo);
                     }
@@ -244,7 +244,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Prepend(info)
                 .ToList();
 
-        #nullable enable
+#nullable enable
         private class ImageDocumentationInfo
         {
             public PlatformInfo Platform { get; }
@@ -264,12 +264,12 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 SharedTags = Image.SharedTags;
                 PlatformTags = Platform.Tags;
-                AllTags = [..PlatformTags, ..SharedTags];
+                AllTags = [.. PlatformTags, .. SharedTags];
 
                 DocumentedPlatformTags = PlatformTags.Where(TagIsDocumented);
                 DocumentedSharedTags = SharedTags.Where(tag =>
                     TagIsDocumented(tag) || TagIsPlatformDocumented(tag, DocumentedPlatformTags));
-                DocumentedTags = [..DocumentedPlatformTags, ..DocumentedSharedTags];
+                DocumentedTags = [.. DocumentedPlatformTags, .. DocumentedSharedTags];
 
                 FormattedDocumentedTags = string.Join(", ", DocumentedTags.Select(tag => tag.Name));
             }
@@ -281,6 +281,6 @@ namespace Microsoft.DotNet.ImageBuilder
                 tag.Model.DocType == TagDocumentationType.PlatformDocumented
                     && documentedPlatformTags?.Any() == true;
         }
-        #nullable disable
+#nullable disable
     }
 }

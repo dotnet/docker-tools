@@ -7,10 +7,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest;
+
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.DockerTools.ImageBuilder
 {
     /// <summary>
     /// Caches state returned from Docker commands.
@@ -37,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, isRetryEnabled, isDryRun);
 
         public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun) =>
-            _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun));
+            _architectureCache.GetOrAdd(image, _ => _inner.GetImageArch(image, isDryRun));
 
         public void CreateTag(string image, string tag, bool isDryRun) =>
             _inner.CreateTag(image, tag, isDryRun);
@@ -50,10 +51,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));
-        
+
         public bool LocalImageExists(string tag, bool isDryRun) =>
             _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
-        
+
         public void PullImage(string image, string? platform, bool isDryRun)
         {
             _pulledImages.GetOrAdd(image, _ =>

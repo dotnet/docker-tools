@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;
 
-namespace Microsoft.DotNet.ImageBuilder;
+namespace Microsoft.DotNet.DockerTools.ImageBuilder;
 
 #nullable enable
 public class ContainerRegistryContentClientWrapper(ContainerRegistryContentClient innerClient) : IContainerRegistryContentClient

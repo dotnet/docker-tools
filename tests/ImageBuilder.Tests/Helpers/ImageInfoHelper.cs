@@ -8,10 +8,10 @@ using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.DockerTools.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Tests.Helpers
 {
     public static class ImageInfoHelper
     {
@@ -124,7 +124,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
                 digest: GenerateFakeDigest(registry, repoName, productVersion, os, arch),
                 architecture: arch,
                 osVersion: os,
-                simpleTags: [ $"{productVersion}-{os}-{arch}" ]
+                simpleTags: [$"{productVersion}-{os}-{arch}"]
             );
         }
 
@@ -166,7 +166,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         }
 
         private static List<string> GetSharedTags(string productVersion, string os) =>
-            [ productVersion, $"{productVersion}-{os}" ];
+            [productVersion, $"{productVersion}-{os}"];
 
         private static string GenerateFakeDigest(
             string registry,

@@ -10,7 +10,7 @@ using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 
 #nullable enable
-namespace Microsoft.DotNet.ImageBuilder.Services
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Services
 {
     public static class AzdoGitHttpClientExtensions
     {
@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             var fileInfos = files
                 .Select(kvp => new
                 {
-                    Exists = FileExistsAsync(gitHttpClient, repositoryId, branchName, kvp.Key),
+                    Exists = gitHttpClient.FileExistsAsync(repositoryId, branchName, kvp.Key),
                     Path = kvp.Key,
                     FileContents = kvp.Value
                 })

@@ -4,7 +4,7 @@
 
 using System.ComponentModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest
 {
     [Description(
         "The type of dependency an image has for a specific scenario."

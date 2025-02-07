@@ -6,7 +6,7 @@ using System;
 using System.ComponentModel;
 using Newtonsoft.Json;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.DockerTools.ImageBuilder.Models.Manifest
 {
     [Description(
         "A repository object contains metadata about a target Docker repository " +

@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -17,7 +16,6 @@ public class GenerateEolAnnotationDataOptions : Options
     public string EolDigestsListPath { get; set; } = string.Empty;
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;
-    public bool AnnotateEolProducts { get; set; }
 }
 
 public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
@@ -29,8 +27,6 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
         [
             ..base.GetCliOptions(),
             .._registryCredentialsOptionsBuilder.GetCliOptions(),
-            CreateOption<bool>("annotate-eol-products", nameof(GenerateEolAnnotationDataOptions.AnnotateEolProducts),
-                "Annotate images of EOL products")
         ];
 
     public override IEnumerable<Argument> GetCliArguments() =>

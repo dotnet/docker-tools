@@ -21,7 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 [Export(typeof(ICommand))]
 public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
 {
-    private readonly IDotNetReleasesService _dotNetReleasesService;
     private readonly ILoggerService _loggerService;
     private readonly IContainerRegistryClientFactory _acrClientFactory;
     private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
@@ -32,7 +31,6 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
     [ImportingConstructor]
     public GenerateEolAnnotationDataCommand(
-        IDotNetReleasesService dotNetReleasesService,
         ILoggerService loggerService,
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
@@ -40,7 +38,6 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         IRegistryCredentialsProvider registryCredentialsProvider,
         ILifecycleMetadataService lifecycleMetadataService)
     {
-        _dotNetReleasesService = dotNetReleasesService ?? throw new ArgumentNullException(nameof(dotNetReleasesService));
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
         _acrContentClientFactory = acrContentClientFactory ?? throw new ArgumentNullException(nameof(acrContentClientFactory));
@@ -74,8 +71,6 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
 
     private async Task<List<EolDigestData>> GetDigestsToAnnotate()
     {
-        Dictionary<string, DateOnly> productEolDates = await _dotNetReleasesService.GetProductEolDatesFromReleasesJson();
-
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
             _loggerService.WriteMessage("No digests to annotate because no image info files were provided.");
@@ -124,20 +119,6 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             });
 
             digestDataList.AddRange(digetsToAnnotate);
-
-            if (Options.AnnotateEolProducts)
-            {
-                // Annotate images for EOL products in new image info
-                // Only do so for those digests that actually exist in the registry (they may have been cleaned up
-                // because they are EOL).
-                IEnumerable<EolDigestData> eolDigests =
-                    newImageArtifactDetails.Repos
-                        .SelectMany(repo =>
-                            repo.Images
-                                .SelectMany(image => GetProductEolDigests(image, productEolDates)))
-                        .Where(digestData => registryTagsByDigest.ContainsKey(digestData.Digest));
-                digestDataList.AddRange(eolDigests);
-            }
         }
         catch (Exception e)
         {
@@ -205,32 +186,5 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
         }
 
         return digests.ToDictionary(val => val.Digest, val => val.Tag);
-    }
-
-    private IEnumerable<EolDigestData> GetProductEolDigests(ImageData image, Dictionary<string, DateOnly> productEolDates)
-    {
-        if (image.ProductVersion == null)
-        {
-            return [];
-        }
-
-        // Check if the version has a pre-release label. If so, it's not EOL by definition.
-        if (image.ProductVersion.Contains("-"))
-        {
-            return [];
-        }
-
-        string dotnetVersion = Version.Parse(image.ProductVersion).ToString(2);
-        if (!productEolDates.TryGetValue(dotnetVersion, out DateOnly date))
-        {
-            return [];
-        }
-
-        return image.GetAllImageDigestInfos().Select(val =>
-            new EolDigestData(val.Digest)
-            {
-                Tag = GetLongestTag(val.Tags),
-                EolDate = date
-            });
     }
 }

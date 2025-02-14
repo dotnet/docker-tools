@@ -1,7 +1,7 @@
 variables:
 - template: /eng/pipelines/templates/variables/build-test-publish.yml@self
 - name: manifest
-  value: src/Microsoft.DotNet.ImageBuilder/manifest.json
+  value: src/ImageBuilder/manifest.json
 - name: publishReadme
   value: false
 - name: manifestVariables
@@ -9,8 +9,8 @@ variables:
 - name: imageInfoVariant
   value: "-imagebuilder"
 - name: testScriptPath
-  value: ./src/Microsoft.DotNet.ImageBuilder/run-tests.ps1
+  value: ./tests/ImageBuilder.Tests/run-tests.ps1
 - name: testResultsDirectory
-  value: src/Microsoft.DotNet.ImageBuilder/tests/TestResults/
+  value: tests/ImageBuilder.Tests/TestResults/
 - name: publicGitRepoUri
   value: https://github.com/dotnet/docker-tools

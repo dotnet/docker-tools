@@ -12,7 +12,7 @@
 **/*.user
 
 # ImageBuilder directory
-.Microsoft.DotNet.ImageBuilder
+.ImageBuilder
 
 # dotnet install directory
 .dotnet/

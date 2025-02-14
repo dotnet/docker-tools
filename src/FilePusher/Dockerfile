@@ -6,12 +6,12 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build-env
 WORKDIR /file-pusher
 
 # copy csproj and restore as distinct layers
-COPY eng/src/file-pusher/*.csproj ./
+COPY src/FilePusher/*.csproj ./
 COPY NuGet.config ./
 RUN dotnet restore
 
 # copy everything else and build
-COPY eng/src/file-pusher/. ./
+COPY src/FilePusher/. ./
 RUN dotnet publish -c Release -o out --no-restore
 
 
@@ -26,4 +26,4 @@ COPY --from=build-env /file-pusher/out ./
 WORKDIR /repo
 COPY . ./
 
-ENTRYPOINT ["/file-pusher/file-pusher"]
+ENTRYPOINT ["/file-pusher/FilePusher"]

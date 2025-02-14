@@ -17,7 +17,7 @@ jobs:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
   - script: >
-      docker build . -f ./eng/src/file-pusher/Dockerfile -t file-pusher
+      docker build -f ./src/FilePusher/Dockerfile -t file-pusher .
     displayName: Build File Pusher
   - script: >
       docker run --rm file-pusher

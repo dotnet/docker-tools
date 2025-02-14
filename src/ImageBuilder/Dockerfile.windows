@@ -3,7 +3,7 @@
 ARG WINDOWS_BASE
 ARG WINDOWS_SDK
 
-# build Microsoft.DotNet.ImageBuilder
+# build ImageBuilder
 FROM mcr.microsoft.com/dotnet/sdk:9.0-$WINDOWS_SDK AS build-env
 WORKDIR /image-builder
 
@@ -38,4 +38,4 @@ FROM mcr.microsoft.com/windows/$WINDOWS_BASE
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 
-ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]
+ENTRYPOINT ["/image-builder/ImageBuilder"]

@@ -11,11 +11,11 @@ All commands are relative to the root of the repo.
 Using Linux or Windows, simply run the build script:
 
 ```pwsh
-# From src/Microsoft.DotNet.ImageBuilder
+# From src/ImageBuilder
 pwsh -f build.ps1
 
 # From the root of the repo
-pwsh -wd ./src/Microsoft.DotNet.ImageBuilder/ -f src/Microsoft.DotNet.ImageBuilder/build.ps1
+pwsh -wd ./src/ImageBuilder/ -f src/ImageBuilder/build.ps1
 ```
 
 ### Build a multi-arch Linux image

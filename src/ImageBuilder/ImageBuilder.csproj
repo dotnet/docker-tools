@@ -2,6 +2,9 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Microsoft.DotNet.DockerTools.$(MSBuildProjectName)</RootNamespace>
+    <LangVersion>latest</LangVersion>
     <PublishTrimmed>False</PublishTrimmed>
 
     <!-- https://github.com/dotnet/docker-tools/issues/327 -->

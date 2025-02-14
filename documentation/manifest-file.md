@@ -4,5 +4,5 @@ The manifest file is the primary source of metadata that drives the production o
 
 For a description of the schema, see the source location at https://github.com/dotnet/docker-tools/tree/main/src/ImageBuilder/src/Models/Manifest. Alternatively, you can generate a JSON schema of the manifest by using the ImageBuilder tool:
 ```
-Microsoft.DotNet.ImageBuilder.exe showManifestSchema
+ImageBuilder.exe showManifestSchema
 ```

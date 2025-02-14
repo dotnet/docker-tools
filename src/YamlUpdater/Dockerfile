@@ -6,15 +6,15 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build-env
 WORKDIR /src
 
 # copy csproj and restore as distinct layers
-COPY eng/src/file-pusher/*.csproj ./file-pusher/
-COPY eng/src/yaml-updater/*.csproj ./yaml-updater/
+COPY src/FilePusher/*.csproj ./file-pusher/
+COPY src/YamlUpdater/*.csproj ./yaml-updater/
 COPY NuGet.config ./
 
 RUN dotnet restore ./yaml-updater/*.csproj
 
 # copy everything else and build
-COPY eng/src/file-pusher/. ./file-pusher/
-COPY eng/src/yaml-updater/. ./yaml-updater/
+COPY src/FilePusher/. ./file-pusher/
+COPY src/YamlUpdater/. ./yaml-updater/
 RUN dotnet publish ./yaml-updater/*.csproj -c Release -o out --no-restore
 
 
@@ -29,4 +29,4 @@ COPY --from=build-env /src/out ./
 WORKDIR /repo
 COPY . ./
 
-ENTRYPOINT ["/yaml-updater/yaml-updater"]
+ENTRYPOINT ["/yaml-updater/YamlUpdater"]

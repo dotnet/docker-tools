@@ -27,7 +27,7 @@ jobs:
       echo "##vso[task.setvariable variable=imageBuilderTag]$(cat $(Pipeline.Workspace)/image-builder/source-build-id/source-build-id.txt)"
     displayName: Get Image Builder Tag
   - script: >
-      docker build . -f ./eng/src/yaml-updater/Dockerfile -t yaml-updater
+      docker build -f ./src/YamlUpdater/Dockerfile -t yaml-updater .
     displayName: Build YAML Updater
   - script: >
       docker run --rm yaml-updater

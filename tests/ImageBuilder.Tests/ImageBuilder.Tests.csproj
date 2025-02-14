@@ -2,6 +2,10 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Microsoft.DotNet.DockerTools.$(MSBuildProjectName)</RootNamespace>
+    <LangVersion>latest</LangVersion>
+    <PublishTrimmed>False</PublishTrimmed>
 
     <!-- https://github.com/dotnet/docker-tools/issues/327 -->
     <Nullable>disable</Nullable>

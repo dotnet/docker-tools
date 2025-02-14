@@ -8,13 +8,12 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0-$WINDOWS_SDK AS build-env
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
-COPY NuGet.config ./
-COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore -r win-x64 ./src/Microsoft.DotNet.ImageBuilder.csproj
+COPY ImageBuilder.csproj NuGet.config .
+RUN dotnet restore -r win-x64 ImageBuilder.csproj
 
 # copy everything else and publish
-COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
+COPY . .
+RUN dotnet publish ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
 
 # install manifest-tool
 RUN pwsh -Command " `

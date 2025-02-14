@@ -17,13 +17,13 @@ RUN oras_version=1.2.2 \
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
-COPY NuGet.config ./
-COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore -r linux-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj
+COPY NuGet.config .
+COPY ImageBuilder.csproj  NuGet.config .
+RUN dotnet restore -r linux-$TARGETARCH ImageBuilder.csproj
 
 # copy everything else and publish
-COPY . ./
-RUN dotnet publish -r linux-$TARGETARCH ./src/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true --no-restore -o out
+COPY . .
+RUN dotnet publish -r linux-$TARGETARCH ImageBuilder.csproj --self-contained=true --no-restore -o out
 
 
 # build runtime image

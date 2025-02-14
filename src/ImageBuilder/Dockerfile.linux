@@ -2,7 +2,7 @@
 #     docker build -t image-builder .
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
-# build Microsoft.DotNet.ImageBuilder
+# build ImageBuilder
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
 
@@ -44,4 +44,4 @@ COPY --from=build-env ["/oras-install/oras", "/usr/local/bin"]
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 
-ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]
+ENTRYPOINT ["/image-builder/ImageBuilder"]

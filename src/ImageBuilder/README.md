@@ -24,7 +24,7 @@ If you don't need to test on Windows, this is the easiest way to create a multi-
 
 ```pwsh
 # Build the image. Choose one or both platforms, and optionally push to a registry or load the image locally.
-docker buildx build [--push,--load] --platform [linux/amd64,linux/arm64] -t "${REPO}:${TAG}" -f .\src\Microsoft.DotNet.ImageBuilder\Dockerfile.linux .\src\Microsoft.DotNet.ImageBuilder\
+docker buildx build [--push,--load] --platform [linux/amd64,linux/arm64] -t "${REPO}:${TAG}" -f .\src\ImageBuilder\Dockerfile.linux .\src\ImageBuilder\
 ```
 
 ### Create a multi-platform manifest list

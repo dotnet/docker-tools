@@ -30,7 +30,7 @@ steps:
   - script: >
       docker cp
       setupImageBuilder-$(Build.BuildId)-$(System.JobId):/image-builder
-      $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+      $(Build.BinariesDirectory)/.ImageBuilder
     displayName: Copy Image Builder
     condition: and(succeeded(), ${{ parameters.condition }})
   - script: docker rm -f setupImageBuilder-$(Build.BuildId)-$(System.JobId)
@@ -46,7 +46,7 @@ steps:
         $tokenHostPath = '$(Agent.TempDirectory)'
         $tokenHostFilePath = "$tokenHostPath\token"
 
-        $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
+        $runImageBuilderCmd = "$(Build.BinariesDirectory)\.ImageBuilder\ImageBuilder.exe"
 
         $authedImageBuilderCmds = @(
           '$env:AZURE_TENANT_ID = $env:tenantId'

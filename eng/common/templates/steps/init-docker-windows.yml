@@ -30,7 +30,7 @@ steps:
   - script: >
       docker cp
       setupImageBuilder-$(Build.BuildId)-$(System.JobId):/image-builder
-      $(Build.BinariesDirectory)/.ImageBuilder
+      $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
     displayName: Copy Image Builder
     condition: and(succeeded(), ${{ parameters.condition }})
   - script: docker rm -f setupImageBuilder-$(Build.BuildId)-$(System.JobId)

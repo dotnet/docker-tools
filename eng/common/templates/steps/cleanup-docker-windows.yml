@@ -1,6 +1,6 @@
 parameters:
   condition: true
-
+  
 steps:
   ################################################################################
   # Cleanup Docker Resources

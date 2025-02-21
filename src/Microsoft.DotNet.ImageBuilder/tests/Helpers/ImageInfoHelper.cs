@@ -137,7 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             List<string> simpleTags = null,
             string baseImageDigest = null,
             DateTime? created = null,
-            List<string> layers = null,
+            List<Layer> layers = null,
             bool isUnchanged = false,
             string commitUrl = "")
         {

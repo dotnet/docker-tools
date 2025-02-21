@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -381,7 +381,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // When a cache hit occurs for a Dockerfile, we want to transfer some of the metadata about the previously
             // published image so we don't need to recalculate it again.
             dstPlatform.BaseImageDigest = srcPlatform.BaseImageDigest;
-            dstPlatform.Layers = new List<string>(srcPlatform.Layers);
+            dstPlatform.Layers = new List<Layer>(srcPlatform.Layers);
         }
 
         private RepoData CreateRepoData(RepoInfo repoInfo) =>

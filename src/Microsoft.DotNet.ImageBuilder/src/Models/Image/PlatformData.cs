@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 1;
             }
 
-            
+
             if (HasDifferentTagState(other))
             {
                 return 1;

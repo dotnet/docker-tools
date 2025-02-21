@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
@@ -15,7 +16,7 @@ public interface IManifestService
 {
     Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun);
 
-    public async Task<IEnumerable<string>> GetImageLayersAsync(string tag, bool isDryRun)
+    public async Task<IEnumerable<Layer>> GetImageLayersAsync(string tag, bool isDryRun)
     {
         if (isDryRun)
         {
@@ -32,7 +33,9 @@ public interface IManifestService
         }
 
         return ((JsonArray)manifestResult.Manifest["layers"]!)
-            .Select(layer => (layer!["digest"] ?? throw new InvalidOperationException("Expected digest property")).ToString())
+            .Select(layer => new Layer(
+                Digest: (layer!["digest"] ?? throw new InvalidOperationException("Expected digest property")).ToString(),
+                Size: (layer!["size"] ?? throw new InvalidOperationException("Expected size property")).GetValue<long>()))
             .Reverse();
     }
 

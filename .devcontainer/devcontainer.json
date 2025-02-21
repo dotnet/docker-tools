@@ -24,5 +24,9 @@
         }
     },
     "remoteUser": "app",
-    "onCreateCommand": "sudo chsh -s /bin/bash app"
+    "onCreateCommand": "sudo chsh -s /bin/bash app",
+    "tasks": {
+      "test": "dotnet test ./src/Microsoft.DotNet.ImageBuilder/Microsoft.DotNet.ImageBuilder.sln",
+      "build": "dotnet build ./src/Microsoft.DotNet.ImageBuilder/Microsoft.DotNet.ImageBuilder.sln"
+    }
 }

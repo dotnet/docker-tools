@@ -97,8 +97,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             },
                                             layers: new List<Layer>
                                             {
-                                                new Layer("qwe", 0),
-                                                new Layer("asd", 0)
+                                                new Layer("qwe", 123),
+                                                new Layer("asd", 456)
                                             })
                                     },
                                     {
@@ -112,7 +112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             },
                                             layers: new List<Layer>
                                             {
-                                                new Layer("qwe", 0)
+                                                new Layer("qwe", 123)
                                             })
                                     }
                                 },
@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         },
                                         layers: new List<Layer>
                                         {
-                                            new Layer("zxc", 0)
+                                            new Layer("zxc", 789)
                                         })
                                 },
                                 ProductVersion = "2.0.5"

@@ -1,0 +1,28 @@
+{
+    "image": "mcr.microsoft.com/dotnet/sdk:9.0-noble",
+    "features": {
+        "ghcr.io/devcontainers/features/common-utils": {
+            "username": "app",
+            "userUid": 1654,
+            "userGid": 1654
+        },
+        "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    },
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-dotnettools.csdevkit",
+                "GitHub.copilot"
+            ],
+            "settings": {
+                "remote.autoForwardPorts": true,
+                "remote.autoForwardPortsSource": "hybrid",
+                "remote.otherPortsAttributes": {
+                    "onAutoForward": "ignore"
+                }
+            }
+        }
+    },
+    "remoteUser": "app",
+    "onCreateCommand": "sudo chsh -s /bin/bash app"
+}

@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.ImageBuilder
                                 {
                                     imageData.ManifestImage = manifestImage;
                                 }
-                                
+
                                 platformData.PlatformInfo = matchingManifestPlatform;
                                 platformData.ImageInfo = manifestImage;
                                 break;
@@ -327,16 +327,16 @@ namespace Microsoft.DotNet.ImageBuilder
 
                         ReplaceValue(property, srcObj, targetObj);
                     }
-                    else if (srcObj is PlatformData && property.Name == nameof(PlatformData.Layers))
-                    {
-                        // Layers are always unique and should never get merged.
-                        // Layers are already sorted according to their position in the image. They should not be sorted alphabetically.
-                        ReplaceValue(property, srcObj, targetObj, skipListSorting: true);
-                    }
                     else
                     {
                         MergeStringLists(property, srcObj, targetObj);
                     }
+                }
+                else if (typeof(IList<Layer>).IsAssignableFrom(property.PropertyType))
+                {
+                    // Layers are always unique and should never get merged.
+                    // Layers are already sorted according to their position in the image. They should not be sorted alphabetically.
+                    ReplaceValue(property, srcObj, targetObj, skipListSorting: true);
                 }
                 else if (typeof(IList<ImageData>).IsAssignableFrom(property.PropertyType))
                 {

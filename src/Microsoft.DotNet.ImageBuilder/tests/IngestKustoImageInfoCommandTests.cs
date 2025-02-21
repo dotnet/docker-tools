@@ -95,10 +95,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "t1"
                                             },
-                                            layers: new List<string>
+                                            layers: new List<Layer>
                                             {
-                                                "qwe",
-                                                "asd"
+                                                new Layer("qwe", 0),
+                                                new Layer("asd", 0)
                                             })
                                     },
                                     {
@@ -110,9 +110,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             {
                                                 "t2"
                                             },
-                                            layers: new List<string>
+                                            layers: new List<Layer>
                                             {
-                                                "qwe"
+                                                new Layer("qwe", 0)
                                             })
                                     }
                                 },
@@ -137,9 +137,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                         {
                                             "t3"
                                         },
-                                        layers: new List<string>
+                                        layers: new List<Layer>
                                         {
-                                            "zxc"
+                                            new Layer("zxc", 0)
                                         })
                                 },
                                 ProductVersion = "2.0.5"
@@ -229,9 +229,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                                             "t2",
                                             "t3"
                                         },
-                                        layers: new List<string>
+                                        layers: new List<Layer>
                                         {
-                                            "zxc"
+                                            new Layer("zxc", 0)
                                         })
                                 },
                                 ProductVersion = "1.0.5"

@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonProperty(Required = Required.Always)]
         public string CommitUrl { get; set; } = string.Empty;
 
-        public List<string> Layers { get; set; } = new();
+        public List<Layer> Layers { get; set; } = new();
 
         /// <summary>
         /// Gets or sets whether the image or its associated tag names have changed since it was last published.
@@ -78,7 +78,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
                 return 1;
             }
 
-            
+
             if (HasDifferentTagState(other))
             {
                 return 1;
@@ -134,5 +134,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
             return new Version(fullVersion).ToString(2);
         }
     }
+
+    public record Layer(string Digest, long Size);
 }
 #nullable disable

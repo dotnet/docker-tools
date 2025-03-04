@@ -8,5 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         bool IsDryRun { get; }
         bool IsVerbose { get; }
+        string GetOption(string name);
     }
 }

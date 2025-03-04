@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 Model = model,
                 BuildContextPath = buildContextPath
             };
-            tagInfo.Name = variableHelper.SubstituteValues(name);
+            tagInfo.Name = variableHelper.SubstituteValues(name, tagInfo.GetVariableValue);
             tagInfo.FullyQualifiedName = GetFullyQualifiedName(repoName, tagInfo.Name);
 
             if (model.Syndication != null)
@@ -54,6 +54,20 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public static string GetFullyQualifiedName(string repoName, string tagName)
         {
             return $"{repoName}:{tagName}";
+        }
+
+        private string GetVariableValue(string variableType, string variableName)
+        {
+            string variableValue = null;
+
+            if (string.Equals(variableType, VariableHelper.SystemVariableTypeId, StringComparison.Ordinal)
+                && string.Equals(variableName, VariableHelper.DockerfileGitCommitShaVariableName, StringComparison.Ordinal)
+                && BuildContextPath != null)
+            {
+                variableValue = GitHelper.GetCommitSha(BuildContextPath);
+            }
+
+            return variableValue;
         }
     }
 }

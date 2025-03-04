@@ -113,10 +113,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 {
                     variableValue = getContextBasedSystemValue(variableType, variableName);
                 }
-                else
-                {
-                    variableValue = Options.GetOption(variableName);
-                }
             }
             else if (string.Equals(variableType, RepoVariableTypeId, StringComparison.Ordinal))
             {

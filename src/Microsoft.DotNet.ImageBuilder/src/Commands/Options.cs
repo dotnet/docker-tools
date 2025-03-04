@@ -17,24 +17,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsDryRun { get; set; }
         public bool IsVerbose { get; set; }
         public bool NoVersionLogging { get; set; }
-
-        public string? GetOption(string name)
-        {
-            string? result;
-
-            PropertyInfo? propInfo = GetType().GetProperties()
-                .FirstOrDefault(p => string.Equals(p.Name, name, StringComparison.Ordinal));
-            if (propInfo != null)
-            {
-                result = propInfo.GetValue(this)?.ToString() ?? "";
-            }
-            else
-            {
-                result = null;
-            }
-
-            return result;
-        }
     }
 
     public class CliOptionsBuilder

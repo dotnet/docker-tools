@@ -18,7 +18,6 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public const string McrTagsYmlTagGroupTypeId = "McrTagsYmlTagGroup";
         public const string RepoVariableTypeId = "Repo";
         public const string SystemVariableTypeId = "System";
-        private const string TimeStampVariableName = "TimeStamp";
         private const string VariableGroupName = "variable";
 
         private static readonly string s_tagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.| ]+)\\)";
@@ -110,11 +109,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (string.Equals(variableType, SystemVariableTypeId, StringComparison.Ordinal))
             {
-                if (string.Equals(variableName, TimeStampVariableName, StringComparison.Ordinal))
-                {
-                    variableValue = s_timeStamp;
-                }
-                else if (getContextBasedSystemValue != null)
+                if (getContextBasedSystemValue != null)
                 {
                     variableValue = getContextBasedSystemValue(variableType, variableName);
                 }

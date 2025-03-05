@@ -13,11 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public class VariableHelper
     {
         private const char BuiltInDelimiter = ':';
-        public const string DockerfileGitCommitShaVariableName = "DockerfileGitCommitSha";
         public const string McrTagsYmlRepoTypeId = "McrTagsYmlRepo";
         public const string McrTagsYmlTagGroupTypeId = "McrTagsYmlTagGroup";
         public const string RepoVariableTypeId = "Repo";
-        public const string SystemVariableTypeId = "System";
         private const string VariableGroupName = "variable";
 
         private static readonly string s_tagVariablePattern = $"\\$\\((?<{VariableGroupName}>[\\w:\\-.| ]+)\\)";
@@ -107,14 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             string variableType = variableNameParts[0];
             variableName = variableNameParts[1];
 
-            if (string.Equals(variableType, SystemVariableTypeId, StringComparison.Ordinal))
-            {
-                if (getContextBasedSystemValue != null)
-                {
-                    variableValue = getContextBasedSystemValue(variableType, variableName);
-                }
-            }
-            else if (string.Equals(variableType, RepoVariableTypeId, StringComparison.Ordinal))
+            if (string.Equals(variableType, RepoVariableTypeId, StringComparison.Ordinal))
             {
                 variableValue = GetRepoById(variableName)?.QualifiedName;
             }

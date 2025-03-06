@@ -15,7 +15,7 @@
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="13.0.0" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.1" />
-    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.24379.1" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25153.3" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageReference Include="Octokit" Version="13.0.1" />

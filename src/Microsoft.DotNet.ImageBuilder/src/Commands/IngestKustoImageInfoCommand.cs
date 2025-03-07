@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -99,9 +99,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                         for (int i = 0; i < platform.Layers.Count; i++)
                         {
-                            // TODO: Track layer size (currently set to 0) https://github.com/dotnet/docker-tools/issues/745
                             layerInfo.AppendLine(FormatLayerCsv(
-                                platform.Layers[i], 0, platform.Layers.Count - i, sha, platform, image, repo.Repo, timestamp));
+                                platform.Layers[i].Digest, platform.Layers[i].Size, platform.Layers.Count - i, sha, platform, image, repo.Repo, timestamp));
                         }
                     }
                 }
@@ -117,7 +116,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static string FormatLayerCsv(
             string layerDigest,
-            int size,
+            long size,
             int ordinal,
             string imageDigest,
             PlatformData platform,

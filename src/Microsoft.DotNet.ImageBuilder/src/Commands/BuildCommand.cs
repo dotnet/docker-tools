@@ -475,6 +475,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
+                // Print image size
+                string? firstTag = allTags.FirstOrDefault(s => !string.IsNullOrWhiteSpace(s));
+                if (firstTag is not null)
+                {
+                    long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun);
+                    _loggerService.WriteMessage($"Image size (on disk): {size} bytes");
+                }
+
                 if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
                 {
                     throw new InvalidOperationException(

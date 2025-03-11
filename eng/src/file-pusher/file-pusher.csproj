@@ -11,7 +11,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25153.3" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
+    <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.25121.105" />
     <PackageReference Include="System.Diagnostics.TextWriterTraceListener" Version="4.3.0" />
   </ItemGroup>
 

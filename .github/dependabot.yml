@@ -4,9 +4,7 @@
 version: 2
 updates:
   - package-ecosystem: "nuget"
-    directories:
-      - "/src/Microsoft.DotNet.ImageBuilder/"
-      - "/eng/src/"
+    directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"

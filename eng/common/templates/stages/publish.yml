@@ -1,8 +1,12 @@
 parameters:
   customPublishInitSteps: []
   customPublishVariables: []
+
   internalProjectName: null
+  publicProjectName: null
+
   isInternalServicingValidation: false
+
   pool:
     vmImage: $(defaultLinuxAmd64PoolImage)
 

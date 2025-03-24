@@ -12,7 +12,6 @@ parameters:
   linuxArmBuildJobTimeout: 60
   windowsAmdBuildJobTimeout: 60
 
-  preBuildValidationTimeout: 60
   linuxAmdTestJobTimeout: 60
   linuxArmTestJobTimeout: 60
   windowsAmdTestJobTimeout: 60
@@ -27,13 +26,20 @@ parameters:
 
   isInternalServicingValidation: false
 
-  linuxAmd64Pool: {}
-  linuxArm32Pool: {}
-  linuxArm64Pool: {}
-  windows2016Pool: {}
-  windows1809Pool: {}
-  windows2022Pool: {}
-  windows2025Pool: {}
+  linuxAmd64Pool:
+    vmImage: $(defaultLinuxAmd64PoolImage)
+  linuxArm32Pool:
+    vmImage: $(defaultLinuxArm32PoolImage)
+  linuxArm64Pool:
+    vmImage: $(defaultLinuxArm64PoolImage)
+  windows2016Pool:
+    vmImage: $(defaultWindows2016PoolImage)
+  windows1809Pool:
+    vmImage: $(defaultWindows1809PoolImage)
+  windows2022Pool:
+    vmImage: $(defaultWindows2022PoolImage)
+  windows2025Pool:
+    vmImage: $(defaultWindows2025PoolImage)
 
 
 ################################################################################
@@ -47,7 +53,7 @@ stages:
     parameters:
       name: PreBuildValidation
       pool: ${{ parameters.linuxAmd64Pool }}
-      testJobTimeout: ${{ parameters.preBuildValidationTimeout }}
+      testJobTimeout: ${{ parameters.linuxAmdTestJobTimeout }}
       preBuildValidation: true
       internalProjectName: ${{ parameters.internalProjectName }}
       customInitSteps:

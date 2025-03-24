@@ -13,9 +13,13 @@ variables:
 - template: templates/variables/image-builder.yml
 
 stages:
-- template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
+- template: ../common/templates/stages/dotnet/build-and-test.yml
   parameters:
     buildMatrixType: platformVersionedOs
     noCache: true
+    internalProjectName: ${{ variables.internalProjectName }}
+    publicProjectName: ${{ variables.publicProjectName }}
+- template: ../common/templates/stages/dotnet/publish.yml
+  parameters:
     internalProjectName: ${{ variables.internalProjectName }}
     publicProjectName: ${{ variables.publicProjectName }}

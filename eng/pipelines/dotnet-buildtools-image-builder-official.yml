@@ -17,12 +17,8 @@ extends:
   template: /eng/common/templates/1es-official.yml@self
   parameters:
     stages:
-    - template: /eng/common/templates/stages/dotnet/build-and-test.yml@self
+    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
       parameters:
         noCache: true
-        internalProjectName: ${{ variables.internalProjectName }}
-        publicProjectName: ${{ variables.publicProjectName }}
-    - template: /eng/common/templates/stages/dotnet/publish.yml@self
-      parameters:
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}

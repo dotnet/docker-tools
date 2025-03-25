@@ -1,5 +1,5 @@
-# A wrapper template around the common build-test-publish-repo template with settings
-# specific to the .NET team's infrastructure.
+# This template wraps the common publish stage template with settings specific
+# to the .NET team's infrastructure.
 
 parameters:
   internalProjectName: null
@@ -34,9 +34,6 @@ stages:
         echo "##vso[task.setvariable variable=publishNotificationRepoName]$repoName"
       displayName: "Set Custom Repo Name Var"
     - ${{ parameters.customPublishInitSteps }}
-
-    internalVersionsRepoRef: InternalVersionsRepo
-    publicVersionsRepoRef: PublicVersionsRepo
 
     ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
       customPublishVariables:

@@ -249,9 +249,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             notificationMarkdown.AppendLine();
             notificationMarkdown.AppendLine(NotificationHelper.FormatNotificationMetadata(queueInfo));
 
-            if (Options.GitOptions.AuthToken == string.Empty ||
-                Options.GitOptions.Owner == string.Empty ||
-                Options.GitOptions.Repo == string.Empty)
+            if (string.IsNullOrEmpty(Options.GitHubAuthOptions.AuthToken) ||
+                string.IsNullOrEmpty(Options.GitOptions.Owner) ||
+                string.IsNullOrEmpty(Options.GitOptions.Repo))
             {
                 _loggerService.WriteMessage(
                     "Skipping posting of notification because GitHub auth token, owner, and repo options were not provided.");
@@ -267,7 +267,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }.AppendIf(NotificationLabels.Failure, () => exception is not null),
                     Options.GitOptions.Owner,
                     Options.GitOptions.Repo,
-                    Options.GitOptions.AuthToken,
+                    Options.GitHubAuthOptions,
                     Options.IsDryRun);
             }
         }

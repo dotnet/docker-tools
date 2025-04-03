@@ -2,9 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
@@ -21,8 +24,13 @@ namespace Microsoft.DotNet.ImageBuilder
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
-        public IGitHubClient GetClient(GitHubAuth gitHubAuth, bool isDryRun)
+        public IGitHubClient GetClient(GitHubAuthOptions gitHubAuthOptions, GitOptions gitOptions, bool isDryRun)
         {
+            var gitHubAuth = new GitHubAuth(
+                authToken: gitHubAuthOptions.AuthToken,
+                user: gitOptions.Username,
+                email: gitOptions.Email);
+
             return new GitHubClientWrapper(_loggerService, new GitHubClient(gitHubAuth), isDryRun);
         }
 

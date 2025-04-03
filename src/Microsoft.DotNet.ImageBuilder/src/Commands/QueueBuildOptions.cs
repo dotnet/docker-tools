@@ -16,18 +16,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public AzdoOptions AzdoOptions { get; set; } = new();
         public IEnumerable<string> AllSubscriptionImagePaths { get; set; } = Enumerable.Empty<string>();
         public GitOptions GitOptions { get; set; } = new();
+        public GitHubAuthOptions GitHubAuthOptions { get; set; } = new();
     }
 
     public class QueueBuildOptionsBuilder : CliOptionsBuilder
     {
+        private const string DefaultSubscriptionsPath = "subscriptions.json";
+
         private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new();
+
         private readonly GitOptionsBuilder _gitOptionsBuilder =
             GitOptionsBuilder.Build()
-                .WithAuthToken(description: "Auth token to use to connect to GitHub for posting notifications")
                 .WithOwner(description: "Owner of the GitHub repo to post notifications to")
                 .WithRepo(description: "Name of the GitHub repo to post notifications to");
 
-        private const string DefaultSubscriptionsPath = "subscriptions.json";
+        private readonly GitHubAuthOptionsBuilder _gitHubAuthOptionsBuilder =
+            new GitHubAuthOptionsBuilder()
+                .WithAuthToken(
+                    isRequired: true,
+                    description: "GitHub personal access token to use for posting notification issues");
+
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_azdoOptionsBuilder.GetCliOptions())
@@ -39,12 +47,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         CreateMultiOption<string>("image-paths", nameof(QueueBuildOptions.AllSubscriptionImagePaths),
                             "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)")
                     }
-                .Concat(_gitOptionsBuilder.GetCliOptions()));
+                .Concat(_gitOptionsBuilder.GetCliOptions())
+                .Concat(_gitHubAuthOptionsBuilder.GetCliOptions()));
 
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_azdoOptionsBuilder.GetCliArguments())
-                .Concat(_gitOptionsBuilder.GetCliArguments());
+                .Concat(_gitOptionsBuilder.GetCliArguments())
+                .Concat(_gitHubAuthOptionsBuilder.GetCliArguments());
     }
 }
-#nullable disable

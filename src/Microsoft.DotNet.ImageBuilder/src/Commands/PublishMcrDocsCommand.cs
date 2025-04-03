@@ -26,7 +26,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
 
         [ImportingConstructor]
-        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
+        public PublishMcrDocsCommand(
+            IGitService gitService,
+            IGitHubClientFactory gitHubClientFactory,
             ILoggerService loggerService) : base()
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
@@ -59,7 +61,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+                using IGitHubClient gitHubClient =
+                    _gitHubClientFactory.GetClient(Options.GitHubAuthOptions, Options.GitOptions, Options.IsDryRun);
 
                 await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
                 {

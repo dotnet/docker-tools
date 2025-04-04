@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -17,51 +16,57 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string ImageInfoPath { get; set; } = string.Empty;
         public int BuildId { get; set; }
         public GitOptions GitOptions { get; set; } = new();
+        public GitHubAuthOptions GitHubAuthOptions { get; set; } = new();
         public AzdoOptions AzdoOptions { get; set; } = new();
     }
 
     public class PostPublishNotificationOptionsBuilder : ManifestOptionsBuilder
     {
         private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new();
+
         private readonly GitOptionsBuilder _gitOptionsBuilder =
             GitOptionsBuilder.Build()
-                .WithAuthToken(isRequired: true, description: "Auth token to use to connect to GitHub for posting notifications")
                 .WithOwner(isRequired: true, description: "Owner of the GitHub repo to post notifications to")
                 .WithRepo(isRequired: true, description: "Name of the GitHub repo to post notifications to");
 
+        private readonly GitHubAuthOptionsBuilder _gitHubAuthOptionsBuilder =
+            new GitHubAuthOptionsBuilder()
+                .WithAuthToken(
+                    isRequired: true,
+                    description: "GitHub personal access token to use for posting notification issues");
+
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(new Option[]
-                {
-                    CreateMultiOption<string>("task", nameof(PostPublishNotificationOptions.TaskNames),
-                        "Name of a build task to report the result of")
-                })
-                .Concat(_azdoOptionsBuilder.GetCliOptions())
-                .Concat(_gitOptionsBuilder.GetCliOptions());
+            [
+                ..base.GetCliOptions(),
+                CreateMultiOption<string>("task", nameof(PostPublishNotificationOptions.TaskNames),
+                    "Name of a build task to report the result of"),
+                .._azdoOptionsBuilder.GetCliOptions(),
+                .._gitOptionsBuilder.GetCliOptions(),
+                .._gitHubAuthOptionsBuilder.GetCliOptions(),
+            ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(new Argument[]
+            [
+                ..base.GetCliArguments(),
+                new Argument<string>(nameof(PostPublishNotificationOptions.SourceRepo))
                 {
-                    new Argument(nameof(PostPublishNotificationOptions.SourceRepo))
-                    {
-                        Description = "Name of the repo that is the source of the publish"
-                    },
-                    new Argument(nameof(PostPublishNotificationOptions.SourceBranch))
-                    {
-                        Description = "Name of the repo branch that is the source of the publish"
-                    },
-                    new Argument(nameof(PostPublishNotificationOptions.ImageInfoPath))
-                    {
-                        Description = "Path to image info file"
-                    },
-                    new Argument(nameof(PostPublishNotificationOptions.BuildId))
-                    {
-                        Description = "ID of the build that executed the publish"
-                    }
-                })
-                .Concat(_azdoOptionsBuilder.GetCliArguments())
-                .Concat(_gitOptionsBuilder.GetCliArguments());
+                    Description = "Name of the repo that is the source of the publish"
+                },
+                new Argument<string>(nameof(PostPublishNotificationOptions.SourceBranch))
+                {
+                    Description = "Name of the repo branch that is the source of the publish"
+                },
+                new Argument<string>(nameof(PostPublishNotificationOptions.ImageInfoPath))
+                {
+                    Description = "Path to image info file"
+                },
+                new Argument<int>(nameof(PostPublishNotificationOptions.BuildId))
+                {
+                    Description = "ID of the build that executed the publish"
+                },
+                .._azdoOptionsBuilder.GetCliArguments(),
+                .._gitOptionsBuilder.GetCliArguments(),
+                .._gitHubAuthOptionsBuilder.GetCliArguments(),
+            ];
     }
 }
-#nullable disable

@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
-
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -14,6 +13,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishMcrDocsOptions : ManifestOptions, IGitOptionsHost
     {
         public GitOptions GitOptions { get; set; } = new();
+
+        public GitHubAuthOptions GitHubAuthOptions { get; set; } = new();
 
         public string SourceRepoUrl { get; set; } = string.Empty;
 
@@ -28,11 +29,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class PublishMcrDocsOptionsBuilder : ManifestOptionsBuilder
     {
-        private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
+        private readonly GitOptionsBuilder _gitOptionsBuilder =
+            GitOptionsBuilder.BuildWithDefaults();
+
+        private readonly GitHubAuthOptionsBuilder _gitHubAuthOptionsBuilder =
+            new GitHubAuthOptionsBuilder()
+                .WithAuthToken(isRequired: true);
 
         public override IEnumerable<Option> GetCliOptions() =>
             base.GetCliOptions()
                 .Concat(_gitOptionsBuilder.GetCliOptions())
+                .Concat(_gitHubAuthOptionsBuilder.GetCliOptions())
                 .Concat(
                     [
                         CreateOption<bool>("exclude-product-family", nameof(PublishMcrDocsOptions.ExcludeProductFamilyReadme),
@@ -44,6 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override IEnumerable<Argument> GetCliArguments() =>
             base.GetCliArguments()
                 .Concat(_gitOptionsBuilder.GetCliArguments())
+                .Concat(_gitHubAuthOptionsBuilder.GetCliArguments())
                 .Concat(
                     [
                         new Argument<string>(nameof(PublishMcrDocsOptions.SourceRepoUrl),
@@ -52,4 +60,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 );
     }
 }
-#nullable disable

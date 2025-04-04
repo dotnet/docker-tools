@@ -10,23 +10,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PublishImageInfoOptions : ImageInfoOptions, IGitOptionsHost
     {
-        public GitOptions GitOptions { get; set; } = new GitOptions();
+        public GitOptions GitOptions { get; set; } = new();
+        public GitHubAuthOptions GitHubAuthOptions { get; set; } = new();
     }
 
     public class PublishImageInfoOptionsBuilder : ImageInfoOptionsBuilder
     {
         private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
 
+        private readonly GitHubAuthOptionsBuilder _gitHubAuthOptionsBuilder =
+            new GitHubAuthOptionsBuilder()
+                .WithAuthToken(isRequired: true);
+
         public override IEnumerable<Option> GetCliOptions() =>
             [
                 ..base.GetCliOptions(),
                 .._gitOptionsBuilder.GetCliOptions(),
+                .._gitHubAuthOptionsBuilder.GetCliOptions(),
             ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
             [
                 ..base.GetCliArguments(),
-                .._gitOptionsBuilder.GetCliArguments()
+                .._gitHubAuthOptionsBuilder.GetCliArguments()
             ];
     }
 }

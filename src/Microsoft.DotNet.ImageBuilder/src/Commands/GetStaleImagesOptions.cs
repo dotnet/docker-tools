@@ -15,6 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptions GitOptions { get; set; } = new GitOptions();
 
+        public GitHubAuthOptions GitHubAuthOptions { get; set; } = new GitHubAuthOptions();
+
         public SubscriptionOptions SubscriptionOptions { get; set; } = new SubscriptionOptions();
 
         public string VariableName { get; set; } = string.Empty;
@@ -27,6 +29,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
     {
         private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
+        private readonly GitHubAuthOptionsBuilder _gitHubAuthOptionsBuilder =
+            new GitHubAuthOptionsBuilder()
+                .WithAuthToken(isRequired: true);
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
         private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new();
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
@@ -37,6 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(_subscriptionOptionsBuilder.GetCliOptions())
                 .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
                 .Concat(_gitOptionsBuilder.GetCliOptions())
+                .Concat(_gitHubAuthOptionsBuilder.GetCliOptions())
                 .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
                 .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions());
 
@@ -45,13 +51,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(_subscriptionOptionsBuilder.GetCliArguments())
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
                 .Concat(_gitOptionsBuilder.GetCliArguments())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments()
+                .Concat(_gitHubAuthOptionsBuilder.GetCliArguments())
+                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
                 .Concat(
                     new Argument[]
                     {
                         new Argument<string>(nameof(GetStaleImagesOptions.VariableName),
                             "The Azure Pipeline variable name to assign the image paths to")
-                    }));
+                    });
     }
 }
-#nullable disable

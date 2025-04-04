@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
                 cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
                 {
-                    Username = Options.GitOptions.AuthToken,
+                    Username = Options.GitHubAuthOptions.AuthToken,
                     Password = string.Empty
                 };
 
@@ -98,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
                     {
-                        Username = Options.GitOptions.AuthToken,
+                        Username = Options.GitHubAuthOptions.AuthToken,
                         Password = string.Empty
                     }
                 });

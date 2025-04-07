@@ -249,7 +249,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             notificationMarkdown.AppendLine();
             notificationMarkdown.AppendLine(NotificationHelper.FormatNotificationMetadata(queueInfo));
 
-            if (Options.GitOptions.AuthToken == string.Empty ||
+            if (!Options.GitOptions.GitHubAuthOptions.HasCredentials ||
                 Options.GitOptions.Owner == string.Empty ||
                 Options.GitOptions.Repo == string.Empty)
             {
@@ -267,7 +267,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }.AppendIf(NotificationLabels.Failure, () => exception is not null),
                     Options.GitOptions.Owner,
                     Options.GitOptions.Repo,
-                    Options.GitOptions.AuthToken,
+                    Options.GitOptions.GitHubAuthOptions,
                     Options.IsDryRun);
             }
         }

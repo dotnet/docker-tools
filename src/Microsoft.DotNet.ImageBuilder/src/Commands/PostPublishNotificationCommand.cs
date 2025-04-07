@@ -26,14 +26,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly INotificationService _notificationService;
+        private readonly IOctokitClientFactory _octokitClientFactory;
 
         [ImportingConstructor]
         public PostPublishNotificationCommand(
             IVssConnectionFactory connectionFactory,
-            INotificationService notificationService)
+            INotificationService notificationService,
+            IOctokitClientFactory octokitClientFactory)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
+            _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
         }
 
         protected override string Description => "Posts a notification about a publishing event";
@@ -107,7 +110,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }.AppendIf(NotificationLabels.Failure, () => overallResult == BuildResult.Failed),
                 Options.GitOptions.Owner,
                 Options.GitOptions.Repo,
-                Options.GitOptions.AuthToken,
+                Options.GitOptions.GitHubAuthOptions,
                 Options.IsDryRun,
                 imagesMarkdown);
         }
@@ -117,8 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // In the case where the publish build was queued by AutoBuilder, this finds the GitHub issue associated
             // with that queued build.
 
-            GitHubClient gitHubClient = new(new ProductHeaderValue("dotnet"));
-            Credentials token = new(Options.GitOptions.AuthToken);
+            IGitHubClient gitHubClient = _octokitClientFactory.CreateGitHubClient(Options.GitOptions.GitHubAuthOptions);
             RepositoryIssueRequest issueRequest = new()
             {
                 Filter = IssueFilter.All,
@@ -127,7 +129,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             issueRequest.Labels.Add(NotificationLabels.AutoBuilder);
             issueRequest.Labels.Add(NotificationLabels.GetRepoLocationLabel(Options.SourceRepo, Options.SourceBranch));
 
-            gitHubClient.Credentials = token;
             IReadOnlyList<Octokit.Issue> issues = await gitHubClient.Issue.GetAllForRepository(
                 Options.GitOptions.Owner, Options.GitOptions.Repo, issueRequest);
 

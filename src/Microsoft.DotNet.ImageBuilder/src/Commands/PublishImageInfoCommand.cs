@@ -7,6 +7,7 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
 using LibGit2Sharp;
+using LibGit2Sharp.Handlers;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -42,11 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _loggerService.WriteSubheading("Cloning GitHub repo");
 
                 CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
-                cloneOptions.FetchOptions.CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                {
-                    Username = Options.GitOptions.AuthToken,
-                    Password = string.Empty
-                };
+                cloneOptions.FetchOptions.CredentialsProvider = GetCredentials(Options.GitOptions.GitHubAuthOptions);
 
                 using IRepository repo =_gitService.CloneRepository(
                     $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
@@ -96,15 +93,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             repo.Network.Push(branch,
                 new PushOptions
                 {
-                    CredentialsProvider = (url, user, cred) => new UsernamePasswordCredentials
-                    {
-                        Username = Options.GitOptions.AuthToken,
-                        Password = string.Empty
-                    }
+                    CredentialsProvider = GetCredentials(Options.GitOptions.GitHubAuthOptions)
                 });
 
             Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
             _loggerService.WriteMessage($"The '{Options.GitOptions.Path}' file was updated: {gitHubCommitUrl}");
         }
+
+        private static CredentialsHandler GetCredentials(GitHubAuthOptions gitHubAuthOptions) =>
+            (url, user, cred) => new UsernamePasswordCredentials
+            {
+                Username = gitHubAuthOptions.AuthToken,
+                Password = string.Empty
+            };
     }
 }

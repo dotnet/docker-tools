@@ -25,7 +25,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new();
         private readonly GitOptionsBuilder _gitOptionsBuilder =
             GitOptionsBuilder.Build()
-                .WithAuthToken(isRequired: true, description: "Auth token to use to connect to GitHub for posting notifications")
+                .WithGitHubAuth(
+                    isRequired: true,
+                    description: "Auth token to use to connect to GitHub for posting notifications")
                 .WithOwner(isRequired: true, description: "Owner of the GitHub repo to post notifications to")
                 .WithRepo(isRequired: true, description: "Name of the GitHub repo to post notifications to");
 

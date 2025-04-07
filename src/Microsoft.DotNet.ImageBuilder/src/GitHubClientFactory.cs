@@ -5,6 +5,7 @@
 using System;
 using System.ComponentModel.Composition;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
@@ -21,9 +22,14 @@ namespace Microsoft.DotNet.ImageBuilder
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
-        public IGitHubClient GetClient(GitHubAuth gitHubAuth, bool isDryRun)
+        public IGitHubClient GetClient(GitOptions gitOptions, bool isDryRun)
         {
-            return new GitHubClientWrapper(_loggerService, new GitHubClient(gitHubAuth), isDryRun);
+            var auth = new GitHubAuth(
+                authToken: gitOptions.GitHubAuthOptions.AuthToken,
+                user: gitOptions.Username,
+                email: gitOptions.Email);
+
+            return new GitHubClientWrapper(_loggerService, new GitHubClient(auth), isDryRun);
         }
 
         // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled

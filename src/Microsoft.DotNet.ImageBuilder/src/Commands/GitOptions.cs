@@ -15,20 +15,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GitOptions : IGitHubFileRef
     {
-        public string AuthToken { get; set; } = string.Empty;
         public string Branch { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string Owner { get; set; } = string.Empty;
         public string Path { get; set; } = string.Empty;
         public string Repo { get; set; } = string.Empty;
         public string Username { get; set; } = string.Empty;
-
-        public GitHubAuth ToGitHubAuth()
-        {
-            return new GitHubAuth(AuthToken, Username, Email);
-        }
-
-        public Credentials ToOctokitCredentials() => new Credentials(AuthToken);
 
         public Uri GetRepoUrl() => new Uri($"https://github.com/{Owner}/{Repo}");
 
@@ -38,6 +30,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public record GitHubAuthOptions(string AuthToken = "", string PrivateKeyFilePath = "")
     {
         public bool IsPrivateKeyAuth => !string.IsNullOrEmpty(PrivateKeyFilePath);
+
+        public bool HasCredentials => !string.IsNullOrEmpty(AuthToken) || !string.IsNullOrEmpty(PrivateKeyFilePath);
     }
 
     public class GitOptionsBuilder
@@ -73,12 +67,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string description = "Email to use for GitHub connection") =>
             AddSymbol("git-email", nameof(GitOptions.Email), isRequired, defaultValue, description);
 
-        public GitOptionsBuilder WithAuthToken(
-            bool isRequired = false,
-            string? defaultValue = null,
-            string description = "Auth token to use to connect to GitHub") =>
-            AddSymbol("git-token", nameof(GitOptions.AuthToken), isRequired, defaultValue, description);
-
         public GitOptionsBuilder WithBranch(
             bool isRequired = false,
             string? defaultValue = null,
@@ -103,12 +91,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string description = "Name of the GitHub repo to access") =>
             AddSymbol("git-repo", nameof(GitOptions.Repo), isRequired, defaultValue, description);
 
-        public GitOptionsBuilder WithGitHubAuth(bool isRequired = false)
+        public GitOptionsBuilder WithGitHubAuth(string? description = null, bool isRequired = false)
         {
+            description ??= "GitHub Personal Access Token (PAT) or private key file (.pem)";
+            description += " [token=<token> | private-key-file=<path to .pem file>]";
+
             _options.Add(CreateOption(
                 "github-auth",
                 nameof(GitOptions.GitHubAuthOptions),
-                "GitHub Personal Access Token (PAT) or private key file (.pem) [token=<token> | private-key-file=<path>]",
+                "GitHub Personal Access Token (PAT) or private key file (.pem) [token=<token> | private-key-file=<path to .pem file>]",
                 parseArg: argumentResult =>
                 {
                     var dictionary = argumentResult.Tokens
@@ -117,6 +108,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     string token = dictionary.GetValueOrDefault("token", "");
                     string privateKeyFile = dictionary.GetValueOrDefault("private-key-file", "");
+
+                    if (isRequired)
+                    {
+                        if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(privateKeyFile))
+                        {
+                            throw new ArgumentException("GitHub token or private key file must be provided.");
+                        }
+                    }
 
                     return new GitHubAuthOptions(token, privateKeyFile);
                 }

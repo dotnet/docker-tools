@@ -1771,7 +1771,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.FilterOptions.Platform.OsType = this.osType;
                 command.Options.GitOptions.Email = "test";
                 command.Options.GitOptions.Username = "test";
-                command.Options.GitOptions.AuthToken = "test";
+                command.Options.GitOptions.GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "test");
                 return command;
             }
 
@@ -1824,10 +1824,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IOctokitClientFactory> octokitClientFactoryMock = new();
                 octokitClientFactoryMock
-                    .Setup(o => o.CreateTreesClient(It.IsAny<Octokit.IApiConnection>()))
+                    .Setup(o => o.CreateTreesClient(It.IsAny<GitHubAuthOptions>()))
                     .Returns(treesClientMock.Object);
                 octokitClientFactoryMock
-                    .Setup(o => o.CreateBlobsClient(It.IsAny<Octokit.IApiConnection>()))
+                    .Setup(o => o.CreateBlobsClient(It.IsAny<GitHubAuthOptions>()))
                     .Returns(blobsClientMock.Object);
 
                 return octokitClientFactoryMock.Object;

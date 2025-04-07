@@ -158,17 +158,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
         {
-            IApiConnection connection = OctokitClientFactory.CreateApiConnection(Options.GitOptions.ToOctokitCredentials());
-
-            ITreesClient treesClient = _octokitClientFactory.CreateTreesClient(connection);
+            ITreesClient treesClient = _octokitClientFactory.CreateTreesClient(Options.GitOptions.GitHubAuthOptions);
             string fileSha = await treesClient.GetFileShaAsync(
                 subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, subscription.ImageInfo.Branch, subscription.ImageInfo.Path);
 
-            IBlobsClient blobsClient = _octokitClientFactory.CreateBlobsClient(connection);
+            IBlobsClient blobsClient = _octokitClientFactory.CreateBlobsClient(Options.GitOptions.GitHubAuthOptions);
             string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
 
             return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
         }
     }
 }
-#nullable disable

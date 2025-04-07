@@ -483,6 +483,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private const string GitRepo = "git-repo";
             private const string GitAccessToken = "git-pat";
 
+            private static readonly GitHubAuthOptions s_gitHubAuthOptions = new(AuthToken: GitAccessToken);
+
             /// <summary>
             /// Initializes a new instance of <see cref="TestContext"/>.
             /// </summary>
@@ -555,7 +557,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             It.IsAny<IEnumerable<string>>(),
                             GitOwner,
                             GitRepo,
-                            GitAccessToken,
+                            s_gitHubAuthOptions,
                             It.IsAny<bool>(),
                             It.IsAny<IEnumerable<string>>()),
                         Times.Exactly(notificationPostCallCount));
@@ -605,7 +607,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 command.Options.GitOptions.Owner = GitOwner;
                 command.Options.GitOptions.Repo = GitRepo;
-                command.Options.GitOptions.AuthToken = GitAccessToken;
+                command.Options.GitOptions.GitHubAuthOptions = s_gitHubAuthOptions;
 
                 return command;
             }

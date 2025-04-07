@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
 
 #nullable enable
@@ -15,11 +16,14 @@ namespace Microsoft.DotNet.ImageBuilder
     public class NotificationService : INotificationService
     {
         private readonly ILoggerService _loggerService;
+        private readonly IOctokitClientFactory _octokitClientFactory;
 
         [ImportingConstructor]
-        public NotificationService(ILoggerService loggerService)
+        public NotificationService(ILoggerService loggerService, IOctokitClientFactory octokitClientFactory)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _octokitClientFactory = octokitClientFactory
+                ?? throw new ArgumentNullException(nameof(octokitClientFactory));
         }
 
         public async Task PostAsync(
@@ -28,11 +32,11 @@ namespace Microsoft.DotNet.ImageBuilder
             IEnumerable<string> labels,
             string repoOwner,
             string repoName,
-            string gitHubAccessToken,
+            GitHubAuthOptions gitHubAuth,
             bool isDryRun,
             IEnumerable<string>? comments = null)
         {
-            IGitHubClient github = OctokitClientFactory.CreateGitHubClient(new(gitHubAccessToken));
+            IGitHubClient github = _octokitClientFactory.CreateGitHubClient(gitHubAuth);
 
             Issue? issue = null;
             if (!isDryRun)
@@ -49,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     foreach (string comment in comments)
                     {
-                        IssueComment postedComment = 
+                        IssueComment postedComment =
                             await github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment);
                     }
                 }

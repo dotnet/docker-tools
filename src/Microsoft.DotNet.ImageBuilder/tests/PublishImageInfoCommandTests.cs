@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 GitOptions gitOptions = new GitOptions
                 {
-                    AuthToken = "token",
+                    GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "token"),
                     Repo = "PublishImageInfoCommand_ReplaceContent",
                     Branch = "testBranch",
                     Path = "imageinfo.json",

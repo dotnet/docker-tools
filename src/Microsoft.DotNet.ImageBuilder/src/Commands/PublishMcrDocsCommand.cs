@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions.ToGitHubAuth(), Options.IsDryRun);
+                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions, Options.IsDryRun);
 
                 await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
                 {

@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.Linq;
 using Microsoft.DotNet.VersionTools.Automation;
 using Octokit;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
@@ -30,6 +31,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public Credentials ToOctokitCredentials() => new Credentials(AuthToken);
 
         public Uri GetRepoUrl() => new Uri($"https://github.com/{Owner}/{Repo}");
+
+        public GitHubAuthOptions GitHubAuthOptions { get; set; } = new GitHubAuthOptions();
+    }
+
+    public record GitHubAuthOptions(string AuthToken = "", string PrivateKeyFilePath = "")
+    {
+        public bool IsPrivateKeyAuth => !string.IsNullOrEmpty(PrivateKeyFilePath);
     }
 
     public class GitOptionsBuilder
@@ -47,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Build()
                 .WithUsername(isRequired: true)
                 .WithEmail(isRequired: true)
-                .WithAuthToken(isRequired: true)
+                .WithGitHubAuth()
                 .WithBranch()
                 .WithOwner()
                 .WithPath()
@@ -95,11 +103,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string description = "Name of the GitHub repo to access") =>
             AddSymbol("git-repo", nameof(GitOptions.Repo), isRequired, defaultValue, description);
 
+        public GitOptionsBuilder WithGitHubAuth(bool isRequired = false)
+        {
+            _options.Add(CreateOption(
+                "github-auth",
+                nameof(GitOptions.GitHubAuthOptions),
+                "GitHub Personal Access Token (PAT) or private key file (.pem) [token=<token> | private-key-file=<path>]",
+                parseArg: argumentResult =>
+                {
+                    var dictionary = argumentResult.Tokens
+                        .Select(token => token.Value.ParseKeyValuePair('='))
+                        .ToDictionary();
+
+                    string token = dictionary.GetValueOrDefault("token", "");
+                    string privateKeyFile = dictionary.GetValueOrDefault("private-key-file", "");
+
+                    return new GitHubAuthOptions(token, privateKeyFile);
+                }
+            ));
+
+            return this;
+        }
+
         public IEnumerable<Option> GetCliOptions() => _options;
 
         public IEnumerable<Argument> GetCliArguments() => _arguments;
 
-        private GitOptionsBuilder AddSymbol<T>(string alias, string propertyName, bool isRequired, T? defaultValue, string description)
+        private GitOptionsBuilder AddSymbol<T>(
+            string alias,
+            string propertyName,
+            bool isRequired,
+            T? defaultValue,
+            string description)
         {
             if (isRequired)
             {
@@ -107,11 +142,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                _options.Add(CreateOption<T>(alias, propertyName, description, defaultValue is null ? default! : defaultValue));
+                _options.Add(
+                    CreateOption(
+                        alias,
+                        propertyName,
+                        description,
+                        defaultValue is null ? default! : defaultValue));
             }
 
             return this;
         }
     }
 }
-#nullable disable

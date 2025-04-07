@@ -109,12 +109,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string token = dictionary.GetValueOrDefault("token", "");
                     string privateKeyFile = dictionary.GetValueOrDefault("private-key-file", "");
 
-                    if (isRequired)
+                    if (isRequired && string.IsNullOrEmpty(token) && string.IsNullOrEmpty(privateKeyFile))
                     {
-                        if (string.IsNullOrEmpty(token) && string.IsNullOrEmpty(privateKeyFile))
-                        {
-                            throw new ArgumentException("GitHub token or private key file must be provided.");
-                        }
+                        throw new ArgumentException("GitHub token or private key file must be provided.");
                     }
 
                     return new GitHubAuthOptions(token, privateKeyFile);

@@ -100,6 +100,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "github-auth",
                 nameof(GitOptions.GitHubAuthOptions),
                 "GitHub Personal Access Token (PAT) or private key file (.pem) [token=<token> | private-key-file=<path to .pem file>]",
+                isRequired: isRequired,
                 parseArg: argumentResult =>
                 {
                     var dictionary = argumentResult.Tokens
@@ -109,14 +110,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string token = dictionary.GetValueOrDefault("token", "");
                     string privateKeyFile = dictionary.GetValueOrDefault("private-key-file", "");
 
+                    // While the command will fail if the option is not provided, it doesn't mean that the correct
+                    // key-value pair was provided. So we need to check that at least one of the two expected values
+                    // is provided. We don't need to check for mutual exclusivity, since only one argument will be
+                    // accepted.
                     if (isRequired && string.IsNullOrEmpty(token) && string.IsNullOrEmpty(privateKeyFile))
                     {
                         throw new ArgumentException("GitHub token or private key file must be provided.");
                     }
 
                     return new GitHubAuthOptions(token, privateKeyFile);
-                }
-            ));
+                }));
 
             return this;
         }

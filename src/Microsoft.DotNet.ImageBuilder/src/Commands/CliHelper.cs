@@ -21,11 +21,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Name = propertyName
             };
 
-        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, ParseArgument<T> parseArg) =>
-            new Option<T>(FormatAlias(alias), parseArg, description: description)
-            {
-                Name = propertyName
-            };
+        public static Option<T> CreateOption<T>(
+            string alias,
+            string propertyName,
+            string description,
+            ParseArgument<T> parseArg,
+            bool isRequired = false) =>
+                new Option<T>(FormatAlias(alias), parseArg, description: description)
+                {
+                    IsRequired = isRequired,
+                    Name = propertyName
+                };
 
         public static Option<T> CreateOption<T>(string alias, string propertyName, string description, Func<string, T> convert,
             T defaultValue = default!) =>

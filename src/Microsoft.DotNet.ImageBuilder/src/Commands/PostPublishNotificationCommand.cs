@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // In the case where the publish build was queued by AutoBuilder, this finds the GitHub issue associated
             // with that queued build.
 
-            IGitHubClient gitHubClient = _octokitClientFactory.CreateGitHubClient(Options.GitOptions.GitHubAuthOptions);
+            IGitHubClient gitHubClient = await _octokitClientFactory.CreateGitHubClientAsync(Options.GitOptions.GitHubAuthOptions);
             RepositoryIssueRequest issueRequest = new()
             {
                 Filter = IssueFilter.All,

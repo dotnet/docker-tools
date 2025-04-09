@@ -232,8 +232,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<IGitHubClientFactory> gitHubClientFactoryMock = new();
             gitHubClientFactoryMock
-                            .Setup(o => o.GetClient(It.IsAny<GitOptions>(), false))
-                            .Returns(gitHubClientMock.Object);
+                            .Setup(o => o.GetClientAsync(It.IsAny<GitOptions>(), false))
+                            .ReturnsAsync(gitHubClientMock.Object);
             return gitHubClientFactoryMock.Object;
         }
     }

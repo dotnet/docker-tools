@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder
             bool isDryRun,
             IEnumerable<string>? comments = null)
         {
-            IGitHubClient github = _octokitClientFactory.CreateGitHubClient(gitHubAuth);
+            IGitHubClient github = await _octokitClientFactory.CreateGitHubClientAsync(gitHubAuth);
 
             Issue? issue = null;
             if (!isDryRun)

@@ -24,9 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
             ?? throw new ArgumentNullException(nameof(octokitClientFactory));
 
-        public IGitHubClient GetClient(GitOptions gitOptions, bool isDryRun)
+        public async Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun)
         {
-            var token = _octokitClientFactory.CreateGitHubToken(gitOptions.GitHubAuthOptions);
+            var token = await _octokitClientFactory.CreateGitHubTokenAsync(gitOptions.GitHubAuthOptions);
 
             var auth = new GitHubAuth(
                 authToken: token,

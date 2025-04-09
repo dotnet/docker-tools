@@ -95,18 +95,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return authOptions.AuthToken;
         }
 
-        public IGitHubClient CreateGitHubClient(GitHubAuthOptions authOptions) =>
-            CreateGitHubClientAsync(authOptions).GetAwaiter().GetResult();
-
-        public ITreesClient CreateTreesClient(GitHubAuthOptions authOptions) =>
-            CreateTreesClientAsync(authOptions).GetAwaiter().GetResult();
-
-        public IBlobsClient CreateBlobsClient(GitHubAuthOptions authOptions) =>
-            CreateBlobsClientAsync(authOptions).GetAwaiter().GetResult();
-
-        public string CreateGitHubToken(GitHubAuthOptions authOptions) =>
-            CreateGitHubTokenAsync(authOptions).GetAwaiter().GetResult();
-
         private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions)
         {
             var credentials = await CreateCredentialsAsync(authOptions);

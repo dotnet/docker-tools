@@ -1824,11 +1824,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 Mock<IOctokitClientFactory> octokitClientFactoryMock = new();
                 octokitClientFactoryMock
-                    .Setup(o => o.CreateTreesClient(It.IsAny<GitHubAuthOptions>()))
-                    .Returns(treesClientMock.Object);
+                    .Setup(o => o.CreateTreesClientAsync(It.IsAny<GitHubAuthOptions>()))
+                    .ReturnsAsync(treesClientMock.Object);
                 octokitClientFactoryMock
-                    .Setup(o => o.CreateBlobsClient(It.IsAny<GitHubAuthOptions>()))
-                    .Returns(blobsClientMock.Object);
+                    .Setup(o => o.CreateBlobsClientAsync(It.IsAny<GitHubAuthOptions>()))
+                    .ReturnsAsync(blobsClientMock.Object);
 
                 return octokitClientFactoryMock.Object;
             }

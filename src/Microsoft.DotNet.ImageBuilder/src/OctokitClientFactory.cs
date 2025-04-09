@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             var client = new GitHubClient(s_productHeaderValue)
             {
-                Credentials = new Credentials(authOptions.AuthToken)
+                Credentials = GetCredentials(authOptions)
             };
 
             return client;
@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static Credentials GetCredentials(GitHubAuthOptions authOptions)
         {
-            if (authOptions.IsPrivateKeyAuth)
+            if (authOptions.IsGitHubAppAuth)
             {
                 throw new NotImplementedException("""
                     Private key authentication is not implemented.
@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     """);
             }
 
-            return new Credentials(authOptions.AuthToken, AuthenticationType.Bearer);
+            return new Credentials(authOptions.AuthToken);
         }
     }
 }

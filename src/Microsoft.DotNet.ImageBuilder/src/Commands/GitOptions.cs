@@ -5,9 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-using Microsoft.DotNet.VersionTools.Automation;
-using Octokit;
+using System.CommandLine.Parsing;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -27,21 +25,37 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public GitHubAuthOptions GitHubAuthOptions { get; set; } = new GitHubAuthOptions();
     }
 
-    public record GitHubAuthOptions(string AuthToken = "", string PrivateKeyFilePath = "")
+    public record GitHubAuthOptions(
+        string AuthToken = "",
+        string PrivateKeyFilePath = "",
+        string ClientId = "")
     {
-        public bool IsPrivateKeyAuth => !string.IsNullOrEmpty(PrivateKeyFilePath);
+        public bool IsGitHubAppAuth =>
+            !string.IsNullOrEmpty(PrivateKeyFilePath) &&
+            !string.IsNullOrEmpty(ClientId);
 
-        public bool HasCredentials => !string.IsNullOrEmpty(AuthToken) || !string.IsNullOrEmpty(PrivateKeyFilePath);
+        public bool HasCredentials =>
+            !string.IsNullOrEmpty(AuthToken) ||
+            (!string.IsNullOrEmpty(PrivateKeyFilePath) && !string.IsNullOrEmpty(ClientId));
     }
 
-    public class GitOptionsBuilder
+    public class GitOptionsBuilder : CliOptionsBuilder
     {
-        private readonly List<Option> _options = new();
-        private readonly List<Argument> _arguments = new();
+        private readonly List<Option> _options = [];
+
+        private readonly List<Argument> _arguments = [];
+
+        private List<ValidateSymbol<CommandResult>> _validators = [];
 
         private GitOptionsBuilder()
         {
         }
+
+        public override IEnumerable<Option> GetCliOptions() => _options;
+
+        public override IEnumerable<Argument> GetCliArguments() => _arguments;
+
+        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() => _validators;
 
         public static GitOptionsBuilder Build() => new();
 
@@ -93,41 +107,54 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GitOptionsBuilder WithGitHubAuth(string? description = null, bool isRequired = false)
         {
-            description ??= "GitHub Personal Access Token (PAT) or private key file (.pem)";
-            description += " [token=<token> | private-key-file=<path to .pem file>]";
+            const string TokenAlias = "gh-token";
+            var tokenOption = CreateOption<string>(
+                TokenAlias,
+                nameof(GitHubAuthOptions.AuthToken),
+                "GitHub Personal Access Token (PAT)");
 
-            _options.Add(CreateOption(
-                "github-auth",
-                nameof(GitOptions.GitHubAuthOptions),
-                "GitHub Personal Access Token (PAT) or private key file (.pem) [token=<token> | private-key-file=<path to .pem file>]",
-                isRequired: isRequired,
-                parseArg: argumentResult =>
+            const string PrivateKeyAlias = "gh-private-key-file";
+            var privateKeyOption = CreateOption<string>(
+                PrivateKeyAlias,
+                nameof(GitHubAuthOptions.PrivateKeyFilePath),
+                "Path to the private key file (.pem) for GitHub App authentication");
+
+            const string ClientIdAlias = "gh-app-client-id";
+            var clientIdOption = CreateOption<string>(
+                ClientIdAlias,
+                nameof(GitHubAuthOptions.ClientId),
+                "GitHub Client ID for GitHub App authentication");
+
+            _options.AddRange([tokenOption, privateKeyOption, clientIdOption]);
+
+            _validators.Add(command =>
                 {
-                    var dictionary = argumentResult.Tokens
-                        .Select(token => token.Value.ParseKeyValuePair('='))
-                        .ToDictionary();
+                    var hasToken = command.Has(tokenOption);
+                    var hasPrivateKey = command.Has(privateKeyOption);
+                    var hasClientId = command.Has(clientIdOption);
 
-                    string token = dictionary.GetValueOrDefault("token", "");
-                    string privateKeyFile = dictionary.GetValueOrDefault("private-key-file", "");
-
-                    // While the command will fail if the option is not provided, it doesn't mean that the correct
-                    // key-value pair was provided. So we need to check that at least one of the two expected values
-                    // is provided. We don't need to check for mutual exclusivity, since only one argument will be
-                    // accepted.
-                    if (isRequired && string.IsNullOrEmpty(token) && string.IsNullOrEmpty(privateKeyFile))
+                    // If token is provided, ensure that private key and client ID were not provided
+                    if (hasToken && (hasPrivateKey || hasClientId))
                     {
-                        throw new ArgumentException("GitHub token or private key file must be provided.");
+                        return "Authentication conflict: Cannot use both GitHub personal access token "
+                            + $"({FormatAlias(TokenAlias)}) and GitHub App credentials ({FormatAlias(PrivateKeyAlias)} "
+                            + $"and {FormatAlias(ClientIdAlias)}) simultaneously. Please provide only one authentication "
+                            + "method.";
                     }
 
-                    return new GitHubAuthOptions(token, privateKeyFile);
-                }));
+                    // Both client ID and private key file are required for GitHub App authentication
+                    if (hasPrivateKey != hasClientId)
+                    {
+                        return $"GitHub App authentication requires both {FormatAlias(ClientIdAlias)} "
+                            + $"and {FormatAlias(PrivateKeyAlias)} but only one was provided.";
+                    }
+
+                    // Returning null indicates that validation passed
+                    return null;
+                });
 
             return this;
         }
-
-        public IEnumerable<Option> GetCliOptions() => _options;
-
-        public IEnumerable<Argument> GetCliArguments() => _arguments;
 
         private GitOptionsBuilder AddSymbol<T>(
             string alias,

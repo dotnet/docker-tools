@@ -40,6 +40,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 cmd.AddOption(option);
             }
 
+            foreach (var validator in OptionsBuilder.GetValidators())
+            {
+                cmd.AddValidator(validator);
+            }
+
             cmd.Handler = CommandHandler.Create<TOptions>(options =>
             {
                 if (!Options.NoVersionLogging)
@@ -69,4 +74,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public abstract Task ExecuteAsync();
     }
 }
-#nullable disable

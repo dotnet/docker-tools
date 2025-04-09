@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-using System.Reflection;
+using System.CommandLine.Parsing;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -46,5 +44,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     propertyName: nameof(Options.NoVersionLogging),
                     description: "Disable automatic logging of Docker version information")
             ];
+
+        /// <summary>
+        /// Optional delegates for performing additional validation of arguments and options.
+        /// </summary>
+        /// <remarks>
+        /// The delegate should return null if validation passes, or a string with the error message if it fails.
+        /// Validation failures will manifest the same way as any other command line parsing errors, like missing
+        /// required arguments or options for example.
+        /// </remarks>
+        /// <returns>Collection of ValidateSymbol delegates</returns>
+        public virtual IEnumerable<ValidateSymbol<CommandResult>> GetValidators() => [];
     }
 }

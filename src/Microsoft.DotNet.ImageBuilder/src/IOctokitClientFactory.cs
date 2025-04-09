@@ -14,4 +14,6 @@ public interface IOctokitClientFactory
     IBlobsClient CreateBlobsClient(GitHubAuthOptions authOptions);
 
     ITreesClient CreateTreesClient(GitHubAuthOptions authOptions);
+
+    string CreateGitHubToken(GitHubAuthOptions authOptions);
 }

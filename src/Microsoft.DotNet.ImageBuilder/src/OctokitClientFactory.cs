@@ -43,32 +43,6 @@ namespace Microsoft.DotNet.ImageBuilder
             return new TreesClient(apiConnection);
         }
 
-        public IGitHubClient CreateGitHubClient(GitHubAuthOptions authOptions) =>
-            CreateGitHubClientAsync(authOptions).GetAwaiter().GetResult();
-
-        public ITreesClient CreateTreesClient(GitHubAuthOptions authOptions) =>
-            CreateTreesClientAsync(authOptions).GetAwaiter().GetResult();
-
-        public IBlobsClient CreateBlobsClient(GitHubAuthOptions authOptions) =>
-            CreateBlobsClientAsync(authOptions).GetAwaiter().GetResult();
-
-        private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions)
-        {
-            var credentials = await CreateCredentialsAsync(authOptions);
-            var connection = new Connection(s_productHeaderValue)
-            {
-                Credentials = credentials
-            };
-
-            return new ApiConnection(connection);
-        }
-
-        private async Task<Credentials> CreateCredentialsAsync(GitHubAuthOptions authOptions)
-        {
-            var token = await CreateTokenAsync(authOptions);
-            return CreateCredentials(token);
-        }
-
         /// <summary>
         /// Creates a GitHub token for the specified authentication options.
         /// </summary>
@@ -83,7 +57,7 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <exception cref="InvalidOperationException">
         /// Thrown if no installations are found for the GitHub App specified by authOptions.
         /// </exception>
-        private async Task<string> CreateTokenAsync(GitHubAuthOptions authOptions)
+        public async Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions)
         {
             if (authOptions.IsGitHubAppAuth)
             {
@@ -119,6 +93,35 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             return authOptions.AuthToken;
+        }
+
+        public IGitHubClient CreateGitHubClient(GitHubAuthOptions authOptions) =>
+            CreateGitHubClientAsync(authOptions).GetAwaiter().GetResult();
+
+        public ITreesClient CreateTreesClient(GitHubAuthOptions authOptions) =>
+            CreateTreesClientAsync(authOptions).GetAwaiter().GetResult();
+
+        public IBlobsClient CreateBlobsClient(GitHubAuthOptions authOptions) =>
+            CreateBlobsClientAsync(authOptions).GetAwaiter().GetResult();
+
+        public string CreateGitHubToken(GitHubAuthOptions authOptions) =>
+            CreateGitHubTokenAsync(authOptions).GetAwaiter().GetResult();
+
+        private async Task<ApiConnection> CreateApiConnectionAsync(GitHubAuthOptions authOptions)
+        {
+            var credentials = await CreateCredentialsAsync(authOptions);
+            var connection = new Connection(s_productHeaderValue)
+            {
+                Credentials = credentials
+            };
+
+            return new ApiConnection(connection);
+        }
+
+        private async Task<Credentials> CreateCredentialsAsync(GitHubAuthOptions authOptions)
+        {
+            var token = await CreateGitHubTokenAsync(authOptions);
+            return CreateCredentials(token);
         }
 
         /// <summary>

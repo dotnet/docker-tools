@@ -10,7 +10,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
@@ -59,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = _gitHubClientFactory.GetClient(Options.GitOptions, Options.IsDryRun);
+                using IGitHubClient gitHubClient = await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun);
 
                 await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
                 {

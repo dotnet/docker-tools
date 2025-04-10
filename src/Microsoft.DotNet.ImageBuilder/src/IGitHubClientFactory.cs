@@ -4,11 +4,12 @@
 
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IGitHubClientFactory
     {
-        IGitHubClient GetClient(GitOptions gitOptions, bool isDryRun);
+        Task<IGitHubClient> GetClientAsync(GitOptions gitOptions, bool isDryRun);
     }
 }

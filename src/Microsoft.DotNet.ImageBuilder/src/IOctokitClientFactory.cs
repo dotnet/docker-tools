@@ -3,15 +3,18 @@
 
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
+using System.Threading.Tasks;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IOctokitClientFactory
 {
-    IGitHubClient CreateGitHubClient(GitHubAuthOptions authOptions);
+    Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions);
 
-    IBlobsClient CreateBlobsClient(GitHubAuthOptions authOptions);
+    Task<IBlobsClient> CreateBlobsClientAsync(GitHubAuthOptions authOptions);
 
-    ITreesClient CreateTreesClient(GitHubAuthOptions authOptions);
+    Task<ITreesClient> CreateTreesClientAsync(GitHubAuthOptions authOptions);
+
+    Task<string> CreateGitHubTokenAsync(GitHubAuthOptions authOptions);
 }

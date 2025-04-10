@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
@@ -45,6 +46,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.GetCliArguments()
                 .Concat(_azdoOptionsBuilder.GetCliArguments())
                 .Concat(_gitOptionsBuilder.GetCliArguments());
+
+        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() =>
+            [
+                ..base.GetValidators(),
+                .._gitOptionsBuilder.GetValidators()
+            ];
     }
 }
-#nullable disable

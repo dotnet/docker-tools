@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -27,6 +28,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             [
                 ..base.GetCliArguments(),
                 .._gitOptionsBuilder.GetCliArguments()
+            ];
+
+        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() =>
+            [
+                ..base.GetValidators(),
+                .._gitOptionsBuilder.GetValidators()
             ];
     }
 }

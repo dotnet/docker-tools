@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Linq;
 
 #nullable enable
@@ -52,6 +53,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         new Argument<string>(nameof(GetStaleImagesOptions.VariableName),
                             "The Azure Pipeline variable name to assign the image paths to")
                     }));
+
+        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() =>
+            [
+                ..base.GetValidators(),
+                .._gitOptionsBuilder.GetValidators()
+            ];
+
     }
 }
-#nullable disable

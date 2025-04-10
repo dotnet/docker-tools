@@ -45,7 +45,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private readonly List<Argument> _arguments = [];
 
-        private List<ValidateSymbol<CommandResult>> _validators = [];
+        private readonly List<ValidateSymbol<CommandResult>> _validators = [];
 
         private GitOptionsBuilder()
         {

@@ -78,7 +78,5 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     CreateDictionaryOption("var", nameof(ManifestOptions.Variables),
                         "Named variables to substitute into the manifest (<name>=<value>)")
                 });
-
-        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() => base.GetValidators();
     }
 }

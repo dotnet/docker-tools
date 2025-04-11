@@ -27,16 +27,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public record GitHubAuthOptions(
         string AuthToken = "",
-        string PrivateKeyFilePath = "",
+        string PrivateKey = "",
         string ClientId = "")
     {
         public bool IsGitHubAppAuth =>
-            !string.IsNullOrEmpty(PrivateKeyFilePath) &&
+            !string.IsNullOrEmpty(PrivateKey) &&
             !string.IsNullOrEmpty(ClientId);
 
         public bool HasCredentials =>
             !string.IsNullOrEmpty(AuthToken) ||
-            (!string.IsNullOrEmpty(PrivateKeyFilePath) && !string.IsNullOrEmpty(ClientId));
+            (!string.IsNullOrEmpty(PrivateKey) && !string.IsNullOrEmpty(ClientId));
     }
 
     public class GitOptionsBuilder : CliOptionsBuilder
@@ -113,11 +113,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 nameof(GitHubAuthOptions.AuthToken),
                 "GitHub Personal Access Token (PAT)");
 
-            const string PrivateKeyAlias = "gh-private-key-file";
+            const string PrivateKeyAlias = "gh-private-key";
             var privateKeyOption = CreateOption<string>(
                 PrivateKeyAlias,
-                nameof(GitHubAuthOptions.PrivateKeyFilePath),
-                "Path to the private key file (.pem) for GitHub App authentication");
+                nameof(GitHubAuthOptions.PrivateKey),
+                "Base64-encoded private key (pem format) for GitHub App authentication");
 
             const string ClientIdAlias = "gh-app-client-id";
             var clientIdOption = CreateOption<string>(

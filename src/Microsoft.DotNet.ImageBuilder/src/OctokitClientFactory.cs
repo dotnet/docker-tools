@@ -69,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder
                     3. Use the GitHub App client to get an token for a specific App installation.
                 **/
 
-                var jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKeyFilePath);
+                var jwt = CreateJwt(authOptions.ClientId, authOptions.PrivateKey);
                 var appCredentials = CreateCredentials(jwt);
                 var appClient = CreateClient(appCredentials);
                 var appInfo = await GetCurrentAppInfoAsync(appClient.Credentials);
@@ -116,15 +116,15 @@ namespace Microsoft.DotNet.ImageBuilder
         /// Creates a JWT that can be used to authenticate as a GitHub App.
         /// </summary>
         /// <param name="clientId">The Client ID of the GitHub App. This is unique per App.</param>
-        /// <param name="privateKeyFilePath">Path to the .pem file which contains the private key for the App.</param>
+        /// <param name="privateKey">Base-64 encoded private key (PEM format) for the App.</param>
         /// <returns></returns>
-        private static string CreateJwt(string clientId, string privateKeyFilePath)
+        private static string CreateJwt(string clientId, string privateKey)
         {
             // https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-json-web-token-jwt-for-a-github-app#about-json-web-tokens-jwts
             // > [The expiration time] must be no more than 10 minutes into the future.
             // Use 9 minutes to be safe.
             var timeout = TimeSpan.FromMinutes(9);
-            return JwtHelper.CreateJwt(clientId, privateKeyFilePath, timeout);
+            return JwtHelper.CreateJwt(clientId, privateKey, timeout);
         }
 
         /// <summary>

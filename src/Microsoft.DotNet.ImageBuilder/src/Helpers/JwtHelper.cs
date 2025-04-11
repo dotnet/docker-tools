@@ -13,14 +13,17 @@ namespace Microsoft.DotNet.ImageBuilder.Helpers;
 
 public static class JwtHelper
 {
-    public static string CreateJwt(string issuer, string pemKeyFilePath, TimeSpan timeout)
+    /// <summary>
+    /// Creates a JWT token using the provided issuer and base64 encoded private key (PEM format).
+    /// </summary>
+    public static string CreateJwt(string issuer, string base64PrivateKey, TimeSpan timeout)
     {
-        string keyText = File.ReadAllText(pemKeyFilePath);
+        string privateKey = DecodeBase64String(base64PrivateKey);
 
         RsaSecurityKey rsaSecurityKey;
         using (var rsa = RSA.Create(4096))
         {
-            rsa.ImportFromPem(keyText);
+            rsa.ImportFromPem(privateKey);
             rsaSecurityKey = new RsaSecurityKey(rsa.ExportParameters(true));
         };
 
@@ -38,5 +41,11 @@ public static class JwtHelper
         var tokenHandler = new JwtSecurityTokenHandler();
         var jwt = tokenHandler.CreateJwtSecurityToken(descriptor);
         return tokenHandler.WriteToken(jwt);
+    }
+
+    private static string DecodeBase64String(string input)
+    {
+        byte[] data = Convert.FromBase64String(input);
+        return System.Text.Encoding.UTF8.GetString(data);
     }
 }

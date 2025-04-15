@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             var installationIdOption = CreateOption<long?>(
                 InstallationIdAlias,
                 nameof(GitHubAuthOptions.InstallationId),
-                "GitHub App installation ID to use (optional; if not provided, it will be discovered automatically)");
+                "GitHub App installation ID to use (only required if app has more than one installation)");
 
             _options.AddRange([tokenOption, privateKeyOption, clientIdOption, installationIdOption]);
 

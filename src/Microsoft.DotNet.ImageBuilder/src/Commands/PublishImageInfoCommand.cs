@@ -47,10 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string authToken = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions);
                 CredentialsHandler credentials = GetCredentials(authToken);
 
-                CloneOptions cloneOptions = new(new() { CredentialsProvider = credentials })
+                CloneOptions cloneOptions = new CloneOptions
                 {
-                    BranchName = Options.GitOptions.Branch,
+                    BranchName = Options.GitOptions.Branch
                 };
+                cloneOptions.FetchOptions.CredentialsProvider = credentials;
 
                 using IRepository repo = _gitService.CloneRepository(
                     $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",

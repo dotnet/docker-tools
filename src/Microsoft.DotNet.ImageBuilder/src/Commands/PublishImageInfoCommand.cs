@@ -44,16 +44,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 _loggerService.WriteSubheading("Cloning GitHub repo");
 
-                string authToken = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions);
-                CredentialsHandler credentials = GetCredentials(authToken);
-
-                CloneOptions cloneOptions = new CloneOptions
-                {
-                    BranchName = Options.GitOptions.Branch
-                };
+                CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
+                CredentialsHandler credentials = await GetCredentialsAsync();
                 cloneOptions.FetchOptions.CredentialsProvider = credentials;
 
-                using IRepository repo = _gitService.CloneRepository(
+                using IRepository repo =_gitService.CloneRepository(
                     $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
                     repoPath,
                     cloneOptions);
@@ -106,11 +101,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteMessage($"The '{Options.GitOptions.Path}' file was updated: {gitHubCommitUrl}");
         }
 
-        private static CredentialsHandler GetCredentials(string token) =>
-            (_, _, _) => new UsernamePasswordCredentials
+        private async Task<CredentialsHandler> GetCredentialsAsync()
+        {
+            string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions);
+            return (_, _, _) => new UsernamePasswordCredentials
             {
-                Username = "_", // A placeholder is required, but GitHub doesn't care what it is.
+                Username = "_",
                 Password = token
             };
+        }
     }
 }

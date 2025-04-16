@@ -174,7 +174,7 @@ jobs:
       '$(imageInfoContainerDir)/full-image-info-new.json'
       '$(gitHubVersionsRepoInfo.userName)'
       '$(gitHubVersionsRepoInfo.email)'
-      --gh-token '$(gitHubVersionsRepoInfo.accessToken)'
+      $(gitHubVersionsRepoInfo.authArgs)
       --git-owner '$(gitHubVersionsRepoInfo.org)'
       --git-repo '$(gitHubVersionsRepoInfo.repo)'
       --git-branch '$(gitHubVersionsRepoInfo.branch)'

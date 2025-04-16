@@ -38,8 +38,8 @@ variables:
   value: main
 - name: gitHubVersionsRepoInfo.path
   value: ${{ variables.commonVersionsImageInfoPath }}
-- name: gitHubVersionsRepoInfo.accessToken
-  value: $(BotAccount-dotnet-docker-bot-PAT)
+- name: gitHubVersionsRepoInfo.authArgs
+  value: --gh-token '$(BotAccount-dotnet-docker-bot-PAT)'
 - name: gitHubVersionsRepoInfo.userName
   value: $(dotnetDockerBot.userName)
 - name: gitHubVersionsRepoInfo.email

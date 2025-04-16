@@ -27,7 +27,7 @@ jobs:
       getStaleImages
       $(dotnetDockerBot.userName)
       $(dotnetDockerBot.email)
-      $(BotAccount-dotnet-docker-bot-PAT)
+      --gh-token $(BotAccount-dotnet-docker-bot-PAT)
       staleImagePaths
       ${{ parameters.customGetStaleImagesArgs }}
       --subscriptions-path ${{ parameters.subscriptionsPath }}
@@ -42,7 +42,7 @@ jobs:
       $(System.AccessToken)
       dnceng
       internal
-      --git-token '$(BotAccount-dotnet-docker-bot-PAT)'
+      --gh-token '$(BotAccount-dotnet-docker-bot-PAT)'
       --git-owner 'dotnet'
       --git-repo '$(internalGitHubRepo)'
       --subscriptions-path ${{ parameters.subscriptionsPath }}

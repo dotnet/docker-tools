@@ -47,13 +47,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string authToken = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions);
                 CredentialsHandler credentials = GetCredentials(authToken);
 
-                CloneOptions cloneOptions = new()
+                CloneOptions cloneOptions = new(new() { CredentialsProvider = credentials })
                 {
                     BranchName = Options.GitOptions.Branch,
-                    FetchOptions = new FetchOptions
-                    {
-                        CredentialsProvider = credentials
-                    }
                 };
 
                 using IRepository repo = _gitService.CloneRepository(
@@ -112,7 +108,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static CredentialsHandler GetCredentials(string token) =>
             (_, _, _) => new UsernamePasswordCredentials
             {
-                Username = "x-access-token",
+                Username = "_", // A placeholder is required, but GitHub doesn't care what it is.
                 Password = token
             };
     }

@@ -16,19 +16,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoOptionsBuilder>
     {
         private readonly IGitService _gitService;
+        private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly ILoggerService _loggerService;
         private const string CommitMessage = "Merging Docker image info updates from build";
 
         [ImportingConstructor]
-        public PublishImageInfoCommand(IGitService gitService, ILoggerService loggerService)
+        public PublishImageInfoCommand(IGitService gitService, IOctokitClientFactory octokitClientFactory, ILoggerService loggerService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
 
         protected override string Description => "Publishes a build's merged image info.";
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
         {
             _loggerService.WriteHeading("PUBLISHING IMAGE INFO");
 
@@ -43,7 +45,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 _loggerService.WriteSubheading("Cloning GitHub repo");
 
                 CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
-                cloneOptions.FetchOptions.CredentialsProvider = GetCredentials(Options.GitOptions.GitHubAuthOptions);
+                CredentialsHandler credentials = await GetCredentialsAsync();
+                cloneOptions.FetchOptions.CredentialsProvider = credentials;
 
                 using IRepository repo =_gitService.CloneRepository(
                     $"https://github.com/{Options.GitOptions.Owner}/{Options.GitOptions.Repo}",
@@ -52,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 Uri imageInfoPathIdentifier = GitHelper.GetBlobUrl(Options.GitOptions);
 
-                UpdateGitRepos(repoPath, repo);
+                UpdateGitRepos(repoPath, repo, credentials);
             }
             finally
             {
@@ -61,11 +64,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     FileHelper.ForceDeleteDirectory(repoPath);
                 }
             }
-
-            return Task.CompletedTask;
         }
 
-        private void UpdateGitRepos(string repoPath, IRepository repo)
+        private void UpdateGitRepos(string repoPath, IRepository repo, CredentialsHandler credentials)
         {
             string imageInfoPath = Path.Combine(repoPath, Options.GitOptions.Path);
 
@@ -93,18 +94,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             repo.Network.Push(branch,
                 new PushOptions
                 {
-                    CredentialsProvider = GetCredentials(Options.GitOptions.GitHubAuthOptions)
+                    CredentialsProvider = credentials
                 });
 
             Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
             _loggerService.WriteMessage($"The '{Options.GitOptions.Path}' file was updated: {gitHubCommitUrl}");
         }
 
-        private static CredentialsHandler GetCredentials(GitHubAuthOptions gitHubAuthOptions) =>
-            (url, user, cred) => new UsernamePasswordCredentials
+        private async Task<CredentialsHandler> GetCredentialsAsync()
+        {
+            string token = await _octokitClientFactory.CreateGitHubTokenAsync(Options.GitOptions.GitHubAuthOptions);
+            return (_, _, _) => new UsernamePasswordCredentials
             {
-                Username = gitHubAuthOptions.AuthToken,
-                Password = string.Empty
+                Username = "_",
+                Password = token
             };
+        }
     }
 }

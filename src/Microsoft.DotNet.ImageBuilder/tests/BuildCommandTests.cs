@@ -43,16 +43,29 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
             const string aspnetRepo = "aspnet";
+
             string runtimeDepsDigest = $"{runtimeDepsRepo}@sha256:c74364a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73edd638c";
             string runtimeDigest = $"{runtimeRepo}@sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
             string aspnetDigest = $"{aspnetRepo}@sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
-            IEnumerable<string> runtimeDepsLayers = new[] {
-                "sha256:777b2c648970480f50f5b4d0af8f9a8ea798eea43dbcf40ce4a8c7118736bdcf",
-                "sha256:b9dfc8eed8d66f1eae8ffe46be9a26fe047a7f6554e9dbc2df9da211e59b4786" };
-            IEnumerable<string> runtimeLayers =
-                runtimeDepsLayers.Concat(new[] { "sha256:466982335a8bacfe63b8f75a2e8c6484dfa7f7e92197550643b3c1457fa445b4" });
-            IEnumerable<string> aspnetLayers =
-                runtimeLayers.Concat(new[] { "sha256:d305fbfc4bd0d9f38662e979dced9831e3b5e4d85442397a8ec0a0e7bcf5458b" });
+
+            IEnumerable<Layer> runtimeDepsLayers =
+            [
+                new Layer("sha256:777b2c648970480f50f5b4d0af8f9a8ea798eea43dbcf40ce4a8c7118736bdcf", 0),
+                new Layer("sha256:b9dfc8eed8d66f1eae8ffe46be9a26fe047a7f6554e9dbc2df9da211e59b4786", 0)
+            ];
+
+            IEnumerable<Layer> runtimeLayers =
+            [
+                ..runtimeDepsLayers,
+                new Layer("sha256:466982335a8bacfe63b8f75a2e8c6484dfa7f7e92197550643b3c1457fa445b4", 0),
+            ];
+
+            IEnumerable<Layer> aspnetLayers =
+            [
+                ..runtimeLayers,
+                new Layer("sha256:d305fbfc4bd0d9f38662e979dced9831e3b5e4d85442397a8ec0a0e7bcf5458b", 0)
+            ];
+
             const string tag = "tag";
             const string baseImageRepo = "baserepo";
             string baseImageTag = $"{baseImageRepo}:basetag";

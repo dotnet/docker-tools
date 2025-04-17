@@ -9,7 +9,7 @@ steps:
     --registry-override '$(acr.server)'
     '$(mcrDocsRepoInfo.userName)'
     '$(mcrDocsRepoInfo.email)'
-    --gh-token '$(mcrDocsRepoInfo.accessToken)'
+    $(mcrDocsRepoInfo.authArgs)
     '$(publicGitRepoUri)'
     ${{ parameters.dryRunArg }}
     $(manifestVariables)

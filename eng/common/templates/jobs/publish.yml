@@ -192,7 +192,7 @@ jobs:
       '$(System.AccessToken)'
       '$(azdoOrgName)'
       '$(System.TeamProject)'
-      --gh-token '$(gitHubNotificationsRepoInfo.accessToken)'
+      $(gitHubNotificationsRepoInfo.authArgs)
       '$(gitHubNotificationsRepoInfo.org)'
       '$(gitHubNotificationsRepoInfo.repo)'
       --repo-prefix '$(publishRepoPrefix)'

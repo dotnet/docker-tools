@@ -6,6 +6,7 @@ using Microsoft.DotNet.ImageBuilder.Models;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
+using Shouldly;
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
@@ -21,62 +22,63 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
     public void CanReadJsonSchemaVersion1()
     {
         ImageArtifactDetails details = ImageArtifactDetails.FromJson(JsonSchemaVersion1);
-        Assert.NotNull(details);
+        details.ShouldNotBeNull();
 
-        // When reading schema version 1.0, it will be automatically converted
-        // to version 2
-        Assert.Equal("2.0", details.SchemaVersion);
+        // When reading schema version 1.0, it will be automatically converted to version 2.0
+        details.SchemaVersion.ShouldBe("2.0");
 
-        Assert.Single(details.Repos);
+        details.Repos.ShouldHaveSingleItem();
         RepoData repo = details.Repos.First();
 
-        Assert.Single(repo.Images);
+        repo.Images.ShouldHaveSingleItem();
         ImageData image = repo.Images.First();
+        image.Platforms.Count.ShouldBe(2);
 
-        Assert.Equal(2, image.Platforms.Count);
+        for (int platformIndex = 0; platformIndex < image.Platforms.Count; platformIndex++)
+        {
+            PlatformData platform = image.Platforms[platformIndex];
 
-        PlatformData platform1 = image.Platforms.First();
-        Assert.Equal(2, platform1.Layers.Count);
-        Assert.Equal("sha256:platform1layer1sha", platform1.Layers.First().Digest);
-        Assert.Equal(0, platform1.Layers.First().Size);
-        Assert.Equal("sha256:platform1layer2sha", platform1.Layers.Last().Digest);
-        Assert.Equal(0, platform1.Layers.Last().Size);
+            platform.Layers.Count.ShouldBe(2);
 
-        PlatformData platform2 = image.Platforms.Last();
-        Assert.Equal(2, platform2.Layers.Count());
-        Assert.Equal("sha256:platform2layer1sha", platform2.Layers.First().Digest);
-        Assert.Equal(0, platform2.Layers.First().Size);
-        Assert.Equal("sha256:platform2layer2sha", platform2.Layers.Last().Digest);
-        Assert.Equal(0, platform2.Layers.Last().Size);
+            for (int layerIndex = 0; layerIndex < platform.Layers.Count; layerIndex++)
+            {
+                Layer layer = platform.Layers[layerIndex];
+                string expectedLayerSha = $"sha256:platform{platformIndex + 1}layer{layerIndex + 1}sha";
+                layer.ShouldBe(new Layer(Digest: expectedLayerSha, Size: 0));
+            }
+        }
     }
 
     [Fact]
     public void CanReadJsonSchemaVersion2()
     {
         ImageArtifactDetails details = ImageArtifactDetails.FromJson(JsonSchemaVersion2);
-        Assert.NotNull(details);
-        Assert.Equal("2.0", details.SchemaVersion);
-        Assert.Single(details.Repos);
+        details.ShouldNotBeNull();
 
+        // When reading schema version 1.0, it will be automatically converted to version 2.0
+        details.SchemaVersion.ShouldBe("2.0");
+
+        details.Repos.ShouldHaveSingleItem();
         RepoData repo = details.Repos.First();
-        Assert.Single(repo.Images);
 
+        repo.Images.ShouldHaveSingleItem();
         ImageData image = repo.Images.First();
-        Assert.Equal(2, image.Platforms.Count());
+        image.Platforms.Count.ShouldBe(2);
 
-        PlatformData platform1 = image.Platforms.First();
-        Assert.Equal(2, platform1.Layers.Count());
-        Assert.Equal("sha256:platform1layer1sha", platform1.Layers.First().Digest);
-        Assert.Equal(0, platform1.Layers.First().Size);
-        Assert.Equal("sha256:platform1layer2sha", platform1.Layers.Last().Digest);
-        Assert.Equal(1, platform1.Layers.Last().Size);
+        for (int platformIndex = 0; platformIndex < image.Platforms.Count; platformIndex++)
+        {
+            PlatformData platform = image.Platforms[platformIndex];
 
-        PlatformData platform2 = image.Platforms.Last();
-        Assert.Equal(2, platform2.Layers.Count());
-        Assert.Equal("sha256:platform2layer1sha", platform2.Layers.First().Digest);
-        Assert.Equal(2, platform2.Layers.First().Size);
-        Assert.Equal("sha256:platform2layer2sha", platform2.Layers.Last().Digest);
-        Assert.Equal(3, platform2.Layers.Last().Size);
+            platform.Layers.Count.ShouldBe(2);
+
+            for (int layerIndex = 0; layerIndex < platform.Layers.Count; layerIndex++)
+            {
+                Layer layer = platform.Layers[layerIndex];
+                string expectedLayerSha = $"sha256:platform{platformIndex + 1}layer{layerIndex + 1}sha";
+                layer.Digest.ShouldBe(expectedLayerSha);
+                layer.Size.ShouldBeGreaterThan(0);
+            }
+        }
     }
 
     [Fact]
@@ -155,10 +157,10 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
         _outputHelper.WriteLine(actualJson);
 
         // Normalize line endings and compare
-        Assert.Equal(expectedJson.Replace("\r\n", "\n"), actualJson.Replace("\r\n", "\n"));
+        actualJson.Replace("\r\n", "\n").ShouldBe(expectedJson.Replace("\r\n", "\n"));
     }
 
-    #region TestData
+    #region Test Data
 
     private const string JsonSchemaVersion1 =
     """
@@ -258,8 +260,8 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
                   "created": "2024-01-01T00:00:01.0000000Z",
                   "commitUrl": "https://example.com/commit1",
                   "layers": [
-                    { "digest": "sha256:platform1layer1sha", "size": 0 },
-                    { "digest": "sha256:platform1layer2sha", "size": 1 }
+                    { "digest": "sha256:platform1layer1sha", "size": 1 },
+                    { "digest": "sha256:platform1layer2sha", "size": 2 }
                   ]
                 },
                 {
@@ -276,8 +278,8 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
                   "created": "2024-01-01T00:00:02.0000000Z",
                   "commitUrl": "https://example.com/commit2",
                   "layers": [
-                    { "digest": "sha256:platform2layer1sha", "size": 2 },
-                    { "digest": "sha256:platform2layer2sha", "size": 3 }
+                    { "digest": "sha256:platform2layer1sha", "size": 3 },
+                    { "digest": "sha256:platform2layer2sha", "size": 4 }
                   ]
                 }
               ]

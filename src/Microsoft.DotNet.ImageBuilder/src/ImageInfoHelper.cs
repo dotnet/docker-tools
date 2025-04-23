@@ -132,7 +132,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static ImageArtifactDetails LoadFromContent(string imageInfoContent, ManifestInfo manifest,
             bool skipManifestValidation = false, bool useFilteredManifest = false)
         {
-            ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoContent);
+            ImageArtifactDetails imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContent);
 
             foreach (RepoData repoData in imageArtifactDetails.Repos)
             {

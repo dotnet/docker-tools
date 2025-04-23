@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
+using Microsoft.VisualStudio.Services.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -16,7 +17,10 @@ public class ImageArtifactDetails
 {
     private static readonly JsonSerializerSettings s_jsonSettings = new()
     {
-        Converters = [ new SchemaVersion2LayerConverter() ],
+        Converters =
+        [
+            new SchemaVersion2LayerConverter()
+        ]
     };
 
     public string SchemaVersion => "2.0";
@@ -58,12 +62,7 @@ public class ImageArtifactDetails
             return token.Type switch
             {
                 // If the token is an object, proceed as normal
-                JTokenType.Object =>
-                    new Layer(
-                        Digest: token["digest"]?.Value<string>()
-                            ?? throw new JsonSerializationException(
-                                $"Unable to serialize Layer digest from '{token}'"),
-                        Size: token["size"]?.Value<long>() ?? 0),
+                JTokenType.Object => JsonHelper.SerializeObject(token),
 
                 // If we encounter a string, we want to convert it to the Layer
                 // object defined in schema version 2. Assume a size of 0. The

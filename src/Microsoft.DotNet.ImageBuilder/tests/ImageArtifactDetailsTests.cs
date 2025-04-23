@@ -2,12 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Models;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Newtonsoft.Json;
 using Shouldly;
-using System.Collections.Generic;
 using System.Linq;
 using Xunit;
 using Xunit.Abstractions;

@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
-using Microsoft.VisualStudio.Services.Common;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 

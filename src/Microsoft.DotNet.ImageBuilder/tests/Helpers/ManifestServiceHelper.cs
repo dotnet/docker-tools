@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 
@@ -13,7 +14,7 @@ internal static class ManifestServiceHelper
 {
     public record ImageDigestResults(string Image, string Digest, int OnCallCount = 1);
 
-    public record ImageLayersResults(string Image, IEnumerable<string> Layers);
+    public record ImageLayersResults(string Image, IEnumerable<Layer> Layers);
 
     public static Mock<IManifestServiceFactory> CreateManifestServiceFactoryMock(
         IEnumerable<ImageDigestResults>? localImageDigestResults = null,
@@ -67,7 +68,7 @@ internal static class ManifestServiceHelper
                 .ReturnsAsync(callIndex => callIndex >= onCallIndex ? digest : throw new Exception());
         }
 
-        foreach ((string image, IEnumerable<string> layers) in imageLayersResults)
+        foreach ((string image, IEnumerable<Layer> layers) in imageLayersResults)
         {
             manifestServiceMock
                 .Setup(o => o.GetImageLayersAsync(image, false))

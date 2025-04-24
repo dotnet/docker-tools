@@ -12,15 +12,15 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class JsonHelper
     {
+        public static JsonSerializerSettings JsonSerializerSettings => new()
+        {
+            ContractResolver = new CustomContractResolver(),
+            Formatting = Formatting.Indented
+        };
+
         public static string SerializeObject(object value)
         {
-            JsonSerializerSettings settings = new()
-            {
-                ContractResolver = new CustomContractResolver(),
-                Formatting = Formatting.Indented
-            };
-
-            return JsonConvert.SerializeObject(value, settings);
+            return JsonConvert.SerializeObject(value, JsonSerializerSettings);
         }
 
         private class CustomContractResolver : DefaultContractResolver

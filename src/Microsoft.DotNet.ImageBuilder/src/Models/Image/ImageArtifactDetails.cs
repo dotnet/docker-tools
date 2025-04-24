@@ -41,6 +41,9 @@ public class ImageArtifactDetails
 
     private class SchemaVersion2LayerConverter : JsonConverter
     {
+        private static readonly JsonSerializer s_jsonSerializer =
+            JsonSerializer.Create(JsonHelper.JsonSerializerSettings);
+
         // We do not want to handle writing at all. We only want to convert
         // the old Layer format to the new format, and all writing should be
         // done using the new format (via the default conversion settings).
@@ -60,8 +63,11 @@ public class ImageArtifactDetails
             JToken token = JToken.Load(reader);
             return token.Type switch
             {
-                // If the token is an object, proceed as normal
-                JTokenType.Object => JsonHelper.SerializeObject(token),
+                // If the token is an object, proceed as normal.
+                // We can't use the JsonSerializer passed into the method since
+                // it contains this converter. Doing so would cause a stack
+                // overflow since this method would be called again recursively.
+                JTokenType.Object => token.ToObject<Layer>(s_jsonSerializer),
 
                 // If we encounter a string, we want to convert it to the Layer
                 // object defined in schema version 2. Assume a size of 0. The

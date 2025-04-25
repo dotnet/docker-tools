@@ -115,8 +115,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public static ImageArtifactDetails DeserializeImageArtifactDetails(string path)
         {
             string imageInfoText = File.ReadAllText(path);
-
-            return JsonConvert.DeserializeObject<ImageArtifactDetails>(imageInfoText) ??
+            return ImageArtifactDetails.FromJson(imageInfoText) ??
                 throw new InvalidDataException($"Unable to deserialize image info file {path}");
         }
 

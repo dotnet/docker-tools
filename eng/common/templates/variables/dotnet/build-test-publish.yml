@@ -15,7 +15,7 @@ variables:
   value: public/,internal/private/,unlisted/
 
 - name: mcrDocsRepoInfo.authArgs
-  value: >
+  value: >-
     --gh-private-key '$(GitHubApp-NET-Docker-MAR-Docs-Updater-PrivateKey)'
     --gh-app-client-id '$(gitHubApp.marDocsUpdater.clientId)'
     --gh-app-installation-id '$(gitHubApp.marDocsUpdater.microsoft.installationId)'

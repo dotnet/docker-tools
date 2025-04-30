@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         string AuthToken = "",
         string PrivateKey = "",
         string ClientId = "",
-        long? InstallationId = null)
+        string? InstallationId = null)
     {
         public bool IsGitHubAppAuth =>
             !string.IsNullOrEmpty(PrivateKey) &&
@@ -127,7 +127,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "GitHub Client ID for GitHub App authentication");
 
             const string InstallationIdAlias = "gh-app-installation-id";
-            var installationIdOption = CreateOption<long?>(
+            var installationIdOption = CreateOption<string?>(
                 InstallationIdAlias,
                 nameof(GitHubAuthOptions.InstallationId),
                 "GitHub App installation ID to use (only required if app has more than one installation)");

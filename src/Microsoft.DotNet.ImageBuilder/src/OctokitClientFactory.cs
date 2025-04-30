@@ -75,11 +75,14 @@ namespace Microsoft.DotNet.ImageBuilder
                 var appInfo = await GetCurrentAppInfoAsync(appClient.Credentials);
 
                 Installation appInstallation;
-
-                if (authOptions.InstallationId is long providedId) {
-                    appInstallation = appInfo.Installations.FirstOrDefault(i => i.Id == providedId)
-                        ?? throw new InvalidOperationException($"No installation found with ID {providedId}.");
-                } else {
+                if (authOptions.InstallationId is string providedId)
+                {
+                    appInstallation = appInfo.Installations
+                        .FirstOrDefault(installation => installation.Id.ToString() == providedId)
+                            ?? throw new InvalidOperationException($"No installation found with ID {providedId}.");
+                }
+                else
+                {
                     appInstallation = appInfo.Installations.SingleOrDefault()
                         ?? throw new InvalidOperationException("Expected exactly one installation for GitHub App but "
                             + "found none or multiple. Provide an installation ID explicitly.");

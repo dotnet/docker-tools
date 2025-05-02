@@ -69,10 +69,13 @@ public class CopyImageService : ICopyImageService
         };
         importImageContent.TargetTags.AddRange(destTagNames);
 
-        string formattedDestTagNames = string.Join(
-            ", ", destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcrName, tag)}'").ToArray());
-        _loggerService.WriteMessage(
-            $"Importing {formattedDestTagNames} from '{DockerHelper.GetImageName(srcRegistryName, srcTagName)}'");
+        string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
+        string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
+        var destinationImageNames = destTagNames
+            .Select(tag => $"'{DockerHelper.GetImageName(destAcrName, tag)}'")
+            .ToList();
+        string formattedDestinationImages = string.Join(", ", destinationImageNames);
+        _loggerService.WriteMessage($"{action} {formattedDestinationImages} from '{sourceImageName}'");
 
         if (!isDryRun)
         {
@@ -86,13 +89,17 @@ public class CopyImageService : ICopyImageService
             }
             catch (Exception e)
             {
-                string errorMsg = $"Importing Failure: {formattedDestTagNames}";
+                string errorMsg = $"Importing Failure: {formattedDestinationImages}";
                 errorMsg += Environment.NewLine + e.ToString();
 
                 _loggerService.WriteMessage(errorMsg);
 
                 throw;
             }
+        }
+        else
+        {
+            _loggerService.WriteMessage("Importing skipped due to dry run.");
         }
     }
 }

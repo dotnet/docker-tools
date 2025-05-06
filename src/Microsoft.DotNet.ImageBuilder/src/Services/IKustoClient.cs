@@ -8,7 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IKustoClient
     {
-        Task IngestFromCsvAsync(
-            string csv, string cluster, string database, string table, bool isDryRun);
+        Task IngestFromCsvAsync(string csv, string cluster, string database, string table);
     }
 }

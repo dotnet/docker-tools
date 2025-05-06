@@ -75,7 +75,8 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             info.RedirectStandardError = true;
             executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
-            s_loggerService.WriteSubheading($"EXECUTING: {executeMessageOverride}");
+            string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
+            s_loggerService.WriteSubheading($"{prefix}: {executeMessageOverride}");
 
             if (isDryRun)
             {
@@ -91,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder
             if (processResult.Process.ExitCode != 0)
             {
                 string exceptionMsg = errorMessage ?? $@"Failed to execute {info.FileName} {info.Arguments}
-                
+
                 {processResult.StandardError}";
 
                 throw new InvalidOperationException(exceptionMsg);

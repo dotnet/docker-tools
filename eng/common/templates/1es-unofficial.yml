@@ -63,4 +63,29 @@ extends:
       sourceAnalysisPool: ${{ parameters.sourceAnalysisPool }}
       tsa:
         enabled: true
-    stages: ${{ parameters.stages }}
+    stages:
+    - ${{ each stage in parameters.stages }}:
+      - stage: ${{ stage.stage }}
+        ${{ each property in stage }}:
+          ${{ if notIn(property.key, 'stage', 'jobs') }}:
+            ${{ property.key }} : ${{ property.value }}
+        jobs:
+        - ${{ each job in stage.jobs }}:
+          - job: ${{ job.job }}
+            ${{ each property in job }}:
+              ${{ if notIn(property.key, 'job', 'steps') }}:
+                ${{ property.key }} : ${{ property.value }}
+            steps:
+            - ${{ each step in job.steps }}:
+              # Special case for Azure Pipelines checkout task:
+              # https://learn.microsoft.com/azure/devops/extend/develop/pipeline-decorator-context?view=azure-devops#task-names-and-guids
+              # The checkout task does not have a name - it is special and built directly into the agent. Avoid
+              # modifying the checkout task, or else it will show up in the UI as a task with no name.
+              - ${{ if contains(step.task, '6d15af64-176c-496d-b583-fd2ae21d4df4') }}:
+                - ${{ step }}
+              - ${{ else }}:
+                - task: ${{ step.task }}
+                  ${{ each property in step }}:
+                    ${{ if notIn(property.key, 'task', 'displayName') }}:
+                      ${{ property.key }} : ${{ property.value }}
+                  displayName: 🟪 ${{ step.displayName }}

@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING READMES");
+            Logger.WriteGroup("GENERATING READMES");
 
             // Generate Product Family Readme
             await GenerateArtifactsAsync(
@@ -119,13 +119,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string GenerateTagsListing(string repoName, string tagsMetadata)
         {
-            Logger.WriteSubheading("GENERATING TAGS LISTING");
+            Logger.WriteSection("GENERATING TAGS LISTING");
 
             string tagsDoc = GenerateTables(repoName, tagsMetadata);
 
             if (Options.IsVerbose)
             {
-                Logger.WriteSubheading($"Tags Documentation:");
+                Logger.WriteSection($"Tags Documentation:");
                 Logger.WriteMessage(tagsDoc);
             }
 

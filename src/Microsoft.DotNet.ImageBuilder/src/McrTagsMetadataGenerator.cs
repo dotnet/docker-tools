@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private string Execute()
         {
-            Logger.WriteHeading("GENERATING MCR TAGS METADATA");
+            Logger.WriteGroup("GENERATING MCR TAGS METADATA");
 
             _imageDocInfos = _repo.FilteredImages
                 .SelectMany(image => image.AllPlatforms
@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             string metadata = yaml.ToString();
 
-            Logger.WriteSubheading("Generated Metadata:");
+            Logger.WriteSection("Generated Metadata:");
             Logger.WriteMessage(metadata);
 
             // Validate that the YAML is in a valid format

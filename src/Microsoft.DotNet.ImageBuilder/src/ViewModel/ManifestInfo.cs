@@ -41,7 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static ManifestInfo Load(IManifestOptionsInfo options)
         {
-            Logger.WriteHeading("READING MANIFEST");
+            Logger.WriteGroup("READING MANIFEST");
 
             ManifestInfo manifest = ManifestInfo.Create(
                 options.Manifest,
@@ -104,7 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public IEnumerable<ImageInfo> GetAllImages() => AllRepos.SelectMany(repo => repo.AllImages);
-        
+
         public ImageInfo GetImageByPlatform(PlatformInfo platform) =>
             GetAllImages()
                 .FirstOrDefault(image => image.AllPlatforms.Contains(platform));

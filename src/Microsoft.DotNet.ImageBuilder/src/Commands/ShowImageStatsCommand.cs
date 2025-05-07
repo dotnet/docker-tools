@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override Task ExecuteAsync()
         {
-            Logger.WriteHeading("IMAGE STATISTICS");
+            Logger.WriteGroup("IMAGE STATISTICS");
 
             PlatformInfo[] platforms = Manifest.GetFilteredPlatforms().ToArray();
             LogGeneralStats(platforms);
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(name => $"{name}");
 
             Logger.WriteMessage();
-            Logger.WriteHeading(
+            Logger.WriteGroup(
                 FormatBaseImageStats(
                     $"External Base Images ({externalBaseImages.Count()})",
                     "Dependent Images",

@@ -600,7 +600,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task PullBaseImagesAsync()
         {
-            Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+            Logger.WriteGroup("PULLING LATEST BASE IMAGES");
 
             if (Options.IsSkipPullingEnabled)
             {

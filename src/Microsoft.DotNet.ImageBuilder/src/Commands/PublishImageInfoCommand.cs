@@ -86,7 +86,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             _gitService.Stage(repo, imageInfoPath);
             Signature sig = new(Options.GitOptions.Username, Options.GitOptions.Email, DateTimeOffset.Now);
-            Commit commit = repo.Commit(CommitMessage, sig, sig);
+
+            Commit commit;
+            try
+            {
+                commit = repo.Commit(CommitMessage, sig, sig);
+            }
+            catch (EmptyCommitException)
+            {
+                _loggerService.WriteMessage("No changes detected in the image info file. Skipping commit and push.");
+                return;
+            }
 
             Branch branch = repo.Branches[Options.GitOptions.Branch];
 

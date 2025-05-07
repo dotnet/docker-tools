@@ -81,6 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Options.IsDryRun)
             {
+                _loggerService.WriteMessage("Skipping commit and push due to dry run.");
                 return;
             }
 
@@ -90,7 +91,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Commit commit;
             try
             {
+                _loggerService.WriteSubheading("Committing changes...");
                 commit = repo.Commit(CommitMessage, sig, sig);
+                _loggerService.WriteMessage($"Created commit {commit.Sha}: '{commit.Message}'");
             }
             catch (EmptyCommitException)
             {
@@ -108,7 +111,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
 
             Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
-            _loggerService.WriteMessage($"The '{Options.GitOptions.Path}' file was updated: {gitHubCommitUrl}");
+            _loggerService.WriteMessage(
+                $"The '{Options.GitOptions.Path}' file was updated. Remote URL: {gitHubCommitUrl}");
         }
 
         private async Task<CredentialsHandler> GetCredentialsAsync()

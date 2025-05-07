@@ -23,7 +23,6 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             _logger.WriteMessage($"Cloning repository {sourceUrl} to {workdirPath}");
             Repository.Clone(sourceUrl, workdirPath, options);
-            _logger.WriteMessage($"Cloned repository {sourceUrl} to {workdirPath}");
             return new Repository(workdirPath);
         }
 
@@ -33,6 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Due to the Stage method's dependency on the Diff class, it prevents it from being easily used
             // with its default implementation due to https://github.com/libgit2/libgit2sharp/issues/1856.
 
+            _logger.WriteMessage($"Staging {path} in repository {repository.Info.WorkingDirectory}");
             LibGit2Sharp.Commands.Stage(repository, path);
         }
     }

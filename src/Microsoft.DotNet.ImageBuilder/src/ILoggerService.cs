@@ -11,5 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder
         void WriteMessage();
         void WriteMessage(string message);
         void WriteSubheading(string subheading);
+        void WriteCommand(string command);
     }
 }

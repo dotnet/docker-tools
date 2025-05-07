@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public void WriteHeading(string heading)
         {
-            Logger.WriteHeading(heading);
+            Logger.WriteGroup(heading);
         }
 
         public void WriteMessage()
@@ -31,7 +31,12 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public void WriteSubheading(string subheading)
         {
-            Logger.WriteSubheading(subheading);
+            Logger.WriteSection(subheading);
+        }
+
+        public void WriteCommand(string command)
+        {
+            Logger.WriteCommand(command);
         }
     }
 }

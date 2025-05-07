@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string artifactName,
             Func<string, TContext, string> postProcess)
         {
-            Logger.WriteSubheading($"Generating '{artifactPath}' from '{templatePath}'");
+            Logger.WriteSection($"Generating '{artifactPath}' from '{templatePath}'");
 
             string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false);
 
@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;                
+                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
                 artifact = document.Render(Context.CreateBuiltin(symbols));
 
                 if (Options.IsVerbose)

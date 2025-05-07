@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING DOCKERFILES");
+            Logger.WriteGroup("GENERATING DOCKERFILES");
 
             await GenerateArtifactsAsync(
                 Manifest.GetFilteredPlatforms(),

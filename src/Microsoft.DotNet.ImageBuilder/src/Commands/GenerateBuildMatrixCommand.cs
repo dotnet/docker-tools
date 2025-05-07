@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING BUILD MATRIX");
+            Logger.WriteGroup("GENERATING BUILD MATRIX");
 
             IEnumerable<BuildMatrixInfo> matrices = await GenerateMatrixInfoAsync();
             LogDiagnostics(matrices);

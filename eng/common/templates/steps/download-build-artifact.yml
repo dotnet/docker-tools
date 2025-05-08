@@ -3,8 +3,8 @@ parameters:
   artifactName: ""
   condition: true
   continueOnError: false
-  pipelineDefinitionId: ""
-  pipelineRunId: ""
+  pipelineDefinitionId: "$(System.DefinitionId)"
+  pipelineRunId: "$(sourceBuildId)"
 
 steps:
 - task: DownloadPipelineArtifact@1

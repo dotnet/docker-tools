@@ -41,51 +41,30 @@ resources:
     ref: refs/tags/release
 
 extends:
-  template: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
+  template: /eng/common/templates/task-prefix-decorator.yml@self
   parameters:
-    pool: ${{ parameters.pool }}
-    sdl:
-      binskim:
-        enabled: true
-      componentgovernance:
-        ignoreDirectories: $(Build.SourcesDirectory)/versions
-        whatIf: true
-        showAlertLink: true
-      enableAllTools: ${{ not(parameters.disableSDL) }}
-      policheck:
-        enabled: true
-      sbom:
-        enabled: true
-      sourceRepositoriesToScan:
-        exclude:
-        - repository: InternalVersionsRepo
-        - repository: PublicVersionsRepo
-      sourceAnalysisPool: ${{ parameters.sourceAnalysisPool }}
-      tsa:
-        enabled: true
-    stages:
-    - ${{ each stage in parameters.stages }}:
-      - stage: ${{ stage.stage }}
-        ${{ each property in stage }}:
-          ${{ if notIn(property.key, 'stage', 'jobs') }}:
-            ${{ property.key }} : ${{ property.value }}
-        jobs:
-        - ${{ each job in stage.jobs }}:
-          - job: ${{ job.job }}
-            ${{ each property in job }}:
-              ${{ if notIn(property.key, 'job', 'steps') }}:
-                ${{ property.key }} : ${{ property.value }}
-            steps:
-            - ${{ each step in job.steps }}:
-              # Special case for Azure Pipelines checkout task:
-              # https://learn.microsoft.com/azure/devops/extend/develop/pipeline-decorator-context?view=azure-devops#task-names-and-guids
-              # The checkout task does not have a name - it is special and built directly into the agent. Avoid
-              # modifying the checkout task, or else it will show up in the UI as a task with no name.
-              - ${{ if contains(step.task, '6d15af64-176c-496d-b583-fd2ae21d4df4') }}:
-                - ${{ step }}
-              - ${{ else }}:
-                - task: ${{ step.task }}
-                  ${{ each property in step }}:
-                    ${{ if notIn(property.key, 'task', 'displayName') }}:
-                      ${{ property.key }} : ${{ property.value }}
-                  displayName: 🟪 ${{ step.displayName }}
+    # Use a unique task prefix for unofficial pipelines
+    taskPrefix: "🟦"
+    baseTemplate: v1/1ES.Unofficial.PipelineTemplate.yml@1ESPipelineTemplates
+    templateParameters:
+      pool: ${{ parameters.pool }}
+      sdl:
+        binskim:
+          enabled: true
+        componentgovernance:
+          ignoreDirectories: $(Build.SourcesDirectory)/versions
+          whatIf: true
+          showAlertLink: true
+        enableAllTools: ${{ not(parameters.disableSDL) }}
+        policheck:
+          enabled: true
+        sbom:
+          enabled: true
+        sourceRepositoriesToScan:
+          exclude:
+          - repository: InternalVersionsRepo
+          - repository: PublicVersionsRepo
+        sourceAnalysisPool: ${{ parameters.sourceAnalysisPool }}
+        tsa:
+          enabled: true
+    stages: ${{ parameters.stages }}

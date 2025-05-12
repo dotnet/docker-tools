@@ -15,11 +15,11 @@
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="13.0.2" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.1" />
-    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25225.6" />
+    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageReference Include="Octokit" Version="13.0.1" />
-    <PackageReference Include="Polly" Version="8.5.0" />
+    <PackageReference Include="Polly" Version="8.5.2" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="Polly.RateLimiting" Version="8.4.2" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />

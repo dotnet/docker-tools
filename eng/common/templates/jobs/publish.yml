@@ -3,8 +3,8 @@ parameters:
   internalProjectName: null
   customInitSteps: []
   customPublishVariables: []
-  sourceBuildPipelineDefinitionId: ""
-  sourceBuildPipelineRunId: ""
+  sourceBuildPipelineDefinitionId: "$(System.DefinitionId)"
+  sourceBuildPipelineRunId: "$(sourceBuildId)"
 
 jobs:
 - job: Publish
@@ -53,10 +53,8 @@ jobs:
     parameters:
       targetPath: $(imageInfoHostDir)
       artifactName: image-info
-      ${{ if ne(parameters.sourcebuildPipelineDefinitionId, '') }}:
-        piplineDefinitionId: ${{ parameters.sourceBuildPipelineDefinitionId }}
-      ${{ if ne(parameters.sourceBuildPipelineRunId, '') }}:
-        pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+      piplineDefinitionId: ${{ parameters.sourceBuildPipelineDefinitionId }}
+      pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
       # This can fail in scenarios where no build jobs have run to produce any artifacts
       continueOnError: true
 

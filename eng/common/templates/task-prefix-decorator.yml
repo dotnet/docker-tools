@@ -51,8 +51,8 @@ extends:
             - ${{ each step in job.steps }}:
               # Special case for Azure Pipelines checkout task:
               # https://learn.microsoft.com/azure/devops/extend/develop/pipeline-decorator-context?view=azure-devops#task-names-and-guids
-              # The checkout task does not have a name - it is special and built directly into the agent. Avoid
-              # modifying the checkout task, or else it will show up in the UI as a task with no name.
+              # The checkout task does not have a name - it is special and built directly into the agent.
+              # Avoid modifying the checkout task, or else it will show up in the UI as a task with no name.
               - ${{ if contains(step.task, '6d15af64-176c-496d-b583-fd2ae21d4df4') }}:
                 - ${{ step }}
               - ${{ else }}:

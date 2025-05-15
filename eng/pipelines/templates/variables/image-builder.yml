@@ -1,3 +1,11 @@
+parameters:
+# sourceBuildId should be overridden when skipping a build to run tests or
+# publish images that were produced in a different pipeline run.
+# Defaults to $(Build.BuildId) which refers to the current pipeline run.
+- name: sourceBuildId
+  type: string
+  default: ""
+
 variables:
 - template: /eng/pipelines/templates/variables/build-test-publish.yml@self
 - name: manifest
@@ -5,7 +13,7 @@ variables:
 - name: publishReadme
   value: false
 - name: manifestVariables
-  value: --var UniqueId=$(sourceBuildId)
+  value: --var UniqueId=${{ parameters.sourceBuildId }}
 - name: imageInfoVariant
   value: "-imagebuilder"
 - name: testScriptPath

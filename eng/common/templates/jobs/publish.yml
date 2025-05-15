@@ -3,8 +3,8 @@ parameters:
   internalProjectName: null
   customInitSteps: []
   customPublishVariables: []
-  sourceBuildPipelineDefinitionId: "$(System.DefinitionId)"
-  sourceBuildPipelineRunId: "$(sourceBuildId)"
+  sourceBuildPipelineDefinitionId: ""
+  sourceBuildPipelineRunId: ""
 
 jobs:
 - job: Publish

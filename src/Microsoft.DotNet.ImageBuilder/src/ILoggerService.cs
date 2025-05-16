@@ -4,16 +4,15 @@
 
 #nullable enable
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public interface ILoggerService
 {
-    public interface ILoggerService
-    {
-        void WriteError(string error);
-        void WriteHeading(string heading);
-        void WriteMessage(string? message = null);
-        void WriteSubheading(string subheading);
-        void WriteWarning(string message);
-        void WriteDebug(string message);
-        void WriteCommand(string command);
-    }
+    void WriteError(string error);
+    void WriteHeading(string heading);
+    void WriteMessage(string? message = null);
+    void WriteSubheading(string subheading);
+    void WriteWarning(string message);
+    void WriteDebug(string message);
+    void WriteCommand(string command);
 }

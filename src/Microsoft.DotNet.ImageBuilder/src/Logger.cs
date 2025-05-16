@@ -6,45 +6,44 @@
 
 using System;
 
-namespace Microsoft.DotNet.ImageBuilder
+namespace Microsoft.DotNet.ImageBuilder;
+
+public static class Logger
 {
-    public static class Logger
+    public static void WriteError(string error)
     {
-        public static void WriteError(string error)
-        {
-            Console.Error.WriteLine($"##[error]{error}");
-        }
+        Console.Error.WriteLine($"##[error]{error}");
+    }
 
-        public static void WriteHeading(string heading)
-        {
-            Console.WriteLine();
-            Console.WriteLine(heading);
-            Console.WriteLine(new string('-', heading.Length));
-        }
+    public static void WriteHeading(string heading)
+    {
+        Console.WriteLine();
+        Console.WriteLine(heading);
+        Console.WriteLine(new string('-', heading.Length));
+    }
 
-        public static void WriteMessage(string? message = null)
-        {
-            Console.WriteLine(message);
-        }
+    public static void WriteMessage(string? message = null)
+    {
+        Console.WriteLine(message);
+    }
 
-        public static void WriteSubheading(string subheading)
-        {
-            WriteMessage($"##[section]{subheading}");
-        }
+    public static void WriteSubheading(string subheading)
+    {
+        WriteMessage($"##[section]{subheading}");
+    }
 
-        public static void WriteCommand(string command)
-        {
-            WriteMessage($"##[command]{command}");
-        }
+    public static void WriteCommand(string command)
+    {
+        WriteMessage($"##[command]{command}");
+    }
 
-        public static void WriteWarning(string message)
-        {
-            WriteMessage($"##[warning]{message}");
-        }
+    public static void WriteWarning(string message)
+    {
+        WriteMessage($"##[warning]{message}");
+    }
 
-        public static void WriteDebug(string message)
-        {
-            WriteMessage($"##[debug]{message}");
-        }
+    public static void WriteDebug(string message)
+    {
+        WriteMessage($"##[debug]{message}");
     }
 }

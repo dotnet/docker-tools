@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System.ComponentModel.Composition;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -19,12 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder
             Logger.WriteHeading(heading);
         }
 
-        public void WriteMessage()
-        {
-            Logger.WriteMessage();
-        }
-
-        public void WriteMessage(string message)
+        public void WriteMessage(string? message = null)
         {
             Logger.WriteMessage(message);
         }
@@ -32,6 +29,21 @@ namespace Microsoft.DotNet.ImageBuilder
         public void WriteSubheading(string subheading)
         {
             Logger.WriteSubheading(subheading);
+        }
+
+        public void WriteCommand(string command)
+        {
+            Logger.WriteCommand(command);
+        }
+
+        public void WriteWarning(string message)
+        {
+            Logger.WriteWarning(message);
+        }
+
+        public void WriteDebug(string message)
+        {
+            Logger.WriteDebug(message);
         }
     }
 }

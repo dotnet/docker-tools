@@ -8,8 +8,19 @@ trigger:
     - src/*
 pr: none
 
+parameters:
+- name: sourceBuildId
+  displayName: >
+    Source build pipeline run ID. This can be overridden in order to publish or
+    run tests for images that were built in a different pipeline. The default
+    value should be left alone if you are simply queueing a new build.
+  type: string
+  default: $(Build.BuildId)
+
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
+  parameters:
+  - sourceBuildId:
 - name: publishEolAnnotations
   value: true
 

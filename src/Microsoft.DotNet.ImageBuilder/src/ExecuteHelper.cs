@@ -75,8 +75,9 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             info.RedirectStandardError = true;
             executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
-            string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
-            s_loggerService.WriteSubheading($"{prefix}: {executeMessageOverride}");
+            string prefix = isDryRun ? "Executing (dry-run)" : "Executing";
+
+            s_loggerService.WriteCommand($"{prefix}: {executeMessageOverride}");
 
             if (isDryRun)
             {
@@ -87,13 +88,16 @@ namespace Microsoft.DotNet.ImageBuilder
             stopwatch.Start();
             ProcessResult processResult = executor(info);
             stopwatch.Stop();
-            s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+            s_loggerService.WriteMessage($"Execution elapsed time: {stopwatch.Elapsed}");
 
             if (processResult.Process.ExitCode != 0)
             {
-                string exceptionMsg = errorMessage ?? $@"Failed to execute {info.FileName} {info.Arguments}
+                string exceptionMsg = errorMessage ??
+                    $"""
+                    Failed to execute {executeMessageOverride}
 
-                {processResult.StandardError}";
+                    {processResult.StandardError}
+                    """;
 
                 throw new InvalidOperationException(exceptionMsg);
             }

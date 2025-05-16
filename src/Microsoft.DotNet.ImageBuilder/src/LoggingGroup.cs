@@ -17,15 +17,19 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// </remarks>
 internal sealed class LoggingGroup : IDisposable
 {
+    private readonly ILoggerService _logger;
+
     /// <summary>
     /// Creates a new collapsible logging group. When this object is created,
     /// all subsequent logging output will be inside this group until this
     /// object is disposed.
     /// </summary>
-    /// <param name="groupName">The name of the logging group.</param>
-    public LoggingGroup(string name)
+    /// <param name="groupName">The name of the logging group</param>
+    /// <param name="loggerService">The logger service to use for output</param>
+    public LoggingGroup(string name, ILoggerService loggerService)
     {
-        Console.WriteLine($"##[group]{name}");
+        _logger = loggerService;
+        _logger.WriteMessage($"##[group]{name}");
     }
 
     /// <summary>
@@ -33,6 +37,6 @@ internal sealed class LoggingGroup : IDisposable
     /// </summary>
     public void Dispose()
     {
-        Console.WriteLine($"##[endgroup]");
+        _logger.WriteMessage($"##[endgroup]");
     }
 }

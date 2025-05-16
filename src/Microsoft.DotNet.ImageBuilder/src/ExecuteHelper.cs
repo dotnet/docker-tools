@@ -134,7 +134,7 @@ namespace Microsoft.DotNet.ImageBuilder
             StringBuilder stdError = new StringBuilder();
             process.ErrorDataReceived += getDataReceivedHandler(stdError, Console.Error);
 
-            using (new LoggingGroup("Command output"))
+            using (s_loggerService.LogGroup("Command output"))
             {
                 process.Start();
                 processStartedCallback?.Invoke(process);

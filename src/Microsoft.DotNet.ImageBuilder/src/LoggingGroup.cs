@@ -11,9 +11,11 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Manages an Azure Pipelines collapsible logging group.
 /// Disposing of the object closes the logging group.
+/// See https://learn.microsoft.com/azure/devops/pipelines/scripts/logging-commands
 /// </summary>
 /// <remarks>
-/// See https://learn.microsoft.com/azure/devops/pipelines/scripts/logging-commands
+/// Only one LoggingGroup can be open at a time. If a second group is created
+/// without closing the first, then the first group will not be collapsible.
 /// </remarks>
 internal sealed class LoggingGroup : IDisposable
 {

@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         public static void WriteError(string error)
         {
-            Console.Error.WriteLine(error);
+            Console.Error.WriteLine($"##[error]{error}");
         }
 
         public static void WriteHeading(string heading)
@@ -32,7 +32,22 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static void WriteSubheading(string subheading)
         {
-            WriteMessage($"-- {subheading}");
+            WriteMessage($"##[section]{subheading}");
+        }
+
+        public static void WriteCommand(string command)
+        {
+            WriteMessage($"##[command]{command}");
+        }
+
+        public static void WriteWarning(string message)
+        {
+            WriteMessage($"##[warning]{message}");
+        }
+
+        public static void WriteDebug(string message)
+        {
+            WriteMessage($"##[debug]{message}");
         }
     }
 }

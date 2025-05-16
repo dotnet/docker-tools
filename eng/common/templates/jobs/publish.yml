@@ -250,8 +250,14 @@ jobs:
     condition: and(always(), eq(variables['publishNotificationsEnabled'], 'true'))
 
   - powershell: |
+      # Default to current build number if parameter was not overridden
+      $buildId = "${{ parameters.sourceBuildPipelineRunId }}"
+      if ($buildId -eq "") {
+        $buildId = "$(Build.BuildNumber)"
+      }
+
       New-Item -ItemType Directory -Path $(sourceBuildIdOutputDir)
-      Set-Content -Path $(sourceBuildIdOutputDir)/source-build-id.txt -Value ${{ parameters.sourceBuildPipelineRunId }}
+      Set-Content -Path $(sourceBuildIdOutputDir)/source-build-id.txt -Value "$buildId"
     condition: succeeded()
     displayName: Write Source Build ID to File
 

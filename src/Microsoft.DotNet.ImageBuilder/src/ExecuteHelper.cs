@@ -135,11 +135,14 @@ namespace Microsoft.DotNet.ImageBuilder
             StringBuilder stdError = new StringBuilder();
             process.ErrorDataReceived += getDataReceivedHandler(stdError, Console.Error);
 
-            process.Start();
-            processStartedCallback?.Invoke(process);
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
+            using (new LoggingGroup("Command output"))
+            {
+                process.Start();
+                processStartedCallback?.Invoke(process);
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
+            }
 
             return new ProcessResult(process, stdOutput.ToString().Trim(), stdError.ToString().Trim());
         }

@@ -76,7 +76,6 @@ namespace Microsoft.DotNet.ImageBuilder
             info.RedirectStandardError = true;
             executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
             string prefix = isDryRun ? "Executing (dry-run)" : "Executing";
-
             s_loggerService.WriteCommand($"{prefix}: {executeMessageOverride}");
 
             if (isDryRun)

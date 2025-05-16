@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#nullable enable
+
 using System;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -20,12 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder
             Console.WriteLine(new string('-', heading.Length));
         }
 
-        public static void WriteMessage()
-        {
-            Console.WriteLine();
-        }
-
-        public static void WriteMessage(string message)
+        public static void WriteMessage(string? message = null)
         {
             Console.WriteLine(message);
         }

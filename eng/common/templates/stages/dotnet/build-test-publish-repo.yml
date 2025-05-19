@@ -27,6 +27,7 @@ parameters:
 
   # Publish parameters
   customPublishInitSteps: []
+  sourceBuildPipelineRunId: ""
 
   # Other common parameters
   internalProjectName: null
@@ -67,3 +68,4 @@ stages:
     customPublishInitSteps: ${{ parameters.customPublishInitSteps }}
     internalProjectName: ${{ parameters.internalProjectName }}
     publicProjectName: ${{ parameters.publicProjectName }}
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

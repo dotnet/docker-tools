@@ -20,7 +20,7 @@ parameters:
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
-  - sourceBuildId:
+  - sourceBuildId: ${{ parameters.sourceBuildId }}
 - name: publishEolAnnotations
   value: true
 
@@ -33,3 +33,4 @@ extends:
         noCache: true
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildId }}

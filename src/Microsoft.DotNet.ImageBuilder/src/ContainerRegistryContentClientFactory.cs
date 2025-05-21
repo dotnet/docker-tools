@@ -4,18 +4,26 @@
 using System.ComponentModel.Composition;
 using Azure.Containers.ContainerRegistry;
 using Azure.Core;
+using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
 [Export(typeof(IContainerRegistryContentClientFactory))]
 [method: ImportingConstructor]
-internal class ContainerRegistryContentClientFactory(IAzureTokenCredentialProvider tokenCredentialProvider) : IContainerRegistryContentClientFactory
+internal class ContainerRegistryContentClientFactory(IAzureTokenCredentialProvider tokenCredentialProvider)
+    : IContainerRegistryContentClientFactory
 {
-    public IContainerRegistryContentClient Create(string acrName, string repositoryName, TokenCredential credential) =>
-        new ContainerRegistryContentClientWrapper(
+    public IContainerRegistryContentClient Create(
+        string acrName,
+        string repositoryName,
+        ServiceConnectionOptions? serviceConnection)
+    {
+        var tokenCredential = tokenCredentialProvider.GetCredential(serviceConnection);
+        return new ContainerRegistryContentClientWrapper(
             new ContainerRegistryContentClient(
                 DockerHelper.GetAcrUri(acrName),
                 repositoryName,
-                tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope)));
+                tokenCredential));
+    }
 }

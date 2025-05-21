@@ -16,14 +16,16 @@ internal static class RegistryCredentialsProviderExtensions
         Func<Task> action,
         RegistryCredentialsOptions credentialsOptions,
         string registryName,
-        string? ownedAcr)
+        string? ownedAcr,
+        ServiceConnectionOptions? serviceConnection = null)
     {
         bool loggedIn = await LogInToRegistry(
             credsProvider,
             isDryRun,
             credentialsOptions,
             registryName,
-            ownedAcr);
+            ownedAcr,
+            serviceConnection);
 
         try
         {
@@ -63,14 +65,19 @@ internal static class RegistryCredentialsProviderExtensions
         bool isDryRun,
         RegistryCredentialsOptions credentialsOptions,
         string registryName,
-        string? ownedAcr)
+        string? ownedAcr,
+        ServiceConnectionOptions? serviceConnection)
     {
         bool loggedIn = false;
 
         RegistryCredentials? credentials = null;
         if (!isDryRun)
         {
-            credentials = await credsProvider.GetCredentialsAsync(registryName, ownedAcr, credentialsOptions);
+            credentials = await credsProvider.GetCredentialsAsync(
+                registryName,
+                ownedAcr,
+                serviceConnection,
+                credentialsOptions);
         }
 
         if (!string.IsNullOrEmpty(registryName) && credentials is not null)

@@ -61,7 +61,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
 
             _loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
-            IContainerRegistryClient acrClient = _acrClientFactory.Create(Options.RegistryName, _tokenCredentialProvider.GetCredential());
+            IContainerRegistryClient acrClient =
+                _acrClientFactory.Create(
+                    Options.RegistryName,
+                    _tokenCredentialProvider.GetCredential(Options.AcrServiceConnection));
 
             _loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
@@ -80,7 +83,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(repoName => acrClient.GetRepository(repoName))
                         .Select(repo =>
                         {
-                            IContainerRegistryContentClient acrContentClient = _acrContentClientFactory.Create(Options.RegistryName, repo.Name, _tokenCredentialProvider.GetCredential());
+                            IContainerRegistryContentClient acrContentClient =
+                                _acrContentClientFactory.Create(
+                                    Options.RegistryName,
+                                    repo.Name,
+                                    Options.AcrServiceConnection);
                             return ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
                         })
                         .ToArrayAsync();
@@ -182,7 +189,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
             });
 
-            // If all the images in the repo are expired, delete the whole repo instead of 
+            // If all the images in the repo are expired, delete the whole repo instead of
             // deleting each individual image.
             if (expiredImages.Count == manifestCount)
             {

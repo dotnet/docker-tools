@@ -152,8 +152,9 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             return [];
         }
 
+        var credential = _tokenCredentialProvider.GetCredential(Options.AcrServiceConnection);
         IContainerRegistryClient acrClient =
-            _acrClientFactory.Create(Options.RegistryOptions.Registry, _tokenCredentialProvider.GetCredential());
+            _acrClientFactory.Create(Options.RegistryOptions.Registry, credential);
         IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
@@ -163,7 +164,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
                 _acrContentClientFactory.Create(
                     Options.RegistryOptions.Registry,
                     repositoryName,
-                    _tokenCredentialProvider.GetCredential());
+                    Options.AcrServiceConnection);
 
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();

@@ -22,8 +22,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public CopyAcrImagesCommand(
-            ICopyImageService copyImageService, ILoggerService loggerService)
-            : base(copyImageService, loggerService)
+            ICopyImageServiceFactory copyImageServiceFactory,
+            ILoggerService loggerService)
+            : base(copyImageServiceFactory, loggerService)
         {
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {

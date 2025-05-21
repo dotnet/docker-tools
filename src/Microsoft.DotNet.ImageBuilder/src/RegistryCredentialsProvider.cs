@@ -6,13 +6,18 @@ using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
+using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
 [Export(typeof(IRegistryCredentialsProvider))]
 [method: ImportingConstructor]
-public class RegistryCredentialsProvider(ILoggerService loggerService, IHttpClientProvider httpClientProvider, IAzureTokenCredentialProvider tokenCredentialProvider) : IRegistryCredentialsProvider
+public class RegistryCredentialsProvider(
+    ILoggerService loggerService,
+    IHttpClientProvider httpClientProvider,
+    IAzureTokenCredentialProvider tokenCredentialProvider)
+    : IRegistryCredentialsProvider
 {
     private readonly ILoggerService _loggerService = loggerService;
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
@@ -27,32 +32,39 @@ public class RegistryCredentialsProvider(ILoggerService loggerService, IHttpClie
     /// <param name="registry">The container registry to get credentials for.</param>
     /// <returns>Registry credentials</returns>
     public async ValueTask<RegistryCredentials?> GetCredentialsAsync(
-        string registry, string? ownedAcr, IRegistryCredentialsHost? credsHost)
+        string registry,
+        string? ownedAcr,
+        ServiceConnectionOptions? serviceConnection,
+        IRegistryCredentialsHost? credsHost)
     {
         // Docker Hub's registry has a separate host name for its API
-        string apiRegistry = registry == DockerHelper.DockerHubRegistry ?
-            DockerHelper.DockerHubApiRegistry :
-            registry;
+        if (registry == DockerHelper.DockerHubRegistry)
+        {
+            registry = DockerHelper.DockerHubApiRegistry;
+        }
 
         if (!string.IsNullOrEmpty(ownedAcr))
         {
             ownedAcr = DockerHelper.FormatAcrName(ownedAcr);
         }
 
-        if (apiRegistry == ownedAcr)
+        if (registry == ownedAcr && serviceConnection != null)
         {
-            return await GetAcrCredentialsWithOAuthAsync(_loggerService, apiRegistry);
+            return await GetAcrCredentialsWithOAuthAsync(_loggerService, registry, serviceConnection);
         }
 
-        return credsHost?.TryGetCredentials(apiRegistry) ?? null;
+        return credsHost?.TryGetCredentials(registry) ?? null;
     }
 
-    private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(ILoggerService logger, string apiRegistry)
+    private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(
+        ILoggerService logger,
+        string apiRegistry,
+        ServiceConnectionOptions serviceConnection)
     {
-        TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential();
-        Guid tenantId = AuthHelper.GetTenantId(logger, tokenCredential);
+        TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
+        var tenantGuid = Guid.Parse(serviceConnection.TenantId);
         string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AzureScopes.DefaultAzureManagementScope]), CancellationToken.None)).Token;
-        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), apiRegistry, tenantId, token);
+        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), apiRegistry, tenantGuid, token);
         return new RegistryCredentials(Guid.Empty.ToString(), refreshToken);
     }
 }

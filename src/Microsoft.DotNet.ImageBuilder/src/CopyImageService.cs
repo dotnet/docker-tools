@@ -10,6 +10,7 @@ using Azure.Core;
 using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerRegistry;
 using Azure.ResourceManager.ContainerRegistry.Models;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -36,10 +37,13 @@ public class CopyImageService : ICopyImageService
     private readonly Lazy<ArmClient> _armClient;
 
     [ImportingConstructor]
-    public CopyImageService(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
+    public CopyImageService(
+        ILoggerService loggerService,
+        IAzureTokenCredentialProvider tokenCredentialProvider,
+        ServiceConnectionOptions serviceConnection)
     {
         _loggerService = loggerService;
-        _armClient = new(() => new ArmClient(tokenCredentialProvider.GetCredential()));
+        _armClient = new Lazy<ArmClient>(() => new ArmClient(tokenCredentialProvider.GetCredential(serviceConnection)));
     }
 
     public static string GetBaseAcrName(string registry) => registry.TrimEndString(DockerHelper.AcrDomain);

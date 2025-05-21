@@ -3,10 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 #nullable enable
+using Microsoft.DotNet.ImageBuilder.Commands;
+
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IManifestServiceFactory
     {
-        IManifestService Create(string? ownedAcr = null, IRegistryCredentialsHost? credsHost = null);
+        IManifestService Create(
+            string? ownedAcr = null,
+            ServiceConnectionOptions? serviceConnectionOptions = null,
+            IRegistryCredentialsHost? credsHost = null);
     }
 }

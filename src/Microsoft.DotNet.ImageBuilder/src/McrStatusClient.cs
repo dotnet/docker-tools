@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel.Composition;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
@@ -13,7 +14,6 @@ using Polly;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IMcrStatusClient))]
     public class McrStatusClient : IMcrStatusClient
     {
         // https://msazure.visualstudio.com/MicrosoftContainerRegistry/_git/docs?path=/status/status_v2.yaml
@@ -23,9 +23,13 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
+        private readonly ServiceConnectionOptions _serviceConnection;
 
-        [ImportingConstructor]
-        public McrStatusClient(IHttpClientProvider httpClientProvider, ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
+        public McrStatusClient(
+            IHttpClientProvider httpClientProvider,
+            ILoggerService loggerService,
+            IAzureTokenCredentialProvider tokenCredentialProvider,
+            ServiceConnectionOptions serviceConnection)
         {
             ArgumentNullException.ThrowIfNull(loggerService);
             ArgumentNullException.ThrowIfNull(httpClientProvider);
@@ -38,6 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");
             _loggerService = loggerService;
             _tokenCredentialProvider = tokenCredentialProvider;
+            _serviceConnection = serviceConnection;
         }
 
         public Task<ImageResult> GetImageResultAsync(string imageDigest)
@@ -72,10 +77,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private Task<string> GetAccessTokenAsync() =>
             _accessToken.GetValueAsync(async () =>
-                (await _tokenCredentialProvider.GetTokenAsync(AzureScopes.McrStatusScope)).Token);
+                (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, AzureScopes.McrStatusScope)).Token);
 
         private Task RefreshAccessTokenAsync() =>
             _accessToken.ResetValueAsync(async () =>
-                (await _tokenCredentialProvider.GetTokenAsync(AzureScopes.McrStatusScope)).Token);
+                (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, AzureScopes.McrStatusScope)).Token);
     }
 }

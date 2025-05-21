@@ -4,6 +4,7 @@
 
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
@@ -13,15 +14,18 @@ internal class ManifestService : IManifestService
     private readonly IRegistryContentClientFactory _registryClientFactory;
     private readonly string? _ownedAcr;
     private readonly IRegistryCredentialsHost? _credsHost;
+    private readonly ServiceConnectionOptions? _serviceConnection;
 
     public ManifestService(
         IRegistryContentClientFactory registryClientFactory,
         string? ownedAcr = null,
+        ServiceConnectionOptions? serviceConnection = null,
         IRegistryCredentialsHost? credsHost = null)
     {
         _registryClientFactory = registryClientFactory;
         _ownedAcr = ownedAcr;
         _credsHost = credsHost;
+        _serviceConnection = serviceConnection;
     }
 
     public Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun)
@@ -34,7 +38,12 @@ internal class ManifestService : IManifestService
         ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
         IRegistryContentClient registryClient = _registryClientFactory.Create(
-            imageName.Registry!, imageName.Repo, _ownedAcr, _credsHost);
+            imageName.Registry!,
+            imageName.Repo,
+            _ownedAcr,
+            _serviceConnection,
+            _credsHost);
+
         return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
     }
 }

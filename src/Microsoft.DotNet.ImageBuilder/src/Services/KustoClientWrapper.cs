@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             string cluster,
             string database,
             string table,
-            ServiceConnectionOptions serviceConnection)
+            IServiceConnection serviceConnection)
         {
             _loggerService.WriteSubheading("INGESTING DATA INTO KUSTO");
 

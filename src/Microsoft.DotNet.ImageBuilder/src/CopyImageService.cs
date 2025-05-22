@@ -40,7 +40,7 @@ public class CopyImageService : ICopyImageService
     public CopyImageService(
         ILoggerService loggerService,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        ServiceConnectionOptions serviceConnection)
+        IServiceConnection serviceConnection)
     {
         _loggerService = loggerService;
         _armClient = new Lazy<ArmClient>(() => new ArmClient(tokenCredentialProvider.GetCredential(serviceConnection)));

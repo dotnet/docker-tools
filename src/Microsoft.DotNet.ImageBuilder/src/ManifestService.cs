@@ -14,12 +14,12 @@ internal class ManifestService : IManifestService
     private readonly IRegistryContentClientFactory _registryClientFactory;
     private readonly string? _ownedAcr;
     private readonly IRegistryCredentialsHost? _credsHost;
-    private readonly ServiceConnectionOptions? _serviceConnection;
+    private readonly IServiceConnection? _serviceConnection;
 
     public ManifestService(
         IRegistryContentClientFactory registryClientFactory,
         string? ownedAcr = null,
-        ServiceConnectionOptions? serviceConnection = null,
+        IServiceConnection? serviceConnection = null,
         IRegistryCredentialsHost? credsHost = null)
     {
         _registryClientFactory = registryClientFactory;

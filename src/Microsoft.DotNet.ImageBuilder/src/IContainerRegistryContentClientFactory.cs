@@ -11,5 +11,5 @@ public interface IContainerRegistryContentClientFactory
     IContainerRegistryContentClient Create(
         string acrName,
         string repositoryName,
-        ServiceConnectionOptions? serviceConnection);
+        IServiceConnection? serviceConnection);
 }

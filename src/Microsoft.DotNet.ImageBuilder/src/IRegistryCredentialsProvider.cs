@@ -12,6 +12,6 @@ public interface IRegistryCredentialsProvider
     ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,
         string? ownedAcr,
-        ServiceConnectionOptions? serviceConnection,
+        IServiceConnection? serviceConnection,
         IRegistryCredentialsHost? credsHost);
 }

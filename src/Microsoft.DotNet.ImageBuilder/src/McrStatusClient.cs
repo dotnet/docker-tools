@@ -23,13 +23,13 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-        private readonly ServiceConnectionOptions _serviceConnection;
+        private readonly IServiceConnection _serviceConnection;
 
         public McrStatusClient(
             IHttpClientProvider httpClientProvider,
             ILoggerService loggerService,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            ServiceConnectionOptions serviceConnection)
+            IServiceConnection serviceConnection)
         {
             ArgumentNullException.ThrowIfNull(loggerService);
             ArgumentNullException.ThrowIfNull(httpClientProvider);

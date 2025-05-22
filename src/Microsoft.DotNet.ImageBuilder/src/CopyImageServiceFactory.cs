@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface ICopyImageServiceFactory
 {
-    ICopyImageService Create(ServiceConnectionOptions serviceConnection);
+    ICopyImageService Create(IServiceConnection serviceConnection);
 }
 
 [Export(typeof(ICopyImageServiceFactory))]
@@ -21,7 +21,7 @@ public class CopyImageServiceFactory(
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly ILoggerService _loggerService = loggerService;
 
-    public ICopyImageService Create(ServiceConnectionOptions serviceConnection)
+    public ICopyImageService Create(IServiceConnection serviceConnection)
     {
         return new CopyImageService(_loggerService, _tokenCredentialProvider, serviceConnection);
     }

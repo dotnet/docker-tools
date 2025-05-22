@@ -10,6 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface IAzureTokenCredentialProvider
 {
     TokenCredential GetCredential(
-        ServiceConnectionOptions? serviceConnection,
+        IServiceConnection? serviceConnection,
         string scope = AzureScopes.DefaultAzureManagementScope);
 }

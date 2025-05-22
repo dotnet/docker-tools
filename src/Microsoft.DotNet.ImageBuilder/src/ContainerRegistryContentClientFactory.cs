@@ -17,7 +17,7 @@ internal class ContainerRegistryContentClientFactory(IAzureTokenCredentialProvid
     public IContainerRegistryContentClient Create(
         string acrName,
         string repositoryName,
-        ServiceConnectionOptions? serviceConnection)
+        IServiceConnection? serviceConnection)
     {
         var tokenCredential = tokenCredentialProvider.GetCredential(serviceConnection);
         return new ContainerRegistryContentClientWrapper(

@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IMcrStatusClientFactory
 {
-    IMcrStatusClient Create(ServiceConnectionOptions serviceConnection);
+    IMcrStatusClient Create(IServiceConnection serviceConnection);
 }
 
 [Export(typeof(IMcrStatusClientFactory))]
@@ -23,7 +23,7 @@ public class McrStatusClientFactory(
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly ILoggerService _loggerService = loggerService;
 
-    public IMcrStatusClient Create(ServiceConnectionOptions serviceConnection)
+    public IMcrStatusClient Create(IServiceConnection serviceConnection)
     {
         return new McrStatusClient(_httpClientProvider, _loggerService, _tokenCredentialProvider, serviceConnection);
     }

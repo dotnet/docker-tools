@@ -17,7 +17,7 @@ internal static class RegistryCredentialsProviderExtensions
         RegistryCredentialsOptions credentialsOptions,
         string registryName,
         string? ownedAcr,
-        ServiceConnectionOptions? serviceConnection = null)
+        IServiceConnection? serviceConnection = null)
     {
         bool loggedIn = await LogInToRegistry(
             credsProvider,
@@ -66,7 +66,7 @@ internal static class RegistryCredentialsProviderExtensions
         RegistryCredentialsOptions credentialsOptions,
         string registryName,
         string? ownedAcr,
-        ServiceConnectionOptions? serviceConnection)
+        IServiceConnection? serviceConnection)
     {
         bool loggedIn = false;
 

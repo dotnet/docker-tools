@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public IManifestService Create(
             string? ownedAcr = null,
-            ServiceConnectionOptions? serviceConnection = null,
+            IServiceConnection? serviceConnection = null,
             IRegistryCredentialsHost? credsHost = null)
         {
             return new ManifestService(_registryClientFactory, ownedAcr, serviceConnection, credsHost);

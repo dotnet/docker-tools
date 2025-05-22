@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         IManifestService Create(
             string? ownedAcr = null,
-            ServiceConnectionOptions? serviceConnectionOptions = null,
+            IServiceConnection? serviceConnectionOptions = null,
             IRegistryCredentialsHost? credsHost = null);
     }
 }

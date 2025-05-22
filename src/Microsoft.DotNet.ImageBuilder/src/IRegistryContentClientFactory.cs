@@ -12,6 +12,6 @@ public interface IRegistryContentClientFactory
         string registry,
         string repo,
         string? ownedAcr = null,
-        ServiceConnectionOptions? serviceConnection = null,
+        IServiceConnection? serviceConnection = null,
         IRegistryCredentialsHost? credsHost = null);
 }

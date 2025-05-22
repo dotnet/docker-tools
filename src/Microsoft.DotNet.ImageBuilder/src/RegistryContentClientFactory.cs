@@ -23,7 +23,7 @@ public class RegistryContentClientFactory(
         string registry,
         string repo,
         string? ownedAcr = null,
-        ServiceConnectionOptions? serviceConnection = null,
+        IServiceConnection? serviceConnection = null,
         IRegistryCredentialsHost? credsHost = null)
     {
         // Docker Hub's registry has a separate host name for its API

@@ -28,7 +28,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
     /// <param name="scope">The scope to request for the token. This might be a URL or a GUID.</param>
     /// <returns>A <see cref="TokenCredential"/> that can be used to authenticate to Azure services.</returns>
     public TokenCredential GetCredential(
-        ServiceConnectionOptions? serviceConnection,
+        IServiceConnection? serviceConnection,
         string scope = AzureScopes.DefaultAzureManagementScope)
     {
         string cacheKey = $"{serviceConnection?.ServiceConnectionId}:{scope}";

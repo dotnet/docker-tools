@@ -34,7 +34,7 @@ public class RegistryCredentialsProvider(
     public async ValueTask<RegistryCredentials?> GetCredentialsAsync(
         string registry,
         string? ownedAcr,
-        ServiceConnectionOptions? serviceConnection,
+        IServiceConnection? serviceConnection,
         IRegistryCredentialsHost? credsHost)
     {
         // Docker Hub's registry has a separate host name for its API
@@ -59,7 +59,7 @@ public class RegistryCredentialsProvider(
     private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(
         ILoggerService logger,
         string apiRegistry,
-        ServiceConnectionOptions serviceConnection)
+        IServiceConnection serviceConnection)
     {
         TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
         var tenantGuid = Guid.Parse(serviceConnection.TenantId);

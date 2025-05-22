@@ -13,7 +13,7 @@ internal static class AzureTokenCredentialProviderExtensions
 {
     public static ValueTask<AccessToken> GetTokenAsync(
         this IAzureTokenCredentialProvider provider,
-        ServiceConnectionOptions serviceConnection,
+        IServiceConnection serviceConnection,
         string scope = AzureScopes.DefaultAzureManagementScope)
     {
         return provider

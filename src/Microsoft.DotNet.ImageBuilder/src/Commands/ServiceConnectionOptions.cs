@@ -10,7 +10,11 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public record ServiceConnectionOptions(string TenantId, string ClientId, string ServiceConnectionId);
+public record ServiceConnectionOptions(
+    string TenantId,
+    string ClientId,
+    string ServiceConnectionId)
+    : IServiceConnection;
 
 public class ServiceConnectionOptionsBuilder
 {

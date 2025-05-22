@@ -7,6 +7,7 @@ using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -15,27 +16,53 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IMarImageIngestionReporter
 {
-   Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime);
+    Task ReportImageStatusesAsync(
+        IServiceConnection? serviceConnection,
+        IEnumerable<DigestInfo> digestInfos,
+        TimeSpan timeout,
+        TimeSpan requeryDelay,
+        DateTime? minimumQueueTime);
 }
 
 [Export(typeof(IMarImageIngestionReporter))]
 public class MarImageIngestionReporter : IMarImageIngestionReporter
 {
     private readonly ILoggerService _loggerService;
-    private readonly IMcrStatusClient _statusClient;
+    private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
     private readonly IEnvironmentService _environmentService;
 
     [ImportingConstructor]
-    public MarImageIngestionReporter(ILoggerService loggerService, IMcrStatusClient statusClient, IEnvironmentService environmentService)
+    public MarImageIngestionReporter(
+        ILoggerService loggerService,
+        IMcrStatusClientFactory mcrStatusClientFactory,
+        IEnvironmentService environmentService)
     {
         _loggerService = loggerService;
-        _statusClient = statusClient;
+        _mcrStatusClientFactory = mcrStatusClientFactory;
         _environmentService = environmentService;
     }
 
-    public Task ReportImageStatusesAsync(IEnumerable<DigestInfo> digestInfos, TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime) =>
-        new ReporterImpl(_loggerService, _statusClient, _environmentService, timeout, requeryDelay, minimumQueueTime)
-            .ReportImageStatusesAsync(digestInfos);
+    public Task ReportImageStatusesAsync(
+        IServiceConnection? serviceConnection,
+        IEnumerable<DigestInfo> digestInfos,
+        TimeSpan timeout,
+        TimeSpan requeryDelay,
+        DateTime? minimumQueueTime)
+    {
+        // Authentication is required to connect to MAR status service
+        ArgumentNullException.ThrowIfNull(serviceConnection, nameof(serviceConnection));
+
+        var mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
+        var reporter = new ReporterImpl(
+            _loggerService,
+            mcrStatusClient,
+            _environmentService,
+            timeout,
+            requeryDelay,
+            minimumQueueTime);
+
+        return reporter.ReportImageStatusesAsync(digestInfos);
+    }
 
     private class ReporterImpl
     {
@@ -161,7 +188,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             {
                 digestInfo.RemainingTags.Remove(tag);
             }
-            
+
             if (digestInfo.RemainingTags.Count == 0)
             {
                 digestInfo.IsComplete = true;

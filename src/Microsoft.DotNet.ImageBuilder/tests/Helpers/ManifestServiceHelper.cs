@@ -32,7 +32,10 @@ internal static class ManifestServiceHelper
     {
         Mock<IManifestServiceFactory> manifestServiceFactoryMock = new();
         manifestServiceFactoryMock
-            .Setup(o => o.Create(It.IsAny<string?>(), It.IsAny<IRegistryCredentialsHost>()))
+            .Setup(o => o.Create(
+                It.IsAny<string?>(),
+                It.IsAny<IServiceConnection>(),
+                It.IsAny<IRegistryCredentialsHost>()))
             .Returns(manifestService);
 
         return manifestServiceFactoryMock;

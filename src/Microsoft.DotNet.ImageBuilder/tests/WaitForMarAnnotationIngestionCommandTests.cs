@@ -43,7 +43,11 @@ public class WaitForMarAnnotationIngestionCommandTests
 
         ingestionReporter.Verify(
             r => r.ReportImageStatusesAsync(
-                It.Is<IEnumerable<DigestInfo>>(actualDigests => actualDigests.SequenceEqual(expectedDigests, DigestInfoEqualityComparer.Instance)),
-                It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<DateTime?>()));
+                It.IsAny<IServiceConnection>(),
+                It.Is<IEnumerable<DigestInfo>>(actualDigests =>
+                    actualDigests.SequenceEqual(expectedDigests, DigestInfoEqualityComparer.Instance)),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<TimeSpan>(),
+                It.IsAny<DateTime?>()));
     }
 }

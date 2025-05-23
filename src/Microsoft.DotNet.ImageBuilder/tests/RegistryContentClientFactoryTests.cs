@@ -22,17 +22,18 @@ public class RegistryContentClientFactoryTests
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>();
+        IServiceConnection serviceConnection = Mock.Of<IServiceConnection>();
 
         IContainerRegistryContentClient contentClient = Mock.Of<IContainerRegistryContentClient>();
 
         Mock<IContainerRegistryContentClientFactory> acrContentClientFactoryMock = new();
         acrContentClientFactoryMock
-            .Setup(o => o.Create(AcrName, RepoName, It.IsAny<TokenCredential>()))
+            .Setup(o => o.Create(AcrName, RepoName, serviceConnection))
             .Returns(contentClient);
 
 
         RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object, Mock.Of<IAzureTokenCredentialProvider>());
-        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, credsHost);
+        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, serviceConnection, credsHost);
 
         Assert.Same(contentClient, client);
     }

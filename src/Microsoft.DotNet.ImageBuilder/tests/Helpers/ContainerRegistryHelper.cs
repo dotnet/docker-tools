@@ -44,7 +44,7 @@ internal static class ContainerRegistryHelper
                 acrClientContentMock.Setup(o => o.GetManifestAsync(kvp.Key)).ReturnsAsync(kvp.Value);
             }
         }
-        
+
         return acrClientContentMock;
     }
 
@@ -55,7 +55,7 @@ internal static class ContainerRegistryHelper
         foreach (Mock<IContainerRegistryContentClient> clientMock in acrContentClients)
         {
             acrContentClientFactoryMock
-                .Setup(o => o.Create(acrName, clientMock.Object.RepositoryName, It.IsAny<TokenCredential>()))
+                .Setup(o => o.Create(acrName, clientMock.Object.RepositoryName, It.IsAny<IServiceConnection>()))
                 .Returns(clientMock.Object);
         }
 

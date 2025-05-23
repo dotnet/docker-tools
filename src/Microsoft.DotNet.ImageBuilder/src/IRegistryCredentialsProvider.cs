@@ -8,5 +8,9 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 public interface IRegistryCredentialsProvider
 {
-    ValueTask<RegistryCredentials?> GetCredentialsAsync(string registry, string? ownedAcr, IRegistryCredentialsHost? credsHost);
+    ValueTask<RegistryCredentials?> GetCredentialsAsync(
+        string registry,
+        string? ownedAcr,
+        IServiceConnection? serviceConnection,
+        IRegistryCredentialsHost? credsHost);
 }

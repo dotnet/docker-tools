@@ -12,6 +12,7 @@ public class GenerateEolAnnotationDataOptions : Options
 {
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
     public RegistryOptions RegistryOptions { get; set; } = new();
+    public ServiceConnectionOptions? AcrServiceConnection { get; set; } = null;
 
     public string EolDigestsListPath { get; set; } = string.Empty;
     public string OldImageInfoPath { get; set; } = string.Empty;
@@ -22,11 +23,15 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
 {
     private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
     private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
+    private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
     public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
             .._registryCredentialsOptionsBuilder.GetCliOptions(),
+            .._serviceConnectionOptionsBuilder.GetCliOptions(
+                alias: "acr-service-connection",
+                propertyName: nameof(GenerateEolAnnotationDataOptions.AcrServiceConnection)),
         ];
 
     public override IEnumerable<Argument> GetCliArguments() =>

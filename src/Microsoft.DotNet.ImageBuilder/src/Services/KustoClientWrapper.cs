@@ -29,7 +29,12 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             _tokenCredentialProvider = tokenCredentialProvider;
         }
 
-        public async Task IngestFromCsvAsync(string csv, string cluster, string database, string table)
+        public async Task IngestFromCsvAsync(
+            string csv,
+            string cluster,
+            string database,
+            string table,
+            IServiceConnection serviceConnection)
         {
             _loggerService.WriteSubheading("INGESTING DATA INTO KUSTO");
 
@@ -37,7 +42,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             KustoConnectionStringBuilder connectionBuilder =
                 new KustoConnectionStringBuilder(clusterResource)
                     .WithAadAzureTokenCredentialsAuthentication(
-                        _tokenCredentialProvider.GetCredential(clusterResource + AzureScopes.ScopeSuffix));
+                        _tokenCredentialProvider.GetCredential(
+                            serviceConnection,
+                            clusterResource + AzureScopes.ScopeSuffix));
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {

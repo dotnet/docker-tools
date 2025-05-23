@@ -20,8 +20,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         [ImportingConstructor]
         public CopyBaseImagesCommand(
-            ICopyImageService copyImageService, ILoggerService loggerService, IGitService gitService)
-            : base(copyImageService, loggerService)
+            ICopyImageServiceFactory copyImageServiceFactory,
+            ILoggerService loggerService,
+            IGitService gitService)
+            : base(copyImageServiceFactory, loggerService)
         {
             _gitService = gitService;
         }
@@ -101,4 +103,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable disable

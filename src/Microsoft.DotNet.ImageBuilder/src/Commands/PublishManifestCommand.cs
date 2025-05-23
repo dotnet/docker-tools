@@ -44,7 +44,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
-                manifestServiceFactory.Create(ownedAcr: Options.RegistryOverride, Options.CredentialsOptions));
+                manifestServiceFactory.Create(
+                    ownedAcr: Options.RegistryOverride,
+                    Options.AcrServiceConnection,
+                    Options.CredentialsOptions));
         }
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
@@ -64,7 +67,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // need to query the registry at the end of the command.
             if (!Options.IsDryRun)
             {
-                _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+                _tokenCredentialProvider.GetCredential(
+                    Options.AcrServiceConnection,
+                    AzureScopes.ContainerRegistryScope);
             }
 
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);

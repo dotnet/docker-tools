@@ -150,8 +150,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             imageIngestionReporterMock
                 .Verify(o => o.ReportImageStatusesAsync(
-                    It.Is<IEnumerable<DigestInfo>>(infos => infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
-                    It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<DateTime>()));
+                    It.IsAny<IServiceConnection>(),
+                    It.Is<IEnumerable<DigestInfo>>(infos =>
+                        infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<DateTime>()));
         }
 
         [Theory]
@@ -279,8 +283,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             imageIngestionReporterMock
                 .Verify(o => o.ReportImageStatusesAsync(
-                    It.Is<IEnumerable<DigestInfo>>(infos => infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
-                    It.IsAny<TimeSpan>(), It.IsAny<TimeSpan>(), It.IsAny<DateTime>()));
+                    It.IsAny<IServiceConnection>(),
+                    It.Is<IEnumerable<DigestInfo>>(infos =>
+                        infos.SequenceEqual(expectedDigestInfos, DigestInfoEqualityComparer.Instance)),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<TimeSpan>(),
+                    It.IsAny<DateTime>()));
         }
     }
 }

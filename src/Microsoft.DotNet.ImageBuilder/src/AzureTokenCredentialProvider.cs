@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.Threading;
@@ -15,18 +16,54 @@ namespace Microsoft.DotNet.ImageBuilder;
 internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 {
     private readonly object _cacheLock = new();
-    private readonly Dictionary<string, TokenCredential?> _credentialsByScope = [];
+    private readonly Dictionary<string, TokenCredential?> _credentialsCache = [];
+    private readonly string _systemAccessToken = Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN") ?? "";
 
-    public TokenCredential GetCredential(string scope = AzureScopes.DefaultAzureManagementScope) =>
-        LockHelper.DoubleCheckedLockLookup(
-            _cacheLock,
-            _credentialsByScope,
-            scope,
-            () =>
+    /// <summary>
+    /// Get a TokenCredential for the specified service connection. Only works in the context of an Azure Pipeline.
+    /// Ensure that the SYSTEM_ACCESSTOKEN environment variable is set in the pipeline.
+    /// </summary>
+    /// <param name="serviceConnection">Details about the Azure DevOps service connection to use.</param>
+    /// <param name="scope">The scope to request for the token. This might be a URL or a GUID.</param>
+    /// <returns>A <see cref="TokenCredential"/> that can be used to authenticate to Azure services.</returns>
+    public TokenCredential GetCredential(
+        IServiceConnection? serviceConnection,
+        string scope = AzureScopes.DefaultAzureManagementScope)
+    {
+        string cacheKey = $"{serviceConnection?.ServiceConnectionId}:{scope}";
+
+        return LockHelper.DoubleCheckedLockLookup(
+            lockObj: _cacheLock,
+            dictionary: _credentialsCache,
+            key: cacheKey,
+            getValue: () =>
             {
-                AccessToken token = new DefaultAzureCredential().GetToken(new TokenRequestContext([scope]), CancellationToken.None);
-                return new StaticTokenCredential(token);
+                TokenCredential? credential = null;
+
+                if (serviceConnection is not null)
+                {
+                    if (string.IsNullOrWhiteSpace(_systemAccessToken))
+                    {
+                        throw new InvalidOperationException(
+                            $"""
+                            Attempted to get Service Connection credential but SYSTEM_ACCESSTOKEN environment variable was not set.
+                            Service connection details: {serviceConnection}
+                            """);
+                    }
+
+                    credential = new AzurePipelinesCredential(
+                        serviceConnection.TenantId,
+                        serviceConnection.ClientId,
+                        serviceConnection.ServiceConnectionId,
+                        _systemAccessToken);
+                }
+
+                // Fall back to DefaultAzureCredential if no service connection is provided.
+                credential ??= new DefaultAzureCredential();
+                var accessToken = credential.GetToken(new TokenRequestContext([scope]), CancellationToken.None);
+                return new StaticTokenCredential(accessToken);
             });
+    }
 
     private class StaticTokenCredential(AccessToken accessToken) : TokenCredential
     {

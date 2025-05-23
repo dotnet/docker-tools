@@ -17,6 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public DateTime MinimumQueueTime { get; set; }
 
         public MarIngestionOptions IngestionOptions { get; set; } = new();
+
+        public ServiceConnectionOptions? MarServiceConnection { get; set; } = null;
     }
 
     public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder
@@ -25,6 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
         private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
+        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         public override IEnumerable<Argument> GetCliArguments() =>
             [
@@ -38,6 +41,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             [
                 ..base.GetCliOptions(),
                 .._ingestionOptionsBuilder.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
+                .._serviceConnectionOptionsBuilder.GetCliOptions(
+                    "mar-service-connection",
+                    nameof(WaitForMcrImageIngestionOptions.MarServiceConnection)),
                 CreateOption("min-queue-time", nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime),
                     "Minimum queue time an image must have to be awaited",
                     val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue)

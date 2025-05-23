@@ -129,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!Options.IsDryRun)
             {
-                await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table);
+                await _kustoClient.IngestFromCsvAsync(info, Options.Cluster, Options.Database, table, Options.KustoServiceConnection);
             }
             else
             {
@@ -138,4 +138,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable disable

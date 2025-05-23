@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
@@ -14,16 +13,18 @@ internal static class RegistryCredentialsProviderExtensions
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
         Func<Task> action,
-        RegistryCredentialsOptions credentialsOptions,
+        IRegistryCredentialsHost credentialsOptions,
         string registryName,
-        string? ownedAcr)
+        string? ownedAcr,
+        IServiceConnection? serviceConnection = null)
     {
         bool loggedIn = await LogInToRegistry(
             credsProvider,
             isDryRun,
             credentialsOptions,
             registryName,
-            ownedAcr);
+            ownedAcr,
+            serviceConnection);
 
         try
         {
@@ -42,7 +43,7 @@ internal static class RegistryCredentialsProviderExtensions
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
         Action action,
-        RegistryCredentialsOptions credentialsOptions,
+        IRegistryCredentialsHost credentialsOptions,
         string registryName,
         string? ownedAcr)
     {
@@ -61,16 +62,21 @@ internal static class RegistryCredentialsProviderExtensions
     private static async Task<bool> LogInToRegistry(
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
-        RegistryCredentialsOptions credentialsOptions,
+        IRegistryCredentialsHost credentialsOptions,
         string registryName,
-        string? ownedAcr)
+        string? ownedAcr,
+        IServiceConnection? serviceConnection)
     {
         bool loggedIn = false;
 
         RegistryCredentials? credentials = null;
         if (!isDryRun)
         {
-            credentials = await credsProvider.GetCredentialsAsync(registryName, ownedAcr, credentialsOptions);
+            credentials = await credsProvider.GetCredentialsAsync(
+                registryName,
+                ownedAcr,
+                serviceConnection,
+                credentialsOptions);
         }
 
         if (!string.IsNullOrEmpty(registryName) && credentials is not null)

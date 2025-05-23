@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class CopyImagesOptions : ManifestOptions, IFilterableOptions
 {
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
-    public ServiceConnectionOptions? ServiceConnection { get; set; } = null;
+    public ServiceConnectionOptions? AcrServiceConnection { get; set; } = null;
 
     public string ResourceGroup { get; set; } = string.Empty;
     public string Subscription { get; set; } = string.Empty;
@@ -27,7 +27,7 @@ public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
             ..base.GetCliOptions(),
             .._serviceConnectionOptionsBuilder.GetCliOptions(
                 alias: "acr-service-connection",
-                propertyName: nameof(CopyImagesOptions.ServiceConnection)),
+                propertyName: nameof(CopyImagesOptions.AcrServiceConnection)),
             .._manifestFilterOptionsBuilder.GetCliOptions()
         ];
 

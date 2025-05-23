@@ -22,10 +22,7 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCom
     {
         LoggerService = loggerService;
         _copyImageService = new Lazy<ICopyImageService>(() =>
-            copyImageServiceFactory.Create(new ServiceConnectionOptions(
-                Options.Subscription,
-                Options.ResourceGroup,
-                string.Empty)));
+            copyImageServiceFactory.Create(Options.AcrServiceConnection));
     }
 
     public ILoggerService LoggerService { get; }

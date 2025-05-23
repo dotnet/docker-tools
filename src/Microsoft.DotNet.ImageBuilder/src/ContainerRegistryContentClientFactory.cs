@@ -3,8 +3,6 @@
 
 using System.ComponentModel.Composition;
 using Azure.Containers.ContainerRegistry;
-using Azure.Core;
-using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 

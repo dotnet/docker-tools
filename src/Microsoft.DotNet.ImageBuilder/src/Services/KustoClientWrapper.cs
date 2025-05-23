@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Ingest;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;

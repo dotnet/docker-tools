@@ -4,7 +4,6 @@
 #nullable enable
 
 using System.ComponentModel.Composition;
-using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 

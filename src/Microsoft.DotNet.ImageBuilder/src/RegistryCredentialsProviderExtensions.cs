@@ -3,7 +3,6 @@
 
 using System;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
@@ -14,7 +13,7 @@ internal static class RegistryCredentialsProviderExtensions
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
         Func<Task> action,
-        RegistryCredentialsOptions credentialsOptions,
+        IRegistryCredentialsHost credentialsOptions,
         string registryName,
         string? ownedAcr,
         IServiceConnection? serviceConnection = null)
@@ -44,7 +43,7 @@ internal static class RegistryCredentialsProviderExtensions
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
         Action action,
-        RegistryCredentialsOptions credentialsOptions,
+        IRegistryCredentialsHost credentialsOptions,
         string registryName,
         string? ownedAcr)
     {
@@ -63,7 +62,7 @@ internal static class RegistryCredentialsProviderExtensions
     private static async Task<bool> LogInToRegistry(
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
-        RegistryCredentialsOptions credentialsOptions,
+        IRegistryCredentialsHost credentialsOptions,
         string registryName,
         string? ownedAcr,
         IServiceConnection? serviceConnection)

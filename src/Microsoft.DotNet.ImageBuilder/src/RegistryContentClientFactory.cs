@@ -10,13 +10,12 @@ namespace Microsoft.DotNet.ImageBuilder;
 [method: ImportingConstructor]
 public class RegistryContentClientFactory(
     IHttpClientProvider httpClientProvider,
-    IContainerRegistryContentClientFactory containerRegistryContentClientFactory,
-    IAzureTokenCredentialProvider tokenCredentialProvider)
+    IContainerRegistryContentClientFactory containerRegistryContentClientFactory)
     : IRegistryContentClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
-    private readonly IContainerRegistryContentClientFactory _containerRegistryContentClientFactory = containerRegistryContentClientFactory;
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
+    private readonly IContainerRegistryContentClientFactory _containerRegistryContentClientFactory =
+        containerRegistryContentClientFactory;
 
     public IRegistryContentClient Create(
         string registry,

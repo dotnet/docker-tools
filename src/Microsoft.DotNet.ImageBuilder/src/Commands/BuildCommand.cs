@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
-        private Lazy<ICopyImageService> _copyImageService;
+        private readonly Lazy<ICopyImageService> _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;

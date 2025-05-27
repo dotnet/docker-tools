@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
-        public ServiceConnectionOptions? AcrServiceConnection { get; set; } = null;
+        public ServiceConnectionOptions? AcrServiceConnection { get; set; }
 
         public string ImageInfoPath { get; set; } = string.Empty;
 

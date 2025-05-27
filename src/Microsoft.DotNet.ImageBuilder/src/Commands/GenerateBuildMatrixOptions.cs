@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? SourceRepoUrl { get; set; }
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
         public bool TrimCachedImages { get; set; }
-        public ServiceConnectionOptions? ServiceConnection { get; set; } = null;
+        public ServiceConnectionOptions? ServiceConnection { get; set; }
     }
 
     public class GenerateBuildMatrixOptionsBuilder : ManifestOptionsBuilder

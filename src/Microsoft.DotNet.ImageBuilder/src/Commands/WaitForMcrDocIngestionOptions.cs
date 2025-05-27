@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public MarIngestionOptions IngestionOptions { get; set; } = new();
 
-        public ServiceConnectionOptions? MarServiceConnection { get; set; } = null;
+        public ServiceConnectionOptions? MarServiceConnection { get; set; }
     }
 
     public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder

@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public ManifestFilterOptions FilterOptions { get; set; } = new();
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-        public ServiceConnectionOptions? AcrServiceConnection { get; set; } = null;
+        public ServiceConnectionOptions? AcrServiceConnection { get; set; }
 
         public bool IsPushEnabled { get; set; }
         public bool IsRetryEnabled { get; set; }

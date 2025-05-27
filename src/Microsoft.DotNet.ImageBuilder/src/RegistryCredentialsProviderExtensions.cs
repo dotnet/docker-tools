@@ -45,7 +45,8 @@ internal static class RegistryCredentialsProviderExtensions
         Action action,
         IRegistryCredentialsHost credentialsOptions,
         string registryName,
-        string? ownedAcr)
+        string? ownedAcr,
+        IServiceConnection? serviceConnection = null)
     {
         await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
@@ -55,7 +56,8 @@ internal static class RegistryCredentialsProviderExtensions
             },
             credentialsOptions,
             registryName,
-            ownedAcr
+            ownedAcr,
+            serviceConnection
         );
     }
 

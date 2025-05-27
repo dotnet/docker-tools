@@ -124,7 +124,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
                 registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
+                ownedAcr: Options.RegistryOverride,
+                serviceConnection: Options.AcrServiceConnection);
         }
 
         private async Task ExecuteWithDockerCredentialsAsync(Action action)
@@ -134,7 +135,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
                 registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
+                ownedAcr: Options.RegistryOverride,
+                serviceConnection: Options.AcrServiceConnection);
         }
 
         private void WriteBuiltImagesToOutputVar()

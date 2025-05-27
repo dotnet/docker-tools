@@ -7,6 +7,7 @@ parameters:
   customGenerateMatrixInitSteps: []
   customBuildInitSteps: []
   customTestInitSteps: []
+  sourceBuildPipelineRunId: ""
 
   linuxAmdBuildJobTimeout: 60
   linuxArmBuildJobTimeout: 60
@@ -266,6 +267,7 @@ stages:
         internalProjectName: ${{ parameters.internalProjectName }}
         publicProjectName: ${{ parameters.publicProjectName }}
         customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         commonInitStepsForMatrixAndBuild:
         - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
           parameters:

@@ -1,7 +1,9 @@
 parameters:
-- sourceBuildId: ""
+- name: sourceBuildId
+  type: string
+  default: ''
 
 variables:
 - template: /eng/common/templates/variables/dotnet/common.yml@self
   parameters:
-  - sourceBuildId: ${{ parameters.sourceBuildId }}
+    sourceBuildId: ${{ parameters.sourceBuildId }}

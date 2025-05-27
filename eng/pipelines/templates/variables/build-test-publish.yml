@@ -1,5 +1,7 @@
 parameters:
-- sourceBuildId: ""
+- name: sourceBuildId
+  type: string
+  default: ''
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self

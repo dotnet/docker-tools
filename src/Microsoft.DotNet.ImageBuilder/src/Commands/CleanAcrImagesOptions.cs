@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -85,4 +84,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         Delete
     }
 }
-#nullable disable

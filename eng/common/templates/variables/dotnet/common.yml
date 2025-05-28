@@ -1,15 +1,15 @@
 parameters:
-# sourceBuildId should be overridden when skipping a build to run tests or
-# publish images that were produced in a different pipeline run.
+# sourceBuildPipelineRunId should be overridden when skipping a build to run
+# tests or publish images that were produced in a different pipeline run.
 # Defaults to $(Build.BuildId) which refers to the current pipeline run.
-- name: sourceBuildId
+- name: sourceBuildPipelineRunId
   type: string
   default: ""
 
 variables:
 - template: /eng/common/templates/variables/common.yml@self
   parameters:
-    sourceBuildId: ${{ parameters.sourceBuildId }}
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 
 - name: publicProjectName
   value: public

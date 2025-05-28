@@ -1,8 +1,8 @@
 parameters:
-# sourceBuildId should be overridden when skipping a build to run tests or
-# publish images that were produced in a different pipeline run.
+# sourceBuildPipelineRunId should be overridden when skipping a build to run
+# tests or publish images that were produced in a different pipeline run.
 # Defaults to $(Build.BuildId) which refers to the current pipeline run.
-- name: sourceBuildId
+- name: sourceBuildPipelineRunId
   type: string
   default: ""
 
@@ -12,9 +12,9 @@ variables:
 
 # stagingRepoPrefix defines where images will be pushed to in the staging repo,
 # which is defined in the $(acr-staging.server) variable.
-- ${{ if ne(parameters.sourceBuildId, '') }}:
+- ${{ if ne(parameters.sourceBuildPipelineRunId, '') }}:
   - name: stagingRepoPrefix
-    value: build-staging/${{ parameters.sourceBuildId }}/
+    value: build-staging/${{ parameters.sourceBuildPipelineRunId }}/
 - ${{ else }}:
   - name: stagingRepoPrefix
     value: build-staging/$(Build.BuildId)/

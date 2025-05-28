@@ -1,9 +1,9 @@
 parameters:
-- name: sourceBuildId
+- name: sourceBuildPipelineRunId
   type: string
   default: ''
 
 variables:
 - template: /eng/common/templates/variables/dotnet/common.yml@self
   parameters:
-    sourceBuildId: ${{ parameters.sourceBuildId }}
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

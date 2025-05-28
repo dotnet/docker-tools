@@ -9,7 +9,7 @@ trigger:
 pr: none
 
 parameters:
-- name: sourceBuildId
+- name: sourceBuildPipelineRunId
   displayName: >
     Source build pipeline run ID. This can be overridden in order to publish or
     run tests for images that were built in a different pipeline. The default
@@ -20,7 +20,7 @@ parameters:
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
-    sourceBuildId: ${{ parameters.sourceBuildId }}
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - name: publishEolAnnotations
   value: true
 
@@ -33,4 +33,4 @@ extends:
         noCache: true
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
-        sourceBuildPipelineRunId: ${{ parameters.sourceBuildId }}
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

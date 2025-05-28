@@ -1,12 +1,12 @@
 parameters:
-- name: sourceBuildId
+- name: sourceBuildPipelineRunId
   type: string
   default: ''
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
   parameters:
-    sourceBuildId: ${{ parameters.sourceBuildId }}
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - template: /eng/common/templates/variables/dotnet/build-test-publish.yml@self
 - name: publicSourceBranch
   value: main

@@ -15,15 +15,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
-        private readonly IMcrStatusClient _mcrStatusClient;
         private readonly IEnvironmentService _environmentService;
+        private readonly Lazy<IMcrStatusClient> _mcrStatusClient;
 
         [ImportingConstructor]
         public WaitForMcrDocIngestionCommand(
-            ILoggerService loggerService, IMcrStatusClient mcrStatusClient, IEnvironmentService environmentService)
+            ILoggerService loggerService,
+            IMcrStatusClientFactory mcrStatusClientFactory,
+            IEnvironmentService environmentService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-            _mcrStatusClient = mcrStatusClient ?? throw new ArgumentNullException(nameof(mcrStatusClient));
+            _mcrStatusClient = new Lazy<IMcrStatusClient>(() => mcrStatusClientFactory.Create(Options.MarServiceConnection));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
 
@@ -35,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                CommitResult result = await WaitForIngestionAsync(_mcrStatusClient);
+                CommitResult result = await WaitForIngestionAsync(_mcrStatusClient.Value);
 
                 LogSuccessfulResults(result);
             }

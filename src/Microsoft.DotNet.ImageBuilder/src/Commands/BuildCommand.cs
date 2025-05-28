@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
-        private readonly ICopyImageService _copyImageService;
+        private readonly Lazy<ICopyImageService> _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ILoggerService loggerService,
             IGitService gitService,
             IProcessService processService,
-            ICopyImageService copyImageService,
+            ICopyImageServiceFactory copyImageServiceFactory,
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
@@ -56,19 +56,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
-            _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
 
-            // Lazily create the Manifest Service so it can have access to options (not available in this constructor)
+            // Lazily create services which need access to options
+            ArgumentNullException.ThrowIfNull(copyImageServiceFactory);
+            _copyImageService = new Lazy<ICopyImageService>(() =>
+                copyImageServiceFactory.Create(Options.AcrServiceConnection));
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
-                manifestServiceFactory.Create(ownedAcr: Options.RegistryOverride, Options.CredentialsOptions));
+                manifestServiceFactory.Create(
+                    ownedAcr: Options.RegistryOverride,
+                    Options.AcrServiceConnection,
+                    Options.CredentialsOptions));
             _imageDigestCache = new ImageDigestCache(_manifestService);
 
             _imageNameResolver = new Lazy<ImageNameResolverForBuild>(() =>
-                new ImageNameResolverForBuild(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
+                new ImageNameResolverForBuild(
+                    Options.BaseImageOverrideOptions,
+                    Manifest,
+                    Options.RepoPrefix,
+                    Options.SourceRepoPrefix));
         }
 
         protected override string Description => "Builds Dockerfiles";
@@ -86,7 +95,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // need to query the registry at the end of the command.
             if (Options.IsPushEnabled)
             {
-                _tokenCredentialProvider.GetCredential(AzureScopes.ContainerRegistryScope);
+                _tokenCredentialProvider.GetCredential(
+                    Options.AcrServiceConnection,
+                    AzureScopes.ContainerRegistryScope);
             }
 
             await ExecuteWithDockerCredentialsAsync(PullBaseImagesAsync);
@@ -113,7 +124,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
                 registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
+                ownedAcr: Options.RegistryOverride,
+                serviceConnection: Options.AcrServiceConnection);
         }
 
         private async Task ExecuteWithDockerCredentialsAsync(Action action)
@@ -123,7 +135,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
                 registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride);
+                ownedAcr: Options.RegistryOverride,
+                serviceConnection: Options.AcrServiceConnection);
         }
 
         private void WriteBuiltImagesToOutputVar()
@@ -582,7 +595,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
                                 .ToArray();
             string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
-            await _copyImageService.ImportImageAsync(
+            await _copyImageService.Value.ImportImageAsync(
                 Options.Subscription,
                 Options.ResourceGroup,
                 destTags,
@@ -744,4 +757,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable restore

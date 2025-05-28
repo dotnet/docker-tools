@@ -14,6 +14,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string CommitDigest { get; set; } = string.Empty;
 
         public MarIngestionOptions IngestionOptions { get; set; } = new();
+
+        public ServiceConnectionOptions? MarServiceConnection { get; set; }
     }
 
     public class WaitForMcrDocIngestionOptionsBuilder : CliOptionsBuilder
@@ -22,6 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
 
         private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
+        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         public override IEnumerable<Argument> GetCliArguments() =>
             [
@@ -34,8 +37,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override IEnumerable<Option> GetCliOptions() =>
             [
                 ..base.GetCliOptions(),
+                .._serviceConnectionOptionsBuilder.GetCliOptions(
+                    "mar-service-connection",
+                    nameof(WaitForMcrDocIngestionOptions.MarServiceConnection)),
                 .._ingestionOptionsBuilder.GetCliOptions(s_defaultTimeout, s_defaultRequeryDelay)
             ];
     }
 }
-#nullable disable

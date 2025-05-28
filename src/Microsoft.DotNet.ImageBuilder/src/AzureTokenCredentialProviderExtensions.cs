@@ -10,6 +10,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 #nullable enable
 internal static class AzureTokenCredentialProviderExtensions
 {
-    public static ValueTask<AccessToken> GetTokenAsync(this IAzureTokenCredentialProvider provider, string scope = AzureScopes.DefaultAzureManagementScope) =>
-        provider.GetCredential(scope).GetTokenAsync(new TokenRequestContext([scope]), CancellationToken.None);
+    public static ValueTask<AccessToken> GetTokenAsync(
+        this IAzureTokenCredentialProvider provider,
+        IServiceConnection serviceConnection,
+        string scope = AzureScopes.DefaultAzureManagementScope)
+    {
+        return provider
+            .GetCredential(serviceConnection, scope)
+            .GetTokenAsync(new TokenRequestContext([scope]), CancellationToken.None);
+    }
 }

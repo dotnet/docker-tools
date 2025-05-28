@@ -22,17 +22,20 @@ public class RegistryContentClientFactoryTests
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>();
+        IServiceConnection serviceConnection = Mock.Of<IServiceConnection>();
 
         IContainerRegistryContentClient contentClient = Mock.Of<IContainerRegistryContentClient>();
 
         Mock<IContainerRegistryContentClientFactory> acrContentClientFactoryMock = new();
         acrContentClientFactoryMock
-            .Setup(o => o.Create(AcrName, RepoName, It.IsAny<TokenCredential>()))
+            .Setup(o => o.Create(AcrName, RepoName, serviceConnection))
             .Returns(contentClient);
 
 
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), acrContentClientFactoryMock.Object, Mock.Of<IAzureTokenCredentialProvider>());
-        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, credsHost);
+        RegistryContentClientFactory clientFactory = new(
+            Mock.Of<IHttpClientProvider>(),
+            acrContentClientFactoryMock.Object);
+        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, serviceConnection, credsHost);
 
         Assert.Same(contentClient, client);
     }
@@ -44,7 +47,9 @@ public class RegistryContentClientFactoryTests
     public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
     {
         ManifestOptions options = Mock.Of<ManifestOptions>(options => options.RegistryOverride == "my-acr");
-        RegistryContentClientFactory clientFactory = new(Mock.Of<IHttpClientProvider>(), Mock.Of<IContainerRegistryContentClientFactory>(), Mock.Of<IAzureTokenCredentialProvider>());
+        RegistryContentClientFactory clientFactory = new(
+            Mock.Of<IHttpClientProvider>(),
+            Mock.Of<IContainerRegistryContentClientFactory>());
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
         IRegistryContentClient client = clientFactory.Create(registry, "repo-name");
 

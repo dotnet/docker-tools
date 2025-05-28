@@ -9,6 +9,7 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.MarStatusHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -32,7 +33,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string platformDigest1 = "repo@sha256:platformDigest1";
             const string platformDigest2 = "repo@sha256:platformDigest2";
 
-            Mock<IMcrStatusClient> statusClientMock = new();
+            var statusClientMock = new Mock<IMcrStatusClient>();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             ImageStatus previousSharedTag1ImageStatus = new ImageStatus
             {
@@ -185,7 +187,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         return enumerator.Current;
                     }
 
-                    
+
 
                     return null;
                 });
@@ -194,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -204,7 +206,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new DigestInfo(DockerHelper.GetDigestSha(platformDigest2), repoPrefix + repo2, [platformTag3])
                 ];
 
-            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+            await reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1)), Times.Exactly(4));
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(2));
@@ -220,6 +227,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "repo1";
 
             Mock<IMcrStatusClient> statusClientMock = new();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             ImageStatus sharedTag2ImageStatus = new()
             {
@@ -279,7 +287,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -287,7 +295,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new(DockerHelper.GetDigestSha(digest), repo1, []),
                 ];
 
-            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+            await reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest)), Times.Exactly(3));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
@@ -302,6 +315,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string onboardingRequestId = "onboardingRequestId";
 
             Mock<IMcrStatusClient> statusClientMock = new();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             ImageStatus platformTag2ImageStatus = new()
             {
@@ -365,7 +379,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -373,7 +387,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new(DockerHelper.GetDigestSha(digest), repo1, []),
                 ];
 
-            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+            await reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(digest)), Times.Exactly(2));
             statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(digest), onboardingRequestId), Times.Once);
@@ -395,6 +414,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string onboardingRequestId2 = "onboardingRequestId2";
 
             Mock<IMcrStatusClient> statusClientMock = new();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             ImageStatus sharedTag1ImageStatus = new ImageStatus
             {
@@ -521,7 +541,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -530,7 +550,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new DigestInfo(DockerHelper.GetDigestSha(platformDigest1), repo1, [platformTag1, platformTag2]),
                 ];
 
-            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+            await reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(manifestDigest1)), Times.Exactly(3));
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(2));
@@ -553,6 +578,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string platformDigest1 = "repo@sha256:platformDigest1";
 
             Mock<IMcrStatusClient> statusClientMock = new();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             ImageStatus platformTag1aImageStatus = new ImageStatus
             {
@@ -615,7 +641,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -623,7 +649,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new DigestInfo(DockerHelper.GetDigestSha(platformDigest1), repo1, [platformTag1]),
                 ];
 
-            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+            await reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(2));
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
@@ -644,6 +675,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string tag1bOnboardingRequestId = "onboard request2";
 
             Mock<IMcrStatusClient> statusClientMock = new();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             ImageStatus platformTag1aImageStatus = new ImageStatus
             {
@@ -741,7 +773,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -749,7 +781,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new DigestInfo(DockerHelper.GetDigestSha(platformDigest1), repo1, [platformTag1]),
                 ];
 
-            await reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromMinutes(1), TimeSpan.FromMicroseconds(1), baselineTime);
+            await reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromMinutes(1),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime);
 
             statusClientMock.Verify(o => o.GetImageResultAsync(DockerHelper.GetDigestSha(platformDigest1)), Times.Exactly(3));
             statusClientMock.Verify(o => o.GetImageResultDetailedAsync(DockerHelper.GetDigestSha(platformDigest1), tag1aOnboardingRequestId), Times.Once);
@@ -787,11 +824,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         }
                     });
 
-            Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
+            var environmentServiceMock = new Mock<IEnvironmentService>();
+            var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             MarImageIngestionReporter reporter = new(
                 Mock.Of<ILoggerService>(),
-                statusClientMock.Object,
+                statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
             List<DigestInfo> digestInfos =
@@ -799,7 +837,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new DigestInfo(DockerHelper.GetDigestSha(platformDigest1), repo1, [platformTag1]),
                 ];
 
-            await Assert.ThrowsAsync<TimeoutException>(() => reporter.ReportImageStatusesAsync(digestInfos, TimeSpan.FromSeconds(3), TimeSpan.FromMicroseconds(1), baselineTime));
+            await Assert.ThrowsAsync<TimeoutException>(() => reporter.ReportImageStatusesAsync(
+                Mock.Of<IServiceConnection>(),
+                digestInfos,
+                TimeSpan.FromSeconds(3),
+                TimeSpan.FromMicroseconds(1),
+                baselineTime));
         }
 
         private static ImageStatus Clone(ImageStatus status, StageStatus? newOverallStatusValue) =>

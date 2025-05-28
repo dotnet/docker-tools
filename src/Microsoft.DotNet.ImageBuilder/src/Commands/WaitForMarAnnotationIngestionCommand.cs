@@ -46,7 +46,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (!Options.IsDryRun)
             {
-                await _imageIngestionReporter.ReportImageStatusesAsync(digests, Options.IngestionOptions.WaitTimeout, Options.IngestionOptions.RequeryDelay, minimumQueueTime: null);
+                await _imageIngestionReporter.ReportImageStatusesAsync(
+                    Options.MarServiceConnection,
+                    digests,
+                    Options.IngestionOptions.WaitTimeout,
+                    Options.IngestionOptions.RequeryDelay,
+                    minimumQueueTime: null);
             }
         }
     }

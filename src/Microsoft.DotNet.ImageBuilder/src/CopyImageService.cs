@@ -36,10 +36,13 @@ public class CopyImageService : ICopyImageService
     private readonly Lazy<ArmClient> _armClient;
 
     [ImportingConstructor]
-    public CopyImageService(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
+    public CopyImageService(
+        ILoggerService loggerService,
+        IAzureTokenCredentialProvider tokenCredentialProvider,
+        IServiceConnection serviceConnection)
     {
         _loggerService = loggerService;
-        _armClient = new(() => new ArmClient(tokenCredentialProvider.GetCredential()));
+        _armClient = new Lazy<ArmClient>(() => new ArmClient(tokenCredentialProvider.GetCredential(serviceConnection)));
     }
 
     public static string GetBaseAcrName(string registry) => registry.TrimEndString(DockerHelper.AcrDomain);

@@ -13,6 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
+        public ServiceConnectionOptions? AcrServiceConnection { get; set; }
 
         public string ImageInfoPath { get; set; } = string.Empty;
 
@@ -23,26 +24,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     public class PublishManifestOptionsBuilder : ManifestOptionsBuilder
     {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
-            new ManifestFilterOptionsBuilder();
-        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder =
-            new RegistryCredentialsOptionsBuilder();
+        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
+        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions());
+        [
+            ..base.GetCliOptions(),
+            .._manifestFilterOptionsBuilder.GetCliOptions(),
+            .._registryCredentialsOptionsBuilder.GetCliOptions(),
+            .._serviceConnectionOptionsBuilder.GetCliOptions(
+                "acr-service-connection", nameof(PublishManifestOptions.AcrServiceConnection)),
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(PublishImageInfoOptions.ImageInfoPath),
-                            "Image info file path")
-                    });
+        [
+            ..base.GetCliArguments(),
+            .._manifestFilterOptionsBuilder.GetCliArguments(),
+            .._registryCredentialsOptionsBuilder.GetCliArguments(),
+            new Argument<string>(nameof(PublishImageInfoOptions.ImageInfoPath),
+                "Image info file path"),
+        ];
     }
 }
-#nullable disable

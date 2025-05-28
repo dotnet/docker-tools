@@ -8,6 +8,7 @@ parameters:
   noCache: false
   customInitSteps: []
   commonInitStepsForMatrixAndBuild: []
+  sourceBuildPipelineRunId: ""
 
 jobs:
 - job: ${{ parameters.name }}
@@ -28,6 +29,7 @@ jobs:
       parameters:
         targetPath: $(Build.ArtifactStagingDirectory)
         artifactName: image-info
+        pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
   - powershell: |
       $additionalGenerateBuildMatrixOptions = "$(additionalGenerateBuildMatrixOptions)"
 

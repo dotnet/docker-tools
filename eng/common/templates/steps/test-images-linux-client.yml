@@ -3,6 +3,7 @@ parameters:
   internalProjectName: null
   condition: true
   customInitSteps: []
+  sourceBuildPipelineRunId: ""
 
 steps:
 - template: /eng/common/templates/steps/init-docker-linux.yml@self
@@ -58,6 +59,7 @@ steps:
         targetPath: $(Build.ArtifactStagingDirectory)
         artifactName: image-info
         condition: ${{ parameters.condition }}
+        pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - template: /eng/common/templates/steps/parse-test-arg-arrays.yml@self
 - powershell: >
     $(test.init);

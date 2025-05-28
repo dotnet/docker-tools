@@ -20,10 +20,6 @@ parameters:
 
 steps:
 # https://learn.microsoft.com/azure/devops/pipelines/tasks/reference/download-pipeline-artifact-v2
-- template: /eng/common/templates/steps/debug-log.yml@self
-  parameters:
-    templateName: /eng/common/templates/steps/download-build-artifact.yml
-    parametersToLog: ${{ parameters }}
 - task: DownloadPipelineArtifact@2
   inputs:
     ${{ if ne(parameters.pipelineRunId, '') }}:

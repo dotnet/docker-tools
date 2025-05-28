@@ -14,10 +14,6 @@ jobs:
 - job: ${{ parameters.name }}
   pool: ${{ parameters.pool }}
   steps:
-  - template: /eng/common/templates/steps/debug-log.yml@self
-    parameters:
-      templateName: /eng/common/templates/jobs/generate-matrix.yml
-      parametersToLog: ${{ parameters }}
   - ${{ parameters.commonInitStepsForMatrixAndBuild }}
   - template: /eng/common/templates/steps/retain-build.yml@self
   - template: /eng/common/templates/steps/init-docker-linux.yml@self

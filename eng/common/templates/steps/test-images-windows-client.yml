@@ -2,6 +2,7 @@ parameters:
   internalProjectName: null
   condition: true
   customInitSteps: []
+  sourceBuildPipelineRunId: ""
 
 steps:
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
@@ -37,6 +38,7 @@ steps:
       targetPath: $(Build.ArtifactStagingDirectory)
       artifactName: image-info
       condition: ${{ parameters.condition }}
+      pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - template: /eng/common/templates/steps/parse-test-arg-arrays.yml@self
 - powershell: >
     $(test.init);

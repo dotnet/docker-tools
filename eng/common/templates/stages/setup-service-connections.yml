@@ -1,0 +1,29 @@
+parameters:
+- name: pool
+  type: object
+# serviceConnections object shape:
+# - name: string
+- name: serviceConnections
+  type: object
+  default: []
+
+stages:
+
+- stage: SetupServiceConnectionsStage
+  displayName: Setup service connections
+  jobs:
+
+  - job: SetupServiceConnectionsJob
+    displayName: Setup service connections
+    pool: ${{ parameters.pool }}
+    steps:
+
+    - ${{ each serviceConnection in parameters.serviceConnections }}:
+      - task: AzureCLI@2
+        displayName: Setup ${{ serviceConnection.name }}
+        inputs:
+          azureSubscription: ${{ serviceConnection.name }}
+          scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: |
+            az account show

@@ -30,7 +30,7 @@ jobs:
         artifactName: image-info
   - powershell: |
       $additionalGenerateBuildMatrixOptions = "$(additionalGenerateBuildMatrixOptions)"
-      
+
       if ("${{ parameters.isTestStage}}" -eq "true") {
         $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(artifactsPath)/image-info.json"
       }
@@ -59,6 +59,10 @@ jobs:
     parameters:
       name: matrix
       displayName: Generate ${{ parameters.matrixType }} Matrix
-      serviceConnection: $(build.serviceConnectionName)
+      serviceConnections:
+      - name: acr
+        tenantId: $(build.serviceConnection.tenantId)
+        clientId: $(build.serviceConnection.clientId)
+        id: $(build.serviceConnection.id)
       internalProjectName: internal
       args: $(generateBuildMatrixCommand)

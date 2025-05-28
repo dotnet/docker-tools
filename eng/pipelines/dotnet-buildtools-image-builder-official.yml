@@ -11,9 +11,10 @@ pr: none
 parameters:
 - name: sourceBuildPipelineRunId
   displayName: >
-    Source build pipeline run ID. This can be overridden in order to publish or
-    run tests for images that were built in a different pipeline. The default
-    value should be left alone if you are simply queueing a new build.
+    Source build pipeline run ID. This refers to runs of *this pipeline*.
+    Override this parametre in combination with disabling the `Build` stage to
+    test or publish images that were build in a different pipeline run.
+    The default value should be left alone if you want to build new images.
   type: string
   default: $(Build.BuildId)
 

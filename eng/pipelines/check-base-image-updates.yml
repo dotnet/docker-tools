@@ -16,7 +16,7 @@ extends:
   template: /eng/common/templates/1es-official.yml@self
   parameters:
     serviceConnections:
-    - name: $(internal-mirror.serviceConnectionName)
+    - name: $(acr-staging.serviceConnectionName)
     stages:
     - stage: CheckBaseImages
       displayName: Check Base Images

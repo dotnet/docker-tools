@@ -28,6 +28,7 @@ extends:
     stages:
     - stage: MirrorBaseImages
       displayName: Mirror Base Images
+      dependsOn: []
       jobs:
       - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
         parameters:

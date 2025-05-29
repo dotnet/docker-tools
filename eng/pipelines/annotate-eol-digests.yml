@@ -22,6 +22,7 @@ extends:
     stages:
     - stage: eolAnnotate
       displayName: Annotate EOL images
+      dependsOn: []
       jobs:
       - job: AnnotateImages
         displayName: Annotate EOL Images

@@ -75,8 +75,8 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             info.RedirectStandardError = true;
             executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
-            string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
-            s_loggerService.WriteSubheading($"{prefix}: {executeMessageOverride}");
+            string prefix = isDryRun ? "Executing (dry-run)" : "Executing";
+            s_loggerService.WriteCommand($"{prefix}: {executeMessageOverride}");
 
             if (isDryRun)
             {
@@ -87,13 +87,16 @@ namespace Microsoft.DotNet.ImageBuilder
             stopwatch.Start();
             ProcessResult processResult = executor(info);
             stopwatch.Stop();
-            s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+            s_loggerService.WriteMessage($"Execution elapsed time: {stopwatch.Elapsed}");
 
             if (processResult.Process.ExitCode != 0)
             {
-                string exceptionMsg = errorMessage ?? $@"Failed to execute {info.FileName} {info.Arguments}
+                string exceptionMsg = errorMessage ??
+                    $"""
+                    Failed to execute {executeMessageOverride}
 
-                {processResult.StandardError}";
+                    {processResult.StandardError}
+                    """;
 
                 throw new InvalidOperationException(exceptionMsg);
             }
@@ -131,11 +134,14 @@ namespace Microsoft.DotNet.ImageBuilder
             StringBuilder stdError = new StringBuilder();
             process.ErrorDataReceived += getDataReceivedHandler(stdError, Console.Error);
 
-            process.Start();
-            processStartedCallback?.Invoke(process);
-            process.BeginOutputReadLine();
-            process.BeginErrorReadLine();
-            process.WaitForExit();
+            using (s_loggerService.LogGroup("Command output"))
+            {
+                process.Start();
+                processStartedCallback?.Invoke(process);
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                process.WaitForExit();
+            }
 
             return new ProcessResult(process, stdOutput.ToString().Trim(), stdError.ToString().Trim());
         }

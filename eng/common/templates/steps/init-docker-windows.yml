@@ -43,15 +43,11 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        $tokenHostPath = '$(Agent.TempDirectory)'
-        $tokenHostFilePath = "$tokenHostPath\token"
-
         $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
 
         $authedImageBuilderCmds = @(
-          '$env:AZURE_TENANT_ID = $env:tenantId'
-          '$env:AZURE_CLIENT_ID = $env:servicePrincipalId'
-          '$env:AZURE_FEDERATED_TOKEN_FILE = ' + "'" + "$tokenHostFilePath" + "'"
+          '$env:SYSTEM_ACCESSTOKEN = $(System.AccessToken)'
+          '$env:SYSTEM_OIDCREQUESTURI = $(System.OidcRequestUri)'
           $runImageBuilderCmd
         )
 
@@ -59,4 +55,3 @@ steps:
 
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"
-        Write-Host "##vso[task.setvariable variable=tokenHostFilePath]$tokenHostFilePath"

@@ -30,6 +30,7 @@ extends:
   parameters:
     stages:
     - stage: Import
+      dependsOn: []
       jobs:
       - job: Import
         steps:

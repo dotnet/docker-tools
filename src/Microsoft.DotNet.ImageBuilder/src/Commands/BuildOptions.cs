@@ -31,6 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? OutputVariableName { get; set; }
         public string? Subscription { get; set; }
         public string? ResourceGroup { get; set; }
+        public bool Internal { get; set; }
     }
 
     public class BuildOptionsBuilder : ManifestOptionsBuilder
@@ -51,7 +52,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 propertyName: nameof(BuildOptions.AcrServiceConnection)),
             .._serviceConnectionOptionsBuilder.GetCliOptions(
                 alias: "storage-service-connection",
-                propertyName: nameof(BuildOptions.StorageServiceConnection)),
+                propertyName: nameof(BuildOptions.StorageServiceConnection),
+                description: "Storage account to use for internal builds."),
 
             CreateOption<bool>("push", nameof(BuildOptions.IsPushEnabled),
                 "Push built images to Docker registry"),
@@ -79,6 +81,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Azure subscription to operate on"),
             CreateOption<string>("acr-resource-group", nameof(BuildOptions.ResourceGroup),
                 "Azure resource group to operate on"),
+            CreateOption<bool>("internal", nameof(BuildOptions.Internal),
+                "When true, all Dockerfiles will be passed the build arg ACCESSTOKEN containing the access token "
+                + "for the storage account specified by the storage-service-connection option. If used without the "
+                + "option, then it will use the system's default Azure credential instead."),
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>

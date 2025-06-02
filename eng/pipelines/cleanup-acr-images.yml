@@ -22,8 +22,6 @@ extends:
       dependsOn: []
       jobs:
       - job: Build
-        pool:
-          vmImage: $(defaultLinuxAmd64PoolImage)
         steps:
         - template: /eng/common/templates/steps/init-docker-linux.yml@self
         - template: /eng/common/templates/steps/clean-acr-images.yml@self

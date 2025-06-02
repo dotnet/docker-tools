@@ -1,5 +1,7 @@
 # Imports an image from a 3rd party registry to the public mirror registry
 
+name: $(Date:yyyyMMdd).$(Rev:r)-${{ replace(replace(parameters.imageName, '/', '_'), ':', '_') }}
+
 trigger: none
 pr: none
 
@@ -30,6 +32,7 @@ extends:
   parameters:
     stages:
     - stage: Import
+      dependsOn: []
       jobs:
       - job: Import
         steps:

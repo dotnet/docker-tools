@@ -19,6 +19,7 @@ extends:
     - name: $(clean.serviceConnectionName)
     stages:
     - stage: Build
+      dependsOn: []
       jobs:
       - job: Build
         pool:

@@ -8,7 +8,9 @@ using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
+using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -31,6 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
         private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
+        private readonly Lazy<string?> _storageAccountToken;
 
         /// <summary>
         /// Maps a source digest from the image info file to the corresponding digest in the copied location for image caching.
@@ -78,6 +81,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Manifest,
                     Options.RepoPrefix,
                     Options.SourceRepoPrefix));
+
+            _storageAccountToken = new Lazy<string?>(() =>
+            {
+                if (!Options.Internal)
+                {
+                    return null;
+                }
+
+                var tokenCredential = _tokenCredentialProvider.GetCredential(
+                    Options.StorageServiceConnection,
+                    AzureScopes.StorageAccountScope);
+
+                var token = tokenCredential.GetToken(new TokenRequestContext(), CancellationToken.None).Token;
+                return token;
+            });
         }
 
         protected override string Description => "Builds Dockerfiles";
@@ -95,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // need to query the registry at the end of the command.
             if (Options.IsPushEnabled)
             {
-                _tokenCredentialProvider.GetCredential(
+                _ = _tokenCredentialProvider.GetCredential(
                     Options.AcrServiceConnection,
                     AzureScopes.ContainerRegistryScope);
             }
@@ -513,11 +531,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
+        /// <summary>
+        /// Gets all the necessary Docker build-args for the specified platform. When building internal images, this
+        /// also includes the access token for the storage account service connection's access token. This refers to
+        /// arguments passed via the <c>--build-arg</c> option to the <c>docker build</c> command, not the arguments
+        /// passed directly to <c>docker build</c>.
+        /// </summary>
+        /// <remarks>
+        /// Platform build args (from the manifest) take precedence over any build args specified via the command line.
+        /// </remarks>
+        /// <param name="platform">The platform to get build args for.</param>
+        /// <returns>Dictionary of all build args to use. Translates to <c>--build-arg key=value</c></returns>
         private Dictionary<string, string?> GetBuildArgs(PlatformInfo platform)
         {
-            // Manifest-defined build args take precendence over build args defined in the build options
-            Dictionary<string, string?> buildArgs = new(Options.BuildArgs.Cast<KeyValuePair<string, string?>>());
-            foreach (KeyValuePair<string, string?> kvp in platform.BuildArgs)
+            Dictionary<string, string?> buildArgs = [];
+
+            if (Options.Internal)
+            {
+                buildArgs["ACCESSTOKEN"] = _storageAccountToken.Value;
+            }
+
+            foreach (var kvp in Options.BuildArgs)
+            {
+                buildArgs[kvp.Key] = kvp.Value;
+            }
+
+            foreach (var kvp in platform.BuildArgs)
             {
                 buildArgs[kvp.Key] = kvp.Value;
             }

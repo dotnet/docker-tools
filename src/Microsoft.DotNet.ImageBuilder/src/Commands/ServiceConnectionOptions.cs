@@ -18,12 +18,23 @@ public record ServiceConnectionOptions(
 
 public class ServiceConnectionOptionsBuilder
 {
-    public IEnumerable<Option> GetCliOptions(string alias, string propertyName) =>
-    [
-        CreateOption(
+    public IEnumerable<Option> GetCliOptions(string alias, string propertyName, string description = "")
+    {
+        const string FormatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
+
+        if (!string.IsNullOrEmpty(description))
+        {
+            description += " " + FormatDescription;
+        }
+        else
+        {
+            description = FormatDescription;
+        }
+
+        var option = CreateOption(
             alias,
             propertyName,
-            "Service connection information in the format \"${tenantId}:${clientId}:${serviceConnectionId}\"",
+            description,
             parseArg: result =>
             {
                 var token = result.Tokens.Single();
@@ -33,6 +44,8 @@ public class ServiceConnectionOptionsBuilder
                     TenantId: serviceConnectionInfo[0],
                     ClientId: serviceConnectionInfo[1],
                     ServiceConnectionId: serviceConnectionInfo[2]);
-            })
-    ];
+            });
+
+        return [option];
+    }
 }

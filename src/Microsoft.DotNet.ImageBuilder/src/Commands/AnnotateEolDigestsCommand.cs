@@ -62,7 +62,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 },
                 Options.CredentialsOptions,
                 registryName: Options.AcrName,
-                ownedAcr: Options.AcrName);
+                ownedAcr: Options.AcrName,
+                serviceConnection: Options.AcrServiceConnection);
 
             WriteNonEmptySummaryForImageDigests(_skippedAnnotationImageDigests,
                 "The following image digests were skipped because they have existing annotations with matching EOL dates.");

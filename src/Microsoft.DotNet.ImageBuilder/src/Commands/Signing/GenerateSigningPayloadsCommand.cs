@@ -48,7 +48,8 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
             action: ExecuteAsyncInternal,
             credentialsOptions: Options.RegistryCredentialsOptions,
             registryName: Options.RegistryOptions.Registry,
-            ownedAcr: Options.RegistryOptions.Registry);
+            ownedAcr: Options.RegistryOptions.Registry,
+            serviceConnection: null);
     }
 
     private async Task ExecuteAsyncInternal()
@@ -84,7 +85,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
 
         await Parallel.ForEachAsync(
             payloads,
-            async (payload, _) => 
+            async (payload, _) =>
                 {
                     string output = await WritePayloadToDiskAsync(payload, outputDirectory);
                     outputFiles.Add(output);

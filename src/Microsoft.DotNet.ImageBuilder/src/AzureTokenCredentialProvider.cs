@@ -40,7 +40,12 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
             {
                 TokenCredential? credential = null;
 
-                if (serviceConnection is not null)
+                if (serviceConnection is not null
+                    // System.CommandLine can instantiate this class with default values (null) when it is not provided
+                    // on the command line, so we need to check for null values.
+                    && !string.IsNullOrEmpty(serviceConnection.ClientId)
+                    && !string.IsNullOrEmpty(serviceConnection.TenantId)
+                    && !string.IsNullOrEmpty(serviceConnection.ServiceConnectionId))
                 {
                     if (string.IsNullOrWhiteSpace(_systemAccessToken))
                     {

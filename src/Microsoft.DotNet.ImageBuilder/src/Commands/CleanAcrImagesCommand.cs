@@ -96,7 +96,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 },
                 Options.CredentialsOptions,
                 registryName: Options.RegistryName,
-                ownedAcr: Options.RegistryName);
+                ownedAcr: Options.RegistryName,
+                serviceConnection: Options.AcrServiceConnection);
 
             await LogSummaryAsync(acrClient, deletedRepos, deletedImages);
         }

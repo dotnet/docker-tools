@@ -58,7 +58,8 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             },
             Options.CredentialsOptions,
             registryName: Options.RegistryOptions.Registry,
-            ownedAcr: Options.RegistryOptions.Registry);
+            ownedAcr: Options.RegistryOptions.Registry,
+            serviceConnection: Options.AcrServiceConnection);
 
     private void WriteDigestDataJson(List<EolDigestData> digestsToAnnotate)
     {

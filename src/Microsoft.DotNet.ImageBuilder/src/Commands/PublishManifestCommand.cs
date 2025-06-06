@@ -107,7 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 },
                 Options.CredentialsOptions,
                 registryName: Manifest.Registry,
-                ownedAcr: Manifest.Registry);
+                ownedAcr: Manifest.Registry,
+                serviceConnection: Options.AcrServiceConnection);
         }
 
         private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)

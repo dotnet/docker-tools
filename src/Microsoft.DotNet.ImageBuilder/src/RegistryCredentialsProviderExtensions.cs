@@ -16,7 +16,7 @@ internal static class RegistryCredentialsProviderExtensions
         IRegistryCredentialsHost credentialsOptions,
         string registryName,
         string? ownedAcr,
-        IServiceConnection? serviceConnection = null)
+        IServiceConnection? serviceConnection)
     {
         bool loggedIn = await LogInToRegistry(
             credsProvider,
@@ -46,7 +46,7 @@ internal static class RegistryCredentialsProviderExtensions
         IRegistryCredentialsHost credentialsOptions,
         string registryName,
         string? ownedAcr,
-        IServiceConnection? serviceConnection = null)
+        IServiceConnection? serviceConnection)
     {
         await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
@@ -57,8 +57,7 @@ internal static class RegistryCredentialsProviderExtensions
             credentialsOptions,
             registryName,
             ownedAcr,
-            serviceConnection
-        );
+            serviceConnection);
     }
 
     private static async Task<bool> LogInToRegistry(

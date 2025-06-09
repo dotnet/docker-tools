@@ -59,10 +59,8 @@ steps:
         )
 
         $authedDockerRunArgs = @(
-          '-e'
-          'SYSTEM_ACCESSTOKEN=$env:SYSTEM_ACCESSTOKEN'
-          '-e'
-          'SYSTEM_OIDCREQUESTURI=$env:SYSTEM_OIDCREQUESTURI'
+          '-e SYSTEM_ACCESSTOKEN=$(System.AccessToken)'
+          '-e SYSTEM_OIDCREQUESTURI=$(System.OidcRequestUri)'
         )
 
         $dockerRunCmd = $dockerRunBaseCmd + $dockerRunArgs

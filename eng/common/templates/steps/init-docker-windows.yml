@@ -44,5 +44,14 @@ steps:
       targetType: 'inline'
       script: |
         $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
+
+        $authedImageBuilderCmds = @(
+          '$env:SYSTEM_ACCESSTOKEN = $(System.AccessToken)'
+          '$env:SYSTEM_OIDCREQUESTURI = $(System.OidcRequestUri)'
+          $runImageBuilderCmd
+        )
+
+        $runAuthedImageBuilderCmd = $($authedImageBuilderCmds -join "; ")
+
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
-        Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runImageBuilderCmd"
+        Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"

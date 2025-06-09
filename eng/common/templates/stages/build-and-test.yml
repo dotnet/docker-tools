@@ -49,7 +49,6 @@ parameters:
 stages:
 - stage: Build
   condition: and(succeeded(), contains(variables['stages'], 'build'))
-  dependsOn: []
   jobs:
   - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
     parameters:

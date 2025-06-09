@@ -7,14 +7,10 @@ steps:
     parameters:
       name: AnnotateEOLImages
       displayName: Annotate EOL Images
-      serviceConnections:
-      - name: acr
-        id: $(publish.serviceConnection.id)
-        tenantId: $(publish.serviceConnection.tenantId)
-        clientId: $(publish.serviceConnection.clientId)
+      serviceConnection: $(publish.serviceConnectionName)
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
-      args: >-
+      args: >
         annotateEolDigests
         ${{ parameters.dataFile }}
         $(acr.server)
@@ -32,13 +28,9 @@ steps:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Wait for Annotation Ingestion
-      serviceConnections:
-      - name: mar
-        id: $(marStatus.serviceConnection.id)
-        tenantId: $(marStatus.serviceConnection.tenantId)
-        clientId: $(marStatus.serviceConnection.clientId)
+      serviceConnection: $(marStatus.serviceConnectionName)
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
-      args: >-
+      args: >
         waitForMarAnnotationIngestion
         $(artifactsPath)/annotation-digests/annotation-digests.txt

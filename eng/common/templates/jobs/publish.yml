@@ -13,7 +13,7 @@ jobs:
 
   variables:
   - name: imageBuilder.commonCmdArgs
-    value: >-
+    value: >
       --manifest '$(manifest)'
       --registry-override '$(acr.server)'
       $(manifestVariables)
@@ -75,13 +75,9 @@ jobs:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Copy Images
-      serviceConnections:
-      - name: acr
-        id: $(publish.serviceConnection.id)
-        tenantId: $(publish.serviceConnection.tenantId)
-        clientId: $(publish.serviceConnection.clientId)
+      serviceConnection: $(publish.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
-      args: >-
+      args: >
         copyAcrImages
         '$(acr.subscription)'
         '$(acr.resourceGroup)'
@@ -98,14 +94,10 @@ jobs:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Publish Manifest
-      serviceConnections:
-      - name: acr
-        id: $(publish.serviceConnection.id)
-        tenantId: $(publish.serviceConnection.tenantId)
-        clientId: $(publish.serviceConnection.clientId)
+      serviceConnection: $(publish.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
       dockerClientOS: ${{ parameters.dockerClientOS }}
-      args: >-
+      args: >
         publishManifest
         '$(imageInfoContainerDir)/image-info.json'
         --repo-prefix '$(publishRepoPrefix)'
@@ -160,14 +152,10 @@ jobs:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Ingest Kusto Image Info
-      serviceConnections:
-      - name: kusto
-        id: $(kusto.serviceConnection.id)
-        tenantId: $(kusto.serviceConnection.tenantId)
-        clientId: $(kusto.serviceConnection.clientId)
+      serviceConnection: $(kusto.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
       condition: and(succeeded(), eq(variables['ingestKustoImageInfo'], 'true'))
-      args: >-
+      args: >
         ingestKustoImageInfo
         '$(imageInfoContainerDir)/image-info.json'
         '$(kusto.cluster)'
@@ -182,14 +170,10 @@ jobs:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Generate EOL Annotation Data
-      serviceConnections:
-      - name: acr
-        id: $(publish.serviceConnection.id)
-        tenantId: $(publish.serviceConnection.tenantId)
-        clientId: $(publish.serviceConnection.clientId)
+      serviceConnection: $(publish.serviceConnectionName)
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
-      args: >-
+      args: >
         generateEolAnnotationData
         '$(artifactsPath)/eol-annotation-data/eol-annotation-data.json'
         '$(imageInfoContainerDir)/full-image-info-orig.json'

@@ -65,14 +65,10 @@ jobs:
     parameters:
       name: BuildImages
       displayName: Build Images
-      serviceConnections:
-      - name: acr
-        id: $(build.serviceConnection.id)
-        tenantId: $(build.serviceConnection.tenantId)
-        clientId: $(build.serviceConnection.clientId)
+      serviceConnection: $(build.serviceConnectionName)
       internalProjectName: ${{ parameters.internalProjectName }}
       dockerClientOS: ${{ parameters.dockerClientOS }}
-      args: >-
+      args: >
         build
         --manifest $(manifest)
         $(imageBuilderPaths)

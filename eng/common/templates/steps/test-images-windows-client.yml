@@ -17,7 +17,7 @@ steps:
       serviceConnection: $(test.serviceConnectionName)
       dockerClientOS: windows
       condition: and(succeeded(), ${{ parameters.condition }})
-      command: >-
+      command: >
         az login --service-principal --tenant $env:tenantId -u $env:servicePrincipalId --federated-token $env:idToken;
         $accessToken = $(az acr login -n $(acr-staging.server) --expose-token --query accessToken --output tsv);
         docker login $(acr-staging.server) -u 00000000-0000-0000-0000-000000000000 -p $accessToken

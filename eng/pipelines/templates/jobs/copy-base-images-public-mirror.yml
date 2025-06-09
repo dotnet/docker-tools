@@ -22,10 +22,7 @@ jobs:
       os: linux
     acr:
       server: $(public-mirror.server)
-      serviceConnection:
-        id: $(public-mirror.serviceConnection.id)
-        tenantId: $(public-mirror.serviceConnection.tenantId)
-        clientId: $(public-mirror.serviceConnection.clientId)
+      serviceConnection: $(public-mirror.serviceConnectionName)
       subscription: $(public-mirror.subscription)
       resourceGroup: $(public-mirror.resourceGroup)
     repoPrefix: $(mirrorRepoPrefix)

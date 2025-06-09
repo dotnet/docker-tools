@@ -1,7 +1,7 @@
 parameters:
 - name: sourceBuildPipelineRunId
   type: string
-  default: '$(Build.BuildId)'
+  default: ''
 
 variables:
 - template: /eng/pipelines/templates/variables/build-test-publish.yml@self

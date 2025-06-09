@@ -61,10 +61,6 @@ jobs:
     parameters:
       name: matrix
       displayName: Generate ${{ parameters.matrixType }} Matrix
-      serviceConnections:
-      - name: acr
-        tenantId: $(build.serviceConnection.tenantId)
-        clientId: $(build.serviceConnection.clientId)
-        id: $(build.serviceConnection.id)
+      serviceConnection: $(build.serviceConnectionName)
       internalProjectName: internal
       args: $(generateBuildMatrixCommand)

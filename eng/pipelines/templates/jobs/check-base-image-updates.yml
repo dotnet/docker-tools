@@ -17,10 +17,7 @@ jobs:
     parameters:
       acr:
         server: $(acr-staging.server)
-        serviceConnection:
-          id: $(acr-staging.serviceConnection.id)
-          tenantId: $(acr-staging.serviceConnection.tenantId)
-          clientId: $(acr-staging.serviceConnection.clientId)
+        serviceConnection: $(acr-staging.serviceConnectionName)
         subscription: $(acr-staging.subscription)
         resourceGroup: $(acr-staging.resourceGroup)
       repoPrefix: $(mirrorRepoPrefix)

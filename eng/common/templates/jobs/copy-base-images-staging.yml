@@ -24,10 +24,7 @@ jobs:
     additionalOptions: ${{ parameters.additionalOptions }}
     acr:
       server: $(acr-staging.server)
-      serviceConnection:
-        tenantId: $(internal-mirror.serviceConnection.tenantId)
-        clientId: $(internal-mirror.serviceConnection.clientId)
-        id: $(internal-mirror.serviceConnection.id)
+      serviceConnection: $(internal-mirror.serviceConnectionName)
       subscription: $(acr-staging.subscription)
       resourceGroup: $(acr-staging.resourceGroup)
     repoPrefix: $(mirrorRepoPrefix)

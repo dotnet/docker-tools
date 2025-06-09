@@ -16,13 +16,9 @@ variables:
 extends:
   template: /eng/common/templates/1es-official.yml@self
   parameters:
-    serviceConnections:
-    - name: $(publish.serviceConnectionName)
-    - name: $(marStatus.serviceConnectionName)
     stages:
     - stage: eolAnnotate
       displayName: Annotate EOL images
-      dependsOn: []
       jobs:
       - job: AnnotateImages
         displayName: Annotate EOL Images

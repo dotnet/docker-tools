@@ -60,7 +60,7 @@ extends:
             acr: $(acr.server)
             action: pruneEol
             age: 15
-            customArgs: --exclude $(excludedBuildToolsPrereqsImage)
+            customArgs: $(excludedBuildToolsPrereqsImagesArgs)
         # Disabled due to https://github.com/dotnet/docker-tools/issues/797
         # - template: ../common/templates/steps/clean-acr-images.yml
         #   parameters:

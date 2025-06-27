@@ -151,6 +151,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 args.Count > 2 ? args[2].AsString : null,
                                 trimTemplate: true).Result,
                         min: 1,
+                        max: 3)),
+                ["replace"] = Value.FromFunction(
+                    Function.CreatePure(
+                        (state, args) =>
+                        {
+                            string source = args[0].AsString;
+                            string oldValue = args[1].AsString;
+                            string newValue = args[2].AsString;
+                            return Value.FromString(source.Replace(oldValue, newValue));
+                        },
+                        min: 3,
                         max: 3))
             };
         }
@@ -192,7 +203,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;                
+                IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
                 artifact = document.Render(Context.CreateBuiltin(symbols));
 
                 if (Options.IsVerbose)

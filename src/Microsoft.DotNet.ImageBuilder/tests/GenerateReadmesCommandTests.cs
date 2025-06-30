@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
+using Shouldly;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
@@ -56,6 +57,23 @@ Referenced Template Content";
 
             generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath));
             Assert.Equal(ExpectedRepoReadme.NormalizeLineEndings(generatedReadme), generatedReadme);
+        }
+
+        [Fact]
+        public async Task GenerateReadmesCommand_StringReplace()
+        {
+            const string Template = """
+                {{replace("Hello world!", "world", ".NET")}}
+                """;
+            const string Expected = "Hello .NET!";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateReadmesCommand command = InitializeCommand(tempFolderContext, Template);
+
+            await command.ExecuteAsync();
+
+            string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
+            generatedReadme.ShouldBe(Expected);
         }
 
         [Fact]

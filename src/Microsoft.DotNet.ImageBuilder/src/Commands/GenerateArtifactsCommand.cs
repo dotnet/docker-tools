@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -33,6 +34,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly List<string> _outOfSyncArtifacts = new List<string>();
         private readonly Dictionary<string, string> generatedArtifacts = new();
 
+        private TimeSpan _documentGenerationTime = TimeSpan.Zero;
+        private TimeSpan _artifactGenerationTime = TimeSpan.Zero;
+
         protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
         {
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
@@ -47,6 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string artifactName,
             Func<string, TContext, string> postProcess = null)
         {
+            long allArtifactsStartTime = Stopwatch.GetTimestamp();
             foreach (TContext context in contexts)
             {
                 string artifactPath = getArtifactPath(context);
@@ -85,6 +90,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 await GenerateArtifactAsync(templatePath, artifactPath, context, getState, artifactName, postProcess);
                 generatedArtifacts.Add(artifactPath, templatePath);
             }
+
+            long allArtifactsEndTime = Stopwatch.GetTimestamp();
+            TimeSpan allArtifactsTime = Stopwatch.GetElapsedTime(allArtifactsStartTime, allArtifactsEndTime);
+
+            Logger.WriteMessage($"Time spent building documents: {_documentGenerationTime.TotalMilliseconds} ms");
+            Logger.WriteMessage($"Time spent generating artifacts: {_artifactGenerationTime.TotalMilliseconds} ms");
+            Logger.WriteMessage($"Total elapsed time: {allArtifactsTime.TotalMilliseconds} ms");
         }
 
         private async Task GenerateArtifactAsync<TContext>(
@@ -203,8 +215,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
+                long documentStartTime = Stopwatch.GetTimestamp();
                 IDocument document = Document.CreateDefault(template, _config).DocumentOrThrow;
+                long documentEndTime = Stopwatch.GetTimestamp();
+
+                long artifactStartTime = Stopwatch.GetTimestamp();
                 artifact = document.Render(Context.CreateBuiltin(symbols));
+                long artifactEndTime = Stopwatch.GetTimestamp();
+
+                _documentGenerationTime += Stopwatch.GetElapsedTime(documentStartTime, documentEndTime);
+                _artifactGenerationTime += Stopwatch.GetElapsedTime(artifactStartTime, artifactEndTime);
 
                 if (Options.IsVerbose)
                 {

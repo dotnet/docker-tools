@@ -137,6 +137,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         {
                             _loggerService.WriteMessage(
                                 PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
+                            _loggerService.WriteMessage(PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
                         }
                         else
                         {

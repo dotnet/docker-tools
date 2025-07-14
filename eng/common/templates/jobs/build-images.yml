@@ -97,7 +97,7 @@ jobs:
       displayName: Publish Image Info File Artifact
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
-  - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.isInternalServicingValidation, 'false')) }}:
+  - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
     # The following task depends on the SBOM Manifest Generator task installed on the agent.
     # This task is auto-injected by 1ES Pipeline Templates so we don't need to install it ourselves.
     - powershell: |
@@ -153,7 +153,7 @@ jobs:
     - template: /eng/common/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
       parameters:
         condition: ne(variables.testScriptPath, '')
-  - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.isInternalServicingValidation, 'false')) }}:
+  - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
     - template: /eng/common/templates/steps/publish-artifact.yml@self
       parameters:
         path: $(sbomDirectory)

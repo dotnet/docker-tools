@@ -239,7 +239,7 @@ stages:
 ################################################################################
 # Test Images
 ################################################################################
-- ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.isInternalServicingValidation, 'false')) }}:
+- ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - stage: Test
     dependsOn: Post_Build
     condition: "

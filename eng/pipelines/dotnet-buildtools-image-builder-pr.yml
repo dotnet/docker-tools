@@ -9,6 +9,13 @@ pr:
 
 trigger: none
 
+resources:
+  repositories:
+  - repository: PublicVersionsRepo
+    type: github
+    endpoint: public
+    name: dotnet/versions
+
 variables:
 - template: templates/variables/image-builder.yml
 

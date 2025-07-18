@@ -9,6 +9,13 @@ trigger:
     - eng/*
     - test/*
 
+resources:
+  repositories:
+  - repository: InternalVersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
 

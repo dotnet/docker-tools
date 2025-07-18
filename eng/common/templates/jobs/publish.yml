@@ -38,7 +38,7 @@ jobs:
   steps:
   - checkout: self
   - checkout: ${{ parameters.versionsRepoRef }}
-    path: $(Pipeline.Workspace)/s/${{ parameters.versionsRepoPath }}
+    path: s/${{ parameters.versionsRepoPath }}
     persistCredentials: true
     fetchDepth: 1
 

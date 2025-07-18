@@ -22,8 +22,7 @@ parameters:
   internalProjectName: null
   publicProjectName: null
 
-  internalVersionsRepoRef: null
-  publicVersionsRepoRef: null
+  versionsRepoRef: null
 
   isInternalServicingValidation: false
 
@@ -91,8 +90,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/common/templates/jobs/build-images.yml@self
     parameters:
@@ -105,8 +103,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -123,8 +120,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -141,8 +137,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -159,8 +154,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -177,8 +171,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -195,14 +188,12 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
-      internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-      publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       isInternalServicingValidation: ${{ parameters.isInternalServicingValidation }}
   - template: /eng/common/templates/jobs/build-images.yml@self
     parameters:
@@ -215,8 +206,7 @@ stages:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
           noCache: ${{ parameters.noCache }}
-          internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-          publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -269,8 +259,7 @@ stages:
         - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
           parameters:
             noCache: ${{ parameters.noCache }}
-            internalVersionsRepoRef: ${{ parameters.internalVersionsRepoRef }}
-            publicVersionsRepoRef: ${{ parameters.publicVersionsRepoRef }}
+            versionsRepoRef: ${{ parameters.versionsRepoRef }}
     - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
       parameters:
         name: Linux_amd64

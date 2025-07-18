@@ -11,7 +11,7 @@ trigger: none
 
 resources:
   repositories:
-  - repository: PublicVersionsRepo
+  - repository: VersionsRepo
     type: github
     endpoint: public
     name: dotnet/versions
@@ -26,3 +26,4 @@ stages:
     noCache: true
     internalProjectName: ${{ variables.internalProjectName }}
     publicProjectName: ${{ variables.publicProjectName }}
+    versionsRepoRef: VersionsRepo

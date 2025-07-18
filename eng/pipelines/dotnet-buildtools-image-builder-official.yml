@@ -20,7 +20,7 @@ parameters:
 
 resources:
   repositories:
-  - repository: InternalVersionsRepo
+  - repository: VersionsRepo
     type: github
     endpoint: dotnet
     name: dotnet/versions
@@ -48,3 +48,4 @@ extends:
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        versionsRepoRef: VersionsRepo

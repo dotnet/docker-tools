@@ -36,11 +36,9 @@ jobs:
   - ${{ parameters.customPublishVariables }}
 
   steps:
-  - checkout: self
-  - checkout: ${{ parameters.versionsRepoRef }}
-    path: s/${{ parameters.versionsRepoPath }}
-    persistCredentials: true
-    fetchDepth: 1
+  - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+    parameters:
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/common/templates/steps/retain-build.yml@self
 

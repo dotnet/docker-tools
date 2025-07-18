@@ -8,6 +8,8 @@ steps:
 - ${{ if ne(parameters.versionsRepoRef, '') }}:
   - checkout: ${{ parameters.versionsRepoRef }}
     path: s/${{ parameters.versionsRepoPath }}
+    persistCredentials: true
+    fetchDepth: 1
 - powershell: |
     $commonMatrixAndBuildOptions = "--source-repo $(publicGitRepoUri)"
     if ("$(System.TeamProject)" -eq "internal" -and "$(Build.Reason)" -ne "PullRequest") {

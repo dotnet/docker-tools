@@ -18,6 +18,13 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
@@ -41,3 +48,4 @@ extends:
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        versionsRepoRef: VersionsRepo

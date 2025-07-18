@@ -16,6 +16,13 @@ resources:
     endpoint: dotnet
     name: dotnet/versions
 
+parameters:
+- name: sourceBuildPipelineRunId
+  displayName: >
+    Source build pipeline run ID. This refers to runs of *this pipeline*.
+  type: string
+  default: $(Build.BuildId)
+
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
 
@@ -35,3 +42,4 @@ extends:
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
         versionsRepoRef: VersionsRepo
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

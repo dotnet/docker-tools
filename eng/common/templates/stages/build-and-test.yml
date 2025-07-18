@@ -87,7 +87,7 @@ stages:
       noCache: ${{ parameters.noCache }}
       customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
@@ -99,7 +99,7 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -115,7 +115,7 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -131,7 +131,7 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -147,7 +147,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -163,7 +163,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -179,7 +179,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -196,7 +196,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
@@ -248,7 +248,7 @@ stages:
         customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         commonInitStepsForMatrixAndBuild:
-        - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
+        - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
           parameters:
             versionsRepoRef: ${{ parameters.versionsRepoRef }}
     - template: /eng/common/templates/jobs/test-images-linux-client.yml@self

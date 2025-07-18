@@ -72,3 +72,4 @@ stages:
     internalProjectName: ${{ parameters.internalProjectName }}
     publicProjectName: ${{ parameters.publicProjectName }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+    versionsRepoRef: ${{ parameters.versionsRepoRef }}

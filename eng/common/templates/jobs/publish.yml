@@ -5,6 +5,8 @@ parameters:
   customPublishVariables: []
   sourceBuildPipelineDefinitionId: ""
   sourceBuildPipelineRunId: ""
+  versionsRepoRef: null
+  versionsRepoPath: ""
 
 jobs:
 - job: Publish

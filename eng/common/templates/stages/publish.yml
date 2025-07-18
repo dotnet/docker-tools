@@ -14,6 +14,9 @@ parameters:
   sourceBuildPipelineDefinitionId: ''
   sourceBuildPipelineRunId: ''
 
+  versionsRepoRef: null
+  versionsRepoPath: "versions"
+
 ################################################################################
 # Publish Images
 ################################################################################
@@ -62,6 +65,8 @@ stages:
         pool: ${{ parameters.pool }}
         internalProjectName: ${{ parameters.internalProjectName }}
         customPublishVariables: ${{ parameters.customPublishVariables }}
+        versionsRepoRef: ${{ parameters.versionsRepoRef }}
+        versionsRepoPath: ${{ parameters.versionsRepoPath }}
         customInitSteps: ${{ parameters.customPublishInitSteps }}
         sourceBuildPipelineDefinitionId: ${{ parameters.sourceBuildPipelineDefinitionId }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

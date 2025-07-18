@@ -38,6 +38,7 @@ jobs:
   steps:
   - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
     parameters:
+      cloneVersionsRepo: ${{ variables.publishImageInfo }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/common/templates/steps/retain-build.yml@self

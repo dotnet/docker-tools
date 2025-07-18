@@ -5,7 +5,6 @@
 # - Publishing images
 
 parameters:
-  # If versionsRepoRef is not provided, then it won't be checked out.
   versionsRepoRef: ""
   versionsRepoPath: "versions"
 
@@ -16,6 +15,7 @@ steps:
     path: s/${{ parameters.versionsRepoPath }}
     persistCredentials: true
     fetchDepth: 1
+    condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
 - powershell: |
     $commonMatrixAndBuildOptions = "--source-repo $(publicGitRepoUri)"
     if ("$(System.TeamProject)" -eq "internal" -and "$(Build.Reason)" -ne "PullRequest") {

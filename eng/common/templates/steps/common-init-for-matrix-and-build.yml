@@ -1,11 +1,11 @@
 parameters:
-  noCache: false
-  versionsRepoRef: null
+  # If versionsRepoRef is not provided, then it won't be checked out.
+  versionsRepoRef: ""
   versionsRepoPath: "versions"
 
 steps:
 - checkout: self
-- ${{ if eq(parameters.noCache, false) }}:
+- ${{ if ne(parameters.versionsRepoRef, '') }}:
   - checkout: ${{ parameters.versionsRepoRef }}
     path: s/${{ parameters.versionsRepoPath }}
 - powershell: |
@@ -18,7 +18,7 @@ steps:
       $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
     }
 
-    if ("${{ parameters.noCache }}" -eq "false") {
+    if ("${{ parameters.versionsRepoRef }}" -ne "") {
       $versionsBasePath = "${{ parameters.versionsRepoPath }}/"
       $pipelineDisabledCache = "false"
 
@@ -57,7 +57,7 @@ steps:
     echo "##vso[task.setvariable variable=pipelineDisabledCache]$pipelineDisabledCache"
   displayName: Set Common Variables for Matrix and Build
 
-- ${{ if eq(parameters.noCache, false) }}:
+- ${{ if ne(parameters.versionsRepoRef, '') }}:
   # Special logic is needed to copy the tsaoptions.json file to a well known location for the 1ES PT.
   # This template has multiple checkouts and AzDO doesn't have support for dynamically determining the
   # default repo path therefore the 1es-official logic can't calculate the repo's tsa config file path.

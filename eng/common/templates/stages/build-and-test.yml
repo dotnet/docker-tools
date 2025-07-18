@@ -22,7 +22,7 @@ parameters:
   internalProjectName: null
   publicProjectName: null
 
-  versionsRepoRef: null
+  versionsRepoRef: ""
 
   isInternalServicingValidation: false
 
@@ -89,7 +89,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/common/templates/jobs/build-images.yml@self
@@ -102,7 +101,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -119,7 +117,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -136,7 +133,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -153,7 +149,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -170,7 +165,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -187,7 +181,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -205,7 +198,6 @@ stages:
       commonInitStepsForMatrixAndBuild:
       - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
         parameters:
-          noCache: ${{ parameters.noCache }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -258,7 +250,6 @@ stages:
         commonInitStepsForMatrixAndBuild:
         - template: /eng/common/templates/steps/common-init-for-matrix-and-build.yml@self
           parameters:
-            noCache: ${{ parameters.noCache }}
             versionsRepoRef: ${{ parameters.versionsRepoRef }}
     - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
       parameters:

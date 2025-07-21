@@ -9,8 +9,23 @@ trigger:
     - eng/*
     - test/*
 
+parameters:
+- name: sourceBuildPipelineRunId
+  displayName: >
+    Source build pipeline run ID. This refers to runs of *this pipeline*.
+  type: string
+  default: $(Build.BuildId)
+
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
+
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
   template: /eng/common/templates/1es-official.yml@self
@@ -27,3 +42,5 @@ extends:
         noCache: true
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
+        versionsRepoRef: VersionsRepo
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

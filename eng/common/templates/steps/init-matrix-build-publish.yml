@@ -1,17 +1,21 @@
+# Initialize common variables used in
+# - Generating build matrix
+# - Building images
+# - Running tests
+# - Publishing images
+
 parameters:
-  noCache: false
-  internalVersionsRepoRef: null
-  publicVersionsRepoRef: null
-  versionsRepoPath: versions
+  versionsRepoRef: ""
+  versionsRepoPath: "versions"
 
 steps:
 - checkout: self
-- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(parameters.noCache, false)) }}:
-  - checkout: ${{ parameters.publicVersionsRepoRef }}
+- ${{ if ne(parameters.versionsRepoRef, '') }}:
+  - checkout: ${{ parameters.versionsRepoRef }}
     path: s/${{ parameters.versionsRepoPath }}
-- ${{ if and(eq(variables['System.TeamProject'], 'internal'), eq(parameters.noCache, false)) }}:
-  - checkout: ${{ parameters.internalVersionsRepoRef }}
-    path: s/${{ parameters.versionsRepoPath }}
+    persistCredentials: true
+    fetchDepth: 1
+    condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
 - powershell: |
     $commonMatrixAndBuildOptions = "--source-repo $(publicGitRepoUri)"
     if ("$(System.TeamProject)" -eq "internal" -and "$(Build.Reason)" -ne "PullRequest") {
@@ -22,7 +26,7 @@ steps:
       $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
     }
 
-    if ("${{ parameters.noCache }}" -eq "false") {
+    if ("${{ parameters.versionsRepoRef }}" -ne "") {
       $versionsBasePath = "${{ parameters.versionsRepoPath }}/"
       $pipelineDisabledCache = "false"
 
@@ -59,9 +63,9 @@ steps:
     echo "##vso[task.setvariable variable=commonMatrixAndBuildOptions]$commonMatrixAndBuildOptions"
     echo "##vso[task.setvariable variable=versionsBasePath]$versionsBasePath"
     echo "##vso[task.setvariable variable=pipelineDisabledCache]$pipelineDisabledCache"
-  displayName: Set Common Variables for Matrix and Build
+  displayName: Set Common Variables for Matrix, Build, and Publish
 
-- ${{ if eq(parameters.noCache, false) }}:
+- ${{ if ne(parameters.versionsRepoRef, '') }}:
   # Special logic is needed to copy the tsaoptions.json file to a well known location for the 1ES PT.
   # This template has multiple checkouts and AzDO doesn't have support for dynamically determining the
   # default repo path therefore the 1es-official logic can't calculate the repo's tsa config file path.

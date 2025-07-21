@@ -25,6 +25,14 @@ variables:
 - name: publishEolAnnotations
   value: true
 
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
+
 extends:
   template: /eng/common/templates/1es-official.yml@self
   parameters:
@@ -41,3 +49,4 @@ extends:
         internalProjectName: ${{ variables.internalProjectName }}
         publicProjectName: ${{ variables.publicProjectName }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        versionsRepoRef: VersionsRepo

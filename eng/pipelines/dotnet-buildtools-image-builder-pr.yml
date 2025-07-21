@@ -12,6 +12,14 @@ trigger: none
 variables:
 - template: templates/variables/image-builder.yml
 
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: public
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
+
 stages:
 - template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
   parameters:
@@ -19,3 +27,4 @@ stages:
     noCache: true
     internalProjectName: ${{ variables.internalProjectName }}
     publicProjectName: ${{ variables.publicProjectName }}
+    versionsRepoRef: VersionsRepo

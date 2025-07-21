@@ -9,15 +9,16 @@ pr:
 
 trigger: none
 
+variables:
+- template: templates/variables/eng-validation.yml
+
 resources:
   repositories:
   - repository: VersionsRepo
     type: github
     endpoint: public
     name: dotnet/versions
-
-variables:
-- template: templates/variables/eng-validation.yml
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 stages:
 - template: ../common/templates/stages/dotnet/build-test-publish-repo.yml

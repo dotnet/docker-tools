@@ -18,19 +18,20 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
-resources:
-  repositories:
-  - repository: VersionsRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/versions
-
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - name: publishEolAnnotations
   value: true
+
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

@@ -9,13 +9,6 @@ trigger:
     - eng/*
     - test/*
 
-resources:
-  repositories:
-  - repository: VersionsRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/versions
-
 parameters:
 - name: sourceBuildPipelineRunId
   displayName: >
@@ -25,6 +18,14 @@ parameters:
 
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
+
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

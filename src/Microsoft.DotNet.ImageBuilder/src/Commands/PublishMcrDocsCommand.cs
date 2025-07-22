@@ -165,11 +165,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (string readmePath in readmePaths)
             {
-                string fullPath = Path.Combine(Manifest.Directory, readmePath);
-
-                string updatedReadMe = File.ReadAllText(fullPath);
+                string updatedReadMe = File.ReadAllText(readmePath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                readmes.Add(GetGitObject(productRepo, fullPath, updatedReadMe));
+                readmes.Add(GetGitObject(productRepo, readmePath, updatedReadMe));
             }
 
             return readmes.ToArray();

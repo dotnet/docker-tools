@@ -15,11 +15,11 @@ public class AsyncPageableMock<T>(IEnumerable<T> items) : AsyncPageable<T>
     public override IAsyncEnumerable<Page<T>> AsPages(string continuationToken = null, int? pageSizeHint = null) =>
         new PageMock<T>[] { new(_items) }.ToAsyncEnumerable();
 
-    private class PageMock<T>(IEnumerable<T> items) : Page<T>
+    private class PageMock<TItem>(IEnumerable<TItem> items) : Page<TItem>
     {
-        private readonly IEnumerable<T> _items = items;
+        private readonly IEnumerable<TItem> _items = items;
 
-        public override IReadOnlyList<T> Values => _items.ToList();
+        public override IReadOnlyList<TItem> Values => _items.ToList();
 
         public override string ContinuationToken => throw new NotImplementedException();
 

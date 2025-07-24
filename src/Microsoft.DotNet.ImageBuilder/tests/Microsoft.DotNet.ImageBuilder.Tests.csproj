@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <IsPackable>false</IsPackable>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

@@ -5,6 +5,8 @@
     <PublishTrimmed>False</PublishTrimmed>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

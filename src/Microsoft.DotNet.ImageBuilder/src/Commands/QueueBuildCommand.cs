@@ -47,14 +47,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public override async Task ExecuteAsync()
         {
             string subscriptionsJson = File.ReadAllText(Options.SubscriptionsPath);
-            Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
+            Subscription[] subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson)
+                ?? throw new InvalidOperationException("Failed to deserialize subscriptions file.");
             IEnumerable<SubscriptionImagePaths> imagePathsBySubscription = GetAllSubscriptionImagePaths();
 
             if (imagePathsBySubscription.Any())
             {
                 await Task.WhenAll(
-                    imagePathsBySubscription.Select(
-                        kvp => QueueBuildForStaleImages(subscriptions.First(sub => sub.Id == kvp.SubscriptionId), kvp.ImagePaths)));
+                    imagePathsBySubscription.Select(kvp =>
+                        QueueBuildForStaleImages(
+                            subscriptions.FirstOrDefault(sub => sub.Id == kvp.SubscriptionId)
+                                ?? throw new InvalidOperationException(
+                                    $"Subscription with ID {kvp.SubscriptionId} not found."),
+                            pathsToRebuild: kvp.ImagePaths
+                        )
+                    )
+                );
             }
             else
             {
@@ -71,7 +79,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Enumerable here represents the data collected by one job.  We need to consolidate the paths for a given subscription since
             // they could be spread across multiple items in the Enumerable.
             return Options.AllSubscriptionImagePaths
-                .SelectMany(allImagePaths => JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(allImagePaths))
+                .SelectMany(allImagePaths => JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(allImagePaths)
+                    ?? throw new InvalidOperationException("Failed to deserialize subscription image paths."))
                 .GroupBy(imagePaths => imagePaths.SubscriptionId)
                 .Select(group => new SubscriptionImagePaths
                 {

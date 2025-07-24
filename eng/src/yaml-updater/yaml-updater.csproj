@@ -6,6 +6,8 @@
     <RootNamespace>YamlUpdater</RootNamespace>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

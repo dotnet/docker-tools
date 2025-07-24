@@ -70,7 +70,8 @@ namespace Microsoft.DotNet.ImageBuilder
         private async Task<T> SendRequestAsync<T>(Func<HttpRequestMessage> message)
         {
             HttpResponseMessage response = await _httpClient.SendRequestAsync(message, GetAccessTokenAsync, _httpPolicy);
-            return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync());
+            return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync()) 
+                ?? throw new InvalidOperationException("Failed to deserialize response from MCR Status API.");
         }
 
         private Task<string> GetAccessTokenAsync() =>

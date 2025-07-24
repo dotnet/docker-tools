@@ -10,6 +10,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
+using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
@@ -21,6 +22,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string imageInfoPath = Path.Combine(directory, "image-info.json");
             File.WriteAllText(imageInfoPath, imageInfoJson);
             return imageInfoPath;
+        }
+
+        public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
+        {
+            Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));
         }
 
         public static ImageArtifactDetails CreateImageInfo(

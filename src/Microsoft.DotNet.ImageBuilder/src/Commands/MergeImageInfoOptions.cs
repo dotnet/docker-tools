@@ -18,6 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? InitialImageInfoPath { get; set; }
 
         public bool IsPublishScenario { get; set; }
+
+        public string? CommitOverride { get; set; }
     }
 
     public class MergeImageInfoOptionsBuilder : ManifestOptionsBuilder
@@ -38,6 +40,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     "Whether the files are being merged as part of publishing to a repo"),
                 CreateOption<string?>("initial-image-info-path", nameof(MergeImageInfoOptions.InitialImageInfoPath),
                     "Path to the image info file to be used as the initial merge target"),
+                CreateOption<string?>("commit-override", nameof(MergeImageInfoOptions.CommitOverride),
+                    "Override the commit in the commitUrl property for images that were updated compared to the"
+                    + " initial image info"),
             ];
     }
 }

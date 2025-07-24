@@ -206,8 +206,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageCacheState runtime1CacheState,
             ImageCacheState sdk1CacheState,
             string leg1ExpectedPaths,
-            string? leg2ExpectedPaths = null,
-            string? leg3ExpectedPaths = null,
+            string leg2ExpectedPaths = null,
+            string leg3ExpectedPaths = null,
             string inputPathFilters = "*runtime* *sdk*")
         {
             const string Standalone1RelativeDir = "1.0/standalone/os/amd64";

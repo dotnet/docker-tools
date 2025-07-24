@@ -41,7 +41,8 @@ namespace YamlUpdater
             Trace.Listeners.Add(safeTraceListener);
 
             string configJson = File.ReadAllText(options.ConfigPath);
-            FilePusher.Models.Config config = JsonConvert.DeserializeObject<FilePusher.Models.Config>(configJson);
+            FilePusher.Models.Config config = JsonConvert.DeserializeObject<FilePusher.Models.Config>(configJson) 
+                ?? throw new InvalidOperationException("Failed to deserialize configuration file.");
 
             UpdateYamlFile(options, config);
 

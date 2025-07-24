@@ -252,7 +252,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     imageInfos.AddRange(
                         image.Platforms
-                            .Where(platform => platform.PlatformInfo.Tags.Any())
+                            .Where(platform => platform.PlatformInfo?.Tags.Any() == true)
                             .Select(platform =>
                             {
                                 string digestSha = DockerHelper.GetDigestSha(platform.Digest);

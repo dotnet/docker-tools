@@ -201,7 +201,7 @@ namespace Microsoft.DotNet.ImageBuilder
         /// <param name="imageArtifactDetails">Image info content.</param>
         public static (PlatformData Platform, ImageData Image)? GetMatchingPlatformData(PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
         {
-            RepoData? repoData = imageArtifactDetails.Repos.FirstOrDefault(s => s.Repo == repo.Name);
+            RepoData repoData = imageArtifactDetails.Repos.FirstOrDefault(s => s.Repo == repo.Name);
             if (repoData == null || repoData.Images == null)
             {
                 return null;
@@ -209,7 +209,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             foreach (ImageData imageData in repoData.Images)
             {
-                PlatformData? platformData = imageData.Platforms
+                PlatformData platformData = imageData.Platforms
                     .FirstOrDefault(platformData => platformData.PlatformInfo == platform);
                 if (platformData != null)
                 {

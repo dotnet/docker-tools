@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -15,7 +16,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     [Export(typeof(ICommand))]
-    public class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>
+    public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>
     {
         protected override string Description => "Merges the content of multiple image info files into one file";
 
@@ -46,10 +47,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IsPublish = Options.IsPublishScenario
             };
 
+            // Keep track of initial state to identify updated images
+            ImageArtifactDetails? initialImageArtifactDetails = null;
+
             ImageArtifactDetails targetImageArtifactDetails;
             if (Options.InitialImageInfoPath != null)
             {
                 targetImageArtifactDetails = srcImageArtifactDetailsList.First(item => item.Path == Options.InitialImageInfoPath).ImageArtifactDetails;
+
+                // Store a deep copy of the initial state for comparison if CommitUrlOverride is specified
+                if (!string.IsNullOrEmpty(Options.CommitOverride))
+                {
+                    initialImageArtifactDetails = ImageArtifactDetails.FromJson(JsonHelper.SerializeObject(targetImageArtifactDetails));
+                }
 
                 if (Options.IsPublishScenario)
                 {
@@ -69,10 +79,84 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails, options);
             }
 
+            // Apply CommitUrl override to updated images
+            if (!string.IsNullOrEmpty(Options.CommitOverride) && initialImageArtifactDetails != null)
+            {
+                ApplyCommitOverrideToUpdatedImages(targetImageArtifactDetails, initialImageArtifactDetails, Options.CommitOverride);
+            }
+
             string destinationContents = JsonHelper.SerializeObject(targetImageArtifactDetails) + Environment.NewLine;
             File.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// Applies a commit URL override to platforms that have been updated
+        /// since the initial state. A platform is considered updated if: -
+        /// It's a new platform that didn't exist in the initial state - Its
+        /// digest has changed compared to the initial state - Its commit URL
+        /// has changed compared to the initial state
+        /// </summary>
+        /// <param name="current">
+        /// The current merged image artifact details containing all platforms.
+        /// This instance will be modified with the <see cref="commitOverride"/>
+        /// </param>
+        /// <param name="initial">
+        /// The initial image artifact details used for comparison to detect updates
+        /// </param>
+        /// <param name="commitOverride">
+        /// The commit URL to apply to updated platforms
+        /// </param>
+        private static void ApplyCommitOverrideToUpdatedImages(
+            ImageArtifactDetails current,
+            ImageArtifactDetails initial,
+            string commitOverride)
+        {
+            // If commitOverride does not contain a valid SHA, throw an error
+            if (!CommitShaRegex.IsMatch(commitOverride))
+            {
+                throw new ArgumentException(
+                    $"The commit override '{commitOverride}' is not a valid SHA.",
+                    nameof(commitOverride));
+            }
+
+            foreach (RepoData currentRepo in current.Repos)
+            {
+                RepoData? initialRepo = initial.Repos.FirstOrDefault(r => r.Repo == currentRepo.Repo);
+                foreach (ImageData currentImage in currentRepo.Images)
+                {
+                    ImageData? initialImage = initialRepo?.Images.FirstOrDefault(i => i.ProductVersion == currentImage.ProductVersion);
+                    foreach (PlatformData currentPlatform in currentImage.Platforms)
+                    {
+                        PlatformData? initialPlatform = initialImage?.Platforms.FirstOrDefault(p =>
+                            p.Dockerfile == currentPlatform.Dockerfile &&
+                            p.Architecture == currentPlatform.Architecture &&
+                            p.OsType == currentPlatform.OsType &&
+                            p.OsVersion == currentPlatform.OsVersion);
+
+                        // If platform doesn't exist in initial or has been updated (different digest or commit), override CommitUrl
+                        if (initialPlatform == null ||
+                            initialPlatform.Digest != currentPlatform.Digest ||
+                            initialPlatform.CommitUrl != currentPlatform.CommitUrl)
+                        {
+                            // Extract the commit SHA from the override URL
+                            var overrideCommitMatch = CommitShaRegex.Match(commitOverride);
+                            if (overrideCommitMatch.Success && !string.IsNullOrEmpty(currentPlatform.CommitUrl))
+                            {
+                                // Replace the commit SHA in the current URL with the one from the override
+                                var newCommitSha = overrideCommitMatch.Value;
+                                currentPlatform.CommitUrl = CommitShaRegex.Replace(currentPlatform.CommitUrl, newCommitSha);
+                            }
+                            else
+                            {
+                                // Fallback to using the entire override if no valid commit SHA found or no current URL
+                                currentPlatform.CommitUrl = commitOverride;
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private void RemoveOutOfDateContent(ImageArtifactDetails imageArtifactDetails)
@@ -126,5 +210,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     "Removal of out-of-date content resulted in there being no content remaining in the target image info file. Something is probably wrong with the logic.");
             }
         }
+
+        [GeneratedRegex(@"[0-9a-f]{40}")]
+        public static partial Regex CommitShaRegex { get; }
     }
 }

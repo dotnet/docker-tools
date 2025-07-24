@@ -5,12 +5,15 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Newtonsoft.Json;
+using Shouldly;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
@@ -18,7 +21,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class MergeImageInfoFilesCommandTests
+    public partial class MergeImageInfoFilesCommandTests
     {
         [Fact]
         public async Task MergeImageInfoFilesCommand_HappyPath()
@@ -983,6 +986,172 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
             ImageInfoHelperTests.CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
+        }
+
+        [Fact]
+        public async Task MergeImageInfoFilesCommand_CommitUrlOverride()
+        {
+            using TempFolderContext context = TestHelper.UseTempFolder();
+
+            // Basic setup
+            // 3 platforms/images
+            // - static - is not updated, and should not have its commit URL overridden
+            // - initial/updated - is updated, and should have its commit URL overridden with NewCommit
+
+            const string StaticDigest = "sha256:static_digest";
+            const string InitialDigest = "sha256:initial_digest";
+            const string NewDigest = "sha256:new_digest";
+
+            const string StaticCommit = "0000000000000000000000000000000000000000";
+            const string InitialCommit = "1111111111111111111111111111111111111111";
+            const string NewCommit = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+            const string CommitOverride = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+            const string StaticDockerfilePath = "path/to/static";
+            const string ChangingDockerfilePath = "path/to/changing";
+
+            string staticDockerfile = CreateDockerfile(StaticDockerfilePath, context);
+            string changingDockerfile = CreateDockerfile(ChangingDockerfilePath, context);
+
+            var createCommitUrl = (string path, string commit) => $"https://github.com/dotnet/dotnet-docker/blob/{commit}/src/{path}/Dockerfile";
+
+            var manifestFile = Path.Combine(context.Path, "manifest.json");
+            Manifest manifest = CreateManifest(
+                CreateRepo("repo",
+                    CreateImage(
+                        [
+                            CreatePlatform(
+                                dockerfilePath: staticDockerfile,
+                                tags: [],
+                                osVersion: "noble",
+                                architecture: Architecture.AMD64
+                            ),
+                            CreatePlatform(
+                                dockerfilePath: changingDockerfile,
+                                tags: [],
+                                osVersion: "noble",
+                                architecture: Architecture.AMD64
+                            )
+                        ],
+                        productVersion: "1.0"
+                    )
+                )
+            );
+
+            // Create initial image info with existing platform
+            var staticPlatform = CreatePlatform(
+                dockerfile: staticDockerfile,
+                digest: StaticDigest,
+                architecture: "amd64",
+                osType: "Linux",
+                osVersion: "noble",
+                commitUrl: createCommitUrl(StaticDockerfilePath, StaticCommit)
+            );
+
+            var initialPlatform = CreatePlatform(
+                dockerfile: changingDockerfile,
+                digest: InitialDigest,
+                architecture: "amd64",
+                osType: "Linux",
+                osVersion: "noble",
+                commitUrl: createCommitUrl(ChangingDockerfilePath, InitialCommit)
+            );
+
+            var updatedPlatform = CreatePlatform(
+                dockerfile: changingDockerfile,
+                digest: NewDigest,
+                architecture: "amd64",
+                osType: "Linux",
+                osVersion: "noble",
+                commitUrl: createCommitUrl(ChangingDockerfilePath, NewCommit)
+            );
+
+            // Leave source image info dir empty for now.
+            var sourceImageInfoDir = Path.Combine(context.Path, "infos");
+            Directory.CreateDirectory(sourceImageInfoDir);
+
+            var initialImageInfoFile = Path.Combine(sourceImageInfoDir, "initial-image-info.json");
+            var initialImageInfo = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms = [initialPlatform, staticPlatform],
+                                ProductVersion = "1.0"
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Only the updated platform is new because the "static" image wasn't built in our scenario.
+            var updatedImageInfoFile = Path.Combine(sourceImageInfoDir, "image-info.json");
+            var updatedImageInfo = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms = [updatedPlatform],
+                                ProductVersion = "1.0"
+                            }
+                        }
+                    }
+                }
+            };
+
+            File.WriteAllText(initialImageInfoFile, JsonHelper.SerializeObject(initialImageInfo));
+            File.WriteAllText(updatedImageInfoFile, JsonHelper.SerializeObject(updatedImageInfo));
+            File.WriteAllText(manifestFile, JsonConvert.SerializeObject(manifest));
+
+            var outputImageInfoFile = Path.Combine(context.Path, "merged-image-info.json");
+
+            MergeImageInfoCommand command = new MergeImageInfoCommand();
+            command.Options.SourceImageInfoFolderPath = sourceImageInfoDir;
+            command.Options.DestinationImageInfoPath = outputImageInfoFile;
+            command.Options.InitialImageInfoPath = initialImageInfoFile;
+            command.Options.CommitOverride = CommitOverride;
+            command.Options.Manifest = manifestFile;
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            // Verify the merged result
+            string resultContent = File.ReadAllText(outputImageInfoFile);
+            ImageArtifactDetails mergedImageInfo = ImageArtifactDetails.FromJson(resultContent);
+
+            mergedImageInfo.Repos.ShouldHaveSingleItem();
+            mergedImageInfo.Repos[0].Images.ShouldHaveSingleItem();
+
+            var platforms = mergedImageInfo.Repos[0].Images[0].Platforms;
+
+            // Verify that we didn't lose any platforms during the merge
+            platforms.ShouldContain(platform => platform.Dockerfile == staticDockerfile);
+            platforms.ShouldContain(platform => platform.Dockerfile == changingDockerfile);
+
+            // Verify that the static platform has the original commit URL
+            var staticPlatformResult = platforms.FirstOrDefault(p => p.Dockerfile == staticDockerfile);
+            var shaMatches = MergeImageInfoCommand.CommitShaRegex.Matches(staticPlatformResult.CommitUrl);
+            shaMatches.ShouldHaveSingleItem();
+            var staticCommitResult = shaMatches[0].Value;
+            staticCommitResult.ShouldBe(StaticCommit);
+
+            // Verify that the initial platform has the overridden commit
+            var initialPlatformResult = platforms.FirstOrDefault(p => p.Dockerfile == changingDockerfile);
+            var initialShaMatches = MergeImageInfoCommand.CommitShaRegex.Matches(initialPlatformResult.CommitUrl);
+            initialShaMatches.ShouldHaveSingleItem();
+            var initialCommitResult = initialShaMatches[0].Value;
+            initialCommitResult.ShouldBe(CommitOverride);
         }
     }
 }

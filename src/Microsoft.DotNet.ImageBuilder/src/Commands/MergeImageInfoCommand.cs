@@ -58,7 +58,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // Store a deep copy of the initial state for comparison if CommitUrlOverride is specified
                 if (!string.IsNullOrEmpty(Options.CommitOverride))
                 {
-                    initialImageArtifactDetails = ImageArtifactDetails.FromJson(JsonHelper.SerializeObject(targetImageArtifactDetails));
+                    initialImageArtifactDetails = ImageInfoHelper.LoadFromContent(
+                        JsonHelper.SerializeObject(targetImageArtifactDetails),
+                        Manifest,
+                        skipManifestValidation: Options.IsPublishScenario
+                    );
                 }
 
                 if (Options.IsPublishScenario)
@@ -93,20 +97,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         /// <summary>
         /// Applies a commit URL override to platforms that have been updated
-        /// since the initial state. A platform is considered updated if: -
-        /// It's a new platform that didn't exist in the initial state - Its
-        /// digest has changed compared to the initial state - Its commit URL
-        /// has changed compared to the initial state
+        /// since the initial state.
         /// </summary>
         /// <param name="current">
         /// The current merged image artifact details containing all platforms.
         /// This instance will be modified with the <see cref="commitOverride"/>
         /// </param>
         /// <param name="initial">
-        /// The initial image artifact details used for comparison to detect updates
+        /// The initial image artifact details used for comparison to detect
+        /// updates.
         /// </param>
         /// <param name="commitOverride">
-        /// The commit URL to apply to updated platforms
+        /// This commit will be inserted into the CommitUrl of any platforms
+        /// that were updated compared to the initial image info.
         /// </param>
         private static void ApplyCommitOverrideToUpdatedImages(
             ImageArtifactDetails current,
@@ -123,31 +126,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (RepoData currentRepo in current.Repos)
             {
-                RepoData? initialRepo = initial.Repos.FirstOrDefault(r => r.Repo == currentRepo.Repo);
+                RepoData? initialRepo = initial.Repos
+                    .FirstOrDefault(r => r.CompareTo(currentRepo) == 0);
+
                 foreach (ImageData currentImage in currentRepo.Images)
                 {
-                    ImageData? initialImage = initialRepo?.Images.FirstOrDefault(i => i.ProductVersion == currentImage.ProductVersion);
+                    ImageData? initialImage = initialRepo?.Images
+                        .FirstOrDefault(i => i.CompareTo(currentImage) == 0);
+
                     foreach (PlatformData currentPlatform in currentImage.Platforms)
                     {
-                        PlatformData? initialPlatform = initialImage?.Platforms.FirstOrDefault(p => p.CompareTo(currentPlatform) == 0);
+                        PlatformData? initialPlatform = initialImage?.Platforms
+                            .FirstOrDefault(p => p.CompareTo(currentPlatform) == 0);
 
-                        // If platform doesn't exist in initial or has been updated (different digest or commit), override CommitUrl
-                        if (initialPlatform == null ||
-                            initialPlatform.Digest != currentPlatform.Digest ||
-                            initialPlatform.CommitUrl != currentPlatform.CommitUrl)
+                        // If platform doesn't exist in initial or has been updated (different digest or commit),
+                        // override CommitUrl
+                        if (initialPlatform is null
+                            || initialPlatform.Digest != currentPlatform.Digest
+                            || initialPlatform.CommitUrl != currentPlatform.CommitUrl)
                         {
-                            // Extract the commit SHA from the override URL
-                            var overrideCommitMatch = CommitShaRegex.Match(commitOverride);
-                            if (overrideCommitMatch.Success && !string.IsNullOrEmpty(currentPlatform.CommitUrl))
+                            if (!string.IsNullOrEmpty(currentPlatform.CommitUrl))
                             {
                                 // Replace the commit SHA in the current URL with the one from the override
-                                var newCommitSha = overrideCommitMatch.Value;
-                                currentPlatform.CommitUrl = CommitShaRegex.Replace(currentPlatform.CommitUrl, newCommitSha);
-                            }
-                            else
-                            {
-                                // Fallback to using the entire override if no valid commit SHA found or no current URL
-                                currentPlatform.CommitUrl = commitOverride;
+                                currentPlatform.CommitUrl =
+                                    CommitShaRegex.Replace(currentPlatform.CommitUrl, commitOverride);
                             }
                         }
                     }

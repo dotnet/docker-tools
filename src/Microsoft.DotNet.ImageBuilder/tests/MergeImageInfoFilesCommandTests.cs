@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -21,7 +20,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public partial class MergeImageInfoFilesCommandTests
+    public class MergeImageInfoFilesCommandTests
     {
         [Fact]
         public async Task MergeImageInfoFilesCommand_HappyPath()

@@ -146,8 +146,8 @@ $@"
             Assert.Equal("testRepo3", manifestInfo.Model.Repos[2].Name);
 
             Assert.Equal(2, manifestInfo.Model.Repos[0].Images.Length);
-            Assert.Equal(1, manifestInfo.Model.Repos[1].Images.Length);
-            Assert.Equal(1, manifestInfo.Model.Repos[2].Images.Length);
+            Assert.Single(manifestInfo.Model.Repos[1].Images);
+            Assert.Single(manifestInfo.Model.Repos[2].Images);
         }
 
         private static ManifestInfo LoadManifestInfo(string manifest, string includeManifestPath = null, string includeManifest = null)

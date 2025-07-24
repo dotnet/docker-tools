@@ -109,7 +109,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                Assert.Equal(1, helper.ResolvedVariables.Count);
+                Assert.Single(helper.ResolvedVariables);
                 Assert.Equal("abc", helper.ResolvedVariables["newVar"]);
             }
         }

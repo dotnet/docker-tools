@@ -15,6 +15,7 @@ using Xunit;
 
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -1246,11 +1247,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageInfoHelper.MergeImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
             CompareImageArtifactDetails(srcImageArtifactDetails, targetImageArtifactDetails);
-        }
-
-        public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
-        {
-            Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));
         }
 
         private static ImageInfo CreateImageInfo() =>

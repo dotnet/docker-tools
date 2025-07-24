@@ -315,7 +315,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                ImageInfoHelperTests.CompareImageArtifactDetails(expected, actual);
+                CompareImageArtifactDetails(expected, actual);
             }
         }
 
@@ -611,7 +611,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                ImageInfoHelperTests.CompareImageArtifactDetails(expected, actual);
+                CompareImageArtifactDetails(expected, actual);
             }
         }
 
@@ -829,7 +829,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
             ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
-            ImageInfoHelperTests.CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
+            CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
         }
 
         /// <summary>
@@ -984,7 +984,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string resultsContent = File.ReadAllText(command.Options.DestinationImageInfoPath);
             ImageArtifactDetails actual = JsonConvert.DeserializeObject<ImageArtifactDetails>(resultsContent);
 
-            ImageInfoHelperTests.CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
+            CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
         }
 
         [Fact]

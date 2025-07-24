@@ -129,11 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     ImageData? initialImage = initialRepo?.Images.FirstOrDefault(i => i.ProductVersion == currentImage.ProductVersion);
                     foreach (PlatformData currentPlatform in currentImage.Platforms)
                     {
-                        PlatformData? initialPlatform = initialImage?.Platforms.FirstOrDefault(p =>
-                            p.Dockerfile == currentPlatform.Dockerfile &&
-                            p.Architecture == currentPlatform.Architecture &&
-                            p.OsType == currentPlatform.OsType &&
-                            p.OsVersion == currentPlatform.OsVersion);
+                        PlatformData? initialPlatform = initialImage?.Platforms.FirstOrDefault(p => p.CompareTo(currentPlatform) == 0);
 
                         // If platform doesn't exist in initial or has been updated (different digest or commit), override CommitUrl
                         if (initialPlatform == null ||

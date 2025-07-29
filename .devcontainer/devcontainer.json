@@ -15,7 +15,7 @@
                 "GitHub.copilot"
             ],
             "settings": {
-                "dotnet.defaultSolution": "Microsoft.DotNet.DockerTools.sln",
+                "dotnet.defaultSolution": "Microsoft.DotNet.DockerTools.slnx",
                 "remote.autoForwardPorts": true,
                 "remote.autoForwardPortsSource": "hybrid",
                 "remote.otherPortsAttributes": {

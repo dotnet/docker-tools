@@ -4,17 +4,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Folder Name="/eng/" />
-  <Folder Name="/eng/src/">
-    <Project Path="eng/src/file-pusher/file-pusher.csproj" />
-    <Project Path="eng/src/yaml-updater/yaml-updater.csproj" />
-  </Folder>
-  <Folder Name="/src/" />
-  <Folder Name="/src/Microsoft.DotNet.ImageBuilder/" />
-  <Folder Name="/src/Microsoft.DotNet.ImageBuilder/src/">
-    <Project Path="src/Microsoft.DotNet.ImageBuilder/src/Microsoft.DotNet.ImageBuilder.csproj" />
-  </Folder>
-  <Folder Name="/src/Microsoft.DotNet.ImageBuilder/tests/">
-    <Project Path="src/Microsoft.DotNet.ImageBuilder/tests/Microsoft.DotNet.ImageBuilder.Tests.csproj" />
-  </Folder>
+  <Project Path="eng/src/file-pusher/file-pusher.csproj" />
+  <Project Path="eng/src/yaml-updater/yaml-updater.csproj" />
+  <Project Path="src/Microsoft.DotNet.ImageBuilder/src/Microsoft.DotNet.ImageBuilder.csproj" />
+  <Project Path="src/Microsoft.DotNet.ImageBuilder/tests/Microsoft.DotNet.ImageBuilder.Tests.csproj" />
 </Solution>

@@ -13,7 +13,9 @@ resources:
       - Publish
 
 variables:
-- template: templates/variables/common.yml
+- template: /eng/pipelines/templates/variables/common.yml
+# Uses GitHub token to submit pull requests
+- template: /eng/common/templates/variables/dotnet/secrets.yml@self
 
 jobs:
 - job: Build

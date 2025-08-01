@@ -16,6 +16,8 @@ parameters:
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
+# Uses DockerHub registry creds to avoid rate limiting
+- template: /eng/common/templates/variables/dotnet/secrets.yml@self
 - ${{ if eq(parameters.isDockerHubImage, 'true') }}:
   - name: normalizedImageName
     value: ${{ format('docker.io/{0}', parameters.imageName) }}

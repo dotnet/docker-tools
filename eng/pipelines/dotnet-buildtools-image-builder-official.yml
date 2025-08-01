@@ -22,6 +22,9 @@ variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+# Uses GitHub token to access the versions repo
+# Also uses DockerHub registry creds to avoid rate limiting
+- template: /eng/common/templates/variables/dotnet/secrets.yml@self
 - name: publishEolAnnotations
   value: true
 

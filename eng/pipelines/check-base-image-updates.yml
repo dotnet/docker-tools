@@ -11,6 +11,8 @@ schedules:
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
+# Uses GitHub token to access the versions repo
+- template: /eng/common/templates/variables/dotnet/secrets.yml@self
 
 extends:
   template: /eng/common/templates/1es-official.yml@self

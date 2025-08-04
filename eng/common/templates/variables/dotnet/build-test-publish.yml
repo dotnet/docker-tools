@@ -34,6 +34,12 @@ variables:
   value: dotnet
 - name: gitHubNotificationsRepoInfo.repo
   value: dotnet-docker-internal
+# $(gitHubNotificationsRepoInfo.authArgs) is needed by the "Post Publish
+# Notification" step in eng/common/templates/jobs/publish.yml#L271, even during
+# a dry-run. This value is a placeholder that gets replaced when referencing
+# the secrets.yml variable template.
+- name: gitHubNotificationsRepoInfo.authArgs
+  value: --gh-token 'placeholder'
 
 - name: gitHubVersionsRepoInfo.org
   value: dotnet

@@ -16,6 +16,13 @@ variables:
 - name: internalProjectName
   value: internal
 
+# $(dockerHubRegistryCreds) is needed by the copy-base-images step in
+# eng/common/templates/stages/build-and-test.yml#L73-L78, even during a dry-run.
+# This is a placeholder that gets replaced when referencing the secrets.yml
+# variable template.
+- name: dockerHubRegistryCreds
+  value: --registry-creds 'docker.io=placeholder;placeholder'
+
 - name: linuxAmd64InternalPoolImage
   value: 1es-ubuntu-2204
 - name: linuxAmd64InternalPoolName

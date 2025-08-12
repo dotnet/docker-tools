@@ -131,8 +131,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (ImageData currentImage in currentRepo.Images)
                 {
-                    ImageData? initialImage = initialRepo?.Images
-                        .FirstOrDefault(i => i.CompareTo(currentImage) == 0);
+                    // Match images without relying on ImageData.CompareTo, which throws when
+                    // ManifestImage is null.
+                    //
+                    // ManifestImage will be null when we're parsing a manifest file where the
+                    // "initial" image was replaced or removed in the build where the "current"
+                    // image was built. For example, this can happen when all the tags change for
+                    // an image,
+                    //
+                    // This means if initialImage.ManifestImage is null, then we can essentially
+                    // treat this currentImage as a new image.
+
+                    ImageData? initialImage = null;
+                    if (initialRepo is not null)
+                    {
+                        if (currentImage.ManifestImage is not null)
+                        {
+                            initialImage = initialRepo.Images
+                                .FirstOrDefault(i => i.ManifestImage == currentImage.ManifestImage);
+                        }
+
+                        // By leaving initialImage null here, we are marking currentImage as a new
+                        // image, since no initial image was found that matches it.
+                    }
 
                     foreach (PlatformData currentPlatform in currentImage.Platforms)
                     {

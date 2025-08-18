@@ -1,0 +1,44 @@
+# This pipeline is a work in progress.
+# See https://github.com/dotnet/dotnet-docker-internal/issues/8566 for more details.
+
+trigger: none
+pr: none
+
+parameters:
+- name: sourceBuildPipelineRunId
+  displayName: >
+    Source build pipeline run ID. This refers to runs of *this pipeline*.
+    Override this parametre in combination with disabling the `Build` stage to
+    test or publish images that were build in a different pipeline run.
+    The default value should be left alone if you want to build new images.
+  type: string
+  default: $(Build.BuildId)
+
+variables:
+- template: /eng/pipelines/templates/variables/image-builder.yml@self
+  parameters:
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+# Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
+- template: /eng/common/templates/variables/dotnet/secrets-unofficial.yml@self
+- name: publishEolAnnotations
+  value: true
+
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
+
+extends:
+  template: /eng/common/templates/1es-unofficial.yml@self
+  parameters:
+    stages:
+    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
+      parameters:
+        noCache: true
+        internalProjectName: ${{ variables.internalProjectName }}
+        publicProjectName: ${{ variables.publicProjectName }}
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        versionsRepoRef: VersionsRepo

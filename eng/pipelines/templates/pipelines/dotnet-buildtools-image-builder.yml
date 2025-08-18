@@ -1,0 +1,50 @@
+# This template injects stages for building and publishing ImageBuilder.
+
+parameters:
+- name: baseTemplate
+  type: object
+
+- name: publishConfig
+  type: object
+  default: null
+
+- name: internalProjectName
+  type: string
+
+- name: publicProjectName
+  type: string
+
+- name: sourceBuildPipelineRunId
+  type: string
+  default: $(Build.BuildId)
+
+- name: versionsRepoRef
+  type: string
+  default: ""
+
+extends:
+  template: ${{ parameters.baseTemplate.template }}
+  parameters:
+
+    ${{ if parameters.baseTemplate.parameters }}:
+      ${{ insert }}: ${{ parameters.baseTemplate.parameters }}
+
+    ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
+      serviceConnections:
+      - name: ${{ parameters.publishConfig.internalMirrorAcr.serviceConnection.name }}
+      - name: ${{ parameters.publishConfig.buildAcr.serviceConnection.name }}
+
+      ${{ if ne(parameters.versionsRepoRef, '') }}:
+        reposToExcludeFromScanning:
+        - ${{ parameters.versionsRepoRef }}
+
+    stages:
+    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
+      parameters:
+        noCache: true
+        internalProjectName: ${{ parameters.internalProjectName }}
+        publicProjectName: ${{ parameters.publicProjectName }}
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        ${{ if ne(parameters.versionsRepoRef, '') }}:
+          versionsRepoRef: ${{ parameters.versionsRepoRef }}
+        publishConfig: ${{ parameters.publishConfig }}

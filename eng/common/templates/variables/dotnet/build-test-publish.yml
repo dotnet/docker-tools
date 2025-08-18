@@ -20,8 +20,10 @@ variables:
   value: ./tests/run-tests.ps1
 - name: testResultsDirectory
   value: tests/Microsoft.DotNet.Docker.Tests/TestResults/
+
 - name: officialRepoPrefixes
   value: public/,internal/private/,unlisted/
+  readonly: true
 
 - name: mcrDocsRepoInfo.userName
   value: $(gitHubApp.marDocsUpdater.userName)

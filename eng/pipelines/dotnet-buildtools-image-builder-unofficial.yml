@@ -8,7 +8,7 @@ parameters:
 - name: sourceBuildPipelineRunId
   displayName: >
     Source build pipeline run ID. This refers to runs of *this pipeline*.
-    Override this parametre in combination with disabling the `Build` stage to
+    Override this parameter in combination with disabling the `Build` stage to
     test or publish images that were build in a different pipeline run.
     The default value should be left alone if you want to build new images.
   type: string
@@ -20,8 +20,17 @@ variables:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 # Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
 - template: /eng/common/templates/variables/dotnet/secrets-unofficial.yml@self
-- name: publishEolAnnotations
+- name: "publishEolAnnotations"
+  value: false
+  readonly: true
+# Unofficial secrets group has no GitHub token to publish image info with
+- name: "publishImageInfo"
+  value: false
+  readonly: true
+# Always run unofficial pipelines in debug mode
+- name: "System.Debug"
   value: true
+  readonly: true
 
 resources:
   repositories:
@@ -32,13 +41,13 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
-  template: /eng/common/templates/1es-unofficial.yml@self
+  template: /eng/common/templates/dotnet/base-pipeline-nonprod.yml@self
   parameters:
-    stages:
-    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+    baseTemplate:
+      template: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
       parameters:
-        noCache: true
-        internalProjectName: ${{ variables.internalProjectName }}
-        publicProjectName: ${{ variables.publicProjectName }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         versionsRepoRef: VersionsRepo
+        baseTemplate:
+          template: /eng/common/templates/1es.yml@self

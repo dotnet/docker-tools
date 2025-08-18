@@ -5,6 +5,7 @@ parameters:
   testJobTimeout: 60
   preBuildValidation: false
   internalProjectName: null
+  publishConfig: null
   customInitSteps: []
   sourceBuildPipelineRunId: ""
 
@@ -20,9 +21,14 @@ jobs:
   pool: ${{ parameters.pool }}
   timeoutInMinutes: ${{ parameters.testJobTimeout }}
   steps:
+  - powershell: |-
+      Write-Host 'Parameters for eng/common/templates/jobs/test-images-linux-client.yml'
+      Write-Host '${{ convertToJson(parameters) }}'
+    displayName: Print parameters
   - template: /eng/common/templates/steps/test-images-linux-client.yml@self
     parameters:
       preBuildValidation: ${{ parameters.preBuildValidation }}
       internalProjectName: ${{ parameters.internalProjectName }}
+      publishConfig: ${{ parameters.publishConfig }}
       customInitSteps: ${{ parameters.customInitSteps }}
       sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

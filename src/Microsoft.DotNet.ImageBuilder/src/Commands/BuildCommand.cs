@@ -28,6 +28,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
+        private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -51,7 +52,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService)
+            IImageCacheService imageCacheService,
+            ILifecycleMetadataService lifecycleMetadataService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -59,6 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(copyImageServiceFactory);
@@ -735,6 +738,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 foreach (TagInfo tag in _processedTags)
                 {
                     _dockerService.PushImage(tag.FullyQualifiedName, Options.IsDryRun);
+
+                    // Immediately set the staged image as EOL to prevent it from being picked up by scanning.
+                    // We only care about scanning for the images hosted by MAR. Not all staged images make it to MAR,
+                    // and, for those that do, they may be replaced by more up-to-date images later on.
+                    _lifecycleMetadataService.AnnotateEolDigest(
+                        tag.FullyQualifiedName,
+                        DateOnly.FromDateTime(DateTime.UtcNow),
+                        Options.IsDryRun,
+                        out _);
                 }
             }
         }

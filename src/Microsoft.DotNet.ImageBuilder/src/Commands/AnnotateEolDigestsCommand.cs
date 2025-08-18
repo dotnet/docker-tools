@@ -126,10 +126,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digestData.Digest, _loggerService, Options.IsDryRun, out Manifest? existingAnnotationManifest))
+            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digestData.Digest, Options.IsDryRun, out Manifest? existingAnnotationManifest))
             {
                 _loggerService.WriteMessage($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                if (_lifecycleMetadataService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _loggerService, Options.IsDryRun, out Manifest? createdAnnotationManifest))
+                if (_lifecycleMetadataService.AnnotateEolDigest(digestData.Digest, eolDate.Value, Options.IsDryRun, out Manifest? createdAnnotationManifest))
                 {
                     _createdAnnotationDigests.Add(createdAnnotationManifest.Reference);
                 }

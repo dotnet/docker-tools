@@ -23,7 +23,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
-        private readonly IProcessService _processService;
         private readonly Lazy<ICopyImageService> _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
@@ -48,7 +47,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IDockerService dockerService,
             ILoggerService loggerService,
             IGitService gitService,
-            IProcessService processService,
             ICopyImageServiceFactory copyImageServiceFactory,
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
@@ -58,7 +56,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-            _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));

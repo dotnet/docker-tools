@@ -40,7 +40,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task BuildCommand_ImageInfoOutput_Basic()
         {
-            const string getInstalledPackagesScriptPath = "get-pkgs.sh";
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
             const string aspnetRepo = "aspnet";
@@ -107,20 +106,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     "DEB,pkg3=2.0.0",
                 };
 
-                Mock<IProcessService> processServiceMock = new();
-
-                processServiceMock
-                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
-                    .Returns(string.Join(Environment.NewLine, runtimeDepsInstalledPackages));
-
-                processServiceMock
-                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
-                    .Returns(string.Join(Environment.NewLine, runtimeInstalledPackages));
-
-                processServiceMock
-                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{aspnetRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
-                    .Returns(string.Join(Environment.NewLine, aspnetInstalledPackages));
-
                 DateTime createdDate = DateTime.Now;
 
                 Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -159,7 +144,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     dockerServiceMock.Object,
                     Mock.Of<ILoggerService>(),
                     gitServiceMock.Object,
-                    processServiceMock.Object,
                     CreateCopyImageServiceFactoryMock().Object,
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
@@ -359,7 +343,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -488,7 +471,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -566,7 +548,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -619,7 +600,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -680,7 +660,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 Mock.Of<IManifestServiceFactory>(),
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -780,7 +759,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -970,7 +948,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     dockerServiceMock.Object,
                     Mock.Of<ILoggerService>(),
                     gitServiceMock.Object,
-                    Mock.Of<IProcessService>(),
                     CreateCopyImageServiceFactoryMock().Object,
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
@@ -1021,7 +998,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -1237,7 +1213,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -1453,7 +1428,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -1770,7 +1744,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -2063,7 +2036,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -2272,7 +2244,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -2520,7 +2491,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -2748,7 +2718,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -3064,7 +3033,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -3412,7 +3380,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
@@ -3511,7 +3478,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
-                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),

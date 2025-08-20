@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.IO;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
@@ -12,9 +11,9 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.CopyImageHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.CopyImageHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -28,14 +27,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
             CopyBaseImagesCommand command = new(
-                copyImageServiceFactoryMock.Object,
-                Mock.Of<ILoggerService>(),
-                Mock.Of<IGitService>(),
-                lifecycleMetadataServiceMock.Object);
+                copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -105,29 +100,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             copyImageServiceMock.VerifyNoOtherCalls();
-
-            DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-            Models.Oci.Manifest outManifest = null;
-
-            var expectedAnnotationTags = new string[]
-            {
-                $"{registry}/{command.Options.RepoPrefix}arm32v7/base:tag",
-                $"{registry}/{command.Options.RepoPrefix}library/base:tag",
-                $"{registry}/{command.Options.RepoPrefix}my-registry.com/repo:tag"
-            };
-
-            foreach (var expectedTag in expectedAnnotationTags)
-            {
-                lifecycleMetadataServiceMock.Verify(
-                    o => o.AnnotateEolDigest(
-                        expectedTag,
-                        // Account for edge case of day boundaries between command execution and this check
-                        It.Is<DateOnly>(date => date == today || date.AddDays(1) == today || date.AddDays(-1) == today),
-                        It.IsAny<bool>(),
-                        out outManifest));
-            }
-
-            lifecycleMetadataServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -154,10 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
             CopyBaseImagesCommand command = new(
-                copyImageServiceFactoryMock.Object,
-                Mock.Of<ILoggerService>(),
-                Mock.Of<IGitService>(),
-                Mock.Of<ILifecycleMetadataService>());
+                copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";

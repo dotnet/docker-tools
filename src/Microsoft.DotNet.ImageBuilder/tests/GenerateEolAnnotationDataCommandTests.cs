@@ -432,7 +432,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Manifest lifecycleArtifactManifest;
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<bool>(), out lifecycleArtifactManifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
             IContainerRegistryContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
@@ -1060,13 +1060,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             Manifest lifecycleArtifactManifest;
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(false);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             { 
                 lifecycleMetadataServiceMock
-                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<bool>(), out lifecycleArtifactManifest))
+                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                     .Returns(digestAnnotated.Value);
             }
             

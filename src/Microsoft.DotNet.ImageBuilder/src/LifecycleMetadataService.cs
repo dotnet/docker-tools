@@ -70,7 +70,15 @@ public class LifecycleMetadataService : ILifecycleMetadataService
                 return false;
             }
 
-            lifecycleArtifactManifest = JsonConvert.DeserializeObject<Manifest>(output ?? string.Empty) ?? throw new Exception("Unable to deserialize manifest");
+            lifecycleArtifactManifest = JsonConvert.DeserializeObject<Manifest>(output ?? string.Empty)
+                ?? throw new Exception(
+                    $"""
+                    Unable to deserialize lifecycle metadata manifest from 'oras' output:
+                    
+                    {output}
+                    
+                    """
+                );
         }
         catch (InvalidOperationException ex)
         {

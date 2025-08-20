@@ -33,6 +33,7 @@ extends:
       serviceConnections:
       - name: ${{ parameters.publishConfig.internalMirrorAcr.serviceConnection.name }}
       - name: ${{ parameters.publishConfig.buildAcr.serviceConnection.name }}
+      - name: ${{ parameters.publishConfig.publishAcr.serviceConnection.name }}
 
       ${{ if ne(parameters.versionsRepoRef, '') }}:
         reposToExcludeFromScanning:

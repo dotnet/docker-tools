@@ -40,6 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task BuildCommand_ImageInfoOutput_Basic()
         {
+            const string getInstalledPackagesScriptPath = "get-pkgs.sh";
             const string runtimeDepsRepo = "runtime-deps";
             const string runtimeRepo = "runtime";
             const string aspnetRepo = "aspnet";
@@ -106,6 +107,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     "DEB,pkg3=2.0.0",
                 };
 
+                Mock<IProcessService> processServiceMock = new();
+
+                processServiceMock
+                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeDepsRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
+                    .Returns(string.Join(Environment.NewLine, runtimeDepsInstalledPackages));
+
+                processServiceMock
+                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{runtimeRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
+                    .Returns(string.Join(Environment.NewLine, runtimeInstalledPackages));
+
+                processServiceMock
+                    .Setup(o => o.Execute(It.IsAny<string>(), It.Is<string>(val => val.Contains(getInstalledPackagesScriptPath) && val.Contains($"{aspnetRepo}:{tag}")), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
+                    .Returns(string.Join(Environment.NewLine, aspnetInstalledPackages));
+
                 DateTime createdDate = DateTime.Now;
 
                 Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -144,12 +159,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     dockerServiceMock.Object,
                     Mock.Of<ILoggerService>(),
                     gitServiceMock.Object,
+                    processServiceMock.Object,
                     CreateCopyImageServiceFactoryMock().Object,
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
                     Mock.Of<IAzureTokenCredentialProvider>(),
-                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                    Mock.Of<ILifecycleMetadataService>());
+                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
@@ -344,12 +359,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -469,18 +484,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<ICopyImageService> copyImageServiceMock = new();
 
-            Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
-
             BuildCommand command = new(
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()),
-                lifecycleMetadataServiceMock.Object);
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -533,28 +546,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o => o.GetImageSize(TagInfo.GetFullyQualifiedName(repoName, tag), false));
 
             copyImageServiceMock.VerifyNoOtherCalls();
-
-            DateOnly today = DateOnly.FromDateTime(DateTime.UtcNow);
-            Models.Oci.Manifest outManifest = null;
-
-            var expectedAnnotationTags = new string[]
-            {
-                TagInfo.GetFullyQualifiedName(repoName, tag),
-                TagInfo.GetFullyQualifiedName(repoName, sharedTag)
-            };
-
-            foreach (var expectedTag in expectedAnnotationTags)
-            {
-                lifecycleMetadataServiceMock.Verify(
-                    o => o.AnnotateEolDigest(
-                        expectedTag,
-                        // Account for edge case of day boundaries between command execution and this check
-                        It.Is<DateOnly>(date => date == today || date.AddDays(1) == today || date.AddDays(-1) == today),
-                        It.IsAny<bool>(),
-                        out outManifest));
-            }
-
-            lifecycleMetadataServiceMock.VerifyNoOtherCalls();
         }
 
         /// <summary>
@@ -575,12 +566,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -628,12 +619,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.BuildArgs.Add("arg1", "val1");
             command.Options.BuildArgs.Add("arg2", "val2a");
@@ -689,12 +680,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 Mock.Of<IManifestServiceFactory>(),
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -789,12 +780,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -979,12 +970,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     dockerServiceMock.Object,
                     Mock.Of<ILoggerService>(),
                     gitServiceMock.Object,
+                    Mock.Of<IProcessService>(),
                     CreateCopyImageServiceFactoryMock().Object,
                     manifestServiceFactoryMock.Object,
                     Mock.Of<IRegistryCredentialsProvider>(),
                     Mock.Of<IAzureTokenCredentialProvider>(),
-                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                    Mock.Of<ILifecycleMetadataService>());
+                    new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.SourceRepoUrl = "https://source";
@@ -1030,12 +1021,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>(),
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock().Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
@@ -1246,12 +1237,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1462,12 +1453,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1779,12 +1770,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2072,12 +2063,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2281,12 +2272,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2529,12 +2520,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2757,12 +2748,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -3073,12 +3064,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -3421,12 +3412,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3520,12 +3511,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
                 CreateCopyImageServiceFactoryMock().Object,
                 CreateManifestServiceFactoryMock(manifestServiceMock).Object,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>(),
-                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object),
-                Mock.Of<ILifecycleMetadataService>());
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;

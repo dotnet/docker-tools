@@ -295,7 +295,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
         {
-            if(_lifecycleMetadataService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, isDryRun: false, out Manifest? lifecycleArtifactManifest) &&
+            if(_lifecycleMetadataService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, isDryRun: false, out Manifest? lifecycleArtifactManifest) &&
                 lifecycleArtifactManifest?.Annotations != null)
             {
                 return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation]), expirationDays);

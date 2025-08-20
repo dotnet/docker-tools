@@ -58,7 +58,7 @@ extends:
         subscription: $(testSubscription)
         repoPrefix: "public/"
         serviceConnection:
-          name: $(acr-test.serviceConnectionName)
-          id: $(acr-test.serviceConnection.id)
-          clientId: $(acr-test.serviceConnection.clientId)
+          name: $(publish-test.serviceConnectionName)
+          id: $(publish-test.serviceConnection.id)
+          clientId: $(publish-test.serviceConnection.clientId)
           tenantId: $(testTenant)

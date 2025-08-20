@@ -113,7 +113,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
             Parallel.ForEach(unsupportedDigests, digest =>
             {
                 _loggerService.WriteMessage($"Checking digest for existing annotation: {digest.Digest}");
-                if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun, out _))
+                if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, Options.IsDryRun, out _))
                 {
                     digetsToAnnotate.Add(digest);
                 }

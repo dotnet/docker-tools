@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface ILifecycleMetadataService
 {
-    bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
+    bool IsDigestAnnotatedForEol(string digest, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
 
-    bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
+    bool AnnotateEolDigest(string digest, DateOnly date, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
 }

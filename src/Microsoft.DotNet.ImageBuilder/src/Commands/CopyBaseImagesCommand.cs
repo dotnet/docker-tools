@@ -17,15 +17,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CopyBaseImagesCommand : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>
     {
         private readonly IGitService _gitService;
+        private readonly ILifecycleMetadataService _lifecycleMetadataService;
 
         [ImportingConstructor]
         public CopyBaseImagesCommand(
             ICopyImageServiceFactory copyImageServiceFactory,
             ILoggerService loggerService,
-            IGitService gitService)
+            IGitService gitService,
+            ILifecycleMetadataService lifecycleMetadataService)
             : base(copyImageServiceFactory, loggerService)
         {
             _gitService = gitService;
+            _lifecycleMetadataService = lifecycleMetadataService;
         }
 
         protected override string Description => "Copies external base images from their source registry to ACR";
@@ -69,12 +72,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 fullRegistryName = Options.RegistryOverride;
             }
 
-            IEnumerable<Task> copyImageTasks = manifests
+            IEnumerable<Task<string>> copyImageTasks = manifests
                 .SelectMany(manifest => GetFromImages(manifest))
                 .Distinct()
                 .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName));
 
             await Task.WhenAll(copyImageTasks);
+
+            // Immediately set the copied images as EOL to prevent them from being picked up by scanning.
+            // We only care about scanning for the published product images which include layers of these base images
+            // that will be included as part of the scanning.
+            foreach (Task<string> copyImageTask in copyImageTasks)
+            {
+                string imageTag = copyImageTask.Result;
+                _lifecycleMetadataService.AnnotateEolDigest(
+                    imageTag,
+                    DateOnly.FromDateTime(DateTime.UtcNow),
+                    Options.IsDryRun,
+                    out _);
+            }
         }
 
         private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
@@ -82,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
                 .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
 
-        private Task CopyImageAsync(string fromImage, string destinationRegistryName)
+        private async Task<string> CopyImageAsync(string fromImage, string destinationRegistryName)
         {
             fromImage = DockerHelper.NormalizeRepo(fromImage);
 
@@ -98,8 +114,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 };
             }
 
-            return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", destinationRegistryName, srcImage,
+            string destinationTag = $"{Options.RepoPrefix}{fromImage}";
+
+            await ImportImageAsync(destinationTag, destinationRegistryName, srcImage,
                 srcRegistryName: registry, sourceCredentials: importSourceCreds);
+
+            return $"{destinationRegistryName}/{destinationTag}";
         }
     }
 }

@@ -21,7 +21,7 @@ jobs:
   - name: imageBuilder.commonCmdArgs
     value: >-
       --manifest '$(manifest)'
-      --registry-override '${{ parameters.publishConfig.buildAcr.server }}'
+      --registry-override '${{ parameters.publishConfig.publishAcr.server }}'
       $(manifestVariables)
       $(imageBuilder.queueArgs)
   - name: publishNotificationRepoName

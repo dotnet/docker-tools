@@ -64,6 +64,12 @@ public class LifecycleMetadataService : ILifecycleMetadataService
                 ],
                 isDryRun: isDryRun);
 
+            if (isDryRun)
+            {
+                lifecycleArtifactManifest = null;
+                return false;
+            }
+
             lifecycleArtifactManifest = JsonConvert.DeserializeObject<Manifest>(output ?? string.Empty) ?? throw new Exception("Unable to deserialize manifest");
         }
         catch (InvalidOperationException ex)

@@ -19,7 +19,7 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 [Export(typeof(ICommand))]
-public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
+public class GenerateEolAnnotationDataForPublishCommand : Command<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
     private readonly ILoggerService _loggerService;
     private readonly IContainerRegistryClientFactory _acrClientFactory;
@@ -30,7 +30,7 @@ public class GenerateEolAnnotationDataCommand : Command<GenerateEolAnnotationDat
     private readonly DateOnly _eolDate;
 
     [ImportingConstructor]
-    public GenerateEolAnnotationDataCommand(
+    public GenerateEolAnnotationDataForPublishCommand(
         ILoggerService loggerService,
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,

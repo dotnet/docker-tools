@@ -27,6 +27,4 @@ stages:
     stagesTemplateParameters:
       buildMatrixType: platformVersionedOs
       noCache: true
-      internalProjectName: ${{ variables.internalProjectName }}
-      publicProjectName: ${{ variables.publicProjectName }}
       versionsRepoRef: VersionsRepo

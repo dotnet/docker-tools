@@ -50,7 +50,7 @@ steps:
   displayName: Test Images
   condition: and(succeeded(), ${{ parameters.condition }})
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
-  - script: docker logout ${{ parameters.publishconfig.buildacr.server }}
+  - script: docker logout ${{ parameters.publishConfig.buildAcr.server }}
     displayName: Docker logout
     condition: and(always(), ${{ parameters.condition }})
     continueOnError: true

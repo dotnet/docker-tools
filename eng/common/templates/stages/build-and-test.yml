@@ -61,10 +61,6 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       publishConfig: ${{ parameters.publishConfig }}
       customInitSteps:
-      - powershell: |-
-          Write-Host 'Parameters for eng/common/templates/stages/build-and-test.yml'
-          Write-Host '${{ convertToJson(parameters) }}'
-        displayName: Print parameters
       - ${{ parameters.customTestInitSteps }}
       # These variables are normally set by the matrix. Since this test job is not generated
       # by a matrix, we need to set them manually. They can be set to empty values since their

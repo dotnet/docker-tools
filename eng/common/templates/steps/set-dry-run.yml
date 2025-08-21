@@ -5,7 +5,7 @@ parameters:
 
 steps:
 - powershell: |
-    if ("$(OneESPT.BuildType)" -eq "Unofficial")
+    if ("$env:ONEESPT_BUILDTYPE" -eq "Unofficial")
     {
       # Don't use dry-run mode for unofficial builds, since they publish to a
       # non-production environment

@@ -75,7 +75,6 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
                     throw new InvalidOperationException(
                         "Attempted to get an Azure Pipelines Credential but no service connection was provided."
                     );
-
                 }
 
                 var accessToken = credential.GetToken(new TokenRequestContext([scope]), CancellationToken.None);

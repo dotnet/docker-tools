@@ -45,13 +45,16 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
-  template: /eng/common/templates/dotnet/base-pipeline-nonprod.yml@self
+  template: /eng/common/templates/1es.yml@self
   parameters:
-    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    baseTemplate:
-      template: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
+    reposToExcludeFromScanning:
+    - VersionsRepo
+    stages:
+    - template: /eng/common/templates/dotnet/base-pipeline-nonprod.yml@self
       parameters:
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-        versionsRepoRef: VersionsRepo
-        baseTemplate:
-          template: /eng/common/templates/1es.yml@self
+        stagesTemplate: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
+        stagesTemplateParameters:
+          sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+          versionsRepoRef: VersionsRepo
+          isPullRequestValidation: false

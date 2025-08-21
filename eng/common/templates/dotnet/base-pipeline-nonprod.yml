@@ -6,16 +6,17 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
-# The pipeline will behave as if it were originally extended from this
-# template, except with the publishConfig parameter automatically passed in.
-- name: baseTemplate
+# This template will have the publishConfig passed to it as a parameter.
+- name: stagesTemplate
+  type: string
+- name: stagesTemplateParameters
   type: object
+  default: {}
 
-extends:
-  template: ${{ parameters.baseTemplate.template }}
-
+stages:
+- template: ${{ parameters.stagesTemplate }}
   parameters:
-    ${{ insert }}: ${{ parameters.baseTemplate.parameters }}
+    ${{ insert }}: ${{ parameters.stagesTemplateParameters }}
 
     internalProjectName: "internal"
     publicProjectName: "public"

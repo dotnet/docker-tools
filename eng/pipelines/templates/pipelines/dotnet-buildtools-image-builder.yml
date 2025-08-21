@@ -1,9 +1,6 @@
 # This template injects stages for building and publishing ImageBuilder.
 
 parameters:
-- name: baseTemplate
-  type: object
-
 - name: publishConfig
   type: object
   default: null
@@ -22,30 +19,25 @@ parameters:
   type: string
   default: ""
 
-extends:
-  template: ${{ parameters.baseTemplate.template }}
-  parameters:
+- name: isPullRequestValidation
+  type: boolean
+  default: false
 
-    ${{ if parameters.baseTemplate.parameters }}:
-      ${{ insert }}: ${{ parameters.baseTemplate.parameters }}
-
-    ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
+stages:
+- ${{ if not(parameters.isPullRequestValidation) }}:
+  - template: /eng/common/templates/stages/setup-service-connections.yml@self
+    parameters:
       serviceConnections:
       - name: ${{ parameters.publishConfig.internalMirrorAcr.serviceConnection.name }}
       - name: ${{ parameters.publishConfig.buildAcr.serviceConnection.name }}
       - name: ${{ parameters.publishConfig.publishAcr.serviceConnection.name }}
 
-      ${{ if ne(parameters.versionsRepoRef, '') }}:
-        reposToExcludeFromScanning:
-        - ${{ parameters.versionsRepoRef }}
-
-    stages:
-    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
-      parameters:
-        noCache: true
-        internalProjectName: ${{ parameters.internalProjectName }}
-        publicProjectName: ${{ parameters.publicProjectName }}
-        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-        ${{ if ne(parameters.versionsRepoRef, '') }}:
-          versionsRepoRef: ${{ parameters.versionsRepoRef }}
-        publishConfig: ${{ parameters.publishConfig }}
+- template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
+  parameters:
+    noCache: true
+    internalProjectName: ${{ parameters.internalProjectName }}
+    publicProjectName: ${{ parameters.publicProjectName }}
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+    ${{ if ne(parameters.versionsRepoRef, '') }}:
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
+    publishConfig: ${{ parameters.publishConfig }}

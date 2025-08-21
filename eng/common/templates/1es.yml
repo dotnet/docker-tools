@@ -12,11 +12,6 @@ parameters:
 - name: stages
   type: stageList
   default: []
-# All service connections that are referenced elsewhere in the pipeline. This is
-# required in order to authenticate with AzurePipelinesCredential in .NET.
-- name: serviceConnections
-  type: object
-  default: []
 # List of repositories that will be excluded from SDL scanning. This should
 # only be used when including other repos without building their source code.
 # E.g. for the dotnet/versions repo.
@@ -72,9 +67,4 @@ extends:
         tsa:
           enabled: true
     stages:
-    - ${{ if gt(length(parameters.serviceConnections), 0) }}:
-      - template: /eng/common/templates/stages/setup-service-connections.yml@self
-        parameters:
-          pool: ${{ parameters.pool }}
-          serviceConnections: ${{ parameters.serviceConnections }}
     - ${{ parameters.stages }}

@@ -26,9 +26,9 @@ resources:
 stages:
 - template: /eng/common/templates/dotnet/base-pipeline-nonprod.yml@self
   parameters:
-    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+    sourceBuildPipelineRunId: $(Build.BuildId)
     stagesTemplate: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
     stagesTemplateParameters:
-      sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+      sourceBuildPipelineRunId: $(Build.BuildId)
       versionsRepoRef: VersionsRepo
       isPullRequestValidation: true

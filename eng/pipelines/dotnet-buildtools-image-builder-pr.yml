@@ -10,7 +10,7 @@ pr:
 trigger: none
 
 variables:
-- template: templates/variables/image-builder.yml
+- template: /eng/pipelines/templates/variables/image-builder.yml
 
 resources:
   repositories:
@@ -21,10 +21,11 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 stages:
-- template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
+- template: /eng/common/templates/dotnet/base-pipeline-nonprod.yml@self
   parameters:
-    buildMatrixType: platformVersionedOs
-    noCache: true
-    internalProjectName: ${{ variables.internalProjectName }}
-    publicProjectName: ${{ variables.publicProjectName }}
-    versionsRepoRef: VersionsRepo
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+    stagesTemplate: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
+    stagesTemplateParameters:
+      sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+      versionsRepoRef: VersionsRepo
+      isPullRequestValidation: true

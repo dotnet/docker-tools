@@ -1,0 +1,65 @@
+# This pipeline template injects the publish config for the dotnet-docker
+# production (official) environment.
+
+parameters:
+- name: sourceBuildPipelineRunId
+  type: string
+  default: $(Build.BuildId)
+
+# This template will have the publishConfig passed to it as a parameter.
+- name: stagesTemplate
+  type: string
+- name: stagesTemplateParameters
+  type: object
+  default: {}
+
+stages:
+- template: ${{ parameters.stagesTemplate }}
+  parameters:
+    ${{ insert }}: ${{ parameters.stagesTemplateParameters }}
+
+    internalProjectName: "internal"
+    publicProjectName: "public"
+
+    publishConfig:
+      internalMirrorAcr:
+        server: $(acr-staging.server)
+        repoPrefix: $(mirrorRepoPrefix)
+        resourceGroup: $(acr-staging.resourceGroup)
+        subscription: $(acr-staging.subscription)
+        serviceConnection:
+          name: $(internal-mirror.serviceConnectionName)
+          id: $(internal-mirror.serviceConnection.id)
+          clientId: $(internal-mirror.serviceConnection.clientId)
+          tenantId: $(internal-mirror.serviceConnection.tenantId)
+
+      publicMirrorAcr:
+        server: $(public-mirror.server)
+
+      buildAcr:
+        server: $(acr-staging.server)
+        resourceGroup: $(acr-staging.resourceGroup)
+        subscription: $(acr-staging.subscription)
+        repoPrefix: build-staging/${{ parameters.sourceBuildPipelineRunId }}/
+        serviceConnection:
+          name: $(build.serviceConnectionName)
+          id: $(build.serviceConnection.id)
+          clientId: $(build.serviceConnection.clientId)
+          tenantId: $(build.serviceConnection.tenantId)
+
+      testServiceConnection:
+        name: $(test.serviceConnectionName)
+        id: $(test.serviceConnection.id)
+        clientId: $(test.serviceConnection.clientId)
+        tenantId: $(test.serviceConnection.tenantId)
+
+      publishAcr:
+        server: $(acr.server)
+        resourceGroup: $(acr.resourceGroup)
+        subscription: $(acr.subscription)
+        repoPrefix: "public/"
+        serviceConnection:
+          name: $(publish.serviceConnectionName)
+          id: $(publish.serviceConnection.id)
+          clientId: $(publish.serviceConnection.clientId)
+          tenantId: $(publish.serviceConnection.tenantId)

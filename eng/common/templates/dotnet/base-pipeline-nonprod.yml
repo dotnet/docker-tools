@@ -1,4 +1,4 @@
-# This pipeline template injects publish config for the dotnet-docker
+# This pipeline template injects the publish config for the dotnet-docker
 # non-production environment.
 
 parameters:

@@ -5,6 +5,9 @@ pr:
     - feature/*
   paths:
     include:
+    - eng/pipelines/dotnet-buildtools-image-builder-pr.yml
+    - eng/pipelines/templates/*
+    - eng/common/templates/*
     - src/*
 
 trigger: none

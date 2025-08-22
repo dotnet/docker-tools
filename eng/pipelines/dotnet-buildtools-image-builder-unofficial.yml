@@ -58,3 +58,4 @@ extends:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
           versionsRepoRef: VersionsRepo
           isPullRequestValidation: false
+          noCache: true

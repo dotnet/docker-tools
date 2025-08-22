@@ -56,6 +56,7 @@ extends:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
           versionsRepoRef: VersionsRepo
           isPullRequestValidation: false
+          noCache: true
           additionalServiceConnections:
           - name: $(kusto.serviceConnectionName)
           - name: $(marStatus.serviceConnectionName)

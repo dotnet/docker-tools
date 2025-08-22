@@ -31,6 +31,7 @@ stages:
     sourceBuildPipelineRunId: $(Build.BuildId)
     stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
     stagesTemplateParameters:
+      noCache: true
       sourceBuildPipelineRunId: $(Build.BuildId)
       versionsRepoRef: VersionsRepo
       isPullRequestValidation: true

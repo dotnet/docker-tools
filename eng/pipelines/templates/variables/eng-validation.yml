@@ -8,7 +8,5 @@ variables:
   value: eng/tests/pipeline-validation/TestResults/
 - name: publicGitRepoUri
   value: https://github.com/dotnet/dotnet-docker-test
-- name: publishRepoPrefix
-  value: test/
 - name: imageInfoVariant
   value: "-test"

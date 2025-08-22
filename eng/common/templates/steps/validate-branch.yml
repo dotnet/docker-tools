@@ -24,7 +24,7 @@ steps:
         exit 0
       }
 
-      if ("$(overrideOfficialBranchValidation)" -eq "true")
+      if ("${{ variables['overrideOfficialBranchValidation'] }}" -eq "true")
       {
         echo "Variable overrideOfficialBranchValidation is set to true, continuing..."
         exit 0

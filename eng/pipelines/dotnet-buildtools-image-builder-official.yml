@@ -17,6 +17,11 @@ parameters:
     The default value should be left alone if you want to build new images.
   type: string
   default: $(Build.BuildId)
+- name: publishRepoPrefix
+  displayName: >
+    Publish repo prefix. Final images will be pushed under this prefix in the
+    production ACR. Examples: `public/`, `test/`
+  default: "public/"
 
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
@@ -45,6 +50,7 @@ extends:
     - template: /eng/common/templates/dotnet/base-pipeline-prod.yml@self
       parameters:
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        publishRepoPrefix: ${{ parameters.publishRepoPrefix }}
         stagesTemplate: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
         stagesTemplateParameters:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

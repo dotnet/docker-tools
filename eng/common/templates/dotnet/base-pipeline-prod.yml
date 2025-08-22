@@ -6,6 +6,10 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
+- name: publishRepoPrefix
+  type: string
+  default: "public/"
+
 # This template will have the publishConfig passed to it as a parameter.
 - name: stagesTemplate
   type: string
@@ -57,7 +61,7 @@ stages:
         server: $(acr.server)
         resourceGroup: $(acr.resourceGroup)
         subscription: $(acr.subscription)
-        repoPrefix: "public/"
+        repoPrefix: ${{ parameters.publishRepoPrefix }}
         serviceConnection:
           name: $(publish.serviceConnectionName)
           id: $(publish.serviceConnection.id)

@@ -14,6 +14,8 @@ trigger: none
 
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml
+  parameters:
+    sourceBuildPipelineRunId: $(Build.BuildId)
 
 resources:
   repositories:

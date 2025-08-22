@@ -1,12 +1,10 @@
 parameters:
+# Pipeline run ID is added as a suffix to ImageBuilder tags
 - name: sourceBuildPipelineRunId
   type: string
-  default: '$(Build.BuildId)'
 
 variables:
 - template: /eng/pipelines/templates/variables/build-test-publish.yml@self
-  parameters:
-    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - name: manifest
   value: src/Microsoft.DotNet.ImageBuilder/manifest.json
 - name: publishReadme

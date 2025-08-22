@@ -38,7 +38,7 @@ jobs:
       if ("${{ parameters.isTestStage}}" -eq "true") {
         $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(artifactsPath)/image-info.json"
       }
-      elseif ("$(pipelineDisabledCache)" -ne "true" -and $env:NOCACHE -ne "true" -and "$(trimCachedImagesForMatrix)" -eq "true") {
+      elseif ("$(pipelineDisabledCache)" -ne "true" -and "${{ parameters.noCache }}" -ne "true" -and "$(trimCachedImagesForMatrix)" -eq "true") {
         # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache
         $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(versionsBasePath)$(imageInfoVersionsPath) --trim-cached-images"
       }

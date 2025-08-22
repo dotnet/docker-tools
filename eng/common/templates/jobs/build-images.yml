@@ -55,7 +55,7 @@ jobs:
       }
 
       # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache
-      if ("$(pipelineDisabledCache)" -ne "true" -and $env:NOCACHE -ne "true") {
+      if ("$(pipelineDisabledCache)" -ne "true" -and "${{ parameters.noCache }}" -ne "true") {
         $imageBuilderBuildArgs = "$imageBuilderBuildArgs --image-info-source-path $(versionsBasePath)$(imageInfoVersionsPath)"
       }
 

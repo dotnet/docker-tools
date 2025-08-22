@@ -47,11 +47,11 @@ extends:
     reposToExcludeFromScanning:
     - VersionsRepo
     stages:
-    - template: /eng/common/templates/dotnet/base-pipeline-prod.yml@self
+    - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         publishRepoPrefix: ${{ parameters.publishRepoPrefix }}
-        stagesTemplate: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
+        stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
         stagesTemplateParameters:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
           versionsRepoRef: VersionsRepo

@@ -26,10 +26,10 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 stages:
-- template: /eng/common/templates/dotnet/base-pipeline-nonprod.yml@self
+- template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
   parameters:
     sourceBuildPipelineRunId: $(Build.BuildId)
-    stagesTemplate: /eng/pipelines/templates/pipelines/dotnet-buildtools-image-builder.yml@self
+    stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
     stagesTemplateParameters:
       sourceBuildPipelineRunId: $(Build.BuildId)
       versionsRepoRef: VersionsRepo

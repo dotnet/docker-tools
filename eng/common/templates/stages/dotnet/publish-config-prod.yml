@@ -1,7 +1,7 @@
 # This pipeline template injects the publish config for the dotnet-docker
 # production (official) environment.
 # The overall structure of this file should stay mostly in-sync with the
-# base-pipeline-nonprod.yml template.
+# publish-config-nonprod.yml template.
 
 parameters:
 # By default, images are staged in repos that are prefixed with this pipeline

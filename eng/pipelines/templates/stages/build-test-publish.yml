@@ -1,9 +1,9 @@
-# This template injects stages for building and publishing ImageBuilder.
+# Build, test, and publish images based on the publishConfig parameter and what
+# variables are defined.
 
 parameters:
 - name: publishConfig
   type: object
-  default: null
 
 - name: internalProjectName
   type: string
@@ -18,6 +18,10 @@ parameters:
 - name: versionsRepoRef
   type: string
   default: ""
+
+- name: noCache
+  type: boolean
+  default: false
 
 - name: isPullRequestValidation
   type: boolean
@@ -42,7 +46,7 @@ stages:
 
 - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
   parameters:
-    noCache: true
+    noCache: ${{ parameters.noCache }}
     internalProjectName: ${{ parameters.internalProjectName }}
     publicProjectName: ${{ parameters.publicProjectName }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

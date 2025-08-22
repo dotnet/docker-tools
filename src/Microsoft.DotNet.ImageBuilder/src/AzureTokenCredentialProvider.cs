@@ -63,8 +63,20 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
                         _systemAccessToken);
                 }
 
+#if DEBUG
                 // Fall back to DefaultAzureCredential if no service connection is provided.
+                // This can still be used for local development against non-production resources.
                 credential ??= new DefaultAzureCredential();
+#endif
+
+                if (credential is null)
+                {
+                    // Using DefaultAzureCredential is not allowed in production environments.
+                    throw new InvalidOperationException(
+                        "Attempted to get an Azure Pipelines Credential but no service connection was provided."
+                    );
+                }
+
                 var accessToken = credential.GetToken(new TokenRequestContext([scope]), CancellationToken.None);
                 return new StaticTokenCredential(accessToken);
             });

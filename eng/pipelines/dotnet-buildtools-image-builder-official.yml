@@ -12,7 +12,7 @@ parameters:
 - name: sourceBuildPipelineRunId
   displayName: >
     Source build pipeline run ID. This refers to runs of *this pipeline*.
-    Override this parametre in combination with disabling the `Build` stage to
+    Override this parameter in combination with disabling the `Build` stage to
     test or publish images that were build in a different pipeline run.
     The default value should be left alone if you want to build new images.
   type: string
@@ -37,19 +37,20 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
-  template: /eng/common/templates/1es-official.yml@self
+  template: /eng/common/templates/1es.yml@self
   parameters:
-    serviceConnections:
-    - name: $(internal-mirror.serviceConnectionName)
-    - name: $(build.serviceConnectionName)
-    - name: $(publish.serviceConnectionName)
-    - name: $(kusto.serviceConnectionName)
-    - name: $(marStatus.serviceConnectionName)
+    reposToExcludeFromScanning:
+    - VersionsRepo
     stages:
-    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
+    - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
-        noCache: true
-        internalProjectName: ${{ variables.internalProjectName }}
-        publicProjectName: ${{ variables.publicProjectName }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-        versionsRepoRef: VersionsRepo
+        stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
+        stagesTemplateParameters:
+          sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+          versionsRepoRef: VersionsRepo
+          isPullRequestValidation: false
+          noCache: true
+          additionalServiceConnections:
+          - name: $(kusto.serviceConnectionName)
+          - name: $(marStatus.serviceConnectionName)

@@ -10,7 +10,7 @@ pr:
 trigger: none
 
 variables:
-- template: templates/variables/eng-validation.yml
+- template: /eng/pipelines/templates/variables/eng-validation.yml@self
 
 resources:
   repositories:
@@ -21,10 +21,10 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 stages:
-- template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
+- template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
   parameters:
-    buildMatrixType: platformVersionedOs
-    noCache: true
-    internalProjectName: ${{ variables.internalProjectName }}
-    publicProjectName: ${{ variables.publicProjectName }}
-    versionsRepoRef: VersionsRepo
+    stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
+    stagesTemplateParameters:
+      noCache: true
+      versionsRepoRef: VersionsRepo
+      isPullRequestValidation: true

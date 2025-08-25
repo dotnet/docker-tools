@@ -66,7 +66,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 #if DEBUG
                 // Fall back to DefaultAzureCredential if no service connection is provided.
                 // This can still be used for local development against non-production resources.
-                credential ??= new DefaultAzureCredential();
+                credential ??= new DefaultAzureCredential(); // CodeQL [SM05137] Safe for DEBUG builds only, used for local development against non-production resources
 #endif
 
                 if (credential is null)

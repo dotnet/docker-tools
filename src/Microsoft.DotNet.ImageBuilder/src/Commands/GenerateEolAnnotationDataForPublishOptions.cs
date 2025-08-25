@@ -8,42 +8,31 @@ using System.CommandLine;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public class GenerateEolAnnotationDataForPublishOptions : Options
+public class GenerateEolAnnotationDataForPublishOptions : GenerateEolAnnotationDataOptions
 {
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-    public RegistryOptions RegistryOptions { get; set; } = new();
-    public ServiceConnectionOptions? AcrServiceConnection { get; set; }
 
-    public string EolDigestsListPath { get; set; } = string.Empty;
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;
 }
 
-public class GenerateEolAnnotationDataOptionsForPublishBuilder : CliOptionsBuilder
+public class GenerateEolAnnotationDataOptionsForPublishBuilder : GenerateEolAnnotationDataOptionsBuilder
 {
     private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
-    private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
     public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
             .._registryCredentialsOptionsBuilder.GetCliOptions(),
-            .._serviceConnectionOptionsBuilder.GetCliOptions(
-                alias: "acr-service-connection",
-                propertyName: nameof(GenerateEolAnnotationDataForPublishOptions.AcrServiceConnection)),
         ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
             .._registryCredentialsOptionsBuilder.GetCliArguments(),
-            new Argument<string>(nameof(GenerateEolAnnotationDataForPublishOptions.EolDigestsListPath),
-                "EOL annotations digests list output path"),
             new Argument<string>(nameof(GenerateEolAnnotationDataForPublishOptions.OldImageInfoPath),
                 "Old image-info file"),
             new Argument<string>(nameof(GenerateEolAnnotationDataForPublishOptions.NewImageInfoPath),
                 "New image-info file"),
-            .._registryOptionsBuilder.GetCliArguments(),
         ];
 }

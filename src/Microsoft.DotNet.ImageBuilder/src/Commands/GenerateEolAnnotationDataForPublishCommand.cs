@@ -3,31 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure.Containers.ContainerRegistry;
-using Kusto.Cloud.Platform.Utils;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Newtonsoft.Json;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 [Export(typeof(ICommand))]
-public class GenerateEolAnnotationDataForPublishCommand : Command<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
+public class GenerateEolAnnotationDataForPublishCommand :
+    GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
-    private readonly ILoggerService _loggerService;
-    private readonly IContainerRegistryClientFactory _acrClientFactory;
-    private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-    private readonly ILifecycleMetadataService _lifecycleMetadataService;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-    private readonly DateOnly _eolDate;
 
     [ImportingConstructor]
     public GenerateEolAnnotationDataForPublishCommand(
@@ -35,25 +26,24 @@ public class GenerateEolAnnotationDataForPublishCommand : Command<GenerateEolAnn
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        IRegistryCredentialsProvider registryCredentialsProvider,
-        ILifecycleMetadataService lifecycleMetadataService)
+        ILifecycleMetadataService lifecycleMetadataService,
+        IRegistryCredentialsProvider registryCredentialsProvider)
+        : base(
+            loggerService,
+            tokenCredentialProvider,
+            acrContentClientFactory,
+            acrClientFactory,
+            lifecycleMetadataService)
     {
-        _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
-        _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
-        _acrContentClientFactory = acrContentClientFactory ?? throw new ArgumentNullException(nameof(acrContentClientFactory));
-        _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
         _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
-        _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
-
-        _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
     }
 
-    protected override string Description => "Generate EOL annotation data";
+    protected override string Description => "Generate EOL annotation data for publish stage";
 
     public override async Task ExecuteAsync() =>
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun, async () =>
             {
-                List<EolDigestData> digestsToAnnotate = await GetDigestsToAnnotate();
+                IEnumerable<EolDigestData> digestsToAnnotate = await GetDigestsToAnnotate();
                 WriteDigestDataJson(digestsToAnnotate);
             },
             Options.CredentialsOptions,
@@ -61,27 +51,16 @@ public class GenerateEolAnnotationDataForPublishCommand : Command<GenerateEolAnn
             ownedAcr: Options.RegistryOptions.Registry,
             serviceConnection: Options.AcrServiceConnection);
 
-    private void WriteDigestDataJson(List<EolDigestData> digestsToAnnotate)
-    {
-        EolAnnotationsData eolAnnotations = new(digestsToAnnotate, _eolDate);
-
-        string annotationsJson = JsonConvert.SerializeObject(
-            eolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-        File.WriteAllText(Options.EolDigestsListPath, annotationsJson);
-    }
-
-    private async Task<List<EolDigestData>> GetDigestsToAnnotate()
+    private async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotate()
     {
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
-            _loggerService.WriteMessage("No digests to annotate because no image info files were provided.");
+            LoggerService.WriteMessage("No digests to annotate because no image info files were provided.");
             return [];
         }
 
         ImageArtifactDetails oldImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(Options.OldImageInfoPath);
         ImageArtifactDetails newImageArtifactDetails = ImageInfoHelper.DeserializeImageArtifactDetails(Options.NewImageInfoPath);
-
-        List<EolDigestData> digestDataList = [];
 
         try
         {
@@ -95,7 +74,8 @@ public class GenerateEolAnnotationDataForPublishCommand : Command<GenerateEolAnn
             IEnumerable<string> repoNames = newImageArtifactDetails.Repos.Select(repo => repo.Repo)
                 .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo))
                 .Select(name => Options.RegistryOptions.RepoPrefix + name);
-            Dictionary<string, string?> registryTagsByDigest = await GetAllImageDigestsFromRegistry(repoNames);
+            Dictionary<string, string?> registryTagsByDigest =
+                await GetAllImageDigestsFromRegistry(repo => repoNames.Contains(repo));
 
             if (!Options.IsDryRun)
             {
@@ -107,86 +87,12 @@ public class GenerateEolAnnotationDataForPublishCommand : Command<GenerateEolAnn
             IEnumerable<string> supportedDigests = newImageArtifactDetails.GetAllDigests();
 
             IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryTagsByDigest, supportedDigests);
-
-            // Annotate digests that are not already annotated for EOL
-            ConcurrentBag<EolDigestData> digetsToAnnotate = [];
-            Parallel.ForEach(unsupportedDigests, digest =>
-            {
-                _loggerService.WriteMessage($"Checking digest for existing annotation: {digest.Digest}");
-                if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, _loggerService, Options.IsDryRun, out _))
-                {
-                    digetsToAnnotate.Add(digest);
-                }
-            });
-
-            digestDataList.AddRange(digetsToAnnotate);
+            return GetDigestsToAnnotate(unsupportedDigests);
         }
         catch (Exception e)
         {
-            _loggerService.WriteError($"Error occurred while generating EOL annotation data: {e}");
+            LoggerService.WriteError($"Error occurred while generating EOL annotation data: {e}");
             throw;
         }
-
-        digestDataList = digestDataList.OrderBy(item => item.Digest).ToList();
-
-        return digestDataList;
-    }
-
-    /// <summary>
-    /// Finds all the digests that are in the registry but not in the supported digests list.
-    /// </summary>
-    private static IEnumerable<EolDigestData> GetUnsupportedDigests(
-        Dictionary<string, string?> registryTagsByDigest, IEnumerable<string> supportedDigests) =>
-        registryTagsByDigest
-            .Where(registryDigest => !supportedDigests.Contains(registryDigest.Key))
-            .Select(registryDigest => new EolDigestData(registryDigest.Key) { Tag = registryDigest.Value });
-
-    private static string? GetLongestTag(IEnumerable<string> tags) =>
-        tags.OrderByDescending(tag => tag.Length).FirstOrDefault();
-
-    private async Task<Dictionary<string, string?>> GetAllImageDigestsFromRegistry(IEnumerable<string> repoNames)
-    {
-        _loggerService.WriteMessage("Querying registry for all image digests...");
-
-        if (Options.IsDryRun)
-        {
-            return [];
-        }
-
-        var credential = _tokenCredentialProvider.GetCredential(Options.AcrServiceConnection);
-        IContainerRegistryClient acrClient =
-            _acrClientFactory.Create(Options.RegistryOptions.Registry, credential);
-        IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
-
-        ConcurrentBag<(string Digest, string? Tag)> digests = [];
-        await foreach (string repositoryName in repositoryNames.Where(name => repoNames.Contains(name)))
-        {
-            IContainerRegistryContentClient contentClient =
-                _acrContentClientFactory.Create(
-                    Options.RegistryOptions.Registry,
-                    repositoryName,
-                    Options.AcrServiceConnection);
-
-            ContainerRepository repo = acrClient.GetRepository(repositoryName);
-            IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
-            await foreach (ArtifactManifestProperties manifestProps in manifests)
-            {
-                ManifestQueryResult manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
-
-                // We only want to return image or manifest list digests here. But the registry will also contain digests for annotations.
-                // These annotation digests should not be returned as we don't want to annotate an annotation. An annotation is just a referrer
-                // and referrers are indicated by the presence of a subject field. So skip any manifest that has a subject field.
-                if (manifestResult.Manifest["subject"] is null)
-                {
-                    string imageName = DockerHelper.GetImageName(
-                        registry: Options.RegistryOptions.Registry,
-                        repo: repositoryName,
-                        digest: manifestProps.Digest);
-                    digests.Add((imageName, GetLongestTag(manifestProps.Tags)));
-                }
-            }
-        }
-
-        return digests.ToDictionary(val => val.Digest, val => val.Tag);
     }
 }

@@ -16,7 +16,7 @@ steps:
     path: s/${{ parameters.versionsRepoPath }}
     persistCredentials: true
     fetchDepth: 1
-    condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
+    condition: succeeded()
 - powershell: |
     $commonMatrixAndBuildOptions = "--source-repo $(publicGitRepoUri)"
     if ("$(System.TeamProject)" -eq "internal" -and "$(Build.Reason)" -ne "PullRequest") {

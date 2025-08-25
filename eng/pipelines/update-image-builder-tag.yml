@@ -4,7 +4,7 @@ pr: none
 resources:
   pipelines:
   - pipeline: image-builder
-    source: docker-tools-imagebuilder
+    source: docker-tools-imagebuilder-official
     trigger:
       branches:
         include:

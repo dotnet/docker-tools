@@ -1,0 +1,37 @@
+pr: none
+trigger: none
+
+parameters:
+- name: sourceBuildPipelineRunId
+  displayName: >
+    Source build pipeline run ID. This refers to runs of *this pipeline*.
+  type: string
+  default: $(Build.BuildId)
+
+variables:
+- template: /eng/pipelines/templates/variables/eng-validation.yml@self
+
+resources:
+  repositories:
+  - repository: VersionsRepo
+    type: github
+    endpoint: dotnet
+    name: dotnet/versions
+    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
+
+extends:
+  template: /eng/common/templates/1es.yml@self
+  parameters:
+    reposToExcludeFromScanning:
+    - VersionsRepo
+    stages:
+    - template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
+      parameters:
+        sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        publishRepoPrefix: "test/"
+        stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
+        stagesTemplateParameters:
+          noCache: true
+          sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+          versionsRepoRef: VersionsRepo
+          isPullRequestValidation: false

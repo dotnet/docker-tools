@@ -1,6 +1,3 @@
-# This pipeline is a work in progress.
-# See https://github.com/dotnet/dotnet-docker-internal/issues/8566 for more details.
-
 trigger: none
 pr: none
 
@@ -8,7 +5,7 @@ parameters:
 - name: sourceBuildPipelineRunId
   displayName: >
     Source build pipeline run ID. This refers to runs of *this pipeline*.
-    Override this parametre in combination with disabling the `Build` stage to
+    Override this parameter in combination with disabling the `Build` stage to
     test or publish images that were build in a different pipeline run.
     The default value should be left alone if you want to build new images.
   type: string
@@ -20,8 +17,24 @@ variables:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 # Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
 - template: /eng/common/templates/variables/dotnet/secrets-unofficial.yml@self
-- name: publishEolAnnotations
+- name: "publishEolAnnotations"
+  value: false
+  readonly: true
+# Unofficial secrets group has no GitHub token for publishing image info or notifications
+- name: "publishImageInfo"
+  value: false
+  readonly: true
+- name: "publishNotificationsEnabled"
+  value: false
+  readonly: true
+# There aren't test/unofficial Kusto tables for build telemetry yet
+- name: "ingestKustoImageInfo"
+  value: false
+  readonly: true
+# Always run unofficial pipelines in debug mode
+- name: "System.Debug"
   value: true
+  readonly: true
 
 resources:
   repositories:
@@ -32,13 +45,17 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
-  template: /eng/common/templates/1es-unofficial.yml@self
+  template: /eng/common/templates/1es.yml@self
   parameters:
+    reposToExcludeFromScanning:
+    - VersionsRepo
     stages:
-    - template: /eng/common/templates/stages/dotnet/build-test-publish-repo.yml@self
+    - template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
       parameters:
-        noCache: true
-        internalProjectName: ${{ variables.internalProjectName }}
-        publicProjectName: ${{ variables.publicProjectName }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-        versionsRepoRef: VersionsRepo
+        stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
+        stagesTemplateParameters:
+          sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+          versionsRepoRef: VersionsRepo
+          isPullRequestValidation: false
+          noCache: true

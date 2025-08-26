@@ -48,7 +48,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     public sealed override async Task ExecuteAsync()
     {
         IEnumerable<EolDigestData> digestsToAnnotate = [];
-        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun,
+        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
+            Options.IsDryRun,
             async () => digestsToAnnotate = await GetDigestsToAnnotateAsync(),
             Options.CredentialsOptions,
             registryName: Options.RegistryOptions.Registry,

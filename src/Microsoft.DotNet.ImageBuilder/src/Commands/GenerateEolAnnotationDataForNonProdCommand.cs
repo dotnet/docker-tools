@@ -36,7 +36,7 @@ public class GenerateEolAnnotationDataForNonProdCommand :
     public override async Task ExecuteAsync()
     {
         // All images in all repos of the registry are marked as unsupported.
-        Dictionary<string, string?> registryTagsByDigest = await GetAllImageDigestsFromRegistry();
+        Dictionary<string, string?> registryTagsByDigest = await GetAllImageDigestsFromRegistryAsync();
         IEnumerable<EolDigestData> eolDigests = GetUnsupportedDigests(registryTagsByDigest, []);
         WriteDigestDataJson(eolDigests);
     }

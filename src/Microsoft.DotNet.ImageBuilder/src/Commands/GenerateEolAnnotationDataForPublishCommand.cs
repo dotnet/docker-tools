@@ -45,7 +45,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
         IEnumerable<EolDigestData> digestsToAnnotate = [];
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun, async () =>
             {
-                digestsToAnnotate = await GetDigestsToAnnotate();
+                digestsToAnnotate = await GetDigestsToAnnotateAsync();
             },
             Options.CredentialsOptions,
             registryName: Options.RegistryOptions.Registry,
@@ -55,7 +55,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
         WriteDigestDataJson(digestsToAnnotate);
     }
 
-    private async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotate()
+    private async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
@@ -79,7 +79,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
                 .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo))
                 .Select(name => Options.RegistryOptions.RepoPrefix + name);
             Dictionary<string, string?> registryTagsByDigest =
-                await GetAllImageDigestsFromRegistry(repo => repoNames.Contains(repo));
+                await GetAllImageDigestsFromRegistryAsync(repo => repoNames.Contains(repo));
 
             if (!Options.IsDryRun)
             {

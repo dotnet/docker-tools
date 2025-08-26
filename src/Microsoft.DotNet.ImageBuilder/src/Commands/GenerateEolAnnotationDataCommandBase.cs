@@ -42,7 +42,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
 
     protected ILoggerService LoggerService { get; }
 
-    protected async Task<Dictionary<string, string?>> GetAllImageDigestsFromRegistry(
+    protected async Task<Dictionary<string, string?>> GetAllImageDigestsFromRegistryAsync(
         Func<string, bool>? repoNameFilter = null)
     {
         LoggerService.WriteMessage("Querying registry for all image digests...");

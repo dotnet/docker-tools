@@ -40,16 +40,20 @@ public class GenerateEolAnnotationDataForPublishCommand :
 
     protected override string Description => "Generate EOL annotation data for publish stage";
 
-    public override async Task ExecuteAsync() =>
+    public override async Task ExecuteAsync()
+    {
+        IEnumerable<EolDigestData> digestsToAnnotate = [];
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun, async () =>
             {
-                IEnumerable<EolDigestData> digestsToAnnotate = await GetDigestsToAnnotate();
-                WriteDigestDataJson(digestsToAnnotate);
+                digestsToAnnotate = await GetDigestsToAnnotate();
             },
             Options.CredentialsOptions,
             registryName: Options.RegistryOptions.Registry,
             ownedAcr: Options.RegistryOptions.Registry,
             serviceConnection: Options.AcrServiceConnection);
+
+        WriteDigestDataJson(digestsToAnnotate);
+    }
 
     private async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotate()
     {

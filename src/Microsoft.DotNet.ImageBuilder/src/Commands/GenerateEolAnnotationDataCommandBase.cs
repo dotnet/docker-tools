@@ -50,7 +50,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         IEnumerable<EolDigestData> digestsToAnnotate = [];
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,
-            async () => digestsToAnnotate = await GetDigestsToAnnotateAsync(),
+            async () => digestsToAnnotate = GetDigestsWithoutExistingAnnotation(await GetDigestsToAnnotateAsync()),
             Options.CredentialsOptions,
             registryName: Options.RegistryOptions.Registry,
             ownedAcr: Options.RegistryOptions.Registry,
@@ -61,7 +61,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
 
     protected abstract Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync();
 
-    protected async Task<Dictionary<string, string?>> GetAllImageDigestsFromRegistryAsync(
+    protected async Task<IEnumerable<EolDigestData>> GetAllImageDigestsFromRegistryAsync(
         Func<string, bool>? repoNameFilter = null)
     {
         LoggerService.WriteMessage("Querying registry for all image digests...");
@@ -107,19 +107,23 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
             }
         }
 
-        return digests.ToDictionary(val => val.Digest, val => val.Tag);
+        return digests
+            .Select(val => new EolDigestData(val.Digest) { Tag = val.Tag });
     }
 
-    /// <summary>
-    /// Finds all the digests that are in the registry but not in the supported digests list.
-    /// </summary>
-    protected static IEnumerable<EolDigestData> GetUnsupportedDigests(
-        Dictionary<string, string?> registryTagsByDigest, IEnumerable<string> supportedDigests) =>
-        registryTagsByDigest
-            .Where(registryDigest => !supportedDigests.Contains(registryDigest.Key))
-            .Select(registryDigest => new EolDigestData(registryDigest.Key) { Tag = registryDigest.Value });
+    protected void WriteDigestDataJson(IEnumerable<EolDigestData> digestsToAnnotate)
+    {
+        EolAnnotationsData eolAnnotations = new(digestsToAnnotate.ToList(), _eolDate);
 
-    protected IEnumerable<EolDigestData> GetDigestsWithoutExistingAnnotation(IEnumerable<EolDigestData> unsupportedDigests)
+        string annotationsJson = JsonConvert.SerializeObject(
+            eolAnnotations,
+            Formatting.Indented,
+            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+        File.WriteAllText(Options.EolDigestsListPath, annotationsJson);
+    }
+
+    private IEnumerable<EolDigestData> GetDigestsWithoutExistingAnnotation(
+        IEnumerable<EolDigestData> unsupportedDigests)
     {
         // Annotate digests that are not already annotated for EOL
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];
@@ -135,17 +139,6 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         return digestsToAnnotate
             .OrderBy(item => item.Digest)
             .ToList();
-    }
-
-    protected void WriteDigestDataJson(IEnumerable<EolDigestData> digestsToAnnotate)
-    {
-        EolAnnotationsData eolAnnotations = new(digestsToAnnotate.ToList(), _eolDate);
-
-        string annotationsJson = JsonConvert.SerializeObject(
-            eolAnnotations,
-            Formatting.Indented,
-            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
-        File.WriteAllText(Options.EolDigestsListPath, annotationsJson);
     }
 
     private static string? GetLongestTag(IEnumerable<string> tags) =>

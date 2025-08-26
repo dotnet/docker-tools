@@ -61,7 +61,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
             IEnumerable<string> repoNames = newImageArtifactDetails.Repos.Select(repo => repo.Repo)
                 .Union(oldImageArtifactDetails.Repos.Select(repo => repo.Repo))
                 .Select(name => Options.RegistryOptions.RepoPrefix + name);
-            Dictionary<string, string?> registryTagsByDigest =
+            IEnumerable<EolDigestData> registryTagsByDigest =
                 await GetAllImageDigestsFromRegistryAsync(repo => repoNames.Contains(repo));
 
             if (!Options.IsDryRun)
@@ -73,8 +73,8 @@ public class GenerateEolAnnotationDataForPublishCommand :
 
             IEnumerable<string> supportedDigests = newImageArtifactDetails.GetAllDigests();
 
-            IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryTagsByDigest, supportedDigests);
-            return GetDigestsWithoutExistingAnnotation(unsupportedDigests);
+            // Finds all the digests that are in the registry but not in the supported digests list.
+            return registryTagsByDigest.Where(registryDigest => !supportedDigests.Contains(registryDigest.Digest));
         }
         catch (Exception e)
         {

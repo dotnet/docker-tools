@@ -20,24 +20,24 @@ public class GenerateEolAnnotationDataForNonProdCommand :
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        IRegistryCredentialsProvider registryCredentialsProvider,
-        ILifecycleMetadataService lifecycleMetadataService)
+        ILifecycleMetadataService lifecycleMetadataService,
+        IRegistryCredentialsProvider registryCredentialsProvider)
         : base(
             loggerService,
             tokenCredentialProvider,
             acrContentClientFactory,
             acrClientFactory,
-            lifecycleMetadataService)
+            lifecycleMetadataService,
+            registryCredentialsProvider)
     {
     }
 
     protected override string Description => "Generate EOL annotation data for non-prod images";
 
-    public override async Task ExecuteAsync()
+    protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {
         // All images in all repos of the registry are marked as unsupported.
         Dictionary<string, string?> registryTagsByDigest = await GetAllImageDigestsFromRegistryAsync();
-        IEnumerable<EolDigestData> eolDigests = GetUnsupportedDigests(registryTagsByDigest, []);
-        WriteDigestDataJson(eolDigests);
+        return GetDigestsWithoutExistingAnnotation(GetUnsupportedDigests(registryTagsByDigest, []));
     }
 }

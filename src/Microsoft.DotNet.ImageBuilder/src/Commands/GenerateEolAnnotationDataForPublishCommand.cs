@@ -18,8 +18,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
-    private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-
     [ImportingConstructor]
     public GenerateEolAnnotationDataForPublishCommand(
         ILoggerService loggerService,
@@ -33,29 +31,14 @@ public class GenerateEolAnnotationDataForPublishCommand :
             tokenCredentialProvider,
             acrContentClientFactory,
             acrClientFactory,
-            lifecycleMetadataService)
+            lifecycleMetadataService,
+            registryCredentialsProvider)
     {
-        _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
     }
 
     protected override string Description => "Generate EOL annotation data for publish stage";
 
-    public override async Task ExecuteAsync()
-    {
-        IEnumerable<EolDigestData> digestsToAnnotate = [];
-        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun, async () =>
-            {
-                digestsToAnnotate = await GetDigestsToAnnotateAsync();
-            },
-            Options.CredentialsOptions,
-            registryName: Options.RegistryOptions.Registry,
-            ownedAcr: Options.RegistryOptions.Registry,
-            serviceConnection: Options.AcrServiceConnection);
-
-        WriteDigestDataJson(digestsToAnnotate);
-    }
-
-    private async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
+    protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
@@ -91,7 +74,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
             IEnumerable<string> supportedDigests = newImageArtifactDetails.GetAllDigests();
 
             IEnumerable<EolDigestData> unsupportedDigests = GetUnsupportedDigests(registryTagsByDigest, supportedDigests);
-            return GetDigestsToAnnotate(unsupportedDigests);
+            return GetDigestsWithoutExistingAnnotation(unsupportedDigests);
         }
         catch (Exception e)
         {

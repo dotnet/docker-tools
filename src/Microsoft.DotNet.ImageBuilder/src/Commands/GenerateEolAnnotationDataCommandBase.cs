@@ -24,6 +24,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
     private readonly IContainerRegistryClientFactory _acrClientFactory;
     private readonly ILifecycleMetadataService _lifecycleMetadataService;
+    private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
 
     protected GenerateEolAnnotationDataCommandBase(
@@ -31,16 +32,33 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IContainerRegistryContentClientFactory acrContentClientFactory,
         IContainerRegistryClientFactory acrClientFactory,
-        ILifecycleMetadataService lifecycleMetadataService)
+        ILifecycleMetadataService lifecycleMetadataService,
+        IRegistryCredentialsProvider registryCredentialsProvider)
     {
         LoggerService = loggerService;
         _tokenCredentialProvider = tokenCredentialProvider;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;
+        _registryCredentialsProvider = registryCredentialsProvider;
     }
 
     protected ILoggerService LoggerService { get; }
+
+    public sealed override async Task ExecuteAsync()
+    {
+        IEnumerable<EolDigestData> digestsToAnnotate = [];
+        await _registryCredentialsProvider.ExecuteWithCredentialsAsync(Options.IsDryRun,
+            async () => digestsToAnnotate = await GetDigestsToAnnotateAsync(),
+            Options.CredentialsOptions,
+            registryName: Options.RegistryOptions.Registry,
+            ownedAcr: Options.RegistryOptions.Registry,
+            serviceConnection: Options.AcrServiceConnection);
+
+        WriteDigestDataJson(digestsToAnnotate);
+    }
+
+    protected abstract Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync();
 
     protected async Task<Dictionary<string, string?>> GetAllImageDigestsFromRegistryAsync(
         Func<string, bool>? repoNameFilter = null)
@@ -100,7 +118,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
             .Where(registryDigest => !supportedDigests.Contains(registryDigest.Key))
             .Select(registryDigest => new EolDigestData(registryDigest.Key) { Tag = registryDigest.Value });
 
-    protected IEnumerable<EolDigestData> GetDigestsToAnnotate(IEnumerable<EolDigestData> unsupportedDigests)
+    protected IEnumerable<EolDigestData> GetDigestsWithoutExistingAnnotation(IEnumerable<EolDigestData> unsupportedDigests)
     {
         // Annotate digests that are not already annotated for EOL
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];

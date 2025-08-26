@@ -5,12 +5,17 @@ pr:
     - feature/*
   paths:
     include:
+    - eng/pipelines/dotnet-buildtools-image-builder-pr.yml
+    - eng/pipelines/templates/*
+    - eng/common/templates/*
     - src/*
 
 trigger: none
 
 variables:
-- template: templates/variables/image-builder.yml
+- template: /eng/pipelines/templates/variables/image-builder.yml
+  parameters:
+    sourceBuildPipelineRunId: $(Build.BuildId)
 
 resources:
   repositories:
@@ -21,10 +26,12 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 stages:
-- template: ../common/templates/stages/dotnet/build-test-publish-repo.yml
+- template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
   parameters:
-    buildMatrixType: platformVersionedOs
-    noCache: true
-    internalProjectName: ${{ variables.internalProjectName }}
-    publicProjectName: ${{ variables.publicProjectName }}
-    versionsRepoRef: VersionsRepo
+    sourceBuildPipelineRunId: $(Build.BuildId)
+    stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
+    stagesTemplateParameters:
+      noCache: true
+      sourceBuildPipelineRunId: $(Build.BuildId)
+      versionsRepoRef: VersionsRepo
+      isPullRequestValidation: true

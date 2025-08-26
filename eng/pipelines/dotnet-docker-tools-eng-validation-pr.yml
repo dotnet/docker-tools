@@ -27,4 +27,3 @@ stages:
     stagesTemplateParameters:
       noCache: true
       versionsRepoRef: VersionsRepo
-      isPullRequestValidation: true

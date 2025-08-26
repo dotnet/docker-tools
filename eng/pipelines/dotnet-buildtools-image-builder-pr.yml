@@ -34,4 +34,3 @@ stages:
       noCache: true
       sourceBuildPipelineRunId: $(Build.BuildId)
       versionsRepoRef: VersionsRepo
-      isPullRequestValidation: true

@@ -36,7 +36,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
     {
     }
 
-    protected override string Description => "Generate EOL annotation data for publish stage";
+    protected override string Description => "Generate EOL annotation data for all images not described in the new image info file";
 
     protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {

@@ -11,11 +11,11 @@ using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 [Export(typeof(ICommand))]
-public class GenerateEolAnnotationDataForNonProdCommand :
+public class GenerateEolAnnotationDataForAllImagesCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
 {
     [ImportingConstructor]
-    public GenerateEolAnnotationDataForNonProdCommand(
+    public GenerateEolAnnotationDataForAllImagesCommand(
         ILoggerService loggerService,
         IContainerRegistryClientFactory acrClientFactory,
         IContainerRegistryContentClientFactory acrContentClientFactory,
@@ -32,7 +32,7 @@ public class GenerateEolAnnotationDataForNonProdCommand :
     {
     }
 
-    protected override string Description => "Generate EOL annotation data for non-prod images";
+    protected override string Description => "Generate EOL annotation data for all images in the registry";
 
     protected override async Task<IEnumerable<EolDigestData>> GetDigestsToAnnotateAsync()
     {

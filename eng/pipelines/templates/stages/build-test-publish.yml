@@ -49,5 +49,5 @@ stages:
     publishConfig: ${{ parameters.publishConfig }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-    ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
+    ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
       buildMatrixType: platformVersionedOs

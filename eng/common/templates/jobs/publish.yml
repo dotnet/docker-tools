@@ -145,6 +145,7 @@ jobs:
 
   - template: /eng/common/templates/steps/wait-for-mcr-image-ingestion.yml@self
     parameters:
+      publishConfig: ${{ parameters.publishConfig }}
       imageInfoPath: '$(imageinfoContainerDir)/image-info.json'
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)
@@ -235,7 +236,6 @@ jobs:
 
   - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
     parameters:
-      internalProjectName: ${{ parameters.internalProjectName }}
       publishConfig: ${{ parameters.publishConfig }}
       dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data.json
 

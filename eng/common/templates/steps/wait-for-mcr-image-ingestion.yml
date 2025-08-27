@@ -12,8 +12,8 @@ parameters:
   type: string
 
 - name: condition
-  type: boolean
-  default: true
+  type: string
+  default: "true"
 
 steps:
 - template: /eng/common/templates/steps/run-imagebuilder.yml@self

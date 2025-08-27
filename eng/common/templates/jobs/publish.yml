@@ -216,12 +216,12 @@ jobs:
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-
-        generateEolAnnotationData
+        generateEolAnnotationDataForPublish
+        '${{ parameters.publishConfig.publishAcr.server }}'
+        '${{ parameters.publishConfig.publishAcr.repoPrefix }}'
         '$(artifactsPath)/eol-annotation-data/eol-annotation-data.json'
         '$(imageInfoContainerDir)/full-image-info-orig.json'
         '$(imageInfoContainerDir)/full-image-info-new.json'
-        '${{ parameters.publishConfig.publishAcr.server }}'
-        '${{ parameters.publishConfig.publishAcr.repoPrefix }}'
         $(generateEolAnnotationDataExtraOptions)
         $(dryRunArg)
 

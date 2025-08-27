@@ -145,6 +145,7 @@ jobs:
 
   - template: /eng/common/templates/steps/wait-for-mcr-image-ingestion.yml@self
     parameters:
+      publishConfig: ${{ parameters.publishConfig }}
       imageInfoPath: '$(imageinfoContainerDir)/image-info.json'
       minQueueTime: $(imageQueueTime)
       dryRunArg: $(dryRunArg)

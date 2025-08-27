@@ -20,7 +20,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
-    public class GenerateEolAnnotationDataTests
+    public class GenerateEolAnnotationDataForPublishTests
     {
         private const string DefaultRepoPrefix = "public/";
         private const string AcrName = "myacr.azurecr.io";
@@ -170,7 +170,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -305,7 +305,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -448,7 +448,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -577,7 +577,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -680,7 +680,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -789,7 +789,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -900,7 +900,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -1006,7 +1006,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         })
                 ]);
 
-            GenerateEolAnnotationDataCommand command =
+            GenerateEolAnnotationDataForPublishCommand command =
                 InitializeCommand(
                     oldImageInfoPath,
                     newImageInfoPath,
@@ -1030,7 +1030,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
         }
 
-        private static GenerateEolAnnotationDataCommand InitializeCommand(
+        private static GenerateEolAnnotationDataForPublishCommand InitializeCommand(
             string oldImageInfoPath,
             string newImageInfoPath,
             string newEolDigestsListPath,
@@ -1041,7 +1041,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             Mock<ILoggerService> loggerServiceMock = new();
             lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
-            GenerateEolAnnotationDataCommand command = new(
+            GenerateEolAnnotationDataForPublishCommand command = new(
                 loggerService: loggerServiceMock.Object,
                 acrClientFactory: registryClientFactory,
                 acrContentClientFactory: registryContentClientFactory,

@@ -13,10 +13,7 @@ public class GenerateEolAnnotationDataOptions : Options
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
     public RegistryOptions RegistryOptions { get; set; } = new();
     public ServiceConnectionOptions? AcrServiceConnection { get; set; }
-
     public string EolDigestsListPath { get; set; } = string.Empty;
-    public string OldImageInfoPath { get; set; } = string.Empty;
-    public string NewImageInfoPath { get; set; } = string.Empty;
 }
 
 public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
@@ -38,12 +35,8 @@ public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
         [
             ..base.GetCliArguments(),
             .._registryCredentialsOptionsBuilder.GetCliArguments(),
+            .._registryOptionsBuilder.GetCliArguments(),
             new Argument<string>(nameof(GenerateEolAnnotationDataOptions.EolDigestsListPath),
                 "EOL annotations digests list output path"),
-            new Argument<string>(nameof(GenerateEolAnnotationDataOptions.OldImageInfoPath),
-                "Old image-info file"),
-            new Argument<string>(nameof(GenerateEolAnnotationDataOptions.NewImageInfoPath),
-                "New image-info file"),
-            .._registryOptionsBuilder.GetCliArguments(),
         ];
 }

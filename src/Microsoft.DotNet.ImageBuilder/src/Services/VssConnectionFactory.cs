@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
@@ -13,12 +12,10 @@ using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
-    [Export(typeof(IVssConnectionFactory))]
     internal class VssConnectionFactory : IVssConnectionFactory
     {
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public VssConnectionFactory(ILoggerService loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

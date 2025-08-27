@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -22,15 +21,12 @@ public interface IMarImageIngestionReporter
         TimeSpan requeryDelay,
         DateTime? minimumQueueTime);
 }
-
-[Export(typeof(IMarImageIngestionReporter))]
 public class MarImageIngestionReporter : IMarImageIngestionReporter
 {
     private readonly ILoggerService _loggerService;
     private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
     private readonly IEnvironmentService _environmentService;
 
-    [ImportingConstructor]
     public MarImageIngestionReporter(
         ILoggerService loggerService,
         IMcrStatusClientFactory mcrStatusClientFactory,

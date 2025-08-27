@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,14 +10,12 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IEnvironmentService _environmentService;
         private readonly Lazy<IMcrStatusClient> _mcrStatusClient;
 
-        [ImportingConstructor]
         public WaitForMcrDocIngestionCommand(
             ILoggerService loggerService,
             IMcrStatusClientFactory mcrStatusClientFactory,

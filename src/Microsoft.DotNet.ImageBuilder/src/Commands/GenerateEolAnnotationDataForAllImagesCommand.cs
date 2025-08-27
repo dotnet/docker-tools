@@ -3,18 +3,15 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-[Export(typeof(ICommand))]
 public class GenerateEolAnnotationDataForAllImagesCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
 {
-    [ImportingConstructor]
     public GenerateEolAnnotationDataForAllImagesCommand(
         ILoggerService loggerService,
         IContainerRegistryClientFactory acrClientFactory,

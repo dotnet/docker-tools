@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,12 +11,10 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions, TrimUnchangedPlatformsOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public TrimUnchangedPlatformsCommand(ILoggerService loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

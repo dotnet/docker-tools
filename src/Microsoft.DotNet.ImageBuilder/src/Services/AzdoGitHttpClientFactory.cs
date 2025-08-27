@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
@@ -11,12 +10,10 @@ using Microsoft.VisualStudio.Services.Common;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
-    [Export(typeof(IAzdoGitHttpClientFactory))]
     public class AzdoGitHttpClientFactory : IAzdoGitHttpClientFactory
     {
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public AzdoGitHttpClientFactory(ILoggerService loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

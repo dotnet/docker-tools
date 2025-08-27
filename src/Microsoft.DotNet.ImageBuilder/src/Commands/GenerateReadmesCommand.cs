@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -20,8 +19,6 @@ using YamlDotNet.Serialization.NamingConventions;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
-    [method: ImportingConstructor]
     public partial class GenerateReadmesCommand(IEnvironmentService environmentService)
         : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService)
     {

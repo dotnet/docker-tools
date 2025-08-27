@@ -3,20 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.Net.Http;
 using System.Threading;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IHttpClientProvider))]
     internal class HttpClientProvider : IHttpClientProvider
     {
         private readonly Lazy<HttpClient> _httpClient;
         private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
-        [ImportingConstructor]
         public HttpClientProvider(ILoggerService loggerService)
         {
             if (loggerService is null)

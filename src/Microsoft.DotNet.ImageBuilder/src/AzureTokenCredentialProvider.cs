@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
@@ -12,7 +11,7 @@ using Azure.Identity;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-[Export(typeof(IAzureTokenCredentialProvider))]
+
 internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 {
     private readonly object _cacheLock = new();

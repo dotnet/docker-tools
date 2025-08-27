@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -16,14 +15,13 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 
 #nullable enable
-[Export(typeof(ICommand))]
+
 public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOptions, GenerateSigningPayloadsOptionsBuilder>
 {
     private readonly ILoggerService _loggerService;
     private readonly IOrasClient _orasClient;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
-    [ImportingConstructor]
     public GenerateSigningPayloadsCommand(
         ILoggerService loggerService,
         IOrasClient orasClient,

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
@@ -12,8 +11,6 @@ using Newtonsoft.Json;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
-
-[Export(typeof(ILifecycleMetadataService))]
 public class LifecycleMetadataService : ILifecycleMetadataService
 {
     public const string EndOfLifeAnnotation = "vnd.microsoft.artifact.lifecycle.end-of-life.date";
@@ -22,7 +19,6 @@ public class LifecycleMetadataService : ILifecycleMetadataService
 
     private readonly IOrasClient _orasClient;
 
-    [ImportingConstructor]
     public LifecycleMetadataService(IOrasClient orasClient)
     {
         _orasClient = orasClient;
@@ -72,9 +68,9 @@ public class LifecycleMetadataService : ILifecycleMetadataService
                 ?? throw new Exception(
                     $"""
                     Unable to deserialize lifecycle metadata manifest from 'oras' output:
-                    
+
                     {output}
-                    
+
                     """
                 );
         }

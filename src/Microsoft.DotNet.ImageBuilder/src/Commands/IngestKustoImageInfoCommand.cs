@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,13 +14,11 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions, IngestKustoImageInfoOptionsBuilder>
     {
         private readonly IKustoClient _kustoClient;
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public IngestKustoImageInfoCommand(ILoggerService loggerService, IKustoClient kustoClient)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

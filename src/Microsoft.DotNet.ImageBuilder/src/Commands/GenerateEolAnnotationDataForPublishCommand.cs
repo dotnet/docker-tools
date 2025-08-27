@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,11 +13,9 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-[Export(typeof(ICommand))]
 public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
-    [ImportingConstructor]
     public GenerateEolAnnotationDataForPublishCommand(
         ILoggerService loggerService,
         IContainerRegistryClientFactory acrClientFactory,

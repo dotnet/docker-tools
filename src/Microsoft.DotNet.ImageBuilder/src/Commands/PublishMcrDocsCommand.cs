@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -16,7 +15,6 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions, PublishMcrDocsOptionsBuilder>
     {
         private const string McrTagsPlaceholder = "Tags go here.";
@@ -24,7 +22,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitHubClientFactory _gitHubClientFactory;
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
             ILoggerService loggerService) : base()
         {

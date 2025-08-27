@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.VersionTools.Automation;
@@ -11,8 +10,6 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IGitHubClientFactory))]
-    [method: ImportingConstructor]
     internal class GitHubClientFactory(
         ILoggerService loggerService,
         IOctokitClientFactory octokitClientFactory)

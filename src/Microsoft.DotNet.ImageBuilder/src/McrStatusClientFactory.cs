@@ -3,8 +3,6 @@
 
 #nullable enable
 
-using System.ComponentModel.Composition;
-
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IMcrStatusClientFactory
@@ -12,8 +10,6 @@ public interface IMcrStatusClientFactory
     IMcrStatusClient Create(IServiceConnection serviceConnection);
 }
 
-[Export(typeof(IMcrStatusClientFactory))]
-[method: ImportingConstructor]
 public class McrStatusClientFactory(
     IHttpClientProvider httpClientProvider,
     IAzureTokenCredentialProvider tokenCredentialProvider,

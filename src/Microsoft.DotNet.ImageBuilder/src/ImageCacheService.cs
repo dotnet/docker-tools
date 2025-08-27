@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -25,8 +24,6 @@ public interface IImageCacheService
         bool isLocalBaseImageExpected,
         bool isDryRun);
 }
-
-[Export(typeof(IImageCacheService))]
 public class ImageCacheService : IImageCacheService
 {
     private readonly ILoggerService _loggerService;
@@ -37,7 +34,6 @@ public class ImageCacheService : IImageCacheService
     // Metadata about Dockerfiles whose images have been retrieved from the cache
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
 
-    [ImportingConstructor]
     public ImageCacheService(ILoggerService loggerService, IGitService gitService)
     {
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -194,7 +190,7 @@ public class ImageCacheService : IImageCacheService
         string? imageInfoSha = srcPlatformData.BaseImageDigest is not null ?
             DockerHelper.GetDigestSha(srcPlatformData.BaseImageDigest) :
             null;
-        
+
         bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
         _loggerService.WriteMessage($"Image info's base image digest SHA: {imageInfoSha}");

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -21,14 +20,12 @@ using Octokit;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotificationOptions, PostPublishNotificationOptionsBuilder>
     {
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly INotificationService _notificationService;
         private readonly IOctokitClientFactory _octokitClientFactory;
 
-        [ImportingConstructor]
         public PostPublishNotificationCommand(
             IVssConnectionFactory connectionFactory,
             INotificationService notificationService,

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -12,13 +11,11 @@ using Octokit;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(INotificationService))]
     public class NotificationService : INotificationService
     {
         private readonly ILoggerService _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
 
-        [ImportingConstructor]
         public NotificationService(ILoggerService loggerService, IOctokitClientFactory octokitClientFactory)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -12,13 +11,11 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class PullImagesCommand : ManifestCommand<PullImagesOptions, PullImagesOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public PullImagesCommand(IDockerService dockerService, ILoggerService loggerService)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));

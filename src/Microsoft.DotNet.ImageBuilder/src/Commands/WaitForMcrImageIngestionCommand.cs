@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -14,13 +13,11 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
-        [ImportingConstructor]
         public WaitForMcrImageIngestionCommand(
             ILoggerService loggerService, IMarImageIngestionReporter imageIngestionReporter)
         {

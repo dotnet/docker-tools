@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel.Composition;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IDateTimeService))]
     public class DateTimeService : IDateTimeService
     {
         public DateTime UtcNow => DateTime.UtcNow;

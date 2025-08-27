@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -15,7 +14,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class PublishManifestCommand : ManifestCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
         private readonly Lazy<IManifestService> _manifestService;
@@ -26,7 +24,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private ConcurrentBag<string> _publishedManifestTags = new();
 
-        [ImportingConstructor]
         public PublishManifestCommand(
             IManifestServiceFactory manifestServiceFactory,
             IDockerService dockerService,

@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -17,7 +16,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
@@ -43,7 +41,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private ImageArtifactDetails? _imageArtifactDetails;
 
-        [ImportingConstructor]
         public BuildCommand(
             IDockerService dockerService,
             ILoggerService loggerService,

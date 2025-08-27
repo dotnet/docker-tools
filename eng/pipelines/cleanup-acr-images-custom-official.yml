@@ -1,0 +1,18 @@
+trigger: none
+pr: none
+
+variables:
+- template: templates/variables/common.yml
+
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    serviceConnections:
+    - name: $(clean.serviceConnectionName)
+    stages:
+    - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
+      parameters:
+        stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images.yml@self
+        action: $(action)
+        age: $(age)
+        customArgs: $(customArgs)

@@ -1,0 +1,20 @@
+parameters:
+  publishConfig: null
+  internalProjectName: "internal"
+  
+stages:
+- stage: Execute
+  jobs:
+  - job: Clean
+    pool:
+      vmImage: $(defaultLinuxAmd64PoolImage)
+    steps:
+    - template: ../common/templates/steps/init-docker-linux.yml
+    - template: ../common/templates/steps/clean-acr-images.yml
+      parameters:
+        internalProjectName: ${{ parameters.internalProjectName }}
+        repo: $(repo)
+        acr: ${{ parameters.publishConfig.buildAcr }}
+        action: $(action)
+        age: $(age)
+        customArgs: $(customArgs)

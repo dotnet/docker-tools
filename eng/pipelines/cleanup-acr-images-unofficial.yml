@@ -1,0 +1,19 @@
+trigger: none
+pr: none
+
+variables:
+- template: /eng/pipelines/templates/variables/common.yml@self
+
+extends:
+  template: /eng/common/templates/1es-unofficial.yml@self
+  parameters:
+    serviceConnections:
+    # For image removal
+    - name: $(clean-test.serviceConnectionName)
+    # For EOL annotations
+    - name: $(build-test.serviceConnectionName)
+    - name: $(public-mirror.serviceConnectionName)
+    stages:
+    - template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
+      parameters:
+        stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images.yml@self

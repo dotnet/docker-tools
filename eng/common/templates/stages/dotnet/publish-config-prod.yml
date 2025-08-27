@@ -73,6 +73,12 @@ stages:
           clientId: $(build.serviceConnection.clientId)
           tenantId: $(build.serviceConnection.tenantId)
 
+      cleanServiceConnection:
+        name: $(clean.serviceConnectionName)
+        id: $(clean.serviceConnection.id)
+        clientId: $(clean.serviceConnection.clientId)
+        tenantId: $(clean.serviceConnection.tenantId)
+
       testServiceConnection:
         name: $(test.serviceConnectionName)
         id: $(test.serviceConnection.id)

@@ -1,0 +1,10 @@
+ARG SYFT_IMAGE_NAME
+ARG TARGET_IMAGE_NAME
+
+FROM ${SYFT_IMAGE_NAME} AS syft
+FROM ${TARGET_IMAGE_NAME} AS target
+
+RUN --mount=from=syft,source=/,target=/syft /syft/syft scan / --select-catalogers image -o spdx-json=/manifest.spdx.json
+
+FROM scratch
+COPY --from=target /manifest.spdx.json /manifest.spdx.json

@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
@@ -17,7 +16,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
@@ -35,7 +33,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             WriteIndented = true
         };
 
-        [ImportingConstructor]
         public AnnotateEolDigestsCommand(
             ILoggerService loggerService,
             ILifecycleMetadataService lifecycleMetadataService,

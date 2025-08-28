@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
 using LibGit2Sharp;
@@ -12,7 +11,6 @@ using LibGit2Sharp.Handlers;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoOptionsBuilder>
     {
         private readonly IGitService _gitService;
@@ -20,7 +18,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private const string CommitMessage = "Merging Docker image info updates from build";
 
-        [ImportingConstructor]
         public PublishImageInfoCommand(IGitService gitService, IOctokitClientFactory octokitClientFactory, ILoggerService loggerService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));

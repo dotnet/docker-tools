@@ -4,20 +4,17 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
 
-        [ImportingConstructor]
         public GetBaseImageStatusCommand(IDockerService dockerService, ILoggerService loggerService)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));

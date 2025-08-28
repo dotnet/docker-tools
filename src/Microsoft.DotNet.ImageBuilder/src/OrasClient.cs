@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 #nullable enable
@@ -27,8 +26,6 @@ public interface IOrasClient
         return Descriptor.FromJson(output);
     }
 }
-
-[Export(typeof(IOrasClient))]
 public class OrasClient : IOrasClient
 {
     private const string OrasExecutable = "oras";

@@ -16,6 +16,7 @@
     <PackageReference Include="Cottle" Version="2.0.10" />
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="13.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.8" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.1" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.1" />
@@ -25,7 +26,6 @@
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="Polly.RateLimiting" Version="8.4.2" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
-    <PackageReference Include="System.ComponentModel.Composition" Version="9.0.4" />
     <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
 

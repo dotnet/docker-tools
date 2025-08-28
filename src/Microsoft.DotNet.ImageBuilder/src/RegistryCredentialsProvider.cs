@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel.Composition;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
@@ -10,8 +9,6 @@ using Azure.Core;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-[Export(typeof(IRegistryCredentialsProvider))]
-[method: ImportingConstructor]
 public class RegistryCredentialsProvider(
     ILoggerService loggerService,
     IHttpClientProvider httpClientProvider,

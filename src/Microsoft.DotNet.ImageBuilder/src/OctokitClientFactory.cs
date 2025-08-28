@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json;
@@ -15,8 +14,6 @@ using Octokit;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IOctokitClientFactory))]
-    [method: ImportingConstructor]
     public class OctokitClientFactory(ILoggerService loggerService) : IOctokitClientFactory
     {
         private static readonly ProductHeaderValue s_productHeaderValue =

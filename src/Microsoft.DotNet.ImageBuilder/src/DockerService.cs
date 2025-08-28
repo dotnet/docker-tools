@@ -5,14 +5,12 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IDockerService))]
     public class DockerService : IDockerService
     {
         public Architecture Architecture => DockerHelper.Architecture;

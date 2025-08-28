@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -16,9 +15,9 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Polly;
 
 #nullable enable
+
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions, CleanAcrImagesOptionsBuilder>
     {
         private readonly IContainerRegistryClientFactory _acrClientFactory;
@@ -30,7 +29,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
 
-        [ImportingConstructor]
         public CleanAcrImagesCommand(
             IContainerRegistryClientFactory acrClientFactory,
             IContainerRegistryContentClientFactory acrContentClientFactory,

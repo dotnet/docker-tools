@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -16,7 +15,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixOptionsBuilder>
     {
         private const string VersionRegGroupName = "Version";
@@ -29,7 +27,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        [ImportingConstructor]
         public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILoggerService loggerService) : base()
         {
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));

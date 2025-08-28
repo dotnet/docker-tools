@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -16,7 +15,6 @@ using Octokit;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>
     {
         private readonly Dictionary<string, string> _imageDigests = new();
@@ -26,7 +24,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
 
-        [ImportingConstructor]
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
             ILoggerService loggerService,

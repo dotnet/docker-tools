@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,13 +11,11 @@ using System.Threading.Tasks;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class WaitForMarAnnotationIngestionCommand : Command<WaitForMarAnnotationIngestionOptions, WaitForMarAnnotationIngestionOptionsBuilder>
     {
         private readonly ILoggerService _loggerService;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
-        [ImportingConstructor]
         public WaitForMarAnnotationIngestionCommand(
             ILoggerService loggerService, IMarImageIngestionReporter imageIngestionReporter)
         {

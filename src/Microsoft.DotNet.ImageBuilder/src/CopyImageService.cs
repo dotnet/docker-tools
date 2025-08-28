@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.ComponentModel.Composition;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure;
@@ -28,14 +27,11 @@ public interface ICopyImageService
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false);
 }
-
-[Export(typeof(ICopyImageService))]
 public class CopyImageService : ICopyImageService
 {
     private readonly ILoggerService _loggerService;
     private readonly Lazy<ArmClient> _armClient;
 
-    [ImportingConstructor]
     public CopyImageService(
         ILoggerService loggerService,
         IAzureTokenCredentialProvider tokenCredentialProvider,

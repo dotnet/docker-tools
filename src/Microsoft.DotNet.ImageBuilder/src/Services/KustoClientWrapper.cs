@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Threading.Tasks;
 using Kusto.Data;
@@ -14,15 +13,14 @@ using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
 
 #nullable enable
+
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
-    [Export(typeof(IKustoClient))]
     internal class KustoClientWrapper : IKustoClient
     {
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
-        [ImportingConstructor]
         public KustoClientWrapper(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _loggerService = loggerService;

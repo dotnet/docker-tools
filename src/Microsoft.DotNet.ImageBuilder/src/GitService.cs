@@ -3,13 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.ComponentModel.Composition;
 using LibGit2Sharp;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    [Export(typeof(IGitService))]
-    [method: ImportingConstructor]
     public class GitService(ILoggerService logger) : IGitService
     {
         private readonly ILoggerService _logger = logger ?? throw new ArgumentNullException(nameof(logger));

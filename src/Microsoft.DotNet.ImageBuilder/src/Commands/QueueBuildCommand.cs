@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel.Composition;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -21,7 +20,6 @@ using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    [Export(typeof(ICommand))]
     public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildOptionsBuilder>
     {
         private readonly IVssConnectionFactory _connectionFactory;
@@ -31,7 +29,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         // The number of most recent builds that must have failed consecutively before skipping the queuing of another build
         public const int BuildFailureLimit = 3;
 
-        [ImportingConstructor]
         public QueueBuildCommand(
             IVssConnectionFactory connectionFactory,
             ILoggerService loggerService,

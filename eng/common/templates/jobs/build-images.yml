@@ -105,7 +105,7 @@ jobs:
         $images = "$(BuildImages.builtImages)"
         if (-not $images) { return 0 }
         $syftImageName = "${{ parameters.publishConfig.publicMirrorAcr.server }}/$(imageNames.syft)"
-        docker pull $syftImageName
+        & $(engCommonPath)/Pull-Image.ps1 $syftImageName
         $images -Split ',' | ForEach-Object {
           echo "Generating SBOM for $_";
           $targetImageName = "$_"

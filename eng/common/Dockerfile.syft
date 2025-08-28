@@ -2,9 +2,15 @@ ARG SYFT_IMAGE_NAME
 ARG TARGET_IMAGE_NAME
 
 FROM ${SYFT_IMAGE_NAME} AS syft
-FROM ${TARGET_IMAGE_NAME} AS target
+FROM ${TARGET_IMAGE_NAME} AS scan-image
 
-RUN --mount=from=syft,source=/,target=/syft /syft/syft scan / --select-catalogers image -o spdx-json=/manifest.spdx.json
+FROM syft AS run-scan
+ARG TARGET_IMAGE_NAME
+ENV SYFT_CHECK_FOR_APP_UPDATE=0 \
+    SYFT_SOURCE_NAME=${TARGET_IMAGE_NAME}
+USER root
+RUN --mount=from=scan-image,source=/,target=/rootfs \
+    ["/syft", "scan", "/rootfs/", "--select-catalogers", "image", "--output", "spdx-json=/manifest.spdx.json"]
 
-FROM scratch
-COPY --from=target /manifest.spdx.json /manifest.spdx.json
+FROM scratch AS output
+COPY --from=run-scan /manifest.spdx.json /manifest.spdx.json

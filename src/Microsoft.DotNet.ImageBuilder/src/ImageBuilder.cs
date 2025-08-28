@@ -64,6 +64,7 @@ public static class ImageBuilder
             builder.AddSingleton<ICommand, GetBaseImageStatusCommand>();
             builder.AddSingleton<ICommand, GetStaleImagesCommand>();
             builder.AddSingleton<ICommand, IngestKustoImageInfoCommand>();
+            builder.AddSingleton<ICommand, MergeImageInfoCommand>();
             builder.AddSingleton<ICommand, PostPublishNotificationCommand>();
             builder.AddSingleton<ICommand, PublishImageInfoCommand>();
             builder.AddSingleton<ICommand, PublishManifestCommand>();

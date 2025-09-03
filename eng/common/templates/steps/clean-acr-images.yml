@@ -3,7 +3,7 @@ parameters:
   acr: null
   action: null
   age: null
-  customArgs: ""
+  customArgs: "--dry-run"
   internalProjectName: null
   publishConfig: null
 steps:

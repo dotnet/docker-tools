@@ -50,3 +50,21 @@ stages:
     #     acr: ${{ parameters.publishConfig.buildAcr }}
     #     action: pruneDangling
     #     age: 0
+  - job: Annotations
+    steps:
+    - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
+      displayName: Create EOL Annotation Data Directory
+    - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
+      parameters:
+        acr: ${{ parameters.publishConfig.buildAcr }}
+    - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
+      parameters:
+        acr: ${{ parameters.publishConfig.publicMirrorAcr }}
+    - template: /eng/common/templates/steps/publish-artifact.yml@self
+      parameters:
+        path: $(Build.ArtifactStagingDirectory)/eol-annotation-data
+        artifactName: eol-annotation-data-$(System.JobAttempt)
+        displayName: Publish EOL Annotation Data Artifact
+        internalProjectName: internal
+        publicProjectName: public

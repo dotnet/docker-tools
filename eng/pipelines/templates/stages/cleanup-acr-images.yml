@@ -1,6 +1,8 @@
 parameters:
   publishConfig: null
-  internalProjectName: "internal"
+  enableDryRun: false
+  internalProjectName: null
+  publicProjectName: null
 
 stages:
 - stage: Execute
@@ -9,6 +11,9 @@ stages:
   - job: Clean
     steps:
     - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    - template: /eng/pipelines/templates/steps/set-dry-run-arg.yml@self
+      parameters:
+        enableDryRun: ${{ parameters.enableDryRun }}
     - template: /eng/common/templates/steps/clean-acr-images.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
@@ -53,6 +58,9 @@ stages:
   - job: Annotations
     steps:
     - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    - template: /eng/pipelines/templates/steps/set-dry-run-arg.yml@self
+      parameters:
+        enableDryRun: ${{ parameters.enableDryRun }}
     - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
       displayName: Create EOL Annotation Data Directory
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self

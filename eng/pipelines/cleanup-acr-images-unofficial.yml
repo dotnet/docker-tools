@@ -1,8 +1,17 @@
 trigger: none
 pr: none
 
+parameters:
+- name: enableDryRun
+  displayName: Enable Dry Run
+  default: false
+  type: boolean
+
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
+- name: publishEolAnnotations
+  value: false
+  readonly: true
 
 extends:
   template: /eng/common/templates/1es-unofficial.yml@self
@@ -17,3 +26,5 @@ extends:
     - template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
       parameters:
         stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images.yml@self
+        stagesTemplateParameters:
+          enableDryRun: ${{ parameters.enableDryRun }}

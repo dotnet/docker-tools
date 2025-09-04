@@ -1,0 +1,12 @@
+parameters:
+  enableDryRun: false
+
+steps:
+  - script: |
+      dryRunArg=""
+      if [ "${{ parameters.enableDryRun }}" = "True" ]; then
+        dryRunArg="--dry-run"
+      fi
+
+      echo "##vso[task.setvariable variable=dryRunArg]$dryRunArg"
+    displayName: Set Dry Run Argument

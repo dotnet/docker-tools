@@ -1,5 +1,4 @@
 parameters:
-  customArgs: "--dry-run"
   acr: null
 steps:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
@@ -16,7 +15,7 @@ steps:
         '${{ parameters.acr.server }}'
         '${{ parameters.acr.repoPrefix }}'
         '$(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json'
-        ${{ parameters.customArgs }}
+        $(dryRunArg)
 
   - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
     parameters:

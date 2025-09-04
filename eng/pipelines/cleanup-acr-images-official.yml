@@ -9,8 +9,17 @@ schedules:
     - main
   always: true
 
+parameters:
+- name: enableDryRun
+  displayName: Enable Dry Run
+  default: false
+  type: boolean
+
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
+- name: publishEolAnnotations
+  value: true
+  readonly: true
 
 extends:
   template: /eng/common/templates/1es-official.yml@self
@@ -25,3 +34,5 @@ extends:
     - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
         stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images.yml@self
+        stagesTemplateParameters:
+          enableDryRun: ${{ parameters.enableDryRun }}

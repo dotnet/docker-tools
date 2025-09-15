@@ -9,12 +9,12 @@ WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
-COPY src/Microsoft.DotNet.ImageBuilder.csproj ./src/
-RUN dotnet restore -r win-x64 ./src/Microsoft.DotNet.ImageBuilder.csproj
+COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
+RUN dotnet restore -r win-x64 ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish ./src/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
+RUN dotnet publish ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
 
 # install manifest-tool
 RUN pwsh -Command " `

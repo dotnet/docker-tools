@@ -22,7 +22,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$dotnetInstallDir = "$PSScriptRoot/../../.dotnet"
+$dotnetInstallDir = "$PSScriptRoot/../.dotnet"
 
 Push-Location $PSScriptRoot
 
@@ -32,9 +32,9 @@ if ($TestCategories.Contains("pre-build")) {
 
 if ($TestCategories.Contains("functional")) {
     try {
-        & ../../eng/common/Install-DotNetSdk.ps1 $dotnetInstallDir
+        & ../eng/common/Install-DotNetSdk.ps1 $dotnetInstallDir
 
-        $cmd = "$DotnetInstallDir/dotnet test $PSScriptRoot/tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
+        $cmd = "$DotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
 
         Write-Output "Executing '$cmd'"
         Invoke-Expression $cmd

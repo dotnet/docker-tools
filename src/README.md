@@ -11,11 +11,11 @@ All commands are relative to the root of the repo.
 Using Linux or Windows, simply run the build script:
 
 ```pwsh
-# From src/Microsoft.DotNet.ImageBuilder
+# From src/
 pwsh -f build.ps1
 
 # From the root of the repo
-pwsh -wd ./src/Microsoft.DotNet.ImageBuilder/ -f src/Microsoft.DotNet.ImageBuilder/build.ps1
+pwsh -wd ./src -f src/build.ps1
 ```
 
 ### Build a multi-arch Linux image
@@ -24,7 +24,7 @@ If you don't need to test on Windows, this is the easiest way to create a multi-
 
 ```pwsh
 # Build the image. Choose one or both platforms, and optionally push to a registry or load the image locally.
-docker buildx build [--push,--load] --platform [linux/amd64,linux/arm64] -t "${REPO}:${TAG}" -f .\src\Microsoft.DotNet.ImageBuilder\Dockerfile.linux .\src\Microsoft.DotNet.ImageBuilder\
+docker buildx build [--push,--load] --platform [linux/amd64,linux/arm64] -t "${REPO}:${TAG}" -f ./src/Dockerfile.linux ./src/
 ```
 
 ### Create a multi-platform manifest list

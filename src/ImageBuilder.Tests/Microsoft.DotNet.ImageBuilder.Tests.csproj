@@ -20,7 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.DotNet.ImageBuilder.csproj" />
+    <ProjectReference Include="../ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj" />
   </ItemGroup>
 
 </Project>

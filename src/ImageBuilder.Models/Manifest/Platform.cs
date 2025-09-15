@@ -6,7 +6,6 @@ using System.ComponentModel;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 [Description(
@@ -75,4 +74,3 @@ public class Platform
     {
     }
 }
-#nullable disable

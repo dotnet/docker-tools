@@ -25,13 +25,13 @@ public class CustomBuildLegGroup
         " custom label that can then be used by tooling to lookup the group when necessary."
         )]
     [JsonProperty(Required = Required.Always)]
-    public string Name { get; set; }
+    public required string Name { get; set; }
 
     [Description("The type of the dependency which impacts how it's used during the build.")]
     [JsonProperty(Required = Required.Always)]
-    public CustomBuildLegDependencyType Type { get; set; }
+    public required CustomBuildLegDependencyType Type { get; set; }
 
     [Description("The set of dependencies the image has for this scenario.")]
     [JsonProperty(Required = Required.Always)]
-    public string[] Dependencies { get; set; } = Array.Empty<string>();
+    public required string[] Dependencies { get; set; }
 }

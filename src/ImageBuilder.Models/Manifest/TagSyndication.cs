@@ -14,10 +14,10 @@ public class TagSyndication
     [Description(
         "Name of the repo to syndicate the tag to."
     )]
-    public string Repo { get; set; }
+    public required string Repo { get; set; }
 
     [Description(
         "List of destination tag names to syndicate the tag to."
     )]
-    public string[] DestinationTags { get; set; }
+    public string[] DestinationTags { get; set; } = [];
 }

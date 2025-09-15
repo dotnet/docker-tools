@@ -4,7 +4,7 @@
       "owner": "dotnet",
       "repo": "docker-tools",
       "branch": "main",
-      "path": "src/Microsoft.DotNet.ImageBuilder/manifest.json",
+      "path": "src/manifest.json",
       "variables": {
         "UniqueId": ""
       }

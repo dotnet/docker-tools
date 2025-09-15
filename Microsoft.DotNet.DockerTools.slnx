@@ -7,5 +7,6 @@
   <Project Path="eng/src/file-pusher/file-pusher.csproj" />
   <Project Path="eng/src/yaml-updater/yaml-updater.csproj" />
   <Project Path="src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj" />
+  <Project Path="src/ImageBuilder.Manifest/Microsoft.DotNet.ImageBuilder.Manifest.csproj" />
   <Project Path="src/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj" />
 </Solution>

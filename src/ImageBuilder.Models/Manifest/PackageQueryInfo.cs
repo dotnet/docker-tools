@@ -4,22 +4,21 @@
 #nullable enable
 using System.ComponentModel;
 
-namespace Microsoft.DotNet.ImageBuilder.Models.Manifest
+namespace Microsoft.DotNet.ImageBuilder.Models.Manifest;
+
+[Description(
+    "Relative path to the template the Dockerfile is generated from."
+)]
+public class PackageQueryInfo
 {
     [Description(
-        "Relative path to the template the Dockerfile is generated from."
-    )]
-    public class PackageQueryInfo
-    {
-        [Description(
-            "Relative path from the manifest file to the script which queries the packages installed for a platform Dockerfile."
-            )]
-        public string? GetInstalledPackagesPath { get; set; }
+        "Relative path from the manifest file to the script which queries the packages installed for a platform Dockerfile."
+        )]
+    public string? GetInstalledPackagesPath { get; set; }
 
-        [Description(
-            "Relative path from the manifest file to the script which queries the packages available for upgrade for a platform Dockerfile."
-            )]
-        public string? GetUpgradablePackagesPath { get; set; }
-    }
+    [Description(
+        "Relative path from the manifest file to the script which queries the packages available for upgrade for a platform Dockerfile."
+        )]
+    public string? GetUpgradablePackagesPath { get; set; }
 }
 #nullable disable

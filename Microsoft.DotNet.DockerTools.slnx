@@ -9,4 +9,6 @@
   <Project Path="src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj" />
   <Project Path="src/ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj" />
   <Project Path="src/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj" />
+  <Project Path="src/ImageBuilder.Templating/Microsoft.DotNet.ImageBuilder.Templating.csproj" />
+  <Project Path="src/ImageBuilder.TemplateGenerator/Microsoft.DotNet.ImageBuilder.TemplateGenerator.csproj" />
 </Solution>

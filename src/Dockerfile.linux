@@ -3,7 +3,7 @@
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
 # build Microsoft.DotNet.ImageBuilder
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-azurelinux3.0 AS build-env
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
 
 # download oras package tarball
@@ -28,7 +28,7 @@ RUN dotnet publish -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBui
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-azurelinux3.0
+FROM mcr.microsoft.com/dotnet/runtime-deps:10.0-azurelinux3.0
 
 # install tooling
 RUN tdnf install -y \

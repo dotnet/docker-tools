@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <PublishTrimmed>False</PublishTrimmed>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -30,12 +30,9 @@
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="Polly.RateLimiting" Version="8.4.2" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
-    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
 
     <!-- CVE-2024-0056: Upgrade System.Data.SqlClient implicitly referenced by Microsoft.TeamFoundationServer.Client -->
     <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
-    <!-- CVE-2024-38095: Upgrade version of System.Formats.Asn1 implicitly referenced by Microsoft.DotNet.VersionTools -->
-    <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
   </ItemGroup>
 </Project>

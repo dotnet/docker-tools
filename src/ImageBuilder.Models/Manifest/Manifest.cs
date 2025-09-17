@@ -19,17 +19,17 @@ public class Manifest
         "Additional json files to be loaded with this manifest.  This is a convienent" +
         "way to split the manifest apart into logical parts."
         )]
-    public string[] Includes { get; set; }
+    public string[] Includes { get; set; } = [];
 
     [Description(
         "Info about the readme that documents the product family."
         )]
-    public Readme Readme { get; set; }
+    public Readme? Readme { get; set; }
 
     [Description(
         "The location of the Docker registry where the images are to be published."
         )]
-    public string Registry { get; set; }
+    public string? Registry { get; set; }
 
     [Description(
         "The set of Docker repositories described by this manifest."

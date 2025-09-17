@@ -11,8 +11,4 @@
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Compile Remove="ReadModel/VariableHelper.cs" />
-  </ItemGroup>
-
 </Project>

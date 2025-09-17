@@ -9,6 +9,16 @@ namespace Microsoft.DotNet.ImageBuilder.ReadModel;
 
 public sealed record ManifestInfo(Manifest Model, ImmutableList<RepoInfo> Repos)
 {
+    private readonly ImmutableDictionary<string, RepoInfo> _reposById =
+        Repos.Where(repo => repo.Model.Id is not null)
+            .ToImmutableDictionary(repo => repo.Model.Id!);
+
+    private readonly ImmutableDictionary<string, RepoInfo> _reposByName =
+        Repos.ToImmutableDictionary(repo => repo.Model.Name);
+
+    public RepoInfo? GetRepoById(string id) => _reposById.GetValueOrDefault(id);
+    public RepoInfo? GetRepoByName(string name) => _reposByName.GetValueOrDefault(name);
+
     public static ManifestInfo Create(Manifest model)
     {
         var repoInfos = model.Repos

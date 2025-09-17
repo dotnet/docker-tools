@@ -34,7 +34,7 @@ public class Manifest
     [Description(
         "The set of Docker repositories described by this manifest."
         )]
-    public Repo[] Repos { get; set; } = Array.Empty<Repo>();
+    public Repo[] Repos { get; set; } = [];
 
     [Description(
         "A set of custom variables that can be referenced in various parts of the " +

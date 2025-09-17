@@ -1,30 +1,32 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Text.RegularExpressions;
 
 namespace Microsoft.DotNet.ImageBuilder.ReadModel;
 
-internal sealed partial class VariableStore
+internal sealed partial class VariableStore : IVariableStore
 {
     private const string VariableGroupName = "variable";
 
-    private ImmutableDictionary<string, string> _resolvedVariables { get; }
+    private readonly Dictionary<string, string> _resolvedVariables;
 
+    /// <summary>
+    /// Creates a new <see cref="VariableStore"/>.
+    /// </summary>
+    /// <param name="variables">
+    /// The order of variable definitions determines which order they are
+    /// resolved in. Variable references must come after their definition.
+    /// </param>
     public VariableStore(IDictionary<string, string> variables)
     {
-        var resolvedVariables = new Dictionary<string, string>();
+        _resolvedVariables = new Dictionary<string, string>();
         foreach (var (variable, unresolvedValue) in variables)
         {
             string resolvedValue = ResolveInnerVariables(unresolvedValue);
-            resolvedVariables.Add(variable, resolvedValue);
+            _resolvedVariables.Add(variable, resolvedValue);
         }
-
-        _resolvedVariables = resolvedVariables.ToImmutableDictionary();
     }
-
-    public string? Get(string variableName) => GetResolvedValue(variableName);
 
     /// <summary>
     /// Evaluates an expression and replaces any variables inside with their
@@ -33,7 +35,7 @@ internal sealed partial class VariableStore
     /// <param name="expression">
     /// Variable references inside this expression will be replaced.
     /// </param>
-    private string ResolveInnerVariables(string expression)
+    public string ResolveInnerVariables(string expression)
     {
         var subVariableMatches = TagVariableRegex.Matches(expression);
         foreach (Match match in subVariableMatches)

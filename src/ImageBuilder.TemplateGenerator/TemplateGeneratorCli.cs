@@ -2,14 +2,21 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using ConsoleAppFramework;
+using Microsoft.DotNet.ImageBuilder.ReadModel;
 
 namespace Microsoft.DotNet.ImageBuilder.TemplateGenerator;
 
 internal sealed class TemplateGeneratorCli
 {
+    /// <summary>
+    /// Generates Dockerfiles from a manifest file.
+    /// </summary>
+    /// <param name="manifestPath">Path to manifest JSON file</param>
     [Command("generate-dockerfiles")]
-    public async Task GenerateDockerfiles(string manifestPath)
+    public async Task GenerateDockerfiles([Argument] string manifestPath)
     {
-        var manifestJson = await File.ReadAllTextAsync(manifestPath);
+        ManifestInfo manifest = await ManifestInfo.LoadAsync(manifestPath);
+        var manifestString = manifest.ToJsonString();
+        await File.WriteAllTextAsync("manifest.processed.json", manifestString);
     }
 }

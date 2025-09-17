@@ -11,34 +11,43 @@ public sealed record ManifestInfo(Manifest Model, ImmutableList<RepoInfo> Repos)
 {
     public static ManifestInfo Create(Manifest model)
     {
-        var repoInfos = model.Repos.Select(RepoInfo.Create).ToImmutableList();
+        var repoInfos = model.Repos
+            .Select(repo => RepoInfo.Create(repo, model))
+            .ToImmutableList();
+
         return new ManifestInfo(model, repoInfos);
     }
 }
 
-public sealed record RepoInfo(Repo Model, ImmutableList<ImageInfo> Images)
+public sealed record RepoInfo(Repo Model, Manifest Manifest, ImmutableList<ImageInfo> Images)
 {
-    public static RepoInfo Create(Repo model)
+    public static RepoInfo Create(Repo model, Manifest manifest)
     {
-        var imageInfos = model.Images.Select(ImageInfo.Create).ToImmutableList();
-        return new RepoInfo(model, imageInfos);
+        var imageInfos = model.Images
+            .Select(image => ImageInfo.Create(image, model))
+            .ToImmutableList();
+
+        return new RepoInfo(model, manifest, imageInfos);
     }
 }
 
 public sealed record ImageInfo(Image Model, ImmutableList<PlatformInfo> Platforms)
 {
-    public static ImageInfo Create(Image model)
+    public static ImageInfo Create(Image model, Repo repo)
     {
-        var platformInfos = model.Platforms.Select(PlatformInfo.Create).ToImmutableList();
+        var platformInfos = model.Platforms
+            .Select(platform => PlatformInfo.Create(platform, model))
+            .ToImmutableList();
+
         return new ImageInfo(model, platformInfos);
     }
 }
 
-public sealed record PlatformInfo(Platform Model)
+public sealed record PlatformInfo(Platform Model, Image Image)
 {
-    public static PlatformInfo Create(Platform model)
+    public static PlatformInfo Create(Platform model, Image image)
     {
-        return new PlatformInfo(model);
+        return new PlatformInfo(model, image);
     }
 }
 

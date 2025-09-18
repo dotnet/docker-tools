@@ -34,19 +34,10 @@ public static class ManifestInfoSerializationExtensions
             var processedRootJsonNode = preprocessor.Process(manifestJsonObject, includesJsonNodes);
             var processedModel = Deserialize<Manifest>(processedRootJsonNode);
 
-            return ManifestInfo.Create(processedModel);
+            return ManifestInfo.Create(processedModel, manifestJsonPath);
         }
 
         public string ToJsonString() => Serialize(manifestInfo.Model);
-
-        internal static ManifestInfo Create(Manifest model)
-        {
-            var repoInfos = model.Repos
-                .Select(repo => RepoInfo.Create(repo, model))
-                .ToImmutableList();
-
-            return new ManifestInfo(model, repoInfos);
-        }
     }
 
     private static async Task<JsonObject> LoadModelFromFileAsync(string manifestJsonPath)

@@ -18,13 +18,27 @@ public sealed class TemplateGeneratorCli
     public async Task GenerateDockerfiles([Argument] string manifestPath)
     {
         ManifestInfo manifest = await ManifestInfo.LoadAsync(manifestPath);
-    }
 
-    [Command("generate-template")]
-    public void GenerateTemplate()
-    {
-        var result = TemplateGenerator.GenerateCottleTemplate();
-        Console.WriteLine(result);
+        var engine = new CottleTemplateEngine();
+        var globalContext = engine.CreateContext(new Dictionary<string, string>());
+
+        var platformsWithTemplates = manifest.AllPlatforms
+            .Where(platform => platform.DockerfileTemplatePath is not null);
+
+        var compiledTemplates = platformsWithTemplates
+            .Select(platform => platform.DockerfileTemplatePath!)
+            .Select(File.ReadAllText)
+            .Select(engine.Compile);
+
+        var compiledTemplateInfos = platformsWithTemplates
+            .Zip(compiledTemplates);
+
+        foreach (var (platform, compiledTemplate) in compiledTemplateInfos)
+        {
+            var platformSpecificContext = globalContext.Add(platform.PlatformSpecificTemplateVariables);
+            var output = compiledTemplate.Render(platformSpecificContext);
+            File.WriteAllText(platform.DockerfilePath, output);
+        }
     }
 }
 

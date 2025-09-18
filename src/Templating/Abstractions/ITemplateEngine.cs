@@ -6,4 +6,5 @@ namespace Microsoft.DotNet.DockerTools.Templating.Abstractions;
 public interface ITemplateEngine<TContext>
 {
     ICompiledTemplate<TContext> Compile(string template);
+    TContext CreateContext(IReadOnlyDictionary<string, string> variables);
 }

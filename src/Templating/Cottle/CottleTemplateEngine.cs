@@ -24,4 +24,21 @@ public sealed class CottleTemplateEngine : ITemplateEngine<IContext>
         var compiledTemplate = new CottleTemplate(document);
         return compiledTemplate;
     }
+
+    public IContext CreateContext(IReadOnlyDictionary<string, string> variables)
+    {
+        var symbols = variables.ToCottleDictionary();
+        return Context.CreateBuiltin(symbols);
+    }
+
+    public IContext CreateVariableContext(Dictionary<string, string> variables)
+    {
+        var variableValues = variables.ToCottleDictionary();
+        var symbols = new Dictionary<Value, Value>
+        {
+            { "VARIABLES", variableValues }
+        };
+
+        return Context.CreateBuiltin(symbols);
+    }
 }

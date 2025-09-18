@@ -3,8 +3,9 @@
 
 using ConsoleAppFramework;
 using Microsoft.DotNet.ImageBuilder.ReadModel;
-using Microsoft.DotNet.DockerTools.Templating;
+using Microsoft.DotNet.DockerTools.Templating.Abstractions;
 using Cottle;
+using Microsoft.DotNet.DockerTools.Templating.Cottle;
 
 namespace Microsoft.DotNet.DockerTools.TemplateGenerator;
 
@@ -41,31 +42,29 @@ public static class TemplateGenerator
             ENV TEST2 {{VARIABLES["Variable1"]}}
             """;
 
-        const string ExpectedOutput =
-            """
-            FROM Repo:2.1-trixie
-            ENV TEST1 IfWorks
-            ENV TEST2 Value1
-            """;
+        // Expected output:
+        // FROM Repo:2.1-trixie
+        // ENV TEST1 IfWorks
+        // ENV TEST2 Value1
 
-        ITemplateEngine<IContext> engine = new CottleTemplateEngine();
+        var engine = new CottleTemplateEngine();
 
-        var predefinedVariables = new Dictionary<Value, Value>
+        var predefinedVariables = new Dictionary<string, string>()
+        {
+            { "Variable1", "Value1" }
+        };
+
+        var contextBasedVariables = new Dictionary<string, string>()
         {
             { "OS_VERSION", "trixie-slim" },
             { "OS_VERSION_BASE", "trixie" },
-            {
-                "VARIABLES",
-                new Dictionary<Value, Value>
-                {
-                    { "Variable1", "Value1" }
-                }
-            }
         };
 
-        var context = Context.CreateBuiltin(predefinedVariables);
+        var templateContext = engine.CreateVariableContext(predefinedVariables);
+        templateContext.Add(contextBasedVariables);
+
         var template = engine.Compile(TemplateString);
-        string result = template.Render(context);
+        string result = template.Render(templateContext);
         return result;
     }
 }

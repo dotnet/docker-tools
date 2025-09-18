@@ -6,9 +6,9 @@ using System.Text.Json.Nodes;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using static Microsoft.DotNet.ImageBuilder.ReadModel.JsonHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.ReadModel;
+namespace Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
 
-public static class ManifestInfoExtensions
+public static class ManifestInfoSerializationExtensions
 {
     extension(ManifestInfo manifestInfo)
     {

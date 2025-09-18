@@ -3,6 +3,7 @@
 
 using BenchmarkDotNet.Attributes;
 using Microsoft.DotNet.ImageBuilder.ReadModel;
+using Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
 
 namespace Microsoft.DotNet.DockerTools.TemplateGenerator.Benchmarks;
 

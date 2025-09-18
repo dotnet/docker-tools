@@ -4,10 +4,7 @@
 using ConsoleAppFramework;
 using Microsoft.DotNet.ImageBuilder.ReadModel;
 using Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
-using Microsoft.DotNet.DockerTools.Templating.Abstractions;
-using Cottle;
 using Microsoft.DotNet.DockerTools.Templating.Cottle;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.DockerTools.TemplateGenerator;
 

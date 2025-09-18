@@ -4,7 +4,7 @@
 using ConsoleAppFramework;
 using Microsoft.DotNet.ImageBuilder.ReadModel;
 
-namespace Microsoft.DotNet.ImageBuilder.TemplateGenerator;
+namespace Microsoft.DotNet.DockerTools.TemplateGenerator;
 
 internal sealed class TemplateGeneratorCli
 {

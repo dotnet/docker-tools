@@ -19,3 +19,6 @@
 
 # Test files
 *.trx
+
+# BenchmarkDotNet Artifacts
+BenchmarkDotNet.Artifacts/

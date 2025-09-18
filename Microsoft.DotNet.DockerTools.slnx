@@ -15,5 +15,6 @@
 
   <Project Path="src/Templating/Templating.csproj" />
   <Project Path="src/TemplateGenerator/TemplateGenerator.csproj" />
+  <Project Path="src/TemplateGenerator.Benchmarks/TemplateGenerator.Benchmarks.csproj" />
 
 </Solution>

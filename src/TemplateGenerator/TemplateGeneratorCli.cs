@@ -3,10 +3,12 @@
 
 using ConsoleAppFramework;
 using Microsoft.DotNet.ImageBuilder.ReadModel;
+using Microsoft.DotNet.DockerTools.Templating;
+using Cottle;
 
 namespace Microsoft.DotNet.DockerTools.TemplateGenerator;
 
-internal sealed class TemplateGeneratorCli
+public sealed class TemplateGeneratorCli
 {
     /// <summary>
     /// Generates Dockerfiles from a manifest file.
@@ -18,5 +20,52 @@ internal sealed class TemplateGeneratorCli
         ManifestInfo manifest = await ManifestInfo.LoadAsync(manifestPath);
         var manifestString = manifest.ToJsonString();
         await File.WriteAllTextAsync("manifest.processed.json", manifestString);
+    }
+
+    [Command("generate-template")]
+    public void GenerateTemplate()
+    {
+        var result = TemplateGenerator.GenerateCottleTemplate();
+        Console.WriteLine(result);
+    }
+}
+
+public static class TemplateGenerator
+{
+    public static string GenerateCottleTemplate()
+    {
+        const string TemplateString =
+            """
+            FROM Repo:2.1-{{OS_VERSION_BASE}}
+            ENV TEST1 {{if OS_VERSION = "trixie-slim":IfWorks}}
+            ENV TEST2 {{VARIABLES["Variable1"]}}
+            """;
+
+        const string ExpectedOutput =
+            """
+            FROM Repo:2.1-trixie
+            ENV TEST1 IfWorks
+            ENV TEST2 Value1
+            """;
+
+        ITemplateEngine<IContext> engine = new CottleTemplateEngine();
+
+        var predefinedVariables = new Dictionary<Value, Value>
+        {
+            { "OS_VERSION", "trixie-slim" },
+            { "OS_VERSION_BASE", "trixie" },
+            {
+                "VARIABLES",
+                new Dictionary<Value, Value>
+                {
+                    { "Variable1", "Value1" }
+                }
+            }
+        };
+
+        var context = Context.CreateBuiltin(predefinedVariables);
+        var template = engine.Compile(TemplateString);
+        string result = template.Render(context);
+        return result;
     }
 }

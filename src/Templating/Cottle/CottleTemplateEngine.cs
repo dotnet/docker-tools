@@ -30,9 +30,15 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
         return compiledTemplate;
     }
 
-    public ICompiledTemplate<IContext> ReadAndCompile(string path)
+    public ICompiledTemplate<IContext> ReadAndCompile(string path, bool trim = true)
     {
         string content = _fileSystem.ReadAllText(path);
+
+        if (trim)
+        {
+            content = content.Trim();
+        }
+
         return Compile(content);
     }
 
@@ -74,7 +80,7 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
                 // Resolve the path of the sub-template to be inserted, relative to the current template
                 var parentTemplateDir = Path.GetDirectoryName(currentTemplatePath) ?? string.Empty;
                 var newTemplatePath = Path.Combine(parentTemplateDir, templateRelativePath);
-                var compiledTemplate = ReadAndCompile(newTemplatePath);
+                var compiledTemplate = ReadAndCompile(newTemplatePath, trim: true);
 
                 var newSymbols = new Dictionary<Value, Value>
                 {

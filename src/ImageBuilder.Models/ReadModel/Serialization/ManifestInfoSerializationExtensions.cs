@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Text.Json.Nodes;
-using static Microsoft.DotNet.ImageBuilder.ReadModel.JsonHelper;
+using static Microsoft.DotNet.ImageBuilder.ReadModel.Serialization.JsonHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
 

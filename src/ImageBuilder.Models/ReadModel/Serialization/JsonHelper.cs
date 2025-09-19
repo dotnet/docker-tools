@@ -5,7 +5,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.Json.Serialization.Metadata;
 
-namespace Microsoft.DotNet.ImageBuilder.ReadModel;
+namespace Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
 
 internal static class JsonHelper
 {

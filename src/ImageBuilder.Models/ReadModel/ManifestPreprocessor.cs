@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
@@ -64,7 +65,18 @@ internal sealed class ManifestPreprocessor
             case JsonValue jsonValue:
                 if (jsonValue.TryGetValue(out string? stringValue))
                 {
-                    jsonValue.ReplaceWith(_variableStore.ResolveInnerVariables(stringValue));
+                    var newValue = _variableStore.ResolveInnerVariables(stringValue);
+
+                    #pragma warning disable IL2026
+                    #pragma warning disable IL3050
+                    // JsonValue.ReplaceWith<T> is annotated with 'RequiresDynamicCodeAttribute', but it doesn't use
+                    // dynamic code in all cases. Since we're giving it a JsonNode, it'll short-circuit before
+                    // resorting to dynamic code for serialization.
+                    jsonValue.ReplaceWith(
+                        JsonSerializer.SerializeToNode(newValue, ManifestSerializationContext.Default.String)
+                    );
+                    #pragma warning restore IL2026
+                    #pragma warning restore IL3050
                 }
                 break;
 

@@ -14,6 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
 )]
 [JsonSerializable(typeof(Manifest))]
 [JsonSerializable(typeof(string[]))]
+[JsonSerializable(typeof(string))]
 public partial class ManifestSerializationContext : JsonSerializerContext
 {
 }

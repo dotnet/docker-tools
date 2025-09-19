@@ -6,6 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.DotNet.DockerTools.TemplateGenerator</RootNamespace>
+    <PublishAot>true</PublishAot>
   </PropertyGroup>
 
   <ItemGroup>

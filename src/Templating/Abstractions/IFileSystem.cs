@@ -3,7 +3,8 @@
 
 namespace Microsoft.DotNet.DockerTools.Templating.Abstractions;
 
-public interface ITemplateEngine<TContext>
+public interface IFileSystem
 {
-    ICompiledTemplate<TContext> Compile(string template);
+    string ReadAllText(string path);
+    void WriteAllText(string path, string content);
 }

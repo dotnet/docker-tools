@@ -13,10 +13,16 @@ public static class CottleContextExtensions
 {
     extension(IContext context)
     {
+        public IContext Add(Value key, Value value)
+        {
+            var newContext = Context.CreateCustom(new Dictionary<Value, Value> { { key, value } });
+            return Context.CreateCascade(primary: newContext, fallback: context);
+        }
+
         public IContext Add(IReadOnlyDictionary<string, string> variables)
         {
             var variablesDictionary = variables.ToCottleDictionary();
-            var newContext = Context.CreateBuiltin(variablesDictionary);
+            var newContext = Context.CreateCustom(variablesDictionary);
             return Context.CreateCascade(newContext, context);
         }
     }

@@ -58,7 +58,7 @@ public static class PlatformInfoVariableExtensions
                 { "ARCH_TAG_SUFFIX", $"-{platform.ArchWithVariant}" },
                 { "PRODUCT_VERSION", platform.Image.ProductVersion ?? "" },
                 { "OS_VERSION", platform.Model.OsVersion },
-                { "OS_VERSION_BASE", "" },
+                { "OS_VERSION_BASE", platform.BaseOsVersion },
                 { "OS_VERSION_NUMBER", platform.GetOsVersionNumber() },
                 { "OS_ARCH_HYPHENATED", platform.GetOsArchHyphenatedName() },
             };

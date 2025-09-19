@@ -21,7 +21,8 @@ public sealed class TemplateGeneratorCli
         ManifestInfo manifest = await ManifestInfo.LoadAsync(manifestPath);
 
         var fileSystem = new FileSystem();
-        var engine = new CottleTemplateEngine(fileSystem);
+        var fileSystemCache = new FileSystemCache(fileSystem);
+        var engine = new CottleTemplateEngine(fileSystemCache);
         engine.AddGlobalVariables(manifest.Model.Variables);
 
         var platformsWithTemplates = manifest.AllPlatforms
@@ -43,5 +44,7 @@ public sealed class TemplateGeneratorCli
 
         Console.WriteLine($"Read {fileSystem.FilesRead} files ({fileSystem.BytesRead} bytes)");
         Console.WriteLine($"Wrote {fileSystem.FilesWritten} files ({fileSystem.BytesWritten} bytes)");
+        Console.WriteLine($"File system cache hits: {fileSystemCache.CacheHits}, misses: {fileSystemCache.CacheMisses}");
+        Console.WriteLine($"Compiled template cache hits: {engine.CompiledTemplateCacheHits}, misses: {engine.CompiledTemplateCacheMisses}");
     }
 }

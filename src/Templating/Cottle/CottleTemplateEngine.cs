@@ -7,7 +7,7 @@ using Microsoft.DotNet.ImageBuilder.ReadModel;
 
 namespace Microsoft.DotNet.DockerTools.Templating.Cottle;
 
-public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngine<IContext>
+public sealed class CottleTemplateEngine : ITemplateEngine<IContext>
 {
     private static readonly DocumentConfiguration s_config = new()
     {
@@ -18,7 +18,8 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
         Trimmer = DocumentConfiguration.TrimNothing
     };
 
-    private readonly IFileSystem _fileSystem = fileSystem;
+    private readonly IFileSystem _fileSystem;
+    private readonly ForeverCache<ICompiledTemplate<IContext>> _templateCache;
 
     private IContext _globalContext = Context.CreateBuiltin(
         new Dictionary<Value, Value>()
@@ -26,6 +27,15 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
             { "replace", ReplaceFunction }
         }
     );
+
+    public CottleTemplateEngine(IFileSystem fileSystem)
+    {
+        _fileSystem = fileSystem;
+        _templateCache = new ForeverCache<ICompiledTemplate<IContext>>(ReadAndCompileWithNoCache);
+    }
+
+    public int CompiledTemplateCacheHits => _templateCache.Hits;
+    public int CompiledTemplateCacheMisses => _templateCache.Misses;
 
     public ICompiledTemplate<IContext> Compile(string template)
     {
@@ -36,6 +46,11 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
     }
 
     public ICompiledTemplate<IContext> ReadAndCompile(string path)
+    {
+        return _templateCache.GetOrAdd(path);
+    }
+
+    private ICompiledTemplate<IContext> ReadAndCompileWithNoCache(string path)
     {
         string content = _fileSystem.ReadAllText(path);
         return Compile(content);

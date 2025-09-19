@@ -6,6 +6,10 @@ using Microsoft.DotNet.DockerTools.Templating.Abstractions;
 
 namespace Microsoft.DotNet.DockerTools.Templating;
 
+/// <summary>
+/// General purpose synchronous file system implementation that tracks simple
+/// metrics about reads and writes.
+/// </summary>
 public sealed class FileSystem : IFileSystem
 {
     private int _reads = 0;

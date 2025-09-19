@@ -10,7 +10,6 @@ steps:
     displayName: Create Annotation Digests Directory
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
-      name: AnnotateEOLImages
       displayName: Annotate EOL Images
       serviceConnections:
       - name: acr

@@ -1,0 +1,25 @@
+parameters:
+  publishConfig: null
+  enableDryRun: false
+  repo: null
+  action: null
+  age: 0
+
+stages:
+- stage: Execute
+  jobs:
+  - job: Clean
+    pool:
+      vmImage: $(defaultLinuxAmd64PoolImage)
+    steps:
+    - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    - template: /eng/pipelines/templates/steps/set-dry-run-arg.yml@self
+      parameters:
+        enableDryRun: ${{ parameters.enableDryRun }}
+    - template: /eng/common/templates/steps/clean-acr-images.yml@self
+      parameters:
+        internalProjectName: internal
+        repo: ${{ parameters.repo }}
+        acr: ${{ parameters.publishConfig.buildAcr }}
+        action: ${{ parameters.action }}
+        age: ${{ parameters.age }}

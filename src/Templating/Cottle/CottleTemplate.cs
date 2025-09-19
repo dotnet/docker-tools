@@ -10,8 +10,20 @@ public sealed class CottleTemplate(IDocument document) : ICompiledTemplate<ICont
 {
     private readonly IDocument _document = document;
 
-    public string Render(IContext context)
+    public string Render(IContext context, bool trim = false, string indent = "")
     {
-        return _document.Render(context);
+        var content = _document.Render(context);
+
+        if (trim)
+        {
+            content = content.Trim();
+        }
+
+        if (!string.IsNullOrEmpty(indent))
+        {
+            content = content.Replace("\n", "\n" + indent);
+        }
+
+        return content;
     }
 }

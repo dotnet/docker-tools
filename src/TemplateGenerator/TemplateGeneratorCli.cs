@@ -29,7 +29,7 @@ public sealed class TemplateGeneratorCli
 
         var compiledTemplates = platformsWithTemplates
             .Select(platform => platform.DockerfileTemplatePath!)
-            .Select(templatePath => engine.ReadAndCompile(templatePath, trim: false));
+            .Select(engine.ReadAndCompile);
 
         var compiledTemplateInfos = platformsWithTemplates
             .Zip(compiledTemplates);

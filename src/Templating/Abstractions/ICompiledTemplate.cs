@@ -5,5 +5,5 @@ namespace Microsoft.DotNet.DockerTools.Templating.Abstractions;
 
 public interface ICompiledTemplate<TContext>
 {
-    string Render(TContext context);
+    string Render(TContext context, bool trim = false, string indent = "");
 }

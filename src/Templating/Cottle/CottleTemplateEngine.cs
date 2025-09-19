@@ -20,7 +20,12 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
 
     private readonly IFileSystem _fileSystem = fileSystem;
 
-    private IContext _globalContext = Context.CreateBuiltin(new Dictionary<Value, Value>());
+    private IContext _globalContext = Context.CreateBuiltin(
+        new Dictionary<Value, Value>()
+        {
+            { "replace", ReplaceFunction }
+        }
+    );
 
     public ICompiledTemplate<IContext> Compile(string template)
     {
@@ -89,4 +94,18 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
 
         return Value.FromFunction(function);
     }
+
+    private static Value ReplaceFunction = Value.FromFunction(
+        Function.CreatePure(
+            (state, args) =>
+            {
+                string source = args[0].AsString;
+                string oldValue = args[1].AsString;
+                string newValue = args[2].AsString;
+                return Value.FromString(source.Replace(oldValue, newValue));
+            },
+            min: 3,
+            max: 3
+        )
+    );
 }

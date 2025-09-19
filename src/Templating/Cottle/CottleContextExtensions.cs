@@ -19,7 +19,13 @@ public static class CottleContextExtensions
             return Context.CreateCascade(primary: newContext, fallback: context);
         }
 
-        public IContext Add(IReadOnlyDictionary<string, string> variables)
+        public IContext Add(Dictionary<Value, Value> symbols)
+        {
+            var newContext = Context.CreateCustom(symbols);
+            return Context.CreateCascade(primary: newContext, fallback: context);
+        }
+
+        public IContext Add(IDictionary<string, string> variables)
         {
             var variablesDictionary = variables.ToCottleDictionary();
             var newContext = Context.CreateCustom(variablesDictionary);
@@ -27,7 +33,7 @@ public static class CottleContextExtensions
         }
     }
 
-    extension(IReadOnlyDictionary<string, string> stringDictionary)
+    extension(IDictionary<string, string> stringDictionary)
     {
         public Dictionary<Value, Value> ToCottleDictionary()
         {
@@ -43,7 +49,7 @@ public static class PlatformInfoVariableExtensions
 {
     extension(PlatformInfo platform)
     {
-        public IReadOnlyDictionary<string, string> PlatformSpecificTemplateVariables =>
+        public Dictionary<string, string> PlatformSpecificTemplateVariables =>
             new Dictionary<string, string>()
             {
                 { "ARCH_SHORT", platform.Model.Architecture.ShortName },

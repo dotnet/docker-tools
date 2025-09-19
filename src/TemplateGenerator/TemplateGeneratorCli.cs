@@ -22,6 +22,7 @@ public sealed class TemplateGeneratorCli
 
         var fileSystem = new FileSystem();
         var engine = new CottleTemplateEngine(fileSystem);
+        engine.AddGlobalVariables(manifest.Model.Variables);
 
         var platformsWithTemplates = manifest.AllPlatforms
             .Where(platform => platform.DockerfileTemplatePath is not null);

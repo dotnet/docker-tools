@@ -18,7 +18,7 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
         Trimmer = DocumentConfiguration.TrimNothing
     };
 
-    private static readonly IContext s_globalContext = Context.CreateBuiltin(new Dictionary<Value, Value>());
+    private IContext _globalContext = Context.CreateBuiltin(new Dictionary<Value, Value>());
 
     private readonly IFileSystem _fileSystem = fileSystem;
 
@@ -36,16 +36,22 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
         return Compile(content);
     }
 
-    public IContext CreatePlatformContext(PlatformInfo platform)
+    public void AddGlobalVariables(IDictionary<string, string> variables)
     {
-        var variables = platform.PlatformSpecificTemplateVariables.ToCottleDictionary();
-        var symbols = new Dictionary<Value, Value>
+        var variableSymbols = new Dictionary<Value, Value>
         {
-            { "VARIABLES", variables }
+            { "VARIABLES", variables.ToCottleDictionary() }
         };
 
-        var variableContext = Context.CreateCustom(symbols);
-        var platformContext = Context.CreateCascade(primary: variableContext, fallback: s_globalContext);
+        _globalContext = _globalContext.Add(variableSymbols);
+    }
+
+    public IContext CreatePlatformContext(PlatformInfo platform)
+    {
+        var platformVariables = platform.PlatformSpecificTemplateVariables.ToCottleDictionary();
+
+        var variableContext = Context.CreateCustom(platformVariables);
+        var platformContext = Context.CreateCascade(primary: variableContext, fallback: _globalContext);
 
         // It's OK for the insert template function not to have a reference to itself. Any sub-templates will have
         // their own InsertTemplate function created for them when they are rendered.
@@ -60,17 +66,23 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
         var function = Function.CreatePure(
             (state, args) =>
             {
+                // Resolve arguments to InsertTemplate
                 var templateRelativePath = args[0].AsString;
                 var templateArgs = args.Count > 1 ? args[1] : Value.EmptyMap;
                 var indent = args.Count > 2 ? args[2].AsString : "";
 
+                // Resolve the path of the sub-template to be inserted, relative to the current template
                 var parentTemplateDir = Path.GetDirectoryName(currentTemplatePath) ?? string.Empty;
                 var newTemplatePath = Path.Combine(parentTemplateDir, templateRelativePath);
                 var compiledTemplate = ReadAndCompile(newTemplatePath);
 
-                var newInsertTemplateFunction = CreateInsertTemplateFunction(platformContext, newTemplatePath);
-                var newContext = platformContext.Add("InsertTemplate", newInsertTemplateFunction);
+                var newSymbols = new Dictionary<Value, Value>
+                {
+                    { "InsertTemplate", CreateInsertTemplateFunction(platformContext, newTemplatePath) },
+                    { "ARGS", new Dictionary<Value, Value>(templateArgs.Fields) },
+                };
 
+                var newContext = platformContext.Add(newSymbols);
                 return compiledTemplate.Render(newContext);
             }
         );

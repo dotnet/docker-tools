@@ -4,4 +4,5 @@
 using BenchmarkDotNet.Running;
 using Microsoft.DotNet.DockerTools.TemplateGenerator.Benchmarks;
 
-var summary = BenchmarkRunner.Run<ManifestBenchmarks>();
+BenchmarkRunner.Run<ManifestBenchmarks>();
+BenchmarkRunner.Run<GenerateDockerfilesBenchmarks>();

@@ -18,9 +18,9 @@ public sealed class CottleTemplateEngine(IFileSystem fileSystem) : ITemplateEngi
         Trimmer = DocumentConfiguration.TrimNothing
     };
 
-    private IContext _globalContext = Context.CreateBuiltin(new Dictionary<Value, Value>());
-
     private readonly IFileSystem _fileSystem = fileSystem;
+
+    private IContext _globalContext = Context.CreateBuiltin(new Dictionary<Value, Value>());
 
     public ICompiledTemplate<IContext> Compile(string template)
     {

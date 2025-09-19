@@ -16,9 +16,9 @@ public sealed class TemplateGeneratorCli
     /// </summary>
     /// <param name="manifestPath">Path to manifest JSON file</param>
     [Command("generate-dockerfiles")]
-    public async Task GenerateDockerfiles([Argument] string manifestPath)
+    public void GenerateDockerfiles([Argument] string manifestPath)
     {
-        ManifestInfo manifest = await ManifestInfo.LoadAsync(manifestPath);
+        ManifestInfo manifest = ManifestInfo.Load(manifestPath);
 
         var fileSystem = new FileSystem();
         var fileSystemCache = new FileSystemCache(fileSystem);

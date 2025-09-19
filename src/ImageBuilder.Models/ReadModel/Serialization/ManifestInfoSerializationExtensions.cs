@@ -1,9 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Immutable;
 using System.Text.Json.Nodes;
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using static Microsoft.DotNet.ImageBuilder.ReadModel.JsonHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
@@ -22,7 +20,8 @@ public static class ManifestInfoSerializationExtensions
             var includesNode = manifestJsonObject["includes"];
             if (includesNode is not null)
             {
-                IEnumerable<string> includesFiles = Deserialize<string[]>(includesNode);
+                var includesFiles = Deserialize(includesNode, ManifestSerializationContext.Default.StringArray);
+
                 includesJsonNodes = await Task.WhenAll(
                     includesFiles
                         // Make includes paths relative to the manifest file
@@ -32,12 +31,12 @@ public static class ManifestInfoSerializationExtensions
 
             var preprocessor = new ManifestPreprocessor();
             var processedRootJsonNode = preprocessor.Process(manifestJsonObject, includesJsonNodes);
-            var processedModel = Deserialize<Manifest>(processedRootJsonNode);
+            var processedModel = Deserialize(processedRootJsonNode, ManifestSerializationContext.Default.Manifest);
 
             return ManifestInfo.Create(processedModel, manifestJsonPath);
         }
 
-        public string ToJsonString() => Serialize(manifestInfo.Model);
+        public string ToJsonString() => Serialize(manifestInfo.Model, ManifestSerializationContext.Default.Manifest);
     }
 
     private static async Task<JsonObject> LoadModelFromFileAsync(string manifestJsonPath)

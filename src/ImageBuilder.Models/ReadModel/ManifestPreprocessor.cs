@@ -3,6 +3,7 @@
 
 using System.Text.Json.Nodes;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.ReadModel.Serialization;
 
 namespace Microsoft.DotNet.ImageBuilder.ReadModel;
 
@@ -15,7 +16,7 @@ internal sealed class ManifestPreprocessor
         // Process includes first so variables in included files can be processed
         ProcessIncludes(root, includesNodes);
 
-        var rawManifest = JsonHelper.Deserialize<Manifest>(root);
+        var rawManifest = JsonHelper.Deserialize(root, ManifestSerializationContext.Default.Manifest);
         var variables = rawManifest.Variables ?? new Dictionary<string, string>();
 
         // Add variables for each repo name (e.g. "Repo:dotnet" -> "mcr.microsoft.com/dotnet")

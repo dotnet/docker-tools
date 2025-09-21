@@ -12,9 +12,23 @@ public class GenerateDockerfilesBenchmarks
         Environment.GetEnvironmentVariable("MANIFEST_PATH") ?? "manifest.json";
 
     [Benchmark]
-    public async Task<string> GenerateDockerfiles()
+    public void GenerateDockerfiles()
     {
-        await new TemplateGeneratorCli().GenerateDockerfiles(s_manifestPath);
-        return "Completed";
+        var generator = new TemplateGeneratorCli();
+        generator.GenerateDockerfiles(s_manifestPath);
+    }
+
+    [Benchmark]
+    public void GenerateReadmes()
+    {
+        var generator = new TemplateGeneratorCli();
+        generator.GenerateReadmes(s_manifestPath);
+    }
+
+    [Benchmark]
+    public void GenerateAll()
+    {
+        var generator = new TemplateGeneratorCli();
+        generator.GenerateAll(s_manifestPath);
     }
 }

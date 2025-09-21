@@ -97,15 +97,42 @@ public sealed record ImageInfo(Image Model, Repo repo, ImmutableList<PlatformInf
 public sealed record PlatformInfo(
     Platform Model,
     Image Image,
+    ImmutableList<TagInfo> Tags,
     string DockerfilePath,
+    string RelativeDockerfilePath,
     string? DockerfileTemplatePath = null)
 {
     internal static PlatformInfo Create(Platform model, Image image, string manifestDir)
     {
-        var dockerfilePath = Path.Combine(manifestDir, model.Dockerfile, "Dockerfile");
+        var relativeDockerfilePath = Path.Combine(model.Dockerfile, "Dockerfile");
+        var fullDockerfilePath = Path.Combine(manifestDir, relativeDockerfilePath);
         var dockerfileTemplatePath = model.DockerfileTemplate is not null
             ? Path.Combine(manifestDir, model.DockerfileTemplate) : null;
 
-        return new PlatformInfo(model, image, dockerfilePath, dockerfileTemplatePath);
+        var tagInfos = model.Tags
+            .Select(tag => TagInfo.Create(tag.Value, model, tag.Key))
+            .ToImmutableList();
+
+        return new PlatformInfo(
+            model,
+            image,
+            tagInfos,
+            fullDockerfilePath,
+            relativeDockerfilePath,
+            dockerfileTemplatePath);
+    }
+}
+
+public sealed record TagInfo(Tag Model, Platform Platform, string Tag, bool IsDocumented)
+{
+    internal static TagInfo Create(Tag model, Platform platform, string tag)
+    {
+        bool isDocumented = model.DocType switch
+        {
+            TagDocumentationType.Undocumented => false,
+            _ => true
+        };
+
+        return new TagInfo(model, platform, tag, isDocumented);
     }
 }

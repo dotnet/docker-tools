@@ -18,7 +18,7 @@ public sealed class CottleTemplateEngine : ITemplateEngine<IContext>
     };
 
     private readonly IFileSystem _fileSystem;
-    private readonly ForeverCache<ICompiledTemplate<IContext>> _templateCache;
+    private readonly ForeverCache<CottleTemplate> _templateCache;
 
     private IContext _globalContext = Context.CreateBuiltin(
         new Dictionary<Value, Value>()
@@ -30,29 +30,15 @@ public sealed class CottleTemplateEngine : ITemplateEngine<IContext>
     public CottleTemplateEngine(IFileSystem fileSystem)
     {
         _fileSystem = fileSystem;
-        _templateCache = new ForeverCache<ICompiledTemplate<IContext>>(ReadAndCompileWithNoCache);
+        _templateCache = new ForeverCache<CottleTemplate>(valueFactory: ReadAndCompileWithNoCache);
     }
 
     public int CompiledTemplateCacheHits => _templateCache.Hits;
     public int CompiledTemplateCacheMisses => _templateCache.Misses;
 
-    public ICompiledTemplate<IContext> Compile(string template)
-    {
-        var documentResult = Document.CreateDefault(template, s_config);
-        var document = documentResult.DocumentOrThrow;
-        var compiledTemplate = new CottleTemplate(document);
-        return compiledTemplate;
-    }
-
     public ICompiledTemplate<IContext> ReadAndCompile(string path)
     {
         return _templateCache.GetOrAdd(path);
-    }
-
-    private ICompiledTemplate<IContext> ReadAndCompileWithNoCache(string path)
-    {
-        string content = _fileSystem.ReadAllText(path);
-        return Compile(content);
     }
 
     public void AddGlobalVariables(IDictionary<string, string> variables)
@@ -65,17 +51,7 @@ public sealed class CottleTemplateEngine : ITemplateEngine<IContext>
         _globalContext = _globalContext.Add(variableSymbols);
     }
 
-    /// <summary>
-    /// Create a new context for rendering a template.
-    /// </summary>
-    /// <param name="variables">
-    /// Dictionary of variables to add to context. These variables will take
-    /// precedence over any global variables already set in the engine.
-    /// </param>
-    /// <param name="templatePath">
-    /// The path to the current template is needed to correctly resolve paths
-    /// to sub-templates
-    /// </param>
+    /// <inheritdoc/>
     public IContext CreateContext(IDictionary<string, string> variables, string templatePath)
     {
         var variableSymbols = variables.ToCottleDictionary();
@@ -117,6 +93,15 @@ public sealed class CottleTemplateEngine : ITemplateEngine<IContext>
         );
 
         return Value.FromFunction(function);
+    }
+
+    private CottleTemplate ReadAndCompileWithNoCache(string path)
+    {
+        string content = _fileSystem.ReadAllText(path);
+        var documentResult = Document.CreateDefault(content, s_config);
+        var document = documentResult.DocumentOrThrow;
+        var compiledTemplate = new CottleTemplate(document);
+        return compiledTemplate;
     }
 
     private static Value ReplaceFunction = Value.FromFunction(

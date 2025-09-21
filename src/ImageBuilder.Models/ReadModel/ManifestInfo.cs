@@ -6,7 +6,11 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder.ReadModel;
 
-public sealed record ManifestInfo(Manifest Model, string FilePath, ImmutableList<RepoInfo> Repos)
+public sealed record ManifestInfo(
+    Manifest Model,
+    string FilePath,
+    ManifestReadmeInfo? Readme,
+    ImmutableList<RepoInfo> Repos)
 {
     private readonly ImmutableDictionary<string, RepoInfo> _reposById =
         Repos.Where(repo => repo.Model.Id is not null)
@@ -25,11 +29,42 @@ public sealed record ManifestInfo(Manifest Model, string FilePath, ImmutableList
             .Select(repo => RepoInfo.Create(repo, model, manifestDir))
             .ToImmutableList();
 
-        return new ManifestInfo(model, manifestFilePath, repoInfos);
+        var readmeInfo = model.Readme is not null
+            ? ManifestReadmeInfo.Create(model.Readme, model, manifestDir)
+            : null;
+
+        return new ManifestInfo(model, manifestFilePath, readmeInfo, repoInfos);
     }
 }
 
-public sealed record RepoInfo(Repo Model, Manifest Manifest, ImmutableList<ImageInfo> Images)
+public sealed record ManifestReadmeInfo(Readme Model, Manifest Manifest, string FilePath, string? TemplatePath)
+{
+    internal static ManifestReadmeInfo Create(Readme model, Manifest manifest, string manifestDir)
+    {
+        string path = Path.Combine(manifestDir, model.Path);
+        string? templatePath = PathHelper.MaybeCombine(manifestDir, model.TemplatePath);
+
+        return new ManifestReadmeInfo(model, manifest, path, templatePath);
+    }
+}
+
+public sealed record RepoReadmeInfo(Readme Model, Repo Repo, string FilePath, string? TemplatePath)
+{
+    internal static RepoReadmeInfo Create(Readme model, Repo repo, string manifestDir)
+    {
+        string path = Path.Combine(manifestDir, model.Path);
+        string? templatePath = PathHelper.MaybeCombine(manifestDir, model.TemplatePath);
+
+        return new RepoReadmeInfo(model, repo, path, templatePath);
+    }
+}
+
+public sealed record RepoInfo(
+    Repo Model,
+    Manifest Manifest,
+    string FullName,
+    ImmutableList<ImageInfo> Images,
+    ImmutableList<RepoReadmeInfo> Readmes)
 {
     internal static RepoInfo Create(Repo model, Manifest manifest, string manifestDir)
     {
@@ -37,11 +72,17 @@ public sealed record RepoInfo(Repo Model, Manifest Manifest, ImmutableList<Image
             .Select(image => ImageInfo.Create(image, model, manifestDir))
             .ToImmutableList();
 
-        return new RepoInfo(model, manifest, imageInfos);
+        var readmeInfos = model.Readmes
+            .Select(readme => RepoReadmeInfo.Create(readme, model, manifestDir))
+            .ToImmutableList();
+
+        var fullName = manifest.Registry + "/" + model.Name;
+
+        return new RepoInfo(model, manifest, fullName, imageInfos, readmeInfos);
     }
 }
 
-public sealed record ImageInfo(Image Model, ImmutableList<PlatformInfo> Platforms)
+public sealed record ImageInfo(Image Model, Repo repo, ImmutableList<PlatformInfo> Platforms)
 {
     internal static ImageInfo Create(Image model, Repo repo, string manifestDir)
     {
@@ -49,7 +90,7 @@ public sealed record ImageInfo(Image Model, ImmutableList<PlatformInfo> Platform
             .Select(platform => PlatformInfo.Create(platform, model, manifestDir))
             .ToImmutableList();
 
-        return new ImageInfo(model, platformInfos);
+        return new ImageInfo(model, repo, platformInfos);
     }
 }
 

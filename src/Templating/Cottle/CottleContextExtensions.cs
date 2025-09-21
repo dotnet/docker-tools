@@ -49,19 +49,63 @@ public static class PlatformInfoVariableExtensions
 {
     extension(PlatformInfo platform)
     {
-        public Dictionary<string, string> PlatformSpecificTemplateVariables =>
-            new Dictionary<string, string>()
+        public Dictionary<string, string> PlatformSpecificTemplateVariables => new()
+        {
+            { "ARCH_SHORT", platform.Model.Architecture.ShortName },
+            { "ARCH_NUPKG", platform.Model.Architecture.NupkgName },
+            { "ARCH_VERSIONED", platform.ArchWithVariant },
+            { "ARCH_TAG_SUFFIX", $"-{platform.ArchWithVariant}" },
+            { "PRODUCT_VERSION", platform.Image.ProductVersion ?? "" },
+            { "OS_VERSION", platform.Model.OsVersion },
+            { "OS_VERSION_BASE", platform.BaseOsVersion },
+            { "OS_VERSION_NUMBER", platform.GetOsVersionNumber() },
+            { "OS_ARCH_HYPHENATED", platform.GetOsArchHyphenatedName() },
+        };
+    }
+}
+
+public static class ManifestInfoVariableExtensions
+{
+    extension(ManifestInfo manifest)
+    {
+        public Dictionary<string, string> TemplateVariables => new()
+        {
+            { "IS_PRODUCT_FAMILY", true.ToString() },
+        };
+    }
+}
+
+public static class RepoInfoVariableExtensions
+{
+    extension(RepoInfo repo)
+    {
+        public Dictionary<string, string> TemplateVariables => new()
+        {
+            { "REPO", repo.Model.Name },
+            { "FULL_REPO", repo.FullName },
+            { "PARENT_REPO", repo.GetParentRepoName() },
+            { "SHORT_REPO", repo.ShortName },
+        };
+
+        private string ShortName =>
+            // LastIndexOf returns -1 when not found, so in the case the repo
+            // name doesn't have any slashes, (-1 + 1) becomes 0 which selects
+            // the whole string.
+            repo.Model.Name[(repo.Model.Name.LastIndexOf('/') + 1)..];
+
+        private string GetParentRepoName()
+        {
+            // Avoid using string.Split(...) to prevent array allocation.
+            var name = repo.Model.Name;
+            int last = name.LastIndexOf('/');
+            if (last <= 0)
             {
-                { "ARCH_SHORT", platform.Model.Architecture.ShortName },
-                { "ARCH_NUPKG", platform.Model.Architecture.NupkgName },
-                { "ARCH_VERSIONED", platform.ArchWithVariant },
-                { "ARCH_TAG_SUFFIX", $"-{platform.ArchWithVariant}" },
-                { "PRODUCT_VERSION", platform.Image.ProductVersion ?? "" },
-                { "OS_VERSION", platform.Model.OsVersion },
-                { "OS_VERSION_BASE", platform.BaseOsVersion },
-                { "OS_VERSION_NUMBER", platform.GetOsVersionNumber() },
-                { "OS_ARCH_HYPHENATED", platform.GetOsArchHyphenatedName() },
-            };
+                return string.Empty;
+            }
+
+            int prev = name.LastIndexOf('/', last - 1);
+            return name[(prev + 1)..last];
+        }
     }
 }
 
@@ -236,7 +280,7 @@ internal static partial class PlatformInfoExtensions
         }
     }
 
-    public static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source.Substring(1);
+    private static string FirstCharToUpper(this string source) => char.ToUpper(source[0]) + source.Substring(1);
 
     [return: NotNullIfNotNull(nameof(source))]
     private static string? TrimEndString(this string? source, string trim) => source switch

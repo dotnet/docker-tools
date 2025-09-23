@@ -10,7 +10,7 @@ steps:
     displayName: Create Annotation Digests Directory
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
-      displayName: Annotate EOL Images
+      displayName: Annotate EOL Images (${{ parameters.acr.server }})
       serviceConnections:
       - name: acr
         id: ${{ parameters.acr.serviceConnection.id }}
@@ -29,13 +29,13 @@ steps:
     parameters:
       path: $(Build.ArtifactStagingDirectory)/annotation-digests
       artifactName: annotation-digests-$(System.JobAttempt)
-      displayName: Publish Annotation Digests List
+      displayName: Publish Annotation Digests List (${{ parameters.acr.server }})
       internalProjectName: internal
       publicProjectName: public
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
-      displayName: Wait for Annotation Ingestion
+      displayName: Wait for Annotation Ingestion (${{ parameters.acr.server }})
       serviceConnections:
       - name: mar
         id: $(marStatus.serviceConnection.id)

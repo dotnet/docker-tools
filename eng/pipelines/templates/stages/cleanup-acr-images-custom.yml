@@ -1,9 +1,19 @@
 parameters:
-  publishConfig: null
-  enableDryRun: false
-  repo: null
-  action: null
-  age: 0
+- name: publishConfig
+  type: object
+  default: null
+- name: enableDryRun
+  type: boolean
+  default: false
+- name: repo
+  type: string
+  default: null
+- name: action
+  type: string
+  default: null
+- name: age
+  type: int
+  default: 0
 
 stages:
 - stage: Execute

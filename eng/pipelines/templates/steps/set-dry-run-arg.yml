@@ -1,5 +1,7 @@
 parameters:
-  enableDryRun: false
+- name: enableDryRun
+  type: boolean
+  default: false
 
 steps:
   - script: |

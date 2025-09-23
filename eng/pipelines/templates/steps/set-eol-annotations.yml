@@ -1,5 +1,8 @@
 parameters:
-  acr: null
+- name: acr
+  type: object
+  default: null
+
 steps:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:

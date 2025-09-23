@@ -1,8 +1,16 @@
 parameters:
-  publishConfig: null
-  enableDryRun: false
-  internalProjectName: null
-  publicProjectName: null
+- name: publishConfig
+  type: object
+  default: null
+- name: enableDryRun
+  type: boolean
+  default: false
+- name: internalProjectName
+  type: string
+  default: null
+- name: publicProjectName
+  type: string
+  default: null
 
 stages:
 - stage: Execute

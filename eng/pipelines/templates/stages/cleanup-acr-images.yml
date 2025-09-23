@@ -17,11 +17,10 @@ stages:
   dependsOn: []
   jobs:     
   - job: Clean
+    variables:
+      dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
     - template: /eng/common/templates/steps/init-docker-linux.yml@self
-    - template: /eng/pipelines/templates/steps/set-dry-run-arg.yml@self
-      parameters:
-        enableDryRun: ${{ parameters.enableDryRun }}
     - template: /eng/common/templates/steps/clean-acr-images.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
@@ -64,11 +63,10 @@ stages:
     #     action: pruneDangling
     #     age: 0
   - job: Annotations
+    variables:
+      dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
     - template: /eng/common/templates/steps/init-docker-linux.yml@self
-    - template: /eng/pipelines/templates/steps/set-dry-run-arg.yml@self
-      parameters:
-        enableDryRun: ${{ parameters.enableDryRun }}
     - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
       displayName: Create EOL Annotation Data Directory
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self

@@ -21,11 +21,10 @@ stages:
   - job: Clean
     pool:
       vmImage: $(defaultLinuxAmd64PoolImage)
+    variables:
+      dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
     - template: /eng/common/templates/steps/init-docker-linux.yml@self
-    - template: /eng/pipelines/templates/steps/set-dry-run-arg.yml@self
-      parameters:
-        enableDryRun: ${{ parameters.enableDryRun }}
     - template: /eng/common/templates/steps/clean-acr-images.yml@self
       parameters:
         internalProjectName: internal

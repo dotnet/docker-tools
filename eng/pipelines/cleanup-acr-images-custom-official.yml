@@ -16,6 +16,7 @@ parameters:
   displayName: Action
   type: string
   default: delete
+  # Keep these values in sync with src/ImageBuilder/Commands/CleanAcrImagesOptions.cs
   values:
   - delete
   - pruneAll

@@ -19,5 +19,5 @@ steps:
 
   - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
     parameters:
-      publishConfig: ${{ parameters.publishConfig }}
+      acr: ${{ parameters.acr }}
       dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json

@@ -236,7 +236,7 @@ jobs:
 
   - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
     parameters:
-      publishConfig: ${{ parameters.publishConfig }}
+      acr: ${{ parameters.publishConfig.publishAcr }}
       dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data.json
 
   - script: >

@@ -28,7 +28,7 @@ steps:
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(Build.ArtifactStagingDirectory)/annotation-digests
-      artifactName: annotation-digests-$(System.JobAttempt)
+      artifactName: annotation-digests-${{ parameters.acr.server }}-$(System.JobAttempt)
       displayName: Publish Annotation Digests List (${{ parameters.acr.server }})
       internalProjectName: internal
       publicProjectName: public

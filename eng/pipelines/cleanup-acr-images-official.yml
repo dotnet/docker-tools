@@ -1,0 +1,38 @@
+trigger: none
+pr: none
+
+schedules:
+- cron: "0 5 * * *"
+  displayName: Nightly build
+  branches:
+    include:
+    - main
+  always: true
+
+parameters:
+- name: enableDryRun
+  displayName: Enable Dry Run
+  default: false
+  type: boolean
+
+variables:
+- template: /eng/pipelines/templates/variables/common.yml@self
+- name: publishEolAnnotations
+  value: true
+  readonly: true
+
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    serviceConnections:
+    # For image removal
+    - name: $(clean.serviceConnectionName)
+    # For EOL annotations
+    - name: $(build.serviceConnectionName)
+    - name: $(public-mirror.serviceConnectionName)
+    stages:
+    - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
+      parameters:
+        stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images.yml@self
+        stagesTemplateParameters:
+          enableDryRun: ${{ parameters.enableDryRun }}

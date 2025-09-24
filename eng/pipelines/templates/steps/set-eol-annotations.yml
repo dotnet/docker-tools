@@ -1,0 +1,26 @@
+parameters:
+- name: acr
+  type: object
+  default: null
+
+steps:
+  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+    parameters:
+      displayName: Generate EOL Annotations (${{ parameters.acr.server }})
+      serviceConnections:
+      - name: acr
+        id: ${{ parameters.acr.serviceConnection.id }}
+        tenantId: ${{ parameters.acr.serviceConnection.tenantId }}
+        clientId: ${{ parameters.acr.serviceConnection.clientId }}
+      internalProjectName: internal
+      args: >-
+        generateEolAnnotationDataForAllImages
+        '${{ parameters.acr.server }}'
+        '${{ parameters.acr.repoPrefix }}'
+        '$(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json'
+        $(dryRunArg)
+
+  - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
+    parameters:
+      acr: ${{ parameters.acr }}
+      dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json

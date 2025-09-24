@@ -1,0 +1,42 @@
+trigger: none
+pr: none
+
+variables:
+- template: templates/variables/common.yml
+
+parameters:
+- name: enableDryRun
+  displayName: Enable Dry Run
+  default: true # True by default for safety purposes
+  type: boolean
+- name: repo
+  displayName: Repo (wildcards allowed)
+  type: string
+- name: action
+  displayName: Action
+  type: string
+  default: delete
+  # Keep these values in sync with src/ImageBuilder/Commands/CleanAcrImagesOptions.cs
+  values:
+  - delete
+  - pruneAll
+  - pruneDangling
+  - pruneEol
+- name: age
+  displayName: Age
+  type: int
+
+extends:
+  template: /eng/common/templates/1es-official.yml@self
+  parameters:
+    serviceConnections:
+    - name: $(clean.serviceConnectionName)
+    stages:
+    - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
+      parameters:
+        stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images-custom.yml@self
+        stagesTemplateParameters:
+          enableDryRun: ${{ parameters.enableDryRun }}
+          repo: ${{ parameters.repo }}
+          action: ${{ parameters.action }}
+          age: ${{ parameters.age }}

@@ -20,9 +20,9 @@ steps:
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-
         annotateEolDigests
-        ${{ parameters.dataFile }}
-        ${{ parameters.acr.server }}
-        ${{ parameters.acr.repoPrefix }}
+        "${{ parameters.dataFile }}"
+        "${{ parameters.acr.server }}"
+        "${{ parameters.acr.repoPrefix }}"
         $(artifactsPath)/annotation-digests/annotation-digests.txt
         $(dryRunArg)
   - template: /eng/common/templates/steps/publish-artifact.yml@self

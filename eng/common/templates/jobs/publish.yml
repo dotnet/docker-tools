@@ -284,8 +284,8 @@ jobs:
       --task "🟪 Publish Image Info"
       --task "🟪 Ingest Kusto Image Info"
       --task "🟪 Generate EOL Annotation Data"
-      --task "🟪 Annotate EOL Images"
-      --task "🟪 Wait for Annotation Ingestion"
+      --task "🟪 Annotate EOL Images (${{ parameters.publishConfig.publishAcr.server }})"
+      --task "🟪 Wait for Annotation Ingestion (${{ parameters.publishConfig.publishAcr.server }})"
       $(dryRunArg)
       $(imageBuilder.commonCmdArgs)
     displayName: Post Publish Notification

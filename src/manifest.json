@@ -37,7 +37,7 @@
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
-              "osVersion": "windowsservercore-ltsc2016",
+              "osVersion": "nanoserver-ltsc2025",
               "tags": {
                 "windowsservercore-ltsc2016-amd64": {},
                 "windowsservercore-ltsc2016-amd64-$(UniqueId)": {}
@@ -49,7 +49,7 @@
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
-              "osVersion": "nanoserver-1809",
+              "osVersion": "nanoserver-ltsc2025",
               "tags": {
                 "nanoserver-1809-amd64": {},
                 "nanoserver-1809-amd64-$(UniqueId)": {}
@@ -61,7 +61,7 @@
               },
               "dockerfile": "Dockerfile.windows",
               "os": "windows",
-              "osVersion": "nanoserver-ltsc2022",
+              "osVersion": "nanoserver-ltsc2025",
               "tags": {
                 "nanoserver-ltsc2022-amd64": {},
                 "nanoserver-ltsc2022-amd64-$(UniqueId)": {}

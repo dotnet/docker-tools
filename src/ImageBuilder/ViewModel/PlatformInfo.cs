@@ -13,16 +13,12 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
-    public class PlatformInfo
+    public partial class PlatformInfo
     {
         private const string ArgGroupName = "arg";
         private const string FromImageMatchName = "fromImage";
         private const string StageIdMatchName = "stageId";
         private const string ScratchIdentifier = "scratch";
-
-        private static Regex FromRegex { get; } = new Regex($@"FROM\s+(--platform=.*?\s+)?(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
-
-        private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d_]+)";
 
         private List<string> _overriddenFromImages = new();
         private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();
@@ -46,6 +42,12 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             ImmutableDictionary<string, CustomBuildLegGroup>.Empty;
         public string PlatformLabel { get; }
         private VariableHelper VariableHelper { get; set; }
+
+        [GeneratedRegex($@"FROM\s+(--platform=.*?\s+)?(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?")]
+        public static partial Regex FromRegex { get; }
+
+        [GeneratedRegex($"\\$(?<{ArgGroupName}>[\\w\\d_]+)")]
+        public static partial Regex ArgPatternRegex { get; }
 
         private PlatformInfo(Platform model, string baseOsVersion, string fullRepoModelName, string repoName, VariableHelper variableHelper,
             string baseDirectory)
@@ -269,7 +271,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private string SubstituteBuildArgs(string instruction)
         {
-            foreach (Match match in Regex.Matches(instruction, s_argPattern))
+            foreach (Match match in ArgPatternRegex.Matches(instruction))
             {
                 if (!BuildArgs.TryGetValue(match.Groups[ArgGroupName].Value, out string? argValue))
                 {

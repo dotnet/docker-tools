@@ -16,24 +16,6 @@ RUN dotnet restore -r win-x64 ./ImageBuilder/Microsoft.DotNet.ImageBuilder.cspro
 COPY . ./
 RUN dotnet publish ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj -c Release -o out -r win-x64 --no-restore --self-contained
 
-# install manifest-tool
-RUN pwsh -Command " `
-        $ErrorActionPreference = 'Stop'; `
-        $ProgressPreference = 'SilentlyContinue'; `
-        $manifestToolVersion = '2.0.6'; `
-        Invoke-WebRequest `
-            -UseBasicParsing `
-            -Uri "https://github.com/estesp/manifest-tool/releases/download/v$manifestToolVersion/binaries-manifest-tool-$manifestToolVersion.tar.gz" `
-            -OutFile binaries-manifest-tool.tar.gz; `
-        $sha = '4d8a502f2d3b82a50cfde65274ff6df7ef6fe441dc65b96b595a70cc64ece5bc'; `
-        if ((Get-FileHash binaries-manifest-tool.tar.gz -Algorithm sha256).Hash -ne $sha) { `
-            Write-Host 'CHECKSUM VERIFICATION FAILED!'; `
-            exit 1; `
-        }; `
-        tar -zxf binaries-manifest-tool.tar.gz -C out manifest-tool-windows-amd64.exe; `
-        Move-Item out/manifest-tool-windows-amd64.exe out/manifest-tool.exe; `
-        Remove-Item binaries-manifest-tool.tar.gz;"
-
 # build runtime image
 FROM mcr.microsoft.com/windows/$WINDOWS_BASE
 WORKDIR /image-builder

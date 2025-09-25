@@ -1,7 +1,7 @@
 # This Dockerfile is intended to be built at the root of the repo.
 
 # build image
-FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build-env
+FROM mcr.microsoft.com/dotnet/sdk:10.0-alpine AS build-env
 
 WORKDIR /src
 
@@ -19,7 +19,7 @@ RUN dotnet publish ./yaml-updater/*.csproj -c Release -o out --no-restore
 
 
 # runtime image
-FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
+FROM mcr.microsoft.com/dotnet/runtime:10.0-alpine
 
 # copy yaml-updater
 WORKDIR /yaml-updater

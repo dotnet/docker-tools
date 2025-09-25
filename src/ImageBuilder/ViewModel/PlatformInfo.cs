@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         private static Regex FromRegex { get; } = new Regex($@"FROM\s+(--platform=.*?\s+)?(?<{FromImageMatchName}>\S+)(\s+AS\s+(?<{StageIdMatchName}>\S+))?");
 
-        private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d-_]+)";
+        private static readonly string s_argPattern = $"\\$(?<{ArgGroupName}>[\\w\\d_]+)";
 
         private List<string> _overriddenFromImages = new();
         private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();

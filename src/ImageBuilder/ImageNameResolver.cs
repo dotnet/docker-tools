@@ -79,8 +79,8 @@ public abstract class ImageNameResolver
     {
         fromImage = _baseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
 
-        if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
-            DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
+        if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry))
+            || (Manifest.Model.Registry is not null && DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry))
             || _sourceRepoPrefix is null)
         {
             return fromImage;
@@ -97,7 +97,7 @@ public abstract class ImageNameResolver
 
     private bool IsInInternallyOwnedRegistry(string imageTag) =>
         DockerHelper.IsInRegistry(imageTag, Manifest.Registry) ||
-        DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry);
+        (Manifest.Model.Registry is not null && DockerHelper.IsInRegistry(imageTag, Manifest.Model.Registry));
 }
 
 public class ImageNameResolverForBuild : ImageNameResolver

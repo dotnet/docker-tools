@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.IO;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
 using Xunit;
@@ -39,6 +42,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         public void GetOSDisplayName_Windows(string osVersion, string expectedDisplayName)
         {
             ValidateGetOSDisplayName(OS.Windows, osVersion, expectedDisplayName);
+        }
+
+        [Theory]
+        [InlineData("VALID", "ubuntu:latest", "$VALID", "ubuntu:latest")]
+        [InlineData("VALID_123", "alpine:latest", "$VALID_123", "alpine:latest")]
+        [InlineData("VALID_123", "alpine:latest", "$VALID_123-other", "alpine:latest-other")]
+        public void Initialize_ArgPattern(
+            string buildArgKey, string buildArgValue, string fromTag, string expectedFromImage)
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            
+            // Create a dockerfile with the ARG
+            string dockerfileContent = $"ARG {buildArgKey}\nFROM {fromTag}";
+            string dockerfilePath = Path.Combine(tempFolderContext.Path, "Dockerfile");
+            File.WriteAllText(dockerfilePath, dockerfileContent);
+            
+            Platform platform = CreatePlatform("Dockerfile", [ "test" ]);
+            platform.BuildArgs = new Dictionary<string, string>
+            {
+                { buildArgKey, buildArgValue }
+            };
+            
+            VariableHelper variableHelper = new(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
+            PlatformInfo platformInfo = PlatformInfo.Create(
+                platform, "", "test", variableHelper, tempFolderContext.Path);
+            platformInfo.Initialize([], "test.azurecr.io");
+            
+            Assert.Contains(expectedFromImage, platformInfo.ExternalFromImages);
         }
 
         private void ValidateGetOSDisplayName(OS os, string osVersion, string expectedDisplayName)

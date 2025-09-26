@@ -20,15 +20,15 @@ steps:
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-
         annotateEolDigests
-        ${{ parameters.dataFile }}
-        ${{ parameters.acr.server }}
-        ${{ parameters.acr.repoPrefix }}
+        "${{ parameters.dataFile }}"
+        "${{ parameters.acr.server }}"
+        "${{ parameters.acr.repoPrefix }}"
         $(artifactsPath)/annotation-digests/annotation-digests.txt
         $(dryRunArg)
   - template: /eng/common/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(Build.ArtifactStagingDirectory)/annotation-digests
-      artifactName: annotation-digests-$(System.JobAttempt)
+      artifactName: annotation-digests-${{ parameters.acr.server }}-$(System.JobAttempt)
       displayName: Publish Annotation Digests List (${{ parameters.acr.server }})
       internalProjectName: internal
       publicProjectName: public

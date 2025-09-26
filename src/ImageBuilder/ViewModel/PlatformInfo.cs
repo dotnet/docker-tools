@@ -212,8 +212,23 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public static bool AreMatchingPlatforms(ImageInfo image1, PlatformInfo platform1, ImageInfo image2, PlatformInfo platform2) =>
             platform1.GetUniqueKey(image1) == platform2.GetUniqueKey(image2);
 
-        public string GetUniqueKey(ImageInfo parentImageInfo) =>
-            $"{DockerfilePathRelativeToManifest}-{Model.OS}-{Model.OsVersion}-{Model.Architecture}-{parentImageInfo.ProductVersion}";
+        public string GetUniqueKey(ImageInfo parentImageInfo)
+        {
+            string key = $"{DockerfilePathRelativeToManifest}-{Model.OS}-{Model.OsVersion}-{Model.Architecture}-{parentImageInfo.ProductVersion}";
+
+            if (BuildArgs == null || BuildArgs.Count == 0)
+            {
+                return key;
+            }
+
+            // Append build args to distinguish platforms that only vary by arg values.
+            // Order by key to guarantee stable output.
+            string buildArgsSegment = string.Join(',', BuildArgs
+                .OrderBy(kvp => kvp.Key, StringComparer.Ordinal)
+                .Select(kvp => $"{kvp.Key}={kvp.Value ?? string.Empty}"));
+
+            return $"{key}-{buildArgsSegment}";
+        }
 
         private static string FormatVersionableOsName(string os, Func<string, string> formatName)
         {

@@ -45,15 +45,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [Theory]
-        [InlineData("VALID", "ubuntu:latest", "ubuntu:latest")]     // Full match and substitution
-        [InlineData("VALID_123", "alpine:latest", "alpine:latest")]     // Full match and substitution
+        [InlineData("VALID", "ubuntu:latest", "$VALID", "ubuntu:latest")]
+        [InlineData("VALID_123", "alpine:latest", "$VALID_123", "alpine:latest")]
+        [InlineData("VALID_123", "alpine:latest", "$VALID_123-other", "alpine:latest-other")]
         public void Initialize_ArgPattern(
-            string buildArgKey, string buildArgValue, string expectedFromImage)
+            string buildArgKey, string buildArgValue, string fromTag, string expectedFromImage)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             
             // Create a dockerfile with the ARG
-            string dockerfileContent = $"ARG {buildArgKey}\nFROM ${buildArgKey}";
+            string dockerfileContent = $"ARG {buildArgKey}\nFROM {fromTag}";
             string dockerfilePath = Path.Combine(tempFolderContext.Path, "Dockerfile");
             File.WriteAllText(dockerfilePath, dockerfileContent);
             

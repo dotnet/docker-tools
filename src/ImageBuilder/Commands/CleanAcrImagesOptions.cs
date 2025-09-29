@@ -60,7 +60,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         ];
     }
 
-    // Keep these values in sync with eng/pipelines/cleanup-acr-images-custom-official.yml
+    // Keep the following templates in sync with these values:
+    // - eng/pipelines/cleanup-acr-images-custom-official.yml
+    // - eng/common/templates/steps/clean-acr-images.yml
     public enum CleanAcrImagesAction
     {
         /// <summary>

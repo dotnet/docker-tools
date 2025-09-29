@@ -5,9 +5,15 @@ parameters:
 - name: dataFile
   displayName: Relative path to EOL annotations data file (e.g. eol-3.1.json for file in root of the branch)
   type: string
+- name: sourceBuildPipelineRunId
+  displayName: Source build pipeline run ID
+  type: string
+  default: $(Build.BuildId)
 
 variables:
 - template: templates/variables/image-builder.yml
+  parameters:
+    sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 - name: publishEolAnnotations
   value: true
 - name: dryRunArg
@@ -30,4 +36,11 @@ extends:
         - template: /eng/common/templates/steps/init-docker-linux.yml@self
         - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
           parameters:
+            acr:
+              server: $(acr.server)
+              repoPrefix: "public/"
+              serviceConnection:
+                id: $(publish.serviceConnection.id)
+                tenantId: $(publish.serviceConnection.tenantId)
+                clientId: $(publish.serviceConnection.clientId)
             dataFile: /repo/${{ parameters.dataFile }}

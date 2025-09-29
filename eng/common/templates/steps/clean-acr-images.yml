@@ -9,7 +9,13 @@ parameters:
 steps:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
-      displayName: Clean ACR Images - ${{ parameters.repo }}
+      # Options are documented in CleanAcrImagesOptions.cs
+      ${{ if eq(parameters.action, 'delete') }}:
+        displayName: "Delete ${{ repo }}"
+      ${{ elseif parameters.age }}:
+        displayName: "Clean ${{ repo }} (${{ parameters.action }} > ${{ parameters.age }}d)"
+      ${{ else }}:
+        displayName: "Clean ${{ parameters.repo }} (${{ parameters.action }})"
       serviceConnections:
       - name: acr
         id: ${{ parameters.publishConfig.cleanServiceConnection.id }}

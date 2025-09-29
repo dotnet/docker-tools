@@ -6,7 +6,7 @@ parameters:
 steps:
   - template: /eng/common/templates/steps/run-imagebuilder.yml@self
     parameters:
-      displayName: Generate EOL Annotations (${{ parameters.acr.server }})
+      displayName: "Generate EOL Data for all images in ${{ parameters.acr.server }}"
       serviceConnections:
       - name: acr
         id: ${{ parameters.acr.serviceConnection.id }}

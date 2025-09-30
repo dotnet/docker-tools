@@ -63,6 +63,7 @@ stages:
     #     action: pruneDangling
     #     age: 0
   - job: Annotations
+    timeoutInMinutes: 120
     variables:
       dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:

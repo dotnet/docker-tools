@@ -11,9 +11,9 @@ steps:
     parameters:
       # Options are documented in CleanAcrImagesOptions.cs
       ${{ if eq(parameters.action, 'delete') }}:
-        displayName: "Delete ${{ repo }}"
+        displayName: "Delete ${{ parameters.repo }}"
       ${{ elseif parameters.age }}:
-        displayName: "Clean ${{ repo }} (${{ parameters.action }} > ${{ parameters.age }}d)"
+        displayName: "Clean ${{ parameters.repo }} (${{ parameters.action }} > ${{ parameters.age }}d)"
       ${{ else }}:
         displayName: "Clean ${{ parameters.repo }} (${{ parameters.action }})"
       serviceConnections:

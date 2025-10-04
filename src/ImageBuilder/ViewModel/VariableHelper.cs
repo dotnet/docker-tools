@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (Manifest.Variables is not null)
             {
-                foreach (KeyValuePair<string, string?> kvp in Manifest.Variables)
+                foreach (KeyValuePair<string, string> kvp in Manifest.Variables)
                 {
                     string? variableValue;
                     if (Options.Variables is not null && Options.Variables.TryGetValue(kvp.Key, out string? overridenValue))
@@ -56,22 +56,17 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             {
                 foreach (KeyValuePair<string, string?> kvp in Options.Variables)
                 {
-                    if (!ResolvedVariables.ContainsKey(kvp.Key))
+                    if (!ResolvedVariables.ContainsKey(kvp.Key) && kvp.Value is not null)
                     {
-                        string? value = SubstituteValues(kvp.Value);
+                        string value = SubstituteValues(kvp.Value);
                         ResolvedVariables.Add(kvp.Key, value);
                     }
                 }
             }
         }
 
-        public string? SubstituteValues(string? expression, Func<string, string, string>? getContextBasedSystemValue = null)
+        public string SubstituteValues(string expression, Func<string, string, string>? getContextBasedSystemValue = null)
         {
-            if (expression == null)
-            {
-                return null;
-            }
-
             foreach (Match match in Regex.Matches(expression, s_tagVariablePattern))
             {
                 string? variableValue;

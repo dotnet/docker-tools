@@ -1,11 +1,20 @@
 <Solution>
+
   <Configurations>
     <Platform Name="Any CPU" />
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
+
   <Project Path="eng/src/file-pusher/file-pusher.csproj" />
   <Project Path="eng/src/yaml-updater/yaml-updater.csproj" />
+
   <Project Path="src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj" />
+  <Project Path="src/ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj" />
   <Project Path="src/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj" />
+
+  <Project Path="src/Templating/Templating.csproj" />
+  <Project Path="src/TemplateGenerator/TemplateGenerator.csproj" />
+  <Project Path="src/TemplateGenerator.Benchmarks/TemplateGenerator.Benchmarks.csproj" />
+
 </Solution>

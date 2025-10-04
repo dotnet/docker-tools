@@ -77,7 +77,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
             manifest.GetExternalFromImages()
                 .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
-                .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
+                .Where(fromImage => string.IsNullOrEmpty(manifest.Model.Registry)
+                    || !fromImage.StartsWith(manifest.Model.Registry));
 
         private Task CopyImageAsync(string fromImage, string destinationRegistryName)
         {

@@ -11,7 +11,22 @@ steps:
         exit 0
       }
 
+      $isOfficialRepoPrefix = "$(officialRepoPrefixes)".Split(',').Contains("${{ parameters.publishConfig.publishAcr.repoPrefix }}")
+      if (-not $isOfficialRepoPrefix)
+      {
+        echo "This build will not publish to an official repo prefix, continuing."
+        echo "Official repo prefixes: $(officialRepoPrefixes)"
+        exit 0
+      }
+
       $isOfficialBranch = "$(officialBranches)".Split(',').Contains("$(sourceBranch)")
+      if ($isOfficialBranch)
+      {
+        echo "$(sourceBranch) is an official branch, continuing."
+        echo "Official branches: $(officialBranches)"
+        exit 0
+      }
+
       $hasOfficialBranchPrefix = $false
       foreach ($prefix in "$(officialBranchPrefixes)".Split(',')) {
         if ("$(sourceBranch)".StartsWith($prefix)) {
@@ -20,16 +35,10 @@ steps:
         }
       }
 
-      if (($isOfficialBranch -or $hasOfficialBranchPrefix) `
-          -and "$(officialRepoPrefixes)".Split(',').Contains("${{ parameters.publishConfig.publishAcr.repoPrefix }}"))
+      if ($hasOfficialBranchPrefix)
       {
-        echo "Conditions met for official build, continuing..."
-        exit 0
-      }
-
-      if (-not "$(officialRepoPrefixes)".Split(',').Contains("${{ parameters.publishConfig.publishAcr.repoPrefix }}"))
-      {
-        echo "This build is a test build, continuing..."
+        echo "$(sourceBranch) has an official branch prefix, continuing."
+        echo "Official branch prefixes: $(officialBranchPrefixes)"
         exit 0
       }
 

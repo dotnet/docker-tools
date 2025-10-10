@@ -7,7 +7,7 @@ steps:
   - powershell: |
       if ("$env:ONEESPT_BUILDTYPE" -eq "Unofficial")
       {
-        echo "Build is from an unofficial pipeline, continuing..."
+        echo "Build is from an unofficial pipeline, continuing."
         exit 0
       }
 

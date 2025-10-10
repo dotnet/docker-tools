@@ -42,12 +42,6 @@ steps:
         exit 0
       }
 
-      if ("${{ variables['overrideOfficialBranchValidation'] }}" -eq "true")
-      {
-        echo "Variable overrideOfficialBranchValidation is set to true, continuing..."
-        exit 0
-      }
-
       echo "##vso[task.logissue type=error]Official builds must be done from an official branch ($(officialBranches)) and repo prefix ($(officialRepoPrefixes))."
       echo "Build definition: $(Build.DefinitionName)"
       echo "1ESPT build type: $(OneESPT.BuildType)"

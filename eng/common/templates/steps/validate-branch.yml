@@ -15,6 +15,7 @@ steps:
       if (-not $isOfficialRepoPrefix)
       {
         echo "This build will not publish to an official repo prefix, continuing."
+        echo "Publish repo prefix: ${{ parameters.publishConfig.publishAcr.repoPrefix }}"
         echo "Official repo prefixes: $(officialRepoPrefixes)"
         exit 0
       }

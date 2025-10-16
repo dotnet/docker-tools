@@ -282,6 +282,58 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             platform.BaseImageDigest = baseImageDigest;
+
+            // Populate FromImages with digests for all FROM images (internal and external)
+            SetPlatformDataFromImages(platform, platformDataByTag);
+        }
+
+        private void SetPlatformDataFromImages(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
+        {
+            if (platform.PlatformInfo is null)
+            {
+                return;
+            }
+
+            platform.FromImages = new Dictionary<string, string>();
+
+            // Collect all FROM images (both internal and external)
+            IEnumerable<string> allFromImages = platform.PlatformInfo.InternalFromImages
+                .Concat(platform.PlatformInfo.ExternalFromImages)
+                .Distinct();
+
+            foreach (string fromImage in allFromImages)
+            {
+                string? digest = null;
+
+                // Check if this is an internal image (from a tag in the manifest)
+                if (platformDataByTag.TryGetValue(fromImage, out PlatformData? fromPlatformData))
+                {
+                    if (fromPlatformData.Digest != null)
+                    {
+                        digest = DockerHelper.GetDigestString(
+                            DockerHelper.GetRepo(_imageNameResolver.Value.GetFromImagePublicTag(fromImage)),
+                            DockerHelper.GetDigestSha(fromPlatformData.Digest));
+                    }
+                }
+                else
+                {
+                    // This is an external image, get the digest from the image digest cache
+                    string localTag = _imageNameResolver.Value.GetFromImageLocalTag(fromImage);
+                    digest = _imageDigestCache.GetLocalImageDigestAsync(localTag, Options.IsDryRun).GetAwaiter().GetResult();
+
+                    if (digest is not null)
+                    {
+                        digest = DockerHelper.GetDigestString(
+                            DockerHelper.GetRepo(_imageNameResolver.Value.GetFromImagePublicTag(fromImage)),
+                            DockerHelper.GetDigestSha(digest));
+                    }
+                }
+
+                if (digest is not null)
+                {
+                    platform.FromImages[fromImage] = digest;
+                }
+            }
         }
 
         private async Task SetPlatformDataLayersAsync(PlatformData platform, string tag)
@@ -410,6 +462,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // published image so we don't need to recalculate it again.
             dstPlatform.BaseImageDigest = srcPlatform.BaseImageDigest;
             dstPlatform.Layers = new List<Layer>(srcPlatform.Layers);
+            if (srcPlatform.FromImages is not null)
+            {
+                dstPlatform.FromImages = new Dictionary<string, string>(srcPlatform.FromImages);
+            }
         }
 
         private RepoData CreateRepoData(RepoInfo repoInfo) =>

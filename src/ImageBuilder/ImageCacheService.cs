@@ -131,9 +131,9 @@ public class ImageCacheService : IImageCacheService
     {
         _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
-        // If the previously published image was based on an image that is still the latest version AND
+        // If the previously published image was based on images that are still the latest versions AND
         // the Dockerfile hasn't changed since it was last published
-        if (await IsBaseImageDigestUpToDateAsync(
+        if (await AreFromImageDigestsUpToDateAsync(
                 platform, srcPlatformData, imageDigestCache, imageNameResolver, isLocalBaseImageExpected, isDryRun) &&
             IsDockerfileUpToDate(platform, srcPlatformData, sourceRepoUrl))
         {
@@ -146,7 +146,7 @@ public class ImageCacheService : IImageCacheService
         return false;
     }
 
-    private async Task<bool> IsBaseImageDigestUpToDateAsync(
+    private async Task<bool> AreFromImageDigestsUpToDateAsync(
         PlatformInfo platform,
         PlatformData srcPlatformData,
         ImageDigestCache imageDigestCache,
@@ -156,6 +156,79 @@ public class ImageCacheService : IImageCacheService
     {
         _loggerService.WriteMessage();
 
+        // If there are no FROM images recorded in the platform data, fall back to the legacy behavior
+        // of checking only the final stage base image
+        if (srcPlatformData.FromImages is null || srcPlatformData.FromImages.Count == 0)
+        {
+            return await IsBaseImageDigestUpToDateAsync(
+                platform, srcPlatformData, imageDigestCache, imageNameResolver, isLocalImageExpected, isDryRun);
+        }
+
+        // Check all FROM images (both intermediate and final stages)
+        IEnumerable<string> allFromImages = platform.InternalFromImages
+            .Concat(platform.ExternalFromImages)
+            .Distinct();
+
+        foreach (string fromImage in allFromImages)
+        {
+            string? currentSha = null;
+
+            if (isLocalImageExpected)
+            {
+                string localTag = imageNameResolver.GetFromImageLocalTag(fromImage);
+                currentSha = await imageDigestCache.GetLocalImageDigestAsync(localTag, isDryRun);
+                if (currentSha is not null)
+                {
+                    currentSha = DockerHelper.GetDigestSha(currentSha);
+                }
+            }
+            else
+            {
+                try
+                {
+                    string queryImage = imageNameResolver.GetFromImagePullTag(fromImage);
+                    currentSha = await imageDigestCache.GetManifestDigestShaAsync(queryImage, isDryRun);
+                }
+                // Handle cases where the image is not found in the registry yet
+                catch (Exception)
+                {
+                    currentSha = null;
+                }
+            }
+
+            // Get the recorded digest for this FROM image
+            string? recordedDigest = null;
+            if (srcPlatformData.FromImages.TryGetValue(fromImage, out string? digest))
+            {
+                recordedDigest = DockerHelper.GetDigestSha(digest);
+            }
+
+            bool digestMatches = recordedDigest?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
+
+            _loggerService.WriteMessage($"FROM image: {fromImage}");
+            _loggerService.WriteMessage($"  Image info's digest SHA: {recordedDigest}");
+            _loggerService.WriteMessage($"  Latest digest SHA: {currentSha}");
+            _loggerService.WriteMessage($"  Digests match: {digestMatches}");
+
+            if (!digestMatches)
+            {
+                _loggerService.WriteMessage($"FROM image '{fromImage}' has changed. Cache miss.");
+                return false;
+            }
+        }
+
+        _loggerService.WriteMessage("All FROM images are up-to-date.");
+        return true;
+    }
+
+    private async Task<bool> IsBaseImageDigestUpToDateAsync(
+        PlatformInfo platform,
+        PlatformData srcPlatformData,
+        ImageDigestCache imageDigestCache,
+        ImageNameResolver imageNameResolver,
+        bool isLocalImageExpected,
+        bool isDryRun)
+    {
         if (platform.FinalStageFromImage is null)
         {
             _loggerService.WriteMessage($"Image does not have a base image. By default, it is considered up-to-date.");

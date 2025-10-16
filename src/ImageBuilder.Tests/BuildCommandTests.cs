@@ -3642,6 +3642,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return dockerServiceMock;
         }
 
+        #nullable enable
         /// <summary>
         /// Verifies that image caching correctly detects changes to intermediate stage FROM images.
         /// This test simulates a scenario where:
@@ -3905,7 +3906,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 It.IsAny<bool>(),
                 It.IsAny<bool>()), Times.Once);
         }
-
+        #nullable disable
         private static void VerifyImportImage(Mock<ICopyImageService> copyImageServiceMock, BuildCommand command,
             string[] destTagNames, string srcTagName, string destRegistryName, string srcRegistryName)
         {

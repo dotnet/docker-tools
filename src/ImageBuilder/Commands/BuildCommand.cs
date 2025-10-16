@@ -204,7 +204,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     if (Options.IsPushEnabled)
                     {
                         await SetPlatformDataDigestAsync(platform, tag.FullyQualifiedName);
-                        SetPlatformDataBaseDigest(platform, platformDataByTag);
+                        await SetPlatformDataBaseDigestAsync(platform, platformDataByTag);
                         await SetPlatformDataLayersAsync(platform, tag.FullyQualifiedName);
                     }
 
@@ -254,7 +254,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.Created = createdDate;
         }
 
-        private void SetPlatformDataBaseDigest(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
+        private async Task SetPlatformDataBaseDigestAsync(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
         {
             string? baseImageDigest = platform.BaseImageDigest;
             if (platform.BaseImageDigest is null && platform.PlatformInfo?.FinalStageFromImage is not null)
@@ -284,10 +284,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             platform.BaseImageDigest = baseImageDigest;
 
             // Populate FromImages with digests for all FROM images (internal and external)
-            SetPlatformDataFromImages(platform, platformDataByTag);
+            await SetPlatformDataFromImagesAsync(platform, platformDataByTag);
         }
 
-        private void SetPlatformDataFromImages(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
+        private async Task SetPlatformDataFromImagesAsync(PlatformData platform, Dictionary<string, PlatformData> platformDataByTag)
         {
             if (platform.PlatformInfo is null)
             {
@@ -319,7 +319,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // This is an external image, get the digest from the image digest cache
                     string localTag = _imageNameResolver.Value.GetFromImageLocalTag(fromImage);
-                    digest = _imageDigestCache.GetLocalImageDigestAsync(localTag, Options.IsDryRun).GetAwaiter().GetResult();
+                    digest = await _imageDigestCache.GetLocalImageDigestAsync(localTag, Options.IsDryRun);
 
                     if (digest is not null)
                     {

@@ -3642,6 +3642,270 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return dockerServiceMock;
         }
 
+        /// <summary>
+        /// Verifies that image caching correctly detects changes to intermediate stage FROM images.
+        /// This test simulates a scenario where:
+        /// - crossdeps-builder image changes (intermediate stage)
+        /// - crossdeps-llvm image doesn't change (final stage)
+        /// - cross image depends on both (copies from crossdeps-builder, final stage from crossdeps-llvm)
+        /// The cross image should be rebuilt because crossdeps-builder changed, even though crossdeps-llvm didn't.
+        /// </summary>
+        [Fact]
+        public async Task BuildCommand_Caching_IntermediateStageChange()
+        {
+            const string registry = "mcr.microsoft.com";
+            const string crossdepsBuilderRepo = "crossdeps-builder";
+            const string crossdepsLlvmRepo = "crossdeps-llvm";
+            const string crossRepo = "cross";
+            const string tag = "3.0";
+            const string baseImageRepo = "azurelinux";
+            string baseImageTag = $"{baseImageRepo}:3.0";
+
+            string crossdepsBuilderRepoQualified = $"{registry}/{crossdepsBuilderRepo}";
+            string crossdepsLlvmRepoQualified = $"{registry}/{crossdepsLlvmRepo}";
+            string crossRepoQualified = $"{registry}/{crossRepo}";
+
+            // Current digests
+            const string currentBaseImageDigest = "sha256:base123";
+            const string currentCrossdepsBuilderDigest = "sha256:builder456";  // This changes
+            const string currentCrossdepsLlvmDigest = "sha256:llvm789";
+            const string currentCrossDigest = "sha256:cross012";
+
+            // Source digests (from previous build)
+            const string sourceBaseImageDigest = "sha256:base123";  // Same
+            const string sourceCrossdepsBuilderDigest = "sha256:builder000";  // Changed!
+            const string sourceCrossdepsLlvmDigest = "sha256:llvm789";  // Same
+            const string sourceCrossDigest = "sha256:cross000";
+
+            string baseImageDigest = $"{baseImageRepo}@{currentBaseImageDigest}";
+            string crossdepsBuilderDigest = $"{crossdepsBuilderRepoQualified}@{currentCrossdepsBuilderDigest}";
+            string crossdepsLlvmDigest = $"{crossdepsLlvmRepoQualified}@{currentCrossdepsLlvmDigest}";
+            string crossDigest = $"{crossRepoQualified}@{currentCrossDigest}";
+
+            const string currentCommitSha = "commit-sha";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            // Create Dockerfiles
+            // crossdeps-builder: FROM azurelinux:3.0
+            string crossdepsBuilderDockerfilePath = DockerfileHelper.CreateDockerfile(
+                "crossdeps-builder", tempFolderContext, baseImageTag);
+
+            // crossdeps-llvm: FROM azurelinux:3.0
+            string crossdepsLlvmDockerfilePath = DockerfileHelper.CreateDockerfile(
+                "crossdeps-llvm", tempFolderContext, baseImageTag);
+
+            // cross: FROM crossdeps-builder AS builder
+            //        FROM crossdeps-llvm
+            //        COPY --from=builder /artifacts /
+            string crossDockerfilePath = PathHelper.NormalizePath(Path.Combine("cross", "Dockerfile"));
+            DockerfileHelper.CreateFile(crossDockerfilePath, tempFolderContext,
+                $"FROM {crossdepsBuilderRepoQualified}:{tag} AS builder{Environment.NewLine}" +
+                $"FROM {crossdepsLlvmRepoQualified}:{tag}{Environment.NewLine}" +
+                $"COPY --from=builder /artifacts /");
+
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            DateTime createdDate = DateTime.Now;
+
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{crossdepsBuilderRepoQualified}:{tag}", false))
+                .Returns(createdDate);
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{crossdepsLlvmRepoQualified}:{tag}", false))
+                .Returns(createdDate);
+            dockerServiceMock
+                .Setup(o => o.GetCreatedDate($"{crossRepoQualified}:{tag}", false))
+                .Returns(createdDate);
+
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(
+                localImageDigestResults:
+                [
+                    new($"{crossdepsBuilderRepoQualified}:{tag}", crossdepsBuilderDigest),
+                    new($"{crossdepsLlvmRepoQualified}:{tag}", crossdepsLlvmDigest),
+                    new($"{crossRepoQualified}:{tag}", crossDigest),
+                    new(baseImageTag, baseImageDigest),
+                ],
+                externalImageDigestResults:
+                [
+                    new(baseImageTag, currentBaseImageDigest),
+                ]);
+
+            Mock<IGitService> gitServiceMock = new();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(currentCommitSha);
+
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
+            BuildCommand command = new(
+                dockerServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                gitServiceMock.Object,
+                Mock.Of<IProcessService>(),
+                CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<IRegistryCredentialsProvider>(),
+                Mock.Of<IAzureTokenCredentialProvider>(),
+                new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
+            command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
+            command.Options.IsPushEnabled = true;
+            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
+            command.Options.Subscription = "my-sub";
+            command.Options.ResourceGroup = "resource-group";
+
+            // Create manifest
+            Manifest manifest = CreateManifest(
+                CreateRepo(crossdepsBuilderRepo,
+                    CreateImage(
+                        CreatePlatform(crossdepsBuilderDockerfilePath, tags: [tag]))),
+                CreateRepo(crossdepsLlvmRepo,
+                    CreateImage(
+                        CreatePlatform(crossdepsLlvmDockerfilePath, tags: [tag]))),
+                CreateRepo(crossRepo,
+                    CreateImage(
+                        CreatePlatform(crossDockerfilePath, tags: [tag]))));
+            manifest.Registry = registry;
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            // Create source image info with FromImages populated
+            ImageArtifactDetails sourceImageArtifactDetails = new()
+            {
+                Repos =
+                [
+                    new RepoData
+                    {
+                        Repo = crossdepsBuilderRepo,
+                        Images =
+                        [
+                            new ImageData
+                            {
+                                Platforms =
+                                [
+                                    new PlatformData
+                                    {
+                                        Dockerfile = crossdepsBuilderDockerfilePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "azurelinux3.0",
+                                        Digest = $"{crossdepsBuilderRepoQualified}@{sourceCrossdepsBuilderDigest}",
+                                        BaseImageDigest = $"{baseImageRepo}@{sourceBaseImageDigest}",
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags = [tag],
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentCommitSha}/{crossdepsBuilderDockerfilePath}",
+                                        FromImages = new Dictionary<string, string>
+                                        {
+                                            [baseImageTag] = $"{baseImageRepo}@{sourceBaseImageDigest}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    new RepoData
+                    {
+                        Repo = crossdepsLlvmRepo,
+                        Images =
+                        [
+                            new ImageData
+                            {
+                                Platforms =
+                                [
+                                    new PlatformData
+                                    {
+                                        Dockerfile = crossdepsLlvmDockerfilePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "azurelinux3.0",
+                                        Digest = $"{crossdepsLlvmRepoQualified}@{sourceCrossdepsLlvmDigest}",
+                                        BaseImageDigest = $"{baseImageRepo}@{sourceBaseImageDigest}",
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags = [tag],
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentCommitSha}/{crossdepsLlvmDockerfilePath}",
+                                        FromImages = new Dictionary<string, string>
+                                        {
+                                            [baseImageTag] = $"{baseImageRepo}@{sourceBaseImageDigest}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    },
+                    new RepoData
+                    {
+                        Repo = crossRepo,
+                        Images =
+                        [
+                            new ImageData
+                            {
+                                Platforms =
+                                [
+                                    new PlatformData
+                                    {
+                                        Dockerfile = crossDockerfilePath,
+                                        Architecture = "amd64",
+                                        OsType = "Linux",
+                                        OsVersion = "azurelinux3.0",
+                                        Digest = $"{crossRepoQualified}@{sourceCrossDigest}",
+                                        BaseImageDigest = $"{crossdepsLlvmRepoQualified}@{sourceCrossdepsLlvmDigest}",
+                                        Created = createdDate.ToUniversalTime(),
+                                        SimpleTags = [tag],
+                                        CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{currentCommitSha}/{crossDockerfilePath}",
+                                        // This is the key: FromImages includes both intermediate and final stage images
+                                        FromImages = new Dictionary<string, string>
+                                        {
+                                            [$"{crossdepsBuilderRepoQualified}:{tag}"] = $"{crossdepsBuilderRepoQualified}@{sourceCrossdepsBuilderDigest}",
+                                            [$"{crossdepsLlvmRepoQualified}:{tag}"] = $"{crossdepsLlvmRepoQualified}@{sourceCrossdepsLlvmDigest}"
+                                        }
+                                    }
+                                ]
+                            }
+                        ]
+                    }
+                ]
+            };
+
+            string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
+            File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
+
+            // Execute build
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            // Verify that the crossdeps-builder image was rebuilt (cache miss due to digest change)
+            dockerServiceMock.Verify(o => o.BuildImage(
+                It.Is<string>(path => path.Contains("crossdeps-builder")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<IDictionary<string, string?>>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>()), Times.Once);
+
+            // Verify that the crossdeps-llvm image was cached (no change in base image or Dockerfile)
+            dockerServiceMock.Verify(o => o.BuildImage(
+                It.Is<string>(path => path.Contains("crossdeps-llvm")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<IDictionary<string, string?>>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>()), Times.Never);
+
+            // Verify that the cross image was rebuilt (cache miss due to crossdeps-builder change)
+            // This is the critical assertion - the cross image should NOT be cached
+            dockerServiceMock.Verify(o => o.BuildImage(
+                It.Is<string>(path => path.Contains("cross")),
+                It.IsAny<string>(),
+                It.IsAny<string>(),
+                It.IsAny<IEnumerable<string>>(),
+                It.IsAny<IDictionary<string, string?>>(),
+                It.IsAny<bool>(),
+                It.IsAny<bool>()), Times.Once);
+        }
+
         private static void VerifyImportImage(Mock<ICopyImageService> copyImageServiceMock, BuildCommand command,
             string[] destTagNames, string srcTagName, string destRegistryName, string srcRegistryName)
         {

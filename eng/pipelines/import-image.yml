@@ -7,7 +7,11 @@ pr: none
 
 parameters:
 - name: imageName
-  displayName: Image name to be imported (for Docker Hub, use <repo>:<tag>; for others, use <registry>/<repo>:<tag>)
+  displayName: >-
+    Name and tag of the image to be imported.
+    If the image is from Docker Hub, use <repo>:<tag>.
+    If the image is from an official Docker Hub registry, make sure to include the library/ prefix.
+    If the image is from another registry, use <registry>/<repo>:<tag>.
   type: string
 - name: isDockerHubImage
   displayName: Is the image from Docker Hub?

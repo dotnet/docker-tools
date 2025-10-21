@@ -20,13 +20,13 @@ parameters:
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
-# Uses DockerHub registry creds to avoid rate limiting
-- template: /eng/common/templates/variables/dotnet/secrets.yml@self
 - ${{ if eq(parameters.isDockerHubImage, 'true') }}:
+  # Uses DockerHub registry credentials to avoid rate limiting
+  - group: Dotnet-Docker-Secrets-Low
   - name: normalizedImageName
     value: ${{ format('docker.io/{0}', parameters.imageName) }}
   - name: extraImportOptions
-    value: --username $(dotnetDockerHubBot.userName) --password $(BotAccount-dotnet-dockerhub-bot-PAT)
+    value: --username $(dotnet-dockerhub-bot-username) --password $(dotnet-dockerhub-bot-pat-low)
 - ${{ else }}:
   - name: normalizedImageName
     value: ${{ parameters.imageName }}

@@ -35,6 +35,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
         [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
         public string? BaseImageDigest { get; set; }
 
+        [JsonProperty(NullValueHandling = NullValueHandling.Ignore)]
+        public Dictionary<string, string>? FromImages { get; set; }
+
         [JsonProperty(Required = Required.Always)]
         public string OsType { get; set; } = string.Empty;
 

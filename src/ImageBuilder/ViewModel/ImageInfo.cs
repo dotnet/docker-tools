@@ -54,7 +54,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 .Select(platform => PlatformInfo.Create(platform, fullRepoModelName, repoName, variableHelper, baseDirectory))
                 .ToArray();
 
-            string? productVersion = variableHelper.SubstituteValues(model.ProductVersion);
+            string? productVersion = model.ProductVersion;
+            if (productVersion is not null)
+            {
+                productVersion = variableHelper.SubstituteValues(productVersion);
+            }
 
             IEnumerable<Platform> filteredPlatformModels = manifestFilter.FilterPlatforms(model.Platforms, productVersion);
             IEnumerable<PlatformInfo> filteredPlatforms = allPlatforms

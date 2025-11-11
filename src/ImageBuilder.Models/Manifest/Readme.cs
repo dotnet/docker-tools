@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 public class Readme
 {
     [Description(
@@ -32,4 +31,3 @@ public class Readme
         TemplatePath = templatePath;
     }
 }
-#nullable disable

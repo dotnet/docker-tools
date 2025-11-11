@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();
 
         public string BaseOsVersion { get; private set; }
-        public IDictionary<string, string?> BuildArgs { get; private set; } = ImmutableDictionary<string, string?>.Empty;
+        public IDictionary<string, string> BuildArgs { get; private set; } = ImmutableDictionary<string, string>.Empty;
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
         public string DockerfilePathRelativeToManifest { get; private set; }
@@ -103,7 +103,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                         Name = group.Name,
                         Type = group.Type,
                         Dependencies = group.Dependencies
-                            .Select(dependency => VariableHelper.SubstituteValues(dependency))
+                            .Select(dependency => VariableHelper.SubstituteValues(dependency)!)
                             .ToArray()
                     })
                 .ToDictionary(info => info.Name)

@@ -64,9 +64,9 @@ try {
         # On Linux, ImageBuilder is run within a container.
         $imageBuilderImageName = "microsoft-dotnet-imagebuilder-withrepo"
         if ($ReuseImageBuilderImage -ne $True) {
-            & ./eng/common/Get-ImageBuilder.ps1
+            & ./eng/docker-tools/Get-ImageBuilder.ps1
             Exec ("docker build -t $imageBuilderImageName --build-arg " `
-                + "IMAGE=${imageNames.imageBuilderName} -f eng/common/Dockerfile.WithRepo .")
+                + "IMAGE=${imageNames.imageBuilderName} -f eng/docker-tools/Dockerfile.WithRepo .")
         }
 
         $imageBuilderCmd = "docker run --name $imageBuilderContainerName -v /var/run/docker.sock:/var/run/docker.sock $imageBuilderImageName"
@@ -78,7 +78,7 @@ try {
         $imageBuilderFolder = ".Microsoft.DotNet.ImageBuilder"
         $imageBuilderCmd = [System.IO.Path]::Combine($imageBuilderFolder, "Microsoft.DotNet.ImageBuilder.exe")
         if (-not (Test-Path -Path "$imageBuilderCmd" -PathType Leaf)) {
-            & ./eng/common/Get-ImageBuilder.ps1
+            & ./eng/docker-tools/Get-ImageBuilder.ps1
             Exec "docker create --name $imageBuilderContainerName ${imageNames.imageBuilderName}"
             $containerCreated = $true
             if (Test-Path -Path $imageBuilderFolder)

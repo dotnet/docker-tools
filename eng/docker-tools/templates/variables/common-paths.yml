@@ -1,5 +1,5 @@
 variables:
-  engCommonRelativePath: eng/common
+  engCommonRelativePath: eng/docker-tools
   engCommonPath: $(Build.Repository.LocalPath)/$(engCommonRelativePath)
   engPath: $(Build.Repository.LocalPath)/eng
   testScriptPath: ""

@@ -7,7 +7,7 @@ parameters:
   sourceBuildPipelineRunId: ""
 
 steps:
-- template: /eng/common/templates/steps/init-docker-linux.yml@self
+- template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
   parameters:
     setupImageBuilder: false
     setupTestRunner: true
@@ -44,7 +44,7 @@ steps:
   displayName: Start Test Runner Container
   condition: and(succeeded(), ${{ parameters.condition }})
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
-  - template: /eng/common/templates/steps/run-pwsh-with-auth.yml@self
+  - template: /eng/docker-tools/templates/steps/run-pwsh-with-auth.yml@self
     parameters:
       displayName: Docker login
       serviceConnection: ${{ parameters.publishConfig.testServiceConnection.name }}
@@ -55,13 +55,13 @@ steps:
         -File $(engCommonRelativePath)/Invoke-WithRetry.ps1
         "az login $azLoginArgs; az acr login -n ${{ parameters.publishConfig.buildAcr.server }}"
   - ${{ if eq(parameters.preBuildValidation, 'false') }}:
-    - template: /eng/common/templates/steps/download-build-artifact.yml@self
+    - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self
       parameters:
         targetPath: $(Build.ArtifactStagingDirectory)
         artifactName: image-info
         condition: ${{ parameters.condition }}
         pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-- template: /eng/common/templates/steps/parse-test-arg-arrays.yml@self
+- template: /eng/docker-tools/templates/steps/parse-test-arg-arrays.yml@self
 - powershell: >
     $(test.init);
     docker exec

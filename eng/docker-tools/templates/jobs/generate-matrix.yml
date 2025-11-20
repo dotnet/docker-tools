@@ -16,18 +16,18 @@ jobs:
   pool: ${{ parameters.pool }}
   steps:
   - ${{ parameters.commonInitStepsForMatrixAndBuild }}
-  - template: /eng/common/templates/steps/retain-build.yml@self
-  - template: /eng/common/templates/steps/init-docker-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/retain-build.yml@self
+  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
   - ${{ parameters.customInitSteps }}
-  - template: /eng/common/templates/steps/validate-branch.yml@self
+  - template: /eng/docker-tools/templates/steps/validate-branch.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
-  - template: /eng/common/templates/steps/set-image-info-path-var.yml
+  - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml
     parameters:
       publicSourceBranch: $(publicSourceBranch)
   - ${{ if eq(parameters.isTestStage, true) }}:
-    - template: /eng/common/templates/steps/download-build-artifact.yml@self
+    - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self
       parameters:
         targetPath: $(Build.ArtifactStagingDirectory)
         artifactName: image-info
@@ -59,7 +59,7 @@ jobs:
       $(commonMatrixAndBuildOptions)
       $(additionalGenerateBuildMatrixOptions)"
     displayName: Set GenerateBuildMatrix Command
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       name: matrix
       displayName: Generate ${{ parameters.matrixType }} Matrix

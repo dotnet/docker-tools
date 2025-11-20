@@ -66,7 +66,7 @@ stages:
               contains(variables['stages'], 'build'),
               contains(variables['stages'], 'test'))))))"
   jobs:
-  - template: /eng/common/templates/jobs/publish.yml@self
+  - template: /eng/docker-tools/templates/jobs/publish.yml@self
     parameters:
       pool: ${{ parameters.pool }}
       internalProjectName: ${{ parameters.internalProjectName }}

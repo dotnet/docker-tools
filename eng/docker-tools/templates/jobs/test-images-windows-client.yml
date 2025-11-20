@@ -17,7 +17,7 @@ jobs:
     matrix: $[ ${{ parameters.matrix }} ]
   timeoutInMinutes: ${{ parameters.testJobTimeout }}
   steps:
-  - template: /eng/common/templates/steps/test-images-windows-client.yml@self
+  - template: /eng/docker-tools/templates/steps/test-images-windows-client.yml@self
     parameters:
       internalProjectName: ${{ parameters.internalProjectName }}
       publishConfig: ${{ parameters.publishConfig }}

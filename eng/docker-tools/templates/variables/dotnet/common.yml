@@ -1,5 +1,5 @@
 variables:
-- template: /eng/common/templates/variables/common.yml@self
+- template: /eng/docker-tools/templates/variables/common.yml@self
 
 - name: publicProjectName
   value: public
@@ -7,7 +7,7 @@ variables:
   value: internal
 
 # $(dockerHubRegistryCreds) is needed by the copy-base-images step in
-# eng/common/templates/stages/build-and-test.yml#L73-L78, even during a dry-run.
+# eng/docker-tools/templates/stages/build-and-test.yml#L73-L78, even during a dry-run.
 # This is a placeholder that gets replaced when referencing the secrets.yml
 # variable template.
 - name: dockerHubRegistryCreds

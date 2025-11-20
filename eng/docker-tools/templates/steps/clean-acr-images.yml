@@ -7,7 +7,7 @@ parameters:
   internalProjectName: null
   publishConfig: null
 steps:
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       # Options are documented in CleanAcrImagesOptions.cs
       ${{ if eq(parameters.action, 'delete') }}:

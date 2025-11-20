@@ -32,7 +32,7 @@ if ($TestCategories.Contains("pre-build")) {
 
 if ($TestCategories.Contains("functional")) {
     try {
-        & ../eng/common/Install-DotNetSdk.ps1 $dotnetInstallDir
+        & ../eng/docker-tools/Install-DotNetSdk.ps1 $dotnetInstallDir
 
         $cmd = "$DotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
 

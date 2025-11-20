@@ -14,7 +14,7 @@ parameters:
   overrideImageInfoCommit: false
 
 stages:
-- template: /eng/common/templates/stages/publish.yml@self
+- template: /eng/docker-tools/templates/stages/publish.yml@self
   parameters:
     internalProjectName: ${{ parameters.internalProjectName }}
     publicProjectName: ${{ parameters.publicProjectName }}

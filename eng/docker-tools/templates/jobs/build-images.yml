@@ -30,11 +30,11 @@ jobs:
     imageInfoContainerDir: $(artifactsPath)/imageInfo
   steps:
   - ${{ parameters.commonInitStepsForMatrixAndBuild }}
-  - template: /eng/common/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
+  - template: /eng/docker-tools/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
     parameters:
       cleanupDocker: true
   - ${{ parameters.customInitSteps }}
-  - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
+  - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self
     parameters:
       publicSourceBranch: $(publicSourceBranch)
   - powershell: echo "##vso[task.setvariable variable=imageBuilderBuildArgs]"
@@ -62,7 +62,7 @@ jobs:
       echo "imageBuilderBuildArgs: $imageBuilderBuildArgs"
       echo "##vso[task.setvariable variable=imageBuilderBuildArgs]$imageBuilderBuildArgs"
     displayName: Set Image Builder Build Args
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       name: BuildImages
       displayName: Build Images
@@ -93,7 +93,7 @@ jobs:
         --acr-resource-group '${{ parameters.publishConfig.buildAcr.resourceGroup }}'
         $(manifestVariables)
         $(imageBuilderBuildArgs)
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(imageInfoHostDir)
       artifactName: $(legName)-image-info-$(System.JobAttempt)
@@ -117,11 +117,11 @@ jobs:
       displayName: Generate SBOMs
       condition: and(succeeded(), ne(variables['BuildImages.builtImages'], ''))
   - ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:
-    - template: /eng/common/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
+    - template: /eng/docker-tools/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
       parameters:
         condition: ne(variables.testScriptPath, '')
   - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.dockerClientOS, 'linux')) }}:
-    - template: /eng/common/templates/steps/publish-artifact.yml@self
+    - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
       parameters:
         path: $(sbomDirectory)
         artifactName: $(legName)-sboms

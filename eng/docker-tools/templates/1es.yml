@@ -48,7 +48,7 @@ resources:
     ref: refs/tags/release
 
 extends:
-  template: /eng/common/templates/task-prefix-decorator.yml@self
+  template: /eng/docker-tools/templates/task-prefix-decorator.yml@self
   parameters:
     baseTemplate: v1/1ES.${{ iif(contains(variables['Build.DefinitionName'], '-official'), 'Official', 'Unofficial') }}.PipelineTemplate.yml@1ESPipelineTemplates
     templateParameters:

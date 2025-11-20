@@ -52,7 +52,7 @@ stages:
   dependsOn: []
   jobs:
 
-  - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
+  - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self
     parameters:
       name: PreBuildValidation
       pool: ${{ parameters.linuxAmd64Pool }}
@@ -72,7 +72,7 @@ stages:
           echo "##vso[task.setvariable variable=architecture]"
         displayName: Initialize Test Variables
 
-  - template: /eng/common/templates/jobs/copy-base-images-staging.yml@self
+  - template: /eng/docker-tools/templates/jobs/copy-base-images-staging.yml@self
     parameters:
       name: CopyBaseImages
       publishConfig: ${{ parameters.publishConfig }}
@@ -80,7 +80,7 @@ stages:
       additionalOptions: "--manifest '$(manifest)' $(imageBuilder.pathArgs) $(manifestVariables)"
       customInitSteps: ${{ parameters.customCopyBaseImagesInitSteps }}
 
-  - template: /eng/common/templates/jobs/generate-matrix.yml@self
+  - template: /eng/docker-tools/templates/jobs/generate-matrix.yml@self
     parameters:
       matrixType: ${{ parameters.buildMatrixType }}
       name: GenerateBuildMatrix
@@ -91,12 +91,12 @@ stages:
       publishConfig: ${{ parameters.publishConfig }}
       customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: Linux_amd64
       pool: ${{ parameters.linuxAmd64Pool }}
@@ -104,7 +104,7 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -114,7 +114,7 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: Linux_arm64
       pool: ${{ parameters.linuxArm64Pool }}
@@ -122,7 +122,7 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -132,7 +132,7 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: Linux_arm32
       pool: ${{ parameters.linuxArm32Pool }}
@@ -140,7 +140,7 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -150,7 +150,7 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: Windows1809_amd64
       pool: ${{ parameters.windows1809Pool }}
@@ -158,7 +158,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -168,7 +168,7 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: Windows2022_amd64
       pool: ${{ parameters.windows2022Pool }}
@@ -176,7 +176,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -186,7 +186,7 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: Windows2025_amd64
       pool: ${{ parameters.windows2025Pool }}
@@ -194,7 +194,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -205,7 +205,7 @@ stages:
       publicProjectName: ${{ parameters.publicProjectName }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
-  - template: /eng/common/templates/jobs/build-images.yml@self
+  - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
       name: WindowsLtsc2016_amd64
       pool: ${{ parameters.windows2016Pool }}
@@ -213,7 +213,7 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       commonInitStepsForMatrixAndBuild:
-      - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+      - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
@@ -231,7 +231,7 @@ stages:
   dependsOn: Build
   condition: and(succeeded(), contains(variables['stages'], 'build'))
   jobs:
-  - template: /eng/common/templates/jobs/post-build.yml@self
+  - template: /eng/docker-tools/templates/jobs/post-build.yml@self
     parameters:
       pool: ${{ parameters.linuxAmd64Pool }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -255,7 +255,7 @@ stages:
               contains(variables['stages'], 'build')),
             not(contains(variables['stages'], 'build')))))"
     jobs:
-    - template: /eng/common/templates/jobs/generate-matrix.yml@self
+    - template: /eng/docker-tools/templates/jobs/generate-matrix.yml@self
       parameters:
         matrixType: ${{ parameters.testMatrixType }}
         name: GenerateTestMatrix
@@ -267,11 +267,11 @@ stages:
         customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         commonInitStepsForMatrixAndBuild:
-        - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+        - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
           parameters:
             versionsRepoRef: ${{ parameters.versionsRepoRef }}
             publishConfig: ${{ parameters.publishConfig }}
-    - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self
       parameters:
         name: Linux_amd64
         pool: ${{ parameters.linuxAmd64Pool }}
@@ -281,7 +281,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         customInitSteps: ${{ parameters.customTestInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self
       parameters:
         name: Linux_arm64
         pool: ${{ parameters.linuxArm64Pool }}
@@ -291,7 +291,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         customInitSteps: ${{ parameters.customTestInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    - template: /eng/common/templates/jobs/test-images-linux-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self
       parameters:
         name: Linux_arm32
         pool: ${{ parameters.linuxArm32Pool }}
@@ -301,7 +301,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         customInitSteps: ${{ parameters.customTestInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    - template: /eng/common/templates/jobs/test-images-windows-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-windows-client.yml@self
       parameters:
         name: Windows1809_amd64
         pool: ${{ parameters.windows1809Pool }}
@@ -311,7 +311,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         customInitSteps: ${{ parameters.customTestInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    - template: /eng/common/templates/jobs/test-images-windows-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-windows-client.yml@self
       parameters:
         name: Windows2022_amd64
         pool: ${{ parameters.windows2022Pool }}
@@ -321,7 +321,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         customInitSteps: ${{ parameters.customTestInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    - template: /eng/common/templates/jobs/test-images-windows-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-windows-client.yml@self
       parameters:
         name: Windows2025_amd64
         pool: ${{ parameters.windows2025Pool }}
@@ -331,7 +331,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         customInitSteps: ${{ parameters.customTestInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    - template: /eng/common/templates/jobs/test-images-windows-client.yml@self
+    - template: /eng/docker-tools/templates/jobs/test-images-windows-client.yml@self
       parameters:
         name: WindowsLtsc2016_amd64
         pool: ${{ parameters.windows2016Pool }}

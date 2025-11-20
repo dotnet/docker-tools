@@ -16,7 +16,7 @@ variables:
   parameters:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 # Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
-- template: /eng/common/templates/variables/dotnet/secrets-unofficial.yml@self
+- template: /eng/docker-tools/templates/variables/dotnet/secrets-unofficial.yml@self
 - name: "publishEolAnnotations"
   value: false
   readonly: true
@@ -45,12 +45,12 @@ resources:
     ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
 
 extends:
-  template: /eng/common/templates/1es.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
     reposToExcludeFromScanning:
     - VersionsRepo
     stages:
-    - template: /eng/common/templates/stages/dotnet/publish-config-nonprod.yml@self
+    - template: /eng/docker-tools/templates/stages/dotnet/publish-config-nonprod.yml@self
       parameters:
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self

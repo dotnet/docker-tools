@@ -40,7 +40,7 @@ parameters:
   versionsRepoRef: null
 
 stages:
-- template: /eng/common/templates/stages/build-and-test.yml@self
+- template: /eng/docker-tools/templates/stages/build-and-test.yml@self
   parameters:
     noCache: ${{ parameters.noCache }}
     publishConfig: ${{ parameters.publishConfig }}

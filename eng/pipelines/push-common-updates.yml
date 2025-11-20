@@ -5,13 +5,13 @@ trigger:
     - main
   paths:
     include:
-    - eng/common/*
+    - eng/docker-tools/*
 pr: none
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml
 # Uses GitHub token to submit pull requests
-- template: /eng/common/templates/variables/dotnet/secrets.yml@self
+- template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
 
 jobs:
 - job: Build

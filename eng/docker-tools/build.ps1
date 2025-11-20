@@ -69,7 +69,7 @@ try {
         $args += ' --manifest "{0}"' -f $Manifest
     }
 
-    ./eng/common/Invoke-ImageBuilder.ps1 "build $args"
+    ./eng/docker-tools/Invoke-ImageBuilder.ps1 "build $args"
 }
 finally {
     popd

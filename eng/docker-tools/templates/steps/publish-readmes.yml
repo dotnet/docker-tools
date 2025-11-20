@@ -22,7 +22,7 @@ steps:
   name: PublishReadmes
   displayName: Publish Readmes
   condition: ${{ parameters.condition }}
-- template: /eng/common/templates/steps/wait-for-mcr-doc-ingestion.yml@self
+- template: /eng/docker-tools/templates/steps/wait-for-mcr-doc-ingestion.yml@self
   parameters:
     commitDigest: $(PublishReadmes.readmeCommitDigest)
     condition: and(${{ parameters.condition }}, ne(variables['PublishReadmes.readmeCommitDigest'], ''))

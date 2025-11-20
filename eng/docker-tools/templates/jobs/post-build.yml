@@ -13,8 +13,8 @@ jobs:
     imageInfosOutputSubDir: "/output"
     sbomOutputDir: "$(Build.ArtifactStagingDirectory)/sbom"
   steps:
-  - template: /eng/common/templates/steps/init-docker-linux.yml@self
-  - template: /eng/common/templates/steps/download-build-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self
     parameters:
       targetPath: $(Build.ArtifactStagingDirectory)
       # This can fail if no build jobs ran to produce any artifacts
@@ -69,7 +69,7 @@ jobs:
         $(manifestVariables)
     name: MergeImageInfoFiles
     displayName: Merge Image Info Files
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       condition: and(succeeded(), ne(variables['MergeImageInfoFiles.noImageInfos'], 'true'))
       path: $(sbomOutputDir)
@@ -77,7 +77,7 @@ jobs:
       displayName: Publish SBOM Artifact
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       condition: and(succeeded(), ne(variables['MergeImageInfoFiles.noImageInfos'], 'true'))
       path: $(imageInfosHostDir)$(imageInfosOutputSubDir)

@@ -44,7 +44,7 @@ resources:
     ref: refs/tags/release
 
 extends:
-  template: /eng/common/templates/task-prefix-decorator.yml@self
+  template: /eng/docker-tools/templates/task-prefix-decorator.yml@self
   parameters:
     # Use a unique task prefix for unofficial pipelines
     taskPrefix: "🟦"
@@ -72,7 +72,7 @@ extends:
           enabled: true
     stages:
     - ${{ if gt(length(parameters.serviceConnections), 0) }}:
-      - template: /eng/common/templates/stages/setup-service-connections.yml@self
+      - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
         parameters:
           pool: ${{ parameters.pool }}
           serviceConnections: ${{ parameters.serviceConnections }}

@@ -14,7 +14,7 @@ variables:
   value: ""
 
 extends:
-  template: /eng/common/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
     serviceConnections:
     - name: $(publish.serviceConnectionName)
@@ -27,7 +27,7 @@ extends:
       - job: AnnotateImages
         displayName: Annotate EOL Images
         steps:
-        - template: /eng/common/templates/steps/init-docker-linux.yml@self
-        - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
+        - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+        - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
           parameters:
             dataFile: /repo/${{ parameters.dataFile }}

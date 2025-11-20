@@ -1,7 +1,7 @@
-# Adapted from https://github.com/dotnet/arcade/blob/main/eng/common/retain-build.ps1
+# Adapted from https://github.com/dotnet/arcade/blob/main/eng/docker-tools/retain-build.ps1
 Param(
     [Parameter(Mandatory = $true)][int] $BuildId,
-    [Parameter(Mandatory = $true)][string] $AzdoOrgUri, 
+    [Parameter(Mandatory = $true)][string] $AzdoOrgUri,
     [Parameter(Mandatory = $true)][string] $AzdoProject,
     [Parameter(Mandatory = $true)][string] $Token
 )

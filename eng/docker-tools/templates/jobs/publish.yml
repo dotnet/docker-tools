@@ -45,14 +45,14 @@ jobs:
   - ${{ parameters.customPublishVariables }}
 
   steps:
-  - template: /eng/common/templates/steps/init-matrix-build-publish.yml@self
+  - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
-  - template: /eng/common/templates/steps/retain-build.yml@self
+  - template: /eng/docker-tools/templates/steps/retain-build.yml@self
 
-  - template: /eng/common/templates/steps/init-docker-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
 
   - pwsh: |
       $azdoOrgName = Split-Path -Leaf $Env:SYSTEM_COLLECTIONURI
@@ -63,11 +63,11 @@ jobs:
 
   - ${{ parameters.customInitSteps }}
 
-  - template: /eng/common/templates/steps/validate-branch.yml@self
+  - template: /eng/docker-tools/templates/steps/validate-branch.yml@self
     parameters:
       internalProjectName: ${{ parameters.internalProjectName }}
 
-  - template: /eng/common/templates/steps/download-build-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self
     parameters:
       targetPath: $(imageInfoHostDir)
       artifactName: image-info
@@ -76,11 +76,11 @@ jobs:
       # This can fail in scenarios where no build jobs have run to produce any artifacts
       continueOnError: true
 
-  - template: /eng/common/templates/steps/set-image-info-path-var.yml@self
+  - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self
     parameters:
       publicSourceBranch: $(publicSourceBranch)
 
-  - template: /eng/common/templates/steps/set-dry-run.yml@self
+  - template: /eng/docker-tools/templates/steps/set-dry-run.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
 
@@ -92,7 +92,7 @@ jobs:
       '$(imageInfoContainerDir)/image-info.json'
     displayName: Trim Unchanged Images
 
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Copy Images
       serviceConnections:
@@ -115,7 +115,7 @@ jobs:
         $(imageBuilder.pathArgs)
         $(imageBuilder.commonCmdArgs)
 
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Publish Manifest
       serviceConnections:
@@ -135,7 +135,7 @@ jobs:
         $(imageBuilder.pathArgs)
         $(imageBuilder.commonCmdArgs)
 
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(imageInfoHostDir)
       artifactName: image-info-final-$(System.JobAttempt)
@@ -143,7 +143,7 @@ jobs:
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
 
-  - template: /eng/common/templates/steps/wait-for-mcr-image-ingestion.yml@self
+  - template: /eng/docker-tools/templates/steps/wait-for-mcr-image-ingestion.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
       imageInfoPath: '$(imageinfoContainerDir)/image-info.json'
@@ -151,7 +151,7 @@ jobs:
       dryRunArg: $(dryRunArg)
       condition: succeeded()
 
-  - template: /eng/common/templates/steps/publish-readmes.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-readmes.yml@self
     parameters:
       dryRunArg: $(dryRunArg)
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
@@ -183,7 +183,7 @@ jobs:
     condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
     displayName: Merge Image Info
 
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Ingest Kusto Image Info
       serviceConnections:
@@ -205,7 +205,7 @@ jobs:
         $(dryRunArg)
         $(imageBuilder.commonCmdArgs)
 
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Generate EOL Annotation Data
       serviceConnections:
@@ -225,7 +225,7 @@ jobs:
         $(generateEolAnnotationDataExtraOptions)
         $(dryRunArg)
 
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(Build.ArtifactStagingDirectory)/eol-annotation-data
       artifactName: eol-annotation-data-$(System.JobAttempt)
@@ -234,7 +234,7 @@ jobs:
       publicProjectName: public
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
 
-  - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
+  - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
     parameters:
       acr: ${{ parameters.publishConfig.publishAcr }}
       dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data.json
@@ -255,10 +255,10 @@ jobs:
     displayName: Publish Image Info
 
   # Task displayNames names are hardcoded to reference the task prefix used by 1ES official
-  # pipelines in eng/common/templates/1es-official.yml.
+  # pipelines in eng/docker-tools/templates/1es-official.yml.
   #
   # These will fail if they are dependend on by an unofficial pipeline since they use a unique task
-  # prefix compared to official pipelines (see eng/common/templates/1es-unofficial.yml). This is
+  # prefix compared to official pipelines (see eng/docker-tools/templates/1es-unofficial.yml). This is
   # acceptable because unofficial pipelines should not publish images.
   #
   # https://github.com/dotnet/docker-tools/issues/1698 tracks making this command no longer depend
@@ -303,7 +303,7 @@ jobs:
     condition: succeeded()
     displayName: Write Source Build ID to File
 
-  - template: /eng/common/templates/steps/publish-artifact.yml@self
+  - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:
       path: $(sourceBuildIdOutputDir)
       artifactName: source-build-id

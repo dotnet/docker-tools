@@ -1,7 +1,7 @@
 # Common variables for building/testing/publishing in the .NET team's pipelines
 
 variables:
-- template: /eng/common/templates/variables/dotnet/common.yml@self
+- template: /eng/docker-tools/templates/variables/dotnet/common.yml@self
 
 - name: commonVersionsImageInfoPath
   value: build-info/docker
@@ -28,7 +28,7 @@ variables:
 - name: gitHubNotificationsRepoInfo.repo
   value: dotnet-docker-internal
 # $(gitHubNotificationsRepoInfo.authArgs) is needed by the "Post Publish
-# Notification" step in eng/common/templates/jobs/publish.yml#L271, even during
+# Notification" step in eng/docker-tools/templates/jobs/publish.yml#L271, even during
 # a dry-run. This value is a placeholder that gets replaced when referencing
 # the secrets.yml variable template.
 - name: gitHubNotificationsRepoInfo.authArgs

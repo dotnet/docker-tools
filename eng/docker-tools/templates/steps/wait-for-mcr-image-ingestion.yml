@@ -16,7 +16,7 @@ parameters:
   default: "true"
 
 steps:
-- template: /eng/common/templates/steps/run-imagebuilder.yml@self
+- template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
   parameters:
     displayName: Wait for Image Ingestion
     condition: and(${{ parameters.condition }}, eq(variables['waitForIngestionEnabled'], 'true'))

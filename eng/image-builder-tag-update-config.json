@@ -2,7 +2,7 @@
   "commitMessage": "Update Image Builder tag reference",
   "pullRequestTitle": "Update Image Builder tag reference",
   "pullRequestDescription": "Updates the common pipeline variables to reference an updated tag of Image Builder.",
-  "sourcePath": "eng/common/templates/variables/docker-images.yml",
+  "sourcePath": "eng/docker-tools/templates/variables/docker-images.yml",
   "workingBranchSuffix": "-image-builder-tag",
   "repos": [
     {

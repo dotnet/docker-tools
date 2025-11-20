@@ -1,6 +1,6 @@
 variables:
-- template: /eng/common/templates/variables/docker-images.yml@self
-- template: /eng/common/templates/variables/common-paths.yml@self
+- template: /eng/docker-tools/templates/variables/docker-images.yml@self
+- template: /eng/docker-tools/templates/variables/common-paths.yml@self
 
 - name: publishReadme
   value: true

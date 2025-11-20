@@ -35,7 +35,7 @@ parameters:
   versionsRepoRef: ""
 
 stages:
-- template: /eng/common/templates/stages/dotnet/build-and-test.yml@self
+- template: /eng/docker-tools/templates/stages/dotnet/build-and-test.yml@self
   parameters:
     linuxAmd64Pool: ${{ parameters.linuxAmd64Pool }}
     # Pre-build
@@ -63,7 +63,7 @@ stages:
     publicProjectName: ${{ parameters.publicProjectName }}
     versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
-- template: /eng/common/templates/stages/dotnet/publish.yml@self
+- template: /eng/docker-tools/templates/stages/dotnet/publish.yml@self
   parameters:
     pool: ${{ parameters.linuxAmd64Pool }}
     customPublishInitSteps: ${{ parameters.customPublishInitSteps }}

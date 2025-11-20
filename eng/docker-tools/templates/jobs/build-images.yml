@@ -105,14 +105,14 @@ jobs:
         $images = "$(BuildImages.builtImages)"
         if (-not $images) { return 0 }
         $syftImageName = "${{ parameters.publishConfig.publicMirrorAcr.server }}/$(imageNames.syft)"
-        & $(engCommonPath)/Pull-Image.ps1 $syftImageName
+        & $(engDockerToolsPath)/Pull-Image.ps1 $syftImageName
         $images -Split ',' | ForEach-Object {
           echo "Generating SBOM for $_";
           $targetImageName = "$_";
           $formattedImageName = $targetImageName.Replace('${{ parameters.publishConfig.buildAcr.server }}/${{ parameters.publishConfig.buildAcr.repoPrefix }}', "").Replace('/', '_').Replace(':', '_');
           $sbomChildDir = "$(sbomDirectory)/$formattedImageName";
           New-Item -Type Directory -Path $sbomChildDir > $null;
-          docker build --output=$sbomChildDir -f $(engCommonPath)/Dockerfile.syft --build-arg SYFT_IMAGE_NAME=$syftImageName --build-arg TARGET_IMAGE_NAME=$targetImageName -t syft-sbom $(engCommonPath);
+          docker build --output=$sbomChildDir -f $(engDockerToolsPath)/Dockerfile.syft --build-arg SYFT_IMAGE_NAME=$syftImageName --build-arg TARGET_IMAGE_NAME=$targetImageName -t syft-sbom $(engDockerToolsPath);
         }
       displayName: Generate SBOMs
       condition: and(succeeded(), ne(variables['BuildImages.builtImages'], ''))

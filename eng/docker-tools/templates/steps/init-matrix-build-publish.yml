@@ -39,7 +39,7 @@ steps:
         $buildRepoName = "$(Build.Repository.Name)"
       }
 
-      $engCommonPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engCommonRelativePath)"
+      $engDockerToolsPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engDockerToolsRelativePath)"
 
       $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
       $manifest = "$buildRepoName/$(manifest)"
@@ -50,7 +50,7 @@ steps:
       }
 
       echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
-      echo "##vso[task.setvariable variable=engCommonPath]$engCommonPath"
+      echo "##vso[task.setvariable variable=engDockerToolsPath]$engDockerToolsPath"
       echo "##vso[task.setvariable variable=manifest]$manifest"
       echo "##vso[task.setvariable variable=engPath]$engPath"
       echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"

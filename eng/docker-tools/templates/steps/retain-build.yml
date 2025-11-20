@@ -1,6 +1,6 @@
 steps:
 - powershell: >
-    $(engCommonPath)/Retain-Build.ps1
+    $(engDockerToolsPath)/Retain-Build.ps1
     -BuildId $(Build.BuildId)
     -AzdoOrgUri '$(System.CollectionUri)'
     -AzdoProject '$(System.TeamProject)'

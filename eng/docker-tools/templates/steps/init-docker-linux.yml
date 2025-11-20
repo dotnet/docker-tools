@@ -25,7 +25,7 @@ steps:
   ################################################################################
 - ${{ if eq(parameters.setupImageBuilder, 'true') }}:
 
-  - powershell: $(engCommonPath)/Pull-Image.ps1 $(imageNames.imageBuilder)
+  - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.imageBuilder)
     displayName: Pull Image Builder
     condition: and(succeeded(), ${{ parameters.condition }})
 
@@ -33,7 +33,7 @@ steps:
       docker build
       -t $(imageNames.imageBuilder.withrepo)
       --build-arg IMAGE=$(imageNames.imageBuilder)
-      -f $(engCommonPath)/Dockerfile.WithRepo .
+      -f $(engDockerToolsPath)/Dockerfile.WithRepo .
     displayName: Build Image for Image Builder
     condition: and(succeeded(), ${{ parameters.condition }})
 
@@ -78,13 +78,13 @@ steps:
   # Setup Test Runner (Optional)
   ################################################################################
 - ${{ if eq(parameters.setupTestRunner, 'true') }}:
-  - powershell: $(engCommonPath)/Pull-Image.ps1 $(imageNames.testrunner)
+  - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.testrunner)
     displayName: Pull Test Runner
     condition: and(succeeded(), ${{ parameters.condition }})
   - script: >
       docker build
       -t $(imageNames.testRunner.withrepo)
       --build-arg IMAGE=$(imageNames.testrunner)
-      -f $(engCommonPath)/Dockerfile.WithRepo .
+      -f $(engDockerToolsPath)/Dockerfile.WithRepo .
     displayName: Build Test Runner Image
     condition: and(succeeded(), ${{ parameters.condition }})

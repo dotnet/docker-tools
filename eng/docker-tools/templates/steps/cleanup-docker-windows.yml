@@ -1,11 +1,11 @@
 parameters:
   condition: true
-  
+
 steps:
   ################################################################################
   # Cleanup Docker Resources
   ################################################################################
-- powershell: $(engCommonPath)/Invoke-CleanupDocker.ps1
+- powershell: $(engDockerToolsPath)/Invoke-CleanupDocker.ps1
   displayName: Cleanup Docker Images
   condition: and(always(), ${{ parameters.condition }})
   continueOnError: true

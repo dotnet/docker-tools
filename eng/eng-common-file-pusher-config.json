@@ -3,7 +3,7 @@
   "pullRequestTitle": "Update common Docker engineering infrastructure with latest",
   "pullRequestDescription": "Updates the common Docker engineering infrastructure with latest changes from the dotnet/docker-tools repo.",
   "sourcePath": "eng/docker-tools",
-  "workingBranchSuffix": "-update-eng-common",
+  "workingBranchSuffix": "-update-docker-tools",
   "repos": [
     {
       "owner": "dotnet",

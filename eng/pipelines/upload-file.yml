@@ -16,7 +16,7 @@ variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
 
 extends:
-  template: /eng/common/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
     stages:
     - stage: UploadFile

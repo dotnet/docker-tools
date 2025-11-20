@@ -22,7 +22,7 @@ variables:
   readonly: true
 
 extends:
-  template: /eng/common/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
     serviceConnections:
     # For image removal
@@ -31,7 +31,7 @@ extends:
     - name: $(build.serviceConnectionName)
     - name: $(public-mirror.serviceConnectionName)
     stages:
-    - template: /eng/common/templates/stages/dotnet/publish-config-prod.yml@self
+    - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
         stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images.yml@self
         stagesTemplateParameters:

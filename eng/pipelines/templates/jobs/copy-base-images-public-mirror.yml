@@ -13,7 +13,7 @@ parameters:
   default: false
 
 jobs:
-- template: /eng/common/templates/jobs/copy-base-images.yml@self
+- template: /eng/docker-tools/templates/jobs/copy-base-images.yml@self
   parameters:
     name: MirrorBaseImages_${{ parameters.name }}
     pool:

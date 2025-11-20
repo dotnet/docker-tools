@@ -12,8 +12,8 @@ jobs:
     image: $(default1ESInternalPoolImage)
     os: linux
   steps:
-  - template: /eng/common/templates/steps/init-docker-linux.yml@self
-  - template: /eng/common/templates/steps/copy-base-images.yml@self
+  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
       acr:
         server: $(acr-staging.server)

@@ -55,7 +55,7 @@ stages:
         age: 15
         customArgs: $(excludedBuildToolsPrereqsImagesArgs)
     # Disabled due to https://github.com/dotnet/docker-tools/issues/797
-    # - template: ../common/templates/steps/clean-acr-images.yml
+    # - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
     #   parameters:
     #     publishConfig: ${{ parameters.publishConfig }}
     #     repo: "mirror/*"

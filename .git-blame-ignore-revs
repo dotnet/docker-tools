@@ -1,2 +1,2 @@
-# Move `eng/common` to `eng/docker-tools` (#1862)
+# Move `eng/common` to `eng/docker-tools` (https://github.com/dotnet/docker-tools/pull/1862)
 bf5be37063edf0a39cc26ee6d6efffa0765958cd

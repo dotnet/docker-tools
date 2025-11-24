@@ -1,0 +1,16 @@
+<Project>
+
+  <Import Project="Version.Details.props" />
+
+  <PropertyGroup>
+    <!-- Follow https://semver.org/spec/v2.0.0.html -->
+    <MajorVersion>0</MajorVersion>
+    <MinorVersion>1</MinorVersion>
+    <PatchVersion>0</PatchVersion>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
+
+    <!-- Arcade features -->
+    <UsingToolXliff>false</UsingToolXliff>
+  </PropertyGroup>
+
+</Project>

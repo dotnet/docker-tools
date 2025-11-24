@@ -16,14 +16,14 @@ parameters:
   default: false
 
 variables:
-- template: /eng/common/templates/variables/dotnet/common.yml@self
+- template: /eng/docker-tools/templates/variables/dotnet/common.yml@self
 # Uses DockerHub registry creds to avoid rate limiting
-- template: /eng/common/templates/variables/dotnet/secrets.yml@self
+- template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
 - name: mirrorRepoPrefix
   value: ""
 
 extends:
-  template: /eng/common/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
     serviceConnections:
     - name: $(public-mirror.serviceConnectionName)

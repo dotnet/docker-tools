@@ -15,13 +15,13 @@ parameters:
 stages:
 - stage: Execute
   dependsOn: []
-  jobs:     
+  jobs:
   - job: Clean
     variables:
       dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
-    - template: /eng/common/templates/steps/init-docker-linux.yml@self
-    - template: /eng/common/templates/steps/clean-acr-images.yml@self
+    - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+    - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
@@ -29,7 +29,7 @@ stages:
         acr: ${{ parameters.publishConfig.buildAcr }}
         action: delete
         age: 15
-    - template: /eng/common/templates/steps/clean-acr-images.yml@self
+    - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
@@ -37,7 +37,7 @@ stages:
         acr: ${{ parameters.publishConfig.publishAcr }}
         action: pruneEol
         age: 15
-    - template: /eng/common/templates/steps/clean-acr-images.yml@self
+    - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
@@ -45,7 +45,7 @@ stages:
         acr: ${{ parameters.publishConfig.publishAcr }}
         action: pruneAll
         age: 7
-    - template: /eng/common/templates/steps/clean-acr-images.yml@self
+    - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
@@ -55,7 +55,7 @@ stages:
         age: 15
         customArgs: $(excludedBuildToolsPrereqsImagesArgs)
     # Disabled due to https://github.com/dotnet/docker-tools/issues/797
-    # - template: ../common/templates/steps/clean-acr-images.yml
+    # - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
     #   parameters:
     #     publishConfig: ${{ parameters.publishConfig }}
     #     repo: "mirror/*"
@@ -67,7 +67,7 @@ stages:
     variables:
       dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
-    - template: /eng/common/templates/steps/init-docker-linux.yml@self
+    - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
     - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
       displayName: Create EOL Annotation Data Directory
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
@@ -76,7 +76,7 @@ stages:
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
       parameters:
         acr: ${{ parameters.publishConfig.publicMirrorAcr }}
-    - template: /eng/common/templates/steps/publish-artifact.yml@self
+    - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
       parameters:
         path: $(Build.ArtifactStagingDirectory)/eol-annotation-data
         artifactName: eol-annotation-data-$(System.JobAttempt)

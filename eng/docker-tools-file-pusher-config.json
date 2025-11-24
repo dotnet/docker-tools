@@ -1,0 +1,29 @@
+{
+  "commitMessage": "Update common Docker engineering infrastructure with latest",
+  "pullRequestTitle": "Update common Docker engineering infrastructure with latest",
+  "pullRequestDescription": "Updates the common Docker engineering infrastructure with latest changes from the dotnet/docker-tools repo.",
+  "sourcePath": "eng/docker-tools",
+  "workingBranchSuffix": "-update-docker-tools",
+  "repos": [
+    {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "nightly"
+    },
+    {
+      "owner": "dotnet",
+      "name": "dotnet-docker",
+      "branch": "main"
+    },
+    {
+      "owner": "dotnet",
+      "name": "dotnet-buildtools-prereqs-docker",
+      "branch": "main"
+    },
+    {
+      "owner": "microsoft",
+      "name": "dotnet-framework-docker",
+      "branch": "main"
+    }
+  ]
+}

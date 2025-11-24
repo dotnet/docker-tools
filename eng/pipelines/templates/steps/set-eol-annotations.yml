@@ -4,7 +4,7 @@ parameters:
   default: null
 
 steps:
-  - template: /eng/common/templates/steps/run-imagebuilder.yml@self
+  - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: "Generate EOL Data for all images in ${{ parameters.acr.server }}"
       serviceConnections:
@@ -20,7 +20,7 @@ steps:
         '$(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json'
         $(dryRunArg)
 
-  - template: /eng/common/templates/steps/annotate-eol-digests.yml@self
+  - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
     parameters:
       acr: ${{ parameters.acr }}
       dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data-${{ parameters.acr.server }}.json

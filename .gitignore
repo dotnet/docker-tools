@@ -24,8 +24,10 @@ msbuild.wrn
 # ImageBuilder directory
 .Microsoft.DotNet.ImageBuilder
 
-# dotnet install directory
+# .NET and tools directories
 .dotnet/
+.packages/
+.tools/
 
 # Test files
 *.trx

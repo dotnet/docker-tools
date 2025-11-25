@@ -1,7 +1,2 @@
 <Project>
-
-  <PropertyGroup>
-    <AllowEmptySignList>true</AllowEmptySignList>
-  </PropertyGroup>
-
 </Project>

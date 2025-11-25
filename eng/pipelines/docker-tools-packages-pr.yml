@@ -1,19 +1,11 @@
-variables:
-  - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-    - name: PoolProvider
-      value: NetCore-Public
-      readonly: true
-  - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-    - name: PoolProvider
-      value: NetCore1ESPool-Internal
-      readonly: true
-
 trigger: none
-
 pr:
   branches:
     include:
     - main
+
+variables:
+  - template: /eng/pipelines/templates/variables/packages-common.yml@self
 
 resources:
   containers:
@@ -24,19 +16,19 @@ stages:
 - stage: build
   displayName: Build
   jobs:
-  - template: /eng/common/templates/jobs/jobs.yml
+  - template: /eng/common/templates/jobs/jobs.yml@self
     parameters:
       enableMicrobuild: true
       enablePublishBuildArtifacts: true
       enablePublishBuildAssets: true
       enablePublishUsingPipelines: true
       enableTelemetry: true
+
       jobs:
       - job: Windows_NT
         pool:
-          name: $(PoolProvider) # This is a queue-time parameter; Public default is NetCore-Public; Internal default is NetCore1ESPool-Internal
-          demands: ImageOverride -equals windows.vs2022.amd64.open
-
+          name: $(PoolProvider)
+          demands: ImageOverride -equals $(WindowsAmd64BuildImage)
         strategy:
           matrix:
             Build_Release:
@@ -50,7 +42,6 @@ stages:
         - checkout: self
           clean: true
         steps:
-        # Use utility script to run script command dependent on agent OS.
         - script: eng\common\cibuild.cmd
             -configuration $(_BuildConfig)
             -prepareMachine
@@ -61,17 +52,18 @@ stages:
       - job: Linux
         container: LinuxContainer
         pool:
-          name: $(PoolProvider)  # This is a queue-time parameter; Public default is NetCore-Public; Internal default is NetCore1ESPool-Internal
-          demands: ImageOverride -equals Build.Ubuntu.2204.Amd64.Open
-
+          name: $(PoolProvider)
+          demands: ImageOverride -equals $(LinuxAmd64BuildImage)
         strategy:
           matrix:
             Build_Debug:
               _BuildConfig: Debug
-              _SignType: none # Test signing is not supported on Linux and macOS.
+              # Test signing is not supported on Linux
+              _SignType: none
             Build_Release:
               _BuildConfig: Release
-              _SignType: none # Test signing is not supported on Linux and macOS.
+              # Test signing is not supported on Linux
+              _SignType: none
         preSteps:
         - checkout: self
           clean: true
@@ -86,16 +78,17 @@ stages:
 
       - job: MacOS
         pool:
-          vmImage: macos-latest
-
+          vmImage: $(MacOSBuildImage)
         strategy:
           matrix:
             Build_Debug:
               _BuildConfig: Debug
-              _SignType: none # Test signing is not supported on Linux and macOS.
+              # Test signing is not supported on macOS
+              _SignType: none
             Build_Release:
               _BuildConfig: Release
-              _SignType: none # Test signing is not supported on Linux and macOS.
+              # Test signing is not supported on macOS
+              _SignType: none
         preSteps:
         - checkout: self
           clean: true

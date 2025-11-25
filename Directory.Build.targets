@@ -2,13 +2,8 @@
 
   <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
 
-  <Import
-    Project="$(RepositoryEngineeringDir)BuildTask.targets"
-    Condition="'$(IsBuildTaskProject)' == 'true'" />
-
-  <!-- Turn on package pruning by default for every TFM except for .NET Framework. -->
   <PropertyGroup>
-    <RestoreEnablePackagePruning Condition="'$(TargetFrameworkIdentifier)' != '.NETFramework'">true</RestoreEnablePackagePruning>
+    <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>
   </PropertyGroup>
 
 </Project>

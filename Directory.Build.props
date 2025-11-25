@@ -14,7 +14,6 @@
     <RepositoryUrl>https://github.com/dotnet/docker-tools</RepositoryUrl>
     <DebugType>embedded</DebugType>
     <DebugSymbols>true</DebugSymbols>
-    <AllowEmptySignList>true</AllowEmptySignList>
   </PropertyGroup>
 
 </Project>

@@ -7,6 +7,14 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- Prevent error CS8002: Referenced assembly 'Cottle, Version=2.X.X.X,
+         Culture=neutral, PublicKeyToken=null' does not have a strong name. -->
+    <!-- Cottle is transitively included via Microsoft.DotNet.ImageBuilder. -->
+    <NoWarn>$(NoWarn);CS8002</NoWarn>
+
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="AwesomeAssertions" Version="8.1.0" />
     <PackageReference Include="Moq" Version="4.20.72" />

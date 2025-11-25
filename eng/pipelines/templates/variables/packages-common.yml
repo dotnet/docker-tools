@@ -12,16 +12,16 @@ variables:
 
   - name: WindowsAmd64BuildImage
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      value: windows.vs2022.amd64.open
-    ${{ else }}:
       value: windows.vs2022.amd64
+    ${{ else }}:
+      value: windows.vs2022.amd64.open
     readonly: true
 
   - name: LinuxAmd64BuildImage
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      value: Build.Ubuntu.2204.Amd64.open
-    ${{ else }}:
       value: Build.Ubuntu.2204.Amd64
+    ${{ else }}:
+      value: Build.Ubuntu.2204.Amd64.open
     readonly: true
 
   - name: MacOSBuildImage

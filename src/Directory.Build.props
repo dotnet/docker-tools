@@ -1,0 +1,10 @@
+<Project>
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <!-- Prevent error CS8002: Referenced assembly 'Cottle, Version=2.X.X.X,
+         Culture=neutral, PublicKeyToken=null' does not have a strong name. -->
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
+</Project>

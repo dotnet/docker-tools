@@ -1,5 +1,9 @@
 <Project>
-  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <PropertyGroup>
+    <_ParentDirectoryBuildPropsPath>$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))</_ParentDirectoryBuildPropsPath>
+  </PropertyGroup>
+  <Import Project="$(_ParentDirectoryBuildPropsPath)" Condition="'$(_ParentDirectoryBuildPropsPath)' != ''" />
 
   <PropertyGroup>
     <!-- Prevent error CS8002: Referenced assembly 'Cottle, Version=2.X.X.X,

@@ -1,0 +1,57 @@
+# This template includes all the steps needed to build and publish all packages
+# in this repo. It does not build or push any container images. This template
+# must support both public and internal builds.
+#
+# Depends on a container resource named 'LinuxContainer'.
+#
+# Also depends on variables set by the variables template
+# /eng/pipelines/templates/variables/packages-build-pools.yml
+#
+parameters:
+# Indicates whether this is an internal build or not.
+- name: isInternalBuild
+  type: boolean
+# The container resource that the build job will be run in.
+- name: containerResource
+  type: string
+
+jobs:
+# Use core-templates directly so that we can dynamically set is1ESPipeline.
+# eng/common/templates/jobs/jobs.yml and eng/common/templates-official/jobs/jobs.yml
+# both hardcode the is1ESPipeline parameter.
+- template: /eng/common/core-templates/jobs/jobs.yml@self
+  parameters:
+    is1ESPipeline: ${{ parameters.isInternalBuild }}
+    enableMicrobuild: true
+    enablePublishBuildArtifacts: true
+    enablePublishBuildAssets: true
+    enablePublishUsingPipelines: true
+    enableTelemetry: true
+
+    jobs:
+    - job: Linux
+      container: LinuxContainer
+      pool:
+        name: $(PoolProvider)
+        demands: ImageOverride -equals $(LinuxAmd64BuildImage)
+      strategy:
+        matrix:
+          Build_Release:
+            _BuildConfig: Release
+            _SignType: none
+      preSteps:
+      - checkout: self
+        clean: true
+      steps:
+      - script: >-
+          eng/common/cibuild.sh
+          --configuration $(_BuildConfig)
+          --prepareMachine
+          --sign
+          -p:OfficialBuildId=$(Build.BuildNumber)
+          -p:DotNetSignType=$(_SignType)
+          -p:DotNetSymbolServerTokenMsdl=$(microsoft-symbol-server-pat)
+          -p:DotNetSymbolServerTokenSymWeb=$(symweb-symbol-server-pat)
+        displayName: Unix Build / Publish
+      - task: ComponentGovernanceComponentDetection@0
+        displayName: Component Governance scan

@@ -1,3 +1,6 @@
+# This template provides variables for build pools used in arcade-based
+# pipelines. It automatically selects between internal and public pools and
+# images based on the project the pipeline is running in.
 
 variables:
   # Provides $(DncEngInternalBuildPool) and $(DncEngPublicBuildPool)
@@ -10,19 +13,9 @@ variables:
       value: $(DncEngPublicBuildPool)
     readonly: true
 
-  - name: WindowsAmd64BuildImage
-    ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-      value: windows.vs2022.amd64
-    ${{ else }}:
-      value: windows.vs2022.amd64.open
-    readonly: true
-
   - name: LinuxAmd64BuildImage
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:
       value: Build.Ubuntu.2204.Amd64
     ${{ else }}:
       value: Build.Ubuntu.2204.Amd64.open
     readonly: true
-
-  - name: MacOSBuildImage
-    value: macos-latest

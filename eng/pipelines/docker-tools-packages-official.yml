@@ -1,17 +1,26 @@
 # This pipeline builds all packages produced by this repo.
 #
-# Use this pipeline for public PR validation builds only. For internal PR
-# validation, use the unofficial version of the pipeline.
+# Use this pipeline for official builds on production branches only.
+# For test builds or internal PR validation, use the unofficial version of the pipeline.
+# For public PR validation, use the PR version of the pipeline.
 #
 # Keep this pipeline in sync with:
-# - eng/pipelines/docker-tools-packages-official.yml
+# - eng/pipelines/docker-tools-packages-pr.yml
 # - eng/pipelines/docker-tools-packages-unofficial.yml
 
-trigger: none
-pr:
+trigger:
+  batch: true
   branches:
     include:
     - main
+  paths:
+    include:
+    - eng/*
+    - src/*
+    - Directory.Build.props
+    - Directory.Build.targets
+    - global.json
+pr: none
 
 resources:
   containers:
@@ -27,5 +36,5 @@ stages:
   jobs:
   - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
     parameters:
-      isInternalBuild: false
+      isInternalBuild: true
       containerResource: LinuxContainer

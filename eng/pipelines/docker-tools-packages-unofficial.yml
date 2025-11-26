@@ -1,0 +1,31 @@
+# This pipeline builds all packages produced by this repo.
+#
+# Use this pipeline for internal PR validation builds or for test builds on
+# non-production branches.
+#
+# Keep this pipeline in sync with:
+# - eng/pipelines/docker-tools-packages-pr.yml
+# - eng/pipelines/docker-tools-packages-official.yml
+
+trigger: none
+pr: none
+
+resources:
+  containers:
+  - container: LinuxContainer
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64
+
+variables:
+- template: /eng/pipelines/templates/variables/packages-build-pools.yml@self
+
+extends:
+  template: /eng/docker-tools/templates/1es.yml@self
+  parameters:
+    stages:
+    - stage: build
+      displayName: Build and publish packages
+      jobs:
+      - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
+        parameters:
+          isInternalBuild: true
+          containerResource: LinuxContainer

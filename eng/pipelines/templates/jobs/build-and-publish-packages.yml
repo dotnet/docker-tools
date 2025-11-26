@@ -8,9 +8,6 @@
 # /eng/pipelines/templates/variables/packages-build-pools.yml
 #
 parameters:
-# Indicates whether this is an internal build or not.
-- name: isInternalBuild
-  type: boolean
 # The container resource that the build job will be run in.
 - name: containerResource
   type: string
@@ -21,11 +18,11 @@ jobs:
 # both hardcode the is1ESPipeline parameter.
 - template: /eng/common/core-templates/jobs/jobs.yml@self
   parameters:
-    is1ESPipeline: ${{ parameters.isInternalBuild }}
+    # Only internal build agents have access to 1ES pipeline templates.
+    is1ESPipeline: ${{ eq(variables['System.TeamProject'], 'internal') }}
     enableMicrobuild: true
     enablePublishBuildArtifacts: true
     enablePublishBuildAssets: true
-    enablePublishUsingPipelines: true
     enableTelemetry: true
 
     jobs:
@@ -38,7 +35,10 @@ jobs:
         matrix:
           Build_Release:
             _BuildConfig: Release
-            _SignType: none
+            ${{ if and(eq(variables['System.TeamProject'], 'internal'), contains(variables['Build.DefinitionName'], '-official')) }}:
+              _SignType: 'real'
+            ${{ else }}:
+              _SignType: 'test'
       preSteps:
       - checkout: self
         clean: true

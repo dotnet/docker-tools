@@ -27,5 +27,4 @@ stages:
   jobs:
   - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
     parameters:
-      isInternalBuild: false
       containerResource: LinuxContainer

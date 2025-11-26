@@ -27,5 +27,4 @@ extends:
       jobs:
       - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
         parameters:
-          isInternalBuild: true
           containerResource: LinuxContainer

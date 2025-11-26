@@ -5,6 +5,8 @@
 variables:
   # Provides $(DncEngInternalBuildPool) and $(DncEngPublicBuildPool)
   - template: /eng/common/templates/variables/pool-providers.yml@self
+  # Provides SDL source analysis pool variables used by /eng/docker-tools/templates/1es.yml
+  - template: /eng/docker-tools/templates/variables/sdl-pool.yml@self
 
   - name: PoolProvider
     ${{ if eq(variables['System.TeamProject'], 'internal') }}:

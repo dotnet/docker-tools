@@ -37,3 +37,4 @@ stages:
   - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
     parameters:
       containerResource: LinuxContainer
+      enablePublish: true

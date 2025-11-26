@@ -11,6 +11,9 @@ parameters:
 # The container resource that the build job will be run in.
 - name: containerResource
   type: string
+# Indicates whether packages should be published as part of the build.
+- name: enablePublish
+  type: boolean
 
 jobs:
 # Use core-templates directly so that we can dynamically set is1ESPipeline.
@@ -21,8 +24,8 @@ jobs:
     # Only internal build agents have access to 1ES pipeline templates.
     is1ESPipeline: ${{ eq(variables['System.TeamProject'], 'internal') }}
     enableMicrobuild: false
-    enablePublishBuildArtifacts: true
-    enablePublishBuildAssets: true
+    enablePublishBuildArtifacts: ${{ parameters.enablePublish }}
+    enablePublishBuildAssets: ${{ parameters.enablePublish }}
     enableTelemetry: true
 
     jobs:

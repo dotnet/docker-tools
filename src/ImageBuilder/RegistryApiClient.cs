@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Client used for querying the REST API of container registries.
 /// </summary>
-public class RegistryServiceClient : IRegistryContentClient
+public class RegistryApiClient : IRegistryManifestClient
 {
     private const string DockerContentDigestHeader = "Docker-Content-Digest";
 
@@ -39,7 +39,7 @@ public class RegistryServiceClient : IRegistryContentClient
 
     public Uri BaseUri { get; }
 
-    public RegistryServiceClient(string registry, string repo, RegistryHttpClient httpClient, RegistryCredentials? credentials)
+    public RegistryApiClient(string registry, string repo, RegistryHttpClient httpClient, RegistryCredentials? credentials)
     {
         BaseUri = new Uri($"https://{registry}");
         _repo = repo;
@@ -95,4 +95,3 @@ public class RegistryServiceClient : IRegistryContentClient
     private Uri GetManifestUri(string repositoryName, string tagOrDigest) =>
         new(BaseUri.AbsoluteUri + $"v2/{repositoryName}/manifests/{tagOrDigest}");
 }
-#nullable disable

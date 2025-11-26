@@ -5,9 +5,9 @@
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class ManifestServiceFactory(IRegistryContentClientFactory registryClientFactory) : IManifestServiceFactory
+    public class ManifestServiceFactory(IRegistryManifestClientFactory registryClientFactory) : IManifestServiceFactory
     {
-        private readonly IRegistryContentClientFactory _registryClientFactory = registryClientFactory;
+        private readonly IRegistryManifestClientFactory _registryClientFactory = registryClientFactory;
 
         public IManifestService Create(
             string? ownedAcr = null,

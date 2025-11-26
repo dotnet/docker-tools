@@ -21,8 +21,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     where TOptionsBuilder : GenerateEolAnnotationDataOptionsBuilder, new()
 {
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
-    private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
-    private readonly IContainerRegistryClientFactory _acrClientFactory;
+    private readonly IAcrContentClientFactory _acrContentClientFactory;
+    private readonly IAcrClientFactory _acrClientFactory;
     private readonly ILifecycleMetadataService _lifecycleMetadataService;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
@@ -30,8 +30,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     protected GenerateEolAnnotationDataCommandBase(
         ILoggerService loggerService,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        IContainerRegistryContentClientFactory acrContentClientFactory,
-        IContainerRegistryClientFactory acrClientFactory,
+        IAcrContentClientFactory acrContentClientFactory,
+        IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {
@@ -72,15 +72,14 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         }
 
         var credential = _tokenCredentialProvider.GetCredential(Options.AcrServiceConnection);
-        IContainerRegistryClient acrClient =
-            _acrClientFactory.Create(Options.RegistryOptions.Registry, credential);
+        IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryOptions.Registry, credential);
         IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
         await foreach (string repositoryName in repositoryNames
             .Where(repo => repoNameFilter is null || repoNameFilter(repo)))
         {
-            IContainerRegistryContentClient contentClient =
+            IAcrContentClient contentClient =
                 _acrContentClientFactory.Create(
                     Options.RegistryOptions.Registry,
                     repositoryName,

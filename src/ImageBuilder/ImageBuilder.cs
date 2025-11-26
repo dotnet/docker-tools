@@ -30,8 +30,8 @@ public static class ImageBuilder
                 // Services
                 services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
                 services.AddSingleton<IAzureTokenCredentialProvider, AzureTokenCredentialProvider>();
-                services.AddSingleton<IContainerRegistryClientFactory, ContainerRegistryClientFactory>();
-                services.AddSingleton<IContainerRegistryContentClientFactory, ContainerRegistryContentClientFactory>();
+                services.AddSingleton<IAcrClientFactory, AcrClientFactory>();
+                services.AddSingleton<IAcrContentClientFactory, AcrContentClientFactory>();
                 services.AddSingleton<ICopyImageServiceFactory, CopyImageServiceFactory>();
                 services.AddSingleton<IDateTimeService, DateTimeService>();
                 services.AddSingleton<IDockerService, DockerService>();
@@ -50,7 +50,7 @@ public static class ImageBuilder
                 services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
                 services.AddSingleton<IOrasClient, OrasClient>();
                 services.AddSingleton<IProcessService, ProcessService>();
-                services.AddSingleton<IRegistryContentClientFactory, RegistryContentClientFactory>();
+                services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
                 services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
                 services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
 

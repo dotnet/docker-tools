@@ -20,8 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions, CleanAcrImagesOptionsBuilder>
     {
-        private readonly IContainerRegistryClientFactory _acrClientFactory;
-        private readonly IContainerRegistryContentClientFactory _acrContentClientFactory;
+        private readonly IAcrClientFactory _acrClientFactory;
+        private readonly IAcrContentClientFactory _acrContentClientFactory;
         private readonly ILoggerService _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
@@ -30,8 +30,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
 
         public CleanAcrImagesCommand(
-            IContainerRegistryClientFactory acrClientFactory,
-            IContainerRegistryContentClientFactory acrContentClientFactory,
+            IAcrClientFactory acrClientFactory,
+            IAcrContentClientFactory acrContentClientFactory,
             ILoggerService loggerService,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             ILifecycleMetadataService lifecycleMetadataService,
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
 
             _loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
-            IContainerRegistryClient acrClient =
+            IAcrClient acrClient =
                 _acrClientFactory.Create(
                     Options.RegistryName,
                     _tokenCredentialProvider.GetCredential(Options.AcrServiceConnection));
@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(repoName => acrClient.GetRepository(repoName))
                         .Select(repo =>
                         {
-                            IContainerRegistryContentClient acrContentClient =
+                            IAcrContentClient acrContentClient =
                                 _acrContentClientFactory.Create(
                                     Options.RegistryName,
                                     repo.Name,
@@ -101,7 +101,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task ProcessRepoAsync(
-            IContainerRegistryClient acrClient, IContainerRegistryContentClient acrContentClient, ContainerRepository repository, List<string> deletedRepos, List<string> deletedImages)
+            IAcrClient acrClient, IAcrContentClient acrContentClient, ContainerRepository repository, List<string> deletedRepos, List<string> deletedImages)
         {
             switch (Options.Action)
             {
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task LogSummaryAsync(IContainerRegistryClient acrClient, List<string> deletedRepos, List<string> deletedImages)
+        private async Task LogSummaryAsync(IAcrClient acrClient, List<string> deletedRepos, List<string> deletedImages)
         {
             _loggerService.WriteHeading("SUMMARY");
 
@@ -163,7 +163,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task ProcessManifestsAsync(
-            IContainerRegistryClient acrClient, IContainerRegistryContentClient acrContentClient, List<string> deletedImages, List<string> deletedRepos, ContainerRepository repository,
+            IAcrClient acrClient, IAcrContentClient acrContentClient, List<string> deletedImages, List<string> deletedRepos, ContainerRepository repository,
             Func<ArtifactManifestProperties, Task<bool>> canDeleteManifest)
         {
             _loggerService.WriteMessage($"Querying manifests for repo '{repository.Name}'");
@@ -205,7 +205,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Any(exclusion => exclusion.Repo == manifest.RepositoryName && (exclusion.Digest == manifest.Digest || manifest.Tags.Contains(exclusion.Tag)));
 
         private async Task DeleteManifestsAsync(
-            IContainerRegistryContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, IEnumerable<ArtifactManifestProperties> manifests)
+            IAcrContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, IEnumerable<ArtifactManifestProperties> manifests)
         {
             ResiliencePipeline pipeline = new ResiliencePipelineBuilder()
                 // Allow any number of tasks to be queued up but only allow X number of them to execute concurrently
@@ -222,7 +222,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         private async Task DeleteManifestAsync(
-            IContainerRegistryContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, ArtifactManifestProperties manifest)
+            IAcrContentClient acrContentClient, List<string> deletedImages, ContainerRepository repository, ArtifactManifestProperties manifest)
         {
             if (!Options.IsDryRun)
             {
@@ -239,7 +239,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task DeleteRepositoryAsync(IContainerRegistryClient acrClient, List<string> deletedRepos, ContainerRepository repository)
+        private async Task DeleteRepositoryAsync(IAcrClient acrClient, List<string> deletedRepos, ContainerRepository repository)
         {
             IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync();
 
@@ -283,7 +283,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static bool IsExpired(DateTimeOffset dateTime, int expirationDays) => dateTime.AddDays(expirationDays) < DateTimeOffset.Now;
 
-        private async Task<bool> IsAnnotationManifestAsync(ArtifactManifestProperties manifest, IContainerRegistryContentClient acrContentClient)
+        private async Task<bool> IsAnnotationManifestAsync(ArtifactManifestProperties manifest, IAcrContentClient acrContentClient)
         {
             ManifestQueryResult manifestResult = await acrContentClient.GetManifestAsync(manifest.Digest);
 

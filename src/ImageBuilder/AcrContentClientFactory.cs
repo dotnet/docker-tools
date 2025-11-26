@@ -7,10 +7,10 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
 
-internal class ContainerRegistryContentClientFactory(IAzureTokenCredentialProvider tokenCredentialProvider)
-    : IContainerRegistryContentClientFactory
+internal class AcrContentClientFactory(IAzureTokenCredentialProvider tokenCredentialProvider)
+    : IAcrContentClientFactory
 {
-    public IContainerRegistryContentClient Create(
+    public IAcrContentClient Create(
         string acrName,
         string repositoryName,
         IServiceConnection? serviceConnection)
@@ -19,7 +19,7 @@ internal class ContainerRegistryContentClientFactory(IAzureTokenCredentialProvid
             serviceConnection,
             AzureScopes.ContainerRegistryScope);
 
-        return new ContainerRegistryContentClientWrapper(
+        return new AcrContentClientWrapper(
             new ContainerRegistryContentClient(
                 DockerHelper.GetAcrUri(acrName),
                 repositoryName,

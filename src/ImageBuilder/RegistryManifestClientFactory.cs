@@ -5,16 +5,15 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
 
-public class RegistryContentClientFactory(
+public class RegistryManifestClientFactory(
     IHttpClientProvider httpClientProvider,
-    IContainerRegistryContentClientFactory containerRegistryContentClientFactory)
-    : IRegistryContentClientFactory
+    IAcrContentClientFactory acrContentClientFactory)
+    : IRegistryManifestClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
-    private readonly IContainerRegistryContentClientFactory _containerRegistryContentClientFactory =
-        containerRegistryContentClientFactory;
+    private readonly IAcrContentClientFactory _acrContentClientFactory = acrContentClientFactory;
 
-    public IRegistryContentClient Create(
+    public IRegistryManifestClient Create(
         string registry,
         string repo,
         string? ownedAcr = null,
@@ -34,11 +33,11 @@ public class RegistryContentClientFactory(
         if (apiRegistry == ownedAcr)
         {
             // If the target registry is the owned ACR, connect to it with the Azure library API. This handles all the Azure auth.
-            return _containerRegistryContentClientFactory.Create(ownedAcr, repo, serviceConnection);
+            return _acrContentClientFactory.Create(ownedAcr, repo, serviceConnection);
         }
 
         // Look up the credentials, if any, for the registry where the image is located
         RegistryCredentials? registryCreds = credsHost?.TryGetCredentials(registry);
-        return new RegistryServiceClient(apiRegistry, repo, _httpClientProvider.GetRegistryClient(), registryCreds);
+        return new RegistryApiClient(apiRegistry, repo, _httpClientProvider.GetRegistryClient(), registryCreds);
     }
 }

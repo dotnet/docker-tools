@@ -8,11 +8,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Prevent error CS8002: Referenced assembly 'Cottle, Version=2.X.X.X,
-         Culture=neutral, PublicKeyToken=null' does not have a strong name. -->
-    <!-- Cottle is transitively included via Microsoft.DotNet.ImageBuilder. -->
-    <NoWarn>$(NoWarn);CS8002</NoWarn>
-
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

@@ -10,9 +10,8 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!-- Prevent error CS8002: Referenced assembly 'Cottle, Version=2.X.X.X,
-         Culture=neutral, PublicKeyToken=null' does not have a strong name. -->
-    <NoWarn>$(NoWarn);CS8002</NoWarn>
+    <!-- The "Cottle" templating package does not have a strong name. -->
+    <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
   <ItemGroup>

@@ -14,8 +14,8 @@ public class GenerateEolAnnotationDataForAllImagesCommand :
 {
     public GenerateEolAnnotationDataForAllImagesCommand(
         ILoggerService loggerService,
-        IContainerRegistryClientFactory acrClientFactory,
-        IContainerRegistryContentClientFactory acrContentClientFactory,
+        IAcrClientFactory acrClientFactory,
+        IAcrContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)

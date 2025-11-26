@@ -6,8 +6,7 @@ using System.Threading.Tasks;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public interface IContainerRegistryContentClient : IRegistryContentClient
+public interface IRegistryManifestClient
 {
-    public string RepositoryName { get; }
-    public Task DeleteManifestAsync(string tagOrDigest);
+    Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest);
 }

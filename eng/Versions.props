@@ -1,7 +1,5 @@
 <Project>
 
-  <Import Project="Version.Details.props" />
-
   <PropertyGroup>
     <!-- Follow https://semver.org/spec/v2.0.0.html -->
     <MajorVersion>0</MajorVersion>

@@ -1,6 +1,23 @@
 # ImageBuilder
 
-ImageBuilder is a tool used to build and publish Docker images.
+ImageBuilder is a tool used to build and publish Docker images. ImageBuilder itself is packaged as a container image:
+
+- `docker pull mcr.microsoft.com/dotnet-buildtools/image-builder:latest`
+- [List of all ImageBuilder image tags](https://mcr.microsoft.com/v2/dotnet-buildtools/image-builder/tags/list)
+
+ImageBuilder relies on metadata which defines various information needed to build and tag container images. The metadata is stored in a manifest.json file ([sample](https://github.com/dotnet/dotnet-docker/blob/main/manifest.json)). The metadata schema is defined in [source](./src/ImageBuilder/Models/Manifest/Manifest.cs).
+
+The full list of supported commands can be seen by running the tool.
+
+```console
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock mcr.microsoft.com/dotnet-buildtools/image-builder --help
+```
+
+Specific options for each command can be seen by specifying the `--help` option:
+
+```console
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock mcr.microsoft.com/dotnet-buildtools/image-builder build --help
+```
 
 ## Building the ImageBuilder container image
 

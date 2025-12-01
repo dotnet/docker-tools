@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
-public class RegistryContentClientFactoryTests
+public class RegistryManifestClientFactoryTests
 {
     private static readonly string s_tenant = Guid.Empty.ToString();
 
@@ -55,7 +55,7 @@ public class RegistryContentClientFactoryTests
 
         Assert.IsType<RegistryApiClient>(client);
 
-        RegistryApiClient registryServiceClient = (RegistryApiClient)client;
-        Assert.Equal(expectedBaseUri, registryServiceClient.BaseUri.ToString());
+        RegistryApiClient registryApiClient = (RegistryApiClient)client;
+        Assert.Equal(expectedBaseUri, registryApiClient.BaseUri.ToString());
     }
 }

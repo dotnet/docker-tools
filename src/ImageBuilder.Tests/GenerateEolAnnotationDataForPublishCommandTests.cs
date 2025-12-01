@@ -134,7 +134,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -149,12 +149,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest201", tags: ["2.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -162,7 +162,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
                             { "imagedigest102", new ManifestQueryResult(string.Empty, []) }
                         }),
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo2",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo2",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest201", new ManifestQueryResult(string.Empty, []) },
@@ -278,7 +278,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -289,12 +289,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -412,7 +412,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -423,7 +423,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
             string armDigest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64");
@@ -435,9 +435,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -548,7 +548,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -560,12 +560,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest102-updated", tags: ["2.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -655,7 +655,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -665,12 +665,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest101-updated", tags: ["1.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -764,7 +764,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -774,12 +774,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -872,7 +872,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -883,12 +883,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "annotationdigest"),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
@@ -983,7 +983,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
 
-            Mock<IAcrClient> registryClientMock = CreateContainerRegistryClientMock(
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
                 [
                     CreateContainerRepository($"{DefaultRepoPrefix}repo1",
                         manifestProperties: [
@@ -992,12 +992,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateArtifactManifestProperties(digest: "imagedigest102", tags: ["2.0"]),
                         ])
                 ]);
-            IAcrClientFactory registryClientFactory = CreateContainerRegistryClientFactory(
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
                 AcrName, registryClientMock.Object);
 
-            IAcrContentClientFactory registryContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName,
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
-                    CreateContainerRegistryContentClientMock($"{DefaultRepoPrefix}repo1",
+                    CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
                         imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { "platformdigest102-amd64", new ManifestQueryResult(string.Empty, []) },

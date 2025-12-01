@@ -33,7 +33,7 @@ internal static class ContainerRegistryHelper
         return repoMock.Object;
     }
 
-    public static Mock<IAcrContentClient> CreateContainerRegistryContentClientMock(string repositoryName, Dictionary<string, ManifestQueryResult>? imageNameToQueryResultsMapping = null)
+    public static Mock<IAcrContentClient> CreateAcrContentClientMock(string repositoryName, Dictionary<string, ManifestQueryResult>? imageNameToQueryResultsMapping = null)
     {
         Mock<IAcrContentClient> acrClientContentMock = new();
         acrClientContentMock.SetupGet(o => o.RepositoryName).Returns(repositoryName);
@@ -48,7 +48,7 @@ internal static class ContainerRegistryHelper
         return acrClientContentMock;
     }
 
-    public static IAcrContentClientFactory CreateContainerRegistryContentClientFactory(
+    public static IAcrContentClientFactory CreateAcrContentClientFactory(
         string acrName, IEnumerable<Mock<IAcrContentClient>> acrContentClients)
     {
         Mock<IAcrContentClientFactory> acrContentClientFactoryMock = new();
@@ -101,7 +101,7 @@ internal static class ContainerRegistryHelper
         return (ContainerRepositoryProperties)ctor.Invoke(args);
     }
 
-    public static Mock<IAcrClient> CreateContainerRegistryClientMock(IEnumerable<ContainerRepository> repositories)
+    public static Mock<IAcrClient> CreateAcrClientMock(IEnumerable<ContainerRepository> repositories)
     {
         Mock<IAcrClient> acrClientMock = new();
 
@@ -123,7 +123,7 @@ internal static class ContainerRegistryHelper
         return acrClientMock;
     }
 
-    public static IAcrClientFactory CreateContainerRegistryClientFactory(string acrName, IAcrClient acrClient)
+    public static IAcrClientFactory CreateAcrClientFactory(string acrName, IAcrClient acrClient)
     {
         Mock<IAcrClientFactory> acrClientFactoryMock = new();
         acrClientFactoryMock

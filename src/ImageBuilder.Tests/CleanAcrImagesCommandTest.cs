@@ -46,12 +46,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: stagingRepo2Name, digest: repo2Digest1)
                 ]);
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([nonPublicRepo1, nonPublicRepo2]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([nonPublicRepo1, nonPublicRepo2]);
             acrClientMock
                 .Setup(o => o.DeleteRepositoryAsync(stagingRepo2Name))
                 .Returns(Task.CompletedTask);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
                 acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
@@ -110,19 +110,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: publicRepo4Name, digest: repo4Digest1, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)))
                 ]);
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([publicRepo1, publicRepo2, publicRepo3, publicRepo4]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([publicRepo1, publicRepo2, publicRepo3, publicRepo4]);
             acrClientMock
                 .Setup(o => o.DeleteRepositoryAsync(publicRepo4Name))
                 .Returns(Task.CompletedTask);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
-            Mock<IAcrContentClient> repo1ContentClient = CreateContainerRegistryContentClientMock(publicRepo1Name);
-            Mock<IAcrContentClient> repo2ContentClient = CreateContainerRegistryContentClientMock(publicRepo2Name);
-            Mock<IAcrContentClient> repo3ContentClient = CreateContainerRegistryContentClientMock(publicRepo3Name);
-            Mock<IAcrContentClient> repo4ContentClient = CreateContainerRegistryContentClientMock(publicRepo4Name);
+            Mock<IAcrContentClient> repo1ContentClient = CreateAcrContentClientMock(publicRepo1Name);
+            Mock<IAcrContentClient> repo2ContentClient = CreateAcrContentClientMock(publicRepo2Name);
+            Mock<IAcrContentClient> repo3ContentClient = CreateAcrContentClientMock(publicRepo3Name);
+            Mock<IAcrContentClient> repo4ContentClient = CreateAcrContentClientMock(publicRepo4Name);
 
-            IAcrContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(
+            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
                 AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
@@ -168,12 +168,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ContainerRepository repo2 = CreateContainerRepository(repo2Name, CreateContainerRepositoryProperties(), []);
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([repo1, repo2]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
             acrClientMock
                 .Setup(o => o.DeleteRepositoryAsync(repo2Name))
                 .Returns(Task.CompletedTask);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
                 acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
@@ -212,12 +212,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: repo1Digest2, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(9)))
                 ]);
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([repo1]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
             acrClientMock
                 .Setup(o => o.DeleteRepositoryAsync(repo1Name))
                 .Returns(Task.CompletedTask);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
@@ -264,14 +264,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ]);
 
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([repo1, repo2]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1, repo2]);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
-            Mock<IAcrContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name);
-            Mock<IAcrContentClient> repo2ContentClientMock = CreateContainerRegistryContentClientMock(repo2Name);
+            Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name);
+            Mock<IAcrContentClient> repo2ContentClientMock = CreateAcrContentClientMock(repo2Name);
 
-            IAcrContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
+            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
                 acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
@@ -318,11 +318,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: repo1Name, digest: annotationdigest, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(10)), registryLoginServer: AcrName)
                 ]);
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([repo1]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([repo1]);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
-            Mock<IAcrContentClient> repo1ContentClientMock = CreateContainerRegistryContentClientMock(repo1Name,
+            Mock<IAcrContentClient> repo1ContentClientMock = CreateAcrContentClientMock(repo1Name,
                 imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
                         {
                             { repo1Digest1, new ManifestQueryResult(string.Empty, []) },
@@ -331,7 +331,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             { annotationdigest, new ManifestQueryResult(string.Empty, new JsonObject { { "subject", "" } }) }
                         });
 
-            IAcrContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(AcrName, [repo1ContentClientMock]);
+            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock]);
 
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(age, repo1Name);
 
@@ -380,14 +380,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateArtifactManifestProperties(repositoryName: publicRepo2Name, digest: repo2Digest3, lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(60)), tags: ["tag2"]),
                 ]);
 
-            Mock<IAcrClient> acrClientMock = CreateContainerRegistryClientMock([publicRepo1, publicRepo2]);
+            Mock<IAcrClient> acrClientMock = CreateAcrClientMock([publicRepo1, publicRepo2]);
 
-            IAcrClientFactory acrClientFactory = CreateContainerRegistryClientFactory(AcrName, acrClientMock.Object);
+            IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
-            Mock<IAcrContentClient> repo1ContentClient = CreateContainerRegistryContentClientMock(publicRepo1Name);
-            Mock<IAcrContentClient> repo2ContentClient = CreateContainerRegistryContentClientMock(publicRepo2Name);
+            Mock<IAcrContentClient> repo1ContentClient = CreateAcrContentClientMock(publicRepo1Name);
+            Mock<IAcrContentClient> repo2ContentClient = CreateAcrContentClientMock(publicRepo2Name);
 
-            IAcrContentClientFactory acrContentClientFactory = CreateContainerRegistryContentClientFactory(
+            IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(
                 AcrName, [repo1ContentClient, repo2ContentClient]);
 
             CleanAcrImagesCommand command = new(

@@ -55,12 +55,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 () =>
                 {
                     Parallel.ForEach(eolAnnotations.EolDigests, digestData => AnnotateDigest(digestData, globalEolDate));
-                    return Task.CompletedTask;
                 },
                 Options.CredentialsOptions,
-                registryName: Options.AcrName,
-                ownedAcr: Options.AcrName,
-                serviceConnection: Options.AcrServiceConnection);
+                registryName: Options.AcrName);
 
             WriteNonEmptySummaryForImageDigests(_skippedAnnotationImageDigests,
                 "The following image digests were skipped because they have existing annotations with matching EOL dates.");

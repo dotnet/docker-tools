@@ -52,9 +52,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
             Options.IsDryRun,
             async () => digestsToAnnotate = GetDigestsWithoutExistingAnnotation(await GetDigestsToAnnotateAsync()),
             Options.CredentialsOptions,
-            registryName: Options.RegistryOptions.Registry,
-            ownedAcr: Options.RegistryOptions.Registry,
-            serviceConnection: Options.AcrServiceConnection);
+            registryName: Options.RegistryOptions.Registry);
 
         WriteDigestDataJson(digestsToAnnotate);
     }

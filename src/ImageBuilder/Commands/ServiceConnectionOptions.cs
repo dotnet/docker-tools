@@ -13,7 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public record ServiceConnectionOptions(
     string TenantId,
     string ClientId,
-    string ServiceConnectionId)
+    // TODO: Temporarily renamed from ServiceConnectionId to Id to match publish-config-(non)?prod.yaml.
+    // Should probably be changed back? Or not. "Id" is pretty self explanatory here.
+    string Id)
     : IServiceConnection;
 
 public class ServiceConnectionOptionsBuilder
@@ -43,7 +45,7 @@ public class ServiceConnectionOptionsBuilder
                 return new ServiceConnectionOptions(
                     TenantId: serviceConnectionInfo[0],
                     ClientId: serviceConnectionInfo[1],
-                    ServiceConnectionId: serviceConnectionInfo[2]);
+                    Id: serviceConnectionInfo[2]);
             });
 
         return [option];

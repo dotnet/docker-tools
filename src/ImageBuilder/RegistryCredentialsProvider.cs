@@ -53,7 +53,7 @@ public class RegistryCredentialsProvider(
         // Compare against all the ACRs passed in via the publish configuration
         var maybeOwnedAcr = new Acr(registry);
         var knownAcrs = _publishConfig.GetKnownAcrConfigurations();
-        var ownedAcr = knownAcrs.FirstOrDefault(acr => acr.Registry == maybeOwnedAcr);
+        var ownedAcr = knownAcrs.FirstOrDefault(acr => acr.Server == maybeOwnedAcr);
 
         if (ownedAcr is not null && ownedAcr.ServiceConnection is not null)
         {
@@ -73,15 +73,15 @@ public class RegistryCredentialsProvider(
             throw new ArgumentNullException(nameof(acrConfig.ServiceConnection));
         }
 
-        if (acrConfig.Registry is null)
+        if (acrConfig.Server is null)
         {
-            throw new ArgumentNullException(nameof(acrConfig.Registry));
+            throw new ArgumentNullException(nameof(acrConfig.Server));
         }
 
         TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
         var tenantGuid = Guid.Parse(acrConfig.ServiceConnection.TenantId);
         string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AzureScopes.DefaultAzureManagementScope]), CancellationToken.None)).Token;
-        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), acrConfig.Registry.Name, tenantGuid, token);
+        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), acrConfig.Server.Name, tenantGuid, token);
         return new RegistryCredentials(Guid.Empty.ToString(), refreshToken);
     }
 }

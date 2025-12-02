@@ -34,5 +34,5 @@ public interface IServiceConnection
     /// <remarks>
     /// This can be found in the URL of the service connection's page in Azure DevOps.
     /// </remarks>
-    string ServiceConnectionId { get; init; }
+    string Id { get; init; }
 }

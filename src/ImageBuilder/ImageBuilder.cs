@@ -8,6 +8,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
@@ -21,6 +22,11 @@ public static class ImageBuilder
     private static Lazy<IServiceProvider> ServiceProvider { get; } = new(() =>
         {
             var builder = Host.CreateApplicationBuilder();
+
+            // Debug view of configuration
+            var root = builder.Configuration;
+            var debugView = root.GetDebugView();
+            Console.WriteLine(debugView);
 
             // Configuration
             builder.AddPublishConfiguration();

@@ -10,8 +10,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -27,6 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
+        private readonly PublishConfiguration _publishConfiguration;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -50,7 +53,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService)
+            IImageCacheService imageCacheService,
+            IOptions<PublishConfiguration> publishConfigOptions)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -59,16 +63,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _publishConfiguration = publishConfigOptions?.Value ?? throw new ArgumentNullException(nameof(publishConfigOptions));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(copyImageServiceFactory);
             _copyImageService = new Lazy<ICopyImageService>(() =>
-                copyImageServiceFactory.Create(Options.AcrServiceConnection));
+                copyImageServiceFactory.Create(_publishConfiguration.BuildAcr?.ServiceConnection));
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
                 manifestServiceFactory.Create(
                     ownedAcr: Options.RegistryOverride,
-                    Options.AcrServiceConnection,
+                    _publishConfiguration.BuildAcr?.ServiceConnection,
                     Options.CredentialsOptions));
             _imageDigestCache = new ImageDigestCache(_manifestService);
 
@@ -129,9 +134,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 isDryRun: Options.IsDryRun,
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
-                registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride,
-                serviceConnection: Options.AcrServiceConnection);
+                registryName: Manifest.Registry);
         }
 
         private async Task ExecuteWithDockerCredentialsAsync(Action action)
@@ -140,9 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 isDryRun: Options.IsDryRun,
                 action: action,
                 credentialsOptions: Options.CredentialsOptions,
-                registryName: Manifest.Registry,
-                ownedAcr: Options.RegistryOverride,
-                serviceConnection: Options.AcrServiceConnection);
+                registryName: Manifest.Registry);
         }
 
         private void WriteBuiltImagesToOutputVar()

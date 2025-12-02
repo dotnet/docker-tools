@@ -15,7 +15,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public ManifestFilterOptions FilterOptions { get; set; } = new();
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-        public ServiceConnectionOptions? AcrServiceConnection { get; set; }
         public ServiceConnectionOptions? StorageServiceConnection { get; set; }
 
         public bool IsPushEnabled { get; set; }
@@ -47,9 +46,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             .._manifestFilterOptionsBuilder.GetCliOptions(),
             .._baseImageOverrideOptionsBuilder.GetCliOptions(),
             .._registryCredentialsOptionsBuilder.GetCliOptions(),
-            .._serviceConnectionOptionsBuilder.GetCliOptions(
-                alias: "acr-service-connection",
-                propertyName: nameof(BuildOptions.AcrServiceConnection)),
             .._serviceConnectionOptionsBuilder.GetCliOptions(
                 alias: "storage-service-connection",
                 propertyName: nameof(BuildOptions.StorageServiceConnection),

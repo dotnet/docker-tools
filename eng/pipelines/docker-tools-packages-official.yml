@@ -30,11 +30,14 @@ resources:
 variables:
 - template: /eng/pipelines/templates/variables/packages-build-pools.yml@self
 
-stages:
-- stage: build
-  displayName: Build and publish packages
-  jobs:
-  - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
-    parameters:
-      containerResource: LinuxContainer
-      enablePublish: true
+extends:
+  template: /eng/docker-tools/templates/1es.yml@self
+  parameters:
+    stages:
+    - stage: build
+      displayName: Build and publish packages
+      jobs:
+      - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
+        parameters:
+          containerResource: LinuxContainer
+          enablePublish: true

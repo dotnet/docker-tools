@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
-public class RegistryContentClientFactoryTests
+public class RegistryManifestClientFactoryTests
 {
     private static readonly string s_tenant = Guid.Empty.ToString();
 
@@ -24,18 +24,18 @@ public class RegistryContentClientFactoryTests
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>();
         IServiceConnection serviceConnection = Mock.Of<IServiceConnection>();
 
-        IContainerRegistryContentClient contentClient = Mock.Of<IContainerRegistryContentClient>();
+        IAcrContentClient contentClient = Mock.Of<IAcrContentClient>();
 
-        Mock<IContainerRegistryContentClientFactory> acrContentClientFactoryMock = new();
+        Mock<IAcrContentClientFactory> acrContentClientFactoryMock = new();
         acrContentClientFactoryMock
             .Setup(o => o.Create(AcrName, RepoName, serviceConnection))
             .Returns(contentClient);
 
 
-        RegistryContentClientFactory clientFactory = new(
+        RegistryManifestClientFactory clientFactory = new(
             Mock.Of<IHttpClientProvider>(),
             acrContentClientFactoryMock.Object);
-        IRegistryContentClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, serviceConnection, credsHost);
+        IRegistryManifestClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, serviceConnection, credsHost);
 
         Assert.Same(contentClient, client);
     }
@@ -47,15 +47,15 @@ public class RegistryContentClientFactoryTests
     public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
     {
         ManifestOptions options = Mock.Of<ManifestOptions>(options => options.RegistryOverride == "my-acr");
-        RegistryContentClientFactory clientFactory = new(
+        RegistryManifestClientFactory clientFactory = new(
             Mock.Of<IHttpClientProvider>(),
-            Mock.Of<IContainerRegistryContentClientFactory>());
+            Mock.Of<IAcrContentClientFactory>());
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
-        IRegistryContentClient client = clientFactory.Create(registry, "repo-name");
+        IRegistryManifestClient client = clientFactory.Create(registry, "repo-name");
 
-        Assert.IsType<RegistryServiceClient>(client);
+        Assert.IsType<RegistryApiClient>(client);
 
-        RegistryServiceClient registryServiceClient = (RegistryServiceClient)client;
-        Assert.Equal(expectedBaseUri, registryServiceClient.BaseUri.ToString());
+        RegistryApiClient registryApiClient = (RegistryApiClient)client;
+        Assert.Equal(expectedBaseUri, registryApiClient.BaseUri.ToString());
     }
 }

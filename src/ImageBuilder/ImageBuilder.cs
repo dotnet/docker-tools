@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -20,6 +21,9 @@ public static class ImageBuilder
     private static Lazy<IServiceProvider> ServiceProvider { get; } = new(() =>
         {
             var builder = Host.CreateApplicationBuilder();
+
+            // Configuration
+            builder.AddPublishConfiguration();
 
             // Services
             builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();

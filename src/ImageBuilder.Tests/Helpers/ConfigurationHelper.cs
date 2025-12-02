@@ -13,15 +13,11 @@ internal static class ConfigurationHelper
     /// <summary>
     /// Sets up a mock of IOptions that returns <paramref name="value"/>.
     /// </summary>
-    public static IOptions<T> CreateOptionsMock<T>(T? value = null) where T : class
+    public static IOptions<T> CreateOptionsMock<T>(T? value = null) where T : class, new()
     {
         var optionsMock = new Mock<IOptions<T>>();
-
-        if (value is not null)
-        {
-            optionsMock.Setup(o => o.Value).Returns(value);
-        }
-
+        var config = value ?? new T();
+        optionsMock.Setup(o => o.Value).Returns(config);
         return optionsMock.Object;
     }
 }

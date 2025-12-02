@@ -58,6 +58,10 @@ steps:
       condition: and(succeeded(), ${{ parameters.condition }})
 
   - script: >-
+    displayName: Output publish configuration
+    condition: and(succeeded(), ${{ parameters.condition }})
+
+  - script: >-
       docker build
       -t $(imageNames.imageBuilder.withrepo)
       --build-arg IMAGE=$(imageNames.imageBuilder)

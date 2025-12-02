@@ -9,6 +9,11 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!-- The "Cottle" templating package does not have a strong name. -->
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Azure.Containers.ContainerRegistry" Version="1.2.0" />
     <PackageReference Include="Azure.Identity" Version="1.13.2" />

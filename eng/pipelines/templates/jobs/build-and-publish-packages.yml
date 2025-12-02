@@ -1,0 +1,56 @@
+# This template includes all the steps needed to build and publish all packages
+# in this repo. It does not build or push any container images. This template
+# must support both public and internal builds.
+#
+# Depends on a container resource named 'LinuxContainer'.
+#
+# Also depends on variables set by the variables template
+# /eng/pipelines/templates/variables/packages-build-pools.yml
+#
+parameters:
+# The container resource that the build job will be run in.
+- name: containerResource
+  type: string
+# Indicates whether packages should be published as part of the build.
+- name: enablePublish
+  type: boolean
+
+jobs:
+# Use core-templates directly so that we can dynamically set is1ESPipeline.
+# eng/common/templates/jobs/jobs.yml and eng/common/templates-official/jobs/jobs.yml
+# both hardcode the is1ESPipeline parameter.
+- template: /eng/common/core-templates/jobs/jobs.yml@self
+  parameters:
+    # Only internal build agents have access to 1ES pipeline templates.
+    is1ESPipeline: ${{ eq(variables['System.TeamProject'], 'internal') }}
+    enableMicrobuild: false
+    enablePublishBuildArtifacts: ${{ parameters.enablePublish }}
+    enablePublishBuildAssets: ${{ parameters.enablePublish }}
+    enableTelemetry: true
+
+    jobs:
+    - job: Linux
+      container: LinuxContainer
+      pool:
+        name: $(PoolProvider)
+        demands: ImageOverride -equals $(LinuxAmd64BuildImage)
+      strategy:
+        matrix:
+          Build_Release:
+            _BuildConfig: Release
+            _SignType: none
+      preSteps:
+      - checkout: self
+        clean: true
+      steps:
+      - script: >-
+          eng/common/cibuild.sh
+          --configuration $(_BuildConfig)
+          --prepareMachine
+          -p:OfficialBuildId=$(Build.BuildNumber)
+          -p:DotNetSignType=$(_SignType)
+          -p:DotNetSymbolServerTokenMsdl=$(microsoft-symbol-server-pat)
+          -p:DotNetSymbolServerTokenSymWeb=$(symweb-symbol-server-pat)
+        displayName: Unix Build / Publish
+      - task: ComponentGovernanceComponentDetection@0
+        displayName: Component Governance scan

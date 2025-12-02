@@ -1,0 +1,40 @@
+# This pipeline builds all packages produced by this repo.
+#
+# Use this pipeline for official builds on production branches only.
+# For test builds or internal PR validation, use the unofficial version of the pipeline.
+# For public PR validation, use the PR version of the pipeline.
+#
+# Keep this pipeline in sync with:
+# - eng/pipelines/docker-tools-packages-pr.yml
+# - eng/pipelines/docker-tools-packages-unofficial.yml
+
+trigger:
+  batch: true
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - eng/*
+    - src/*
+    - Directory.Build.props
+    - Directory.Build.targets
+    - global.json
+pr: none
+
+resources:
+  containers:
+  - container: LinuxContainer
+    image: mcr.microsoft.com/dotnet-buildtools/prereqs:azurelinux-3.0-net10.0-cross-amd64
+
+variables:
+- template: /eng/pipelines/templates/variables/packages-build-pools.yml@self
+
+stages:
+- stage: build
+  displayName: Build and publish packages
+  jobs:
+  - template: /eng/pipelines/templates/jobs/build-and-publish-packages.yml@self
+    parameters:
+      containerResource: LinuxContainer
+      enablePublish: true

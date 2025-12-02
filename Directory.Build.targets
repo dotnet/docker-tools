@@ -1,0 +1,9 @@
+<Project>
+
+  <Import Project="Sdk.targets" Sdk="Microsoft.DotNet.Arcade.Sdk" />
+
+  <PropertyGroup>
+    <RestoreEnablePackagePruning>true</RestoreEnablePackagePruning>
+  </PropertyGroup>
+
+</Project>

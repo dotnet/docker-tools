@@ -32,6 +32,7 @@ jobs:
   - ${{ parameters.commonInitStepsForMatrixAndBuild }}
   - template: /eng/docker-tools/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
     parameters:
+      publishConfig: ${{ parameters.publishConfig }}
       cleanupDocker: true
   - ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self

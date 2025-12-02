@@ -1,8 +1,21 @@
 parameters:
-  setupImageBuilder: true
-  setupTestRunner: false
-  cleanupDocker: false
-  condition: true
+- name: setupImageBuilder
+  type: boolean
+  default: true
+- name: setupTestRunner
+  type: boolean
+  default: false
+# Whether existing Docker images will be deleted
+- name: cleanupDocker
+  type: boolean
+  default: false
+# Whether or not to run the steps in this template
+- name: condition
+  type: boolean
+  default: true
+- name: publishConfig
+  type: object
+  default: null
 
 steps:
 - template: /eng/docker-tools/templates/steps/init-common.yml@self
@@ -28,6 +41,21 @@ steps:
   - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.imageBuilder)
     displayName: Pull Image Builder
     condition: and(succeeded(), ${{ parameters.condition }})
+
+  - ${{ if parameters.publishConfig }}:
+    # .NET Microsoft.Extensions.Configuration reads appsettings.json from the working directory when
+    # ImageBuilder is run. By putting the publish configuration in the root of the repo, it will be
+    # copied into the ImageBuilder container and read from there.
+    - powershell: |-
+        $appsettingsJsonContent = @"
+        {
+          "PublishConfiguration": ${{ convertToJson(parameters.publishConfig) }}
+        }
+        "@
+        Set-Content -Path "appsettings.json" -Value $appsettingsJsonContent
+        Get-Content -Path "appsettings.json"
+      displayName: Output publish configuration
+      condition: and(succeeded(), ${{ parameters.condition }})
 
   - script: >-
       docker build

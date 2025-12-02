@@ -33,9 +33,9 @@ internal static class ContainerRegistryHelper
         return repoMock.Object;
     }
 
-    public static Mock<IContainerRegistryContentClient> CreateContainerRegistryContentClientMock(string repositoryName, Dictionary<string, ManifestQueryResult>? imageNameToQueryResultsMapping = null)
+    public static Mock<IAcrContentClient> CreateAcrContentClientMock(string repositoryName, Dictionary<string, ManifestQueryResult>? imageNameToQueryResultsMapping = null)
     {
-        Mock<IContainerRegistryContentClient> acrClientContentMock = new();
+        Mock<IAcrContentClient> acrClientContentMock = new();
         acrClientContentMock.SetupGet(o => o.RepositoryName).Returns(repositoryName);
         if (imageNameToQueryResultsMapping is not null)
         {
@@ -48,11 +48,11 @@ internal static class ContainerRegistryHelper
         return acrClientContentMock;
     }
 
-    public static IContainerRegistryContentClientFactory CreateContainerRegistryContentClientFactory(
-        string acrName, IEnumerable<Mock<IContainerRegistryContentClient>> acrContentClients)
+    public static IAcrContentClientFactory CreateAcrContentClientFactory(
+        string acrName, IEnumerable<Mock<IAcrContentClient>> acrContentClients)
     {
-        Mock<IContainerRegistryContentClientFactory> acrContentClientFactoryMock = new();
-        foreach (Mock<IContainerRegistryContentClient> clientMock in acrContentClients)
+        Mock<IAcrContentClientFactory> acrContentClientFactoryMock = new();
+        foreach (Mock<IAcrContentClient> clientMock in acrContentClients)
         {
             acrContentClientFactoryMock
                 .Setup(o => o.Create(acrName, clientMock.Object.RepositoryName, It.IsAny<IServiceConnection>()))
@@ -101,9 +101,9 @@ internal static class ContainerRegistryHelper
         return (ContainerRepositoryProperties)ctor.Invoke(args);
     }
 
-    public static Mock<IContainerRegistryClient> CreateContainerRegistryClientMock(IEnumerable<ContainerRepository> repositories)
+    public static Mock<IAcrClient> CreateAcrClientMock(IEnumerable<ContainerRepository> repositories)
     {
-        Mock<IContainerRegistryClient> acrClientMock = new();
+        Mock<IAcrClient> acrClientMock = new();
 
         IAsyncEnumerable<string> repositoryNames = repositories
             .Select(repo => repo.Name)
@@ -123,9 +123,9 @@ internal static class ContainerRegistryHelper
         return acrClientMock;
     }
 
-    public static IContainerRegistryClientFactory CreateContainerRegistryClientFactory(string acrName, IContainerRegistryClient acrClient)
+    public static IAcrClientFactory CreateAcrClientFactory(string acrName, IAcrClient acrClient)
     {
-        Mock<IContainerRegistryClientFactory> acrClientFactoryMock = new();
+        Mock<IAcrClientFactory> acrClientFactoryMock = new();
         acrClientFactoryMock
             .Setup(o => o.Create(acrName, It.IsAny<TokenCredential>()))
             .Returns(acrClient);

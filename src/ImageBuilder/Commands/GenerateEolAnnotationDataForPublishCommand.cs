@@ -18,8 +18,8 @@ public class GenerateEolAnnotationDataForPublishCommand :
 {
     public GenerateEolAnnotationDataForPublishCommand(
         ILoggerService loggerService,
-        IContainerRegistryClientFactory acrClientFactory,
-        IContainerRegistryContentClientFactory acrContentClientFactory,
+        IAcrClientFactory acrClientFactory,
+        IAcrContentClientFactory acrContentClientFactory,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)

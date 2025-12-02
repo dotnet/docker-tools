@@ -10,13 +10,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal class ManifestService : IManifestService
 {
-    private readonly IRegistryContentClientFactory _registryClientFactory;
+    private readonly IRegistryManifestClientFactory _registryClientFactory;
     private readonly string? _ownedAcr;
     private readonly IRegistryCredentialsHost? _credsHost;
     private readonly IServiceConnection? _serviceConnection;
 
     public ManifestService(
-        IRegistryContentClientFactory registryClientFactory,
+        IRegistryManifestClientFactory registryClientFactory,
         string? ownedAcr = null,
         IServiceConnection? serviceConnection = null,
         IRegistryCredentialsHost? credsHost = null)
@@ -36,7 +36,7 @@ internal class ManifestService : IManifestService
 
         ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
 
-        IRegistryContentClient registryClient = _registryClientFactory.Create(
+        IRegistryManifestClient registryClient = _registryClientFactory.Create(
             imageName.Registry!,
             imageName.Repo,
             _ownedAcr,

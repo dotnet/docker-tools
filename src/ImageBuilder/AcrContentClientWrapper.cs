@@ -10,7 +10,7 @@ using Azure.Containers.ContainerRegistry;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class ContainerRegistryContentClientWrapper(ContainerRegistryContentClient innerClient) : IContainerRegistryContentClient
+public class AcrContentClientWrapper(ContainerRegistryContentClient innerClient) : IAcrContentClient
 {
     private readonly ContainerRegistryContentClient _innerClient = innerClient;
 

@@ -4,9 +4,9 @@
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public interface IRegistryContentClientFactory
+public interface IRegistryManifestClientFactory
 {
-    IRegistryContentClient Create(
+    IRegistryManifestClient Create(
         string registry,
         string repo,
         string? ownedAcr = null,

@@ -66,14 +66,8 @@ jobs:
     parameters:
       name: BuildImages
       displayName: Build Images
-      serviceConnections:
-      # "name" here refers to the argument name, not the service connection name.
-      # It should probably be changed to "argName".
-      - name: acr
-        id: ${{ parameters.publishConfig.buildAcr.serviceConnection.id }}
-        tenantId: ${{ parameters.publishConfig.buildAcr.serviceConnection.tenantId }}
-        clientId: ${{ parameters.publishConfig.buildAcr.serviceConnection.clientId }}
-      - ${{ if parameters.storageAccountServiceConnection }}:
+      ${{ if parameters.storageAccountServiceConnection }}:
+        serviceConnections:
         - name: storage
           id: ${{ parameters.storageAccountServiceConnection.id }}
           tenantId: ${{ parameters.storageAccountServiceConnection.tenantId }}

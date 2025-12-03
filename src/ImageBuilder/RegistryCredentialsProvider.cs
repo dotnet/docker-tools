@@ -82,7 +82,7 @@ public class RegistryCredentialsProvider(
         TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
         var tenantGuid = Guid.Parse(acrConfig.ServiceConnection.TenantId);
         string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AzureScopes.DefaultAzureManagementScope]), CancellationToken.None)).Token;
-        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), Acr.Parse(acrConfig.Server).Name, tenantGuid, token);
+        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), Acr.Parse(acrConfig.Server), tenantGuid, token);
         return new RegistryCredentials(Guid.Empty.ToString(), refreshToken);
     }
 }

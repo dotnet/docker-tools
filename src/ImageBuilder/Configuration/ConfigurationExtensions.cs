@@ -12,7 +12,8 @@ public static class ConfigurationExtensions
 {
     public static void AddPublishConfiguration(this IHostApplicationBuilder builder)
     {
-        var publishConfigSection = builder.Configuration.GetSection(PublishConfiguration.ConfigurationKey);
-        builder.Services.AddOptions<PublishConfiguration>().Bind(publishConfigSection);
+        builder.Services
+            .AddOptions<PublishConfiguration>()
+            .BindConfiguration(PublishConfiguration.ConfigurationKey);
     }
 }

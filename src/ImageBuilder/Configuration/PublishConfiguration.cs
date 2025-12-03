@@ -11,7 +11,7 @@ public sealed record PublishConfiguration
 {
     public static string ConfigurationKey => nameof(PublishConfiguration);
 
-    public AcrConfiguration? BuildAcr { get; init; }
+    public AcrConfiguration? BuildAcr { get; set; }
 
     /// <summary>
     /// Gets all ACR configurations that were provided in the publish configuration.

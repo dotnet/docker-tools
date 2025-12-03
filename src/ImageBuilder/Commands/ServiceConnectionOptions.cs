@@ -10,13 +10,13 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public record ServiceConnectionOptions(
-    string TenantId,
-    string ClientId,
-    // TODO: Temporarily renamed from ServiceConnectionId to Id to match publish-config-(non)?prod.yaml.
-    // Should probably be changed back? Or not. "Id" is pretty self explanatory here.
-    string Id)
-    : IServiceConnection;
+public record ServiceConnectionOptions : IServiceConnection
+{
+    public string Name { get; set; } = "";
+    public string TenantId { get; set; } = "";
+    public string ClientId { get; set; } = "";
+    public string Id { get; set; } = "";
+}
 
 public class ServiceConnectionOptionsBuilder
 {
@@ -42,10 +42,12 @@ public class ServiceConnectionOptionsBuilder
                 var token = result.Tokens.Single();
                 var serviceConnectionInfo = token.Value.Split(':');
 
-                return new ServiceConnectionOptions(
-                    TenantId: serviceConnectionInfo[0],
-                    ClientId: serviceConnectionInfo[1],
-                    Id: serviceConnectionInfo[2]);
+                return new ServiceConnectionOptions()
+                {
+                    TenantId = serviceConnectionInfo[0],
+                    ClientId = serviceConnectionInfo[1],
+                    Id = serviceConnectionInfo[2],
+                };
             });
 
         return [option];

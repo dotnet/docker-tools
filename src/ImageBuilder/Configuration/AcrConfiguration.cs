@@ -9,12 +9,10 @@ namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
 public sealed record AcrConfiguration
 {
-    public static string ConfigurationKey => nameof(AcrConfiguration);
-
     // TODO: This was temporarily renamed to Server to match existing YAML configuration.
     // See publish-config-prod.yml and publish-config-prod.yml.
     // It should be renamed back to Repo once the YAML files are updated.
-    public Acr? Server { get; set; } = null;
+    public string? Server { get; set; } = null;
     public string? ResourceGroup { get; set; } = null;
     public string? Subscription { get; set; } = null;
     public string? RepoPrefix { get; set; } = null;

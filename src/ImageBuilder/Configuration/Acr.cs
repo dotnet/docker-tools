@@ -13,19 +13,24 @@ public sealed record Acr
     private const string AcrDomain = ".azurecr.io";
     private const string Https = "https://";
 
-    public Acr(string name)
+    private Acr(string name)
     {
-        Name = name
-            .ToLowerInvariant()
-            .TrimStartString(Https)
-            .TrimEndString(AcrDomain);
+        Name = name;
     }
 
     /// <summary>
-    /// Converts a string to an instance of <see cref="Acr"/>.
+    /// Parses a reference to an <see cref="Acr"/> from a string.
     /// </summary>
     /// <param name="registry">The name, login server, or URL of the ACR.</param>
-    public static implicit operator Acr(string registry) => new(registry);
+    public static Acr Parse(string name)
+    {
+        name = name
+            .ToLowerInvariant()
+            .TrimStartString(Https)
+            .TrimEndString(AcrDomain);
+
+        return new Acr(name);
+    }
 
     /// <summary>
     /// Name of the ACR without the ".azurecr.io" suffix.

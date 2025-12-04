@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands

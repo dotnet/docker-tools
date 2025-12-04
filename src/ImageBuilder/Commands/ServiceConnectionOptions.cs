@@ -6,17 +6,10 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
-
-public record ServiceConnectionOptions : IServiceConnection
-{
-    public string Name { get; set; } = "";
-    public string TenantId { get; set; } = "";
-    public string ClientId { get; set; } = "";
-    public string Id { get; set; } = "";
-}
 
 public class ServiceConnectionOptionsBuilder
 {

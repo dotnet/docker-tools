@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable

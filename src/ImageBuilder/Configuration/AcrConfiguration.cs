@@ -16,5 +16,5 @@ public sealed record AcrConfiguration
     public string? ResourceGroup { get; set; } = null;
     public string? Subscription { get; set; } = null;
     public string? RepoPrefix { get; set; } = null;
-    public ServiceConnectionOptions? ServiceConnection { get; set; } = null;
+    public ServiceConnection? ServiceConnection { get; set; } = null;
 }

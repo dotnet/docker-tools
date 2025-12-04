@@ -35,7 +35,7 @@ public class ServiceConnectionOptionsBuilder
                 var token = result.Tokens.Single();
                 var serviceConnectionInfo = token.Value.Split(':');
 
-                return new ServiceConnectionOptions()
+                return new ServiceConnection()
                 {
                     TenantId = serviceConnectionInfo[0],
                     ClientId = serviceConnectionInfo[1],

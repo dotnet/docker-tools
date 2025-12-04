@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CleanAcrImagesOptions : Options
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-        public ServiceConnectionOptions AcrServiceConnection { get; set; }
+        public ServiceConnection AcrServiceConnection { get; set; }
 
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }

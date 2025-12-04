@@ -5,7 +5,7 @@
 
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
-public record ServiceConnectionOptions : IServiceConnection
+public record ServiceConnection : IServiceConnection
 {
     /// <inheritdoc/>
     public string Name { get; set; } = "";

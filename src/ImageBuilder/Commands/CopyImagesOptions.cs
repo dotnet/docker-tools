@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class CopyImagesOptions : ManifestOptions, IFilterableOptions
 {
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
-    public ServiceConnectionOptions? AcrServiceConnection { get; set; }
+    public ServiceConnection? AcrServiceConnection { get; set; }
 
     public string ResourceGroup { get; set; } = string.Empty;
     public string Subscription { get; set; } = string.Empty;

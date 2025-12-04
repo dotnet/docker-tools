@@ -13,7 +13,7 @@ public class GenerateEolAnnotationDataOptions : Options
 {
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
     public RegistryOptions RegistryOptions { get; set; } = new();
-    public ServiceConnectionOptions? AcrServiceConnection { get; set; }
+    public ServiceConnection? AcrServiceConnection { get; set; }
     public string EolDigestsListPath { get; set; } = string.Empty;
 }
 

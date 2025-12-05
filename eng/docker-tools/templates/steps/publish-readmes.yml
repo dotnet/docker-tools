@@ -1,6 +1,12 @@
 parameters:
-  dryRunArg: ""
-  condition: true
+- name: publishConfig
+  type: object
+- name: dryRunArg
+  type: string
+  default: ""
+- name: condition
+  type: boolean
+  default: true
 
 steps:
 - script: >

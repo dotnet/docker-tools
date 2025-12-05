@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
-        private readonly Lazy<ICopyImageService> _copyImageService;
+        private readonly ICopyImageService _copyImageService;
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
@@ -49,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ILoggerService loggerService,
             IGitService gitService,
             IProcessService processService,
-            ICopyImageServiceFactory copyImageServiceFactory,
+            ICopyImageService copyImageService,
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
@@ -60,21 +60,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
+            _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _publishConfiguration = publishConfigOptions?.Value ?? throw new ArgumentNullException(nameof(publishConfigOptions));
 
             // Lazily create services which need access to options
-            ArgumentNullException.ThrowIfNull(copyImageServiceFactory);
-            _copyImageService = new Lazy<ICopyImageService>(() =>
-                copyImageServiceFactory.Create(_publishConfiguration.BuildAcr?.ServiceConnection));
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
-                manifestServiceFactory.Create(
-                    ownedAcr: Options.RegistryOverride,
-                    _publishConfiguration.BuildAcr?.ServiceConnection,
-                    Options.CredentialsOptions));
+                manifestServiceFactory.Create(Options.CredentialsOptions));
             _imageDigestCache = new ImageDigestCache(_manifestService);
 
             _imageNameResolver = new Lazy<ImageNameResolverForBuild>(() =>
@@ -623,7 +618,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
                                 .ToArray();
             string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
-            await _copyImageService.Value.ImportImageAsync(
+            await _copyImageService.ImportImageAsync(
                 Options.Subscription,
                 Options.ResourceGroup,
                 destTags,

@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.Extensions.Options;
 
@@ -33,13 +32,8 @@ public class RegistryResolver(IOptions<PublishConfiguration> publishConfigOption
                 ExplicitCredentials: explicitCreds);
         }
 
-        // Compare against all the ACRs passed in via the publish configuration
-        var maybeOwnedAcr = Acr.Parse(registry);
-        var knownAcrs = _publishConfig.GetKnownAcrConfigurations();
-        var ownedAcr = knownAcrs.FirstOrDefault(acrConfig =>
-            !string.IsNullOrWhiteSpace(acrConfig.Server)
-            && acrConfig.ToAcr() == maybeOwnedAcr
-            && acrConfig.ServiceConnection is not null);
+        // Look up the ACR in the publish configuration
+        var ownedAcr = _publishConfig.FindAcrByName(registry);
 
         return new RegistryInfo(
             EffectiveRegistry: registry,

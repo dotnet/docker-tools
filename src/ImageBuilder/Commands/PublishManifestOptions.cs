@@ -13,7 +13,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
-        public ServiceConnection? AcrServiceConnection { get; set; }
 
         public string ImageInfoPath { get; set; } = string.Empty;
 
@@ -26,15 +25,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
             .._manifestFilterOptionsBuilder.GetCliOptions(),
             .._registryCredentialsOptionsBuilder.GetCliOptions(),
-            .._serviceConnectionOptionsBuilder.GetCliOptions(
-                "acr-service-connection", nameof(PublishManifestOptions.AcrServiceConnection)),
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>

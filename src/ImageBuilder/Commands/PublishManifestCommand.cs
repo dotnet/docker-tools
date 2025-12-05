@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PublishManifestCommand : ManifestCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
     {
-        private readonly Lazy<IManifestService> _manifestService;
+        private readonly IManifestService _manifestService;
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
         private readonly IDateTimeService _dateTimeService;
@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private ConcurrentBag<string> _publishedManifestTags = new();
 
         public PublishManifestCommand(
-            IManifestServiceFactory manifestServiceFactory,
+            IManifestService manifestService,
             IDockerService dockerService,
             ILoggerService loggerService,
             IDateTimeService dateTimeService,
@@ -37,14 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
-
-            // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
-            ArgumentNullException.ThrowIfNull(manifestServiceFactory);
-            _manifestService = new Lazy<IManifestService>(() =>
-                manifestServiceFactory.Create(
-                    ownedAcr: Options.RegistryOverride,
-                    Options.AcrServiceConnection,
-                    Options.CredentialsOptions));
+            _manifestService = manifestService ?? throw new ArgumentNullException(nameof(manifestService));
         }
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
@@ -113,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 image.Manifest.Digest = DockerHelper.GetDigestString(
                     image.ManifestRepo.FullModelName,
-                    await _manifestService.Value.GetManifestDigestShaAsync(
+                    await _manifestService.GetManifestDigestShaAsync(
                         sharedTag.FullyQualifiedName, Options.IsDryRun));
 
                 IEnumerable<(string Repo, string Tag)> syndicatedRepresentativeSharedTags = image.ManifestImage.SharedTags
@@ -128,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     string digest = DockerHelper.GetDigestString(
                         DockerHelper.GetImageName(Manifest.Model.Registry, syndicatedSharedTag.Repo),
-                        await _manifestService.Value.GetManifestDigestShaAsync(
+                        await _manifestService.GetManifestDigestShaAsync(
                             DockerHelper.GetImageName(Manifest.Registry, Options.RepoPrefix + syndicatedSharedTag.Repo, syndicatedSharedTag.Tag),
                             Options.IsDryRun));
                     image.Manifest.SyndicatedDigests.Add(digest);
@@ -172,7 +165,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void GenerateManifest(RepoInfo repo, ImageInfo image, string tag, Func<string, string> getImageName,
+        private void GenerateManifest(
+            RepoInfo repo,
+            ImageInfo image,
+            string tag,
+            Func<string, string> getImageName,
             Func<PlatformInfo, TagInfo?> getTagRepresentative)
         {
             string manifestListTag = getImageName(tag);

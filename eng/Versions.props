@@ -8,6 +8,7 @@
     <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
+    <PreReleaseVersionLabel>beta</PreReleaseVersionLabel>
 
     <!-- Arcade features -->
     <UsingToolXliff>false</UsingToolXliff>

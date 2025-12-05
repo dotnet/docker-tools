@@ -2,27 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Configuration;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
 public class RegistryCredentialsProvider(
-    ILoggerService loggerService,
     IHttpClientProvider httpClientProvider,
     IAzureTokenCredentialProvider tokenCredentialProvider,
-    IOptions<PublishConfiguration> publishConfigOptions)
+    IRegistryResolver registryResolver)
     : IRegistryCredentialsProvider
 {
-    private readonly ILoggerService _loggerService = loggerService;
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
-    private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
+    private readonly IRegistryResolver _registryResolver = registryResolver;
 
     /// <summary>
     /// Dynamically gets the RegistryCredentials for the specified registry in the following order of preference:
@@ -36,35 +32,17 @@ public class RegistryCredentialsProvider(
         string registry,
         IRegistryCredentialsHost? credsHost)
     {
-        var explicitCreds = credsHost?.TryGetCredentials(registry);
+        RegistryInfo registryInfo = _registryResolver.Resolve(registry, credsHost);
 
-        // Docker Hub's registry has a separate host name for its API
-        if (registry == DockerHelper.DockerHubRegistry)
-        {
-            registry = DockerHelper.DockerHubApiRegistry;
-
-            // This is definitely not an ACR, so don't bother checking ACRs
-            // passed in via the publish configuration.
-            return explicitCreds;
-        }
-
-        // Compare against all the ACRs passed in via the publish configuration
-        var maybeOwnedAcr = Acr.Parse(registry);
-        var knownAcrs = _publishConfig.GetKnownAcrConfigurations();
-        var ownedAcr = knownAcrs
-            .FirstOrDefault(acr =>
-                !string.IsNullOrWhiteSpace(acr.Server)
-                && Acr.Parse(acr.Server) == maybeOwnedAcr);
-
-        if (ownedAcr is not null && ownedAcr.ServiceConnection is not null)
+        if (registryInfo.OwnedAcr is not null)
         {
             // If we're here, we know we own the ACR and have a service
             // connection we can use for authentication.
-            return await GetAcrCredentialsWithOAuthAsync(ownedAcr);
+            return await GetAcrCredentialsWithOAuthAsync(registryInfo.OwnedAcr);
         }
 
         // Fall back to credentials explicitly passed in via command line.
-        return explicitCreds;
+        return registryInfo.ExplicitCredentials;
     }
 
     private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(AcrConfiguration acrConfig)

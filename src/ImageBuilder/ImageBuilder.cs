@@ -54,6 +54,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<IOrasClient, OrasClient>();
             builder.Services.AddSingleton<IProcessService, ProcessService>();
+            builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
             builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();

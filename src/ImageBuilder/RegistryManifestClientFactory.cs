@@ -1,43 +1,41 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.ImageBuilder.Configuration;
+
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
 
 public class RegistryManifestClientFactory(
     IHttpClientProvider httpClientProvider,
-    IAcrContentClientFactory acrContentClientFactory)
+    IAcrContentClientFactory acrContentClientFactory,
+    IRegistryResolver registryResolver)
     : IRegistryManifestClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IAcrContentClientFactory _acrContentClientFactory = acrContentClientFactory;
+    private readonly IRegistryResolver _registryResolver = registryResolver;
 
-    public IRegistryManifestClient Create(
-        string registry,
-        string repo,
-        string? ownedAcr = null,
-        IServiceConnection? serviceConnection = null,
-        IRegistryCredentialsHost? credsHost = null)
+    public IRegistryManifestClient Create(string registry, string repo, IRegistryCredentialsHost? credsHost = null)
     {
-        // Docker Hub's registry has a separate host name for its API
-        string apiRegistry = registry == DockerHelper.DockerHubRegistry ?
-            DockerHelper.DockerHubApiRegistry :
-            registry;
+        RegistryInfo registryInfo = _registryResolver.Resolve(registry, credsHost);
 
-        if (!string.IsNullOrEmpty(ownedAcr))
+        if (registryInfo.OwnedAcr is not null)
         {
-            ownedAcr = DockerHelper.FormatAcrName(ownedAcr);
+            // If we're here, we know we own the ACR and have a service
+            // connection we can use for authentication.
+            // Create using Azure SDK.
+            var acr = registryInfo.OwnedAcr.ToAcr()!;
+            return _acrContentClientFactory.Create(acr, repo, registryInfo.OwnedAcr.ServiceConnection);
         }
 
-        if (apiRegistry == ownedAcr)
-        {
-            // If the target registry is the owned ACR, connect to it with the Azure library API. This handles all the Azure auth.
-            return _acrContentClientFactory.Create(ownedAcr, repo, serviceConnection);
-        }
-
-        // Look up the credentials, if any, for the registry where the image is located
-        RegistryCredentials? registryCreds = credsHost?.TryGetCredentials(registry);
-        return new RegistryApiClient(apiRegistry, repo, _httpClientProvider.GetRegistryClient(), registryCreds);
+        // Fall back to credentials explicitly passed in via command line.
+        // Create using explicit credentials, if any.
+        return new RegistryApiClient(
+            registryInfo.EffectiveRegistry,
+            repo,
+            _httpClientProvider.GetRegistryClient(),
+            registryInfo.ExplicitCredentials);
     }
 }

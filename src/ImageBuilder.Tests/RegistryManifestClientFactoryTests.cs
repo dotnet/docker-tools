@@ -1,10 +1,13 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#nullable enable
+
 using System;
 using System.Collections.Generic;
 using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Moq;
 using Xunit;
 
@@ -22,34 +25,45 @@ public class RegistryManifestClientFactoryTests
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>();
-        IServiceConnection serviceConnection = Mock.Of<IServiceConnection>();
 
         IAcrContentClient contentClient = Mock.Of<IAcrContentClient>();
 
         Mock<IAcrContentClientFactory> acrContentClientFactoryMock = new();
         acrContentClientFactoryMock
-            .Setup(o => o.Create(AcrName, RepoName, serviceConnection))
+            .Setup(o => o.Create(It.IsAny<Acr>(), RepoName))
             .Returns(contentClient);
 
+        // Create a mock IRegistryResolver that returns an OwnedAcr for the given registry
+        Mock<IRegistryResolver> registryResolverMock = new();
+        registryResolverMock
+            .Setup(o => o.Resolve(AcrName, It.IsAny<IRegistryCredentialsHost?>()))
+            .Returns(new RegistryInfo(AcrName, new AcrConfiguration { Server = ownedAcr }, null));
 
         RegistryManifestClientFactory clientFactory = new(
             Mock.Of<IHttpClientProvider>(),
-            acrContentClientFactoryMock.Object);
-        IRegistryManifestClient client = clientFactory.Create(AcrName, RepoName, ownedAcr, serviceConnection, credsHost);
+            acrContentClientFactoryMock.Object,
+            registryResolverMock.Object);
+        IRegistryManifestClient client = clientFactory.Create(AcrName, RepoName, credsHost);
 
         Assert.Same(contentClient, client);
     }
 
     [Theory]
-    [InlineData("test.azurecr.io", "https://test.azurecr.io/")]
-    [InlineData("mcr.microsoft.com", "https://mcr.microsoft.com/")]
-    [InlineData(DockerHelper.DockerHubRegistry, $"https://{DockerHelper.DockerHubApiRegistry}/")]
-    public void CreateOtherRegistryClient(string registry, string expectedBaseUri)
+    [InlineData("test.azurecr.io", "test.azurecr.io", "https://test.azurecr.io/")]
+    [InlineData("mcr.microsoft.com", "mcr.microsoft.com", "https://mcr.microsoft.com/")]
+    [InlineData(DockerHelper.DockerHubRegistry, DockerHelper.DockerHubApiRegistry, $"https://{DockerHelper.DockerHubApiRegistry}/")]
+    public void CreateOtherRegistryClient(string registry, string effectiveRegistry, string expectedBaseUri)
     {
-        ManifestOptions options = Mock.Of<ManifestOptions>(options => options.RegistryOverride == "my-acr");
+        // Create a mock IRegistryResolver that returns no OwnedAcr (external registry)
+        Mock<IRegistryResolver> registryResolverMock = new();
+        registryResolverMock
+            .Setup(o => o.Resolve(registry, It.IsAny<IRegistryCredentialsHost?>()))
+            .Returns(new RegistryInfo(effectiveRegistry, null, null));
+
         RegistryManifestClientFactory clientFactory = new(
             Mock.Of<IHttpClientProvider>(),
-            Mock.Of<IAcrContentClientFactory>());
+            Mock.Of<IAcrContentClientFactory>(),
+            registryResolverMock.Object);
         IRegistryCredentialsHost credsHost = Mock.Of<IRegistryCredentialsHost>(host => host.Credentials == new Dictionary<string, RegistryCredentials>());
         IRegistryManifestClient client = clientFactory.Create(registry, "repo-name");
 

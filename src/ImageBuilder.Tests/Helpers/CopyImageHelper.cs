@@ -9,21 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 
 internal static class CopyImageHelper
 {
-    /// <summary>
-    /// Creates a mock of the <see cref="ICopyImageServiceFactory"/> interface.
-    /// </summary>
-    /// <param name="copyImageService">Optional service to return when calling the factory's Create method.</param>
-    /// <returns></returns>
-    public static Mock<ICopyImageServiceFactory> CreateCopyImageServiceFactoryMock(
-        ICopyImageService? copyImageService = null)
-    {
-        copyImageService ??= new Mock<ICopyImageService>().Object;
-
-        var factoryMock = new Mock<ICopyImageServiceFactory>();
-        factoryMock
-            .Setup(o => o.Create(It.IsAny<IServiceConnection>()))
-            .Returns(copyImageService);
-
-        return factoryMock;
-    }
+    // ICopyImageService is now mocked directly using Mock.Of<ICopyImageService>()
+    // since we no longer have a factory
 }

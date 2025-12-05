@@ -54,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -126,7 +126,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -176,7 +176,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -220,7 +220,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILoggerService>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -274,7 +274,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -336,7 +336,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(age, repo1Name);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), lifecycleMetadataServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), lifecycleMetadataServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;
@@ -391,7 +391,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<IAzureTokenCredentialProvider>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILoggerService>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
             command.Options.Subscription = subscription;
             command.Options.ResourceGroup = resourceGroup;
             command.Options.RegistryName = AcrName;

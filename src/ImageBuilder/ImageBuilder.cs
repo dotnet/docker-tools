@@ -48,7 +48,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
             builder.Services.AddSingleton<ILoggerService, LoggerService>();
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
-            builder.Services.AddSingleton<IManifestService>(sp => sp.GetRequiredService<IManifestServiceFactory>().Create());
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
             builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();

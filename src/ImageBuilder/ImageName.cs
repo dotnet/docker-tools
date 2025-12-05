@@ -4,20 +4,20 @@
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class ImageName
+public record ImageName
 {
     public ImageName(string? registry, string repo, string? tag, string? digest)
     {
-        Registry = registry;
+        Registry = registry ?? "";
         Repo = repo;
-        Tag = tag;
-        Digest = digest;
+        Tag = tag ?? "";
+        Digest = digest ?? "";
     }
 
-    public string? Registry { get; }
+    public string Registry { get; }
     public string Repo { get; }
-    public string? Tag { get; }
-    public string? Digest { get; }
+    public string Tag { get; }
+    public string Digest { get; }
 
     /// <summary>
     /// Parses an image name into its constituent parts.
@@ -78,4 +78,3 @@ public class ImageName
         return new ImageName(registry, repo, tag, digest);
     }
 }
-#nullable disable

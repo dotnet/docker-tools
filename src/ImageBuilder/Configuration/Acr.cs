@@ -3,6 +3,8 @@
 
 #nullable enable
 
+using System;
+
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
 /// <summary>
@@ -49,4 +51,9 @@ public sealed record Acr
     /// E.g. "https://myregistry.azurecr.io"
     /// </summary>
     public string RegistryUrl => $"https://{Server}";
+
+    /// <summary>
+    /// E.g. "https://myregistry.azurecr.io" as an instance of a <see cref="Uri"/>
+    /// </summary>
+    public Uri RegistryUri => new(RegistryUrl);
 }

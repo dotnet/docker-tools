@@ -3,8 +3,6 @@
 
 #nullable enable
 
-using Microsoft.DotNet.ImageBuilder.Commands;
-
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
 public sealed record AcrConfiguration
@@ -17,4 +15,17 @@ public sealed record AcrConfiguration
     public string? Subscription { get; set; } = null;
     public string? RepoPrefix { get; set; } = null;
     public ServiceConnection? ServiceConnection { get; set; } = null;
+}
+
+public static class AcrConfigurationExtensions
+{
+    public static Acr? ToAcr(this AcrConfiguration acrConfig)
+    {
+        if (string.IsNullOrWhiteSpace(acrConfig.Server))
+        {
+            return null;
+        }
+
+        return Acr.Parse(acrConfig.Server);
+    }
 }

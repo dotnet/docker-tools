@@ -27,7 +27,7 @@ public class RegistryManifestClientFactory(
             // connection we can use for authentication.
             // Create using Azure SDK.
             var acr = registryInfo.OwnedAcr.ToAcr()!;
-            return _acrContentClientFactory.Create(acr, repo, registryInfo.OwnedAcr.ServiceConnection);
+            return _acrContentClientFactory.Create(acr, repo);
         }
 
         // Fall back to credentials explicitly passed in via command line.

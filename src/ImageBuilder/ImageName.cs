@@ -20,6 +20,36 @@ public record ImageName
     public string Digest { get; }
 
     /// <summary>
+    /// Implicitly converts a string to an ImageName.
+    /// </summary>
+    public static implicit operator ImageName(string imageName) => Parse(imageName, true);
+
+    /// <summary>
+    /// Implicitly converts an ImageName to a string.
+    /// </summary>
+    public static implicit operator string(ImageName imageName) => imageName.ToString();
+
+    /// <summary>
+    /// Formats the image name as a string.
+    /// </summary>
+    public override string ToString()
+    {
+        string imageName = string.IsNullOrWhiteSpace(Registry) ? Repo : $"{Registry}/{Repo}";
+
+        if (!string.IsNullOrWhiteSpace(Tag))
+        {
+            imageName = $"{imageName}:{Tag}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(Digest))
+        {
+            imageName = $"{imageName}@{Digest}";
+        }
+
+        return imageName;
+    }
+
+    /// <summary>
     /// Parses an image name into its constituent parts.
     /// </summary>
     /// <param name="imageName">The image name to parse.</param>
@@ -40,7 +70,7 @@ public record ImageName
 
         if (registry is null && autoResolveImpliedNames)
         {
-            registry = DockerHelper.DockerHubRegistry;
+            registry ??= DockerHelper.DockerHubRegistry;
         }
 
         string? tag = null;

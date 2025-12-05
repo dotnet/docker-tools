@@ -5,8 +5,8 @@ parameters:
   type: string
   default: ""
 - name: condition
-  type: boolean
-  default: true
+  type: string
+  default: "true"
 
 steps:
 - script: >

@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
@@ -14,18 +13,15 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCom
     where TOptions : CopyImagesOptions, new()
     where TOptionsBuilder : CopyImagesOptionsBuilder, new()
 {
-    private readonly Lazy<ICopyImageService> _copyImageService;
+    private readonly ICopyImageService _copyImageService;
 
-    private ICopyImageService CopyImageService => _copyImageService.Value;
-
-    public CopyImagesCommand(ICopyImageServiceFactory copyImageServiceFactory, ILoggerService loggerService)
+    public CopyImagesCommand(ICopyImageService copyImageService, ILoggerService loggerService)
     {
         LoggerService = loggerService;
-        _copyImageService = new Lazy<ICopyImageService>(() =>
-            copyImageServiceFactory.Create(Options.AcrServiceConnection));
+        _copyImageService = copyImageService;
     }
 
-    public ILoggerService LoggerService { get; }
+    protected ILoggerService LoggerService { get; }
 
     protected Task ImportImageAsync(
         string destTagName,
@@ -34,7 +30,7 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCom
         string? srcRegistryName = null,
         ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
-            CopyImageService.ImportImageAsync(
+            _copyImageService.ImportImageAsync(
                 Options.Subscription,
                 Options.ResourceGroup,
                 [destTagName],

@@ -60,15 +60,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            // Prepopulate the credential cache with the container registry scope so that the OIDC token isn't expired by the time we
-            // need to query the registry at the end of the command.
-            if (!Options.IsDryRun)
-            {
-                _tokenCredentialProvider.GetCredential(
-                    Options.AcrServiceConnection,
-                    AzureScopes.ContainerRegistryScope);
-            }
-
             ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(

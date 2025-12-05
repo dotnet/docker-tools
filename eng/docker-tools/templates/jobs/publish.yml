@@ -95,11 +95,6 @@ jobs:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Copy Images
-      serviceConnections:
-      - name: acr
-        id: ${{ parameters.publishConfig.publishAcr.serviceConnection.id }}
-        tenantId: ${{ parameters.publishConfig.publishAcr.serviceConnection.tenantId }}
-        clientId: ${{ parameters.publishConfig.publishAcr.serviceConnection.clientId }}
       internalProjectName: ${{ parameters.internalProjectName }}
       args: >-
         copyAcrImages
@@ -118,11 +113,6 @@ jobs:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Publish Manifest
-      serviceConnections:
-      - name: acr
-        id: ${{ parameters.publishConfig.publishAcr.serviceConnection.id }}
-        tenantId: ${{ parameters.publishConfig.publishAcr.serviceConnection.tenantId }}
-        clientId: ${{ parameters.publishConfig.publishAcr.serviceConnection.clientId }}
       internalProjectName: ${{ parameters.internalProjectName }}
       dockerClientOS: ${{ parameters.dockerClientOS }}
       args: >-
@@ -208,11 +198,6 @@ jobs:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: Generate EOL Annotation Data
-      serviceConnections:
-      - name: acr
-        id: ${{ parameters.publishConfig.publishAcr.serviceConnection.id }}
-        tenantId: ${{ parameters.publishConfig.publishAcr.serviceConnection.tenantId }}
-        clientId: ${{ parameters.publishConfig.publishAcr.serviceConnection.clientId }}
       internalProjectName: internal
       condition: and(succeeded(), eq(variables['publishEolAnnotations'], 'true'))
       args: >-

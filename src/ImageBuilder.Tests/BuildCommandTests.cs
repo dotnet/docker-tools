@@ -1926,7 +1926,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps3Repo}:{tag}", false), Times.Once);
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(It.IsAny<string>(), false));
+            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(It.IsAny<ImageName>(), false));
 
             dockerServiceMock.Verify(o => o.PullImage(runtimeDepsDigest, null, false));
             dockerServiceMock.Verify(o => o.CreateTag(runtimeDepsDigest, $"{runtimeDepsRepo}:{tag}", false));

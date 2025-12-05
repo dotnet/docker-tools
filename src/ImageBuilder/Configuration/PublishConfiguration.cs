@@ -41,5 +41,20 @@ public sealed record PublishConfiguration
         {
             yield return BuildAcr;
         }
+
+        if (PublishAcr is not null)
+        {
+            yield return PublishAcr;
+        }
+
+        if (InternalMirrorAcr is not null)
+        {
+            yield return InternalMirrorAcr;
+        }
+
+        if (PublicMirrorAcr is not null)
+        {
+            yield return PublicMirrorAcr;
+        }
     }
 }

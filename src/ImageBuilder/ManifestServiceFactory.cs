@@ -9,12 +9,9 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private readonly IRegistryManifestClientFactory _registryClientFactory = registryClientFactory;
 
-        public IManifestService Create(
-            string? ownedAcr = null,
-            IServiceConnection? serviceConnection = null,
-            IRegistryCredentialsHost? credsHost = null)
+        public IManifestService Create(IRegistryCredentialsHost? credsHost = null)
         {
-            return new ManifestService(_registryClientFactory, ownedAcr, serviceConnection, credsHost);
+            return new ManifestService(_registryClientFactory, credsHost);
         }
     }
 }

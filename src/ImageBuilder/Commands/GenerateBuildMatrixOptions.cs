@@ -24,7 +24,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? SourceRepoUrl { get; set; }
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
         public bool TrimCachedImages { get; set; }
-        public ServiceConnection? ServiceConnection { get; set; }
     }
 
     public class GenerateBuildMatrixOptionsBuilder : ManifestOptionsBuilder
@@ -34,7 +33,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
         private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
             [
@@ -42,8 +40,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .._manifestFilterOptionsBuilder.GetCliOptions(),
                 .._baseImageOverrideOptionsBuilder.GetCliOptions(),
                 .._registryCredentialsOptionsBuilder.GetCliOptions(),
-                .._serviceConnectionOptionsBuilder.GetCliOptions(
-                    "acr-service-connection", nameof(GenerateBuildMatrixOptions.ServiceConnection)),
                 CreateOption("type", nameof(GenerateBuildMatrixOptions.MatrixType),
                     $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(DefaultMatrixType)}", DefaultMatrixType),
                 CreateMultiOption<string>("custom-build-leg-group", nameof(GenerateBuildMatrixOptions.CustomBuildLegGroups),

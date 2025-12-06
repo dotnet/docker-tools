@@ -153,6 +153,7 @@ jobs:
 
   - template: /eng/docker-tools/templates/steps/publish-readmes.yml@self
     parameters:
+      publishConfig: ${{ parameters.publishConfig }}
       dryRunArg: $(dryRunArg)
       condition: and(succeeded(), eq(variables['publishReadme'], 'true'))
 

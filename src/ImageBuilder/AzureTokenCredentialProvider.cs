@@ -3,8 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Azure.Core;
 using Azure.Identity;
 
@@ -15,21 +13,28 @@ namespace Microsoft.DotNet.ImageBuilder;
 internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 {
     private readonly object _cacheLock = new();
-    private readonly Dictionary<string, TokenCredential?> _credentialsCache = [];
+    private readonly Dictionary<string, TokenCredential> _credentialsCache = [];
     private readonly string _systemAccessToken = Environment.GetEnvironmentVariable("SYSTEM_ACCESSTOKEN") ?? "";
 
     /// <summary>
     /// Get a TokenCredential for the specified service connection. Only works in the context of an Azure Pipeline.
     /// Ensure that the SYSTEM_ACCESSTOKEN environment variable is set in the pipeline.
     /// </summary>
+    /// <remarks>
+    /// The returned TokenCredential handles token caching and refresh automatically via the Azure SDK.
+    /// Tokens are refreshed when they are close to expiring, so long-running operations will not fail
+    /// due to token expiration.
+    /// </remarks>
     /// <param name="serviceConnection">Details about the Azure DevOps service connection to use.</param>
-    /// <param name="scope">The scope to request for the token. This might be a URL or a GUID.</param>
+    /// <param name="scope">The scope to request for the token. This parameter is ignored; the credential
+    /// will request the appropriate scope when GetToken is called.</param>
     /// <returns>A <see cref="TokenCredential"/> that can be used to authenticate to Azure services.</returns>
     public TokenCredential GetCredential(
         IServiceConnection? serviceConnection,
         string scope = AzureScopes.DefaultAzureManagementScope)
     {
-        string cacheKey = $"{serviceConnection?.ServiceConnectionId}:{scope}";
+        // Cache by service connection ID only. The TokenCredential handles different scopes internally.
+        string cacheKey = serviceConnection?.ServiceConnectionId ?? "default";
 
         return LockHelper.DoubleCheckedLockLookup(
             lockObj: _cacheLock,
@@ -76,14 +81,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
                     );
                 }
 
-                var accessToken = credential.GetToken(new TokenRequestContext([scope]), CancellationToken.None);
-                return new StaticTokenCredential(accessToken);
+                return credential;
             });
-    }
-
-    private class StaticTokenCredential(AccessToken accessToken) : TokenCredential
-    {
-        public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken) => accessToken;
-        public override ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken) => ValueTask.FromResult(accessToken);
     }
 }

@@ -45,7 +45,7 @@ public class RegistryCredentialsProvider(
         return registryInfo.ExplicitCredentials;
     }
 
-    private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(AcrConfiguration acrConfig)
+    private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(RegistryConfiguration acrConfig)
     {
         if (acrConfig.ServiceConnection is null)
         {

@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <param name="ExplicitCredentials">Fallback credentials explicitly passed in via command line.</param>
 public record RegistryInfo(
     string EffectiveRegistry,
-    AcrConfiguration? OwnedAcr,
+    RegistryConfiguration? OwnedAcr,
     RegistryCredentials? ExplicitCredentials);
 
 /// <summary>

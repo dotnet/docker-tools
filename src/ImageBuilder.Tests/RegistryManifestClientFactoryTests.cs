@@ -37,7 +37,7 @@ public class RegistryManifestClientFactoryTests
         Mock<IRegistryResolver> registryResolverMock = new();
         registryResolverMock
             .Setup(o => o.Resolve(AcrName, It.IsAny<IRegistryCredentialsHost?>()))
-            .Returns(new RegistryInfo(AcrName, new AcrConfiguration { Server = ownedAcr }, null));
+            .Returns(new RegistryInfo(AcrName, new RegistryConfiguration { Server = ownedAcr }, null));
 
         RegistryManifestClientFactory clientFactory = new(
             Mock.Of<IHttpClientProvider>(),

@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
@@ -14,28 +15,28 @@ public sealed record PublishConfiguration
     /// <summary>
     /// Images are built and pushed into this registry before testing and publishing.
     /// </summary>
-    public AcrConfiguration? BuildAcr { get; set; }
+    public RegistryConfiguration? BuildAcr { get; set; }
 
     /// <summary>
     /// Images are copied from <see cref="BuildAcr"/> to this registry during publishing.
     /// </summary>
-    public AcrConfiguration? PublishAcr { get; set; }
+    public RegistryConfiguration? PublishAcr { get; set; }
 
     /// <summary>
     /// External image dependencies are mirrored to this registry.
     /// </summary>
-    public AcrConfiguration? InternalMirrorAcr { get; set; }
+    public RegistryConfiguration? InternalMirrorAcr { get; set; }
 
     /// <summary>
     /// External images are mirrored to this registry. This registry has anonymous pull access
     /// enabled so that it can be used in public PR validation.
     /// </summary>
-    public AcrConfiguration? PublicMirrorAcr { get; set; }
+    public RegistryConfiguration? PublicMirrorAcr { get; set; }
 
     /// <summary>
     /// Gets all ACR configurations that were provided in the publish configuration.
     /// </summary>
-    public IEnumerable<AcrConfiguration> GetKnownAcrConfigurations()
+    public IEnumerable<RegistryConfiguration> GetKnownAcrConfigurations()
     {
         if (BuildAcr is not null)
         {

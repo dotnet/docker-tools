@@ -7,9 +7,30 @@ namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
 public sealed record RegistryConfiguration
 {
+    /// <summary>
+    /// The registry endpoint. Examples: "myregistry.azurecr.io",
+    /// "mcr.microsoft.com/dotnet/sdk", "localhost:5000", etc.
+    /// </summary>
     public string? Server { get; set; } = null;
+
+    /// <summary>
+    /// If the registry is an ACR, this is the Azure resource group that the ACR is in.
+    /// </summary>
     public string? ResourceGroup { get; set; } = null;
+
+    /// <summary>
+    /// If the registry is an ACR, this is the Azure subscription that the ACR belongs to.
+    /// </summary>
     public string? Subscription { get; set; } = null;
+
+    /// <summary>
+    /// E.g. "public/" or "prefix-". A delimiter (slash/dash/etc.) is not automatically added to
+    /// the end of this prefix. It should be included if necessary.
+    /// </summary>
     public string? RepoPrefix { get; set; } = null;
+
+    /// <summary>
+    /// The Azure DevOps service connection to use for authentication to the registry.
+    /// </summary>
     public ServiceConnection? ServiceConnection { get; set; } = null;
 }

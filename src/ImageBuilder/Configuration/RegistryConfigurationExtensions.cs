@@ -3,6 +3,8 @@
 
 #nullable enable
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
 public static class RegistryConfigurationExtensions
@@ -21,9 +23,21 @@ public static class RegistryConfigurationExtensions
     /// <summary>
     /// Determines if the registry is an Azure Container Registry that we can authenticate to.
     /// </summary>
-    public static bool IsOwnedAcr(this RegistryConfiguration registry)
+    /// <returns>True if the registry is an Azure Container Registry that we can authenticate to.</returns>
+    public static bool IsOwnedAcr(
+        this RegistryConfiguration registry,
+        [NotNullWhen(true)] out Acr? acr,
+        [NotNullWhen(true)] out ServiceConnection? serviceConnection)
     {
-        return !string.IsNullOrWhiteSpace(registry.Server)
-            && registry.ServiceConnection is not null;
+        if (string.IsNullOrWhiteSpace(registry.Server) || registry.ServiceConnection is null)
+        {
+            acr = null;
+            serviceConnection = null;
+            return false;
+        }
+
+        acr = Acr.Parse(registry.Server);
+        serviceConnection = registry.ServiceConnection;
+        return true;
     }
 }

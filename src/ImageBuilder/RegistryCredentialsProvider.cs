@@ -45,22 +45,17 @@ public class RegistryCredentialsProvider(
         return registryInfo.ExplicitCredentials;
     }
 
-    private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(RegistryConfiguration acrConfig)
+    private async ValueTask<RegistryCredentials> GetAcrCredentialsWithOAuthAsync(RegistryConfiguration registryConfig)
     {
-        if (acrConfig.ServiceConnection is null)
+        if (!registryConfig.IsOwnedAcr(out var acr, out var serviceConnection))
         {
-            throw new ArgumentNullException(nameof(acrConfig.ServiceConnection));
+            throw new InvalidOperationException($"Registry '{registryConfig}' is not an owned ACR.");
         }
 
-        if (acrConfig.Server is null)
-        {
-            throw new ArgumentNullException(nameof(acrConfig.Server));
-        }
-
-        TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
-        var tenantGuid = Guid.Parse(acrConfig.ServiceConnection.TenantId);
+        TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
+        var tenantGuid = Guid.Parse(serviceConnection.TenantId);
         string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AzureScopes.DefaultAzureManagementScope]), CancellationToken.None)).Token;
-        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), Acr.Parse(acrConfig.Server), tenantGuid, token);
+        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), acr, tenantGuid, token);
         return new RegistryCredentials(Guid.Empty.ToString(), refreshToken);
     }
 }

@@ -28,7 +28,6 @@ public static class ConfigurationExtensions
     {
         var targetAcr = Acr.Parse(registryName);
         return publishConfig.GetKnownRegistries()
-            .Where(registry => registry.IsOwnedAcr())
-            .FirstOrDefault(config => config.ToAcr() == targetAcr);
+            .FirstOrDefault(registry => registry.IsOwnedAcr(out var acr, out var sc) && acr == targetAcr);
     }
 }

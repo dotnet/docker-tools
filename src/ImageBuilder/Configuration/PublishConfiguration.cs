@@ -4,6 +4,7 @@
 #nullable enable
 
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
@@ -37,24 +38,16 @@ public sealed record PublishConfiguration
     /// </summary>
     public IEnumerable<RegistryConfiguration> GetKnownRegistries()
     {
-        if (BuildRegistry is not null)
-        {
-            yield return BuildRegistry;
-        }
+        RegistryConfiguration?[] registries =
+        [
+            BuildRegistry,
+            PublishRegistry,
+            InternalMirrorRegistry,
+            PublicMirrorRegistry
+        ];
 
-        if (PublishRegistry is not null)
-        {
-            yield return PublishRegistry;
-        }
-
-        if (InternalMirrorRegistry is not null)
-        {
-            yield return InternalMirrorRegistry;
-        }
-
-        if (PublicMirrorRegistry is not null)
-        {
-            yield return PublicMirrorRegistry;
-        }
+        // Use OfType to filter out null values, since Where(x => x is not null)
+        // does not get rid of the nullable annotation on RegistryConfiguration?.
+        return registries.OfType<RegistryConfiguration>();
     }
 }

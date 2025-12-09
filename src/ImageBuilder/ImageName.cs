@@ -70,7 +70,7 @@ public record ImageName
 
         if (registry is null && autoResolveImpliedNames)
         {
-            registry ??= DockerHelper.DockerHubRegistry;
+            registry = DockerHelper.DockerHubRegistry;
         }
 
         string? tag = null;

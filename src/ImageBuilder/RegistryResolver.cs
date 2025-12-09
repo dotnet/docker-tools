@@ -33,7 +33,7 @@ public class RegistryResolver(IOptions<PublishConfiguration> publishConfigOption
         }
 
         // Look up the ACR in the publish configuration
-        var ownedAcr = _publishConfig.FindAcrByName(registry);
+        var ownedAcr = _publishConfig.FindOwnedAcrByName(registry);
 
         return new RegistryInfo(
             EffectiveRegistry: registry,

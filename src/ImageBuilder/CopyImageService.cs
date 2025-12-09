@@ -113,7 +113,7 @@ public class CopyImageService : ICopyImageService
     private ArmClient GetArmClientForAcr(string acrName)
     {
         // Look up the service connection for this ACR from the publish configuration
-        var acrConfig = _publishConfig.FindAcrByName(acrName);
+        var acrConfig = _publishConfig.FindOwnedAcrByName(acrName);
 
         if (acrConfig?.ServiceConnection is null)
         {

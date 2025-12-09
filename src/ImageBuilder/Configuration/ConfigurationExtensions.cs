@@ -24,12 +24,11 @@ public static class ConfigurationExtensions
     /// <param name="publishConfig">The publish configuration to search.</param>
     /// <param name="registryName">The registry name to look up (e.g., "myacr.azurecr.io" or "myacr").</param>
     /// <returns>The matching <see cref="RegistryConfiguration"/> with a service connection, or null if not found.</returns>
-    public static RegistryConfiguration? FindAcrByName(this PublishConfiguration publishConfig, string registryName)
+    public static RegistryConfiguration? FindOwnedAcrByName(this PublishConfiguration publishConfig, string registryName)
     {
         var targetAcr = Acr.Parse(registryName);
-        return publishConfig.GetKnownAcrConfigurations().FirstOrDefault(config =>
-            !string.IsNullOrWhiteSpace(config.Server)
-            && config.ToAcr() == targetAcr
-            && config.ServiceConnection is not null);
+        return publishConfig.GetKnownRegistries()
+            .Where(registry => registry.IsOwnedAcr())
+            .FirstOrDefault(config => config.ToAcr() == targetAcr);
     }
 }

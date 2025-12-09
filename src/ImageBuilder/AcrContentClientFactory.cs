@@ -20,7 +20,7 @@ internal class AcrContentClientFactory(
 
     public IAcrContentClient Create(Acr acr, string repositoryName)
     {
-        var acrConfig = _publishConfig.FindAcrByName(acr.Server);
+        var acrConfig = _publishConfig.FindOwnedAcrByName(acr.Server);
         if (acrConfig?.ServiceConnection is null)
         {
             throw new InvalidOperationException(

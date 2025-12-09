@@ -17,4 +17,13 @@ public static class RegistryConfigurationExtensions
 
         return Acr.Parse(registryConfig.Server);
     }
+
+    /// <summary>
+    /// Determines if the registry is an Azure Container Registry that we can authenticate to.
+    /// </summary>
+    public static bool IsOwnedAcr(this RegistryConfiguration registry)
+    {
+        return !string.IsNullOrWhiteSpace(registry.Server)
+            && registry.ServiceConnection is not null;
+    }
 }

@@ -33,9 +33,9 @@ public sealed record PublishConfiguration
     public RegistryConfiguration? PublicMirrorRegistry { get; set; }
 
     /// <summary>
-    /// Gets all ACR configurations that were provided in the publish configuration.
+    /// Gets all registries that were provided in the publish configuration.
     /// </summary>
-    public IEnumerable<RegistryConfiguration> GetKnownAcrConfigurations()
+    public IEnumerable<RegistryConfiguration> GetKnownRegistries()
     {
         if (BuildRegistry is not null)
         {

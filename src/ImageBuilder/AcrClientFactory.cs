@@ -22,7 +22,7 @@ public class AcrClientFactory(
 
     public IAcrClient Create(string acrName)
     {
-        var acrConfig = _publishConfig.FindAcrByName(acrName);
+        var acrConfig = _publishConfig.FindOwnedAcrByName(acrName);
         if (acrConfig?.ServiceConnection is null)
         {
             throw new InvalidOperationException(

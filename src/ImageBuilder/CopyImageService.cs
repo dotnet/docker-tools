@@ -123,7 +123,7 @@ public class CopyImageService : ICopyImageService
         }
 
         // Cache ArmClient instances per service connection to avoid recreating them
-        string cacheKey = acrConfig.ServiceConnection.TenantId + acrConfig.ServiceConnection.ClientId;
+        string cacheKey = string.Join('|', acrConfig.ServiceConnection.TenantId, acrConfig.ServiceConnection.ClientId);
         return _armClientCache.GetOrAdd(cacheKey, _ =>
         {
             TokenCredential credential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);

@@ -23,11 +23,6 @@ public static class ImageBuilder
         {
             var builder = Host.CreateApplicationBuilder();
 
-            // Debug view of configuration
-            var root = builder.Configuration;
-            var debugView = root.GetDebugView();
-            Console.WriteLine(debugView);
-
             // Configuration
             builder.AddPublishConfiguration();
 

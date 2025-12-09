@@ -25,6 +25,7 @@ internal class ManifestService(
 
         IRegistryManifestClient registryClient = _registryClientFactory.Create(image.Registry, image.Repo, _credsHost);
 
-        return registryClient.GetManifestAsync(image.Tag ?? image.Digest);
+        string tagOrDigest = !string.IsNullOrEmpty(image.Tag) ? image.Tag : image.Digest;
+        return registryClient.GetManifestAsync(tagOrDigest);
     }
 }

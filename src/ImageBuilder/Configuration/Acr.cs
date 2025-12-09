@@ -23,7 +23,7 @@ public sealed record Acr
     /// <summary>
     /// Parses a reference to an <see cref="Acr"/> from a string.
     /// </summary>
-    /// <param name="registry">The name, login server, or URL of the ACR.</param>
+    /// <param name="name">The name, login server, or URL of the ACR.</param>
     public static Acr Parse(string name)
     {
         name = name

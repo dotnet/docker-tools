@@ -186,6 +186,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
                 string s when s.Contains("duke") => "Debian 15",
                 string s when s.Contains("jammy") => "Ubuntu 22.04",
                 string s when s.Contains("noble") => "Ubuntu 24.04",
+                string s when s.Contains("resolute") => "Ubuntu 26.04",
                 string s when s.Contains("azurelinux") =>
                     FormatVersionableOsName(os, name => "Azure Linux"),
                 string s when s.Contains("cbl-mariner") =>

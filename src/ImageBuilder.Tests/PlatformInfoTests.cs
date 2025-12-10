@@ -21,6 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [InlineData("trixie-slim", "Debian 13")]
         [InlineData("noble", "Ubuntu 24.04")]
         [InlineData("noble-chiseled", "Ubuntu 24.04")]
+        [InlineData("resolute", "Ubuntu 26.04")]
+        [InlineData("resolute-chiseled", "Ubuntu 26.04")]
         [InlineData("alpine3.12", "Alpine 3.12")]
         [InlineData("centos8", "Centos 8")]
         [InlineData("fedora32", "Fedora 32")]

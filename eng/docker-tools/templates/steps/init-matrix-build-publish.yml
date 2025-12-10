@@ -27,6 +27,8 @@ steps:
       $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
     }
 
+    $containerBuildRepoRoot="/repo"
+
     if ("${{ parameters.versionsRepoRef }}" -ne "") {
       $versionsBasePath = "${{ parameters.versionsRepoPath }}/"
       $pipelineDisabledCache = "false"
@@ -39,14 +41,18 @@ steps:
         $buildRepoName = "$(Build.Repository.Name)"
       }
 
+      # When multiple repos are checked out in Azure Pipelines, each repo is placed in a subfolder
+      # under the main working directory. The subfolder is named after the repo.
+      $containerBuildRepoRoot = "$containerBuildRepoRoot/$buildRepoName"
+
       $engDockerToolsPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engDockerToolsRelativePath)"
 
       $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
-      $manifest = "$buildRepoName/$(manifest)"
-      $testResultsDirectory = "$buildRepoName/$testResultsDirectory"
+      $manifest = "$containerBuildRepoRoot/$(manifest)"
+      $testResultsDirectory = "$containerBuildRepoRoot/$testResultsDirectory"
 
       if ("$(testScriptPath)") {
-        $testScriptPath = "$buildRepoName/$(testScriptPath)"
+        $testScriptPath = "$containerBuildRepoRoot/$(testScriptPath)"
       }
 
       echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
@@ -64,6 +70,7 @@ steps:
     echo "##vso[task.setvariable variable=commonMatrixAndBuildOptions]$commonMatrixAndBuildOptions"
     echo "##vso[task.setvariable variable=versionsBasePath]$versionsBasePath"
     echo "##vso[task.setvariable variable=pipelineDisabledCache]$pipelineDisabledCache"
+    echo "##vso[task.setvariable variable=containerBuildRepoRoot]$containerBuildRepoRoot"
   displayName: Set Common Variables for Matrix, Build, and Publish
 
 - ${{ if ne(parameters.versionsRepoRef, '') }}:

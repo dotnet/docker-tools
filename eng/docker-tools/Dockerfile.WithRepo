@@ -2,5 +2,7 @@
 ARG IMAGE
 FROM $IMAGE
 
+# Keep this path in sync with $(containerBuildRepoRoot) in
+# eng/docker-tools/templates/steps/init-matrix-build-publish.yml
 WORKDIR /repo
 COPY . .

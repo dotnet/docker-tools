@@ -24,12 +24,6 @@ public sealed record RegistryConfiguration
     public string? Subscription { get; set; } = null;
 
     /// <summary>
-    /// E.g. "public/" or "prefix-". A delimiter (slash/dash/etc.) is not automatically added to
-    /// the end of this prefix. It should be included if necessary.
-    /// </summary>
-    public string? RepoPrefix { get; set; } = null;
-
-    /// <summary>
     /// The Azure DevOps service connection to use for authentication to the registry.
     /// </summary>
     public ServiceConnection? ServiceConnection { get; set; } = null;

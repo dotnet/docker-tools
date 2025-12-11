@@ -9,7 +9,5 @@ public interface IRegistryManifestClientFactory
     IRegistryManifestClient Create(
         string registry,
         string repo,
-        string? ownedAcr = null,
-        IServiceConnection? serviceConnection = null,
         IRegistryCredentialsHost? credsHost = null);
 }

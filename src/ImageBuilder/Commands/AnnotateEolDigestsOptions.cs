@@ -11,7 +11,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class AnnotateEolDigestsOptions : Options
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-        public ServiceConnectionOptions? AcrServiceConnection { get; set; }
 
         public string EolDigestsListPath { get; set; } = string.Empty;
         public string AcrName { get; set; } = string.Empty;
@@ -22,15 +21,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class AnnotateEolDigestsOptionsBuilder : CliOptionsBuilder
     {
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
             [
                 ..base.GetCliOptions(),
                 .._registryCredentialsOptionsBuilder.GetCliOptions(),
-                .._serviceConnectionOptionsBuilder.GetCliOptions(
-                    alias: "acr-service-connection",
-                    propertyName: nameof(AnnotateEolDigestsOptions.AcrServiceConnection))
             ];
 
         public override IEnumerable<Argument> GetCliArguments() =>

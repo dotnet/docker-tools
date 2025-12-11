@@ -10,6 +10,7 @@ using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
@@ -21,14 +22,14 @@ public static class OAuthHelper
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
     };
 
-    public static async Task<string> GetRefreshTokenAsync(HttpClient httpClient, string acrName, Guid tenant, string eidToken)
+    public static async Task<string> GetRefreshTokenAsync(HttpClient httpClient, Acr acr, Guid tenant, string eidToken)
     {
         StringContent requestContent = new(
-            $"grant_type=access_token&service={acrName}&tenant={tenant}&access_token={eidToken}",
+            $"grant_type=access_token&service={acr.Server}&tenant={tenant}&access_token={eidToken}",
             Encoding.UTF8,
             "application/x-www-form-urlencoded");
 
-        HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync($"https://{acrName}/oauth2/exchange", requestContent);
+        HttpResponseMessage tokenExchangeResponse = await httpClient.PostAsync($"{acr.RegistryUrl}/oauth2/exchange", requestContent);
         tokenExchangeResponse.EnsureSuccessStatusCode();
 
         OAuthExchangeResult result = await tokenExchangeResponse.Content.ReadFromJsonAsync<OAuthExchangeResult>(s_jsonOptions)

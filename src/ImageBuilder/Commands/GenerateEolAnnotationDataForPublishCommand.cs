@@ -20,12 +20,10 @@ public class GenerateEolAnnotationDataForPublishCommand :
         ILoggerService loggerService,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
-        IAzureTokenCredentialProvider tokenCredentialProvider,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
         : base(
             loggerService,
-            tokenCredentialProvider,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,

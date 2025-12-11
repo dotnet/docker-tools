@@ -7,6 +7,13 @@
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+
+    <!-- Enable source generated options binding for Microsoft.Extensions.Options -->
+    <!-- See https://learn.microsoft.com/dotnet/core/extensions/configuration-generator -->
+    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
+    <InterceptorsNamespaces>
+      $(InterceptorsNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration
+    </InterceptorsNamespaces>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -21,6 +28,7 @@
     <PackageReference Include="Cottle" Version="2.0.10" />
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.0.2" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.11" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.1" />

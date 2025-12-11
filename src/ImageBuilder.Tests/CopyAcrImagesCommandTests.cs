@@ -16,7 +16,6 @@ using Newtonsoft.Json;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.CopyImageHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -34,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 Mock<ICopyImageService> copyImageServiceMock = new();
 
-                CopyAcrImagesCommand command = new(CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object).Object, Mock.Of<ILoggerService>());
+                CopyAcrImagesCommand command = new(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -127,9 +126,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 var environmentServiceMock = new Mock<IEnvironmentService>();
                 var copyImageServiceMock = new Mock<ICopyImageService>();
-                var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
-                var command = new CopyAcrImagesCommand(copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>());
+                var command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.Subscription = subscriptionId;
                 command.Options.ResourceGroup = "my resource group";
@@ -234,9 +232,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var environmentServiceMock = new Mock<IEnvironmentService>();
             var copyImageServiceMock = new Mock<ICopyImageService>();
-            var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
-            var command = new CopyAcrImagesCommand(copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>());
+            var command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -352,9 +349,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var environmentServiceMock = new Mock<IEnvironmentService>();
             var copyImageServiceMock = new Mock<ICopyImageService>();
-            var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
-            var command = new CopyAcrImagesCommand(copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>());
+            var command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";

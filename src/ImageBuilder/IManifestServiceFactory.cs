@@ -8,9 +8,6 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IManifestServiceFactory
     {
-        IManifestService Create(
-            string? ownedAcr = null,
-            IServiceConnection? serviceConnectionOptions = null,
-            IRegistryCredentialsHost? credsHost = null);
+        IManifestService Create(IRegistryCredentialsHost? credsHost = null);
     }
 }

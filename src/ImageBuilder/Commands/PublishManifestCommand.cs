@@ -41,10 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Lazily create the Manifest Service so it can have access to Options (not available in this constructor)
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
-                manifestServiceFactory.Create(
-                    ownedAcr: Options.RegistryOverride,
-                    Options.AcrServiceConnection,
-                    Options.CredentialsOptions));
+                manifestServiceFactory.Create(Options.CredentialsOptions));
         }
 
         protected override string Description => "Creates and publishes the manifest to the Docker Registry";
@@ -94,9 +91,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     await SaveTagInfoToImageInfoFileAsync(createdDate, imageArtifactDetails);
                 },
                 Options.CredentialsOptions,
-                registryName: Manifest.Registry,
-                ownedAcr: Manifest.Registry,
-                serviceConnection: Options.AcrServiceConnection);
+                registryName: Manifest.Registry);
         }
 
         private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
@@ -174,7 +169,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void GenerateManifest(RepoInfo repo, ImageInfo image, string tag, Func<string, string> getImageName,
+        private void GenerateManifest(
+            RepoInfo repo,
+            ImageInfo image,
+            string tag,
+            Func<string, string> getImageName,
             Func<PlatformInfo, TagInfo?> getTagRepresentative)
         {
             string manifestListTag = getImageName(tag);

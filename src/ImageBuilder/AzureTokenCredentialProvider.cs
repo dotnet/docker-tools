@@ -34,7 +34,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
         string scope = AzureScopes.DefaultAzureManagementScope)
     {
         // Cache by service connection ID only. The TokenCredential handles different scopes internally.
-        string cacheKey = serviceConnection?.ServiceConnectionId ?? "default";
+        string cacheKey = serviceConnection?.Id ?? "default";
 
         return LockHelper.DoubleCheckedLockLookup(
             lockObj: _cacheLock,
@@ -49,7 +49,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
                     // on the command line, so we need to check for null values.
                     && !string.IsNullOrEmpty(serviceConnection.ClientId)
                     && !string.IsNullOrEmpty(serviceConnection.TenantId)
-                    && !string.IsNullOrEmpty(serviceConnection.ServiceConnectionId))
+                    && !string.IsNullOrEmpty(serviceConnection.Id))
                 {
                     if (string.IsNullOrWhiteSpace(_systemAccessToken))
                     {
@@ -63,7 +63,7 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
                     credential = new AzurePipelinesCredential(
                         serviceConnection.TenantId,
                         serviceConnection.ClientId,
-                        serviceConnection.ServiceConnectionId,
+                        serviceConnection.Id,
                         _systemAccessToken);
                 }
 

@@ -55,7 +55,7 @@ internal static class ContainerRegistryHelper
         foreach (Mock<IAcrContentClient> clientMock in acrContentClients)
         {
             acrContentClientFactoryMock
-                .Setup(o => o.Create(acrName, clientMock.Object.RepositoryName, It.IsAny<IServiceConnection>()))
+                .Setup(o => o.Create(It.Is<Configuration.Acr>(acr => acr.Server == acrName), clientMock.Object.RepositoryName))
                 .Returns(clientMock.Object);
         }
 
@@ -127,7 +127,7 @@ internal static class ContainerRegistryHelper
     {
         Mock<IAcrClientFactory> acrClientFactoryMock = new();
         acrClientFactoryMock
-            .Setup(o => o.Create(acrName, It.IsAny<TokenCredential>()))
+            .Setup(o => o.Create(acrName))
             .Returns(acrClient);
         return acrClientFactoryMock.Object;
     }

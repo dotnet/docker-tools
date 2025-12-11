@@ -1045,9 +1045,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 loggerService: loggerServiceMock.Object,
                 acrClientFactory: registryClientFactory,
                 acrContentClientFactory: registryContentClientFactory,
-                tokenCredentialProvider: Mock.Of<IAzureTokenCredentialProvider>(),
-                registryCredentialsProvider: Mock.Of<IRegistryCredentialsProvider>(),
-                lifecycleMetadataService: lifecycleMetadataService);
+                lifecycleMetadataService: lifecycleMetadataService,
+                registryCredentialsProvider: Mock.Of<IRegistryCredentialsProvider>());
             command.Options.OldImageInfoPath = oldImageInfoPath;
             command.Options.NewImageInfoPath = newImageInfoPath;
             command.Options.EolDigestsListPath = newEolDigestsListPath;

@@ -6,7 +6,9 @@ using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
@@ -21,12 +23,15 @@ public static class ImageBuilder
         {
             var builder = Host.CreateApplicationBuilder();
 
+            // Configuration
+            builder.AddPublishConfiguration();
+
             // Services
             builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
             builder.Services.AddSingleton<IAzureTokenCredentialProvider, AzureTokenCredentialProvider>();
             builder.Services.AddSingleton<IAcrClientFactory, AcrClientFactory>();
             builder.Services.AddSingleton<IAcrContentClientFactory, AcrContentClientFactory>();
-            builder.Services.AddSingleton<ICopyImageServiceFactory, CopyImageServiceFactory>();
+            builder.Services.AddSingleton<ICopyImageService, CopyImageService>();
             builder.Services.AddSingleton<IDateTimeService, DateTimeService>();
             builder.Services.AddSingleton<IDockerService, DockerService>();
             builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
@@ -44,6 +49,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<IOrasClient, OrasClient>();
             builder.Services.AddSingleton<IProcessService, ProcessService>();
+            builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
             builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();

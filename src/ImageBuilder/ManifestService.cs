@@ -8,41 +8,24 @@ using System.Threading.Tasks;
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
-internal class ManifestService : IManifestService
+internal class ManifestService(
+    IRegistryManifestClientFactory registryClientFactory,
+    IRegistryCredentialsHost? credsHost = null
+) : IManifestService
 {
-    private readonly IRegistryManifestClientFactory _registryClientFactory;
-    private readonly string? _ownedAcr;
-    private readonly IRegistryCredentialsHost? _credsHost;
-    private readonly IServiceConnection? _serviceConnection;
+    private readonly IRegistryManifestClientFactory _registryClientFactory = registryClientFactory;
+    private readonly IRegistryCredentialsHost? _credsHost = credsHost;
 
-    public ManifestService(
-        IRegistryManifestClientFactory registryClientFactory,
-        string? ownedAcr = null,
-        IServiceConnection? serviceConnection = null,
-        IRegistryCredentialsHost? credsHost = null)
-    {
-        _registryClientFactory = registryClientFactory;
-        _ownedAcr = ownedAcr;
-        _credsHost = credsHost;
-        _serviceConnection = serviceConnection;
-    }
-
-    public Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun)
+    public Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun)
     {
         if (isDryRun)
         {
             return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
         }
 
-        ImageName imageName = ImageName.Parse(image, autoResolveImpliedNames: true);
+        IRegistryManifestClient registryClient = _registryClientFactory.Create(image.Registry, image.Repo, _credsHost);
 
-        IRegistryManifestClient registryClient = _registryClientFactory.Create(
-            imageName.Registry!,
-            imageName.Repo,
-            _ownedAcr,
-            _serviceConnection,
-            _credsHost);
-
-        return registryClient.GetManifestAsync((imageName.Tag ?? imageName.Digest)!);
+        string tagOrDigest = !string.IsNullOrEmpty(image.Tag) ? image.Tag : image.Digest;
+        return registryClient.GetManifestAsync(tagOrDigest);
     }
 }

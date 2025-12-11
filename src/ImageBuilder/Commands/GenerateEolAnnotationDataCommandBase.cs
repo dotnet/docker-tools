@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Newtonsoft.Json;
 
@@ -20,7 +21,6 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     where TOptions : GenerateEolAnnotationDataOptions, new()
     where TOptionsBuilder : GenerateEolAnnotationDataOptionsBuilder, new()
 {
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly IAcrContentClientFactory _acrContentClientFactory;
     private readonly IAcrClientFactory _acrClientFactory;
     private readonly ILifecycleMetadataService _lifecycleMetadataService;
@@ -29,14 +29,12 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
 
     protected GenerateEolAnnotationDataCommandBase(
         ILoggerService loggerService,
-        IAzureTokenCredentialProvider tokenCredentialProvider,
         IAcrContentClientFactory acrContentClientFactory,
         IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {
         LoggerService = loggerService;
-        _tokenCredentialProvider = tokenCredentialProvider;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;
@@ -52,9 +50,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
             Options.IsDryRun,
             async () => digestsToAnnotate = GetDigestsWithoutExistingAnnotation(await GetDigestsToAnnotateAsync()),
             Options.CredentialsOptions,
-            registryName: Options.RegistryOptions.Registry,
-            ownedAcr: Options.RegistryOptions.Registry,
-            serviceConnection: Options.AcrServiceConnection);
+            registryName: Options.RegistryOptions.Registry);
 
         WriteDigestDataJson(digestsToAnnotate);
     }
@@ -71,19 +67,19 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
             return [];
         }
 
-        var credential = _tokenCredentialProvider.GetCredential(Options.AcrServiceConnection);
-        IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryOptions.Registry, credential);
-        IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
+        IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryOptions.Registry);
+
+        IAsyncEnumerable<string> repositoryNames =
+            acrClient.GetRepositoryNamesAsync()
+                     .Where(repo => repoNameFilter is null || repoNameFilter(repo));
 
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
-        await foreach (string repositoryName in repositoryNames
-            .Where(repo => repoNameFilter is null || repoNameFilter(repo)))
+        await foreach (string repositoryName in repositoryNames)
         {
             IAcrContentClient contentClient =
                 _acrContentClientFactory.Create(
-                    Options.RegistryOptions.Registry,
-                    repositoryName,
-                    Options.AcrServiceConnection);
+                    Acr.Parse(Options.RegistryOptions.Registry),
+                    repositoryName);
 
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();

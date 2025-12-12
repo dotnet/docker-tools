@@ -16,9 +16,7 @@ trigger:
   paths:
     include:
     - eng/common/*
-    - eng/pipelines/docker-tools-packages-official.yml
-    - eng/pipelines/templates/jobs/build-and-publish-packages.yml
-    - eng/pipelines/templates/variables/packages-build-pools.yml
+    - eng/pipelines/*
     - src/ImageBuilder.Models/*
     - Directory.Build.props
     - Directory.Build.targets

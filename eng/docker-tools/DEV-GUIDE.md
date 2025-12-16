@@ -385,17 +385,3 @@ When you queue a new run, you can override these as runtime parameters:
 2. Set `sourceBuildPipelineRunId` to the run ID containing the artifacts you need (find the build ID in the URL when viewing a pipeline run, e.g., `buildId=123456`)
 
 This avoids the multi-hour rebuild cycle when you just need to retry a failed operation.
-
----
-
-## Conclusion
-
-The docker-tools infrastructure provides a powerful, flexible system for building and publishing .NET Docker images. The key concepts to remember:
-
-1. **Local development** uses [`build.ps1`](build.ps1) and [`Invoke-ImageBuilder.ps1`](Invoke-ImageBuilder.ps1)
-2. **Pipelines** are composed from stage, job, and step templates
-3. **Matrix generation** intelligently parallelizes builds
-4. **Caching** via image-info files speeds up unchanged images
-5. **All changes** to this infrastructure should go through dotnet/docker-tools
-
-For more details on ImageBuilder itself, see the [dotnet/docker-tools](https://github.com/dotnet/docker-tools) repository.

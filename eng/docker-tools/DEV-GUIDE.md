@@ -121,11 +121,15 @@ Build Stage
             └── Merge artifacts
                     │
                     ▼
-                  (end)
+              Publish Stage (dry-run)
+                └── All publish operations run but skip actual pushes
+                        │
+                        ▼
+                      (end)
 ```
 - Images are built but **not pushed** to any registry
 - Quick smoke tests run inline within each build job
-- No separate Test stage, no Publish stage
+- Publish stage runs in dry-run mode (validates publish logic without pushing)
 - Validates that Dockerfiles build successfully
 
 **Internal Official Builds**:

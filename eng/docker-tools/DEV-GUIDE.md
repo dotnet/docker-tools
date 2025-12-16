@@ -293,6 +293,42 @@ The `set-dry-run.yml` step template determines this automatically based on conte
 
 ---
 
+## Automatic Image Rebuilds
+
+The infrastructure includes automation that monitors for base image updates and triggers rebuilds when dependencies change.
+
+### How It Works
+
+A scheduled pipeline (`check-base-image-updates.yml`) runs every 4 hours and:
+
+1. **Checks for stale images** — Compares the base image digests used in our published images against the current digests in upstream registries
+2. **Identifies affected images** — Determines which of our images need rebuilding because their base image changed
+3. **Queues targeted builds** — Automatically triggers builds for only the affected images, not the entire repo
+
+This ensures that security patches and updates in base images (like `alpine`, `ubuntu`, `mcr.microsoft.com/windows/nanoserver`) flow through to images without manual intervention.
+
+### Failure Handling and Recovery
+
+The system has built-in retry logic but requires manual intervention after repeated failures:
+
+**Automatic retry behavior:**
+- If a triggered build fails, the system will attempt to rebuild every 4 hours
+- After **3 unsuccessful attempts**, the system stops queuing new builds for that image
+- This prevents endless rebuild loops when there's a genuine issue requiring human attention
+
+**After fixing the issue:**
+
+Once you've fixed the underlying problem (Dockerfile change, test fix, etc.) and have a successful build:
+
+1. Navigate to the successful pipeline run in Azure DevOps
+2. Add the `autobuilder` label to that run
+3. This signals to the infrastructure that a successful build has occurred
+4. The system will resume automatic rebuilds for that image as needed
+
+The `autobuilder` label is how the infrastructure tracks that the failure cycle has been broken and normal operations can resume.
+
+---
+
 ## Common Customization Patterns
 
 ### Pattern: Adding Build Arguments

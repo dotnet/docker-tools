@@ -46,6 +46,9 @@ The most common local task is building images to test Dockerfile changes before 
 ```powershell
 # Build images from a specific directory
 ./eng/docker-tools/build.ps1 -Paths "src/runtime/8.0/alpine3.20"
+
+# Build all 8.0 runtime images using glob pattern
+./eng/docker-tools/build.ps1 -Paths "src/runtime/8.0/*"
 ```
 
 **Combine Filters:**

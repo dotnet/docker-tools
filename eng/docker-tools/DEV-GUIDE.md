@@ -65,7 +65,7 @@ The most common local task is building images to test Dockerfile changes before 
 
 ### Understanding What Happens Under the Hood
 
-When you run `build.ps1`, here's the chain of execution:
+When you run [`build.ps1`](build.ps1), here's the chain of execution:
 
 ```
 build.ps1
@@ -289,7 +289,7 @@ Or the infrastructure automatically enables dry-run for:
 - Builds from non-official branches
 - Public project builds
 
-The `set-dry-run.yml` step template determines this automatically based on context.
+The [`set-dry-run.yml`](templates/steps/set-dry-run.yml) step template determines this automatically based on context.
 
 ---
 
@@ -299,7 +299,7 @@ The infrastructure includes automation that monitors for base image updates and 
 
 ### How It Works
 
-A scheduled pipeline (`check-base-image-updates.yml`) runs every 4 hours and:
+A scheduled pipeline ([`check-base-image-updates.yml`](https://github.com/dotnet/docker-tools/blob/main/eng/pipelines/check-base-image-updates.yml)) runs every 4 hours and:
 
 1. **Checks for stale images** — Compares the base image digests used in our published images against the current digests in upstream registries
 2. **Identifies affected images** — Determines which of our images need rebuilding because their base image changed
@@ -354,7 +354,7 @@ A powerful pattern is combining the `stages` variable with `sourceBuildPipelineR
 **How it works:**
 
 1. `sourceBuildPipelineRunId` tells the pipeline which previous run to pull artifacts from
-2. The `download-build-artifact.yml` step uses this ID to fetch `image-info.json` from that run
+2. The [`download-build-artifact.yml`](templates/steps/download-build-artifact.yml) step uses this ID to fetch `image-info.json` from that run
 3. Specified stage(s) use the downloaded image info to know which images exist
 
 **Common recovery patterns:**
@@ -381,7 +381,7 @@ This avoids the multi-hour rebuild cycle when you just need to retry a failed op
 
 The docker-tools infrastructure provides a powerful, flexible system for building and publishing .NET Docker images. The key concepts to remember:
 
-1. **Local development** uses `build.ps1` and `Invoke-ImageBuilder.ps1`
+1. **Local development** uses [`build.ps1`](build.ps1) and [`Invoke-ImageBuilder.ps1`](Invoke-ImageBuilder.ps1)
 2. **Pipelines** are composed from stage, job, and step templates
 3. **Matrix generation** intelligently parallelizes builds
 4. **Caching** via image-info files speeds up unchanged images

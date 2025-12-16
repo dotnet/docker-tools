@@ -15,8 +15,9 @@ trigger:
     - main
   paths:
     include:
-    - eng/*
-    - src/*
+    - eng/common/*
+    - eng/pipelines/*
+    - src/ImageBuilder.Models/*
     - Directory.Build.props
     - Directory.Build.targets
     - global.json

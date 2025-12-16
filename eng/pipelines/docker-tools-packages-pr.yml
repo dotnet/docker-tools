@@ -12,6 +12,14 @@ pr:
   branches:
     include:
     - main
+  paths:
+    include:
+    - eng/common/*
+    - eng/pipelines/*
+    - src/ImageBuilder.Models/*
+    - Directory.Build.props
+    - Directory.Build.targets
+    - global.json
 
 resources:
   containers:

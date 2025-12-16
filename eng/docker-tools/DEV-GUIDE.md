@@ -369,7 +369,7 @@ A powerful pattern is combining the `stages` variable with `sourceBuildPipelineR
 | Scenario | stages | sourceBuildPipelineRunId |
 |----------|--------|--------------------------|
 | Normal full build | `"build,test,publish"` | `$(Build.BuildId)` (default) |
-| Retry failed publish | `"publish"` | ID of the successful build run |
+| Re-run publish after infra fix | `"publish"` | ID of the successful build run |
 | Re-test after infra fix | `"test"` | ID of the build run to test |
 | Build only (no publish) | `"build"` | `$(Build.BuildId)` (default) |
 | Test + publish (skip build) | `"test,publish"` | ID of the build run |

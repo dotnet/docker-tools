@@ -164,7 +164,7 @@ Build Stage
 - Tests run against staged images
 - Only successful builds get published
 
-### Matrix Generation: The Smart Scheduling System
+### Build Matrix Generation
 
 The `generateBuildMatrix` command is key to understanding how builds are parallelized. It:
 

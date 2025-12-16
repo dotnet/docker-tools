@@ -351,7 +351,11 @@ customBuildInitSteps:
 
 ### Pattern: Re-running Stages with `stages` and `sourceBuildPipelineRunId`
 
-A powerful pattern is combining the `stages` variable with `sourceBuildPipelineRunId` to re-run specific stages using artifacts from a previous build. This is essential for recovery scenarios.
+A powerful pattern is combining the `stages` variable with `sourceBuildPipelineRunId` to run specific stages using artifacts from a previous build. This is useful for:
+1. Skipping stages you don't need to run
+2. Avoiding unnecessary re-builds after test/publishing infrastructure fixes
+
+Note: For simple retries of failed jobs, use the Azure Pipelines UI "Re-run failed jobs" feature instead.
 
 **Scenario: Test failed, need to run publish anyway**
 

@@ -114,7 +114,7 @@ Build Stage
   ├── PreBuildValidation
   ├── GenerateBuildMatrix
   └── Build Jobs (dry-run, no push)
-        └── Inline smoke tests after each build
+        └── Inline tests after each build
               │
               ▼
           Post_Build Stage
@@ -128,7 +128,7 @@ Build Stage
                       (end)
 ```
 - Images are built but **not pushed** to any registry
-- Quick smoke tests run inline within each build job
+- Tests run inline within each build job
 - Publish stage runs in dry-run mode (validates publish logic without pushing)
 - Validates that Dockerfiles build successfully
 

@@ -148,7 +148,7 @@ Build Stage
                     ▼
               Test Stage
                 ├── GenerateTestMatrix
-                └── Test Jobs (full test suite)
+                └── Test Jobs
                         │
                         ▼
                   Publish Stage
@@ -161,7 +161,7 @@ Build Stage
 ```
 - Full pipeline with all stages
 - Images flow: `buildAcr` → `publishAcr` → MAR (see [`publish-config-prod.yml`](templates/stages/dotnet/publish-config-prod.yml) for ACR definitions)
-- Complete test suite runs against staged images
+- Tests run against staged images
 - Only successful builds get published
 
 ### Matrix Generation: The Smart Scheduling System

@@ -173,7 +173,7 @@ The `generateBuildMatrix` command is key to understanding how builds are paralle
 3. **Groups by platform** - Creates jobs for each OS/Architecture combo
 4. **Optimizes with caching** - Can detect and exclude unchanged images
 
-### The `stages` Variable: Controlling What Runs
+### Controlling Which Build Stages Run
 
 The `stages` variable is a comma-separated string that controls which pipeline stages execute:
 

@@ -198,7 +198,7 @@ The stages variable is useful for:
 
 ### Image Info Files: The Build's Memory
 
-Image info files are the mechanism that tracks what was built:
+Image info files (defined by [`ImageArtifactDetails`](https://github.com/dotnet/docker-tools/blob/main/src/ImageBuilder/Models/Image/ImageArtifactDetails.cs)) are the mechanism that tracks what was built:
 
 ```json
 {

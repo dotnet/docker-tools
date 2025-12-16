@@ -382,7 +382,7 @@ Note: For simple retries of failed jobs, use the Azure Pipelines UI "Re-run fail
 
 When you queue a new run, you can override these as runtime parameters:
 1. Set `stages` to the stage(s) you want to run
-2. Set `sourceBuildPipelineRunId` to the run ID containing the artifacts you need
+2. Set `sourceBuildPipelineRunId` to the run ID containing the artifacts you need (find the build ID in the URL when viewing a pipeline run, e.g., `buildId=123456`)
 
 This avoids the multi-hour rebuild cycle when you just need to retry a failed operation.
 

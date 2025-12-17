@@ -7,13 +7,6 @@
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
-
-    <!-- Enable source generated options binding for Microsoft.Extensions.Options -->
-    <!-- See https://learn.microsoft.com/dotnet/core/extensions/configuration-generator -->
-    <EnableConfigurationBindingGenerator>true</EnableConfigurationBindingGenerator>
-    <InterceptorsNamespaces>
-      $(InterceptorsNamespaces);Microsoft.Extensions.Configuration.Binder.SourceGeneration
-    </InterceptorsNamespaces>
   </PropertyGroup>
 
   <PropertyGroup>

@@ -70,47 +70,6 @@ Always ask yourself:
 
 If the answer to any of these is "yes", update the relevant documentation as part of your PR.
 
-## Coding Standards
-
-### C# Code (.cs files)
-
-- **License header required**: All C# files must start with:
-  ```csharp
-  // Licensed to the .NET Foundation under one or more agreements.
-  // The .NET Foundation licenses this file to you under the MIT license.
-  ```
-- **Indentation**: 4 spaces (no tabs)
-- **Braces**: Allman style - opening braces on new lines
-- **Field naming**:
-  - Private/internal fields: `_camelCase` prefix
-  - Static fields: `s_camelCase` prefix
-  - Constants: `PascalCase`
-- **Avoid `this.`** unless necessary
-- **Use `var`** only when type is clear
-- **Prefer keywords** over BCL types (e.g., `string` not `String`)
-- **TreatWarningsAsErrors**: Enabled - all warnings must be resolved
-- **LangVersion**: Uses latest C# language features
-
-### PowerShell Scripts (.ps1 files)
-
-- Follow existing patterns in `eng/docker-tools/` scripts
-- Use `Invoke-ImageBuilder.ps1` as the central entry point for ImageBuilder operations
-- Support common filtering parameters: `-OS`, `-Architecture`, `-Version`, `-Paths`
-
-### JSON and YAML
-
-- **JSON**: 2-space indentation
-- **YAML**: 2-space indentation
-- Manifest files follow the schema defined in `src/ImageBuilder/Models/Manifest/`
-
-### Other Files
-
-- **Final newline**: All files must end with a newline
-- **Trim trailing whitespace**: Required
-- **Line endings**:
-  - Shell scripts (`.sh`): LF
-  - Batch files (`.cmd`, `.bat`): CRLF
-
 ## Building and Testing
 
 ### Build the entire repository

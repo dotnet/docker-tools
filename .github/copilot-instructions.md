@@ -32,6 +32,44 @@ This repository contains common tools for .NET Docker repositories, with the pri
 
 3. **Document breaking changes**: If changes affect consuming repositories (dotnet-docker, dotnet-buildtools-prereqs-docker, dotnet-framework-docker), clearly document migration steps.
 
+## Code Review Guidelines
+
+When making changes to this repository, always consider which documentation needs to be updated alongside your code changes. Common patterns:
+
+### Changes to Shared Pipeline Templates
+
+When modifying files in `eng/docker-tools/` (PowerShell scripts, Azure Pipeline templates, workflow changes):
+- **Update `eng/docker-tools/DEV-GUIDE.md`** with any new commands, changed parameters, or updated workflows
+- Ensure examples in DEV-GUIDE.md remain accurate and functional
+- Document any breaking changes that affect consuming repositories
+
+### Changes to Repository Build Scripts
+
+When modifying `build.sh`, `build.cmd`, or the build process:
+- **Update `README.md` section "Building locally"** to reflect new build commands or options
+- Keep instructions accurate for both Windows and Linux/Mac users
+- Document any new prerequisites or environment requirements
+
+### Changes to ImageBuilder
+
+When modifying ImageBuilder source code (`src/ImageBuilder/`), build scripts, or processes:
+- **Update `src/README.md`** to reflect changes in:
+  - How to build the ImageBuilder container image
+  - New commands or command options
+  - Changed build processes or requirements
+- Update `documentation/manifest-file.md` if manifest schema changes
+- Ensure code examples and usage patterns remain current
+
+### General Documentation Updates
+
+Always ask yourself:
+- Does this change affect how developers use the tool?
+- Does this change affect the build or test process?
+- Does this change require updates to examples or workflows in documentation?
+- Are there breaking changes that need to be communicated?
+
+If the answer to any of these is "yes", update the relevant documentation as part of your PR.
+
 ## Coding Standards
 
 ### C# Code (.cs files)

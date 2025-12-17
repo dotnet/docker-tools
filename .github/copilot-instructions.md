@@ -191,7 +191,7 @@ When updating functionality, these files often need coordinated changes:
 
 ## Additional Context
 
-- **.NET SDK Version**: Defined in `global.json` (currently 9.0.300)
+- **.NET SDK Version**: Defined in `global.json`
 - **Arcade SDK**: Uses Microsoft.DotNet.Arcade.Sdk for build infrastructure
 - **Testing**: xUnit for unit tests
 - **Container registry**: Uses Azure Container Registry (ACR) for staging

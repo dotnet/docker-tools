@@ -13,7 +13,6 @@ using Newtonsoft.Json;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.CopyImageHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -27,10 +26,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
-            var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
             CopyBaseImagesCommand command = new(
-                copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
+                copyImageServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";
@@ -123,10 +121,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
-            var copyImageServiceFactoryMock = CreateCopyImageServiceFactoryMock(copyImageServiceMock.Object);
 
             CopyBaseImagesCommand command = new(
-                copyImageServiceFactoryMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
+                copyImageServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.Subscription = subscriptionId;
             command.Options.ResourceGroup = "my resource group";

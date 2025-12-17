@@ -17,10 +17,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitService _gitService;
 
         public CopyBaseImagesCommand(
-            ICopyImageServiceFactory copyImageServiceFactory,
+            ICopyImageService copyImageService,
             ILoggerService loggerService,
             IGitService gitService)
-            : base(copyImageServiceFactory, loggerService)
+            : base(copyImageService, loggerService)
         {
             _gitService = gitService;
         }

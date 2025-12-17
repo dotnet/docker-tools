@@ -42,10 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
             _imageDigestCache = new ImageDigestCache(
                 new Lazy<IManifestService>(
-                    () => manifestServiceFactory.Create(
-                        ownedAcr: Options.RegistryOverride,
-                        Options.ServiceConnection,
-                        Options.CredentialsOptions)));
+                    () => manifestServiceFactory.Create(Options.CredentialsOptions)));
             _imageNameResolver = new Lazy<ImageNameResolverForMatrix>(() =>
                 new ImageNameResolverForMatrix(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
         }

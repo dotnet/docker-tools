@@ -18,7 +18,7 @@ public interface IServiceConnection
     /// <remarks>
     /// This can be found on the service connection's page in Azure DevOps under the "Edit" menu.
     /// </remarks>
-    string TenantId { get; init; }
+    string TenantId { get; }
 
     /// <summary>
     /// The Client ID of the service connection's Managed Identity (GUID).
@@ -26,7 +26,7 @@ public interface IServiceConnection
     /// <remarks>
     /// This can be found on the service connection's page in Azure DevOps under the "Edit" menu.
     /// </remarks>
-    string ClientId { get; init; }
+    string ClientId { get; }
 
     /// <summary>
     /// The service connection ID (GUID).
@@ -34,5 +34,5 @@ public interface IServiceConnection
     /// <remarks>
     /// This can be found in the URL of the service connection's page in Azure DevOps.
     /// </remarks>
-    string ServiceConnectionId { get; init; }
+    string Id { get; }
 }

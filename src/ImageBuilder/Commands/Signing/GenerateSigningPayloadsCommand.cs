@@ -45,9 +45,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
             isDryRun: false,
             action: ExecuteAsyncInternal,
             credentialsOptions: Options.RegistryCredentialsOptions,
-            registryName: Options.RegistryOptions.Registry,
-            ownedAcr: Options.RegistryOptions.Registry,
-            serviceConnection: null);
+            registryName: Options.RegistryOptions.Registry);
     }
 
     private async Task ExecuteAsyncInternal()

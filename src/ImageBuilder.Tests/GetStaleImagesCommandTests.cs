@@ -1529,7 +1529,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             const string repo1 = "test-repo";
             const string dockerfile1Path = "dockerfile1/Dockerfile";
             const string dockerfile2Path = "dockerfile2/Dockerfile";
-            const string CustomRegistry = "my-registry";
+            const string CustomRegistry = "my-registry.io";
 
             SubscriptionInfo[] subscriptionInfos = new SubscriptionInfo[]
             {
@@ -1590,7 +1590,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 // Override the image tags to target a custom registry
                 context.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
-                context.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry/$1";
+                context.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry.io/$1";
 
                 await context.ExecuteCommandAsync();
 
@@ -1700,7 +1700,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     if (fromImage.Name != null)
                     {
-                        this.imageDigests[fromImage.Name] = fromImage.Digest;
+                        // Normalize the key using ImageName.Parse to match how the mock receives ImageName
+                        string normalizedName = ImageName.Parse(fromImage.Name, autoResolveImpliedNames: true).ToString();
+                        this.imageDigests[normalizedName] = fromImage.Digest;
                     }
                 }
 
@@ -1924,8 +1926,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 };
 
                 manifestServiceMock
-                    .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
-                    .ReturnsAsync((string image, bool isDryRun) =>
+                    .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false))
+                    .ReturnsAsync((ImageName image, bool isDryRun) =>
                         new ManifestQueryResult(this.imageDigests[image], new JsonObject()));
 
                 Mock<IManifestServiceFactory> manifestServiceFactoryMock =

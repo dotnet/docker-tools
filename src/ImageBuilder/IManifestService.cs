@@ -14,22 +14,22 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IManifestService
 {
-    Task<ManifestQueryResult> GetManifestAsync(string image, bool isDryRun);
+    Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun);
 
-    public async Task<IEnumerable<Layer>> GetImageLayersAsync(string tag, bool isDryRun)
+    public async Task<IEnumerable<Layer>> GetImageLayersAsync(ImageName image, bool isDryRun)
     {
         if (isDryRun)
         {
             return [];
         }
 
-        ManifestQueryResult manifestResult = await GetManifestAsync(tag, isDryRun);
+        ManifestQueryResult manifestResult = await GetManifestAsync(image, isDryRun);
         if (!manifestResult.Manifest.ContainsKey("layers"))
         {
             JsonArray manifests = (JsonArray)(manifestResult.Manifest["manifests"] ??
                 throw new InvalidOperationException("Expected manifests property"));
             throw new InvalidOperationException(
-                $"'{tag}' is expected to be a concrete tag with 1 manifest. It has '{manifests.Count}' manifests.");
+                $"'{image}' is expected to be a concrete tag with 1 manifest. It has '{manifests.Count}' manifests.");
         }
 
         return ((JsonArray)manifestResult.Manifest["layers"]!)
@@ -39,7 +39,7 @@ public interface IManifestService
             .Reverse();
     }
 
-    public async Task<string?> GetLocalImageDigestAsync(string image, bool isDryRun)
+    public async Task<string?> GetLocalImageDigestAsync(ImageName image, bool isDryRun)
     {
         IEnumerable<string> digests = DockerHelper.GetImageDigests(image, isDryRun);
 

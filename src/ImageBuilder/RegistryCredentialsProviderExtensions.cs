@@ -14,17 +14,9 @@ internal static class RegistryCredentialsProviderExtensions
         bool isDryRun,
         Func<Task> action,
         IRegistryCredentialsHost credentialsOptions,
-        string registryName,
-        string? ownedAcr,
-        IServiceConnection? serviceConnection)
+        string registryName)
     {
-        bool loggedIn = await LogInToRegistry(
-            credsProvider,
-            isDryRun,
-            credentialsOptions,
-            registryName,
-            ownedAcr,
-            serviceConnection);
+        bool loggedIn = await LogInToRegistry(credsProvider, isDryRun, credentialsOptions, registryName);
 
         try
         {
@@ -44,9 +36,7 @@ internal static class RegistryCredentialsProviderExtensions
         bool isDryRun,
         Action action,
         IRegistryCredentialsHost credentialsOptions,
-        string registryName,
-        string? ownedAcr,
-        IServiceConnection? serviceConnection)
+        string registryName)
     {
         await credsProvider.ExecuteWithCredentialsAsync(
             isDryRun,
@@ -55,29 +45,21 @@ internal static class RegistryCredentialsProviderExtensions
                 return Task.CompletedTask;
             },
             credentialsOptions,
-            registryName,
-            ownedAcr,
-            serviceConnection);
+            registryName);
     }
 
     private static async Task<bool> LogInToRegistry(
         this IRegistryCredentialsProvider credsProvider,
         bool isDryRun,
         IRegistryCredentialsHost credentialsOptions,
-        string registryName,
-        string? ownedAcr,
-        IServiceConnection? serviceConnection)
+        string registryName)
     {
         bool loggedIn = false;
 
         RegistryCredentials? credentials = null;
         if (!isDryRun)
         {
-            credentials = await credsProvider.GetCredentialsAsync(
-                registryName,
-                ownedAcr,
-                serviceConnection,
-                credentialsOptions);
+            credentials = await credsProvider.GetCredentialsAsync(registryName, credentialsOptions);
         }
 
         if (!string.IsNullOrEmpty(registryName) && credentials is not null)

@@ -6,15 +6,10 @@
 using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
-
-public record ServiceConnectionOptions(
-    string TenantId,
-    string ClientId,
-    string ServiceConnectionId)
-    : IServiceConnection;
 
 public class ServiceConnectionOptionsBuilder
 {
@@ -40,10 +35,12 @@ public class ServiceConnectionOptionsBuilder
                 var token = result.Tokens.Single();
                 var serviceConnectionInfo = token.Value.Split(':');
 
-                return new ServiceConnectionOptions(
-                    TenantId: serviceConnectionInfo[0],
-                    ClientId: serviceConnectionInfo[1],
-                    ServiceConnectionId: serviceConnectionInfo[2]);
+                return new ServiceConnection()
+                {
+                    TenantId = serviceConnectionInfo[0],
+                    ClientId = serviceConnectionInfo[1],
+                    Id = serviceConnectionInfo[2],
+                };
             });
 
         return [option];

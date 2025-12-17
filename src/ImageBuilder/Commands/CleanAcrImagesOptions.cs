@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -11,7 +12,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CleanAcrImagesOptions : Options
     {
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
-        public ServiceConnectionOptions AcrServiceConnection { get; set; }
 
         public string RepoName { get; set; }
         public CleanAcrImagesAction Action { get; set; }
@@ -25,7 +25,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class CleanAcrImagesOptionsBuilder : CliOptionsBuilder
     {
         private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
 
         private const CleanAcrImagesAction DefaultCleanAcrImagesAction = CleanAcrImagesAction.PruneDangling;
         private const int DefaultAge = 30;
@@ -48,9 +47,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [
             .. base.GetCliOptions(),
             .. _registryCredentialsOptionsBuilder.GetCliOptions(),
-            .. _serviceConnectionOptionsBuilder.GetCliOptions(
-                alias: "acr-service-connection",
-                propertyName: nameof(CleanAcrImagesOptions.AcrServiceConnection)),
             CreateOption("action", nameof(CleanAcrImagesOptions.Action),
                 EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction), DefaultCleanAcrImagesAction),
             CreateOption("age", nameof(CleanAcrImagesOptions.Age),

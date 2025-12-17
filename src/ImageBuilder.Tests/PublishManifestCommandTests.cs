@@ -297,7 +297,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IManifestService> manifestService = CreateManifestServiceMock();
             Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestService);
             manifestService
-                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
+                .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             manifestService
@@ -427,7 +427,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
             manifestServiceMock
-                .Setup(o => o.GetManifestAsync(It.IsAny<string>(), false))
+                .Setup(o => o.GetManifestAsync(It.IsAny<ImageName>(), false))
                 .ReturnsAsync(new ManifestQueryResult("digest", new JsonObject()));
 
             Mock<IDockerService> dockerServiceMock = new();

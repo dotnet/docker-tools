@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -19,9 +20,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
-            ICopyImageServiceFactory copyImageServiceFactory,
+            ICopyImageService copyImageService,
             ILoggerService loggerService)
-            : base(copyImageServiceFactory, loggerService)
+            : base(copyImageService, loggerService)
         {
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
@@ -48,7 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                Options.Subscription, Options.ResourceGroup, CopyImageService.GetBaseAcrName(Options.SourceRegistry));
+                Options.Subscription, Options.ResourceGroup, Acr.Parse(Options.SourceRegistry).Name);
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>

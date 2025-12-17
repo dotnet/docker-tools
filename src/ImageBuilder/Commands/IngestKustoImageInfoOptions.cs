@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class IngestKustoImageInfoOptions : ImageInfoOptions, IFilterableOptions
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new();
-        public ServiceConnectionOptions? KustoServiceConnection { get; set; }
+        public ServiceConnection? KustoServiceConnection { get; set; }
         public string Cluster { get; set; } = string.Empty;
         public string Database { get; set; } = string.Empty;
         public string ImageTable { get; set; } = string.Empty;

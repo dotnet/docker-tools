@@ -39,10 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // limiting on other registries we don't own.
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
-                manifestServiceFactory.Create(
-                    ownedAcr: null,
-                    serviceConnectionOptions: null,
-                    Options.CredentialsOptions));
+                manifestServiceFactory.Create(Options.CredentialsOptions));
         }
 
         protected override string Description => "Gets paths to images whose base images are out-of-date";

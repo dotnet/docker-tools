@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 #nullable enable
@@ -18,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public MarIngestionOptions IngestionOptions { get; set; } = new();
 
-        public ServiceConnectionOptions? MarServiceConnection { get; set; }
+        public ServiceConnection? MarServiceConnection { get; set; }
     }
 
     public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder

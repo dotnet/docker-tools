@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure;
@@ -9,6 +10,8 @@ using Azure.Core;
 using Azure.ResourceManager;
 using Azure.ResourceManager.ContainerRegistry;
 using Azure.ResourceManager.ContainerRegistry.Models;
+using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -27,21 +30,23 @@ public interface ICopyImageService
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false);
 }
+
 public class CopyImageService : ICopyImageService
 {
     private readonly ILoggerService _loggerService;
-    private readonly Lazy<ArmClient> _armClient;
+    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
+    private readonly PublishConfiguration _publishConfig;
+    private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
     public CopyImageService(
         ILoggerService loggerService,
         IAzureTokenCredentialProvider tokenCredentialProvider,
-        IServiceConnection serviceConnection)
+        IOptions<PublishConfiguration> publishConfigOptions)
     {
         _loggerService = loggerService;
-        _armClient = new Lazy<ArmClient>(() => new ArmClient(tokenCredentialProvider.GetCredential(serviceConnection)));
+        _tokenCredentialProvider = tokenCredentialProvider;
+        _publishConfig = publishConfigOptions.Value;
     }
-
-    public static string GetBaseAcrName(string registry) => registry.TrimEndString(DockerHelper.AcrDomain);
 
     public async Task ImportImageAsync(
         string subscription,
@@ -54,7 +59,7 @@ public class CopyImageService : ICopyImageService
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false)
     {
-        destAcrName = GetBaseAcrName(destAcrName);
+        Acr destAcr = Acr.Parse(destAcrName);
 
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
@@ -62,24 +67,27 @@ public class CopyImageService : ICopyImageService
             RegistryAddress = srcRegistryName,
             Credentials = sourceCredentials
         };
+
         ContainerRegistryImportImageContent importImageContent = new(importSrc)
         {
             Mode = ContainerRegistryImportMode.Force
         };
+
         importImageContent.TargetTags.AddRange(destTagNames);
 
         string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
         string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
         var destinationImageNames = destTagNames
-            .Select(tag => $"'{DockerHelper.GetImageName(destAcrName, tag)}'")
+            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
             .ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
         _loggerService.WriteMessage($"{action} {formattedDestinationImages} from '{sourceImageName}'");
 
         if (!isDryRun)
         {
-            ContainerRegistryResource registryResource = _armClient.Value.GetContainerRegistryResource(
-                ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcrName));
+            ArmClient armClient = GetArmClientForAcr(destAcrName);
+            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(
+                ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcr.Name));
 
             try
             {
@@ -100,5 +108,26 @@ public class CopyImageService : ICopyImageService
         {
             _loggerService.WriteMessage("Importing skipped due to dry run.");
         }
+    }
+
+    private ArmClient GetArmClientForAcr(string acrName)
+    {
+        // Look up the service connection for this ACR from the publish configuration
+        var acrConfig = _publishConfig.FindOwnedAcrByName(acrName);
+
+        if (acrConfig?.ServiceConnection is null)
+        {
+            throw new InvalidOperationException(
+                $"No service connection found for ACR '{acrName}'. " +
+                $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
+        }
+
+        // Cache ArmClient instances per service connection to avoid recreating them
+        string cacheKey = string.Join('|', acrConfig.ServiceConnection.TenantId, acrConfig.ServiceConnection.ClientId);
+        return _armClientCache.GetOrAdd(cacheKey, _ =>
+        {
+            TokenCredential credential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
+            return new ArmClient(credential);
+        });
     }
 }

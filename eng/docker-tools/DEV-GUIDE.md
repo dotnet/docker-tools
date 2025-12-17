@@ -48,7 +48,7 @@ The most common local task is building images to test Dockerfile changes before 
 ./eng/docker-tools/build.ps1 -Paths "src/runtime/8.0/alpine3.20"
 
 # Build all 8.0 runtime images using glob pattern
-./eng/docker-tools/build.ps1 -Paths "src/runtime/8.0/*"
+./eng/docker-tools/build.ps1 -Paths "*runtime*8.0*"
 ```
 
 **Combine Filters:**

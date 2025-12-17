@@ -87,18 +87,23 @@ build.cmd
 This runs: restore → build → test → pack
 
 ### Build ImageBuilder container image
-```bash
-# From root
-pwsh -WorkingDirectory ./src -f src/build.ps1
+```powershell
+# From src/ directory
+./build.ps1
+
+# Or from root directory
+pwsh -f ./src/build.ps1
 ```
 
 ### Run tests
 ```bash
-# From root
+# From root - runs restore, build, test, and pack
 ./build.sh --test
+```
 
-# From src/
-pwsh -f run-tests.ps1
+```powershell
+# From src/ - runs ImageBuilder tests specifically
+./run-tests.ps1
 ```
 
 ## ImageBuilder Architecture

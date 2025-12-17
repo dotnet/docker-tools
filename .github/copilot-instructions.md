@@ -89,7 +89,7 @@ This runs: restore → build → test → pack
 ### Build ImageBuilder container image
 ```bash
 # From root
-pwsh -wd ./src -f src/build.ps1
+pwsh -WorkingDirectory ./src -f src/build.ps1
 ```
 
 ### Run tests
@@ -122,7 +122,7 @@ ImageBuilder is a CLI tool that orchestrates Docker image builds using manifest 
 ## Common Workflows
 
 ### Local Development
-```bash
+```powershell
 # Build specific images locally
 ./eng/docker-tools/build.ps1 -OS "alpine" -Architecture "arm64"
 

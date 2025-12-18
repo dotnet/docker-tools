@@ -24,7 +24,7 @@ public class TagSerializationTests
         string json = """
             {
               "documentationGroup": null,
-              "docType": 0,
+              "docType": "Documented",
               "syndication": null
             }
             """;
@@ -52,11 +52,11 @@ public class TagSerializationTests
             }
         };
 
-        // Without StringEnumConverter, enums serialize as integers.
+        // Enums serialize as strings with StringEnumConverter.
         string json = """
             {
               "documentationGroup": "test-group",
-              "docType": 1,
+              "docType": "Undocumented",
               "syndication": {
                 "repo": "target-repo",
                 "destinationTags": [

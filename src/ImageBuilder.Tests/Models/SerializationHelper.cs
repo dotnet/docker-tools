@@ -72,6 +72,23 @@ public static class SerializationHelper
     }
 
     /// <summary>
+    /// Asserts that deserializing the given JSON throws a <see cref="JsonSerializationException"/>
+    /// because a required property is missing or null.
+    /// </summary>
+    /// <typeparam name="T">The type of object to deserialize to.</typeparam>
+    /// <param name="json">The JSON string to deserialize.</param>
+    /// <param name="propertyName">The name of the required property (use nameof()).</param>
+    public static void AssertDeserializationFails<T>(string json, string propertyName)
+    {
+        JsonSerializationException exception = Assert.Throws<JsonSerializationException>(
+            () => JsonConvert.DeserializeObject<T>(json));
+
+        // Newtonsoft.Json error messages use the format: "Required property 'PropertyName' ..."
+        string expectedPattern = $"Required property '{propertyName}'";
+        Assert.Contains(expectedPattern, exception.Message);
+    }
+
+    /// <summary>
     /// Normalizes a JSON string by removing trailing whitespace and normalizing line endings.
     /// </summary>
     private static string NormalizeJson(string json)

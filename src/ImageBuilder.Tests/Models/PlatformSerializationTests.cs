@@ -25,17 +25,15 @@ public class PlatformSerializationTests
         Platform platform = new();
 
         // Empty BuildArgs dictionary IS serialized (only IList is omitted)
-        // Empty Tags dictionary IS serialized
-        // Empty CustomBuildLegGroups array is omitted
+        // Empty Tags dictionary IS serialized (required)
+        // Empty arrays (CustomBuildLegGroups, Images) are omitted
         string json = """
             {
               "buildArgs": {},
               "dockerfile": "",
-              "dockerfileTemplate": null,
               "os": "Linux",
               "osVersion": "",
-              "tags": {},
-              "variant": null
+              "tags": {}
             }
             """;
 
@@ -66,7 +64,7 @@ public class PlatformSerializationTests
             Variant = "v8"
         };
 
-        // Empty CustomBuildLegGroups is omitted
+        // Empty CustomBuildLegGroups is omitted; default Tag properties are omitted
         string json = """
             {
               "architecture": "ARM64",
@@ -79,15 +77,9 @@ public class PlatformSerializationTests
               "os": "Linux",
               "osVersion": "jammy",
               "tags": {
-                "8.0-jammy-arm64v8": {
-                  "documentationGroup": null,
-                  "docType": "Documented",
-                  "syndication": null
-                },
+                "8.0-jammy-arm64v8": {},
                 "8.0": {
-                  "documentationGroup": null,
-                  "docType": "Undocumented",
-                  "syndication": null
+                  "docType": "Undocumented"
                 }
               },
               "variant": "v8"
@@ -130,22 +122,16 @@ public class PlatformSerializationTests
 
         // Architecture defaults to AMD64 and is not serialized due to DefaultValueHandling.IgnoreAndPopulate
         // Empty dictionaries ARE serialized (only IList is omitted)
-        // Empty CustomBuildLegGroups array is omitted
+        // Empty CustomBuildLegGroups array is omitted; default Tag properties are omitted
         string json = """
             {
               "buildArgs": {},
               "dockerfile": "src/Dockerfile",
-              "dockerfileTemplate": null,
               "os": "Linux",
               "osVersion": "jammy",
               "tags": {
-                "8.0": {
-                  "documentationGroup": null,
-                  "docType": "Documented",
-                  "syndication": null
-                }
-              },
-              "variant": null
+                "8.0": {}
+              }
             }
             """;
 
@@ -166,22 +152,16 @@ public class PlatformSerializationTests
 
         // Architecture is AMD64 (default) so it's omitted
         // Empty BuildArgs dictionary IS serialized (only IList is omitted)
-        // Empty CustomBuildLegGroups array is omitted
+        // Empty CustomBuildLegGroups array is omitted; default Tag properties are omitted
         string json = """
             {
               "buildArgs": {},
               "dockerfile": "src/runtime/8.0/nanoserver-ltsc2022/amd64/Dockerfile",
-              "dockerfileTemplate": null,
               "os": "Windows",
               "osVersion": "nanoserver-ltsc2022",
               "tags": {
-                "8.0-nanoserver-ltsc2022": {
-                  "documentationGroup": null,
-                  "docType": "Documented",
-                  "syndication": null
-                }
-              },
-              "variant": null
+                "8.0-nanoserver-ltsc2022": {}
+              }
             }
             """;
 

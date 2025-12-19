@@ -21,10 +21,10 @@ public class ReadmeSerializationTests
     {
         Readme readme = new();
 
+        // Path is required so always serialized; null templatePath is omitted
         string json = """
             {
-              "path": "",
-              "templatePath": null
+              "path": ""
             }
             """;
 
@@ -88,10 +88,10 @@ public class ReadmeSerializationTests
     {
         Readme readme = new("README.md", null);
 
+        // Null templatePath is omitted
         string json = """
             {
-              "path": "README.md",
-              "templatePath": null
+              "path": "README.md"
             }
             """;
 

@@ -28,13 +28,11 @@ public class ImageSerializationTests
     }
 
     [Fact]
-    public void FullyPopulatedImage_Serialization()
+    public void FullyPopulatedImage_Bidirectional()
     {
-        // Bidirectional test not possible: empty Platforms array is required for deserialization
-        // but omitted during serialization
         Image image = new()
         {
-            Platforms = [], // Leave sub-model arrays empty per instructions
+            Platforms = [],
             SharedTags = new Dictionary<string, Tag>
             {
                 ["8.0"] = new Tag(),
@@ -43,33 +41,26 @@ public class ImageSerializationTests
             ProductVersion = "8.0.0"
         };
 
-        // Empty Platforms array is omitted by JsonHelper.CustomContractResolver
+        // Default Tag properties are omitted; only non-default values are serialized
         string json = """
             {
+              "platforms": [],
               "sharedTags": {
-                "8.0": {
-                  "documentationGroup": null,
-                  "docType": "Documented",
-                  "syndication": null
-                },
+                "8.0": {},
                 "latest": {
-                  "documentationGroup": null,
-                  "docType": "Undocumented",
-                  "syndication": null
+                  "docType": "Undocumented"
                 }
               },
               "productVersion": "8.0.0"
             }
             """;
 
-        AssertSerialization(image, json);
+        AssertBidirectional(image, json, AssertImagesEqual);
     }
 
     [Fact]
     public void FullyPopulatedImage_RoundTrip()
     {
-        // RoundTrip tests fail when arrays are empty because they get omitted on serialization
-        // but are required on deserialization. Test serialization only.
         Image image = new()
         {
             Platforms = [],
@@ -77,42 +68,24 @@ public class ImageSerializationTests
             ProductVersion = "8.0.0"
         };
 
-        // Cannot round-trip because empty Platforms array is omitted but required
-        string json = """
-            {
-              "sharedTags": {
-                "8.0": {
-                  "documentationGroup": null,
-                  "docType": "Documented",
-                  "syndication": null
-                }
-              },
-              "productVersion": "8.0.0"
-            }
-            """;
-
-        AssertSerialization(image, json);
+        AssertRoundTrip(image, AssertImagesEqual);
     }
 
     [Fact]
-    public void MinimalImage_Serialization()
+    public void MinimalImage_Bidirectional()
     {
-        // Bidirectional test not possible: empty Platforms array is required for deserialization
-        // but omitted during serialization
         Image image = new()
         {
             Platforms = []
         };
 
-        // Empty Platforms array is omitted by JsonHelper.CustomContractResolver
         string json = """
             {
-              "sharedTags": null,
-              "productVersion": null
+              "platforms": []
             }
             """;
 
-        AssertSerialization(image, json);
+        AssertBidirectional(image, json, AssertImagesEqual);
     }
 
     [Fact]

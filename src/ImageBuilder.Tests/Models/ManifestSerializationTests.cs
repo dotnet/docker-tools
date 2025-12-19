@@ -22,13 +22,10 @@ public class ManifestSerializationTests
     {
         Manifest manifest = new();
 
-        // Empty Repos array is omitted by JsonHelper.CustomContractResolver
+        // Nulls are omitted; empty Repos array is omitted (IList)
         // Empty Variables dictionary is NOT omitted (dictionaries are not IList)
         string json = """
             {
-              "includes": null,
-              "readme": null,
-              "registry": null,
               "variables": {}
             }
             """;
@@ -50,7 +47,7 @@ public class ManifestSerializationTests
             Includes = ["include1.json", "include2.json"],
             Readme = new Readme("README.md", "README.template.md"),
             Registry = "mcr.microsoft.com",
-            Repos = [], // Leave sub-model arrays empty per instructions
+            Repos = [],
             Variables = new Dictionary<string, string>
             {
                 ["version"] = "8.0",
@@ -58,7 +55,7 @@ public class ManifestSerializationTests
             }
         };
 
-        // Empty Repos array is omitted by JsonHelper.CustomContractResolver
+        // Empty Repos array is omitted (not required)
         string json = """
             {
               "includes": [

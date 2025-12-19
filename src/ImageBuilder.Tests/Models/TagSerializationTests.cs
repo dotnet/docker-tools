@@ -21,13 +21,8 @@ public class TagSerializationTests
     {
         Tag tag = new();
 
-        string json = """
-            {
-              "documentationGroup": null,
-              "docType": "Documented",
-              "syndication": null
-            }
-            """;
+        // All properties have default/null values, so they are omitted
+        string json = "{}";
 
         AssertBidirectional(tag, json, AssertTagsEqual);
     }

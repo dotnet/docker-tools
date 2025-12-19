@@ -7,6 +7,7 @@
 using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
+using Shouldly;
 using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -21,6 +22,8 @@ public static class SerializationHelper
     {
         ContractResolver = JsonHelper.JsonSerializerSettings.ContractResolver,
         Formatting = Formatting.Indented,
+        NullValueHandling = JsonHelper.JsonSerializerSettings.NullValueHandling,
+        DefaultValueHandling = JsonHelper.JsonSerializerSettings.DefaultValueHandling,
         Converters = { new StringEnumConverter() }
     };
 
@@ -48,8 +51,10 @@ public static class SerializationHelper
     /// <param name="expectedJson">The expected JSON string.</param>
     public static void AssertSerialization<T>(T obj, string expectedJson)
     {
-        string actualJson = Serialize(obj);
-        Assert.Equal(NormalizeJson(expectedJson), NormalizeJson(actualJson));
+        var actualJson = Serialize(obj);
+        var normalizedActualJson = NormalizeJson(actualJson);
+        var normalizedExpectedJson = NormalizeJson(expectedJson);
+        normalizedActualJson.ShouldBeEquivalentTo(normalizedExpectedJson);
     }
 
     /// <summary>
@@ -92,8 +97,7 @@ public static class SerializationHelper
             () => JsonConvert.DeserializeObject<T>(json));
 
         // Newtonsoft.Json error messages use the format: "Required property 'PropertyName' ..."
-        string expectedPattern = $"Required property '{propertyName}'";
-        Assert.Contains(expectedPattern, exception.Message);
+        exception.Message.ShouldContain($"Required property '{propertyName}'");
     }
 
     /// <summary>
@@ -110,8 +114,7 @@ public static class SerializationHelper
 
         // Newtonsoft.Json error messages use the format: "Cannot write a null value for property 'name'..."
         // Note: property name is lowercase in serialization error messages
-        string expectedPattern = $"property '{propertyName.ToLowerInvariant()}'";
-        Assert.Contains(expectedPattern, exception.Message);
+        exception.Message.ShouldContain($"property '{propertyName.ToLowerInvariant()}'");
     }
 
     /// <summary>

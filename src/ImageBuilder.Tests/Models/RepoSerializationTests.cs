@@ -27,36 +27,32 @@ public class RepoSerializationTests
     }
 
     [Fact]
-    public void FullyPopulatedRepo_Serialization()
+    public void FullyPopulatedRepo_Bidirectional()
     {
-        // Bidirectional test not possible: empty Images array is required for deserialization
-        // but omitted during serialization
         Repo repo = new()
         {
             Id = "runtime",
-            Images = [], // Leave sub-model arrays empty per instructions
+            Images = [],
             McrTagsMetadataTemplate = "tags-metadata-template.yaml",
             Name = "dotnet/runtime",
-            Readmes = [] // Leave sub-model arrays empty per instructions
+            Readmes = []
         };
 
-        // Empty Images and Readmes arrays are omitted by JsonHelper.CustomContractResolver
         string json = """
             {
               "id": "runtime",
+              "images": [],
               "mcrTagsMetadataTemplate": "tags-metadata-template.yaml",
               "name": "dotnet/runtime"
             }
             """;
 
-        AssertSerialization(repo, json);
+        AssertBidirectional(repo, json, AssertReposEqual);
     }
 
     [Fact]
     public void FullyPopulatedRepo_RoundTrip()
     {
-        // RoundTrip tests fail when arrays are empty because they get omitted on serialization
-        // but are required on deserialization. Use serialization test instead.
         Repo repo = new()
         {
             Id = "sdk",
@@ -66,40 +62,27 @@ public class RepoSerializationTests
             Readmes = []
         };
 
-        // Cannot round-trip because empty Images array is omitted but required
-        // Test serialization only
-        string json = """
-            {
-              "id": "sdk",
-              "mcrTagsMetadataTemplate": "template.yaml",
-              "name": "dotnet/sdk"
-            }
-            """;
-
-        AssertSerialization(repo, json);
+        AssertRoundTrip(repo, AssertReposEqual);
     }
 
     [Fact]
-    public void MinimalRepo_Serialization()
+    public void MinimalRepo_Bidirectional()
     {
-        // Bidirectional test not possible: empty Images array is required for deserialization
-        // but omitted during serialization
         Repo repo = new()
         {
             Images = [],
             Name = "dotnet/aspnet"
         };
 
-        // Empty Images array is omitted by JsonHelper.CustomContractResolver
+        // Null properties are omitted; only required images and name are serialized
         string json = """
             {
-              "id": null,
-              "mcrTagsMetadataTemplate": null,
+              "images": [],
               "name": "dotnet/aspnet"
             }
             """;
 
-        AssertSerialization(repo, json);
+        AssertBidirectional(repo, json, AssertReposEqual);
     }
 
     [Fact]

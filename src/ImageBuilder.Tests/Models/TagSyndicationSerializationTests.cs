@@ -21,12 +21,8 @@ public class TagSyndicationSerializationTests
     {
         TagSyndication syndication = new();
 
-        string json = """
-            {
-              "repo": null,
-              "destinationTags": null
-            }
-            """;
+        // All properties are null, so they are omitted
+        string json = "{}";
 
         AssertBidirectional(syndication, json, AssertTagSyndicationsEqual);
     }
@@ -80,10 +76,10 @@ public class TagSyndicationSerializationTests
             Repo = "dotnet/runtime"
         };
 
+        // Null destinationTags is omitted
         string json = """
             {
-              "repo": "dotnet/runtime",
-              "destinationTags": null
+              "repo": "dotnet/runtime"
             }
             """;
 
@@ -98,9 +94,9 @@ public class TagSyndicationSerializationTests
             DestinationTags = ["8.0", "latest"]
         };
 
+        // Null repo is omitted
         string json = """
             {
-              "repo": null,
               "destinationTags": [
                 "8.0",
                 "latest"

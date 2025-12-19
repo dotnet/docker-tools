@@ -1,6 +1,7 @@
 parameters:
   setupImageBuilder: true
   condition: true
+  publishConfig: null
 
 steps:
 - template: /eng/docker-tools/templates/steps/init-common.yml@self
@@ -37,6 +38,19 @@ steps:
     displayName: Cleanup Setup Container
     condition: and(always(), ${{ parameters.condition }})
     continueOnError: true
+
+  - ${{ if parameters.publishConfig }}:
+    - powershell: |-
+        $appsettingsJsonContent = @"
+        {
+          "PublishConfiguration": ${{ convertToJson(parameters.publishConfig) }}
+        }
+        "@
+        Set-Content -Path "$(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder/appsettings.json" -Value $appsettingsJsonContent
+        Get-Content -Path "$(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder/appsettings.json"
+      displayName: Output publish configuration
+      condition: and(succeeded(), ${{ parameters.condition }})
+
   - task: PowerShell@2
     displayName: Define runImageBuilderCmd Variables
     condition: and(succeeded(), ${{ parameters.condition }})

@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Manifest;
 public class Manifest
 {
     [Description(
-        "Additional json files to be loaded with this manifest.  This is a convienent" +
+        "Additional json files to be loaded with this manifest.  This is a convenient" +
         "way to split the manifest apart into logical parts."
         )]
     public string[] Includes { get; set; }
@@ -40,8 +40,8 @@ public class Manifest
 
     [Description(
         "A set of custom variables that can be referenced in various parts of the " +
-        "manifest. This provides a few benefits: 1) allows a commmonly used value " +
-        "to be defined only once and referenced by its variable name many times" +
+        "manifest. This provides a few benefits: 1) allows a commonly used value " +
+        "to be defined only once and referenced by its variable name many times " +
         "2) allows tools that consume the manifest file to provide a mechanism to " +
         "dynamically override the value of these variables. Variables may be " +
         "referenced in other parts of the manifest by using the following syntax: " +

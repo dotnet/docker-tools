@@ -2015,14 +2015,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         private class SubscriptionInfo
         {
-            public SubscriptionInfo(Models.Subscription.Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
+            public SubscriptionInfo(Subscription subscription, Manifest manifest, ImageArtifactDetails imageInfo)
             {
                 Subscription = subscription;
                 Manifest = manifest;
                 ImageInfo = imageInfo;
             }
 
-            public Models.Subscription.Subscription Subscription { get; }
+            public Subscription Subscription { get; }
             public Manifest Manifest { get; }
             public ImageArtifactDetails ImageInfo { get; }
         }

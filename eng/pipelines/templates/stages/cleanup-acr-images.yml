@@ -26,7 +26,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
         repo: "build-staging/*"
-        acr: ${{ parameters.publishConfig.buildAcr }}
+        acr: ${{ parameters.publishConfig.BuildRegistry }}
         action: delete
         age: 15
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
@@ -34,7 +34,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
         repo: "public/dotnet/*"
-        acr: ${{ parameters.publishConfig.publishAcr }}
+        acr: ${{ parameters.publishConfig.PublishRegistry }}
         action: pruneEol
         age: 15
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
@@ -42,7 +42,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
         repo: "test/*"
-        acr: ${{ parameters.publishConfig.publishAcr }}
+        acr: ${{ parameters.publishConfig.PublishRegistry }}
         action: pruneAll
         age: 7
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
@@ -50,7 +50,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         internalProjectName: ${{ parameters.internalProjectName }}
         repo: "public/dotnet-buildtools/*"
-        acr: ${{ parameters.publishConfig.publishAcr }}
+        acr: ${{ parameters.publishConfig.PublishRegistry }}
         action: pruneEol
         age: 15
         customArgs: $(excludedBuildToolsPrereqsImagesArgs)
@@ -59,7 +59,7 @@ stages:
     #   parameters:
     #     publishConfig: ${{ parameters.publishConfig }}
     #     repo: "mirror/*"
-    #     acr: ${{ parameters.publishConfig.buildAcr }}
+    #     acr: ${{ parameters.publishConfig.BuildRegistry }}
     #     action: pruneDangling
     #     age: 0
   - job: Annotations
@@ -72,10 +72,10 @@ stages:
       displayName: Create EOL Annotation Data Directory
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
       parameters:
-        acr: ${{ parameters.publishConfig.buildAcr }}
+        acr: ${{ parameters.publishConfig.BuildRegistry }}
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
       parameters:
-        acr: ${{ parameters.publishConfig.publicMirrorAcr }}
+        acr: ${{ parameters.publishConfig.PublicMirrorRegistry }}
     - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
       parameters:
         path: $(Build.ArtifactStagingDirectory)/eol-annotation-data

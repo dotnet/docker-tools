@@ -46,8 +46,8 @@ steps:
           "PublishConfiguration": ${{ convertToJson(parameters.publishConfig) }}
         }
         "@
-        Set-Content -Path "$(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder/appsettings.json" -Value $appsettingsJsonContent
-        Get-Content -Path "$(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder/appsettings.json"
+        Set-Content -Path "$(Build.SourcesDirectory)/.Microsoft.DotNet.ImageBuilder/appsettings.json" -Value $appsettingsJsonContent
+        Get-Content -Path "$(Build.SourcesDirectory)/.Microsoft.DotNet.ImageBuilder/appsettings.json"
       displayName: Output publish configuration
       condition: and(succeeded(), ${{ parameters.condition }})
 

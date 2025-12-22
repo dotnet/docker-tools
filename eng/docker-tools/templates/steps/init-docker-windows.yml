@@ -1,6 +1,6 @@
 parameters:
   setupImageBuilder: true
-  condition: true
+  condition: "true"
   publishConfig: null
 
 steps:

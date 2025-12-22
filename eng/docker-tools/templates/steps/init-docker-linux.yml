@@ -11,8 +11,8 @@ parameters:
   default: false
 # Whether or not to run the steps in this template
 - name: condition
-  type: boolean
-  default: true
+  type: string
+  default: "true"
 - name: publishConfig
   type: object
   default: null

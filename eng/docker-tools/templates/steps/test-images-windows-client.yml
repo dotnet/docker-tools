@@ -1,7 +1,7 @@
 parameters:
   internalProjectName: null
   publishConfig: null
-  condition: true
+  condition: "true"
   customInitSteps: []
   sourceBuildPipelineRunId: ""
 

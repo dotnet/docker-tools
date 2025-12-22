@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -69,6 +70,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
 
         IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryOptions.Registry);
 
+
+        Stopwatch totalStopwatch = Stopwatch.StartNew();
         IAsyncEnumerable<string> repositoryNames =
             acrClient.GetRepositoryNamesAsync()
                      .Where(repo => repoNameFilter is null || repoNameFilter(repo));
@@ -76,6 +79,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
         await foreach (string repositoryName in repositoryNames)
         {
+            Stopwatch repoStopwatch = Stopwatch.StartNew();
+
             IAcrContentClient contentClient =
                 _acrContentClientFactory.Create(
                     Acr.Parse(Options.RegistryOptions.Registry),
@@ -83,6 +88,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
 
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
+            int manifestCount = 0;
             await foreach (ArtifactManifestProperties manifestProps in manifests)
             {
                 ManifestQueryResult manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
@@ -99,8 +105,15 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
                         digest: manifestProps.Digest);
                     digests.Add((imageName, GetLongestTag(manifestProps.Tags)));
                 }
+                manifestCount++;
             }
+
+            repoStopwatch.Stop();
+            LoggerService.WriteMessage($"Processed repository '{repositoryName}' with {manifestCount} manifests in {repoStopwatch.ElapsedMilliseconds}ms");
         }
+
+        totalStopwatch.Stop();
+        LoggerService.WriteMessage($"Completed querying all image digests. Total digests: {digests.Count}, Total time: {totalStopwatch.Elapsed}");
 
         return digests
             .Select(val => new EolDigestData(val.Digest) { Tag = val.Tag });

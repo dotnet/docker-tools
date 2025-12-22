@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
@@ -10,15 +11,23 @@ using Azure.Containers.ContainerRegistry;
 namespace Microsoft.DotNet.ImageBuilder;
 
 #nullable enable
-public class AcrContentClientWrapper(ContainerRegistryContentClient innerClient) : IAcrContentClient
+public class AcrContentClientWrapper(ContainerRegistryContentClient innerClient, ILoggerService loggerService) : IAcrContentClient
 {
     private readonly ContainerRegistryContentClient _innerClient = innerClient;
+    private readonly ILoggerService _loggerService = loggerService;
 
     public string RepositoryName => _innerClient.RepositoryName;
 
     public async Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest)
     {
+        _loggerService.WriteMessage($"[{nameof(GetManifestAsync)}] {RepositoryName}:{tagOrDigest}");
+        Stopwatch stopwatch = Stopwatch.StartNew();
+
         Response<GetManifestResult> result = await _innerClient.GetManifestAsync(tagOrDigest);
+
+        stopwatch.Stop();
+        _loggerService.WriteMessage($"[{nameof(GetManifestAsync)}] {RepositoryName}:{tagOrDigest} -> {result.Value.Digest} ({stopwatch.ElapsedMilliseconds}ms)");
+
         JsonObject manifestData = (JsonObject)(JsonNode.Parse(result.Value.Manifest.ToString()) ?? throw new JsonException($"Unable to deserialize result: {result.Value.Manifest}"));
         return new ManifestQueryResult(result.Value.Digest, manifestData);
     }

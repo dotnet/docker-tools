@@ -12,11 +12,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal class AcrContentClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,
-    IOptions<PublishConfiguration> publishConfigOptions)
+    IOptions<PublishConfiguration> publishConfigOptions,
+    ILoggerService loggerService)
     : IAcrContentClientFactory
 {
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
+    private readonly ILoggerService _loggerService = loggerService;
 
     public IAcrContentClient Create(Acr acr, string repositoryName)
     {
@@ -33,7 +35,7 @@ internal class AcrContentClientFactory(
             AzureScopes.ContainerRegistryScope);
 
         var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
-        var wrapper = new AcrContentClientWrapper(client);
+        var wrapper = new AcrContentClientWrapper(client, _loggerService);
         return wrapper;
     }
 }

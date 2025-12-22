@@ -21,7 +21,7 @@
     <PackageReference Include="Cottle" Version="2.0.10" />
     <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.0.3" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.11" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.1" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.11" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.11" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.1" />

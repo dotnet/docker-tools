@@ -81,7 +81,11 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
                     );
                 }
 
-                return credential;
+                // Wrap the credential with CachingTokenCredential to ensure tokens are cached.
+                // AzurePipelinesCredential does not cache tokens internally, so each call to
+                // GetToken would make a new request to Azure, which is slow. The caching wrapper
+                // caches the token and refreshes it only when it's close to expiration.
+                return new CachingTokenCredential(credential);
             });
     }
 }

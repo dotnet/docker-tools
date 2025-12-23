@@ -39,7 +39,7 @@ steps:
     condition: and(always(), ${{ parameters.condition }})
     continueOnError: true
 
-  - ${{ if parameters.publishConfig }}:
+  - ${{ if and(parameters.publishConfig, ne(variables['Build.Reason'], 'PullRequest')) }}:
     # .NET Microsoft.Extensions.Configuration reads appsettings.json from the working directory
     # where ImageBuilder is run, not from the executable's directory. Place it in the repo root.
     - powershell: |-

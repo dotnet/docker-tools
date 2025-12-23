@@ -15,6 +15,14 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// when they are close to expiration. This is necessary for credentials like
 /// <see cref="Azure.Identity.AzurePipelinesCredential"/> that do not cache tokens internally.
 /// </summary>
+/// <remarks>
+/// This class uses <see cref="SemaphoreSlim"/> to provide thread-safe access for both synchronous
+/// and asynchronous callers, preventing concurrent token fetches that would waste network resources.
+/// The <see cref="SemaphoreSlim"/> is used instead of a regular lock because it supports both
+/// <see cref="SemaphoreSlim.Wait(CancellationToken)"/> and
+/// <see cref="SemaphoreSlim.WaitAsync(CancellationToken)"/> methods, allowing coordination between
+/// the sync <see cref="GetToken"/> and async <see cref="GetTokenAsync"/> methods.
+/// </remarks>
 internal class CachingTokenCredential : TokenCredential
 {
     private readonly TokenCredential _innerCredential;

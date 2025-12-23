@@ -31,3 +31,4 @@ msbuild.wrn
 
 # Test files
 *.trx
+.nuget/

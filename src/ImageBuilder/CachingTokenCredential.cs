@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 internal class CachingTokenCredential : TokenCredential
 {
     private readonly TokenCredential _innerCredential;
-    private readonly object _cacheLock = new();
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
     private AccessToken? _cachedToken;
 
     /// <summary>
@@ -34,7 +34,8 @@ internal class CachingTokenCredential : TokenCredential
 
     public override AccessToken GetToken(TokenRequestContext requestContext, CancellationToken cancellationToken)
     {
-        lock (_cacheLock)
+        _semaphore.Wait(cancellationToken);
+        try
         {
             if (IsTokenValid(_cachedToken))
             {
@@ -44,34 +45,28 @@ internal class CachingTokenCredential : TokenCredential
             _cachedToken = _innerCredential.GetToken(requestContext, cancellationToken);
             return _cachedToken.Value;
         }
+        finally
+        {
+            _semaphore.Release();
+        }
     }
 
     public override async ValueTask<AccessToken> GetTokenAsync(TokenRequestContext requestContext, CancellationToken cancellationToken)
     {
-        // For async, we use a simple lock pattern. The lock is released before the await,
-        // so we need to double-check after acquiring the lock.
-        AccessToken? cachedToken;
-        lock (_cacheLock)
+        await _semaphore.WaitAsync(cancellationToken);
+        try
         {
-            cachedToken = _cachedToken;
-        }
-
-        if (IsTokenValid(cachedToken))
-        {
-            return cachedToken!.Value;
-        }
-
-        // Token is expired or not cached, fetch a new one
-        var newToken = await _innerCredential.GetTokenAsync(requestContext, cancellationToken);
-
-        lock (_cacheLock)
-        {
-            // Double-check in case another thread already refreshed
-            if (!IsTokenValid(_cachedToken))
+            if (IsTokenValid(_cachedToken))
             {
-                _cachedToken = newToken;
+                return _cachedToken!.Value;
             }
-            return _cachedToken!.Value;
+
+            _cachedToken = await _innerCredential.GetTokenAsync(requestContext, cancellationToken);
+            return _cachedToken.Value;
+        }
+        finally
+        {
+            _semaphore.Release();
         }
     }
 

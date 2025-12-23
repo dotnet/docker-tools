@@ -166,6 +166,45 @@ public class CachingTokenCredentialTests
         Assert.Throws<ArgumentNullException>(() => new CachingTokenCredential(null!));
     }
 
+    [Fact]
+    public async Task GetTokenAsync_ConcurrentCalls_OnlyFetchesOnce()
+    {
+        // Arrange
+        var expectedToken = CreateToken(expiresInMinutes: 60);
+        var callCount = 0;
+
+        var innerCredential = new Mock<TokenCredential>();
+        innerCredential
+            .Setup(c => c.GetTokenAsync(It.IsAny<TokenRequestContext>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(() =>
+            {
+                Interlocked.Increment(ref callCount);
+                // Simulate a slow token fetch
+                Thread.Sleep(100);
+                return expectedToken;
+            });
+
+        var cachingCredential = new CachingTokenCredential(innerCredential.Object);
+
+        // Act - Start multiple concurrent token requests
+        var tasks = new Task<AccessToken>[10];
+        for (int i = 0; i < tasks.Length; i++)
+        {
+            tasks[i] = cachingCredential.GetTokenAsync(TestRequestContext, CancellationToken.None).AsTask();
+        }
+
+        var results = await Task.WhenAll(tasks);
+
+        // Assert - All results should be the same token
+        foreach (var result in results)
+        {
+            Assert.Equal(expectedToken.Token, result.Token);
+        }
+
+        // Verify the inner credential was only called once despite concurrent requests
+        Assert.Equal(1, callCount);
+    }
+
     private static AccessToken CreateToken(int expiresInMinutes)
     {
         return new AccessToken(

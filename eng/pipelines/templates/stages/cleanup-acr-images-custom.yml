@@ -29,6 +29,6 @@ stages:
       parameters:
         internalProjectName: internal
         repo: ${{ parameters.repo }}
-        acr: ${{ parameters.publishConfig.buildAcr }}
+        acr: ${{ parameters.publishConfig.BuildRegistry }}
         action: ${{ parameters.action }}
         age: ${{ parameters.age }}

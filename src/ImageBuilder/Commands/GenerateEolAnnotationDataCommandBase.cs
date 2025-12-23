@@ -74,7 +74,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
                      .Where(repo => repoNameFilter is null || repoNameFilter(repo));
 
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
-        await foreach (string repositoryName in repositoryNames)
+        await Parallel.ForEachAsync(repositoryNames, async (repositoryName, outerCT) =>
         {
             IAcrContentClient contentClient =
                 _acrContentClientFactory.Create(
@@ -83,7 +83,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
 
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
-            await foreach (ArtifactManifestProperties manifestProps in manifests)
+            await Parallel.ForEachAsync(manifests, outerCT, async (manifestProps, innerCT) =>
             {
                 ManifestQueryResult manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
 
@@ -99,8 +99,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
                         digest: manifestProps.Digest);
                     digests.Add((imageName, GetLongestTag(manifestProps.Tags)));
                 }
-            }
-        }
+            });
+        });
 
         return digests
             .Select(val => new EolDigestData(val.Digest) { Tag = val.Tag });

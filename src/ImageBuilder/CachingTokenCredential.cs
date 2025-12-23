@@ -80,7 +80,7 @@ internal class CachingTokenCredential : TokenCredential
 
     private static bool IsTokenValid(AccessToken? token)
     {
-        if (token is null)
+        if (!token.HasValue)
         {
             return false;
         }

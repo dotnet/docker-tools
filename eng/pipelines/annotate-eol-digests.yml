@@ -14,12 +14,14 @@ variables:
   value: ""
 
 extends:
-  template: /eng/docker-tools/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    serviceConnections:
-    - name: $(publish.serviceConnectionName)
-    - name: $(marStatus.serviceConnectionName)
     stages:
+    - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
+      parameters:
+        serviceConnections:
+        - name: $(publish.serviceConnectionName)
+        - name: $(marStatus.serviceConnectionName)
     - stage: eolAnnotate
       displayName: Annotate EOL images
       dependsOn: []

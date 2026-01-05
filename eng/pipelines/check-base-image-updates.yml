@@ -15,11 +15,13 @@ variables:
 - template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
 
 extends:
-  template: /eng/docker-tools/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    serviceConnections:
-    - name: $(acr-staging.serviceConnectionName)
     stages:
+    - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
+      parameters:
+        serviceConnections:
+        - name: $(acr-staging.serviceConnectionName)
     - stage: CheckBaseImages
       displayName: Check Base Images
       dependsOn: []

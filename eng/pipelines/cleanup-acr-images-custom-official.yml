@@ -27,11 +27,13 @@ parameters:
   type: int
 
 extends:
-  template: /eng/docker-tools/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    serviceConnections:
-    - name: $(clean.serviceConnectionName)
     stages:
+    - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
+      parameters:
+        serviceConnections:
+        - name: $(clean.serviceConnectionName)
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
         stagesTemplate: /eng/pipelines/templates/stages/cleanup-acr-images-custom.yml@self

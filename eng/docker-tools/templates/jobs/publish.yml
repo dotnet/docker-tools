@@ -254,12 +254,10 @@ jobs:
     condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
     displayName: Publish Image Info
 
-  # Task displayNames names are hardcoded to reference the task prefix used by 1ES official
-  # pipelines in eng/docker-tools/templates/1es-official.yml.
-  #
-  # These will fail if they are dependend on by an unofficial pipeline since they use a unique task
-  # prefix compared to official pipelines (see eng/docker-tools/templates/1es-unofficial.yml). This is
-  # acceptable because unofficial pipelines should not publish images.
+  # Task displayNames are hardcoded to reference the task prefix used by 1ES official
+  # pipelines (🟪). These will fail if they are depended on by an unofficial pipeline since
+  # they use a unique task prefix compared to official pipelines (🟦).
+  # This is acceptable because unofficial pipelines should not publish images.
   #
   # https://github.com/dotnet/docker-tools/issues/1698 tracks making this command no longer depend
   # on individual step displayNames.

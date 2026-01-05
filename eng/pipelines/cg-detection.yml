@@ -20,9 +20,8 @@ variables:
   value: false
 
 extends:
-  template: /eng/docker-tools/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    cgDryRun: ${{ parameters.cgDryRun }}
     stages:
     - stage: CgDetection
       displayName: CG Detection

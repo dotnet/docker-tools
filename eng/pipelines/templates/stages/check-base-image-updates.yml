@@ -1,0 +1,43 @@
+# This stage template checks for updates to base images for multiple repos, and
+# queues build jobs if any images are out-of-date.
+
+parameters:
+# Publishing configuration containing registry and service connection settings.
+# Schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
+- name: publishConfig
+  type: object
+# The name of the internal Azure DevOps project (e.g., "internal").
+- name: internalProjectName
+  type: string
+# The name of the public Azure DevOps project (e.g., "public").
+- name: publicProjectName
+  type: string
+
+stages:
+- template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
+  parameters:
+    serviceConnections:
+    - name: ${{ parameters.publishConfig.InternalMirrorRegistry.serviceConnection.name }}
+    - name: ${{ parameters.publishConfig.BuildRegistry.serviceConnection.name }}
+
+- stage: CheckBaseImages
+  displayName: Check Base Images
+  dependsOn: []
+  jobs:
+
+  - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self
+    parameters:
+      jobName: CheckBaseImages
+      subscriptionsPath: eng/check-base-image-subscriptions.json
+      publicProjectName: ${{ parameters.publicProjectName }}
+      internalProjectName: ${{ parameters.internalProjectName }}
+      publishConfig: ${{ parameters.publishConfig }}
+
+  - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self
+    parameters:
+      jobName: CheckBaseImages_BuildTools
+      subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
+      customGetStaleImagesArgs: --base-override-regex '^((centos|debian|ubuntu):.+)' --base-override-sub '$(overrideRegistry)/$1'
+      publicProjectName: ${{ parameters.publicProjectName }}
+      internalProjectName: ${{ parameters.internalProjectName }}
+      publishConfig: ${{ parameters.publishConfig }}

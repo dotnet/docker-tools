@@ -17,4 +17,4 @@ steps:
     Set-Content -Path "appsettings.json" -Value $appsettingsJsonContent
     Get-Content -Path "appsettings.json"
   displayName: Output publish configuration
-  condition: and(succeeded(), ${{ parameters.condition }})
+  condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'), ${{ parameters.condition }})

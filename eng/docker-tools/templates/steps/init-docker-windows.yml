@@ -39,11 +39,10 @@ steps:
     condition: and(always(), ${{ parameters.condition }})
     continueOnError: true
 
-  - ${{ if and(parameters.publishConfig, ne(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
-      parameters:
-        publishConfig: ${{ parameters.publishConfig }}
-        condition: ${{ parameters.condition }}
+  - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      condition: ${{ parameters.condition }}
 
   - task: PowerShell@2
     displayName: Define runImageBuilderCmd Variables

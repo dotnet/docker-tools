@@ -42,11 +42,10 @@ steps:
     displayName: Pull Image Builder
     condition: and(succeeded(), ${{ parameters.condition }})
 
-  - ${{ if and(parameters.publishConfig, ne(variables['Build.Reason'], 'PullRequest')) }}:
-    - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
-      parameters:
-        publishConfig: ${{ parameters.publishConfig }}
-        condition: ${{ parameters.condition }}
+  - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      condition: ${{ parameters.condition }}
 
   - script: >-
       docker build

@@ -26,4 +26,3 @@ jobs:
     customInitSteps: ${{ parameters.customInitSteps }}
     additionalOptions: ${{ parameters.additionalOptions }}
     acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}
-    repoPrefix: ${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}

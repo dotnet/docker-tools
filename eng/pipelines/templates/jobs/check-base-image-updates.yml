@@ -1,9 +1,29 @@
+# This job template checks for stale images that need to be rebuilt due to base
+# image updates. It copies base images to the staging registry, detects which
+# images are stale, and queues builds for any images that need to be updated.
+
 parameters:
-  jobName: null
-  subscriptionsPath: null
-  customGetStaleImagesArgs: ""
-  publicProjectName: null
-  internalProjectName: null
+# The name of the job (e.g., "CheckBaseImages").
+- name: jobName
+  type: string
+# Path to the subscriptions JSON file that defines which base images to monitor.
+# Relative to the repo root.
+- name: subscriptionsPath
+  type: string
+# The name of the public Azure DevOps project (e.g., "public").
+- name: publicProjectName
+  type: string
+# The name of the internal Azure DevOps project (e.g., "internal").
+- name: internalProjectName
+  type: string
+# Publishing configuration containing registry and service connection settings.
+# Schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
+- name: publishConfig
+  type: object
+# Additional arguments to pass to the getStaleImages command (optional).
+- name: customGetStaleImagesArgs
+  type: string
+  default: ""
 
 jobs:
 - job: ${{ parameters.jobName }}
@@ -12,19 +32,16 @@ jobs:
     image: $(default1ESInternalPoolImage)
     os: linux
   steps:
+
   - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
-      acr:
-        server: $(acr-staging.server)
-        serviceConnection:
-          id: $(acr-staging.serviceConnection.id)
-          tenantId: $(acr-staging.serviceConnection.tenantId)
-          clientId: $(acr-staging.serviceConnection.clientId)
-        subscription: $(acr-staging.subscription)
-        resourceGroup: $(acr-staging.resourceGroup)
-      repoPrefix: $(mirrorRepoPrefix)
+      acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
+
   - script: >
       $(runImageBuilderCmd)
       getStaleImages
@@ -39,6 +56,7 @@ jobs:
       $(dockerHubRegistryCreds)
     displayName: Get Stale Images
     name: GetStaleImages
+
   - script: >
       $(runImageBuilderCmd)
       queueBuild

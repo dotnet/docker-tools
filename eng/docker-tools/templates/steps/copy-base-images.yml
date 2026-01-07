@@ -3,15 +3,9 @@ parameters:
   type: object
   default:
     server: ""
-    serviceConnection:
-      tenantId: ""
-      clientId: ""
-      id: ""
     subscription: ""
     resourceGroup: ""
-- name: repoPrefix
-  type: string
-  default: null
+    repoPrefix: ""
 - name: additionalOptions
   type: string
   default: ""
@@ -39,7 +33,7 @@ steps:
       '${{ parameters.acr.resourceGroup }}'
       $(dockerHubRegistryCreds)
       $(customCopyBaseImagesArgs)
-      --repo-prefix '${{ parameters.repoPrefix }}'
+      --repo-prefix '${{ parameters.acr.repoPrefix }}'
       --registry-override '${{ parameters.acr.server }}'
       --os-type 'linux'
       --architecture '*'

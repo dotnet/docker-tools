@@ -19,8 +19,6 @@ variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
 # Uses DockerHub registry creds to avoid rate limiting
 - template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
-- name: mirrorRepoPrefix
-  value: ""
 
 extends:
   template: /eng/docker-tools/templates/1es.yml@self

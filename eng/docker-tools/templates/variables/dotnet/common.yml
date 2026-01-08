@@ -27,8 +27,10 @@ variables:
 - name: linuxArm64InternalPoolName
   value: Docker-Linux-Arm-Internal
 
-- name: linuxArm32PoolImage
-  value: Mariner-2-Docker-ARM64
+- name: linuxArm32PublicPoolImage
+  value: azure-linux-3-arm64-public
+- name: linuxArm32InternalPoolImage
+  value: azure-linux-3-arm64
 - name: linuxArm32PublicPoolName
   value: Docker-Linux-Arm-Public
 - name: linuxArm32InternalPoolName

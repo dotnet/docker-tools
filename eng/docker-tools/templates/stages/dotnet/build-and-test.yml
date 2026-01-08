@@ -82,7 +82,7 @@ stages:
       hostArchitecture: Arm64
       ${{ if eq(variables['System.TeamProject'], parameters.publicProjectName) }}:
         name: $(linuxArm64PublicPoolName)
-        image: $(linuxArm64PublicPoolImage)
+        demands: ImageOverride -equals $(linuxArm64PublicPoolImage)
       ${{ if eq(variables['System.TeamProject'], parameters.internalProjectName) }}:
         name: $(linuxArm64InternalPoolName)
         image: $(linuxArm64InternalPoolImage)

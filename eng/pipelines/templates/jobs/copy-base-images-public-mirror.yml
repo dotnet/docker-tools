@@ -23,7 +23,6 @@ jobs:
       os: linux
     publishConfig: ${{ parameters.publishConfig }}
     acr: ${{ parameters.publishConfig.PublicMirrorRegistry }}
-    repoPrefix: $(mirrorRepoPrefix)
     customInitSteps: ${{ parameters.customInitSteps }}
     additionalOptions: '--subscriptions-path ${{ parameters.subscriptionsPath }}'
     forceDryRun: ${{ parameters.dryRun }}

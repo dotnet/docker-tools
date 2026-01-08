@@ -16,29 +16,18 @@ parameters:
   default: false
 
 variables:
-- template: /eng/docker-tools/templates/variables/dotnet/common.yml@self
+- template: /eng/pipelines/templates/variables/common.yml@self
 # Uses DockerHub registry creds to avoid rate limiting
 - template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
 - name: mirrorRepoPrefix
   value: ""
 
 extends:
-  template: /eng/docker-tools/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    serviceConnections:
-    - name: $(public-mirror.serviceConnectionName)
     stages:
-    - stage: MirrorBaseImages
-      displayName: Mirror Base Images
-      dependsOn: []
-      jobs:
-      - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
-        parameters:
-          name: "Public"
-          subscriptionsPath: eng/check-base-image-subscriptions.json
-          dryRun: ${{ parameters.dryRun }}
-      - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
-        parameters:
-          name: "Public_Buildtools"
-          subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
+    - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
+      parameters:
+        stagesTemplate: /eng/pipelines/templates/stages/mirror-base-images.yml@self
+        stagesTemplateParameters:
           dryRun: ${{ parameters.dryRun }}

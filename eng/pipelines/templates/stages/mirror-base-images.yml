@@ -1,0 +1,35 @@
+# This stage template mirrors base images from upstream registries to the
+# public mirror registry.
+
+parameters:
+# Publishing configuration containing registry and service connection settings.
+# Schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
+- name: publishConfig
+  type: object
+# Whether this is a dry run (no actual changes will be made).
+- name: dryRun
+  type: boolean
+  default: false
+
+stages:
+- template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
+  parameters:
+    serviceConnections:
+    - name: ${{ parameters.publishConfig.PublicMirrorRegistry.serviceConnection.name }}
+
+- stage: MirrorBaseImages
+  displayName: Mirror Base Images
+  dependsOn: []
+  jobs:
+  - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
+    parameters:
+      name: "Public"
+      subscriptionsPath: eng/check-base-image-subscriptions.json
+      publishConfig: ${{ parameters.publishConfig }}
+      dryRun: ${{ parameters.dryRun }}
+  - template: /eng/pipelines/templates/jobs/copy-base-images-public-mirror.yml@self
+    parameters:
+      name: "Public_Buildtools"
+      subscriptionsPath: eng/check-base-image-subscriptions-buildtools.json
+      publishConfig: ${{ parameters.publishConfig }}
+      dryRun: ${{ parameters.dryRun }}

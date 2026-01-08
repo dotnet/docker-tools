@@ -10,6 +10,13 @@ parameters:
 - name: dryRun
   type: boolean
   default: false
+# These parameters are passed by publish-config-prod.yml but not used here.
+- name: internalProjectName
+  type: string
+  default: ""
+- name: publicProjectName
+  type: string
+  default: ""
 
 stages:
 - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self

@@ -15,6 +15,9 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
+// Disambiguate between McrTags.Repo and Manifest.Repo
+using Repo = Microsoft.DotNet.ImageBuilder.Models.McrTags.Repo;
+
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -96,26 +99,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return readme;
             }
 
-            TagMetadataManifest tagsMetadata = GenerateRepoTagsMetadata(repo);
+            TagsMetadata tagsMetadata = GenerateRepoTagsMetadata(repo);
             string tagsListing = GenerateRepoTagsListing(tagsMetadata);
             return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
         }
 
-        private TagMetadataManifest GenerateRepoTagsMetadata(RepoInfo repo)
+        private TagsMetadata GenerateRepoTagsMetadata(RepoInfo repo)
         {
             string tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
             return new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
-                .Deserialize<TagMetadataManifest>(tagsMetadataYaml);
+                .Deserialize<TagsMetadata>(tagsMetadataYaml);
         }
 
-        private string GenerateRepoTagsListing(TagMetadataManifest tagsMetadata)
+        private string GenerateRepoTagsListing(TagsMetadata tagsMetadata)
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
             // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
-            RepoTagGroups repoTagGroups = tagsMetadata.Repos.Single();
+            Repo repoTagGroups = tagsMetadata.Repos.Single();
             string tagsDoc = GenerateTables(repoTagGroups.TagGroups).Replace("\r\n", "\n");
 
             if (Options.IsVerbose)
@@ -211,20 +214,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return row;
-        }
-
-        private class TagMetadataManifest
-        {
-            public List<RepoTagGroups> Repos { get; set; } = [];
-        }
-
-        private class RepoTagGroups
-        {
-            public string RepoName { get; set; } = null!;
-
-            public bool CustomTablePivots { get; set; }
-
-            public List<TagGroup> TagGroups { get; set; } = [];
         }
     }
 

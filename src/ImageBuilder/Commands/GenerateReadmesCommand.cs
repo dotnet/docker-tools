@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
-            string tagsDoc = GenerateTables(repoTagsMetadata.TagGroups).Replace("\r\n", "\n");
+            string tagsDoc = GenerateMarkdownTables(repoTagsMetadata.TagGroups).Replace("\r\n", "\n");
 
             if (Options.IsVerbose)
             {
@@ -131,7 +131,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return tagsDoc;
         }
 
-        private static string GenerateTables(IEnumerable<TagGroup> tagGroups)
+        private static string GenerateMarkdownTables(IEnumerable<TagGroup> tagGroups)
         {
             StringBuilder tables = new();
             IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch = tagGroups

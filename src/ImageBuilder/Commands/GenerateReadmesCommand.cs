@@ -109,16 +109,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return readme;
             }
 
-            string tagsMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo);
-            string tagsListing = GenerateTagsListing(repo.Name, tagsMetadata);
+            TagMetadataManifest tagsMetadata = GenerateRepoTagsMetadata(repo);
+            string tagsListing = GenerateRepoTagsListing(tagsMetadata);
             return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
         }
 
-        private string GenerateTagsListing(string repoName, string tagsMetadata)
+        private TagMetadataManifest GenerateRepoTagsMetadata(RepoInfo repo)
+        {
+            string tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
+            return new DeserializerBuilder()
+                .WithNamingConvention(CamelCaseNamingConvention.Instance)
+                .Build()
+                .Deserialize<TagMetadataManifest>(tagsMetadataYaml);
+        }
+
+        private string GenerateRepoTagsListing(TagMetadataManifest tagsMetadata)
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
-            string tagsDoc = GenerateTables(repoName, tagsMetadata);
+            string tagsDoc = GenerateTables(tagsMetadata);
 
             if (Options.IsVerbose)
             {
@@ -129,13 +138,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return tagsDoc;
         }
 
-        private static string GenerateTables(string repoName, string tagsMetadata)
+        private static string GenerateTables(TagMetadataManifest metadataManifest)
         {
-            TagMetadataManifest metadataManifest = new DeserializerBuilder()
-                .WithNamingConvention(CamelCaseNamingConvention.Instance)
-                .Build()
-                .Deserialize<TagMetadataManifest>(tagsMetadata);
-
             // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
             RepoTagGroups repoTagGroups = metadataManifest.Repos.Single();
 

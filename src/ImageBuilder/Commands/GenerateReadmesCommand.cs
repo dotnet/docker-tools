@@ -71,8 +71,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Dictionary<Value, Value> symbols = new(state.Symbols);
             symbols["FULL_REPO"] = repo.QualifiedName;
             symbols["REPO"] = repo.Name;
-            symbols["PARENT_REPO"] = GetParentRepoName(repo);
-            symbols["SHORT_REPO"] = GetShortRepoName(repo);
+            symbols["PARENT_REPO"] = repo.GetParentRepoName();
+            symbols["SHORT_REPO"] = repo.GetShortName();
 
             return (symbols, indent);
         }
@@ -87,18 +87,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             symbols["IS_PRODUCT_FAMILY"] = context is ManifestInfo;
 
             return (symbols, indent);
-        }
-
-        private static string GetParentRepoName(RepoInfo repo)
-        {
-            string[] parts = repo.Name.Split('/');
-            return parts.Length > 1 ? parts[parts.Length - 2] : string.Empty;
-        }
-
-        private static string GetShortRepoName(RepoInfo repo)
-        {
-            int lastSlashIndex = repo.Name.LastIndexOf('/');
-            return lastSlashIndex == -1 ? repo.Name : repo.Name.Substring(lastSlashIndex + 1);
         }
 
         private string UpdateTagsListing(string readme, RepoInfo repo)
@@ -237,6 +225,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             public bool CustomTablePivots { get; set; }
 
             public List<TagGroup> TagGroups { get; set; } = [];
+        }
+    }
+
+    internal static class ReadmeTemplateVariablesExtensions
+    {
+        public static string GetParentRepoName(this RepoInfo repo)
+        {
+            string[] parts = repo.Name.Split('/');
+            return parts.Length > 1 ? parts[parts.Length - 2] : string.Empty;
+        }
+
+        public static string GetShortName(this RepoInfo repo)
+        {
+            int lastSlashIndex = repo.Name.LastIndexOf('/');
+            return lastSlashIndex == -1 ? repo.Name : repo.Name.Substring(lastSlashIndex + 1);
         }
     }
 }

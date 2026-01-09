@@ -127,7 +127,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
-            string tagsDoc = GenerateTables(tagsMetadata);
+            // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
+            RepoTagGroups repoTagGroups = tagsMetadata.Repos.Single();
+            string tagsDoc = GenerateTables(repoTagGroups.TagGroups).Replace("\r\n", "\n");
 
             if (Options.IsVerbose)
             {
@@ -136,14 +138,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return tagsDoc;
-        }
-
-        private static string GenerateTables(TagMetadataManifest metadataManifest)
-        {
-            // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
-            RepoTagGroups repoTagGroups = metadataManifest.Repos.Single();
-
-            return GenerateTables(repoTagGroups.TagGroups).Replace("\r\n", "\n");
         }
 
         private static string GenerateTables(IEnumerable<TagGroup> tagGroups)

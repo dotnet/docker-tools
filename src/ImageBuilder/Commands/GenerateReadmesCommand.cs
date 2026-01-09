@@ -99,27 +99,28 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return readme;
             }
 
-            TagsMetadata tagsMetadata = GenerateRepoTagsMetadata(repo);
-            string tagsListing = GenerateRepoTagsListing(tagsMetadata);
+            var repoTagsMetadata = GenerateRepoTagsMetadata(repo);
+            string tagsListing = GenerateRepoTagsListing(repoTagsMetadata);
             return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
         }
 
-        private TagsMetadata GenerateRepoTagsMetadata(RepoInfo repo)
+        private Repo GenerateRepoTagsMetadata(RepoInfo repo)
         {
-            string tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
-            return new DeserializerBuilder()
+            var tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
+            var tagsMetadata = new DeserializerBuilder()
                 .WithNamingConvention(CamelCaseNamingConvention.Instance)
                 .Build()
                 .Deserialize<TagsMetadata>(tagsMetadataYaml);
+
+            // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
+            return tagsMetadata.Repos.Single();
         }
 
-        private string GenerateRepoTagsListing(TagsMetadata tagsMetadata)
+        private string GenerateRepoTagsListing(Repo repoTagsMetadata)
         {
             Logger.WriteSubheading("GENERATING TAGS LISTING");
 
-            // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
-            Repo repoTagGroups = tagsMetadata.Repos.Single();
-            string tagsDoc = GenerateTables(repoTagGroups.TagGroups).Replace("\r\n", "\n");
+            string tagsDoc = GenerateTables(repoTagsMetadata.TagGroups).Replace("\r\n", "\n");
 
             if (Options.IsVerbose)
             {

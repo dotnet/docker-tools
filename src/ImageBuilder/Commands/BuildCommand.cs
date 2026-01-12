@@ -86,11 +86,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     return null;
                 }
 
-                var tokenCredential = _tokenCredentialProvider.GetCredential(
-                    Options.StorageServiceConnection,
-                    AzureScopes.StorageAccountScope);
-
-                var token = tokenCredential.GetToken(new TokenRequestContext(), CancellationToken.None).Token;
+                var tokenCredential = _tokenCredentialProvider.GetCredential(Options.StorageServiceConnection);
+                var requestContext = new TokenRequestContext([AzureScopes.StorageAccountScope]);
+                var tokenObject = tokenCredential.GetToken(requestContext, CancellationToken.None);
+                var token = tokenObject.Token;
                 return token;
             });
         }

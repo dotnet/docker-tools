@@ -28,9 +28,7 @@ internal class AcrContentClientFactory(
                 $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
         }
 
-        var tokenCredential = _tokenCredentialProvider.GetCredential(
-            acrConfig.ServiceConnection,
-            AzureScopes.ContainerRegistryScope);
+        var tokenCredential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
 
         var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
         var wrapper = new AcrContentClientWrapper(client);

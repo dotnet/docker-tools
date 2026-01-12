@@ -26,6 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
 
+        /// <summary>
+        /// Orchestrates readme generation for both the product family and individual repos,
+        /// then validates all generated artifacts.
+        /// </summary>
         public override async Task ExecuteAsync()
         {
             Logger.WriteHeading("GENERATING READMES");
@@ -56,9 +60,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ValidateArtifacts();
         }
 
+        /// <summary>
+        /// Builds template state for product family readmes, recursively resolving nested template includes.
+        /// </summary>
+        /// <param name="templatePath">Must be a valid path to an existing Cottle template file.</param>
+        /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
         public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(ManifestInfo manifest, string templatePath, string indent) =>
             GetCommonTemplateState(templatePath, manifest, (manifest, templatePath, currentIndent) => GetTemplateState(manifest, templatePath, currentIndent + indent), indent);
 
+        /// <summary>
+        /// Builds template state for repo-specific readmes, adding repo-specific symbols like FULL_REPO and SHORT_REPO.
+        /// </summary>
+        /// <param name="templatePath">Must be a valid path to an existing Cottle template file.</param>
+        /// <param name="indent">Accumulated indentation from parent templates; empty string for root calls.</param>
         public (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState(RepoInfo repo, string templatePath, string indent)
         {
             (IReadOnlyDictionary<Value, Value> Symbols, string Indent) state = GetCommonTemplateState(
@@ -75,6 +89,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return (symbols, indent);
         }
 
+        /// <summary>
+        /// Creates the base template state shared by both manifest and repo templates,
+        /// including the IS_PRODUCT_FAMILY flag used for conditional template logic.
+        /// </summary>
+        /// <typeparam name="TContext">Either ManifestInfo or RepoInfo depending on the readme scope.</typeparam>
         private (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetCommonTemplateState<TContext>(
             string sourceTemplatePath,
             TContext context,
@@ -87,6 +106,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return (symbols, indent);
         }
 
+        /// <summary>
+        /// Replaces the tags listing section in a readme with freshly generated tag tables.
+        /// No-op if the repo lacks MCR tags metadata configuration.
+        /// </summary>
         private string UpdateTagsListing(string readme, RepoInfo repo)
         {
             if (repo.Model.McrTagsMetadataTemplate is null)
@@ -109,6 +132,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return updatedReadme;
         }
 
+        /// <summary>
+        /// Extracts tag groups from MCR tags metadata YAML. Each tag group represents
+        /// a set of tags pointing to the same image digest.
+        /// </summary>
         private IEnumerable<TagGroup> GenerateRepoTagGroups(RepoInfo repo)
         {
             var tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
@@ -165,6 +192,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
+        /// <summary>
+        /// Converts tag groups into formatted markdown tables, organized by OS/architecture sections.
+        /// </summary>
         private static string GenerateMarkdownTables(IEnumerable<TagGroup> tagGroups)
         {
             StringBuilder tables = new();
@@ -177,7 +207,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         /// <summary>
-        /// Represents a section of the tags listing, containing one or more markdown tables.
+        /// Represents a section of the tags listing, containing one top level
+        /// table and zero or more nested sub-tables.
         /// </summary>
         /// <param name="Title">The section title</param>
         /// <param name="Tags">The tag groups to display in this section's table</param>
@@ -187,9 +218,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IEnumerable<TagGroup> Tags,
             IEnumerable<TagsTable> SubTables)
         {
+            /// <summary>
+            /// Creates a leaf section with no nested sub-tables.
+            /// </summary>
             public TagsTable(string title, IEnumerable<TagGroup> tags)
                 : this(title, tags, []) { }
 
+            /// <summary>
+            /// Appends this section and all nested sub-tables to the builder,
+            /// incrementing heading depth for each nesting level.
+            /// </summary>
+            /// <param name="headingLevel">
+            /// Must be between 1-6 per markdown spec; exceeding 6 renders as plain text.
+            /// </param>
             public void RenderAsMarkdown(StringBuilder builder, int headingLevel = 3)
             {
                 string headingPrefix = new('#', headingLevel);
@@ -223,12 +264,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
     internal static class ReadmeTemplateVariablesExtensions
     {
+        /// <summary>
+        /// Extracts the parent segment from a hierarchical repo name (e.g., "dotnet" from "dotnet/runtime").
+        /// Returns empty string for flat repo names without hierarchy.
+        /// </summary>
         public static string GetParentRepoName(this RepoInfo repo)
         {
             string[] parts = repo.Name.Split('/');
             return parts.Length > 1 ? parts[parts.Length - 2] : string.Empty;
         }
 
+        /// <summary>
+        /// Extracts the final segment from a hierarchical repo name (e.g., "runtime" from "dotnet/runtime").
+        /// Returns the full name if no hierarchy exists.
+        /// </summary>
         public static string GetShortName(this RepoInfo repo)
         {
             int lastSlashIndex = repo.Name.LastIndexOf('/');

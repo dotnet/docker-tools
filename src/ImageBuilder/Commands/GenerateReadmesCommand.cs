@@ -15,9 +15,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-// Disambiguate between McrTags.Repo and Manifest.Repo
-using Repo = Microsoft.DotNet.ImageBuilder.Models.McrTags.Repo;
-
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -25,8 +22,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService)
     {
         private const string ArtifactName = "Readme";
-        private const string LinuxTableHeader = "Tags | Dockerfile | OS Version\n-----------| -------------| -------------";
-        private const string WindowsTableHeader = "Tag | Dockerfile\n---------| ---------------";
 
         protected override string Description =>
             "Generates the Readmes from the Cottle based templates (http://r3c.github.io/cottle/) and updates the tag listing section";
@@ -94,17 +89,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private string UpdateTagsListing(string readme, RepoInfo repo)
         {
-            if (repo.Model.McrTagsMetadataTemplate == null)
+            if (repo.Model.McrTagsMetadataTemplate is null)
             {
                 return readme;
             }
 
-            var repoTagsMetadata = GenerateRepoTagsMetadata(repo);
-            string tagsListing = GenerateRepoTagsListing(repoTagsMetadata);
-            return ReadmeHelper.UpdateTagsListing(readme, tagsListing);
+            var repoTagGroups = GenerateRepoTagGroups(repo);
+
+            Logger.WriteSubheading("GENERATING TAGS LISTING");
+            string tagsMarkdown = GenerateMarkdownTables(repoTagGroups);
+
+            if (Options.IsVerbose)
+            {
+                Logger.WriteSubheading($"Tags Documentation:");
+                Logger.WriteMessage(tagsMarkdown);
+            }
+
+            var updatedReadme = ReadmeHelper.UpdateTagsListing(readme, tagsMarkdown);
+            return updatedReadme;
         }
 
-        private Repo GenerateRepoTagsMetadata(RepoInfo repo)
+        private IEnumerable<TagGroup> GenerateRepoTagGroups(RepoInfo repo)
         {
             var tagsMetadataYaml = McrTagsMetadataGenerator.Execute(Manifest, repo);
             var tagsMetadata = new DeserializerBuilder()
@@ -112,109 +117,107 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Build()
                 .Deserialize<TagsMetadata>(tagsMetadataYaml);
 
-            // While the schema of the tag metadata supports multiple repos, we call this operation on a per-repo basis so only one repo output is expected
-            return tagsMetadata.Repos.Single();
+            // While the schema of the tag metadata supports multiple repos, we call this operation
+            // on a per-repo basis so only one repo output is expected. We also don't need the repo
+            // metadata for generating tags tables either, so return only the tags.
+            // Each tag group here is one set of tags that all point to the same image.
+            var repoTagsMetadata = tagsMetadata.Repos.Single();
+            return repoTagsMetadata.TagGroups;
         }
 
-        private string GenerateRepoTagsListing(Repo repoTagsMetadata)
+        /// <summary>
+        /// Groups tag groups into table sections based on OS and architecture.
+        /// Each section represents a logical grouping that will become one or more markdown tables.
+        /// </summary>
+        private static IEnumerable<TagsTable> GroupTagsIntoSections(IEnumerable<TagGroup> tagGroups)
         {
-            Logger.WriteSubheading("GENERATING TAGS LISTING");
+            var groupedByOsArch = tagGroups.GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture));
 
-            string tagsDoc = GenerateMarkdownTables(repoTagsMetadata.TagGroups).Replace("\r\n", "\n");
-
-            if (Options.IsVerbose)
+            foreach (var osArchGroup in groupedByOsArch)
             {
-                Logger.WriteSubheading($"Tags Documentation:");
-                Logger.WriteMessage(tagsDoc);
-            }
+                string title = $"{CultureInfo.InvariantCulture.TextInfo.ToTitleCase(osArchGroup.Key.OS)} {osArchGroup.Key.Architecture} Tags";
 
-            return tagsDoc;
+                // Further group by custom sub-table title (e.g., "Preview tags")
+                // Tags without a custom sub-table title come first (null/empty keys sort first)
+                var subGroups = osArchGroup
+                    .GroupBy(tagGroup => tagGroup.CustomSubTableTitle)
+                    .OrderBy(g => g.Key)
+                    .ToList();
+
+                // If there's only one group with no custom title, no need for sub-sections
+                if (subGroups.Count == 1 && string.IsNullOrEmpty(subGroups[0].Key))
+                {
+                    yield return new TagsTable(title, subGroups[0]);
+                }
+                else
+                {
+                    // Tags without custom title go directly in the parent section
+                    // Tags with custom titles become sub-sections
+                    var mainTags = subGroups
+                        .Where(g => string.IsNullOrEmpty(g.Key))
+                        .SelectMany(g => g);
+                    var subSections = subGroups
+                        .Where(g => !string.IsNullOrEmpty(g.Key))
+                        .Select(subGroup => new TagsTable(subGroup.Key!, tags: subGroup));
+
+                    yield return new TagsTable(title, mainTags, subSections);
+                }
+            }
         }
 
         private static string GenerateMarkdownTables(IEnumerable<TagGroup> tagGroups)
         {
             StringBuilder tables = new();
-            IEnumerable<IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup>> tagGroupsGroupedByOsArch = tagGroups
-                .GroupBy(tagGroup => (tagGroup.OS, tagGroup.Architecture, tagGroup.OS == "windows" ? tagGroup.OsVersion : null));
-            bool isFirstTable = true;
+            const int HeadingLevel = 3;
 
-            foreach (IGrouping<(string OS, string Architecture, string? OsVersion), TagGroup> groupedTagGroups in tagGroupsGroupedByOsArch)
-            {
-                if (isFirstTable)
-                {
-                    isFirstTable = false;
-                }
-                else
-                {
-                    tables.AppendLine();
-                }
-
-                string title;
-                string tableHeader;
-                if (groupedTagGroups.Key.OsVersion is not null)
-                {
-                    title = groupedTagGroups.Key.OsVersion;
-                    tableHeader = WindowsTableHeader;
-                }
-                else
-                {
-                    title = CultureInfo.InvariantCulture.TextInfo.ToTitleCase(groupedTagGroups.Key.OS);
-                    tableHeader = LinuxTableHeader;
-                }
-
-                AddOsTableContent(groupedTagGroups, title, groupedTagGroups.Key.Architecture, tableHeader, tables);
-            }
+            var sections = GroupTagsIntoSections(tagGroups).ToList();
+            sections.ForEach(tableSection => tableSection.RenderAsMarkdown(tables, HeadingLevel));
 
             return tables.ToString();
         }
 
-        private static void AddOsTableContent(IEnumerable<TagGroup> tagGroups, string title, string arch, string tableHeader, StringBuilder tables)
+        /// <summary>
+        /// Represents a section of the tags listing, containing one or more markdown tables.
+        /// </summary>
+        /// <param name="Title">The section title</param>
+        /// <param name="Tags">The tag groups to display in this section's table</param>
+        /// <param name="SubTables">Nested sub-sections</param>
+        private sealed record TagsTable(
+            string Title,
+            IEnumerable<TagGroup> Tags,
+            IEnumerable<TagsTable> SubTables)
         {
-            // Group tags by custom sub table title (e.g. Preview tags). Those tags without a custom sub table title will be listed first.
-            List<IGrouping<string, TagGroup>> tagGroupGroupings = tagGroups
-                .GroupBy(tg => tg.CustomSubTableTitle)
-                .OrderBy(group => group.Key)
-                .ToList();
+            public TagsTable(string title, IEnumerable<TagGroup> tags)
+                : this(title, tags, []) { }
 
-            for (int i = 0; i < tagGroupGroupings.Count; i++)
+            public void RenderAsMarkdown(StringBuilder builder, int headingLevel = 3)
             {
-                if (i > 0)
+                string headingPrefix = new('#', headingLevel);
+                builder.AppendLine($"{headingPrefix} {Title}");
+                builder.AppendLine();
+
+                if (Tags.Any())
                 {
-                    tables.AppendLine();
+                    builder.AppendLine(
+                        """
+                        Tags | Dockerfile | OS Version
+                        ---- | ---------- | ----------
+                        """);
+
+                    foreach (TagGroup tagGroup in Tags)
+                    {
+                        var tagsString = string.Join(", ", tagGroup.Tags);
+                        builder.AppendLine($"{tagsString} | [Dockerfile]({tagGroup.Dockerfile}) | {tagGroup.OsVersion}");
+                    }
                 }
 
-                IGrouping<string, TagGroup> tagGroupGrouping = tagGroupGroupings[i];
+                builder.AppendLine();
 
-                if (!string.IsNullOrEmpty(tagGroupGrouping.Key))
+                foreach (var subTable in SubTables)
                 {
-                    tables.AppendLine("#### " + tagGroupGrouping.Key);
-                    tables.AppendLine();
-                    tables.AppendLine(tableHeader);
+                    subTable.RenderAsMarkdown(builder, headingLevel + 1);
                 }
-                else
-                {
-                    tables.AppendLine($"### {title} {arch} Tags");
-                    tables.AppendLine();
-                    tables.AppendLine(tableHeader);
-                }
-
-                foreach (TagGroup tagGroup in tagGroupGrouping)
-                {
-                    tables.AppendLine(FormatTagGroupRow(tagGroup));
-                }
-
             }
-        }
-
-        private static string FormatTagGroupRow(TagGroup tagGroup)
-        {
-            string row = $"{string.Join(", ", tagGroup.Tags)} | [Dockerfile]({tagGroup.Dockerfile})";
-            if (tagGroup.OS != "windows")
-            {
-                row += $" | {tagGroup.OsVersion}";
-            }
-
-            return row;
         }
     }
 

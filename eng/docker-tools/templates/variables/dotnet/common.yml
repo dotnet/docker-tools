@@ -15,6 +15,10 @@ variables:
 
 - name: linuxAmd64InternalPoolImage
   value: 1es-ubuntu-2204
+- name: linuxAmd64PublicPoolImage
+  value: Azure-Linux-3-Amd64-Public
+- name: linuxAmd64PublicPoolName
+  value: NetCore-Public
 - name: linuxAmd64InternalPoolName
   value: NetCore1ESPool-Internal
 

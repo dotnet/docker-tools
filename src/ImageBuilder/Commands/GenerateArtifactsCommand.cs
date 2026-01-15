@@ -153,7 +153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 ["VARIABLES"] = Manifest.VariableHelper.ResolvedVariables
                     .ToDictionary(kvp => (Value)kvp.Key, kvp => (Value)kvp.Value),
                 ["InsertTemplate"] = Value.FromFunction(
-                    Function.CreatePure(
+                    Function.CreatePureMinMax(
                         (state, args) =>
                             RenderTemplateAsync(
                                 Path.Combine(Path.GetDirectoryName(sourceTemplatePath), args[0].AsString),
@@ -165,7 +165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         min: 1,
                         max: 3)),
                 ["replace"] = Value.FromFunction(
-                    Function.CreatePure(
+                    Function.CreatePureMinMax(
                         (state, args) =>
                         {
                             string source = args[0].AsString;

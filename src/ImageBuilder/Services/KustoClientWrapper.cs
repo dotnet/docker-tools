@@ -36,13 +36,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         {
             _loggerService.WriteSubheading("INGESTING DATA INTO KUSTO");
 
-            string clusterResource = $"https://{cluster}.kusto.windows.net";
-            KustoConnectionStringBuilder connectionBuilder =
-                new KustoConnectionStringBuilder(clusterResource)
-                    .WithAadAzureTokenCredentialsAuthentication(
-                        _tokenCredentialProvider.GetCredential(
-                            serviceConnection,
-                            clusterResource + AzureScopes.ScopeSuffix));
+            var connectionString = $"https://{cluster}.kusto.windows.net";
+            var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
+            var connectionBuilder = new KustoConnectionStringBuilder(connectionString)
+                .WithAadAzureTokenCredentialsAuthentication(tokenCredential);
 
             using (IKustoIngestClient client = KustoIngestFactory.CreateDirectIngestClient(connectionBuilder))
             {

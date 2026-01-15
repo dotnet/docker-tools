@@ -26,12 +26,8 @@ internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
     /// due to token expiration.
     /// </remarks>
     /// <param name="serviceConnection">Details about the Azure DevOps service connection to use.</param>
-    /// <param name="scope">The scope to request for the token. This parameter is ignored; the credential
-    /// will request the appropriate scope when GetToken is called.</param>
     /// <returns>A <see cref="TokenCredential"/> that can be used to authenticate to Azure services.</returns>
-    public TokenCredential GetCredential(
-        IServiceConnection? serviceConnection,
-        string scope = AzureScopes.DefaultAzureManagementScope)
+    public TokenCredential GetCredential(IServiceConnection? serviceConnection)
     {
         // Cache by service connection ID only. The TokenCredential handles different scopes internally.
         string cacheKey = serviceConnection?.Id ?? "default";

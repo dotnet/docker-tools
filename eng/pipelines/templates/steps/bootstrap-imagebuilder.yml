@@ -7,10 +7,15 @@
 #             (since Windows runs the exe directly, not in a container)
 #
 # The result is tagged/placed so that subsequent steps work without modification.
+# The imageNames.imageBuilder variable is overridden to point to the bootstrapped image.
 
 steps:
-- script: >-
-    docker build -t $(imageNames.imageBuilder) -f src/Dockerfile.linux src/
+# Override the imageBuilder variable with a local bootstrap tag
+- script: echo "##vso[task.setvariable variable=imageNames.imageBuilder]imagebuilder-bootstrap:$(Build.BuildId)"
+  displayName: Set bootstrap ImageBuilder tag
+  condition: eq(variables['Agent.OS'], 'Linux')
+
+- script: docker build -t imagebuilder-bootstrap:$(Build.BuildId) -f src/Dockerfile.linux src/
   displayName: Bootstrap ImageBuilder from source (Linux)
   condition: eq(variables['Agent.OS'], 'Linux')
 

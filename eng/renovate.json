@@ -1,0 +1,19 @@
+{
+  // List of package managers to enable
+  // https://docs.renovatebot.com/configuration-options/#enabledmanagers
+  // https://docs.renovatebot.com/modules/manager/
+  "enabledManagers": [
+    // Only enable the custom regex manager; disable all built-in managers
+    // (e.g., dockerfile, nuget, github-actions) to prevent unwanted PRs
+    "custom.regex"
+  ],
+
+  // Extend the base config with additional presets
+  // https://docs.renovatebot.com/configuration-options/#extends
+  // https://docs.renovatebot.com/key-concepts/presets/
+  "extends": [
+    // Enable detection of "# renovate: datasource=... depName=..." comments
+    // in Dockerfiles to track ARG/ENV version variables
+    "customManagers:dockerfileVersions"
+  ]
+}

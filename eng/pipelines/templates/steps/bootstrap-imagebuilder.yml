@@ -14,16 +14,10 @@ steps:
   displayName: Bootstrap ImageBuilder from source (Linux)
   condition: eq(variables['Agent.OS'], 'Linux')
 
-- powershell: >-
-    $(engDockerToolsPath)/Install-DotNetSdk.ps1 -InstallPath "$(Build.SourcesDirectory)/.dotnet"
+- powershell: $(engDockerToolsPath)/Install-DotNetSdk.ps1 -InstallPath "$(Build.SourcesDirectory)/.dotnet"
   displayName: Install .NET SDK (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-- powershell: >-
-    $(Build.SourcesDirectory)/.dotnet/dotnet
-      publish
-      src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
-      --self-contained
-      -o $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+- powershell: $(Build.SourcesDirectory)/.dotnet/dotnet publish src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained -o $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
   displayName: Bootstrap ImageBuilder from source (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')

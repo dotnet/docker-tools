@@ -19,7 +19,7 @@
     <PackageReference Include="Azure.Identity" Version="1.13.2" />
     <PackageReference Include="Azure.ResourceManager.ContainerRegistry" Version="1.4.0" />
     <PackageReference Include="Cottle" Version="2.1.0" />
-    <PackageReference Include="LibGit2Sharp" Version="0.30.0" />
+    <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.0.3" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.12" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.12" />

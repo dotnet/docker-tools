@@ -17,10 +17,8 @@ public class RegistryManifestClientFactoryTests
 {
     private static readonly string s_tenant = Guid.Empty.ToString();
 
-    [Theory]
-    [InlineData("my-acr")]
-    [InlineData("my-acr.azurecr.io")]
-    public void CreateAcrClient(string ownedAcr)
+    [Fact]
+    public void CreateAcrClient()
     {
         const string AcrName = "my-acr.azurecr.io";
         const string RepoName = "repo-name";
@@ -33,11 +31,11 @@ public class RegistryManifestClientFactoryTests
             .Setup(o => o.Create(It.IsAny<Acr>(), RepoName))
             .Returns(contentClient);
 
-        // Create a mock IRegistryResolver that returns an OwnedAcr for the given registry
+        // Create a mock IRegistryResolver that returns authentication for the given registry
         Mock<IRegistryResolver> registryResolverMock = new();
         registryResolverMock
             .Setup(o => o.Resolve(AcrName, It.IsAny<IRegistryCredentialsHost?>()))
-            .Returns(new RegistryInfo(AcrName, new RegistryConfiguration { Server = ownedAcr }, null));
+            .Returns(new RegistryInfo(AcrName, new RegistryAuthentication { ServiceConnection = new ServiceConnection() }, null));
 
         RegistryManifestClientFactory clientFactory = new(
             Mock.Of<IHttpClientProvider>(),
@@ -54,7 +52,7 @@ public class RegistryManifestClientFactoryTests
     [InlineData(DockerHelper.DockerHubRegistry, DockerHelper.DockerHubApiRegistry, $"https://{DockerHelper.DockerHubApiRegistry}/")]
     public void CreateOtherRegistryClient(string registry, string effectiveRegistry, string expectedBaseUri)
     {
-        // Create a mock IRegistryResolver that returns no OwnedAcr (external registry)
+        // Create a mock IRegistryResolver that returns no authentication (external registry)
         Mock<IRegistryResolver> registryResolverMock = new();
         registryResolverMock
             .Setup(o => o.Resolve(registry, It.IsAny<IRegistryCredentialsHost?>()))

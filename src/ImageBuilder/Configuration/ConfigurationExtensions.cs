@@ -19,15 +19,30 @@ public static class ConfigurationExtensions
     }
 
     /// <summary>
-    /// Finds an ACR configuration by registry name that has a valid service connection.
+    /// Finds authentication details for a registry by name.
     /// </summary>
     /// <param name="publishConfig">The publish configuration to search.</param>
     /// <param name="registryName">The registry name to look up (e.g., "myacr.azurecr.io" or "myacr").</param>
-    /// <returns>The matching <see cref="RegistryConfiguration"/> with a service connection, or null if not found.</returns>
-    public static RegistryConfiguration? FindOwnedAcrByName(this PublishConfiguration publishConfig, string registryName)
+    /// <returns>The matching <see cref="RegistryAuthentication"/>, or null if not found.</returns>
+    public static RegistryAuthentication? FindRegistryAuthentication(this PublishConfiguration publishConfig, string registryName)
     {
+        // Try exact match first
+        if (publishConfig.RegistryAuthentication.TryGetValue(registryName, out var auth))
+        {
+            return auth;
+        }
+
+        // Try normalized ACR name lookup (handle both "myacr" and "myacr.azurecr.io")
         var targetAcr = Acr.Parse(registryName);
-        return publishConfig.GetKnownRegistries()
-            .FirstOrDefault(registry => registry.IsOwnedAcr(out var acr, out var sc) && acr == targetAcr);
+        foreach (var (key, value) in publishConfig.RegistryAuthentication)
+        {
+            var keyAcr = Acr.Parse(key);
+            if (keyAcr == targetAcr)
+            {
+                return value;
+            }
+        }
+
+        return null;
     }
 }

@@ -112,10 +112,10 @@ public class CopyImageService : ICopyImageService
 
     private ArmClient GetArmClientForAcr(string acrName)
     {
-        // Look up the service connection for this ACR from the publish configuration
-        var acrConfig = _publishConfig.FindOwnedAcrByName(acrName);
+        // Look up the authentication for this ACR from the publish configuration
+        var auth = _publishConfig.FindRegistryAuthentication(acrName);
 
-        if (acrConfig?.ServiceConnection is null)
+        if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
                 $"No service connection found for ACR '{acrName}'. " +
@@ -123,10 +123,10 @@ public class CopyImageService : ICopyImageService
         }
 
         // Cache ArmClient instances per service connection to avoid recreating them
-        string cacheKey = string.Join('|', acrConfig.ServiceConnection.TenantId, acrConfig.ServiceConnection.ClientId);
+        string cacheKey = string.Join('|', auth.ServiceConnection.TenantId, auth.ServiceConnection.ClientId);
         return _armClientCache.GetOrAdd(cacheKey, _ =>
         {
-            TokenCredential credential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
+            TokenCredential credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
             return new ArmClient(credential);
         });
     }

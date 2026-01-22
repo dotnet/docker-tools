@@ -7,6 +7,10 @@ ARG WINDOWS_SDK
 FROM mcr.microsoft.com/dotnet/sdk:9.0-$WINDOWS_SDK AS build-env
 WORKDIR /image-builder
 
+# Work around Windows path length limitations by moving NuGet package cache to
+# a location with a shorter path.
+ENV NUGET_PACKAGES=/nuget
+
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/

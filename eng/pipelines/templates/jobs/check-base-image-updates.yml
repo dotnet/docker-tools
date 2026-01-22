@@ -33,8 +33,9 @@ jobs:
     os: linux
   steps:
 
-  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/init-docker.yml@self
     parameters:
+      dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
 
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self

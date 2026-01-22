@@ -1,0 +1,13 @@
+# Bootstrap ImageBuilder by building it from source.
+# This template builds the ImageBuilder Docker image directly from the Dockerfiles in src/,
+# bypassing the need to pull a pre-built image.
+#
+# The resulting image is tagged as $(imageNames.imageBuilder) so that subsequent steps
+# (like building the -withrepo image) work without modification.
+#
+# Note: This step expects $(dockerClientOS) to be set by the calling template (init-docker.yml).
+
+steps:
+- script: |
+    docker build -t $(imageNames.imageBuilder) -f src/Dockerfile.$(dockerClientOS) src/
+  displayName: Bootstrap ImageBuilder from source

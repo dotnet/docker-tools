@@ -3,6 +3,7 @@ parameters:
   internalProjectName: null
   publishConfig: null
   customInitSteps: []
+  customImageBuilderSetup: []
   customPublishVariables: []
   sourceBuildPipelineDefinitionId: ""
   sourceBuildPipelineRunId: ""
@@ -52,9 +53,11 @@ jobs:
 
   - template: /eng/docker-tools/templates/steps/retain-build.yml@self
 
-  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/init-docker.yml@self
     parameters:
+      dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
+      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
 
   - pwsh: |
       $azdoOrgName = Split-Path -Leaf $Env:SYSTEM_COLLECTIONURI

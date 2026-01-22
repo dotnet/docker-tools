@@ -23,6 +23,10 @@ parameters:
   type: boolean
   default: false
 
+- name: customImageBuilderSetup
+  type: stepList
+  default: []
+
 # Additional service connections needed by this pipeline that are not included
 # in the publishConfig.
 - name: additionalServiceConnections
@@ -47,6 +51,7 @@ stages:
     publicProjectName: ${{ parameters.publicProjectName }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     publishConfig: ${{ parameters.publishConfig }}
+    customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
     ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

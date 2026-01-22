@@ -6,6 +6,7 @@ parameters:
   buildJobTimeout: 60
   commonInitStepsForMatrixAndBuild: []
   customInitSteps: []
+  customImageBuilderSetup: []
   publishConfig: null
   noCache: false
   internalProjectName: null
@@ -30,10 +31,12 @@ jobs:
     imageInfoContainerDir: $(artifactsPath)/imageInfo
   steps:
   - ${{ parameters.commonInitStepsForMatrixAndBuild }}
-  - template: /eng/docker-tools/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
+  - template: /eng/docker-tools/templates/steps/init-docker.yml@self
     parameters:
+      dockerClientOS: ${{ parameters.dockerClientOS }}
       publishConfig: ${{ parameters.publishConfig }}
       cleanupDocker: true
+      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
   - ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self
     parameters:

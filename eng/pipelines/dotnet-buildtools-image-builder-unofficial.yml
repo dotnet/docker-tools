@@ -11,6 +11,14 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
+- name: bootstrapImageBuilder
+  displayName: >
+    Bootstrap ImageBuilder from source. When enabled, ImageBuilder is built from
+    the current branch's source code instead of pulling the pre-built image.
+    Use this to test ImageBuilder source changes end-to-end.
+  type: boolean
+  default: false
+
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
@@ -58,3 +66,6 @@ extends:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
           versionsRepoRef: VersionsRepo
           noCache: true
+          ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
+            customImageBuilderSetup:
+            - template: /eng/pipelines/templates/steps/bootstrap-imagebuilder.yml@self

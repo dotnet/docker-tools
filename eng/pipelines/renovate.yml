@@ -30,6 +30,6 @@ extends:
       jobs:
       - template: /eng/pipelines/templates/jobs/renovate.yml
         parameters:
-          gitHubRepo: dotnet/dotnet-docker
+          gitHubRepo: dotnet/docker-tools
           dryRun: ${{ parameters.dryRun }}
           forceRecreatePR: ${{ parameters.forceRecreatePR }}

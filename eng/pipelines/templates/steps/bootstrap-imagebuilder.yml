@@ -8,10 +8,6 @@
 #
 # The result is tagged/placed so that subsequent steps work without modification.
 # The imageNames.imageBuilder variable is overridden to point to the bootstrapped image.
-#
-# Note: This template must be used in the docker-tools repo. The $(repoRoot) variable
-# is set by init-matrix-build-publish.yml and points to the source repo root in both
-# single and multi-repo checkout scenarios.
 
 steps:
 # Override the imageBuilder variable with a local bootstrap tag

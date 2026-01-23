@@ -13,9 +13,9 @@ parameters:
 
 - name: bootstrapImageBuilder
   displayName: >
-    Bootstrap ImageBuilder from source. When enabled, ImageBuilder is built from
-    the current branch's source code instead of pulling the pre-built image.
-    Use this to test ImageBuilder source changes end-to-end.
+    Build ImageBuilder from source at the start of every job instead of pulling
+    the pre-built image from MCR. Use this option during development to
+    validate changes to ImageBuilder and pipeline templates at the same time.
   type: boolean
   default: false
 

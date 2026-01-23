@@ -8,6 +8,9 @@
 #
 # The result is tagged/placed so that subsequent steps work without modification.
 # The imageNames.imageBuilder variable is overridden to point to the bootstrapped image.
+#
+# Note: This template must be used in the docker-tools repo. The src/ directory
+# containing ImageBuilder source is resolved relative to $(Build.Repository.LocalPath).
 
 steps:
 # Override the imageBuilder variable with a local bootstrap tag
@@ -15,7 +18,7 @@ steps:
   displayName: Set bootstrap ImageBuilder tag
   condition: eq(variables['Agent.OS'], 'Linux')
 
-- script: docker build -t imagebuilder-bootstrap:$(Build.BuildId) -f src/Dockerfile.linux src/
+- script: docker build -t imagebuilder-bootstrap:$(Build.BuildId) -f $(Build.Repository.LocalPath)/src/Dockerfile.linux $(Build.Repository.LocalPath)/src/
   displayName: Bootstrap ImageBuilder from source (Linux)
   condition: eq(variables['Agent.OS'], 'Linux')
 
@@ -23,6 +26,6 @@ steps:
   displayName: Install .NET SDK (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-- powershell: $(Build.SourcesDirectory)/.dotnet/dotnet publish src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained -o $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+- powershell: $(Build.SourcesDirectory)/.dotnet/dotnet publish $(Build.Repository.LocalPath)/src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained -o $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
   displayName: Bootstrap ImageBuilder from source (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')

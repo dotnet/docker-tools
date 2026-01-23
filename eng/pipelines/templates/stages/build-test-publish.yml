@@ -23,7 +23,9 @@ parameters:
   type: boolean
   default: false
 
-- name: customImageBuilderSetup
+# When true, ImageBuilder will not be pulled from MCR at the start of each job
+# and these steps will be run instead.
+- name: customImageBuilderSetupSteps
   type: stepList
   default: []
 
@@ -51,7 +53,7 @@ stages:
     publicProjectName: ${{ parameters.publicProjectName }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     publishConfig: ${{ parameters.publishConfig }}
-    customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+    customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
     ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

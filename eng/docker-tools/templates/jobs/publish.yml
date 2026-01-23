@@ -3,7 +3,7 @@ parameters:
   internalProjectName: null
   publishConfig: null
   customInitSteps: []
-  customImageBuilderSetup: []
+  customImageBuilderSetupSteps: []
   customPublishVariables: []
   sourceBuildPipelineDefinitionId: ""
   sourceBuildPipelineRunId: ""
@@ -57,7 +57,7 @@ jobs:
     parameters:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
 
   - pwsh: |
       $azdoOrgName = Split-Path -Leaf $Env:SYSTEM_COLLECTIONURI

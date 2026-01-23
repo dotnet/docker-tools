@@ -33,7 +33,7 @@ parameters:
 # Custom steps to set up ImageBuilder instead of pulling it.
 # When provided, these steps run instead of the default pull-based setup.
 # The steps should result in $(imageNames.imageBuilder) being available locally.
-- name: customImageBuilderSetup
+- name: customImageBuilderSetupSteps
   type: stepList
   default: []
 
@@ -72,12 +72,12 @@ steps:
 - ${{ if eq(parameters.setupImageBuilder, true) }}:
 
   # Custom ImageBuilder setup (e.g., bootstrap from source)
-  - ${{ if gt(length(parameters.customImageBuilderSetup), 0) }}:
+  - ${{ if gt(length(parameters.customImageBuilderSetupSteps), 0) }}:
     # Set dockerClientOS variable so custom setup steps can use it
     - script: echo "##vso[task.setvariable variable=dockerClientOS]${{ parameters.dockerClientOS }}"
       displayName: Set dockerClientOS variable
       condition: and(succeeded(), ${{ parameters.condition }})
-    - ${{ parameters.customImageBuilderSetup }}
+    - ${{ parameters.customImageBuilderSetupSteps }}
 
   # Default: Pull pre-built ImageBuilder image
   - ${{ else }}:

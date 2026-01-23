@@ -7,7 +7,7 @@ parameters:
   customGenerateMatrixInitSteps: []
   customBuildInitSteps: []
   customTestInitSteps: []
-  customImageBuilderSetup: []
+  customImageBuilderSetupSteps: []
   sourceBuildPipelineRunId: ""
 
   linuxAmdBuildJobTimeout: 60
@@ -80,7 +80,7 @@ stages:
       pool: ${{ parameters.linuxAmd64Pool }}
       additionalOptions: "--manifest '$(manifest)' $(imageBuilder.pathArgs) $(manifestVariables)"
       customInitSteps: ${{ parameters.customCopyBaseImagesInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
 
   - template: /eng/docker-tools/templates/jobs/generate-matrix.yml@self
     parameters:
@@ -92,7 +92,7 @@ stages:
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       commonInitStepsForMatrixAndBuild:
       - template: /eng/docker-tools/templates/steps/init-matrix-build-publish.yml@self
         parameters:
@@ -112,7 +112,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -131,7 +131,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -150,7 +150,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -169,7 +169,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -188,7 +188,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -207,7 +207,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -227,7 +227,7 @@ stages:
           publishConfig: ${{ parameters.publishConfig }}
           versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customBuildInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}

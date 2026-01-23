@@ -1,7 +1,7 @@
 parameters:
   customPublishInitSteps: []
   customPublishVariables: []
-  customImageBuilderSetup: []
+  customImageBuilderSetupSteps: []
 
   internalProjectName: null
   publicProjectName: null
@@ -74,7 +74,7 @@ stages:
       publishConfig: ${{ parameters.publishConfig }}
       customPublishVariables: ${{ parameters.customPublishVariables }}
       customInitSteps: ${{ parameters.customPublishInitSteps }}
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
       sourceBuildPipelineDefinitionId: ${{ parameters.sourceBuildPipelineDefinitionId }}
       sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}

@@ -11,7 +11,7 @@ parameters:
 - name: customInitSteps
   type: stepList
   default: []
-- name: customImageBuilderSetup
+- name: customImageBuilderSetupSteps
   type: stepList
   default: []
 - name: additionalOptions
@@ -28,6 +28,6 @@ jobs:
     pool: ${{ parameters.pool }}
     publishConfig: ${{ parameters.publishConfig }}
     customInitSteps: ${{ parameters.customInitSteps }}
-    customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+    customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
     additionalOptions: ${{ parameters.additionalOptions }}
     acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}

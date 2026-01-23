@@ -6,7 +6,7 @@ parameters:
   buildJobTimeout: 60
   commonInitStepsForMatrixAndBuild: []
   customInitSteps: []
-  customImageBuilderSetup: []
+  customImageBuilderSetupSteps: []
   publishConfig: null
   noCache: false
   internalProjectName: null
@@ -36,7 +36,7 @@ jobs:
       dockerClientOS: ${{ parameters.dockerClientOS }}
       publishConfig: ${{ parameters.publishConfig }}
       cleanupDocker: true
-      customImageBuilderSetup: ${{ parameters.customImageBuilderSetup }}
+      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
   - ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self
     parameters:

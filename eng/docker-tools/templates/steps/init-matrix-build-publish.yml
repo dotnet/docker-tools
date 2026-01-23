@@ -3,6 +3,20 @@
 # - Building images
 # - Running tests
 # - Publishing images
+#
+# Checkout behavior:
+# - Single-repo checkout (versionsRepoRef is empty):
+#   - Only 'self' is checked out
+#   - $(Build.Repository.LocalPath) points directly to the repo root
+#   - $(repoRoot) = $(Build.Repository.LocalPath)
+#
+# - Multi-repo checkout (versionsRepoRef is set):
+#   - Both 'self' and the versions repo are checked out
+#   - $(Build.Repository.LocalPath) points to the parent directory containing both repos
+#   - The source repo is at $(Build.Repository.LocalPath)/<repo-name>
+#   - The versions repo is at $(Build.Repository.LocalPath)/<versionsRepoPath>
+#   - $(repoRoot) = $(Build.Repository.LocalPath)/<repo-name>
+#   - $(versionsRepoRoot) = $(Build.Repository.LocalPath)/<versionsRepoPath>
 
 parameters:
   publishConfig: null
@@ -39,9 +53,11 @@ steps:
         $buildRepoName = "$(Build.Repository.Name)"
       }
 
-      $engDockerToolsPath = "$(Build.Repository.LocalPath)/$buildRepoName/$(engDockerToolsRelativePath)"
+      $repoRoot = "$(Build.Repository.LocalPath)/$buildRepoName"
+      $versionsRepoRoot = "$(Build.Repository.LocalPath)/${{ parameters.versionsRepoPath }}"
+      $engDockerToolsPath = "$repoRoot/$(engDockerToolsRelativePath)"
 
-      $engPath = "$(Build.Repository.LocalPath)/$buildRepoName/eng"
+      $engPath = "$repoRoot/eng"
       $manifest = "$buildRepoName/$(manifest)"
       $testResultsDirectory = "$buildRepoName/$testResultsDirectory"
 
@@ -50,6 +66,8 @@ steps:
       }
 
       echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
+      echo "##vso[task.setvariable variable=repoRoot]$repoRoot"
+      echo "##vso[task.setvariable variable=versionsRepoRoot]$versionsRepoRoot"
       echo "##vso[task.setvariable variable=engDockerToolsPath]$engDockerToolsPath"
       echo "##vso[task.setvariable variable=manifest]$manifest"
       echo "##vso[task.setvariable variable=engPath]$engPath"
@@ -59,6 +77,7 @@ steps:
     else {
       $versionsBasePath = ""
       $pipelineDisabledCache = "true"
+      echo "##vso[task.setvariable variable=repoRoot]$(Build.Repository.LocalPath)"
     }
 
     echo "##vso[task.setvariable variable=commonMatrixAndBuildOptions]$commonMatrixAndBuildOptions"

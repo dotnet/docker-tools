@@ -191,7 +191,6 @@ stages:
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       storageAccountServiceConnection: ${{ parameters.storageAccountServiceConnection }}
   - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:

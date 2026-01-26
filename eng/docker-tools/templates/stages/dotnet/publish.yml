@@ -8,7 +8,7 @@ parameters:
   pool: ""
   isStandalonePublish: false
   customPublishInitSteps: []
-  customImageBuilderSetupSteps: []
+  customInitSteps: []
   sourceBuildPipelineDefinitionId: ''
   sourceBuildPipelineRunId: ''
   versionsRepoRef: null
@@ -21,7 +21,7 @@ stages:
     publicProjectName: ${{ parameters.publicProjectName }}
     publishConfig: ${{ parameters.publishConfig }}
     isStandalonePublish: ${{ parameters.isStandalonePublish }}
-    customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
+    customInitSteps: ${{ parameters.customInitSteps }}
     sourceBuildPipelineDefinitionId: ${{ parameters.sourceBuildPipelineDefinitionId }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     versionsRepoRef: ${{ parameters.versionsRepoRef }}

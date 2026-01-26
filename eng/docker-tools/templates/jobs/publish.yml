@@ -3,7 +3,7 @@ parameters:
   internalProjectName: null
   publishConfig: null
   customInitSteps: []
-  customImageBuilderSetupSteps: []
+  customPostInitSteps: []
   customPublishVariables: []
   sourceBuildPipelineDefinitionId: ""
   sourceBuildPipelineRunId: ""
@@ -57,14 +57,14 @@ jobs:
     parameters:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
-      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
 
   - pwsh: |
       $azdoOrgName = Split-Path -Leaf $Env:SYSTEM_COLLECTIONURI
       echo "##vso[task.setvariable variable=azdoOrgName]$azdoOrgName"
     displayName: Set Publish Variables
 
-  - ${{ parameters.customInitSteps }}
+  - ${{ parameters.customPostInitSteps }}
 
   - template: /eng/docker-tools/templates/steps/validate-branch.yml@self
     parameters:

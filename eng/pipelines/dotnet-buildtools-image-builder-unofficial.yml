@@ -67,5 +67,5 @@ extends:
           versionsRepoRef: VersionsRepo
           noCache: true
           ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
-            customImageBuilderSetupSteps:
+            customInitSteps:
             - template: /eng/pipelines/templates/steps/bootstrap-imagebuilder.yml@self

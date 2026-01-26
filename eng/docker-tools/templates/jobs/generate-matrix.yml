@@ -8,7 +8,6 @@ parameters:
   noCache: false
   publishConfig: null
   customInitSteps: []
-  customImageBuilderSetupSteps: []
   commonInitStepsForMatrixAndBuild: []
   sourceBuildPipelineRunId: ""
 
@@ -21,8 +20,7 @@ jobs:
   - template: /eng/docker-tools/templates/steps/init-docker.yml@self
     parameters:
       dockerClientOS: linux
-      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
-  - ${{ parameters.customInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/validate-branch.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}

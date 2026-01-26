@@ -14,9 +14,6 @@ parameters:
 - name: customInitSteps
   type: stepList
   default: []
-- name: customImageBuilderSetupSteps
-  type: stepList
-  default: []
 - name: additionalOptions
   type: string
   default: ''
@@ -35,8 +32,7 @@ jobs:
     parameters:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
-      customImageBuilderSetupSteps: ${{ parameters.customImageBuilderSetupSteps }}
-  - ${{ parameters.customInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
       acr: ${{ parameters.acr }}

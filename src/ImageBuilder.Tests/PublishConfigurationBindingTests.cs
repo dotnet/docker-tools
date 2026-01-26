@@ -38,8 +38,9 @@ public class PublishConfigurationBindingTests
             "PublicMirrorRegistry": {
               "Server": "public-mirror.azurecr.io"
             },
-            "RegistryAuthentication": {
-              "build.azurecr.io": {
+            "RegistryAuthentication": [
+              {
+                "Server": "build.azurecr.io",
                 "ServiceConnection": {
                   "Name": "build-sc",
                   "TenantId": "tenant-build",
@@ -49,7 +50,8 @@ public class PublishConfigurationBindingTests
                 "ResourceGroup": "rg-build",
                 "Subscription": "sub-build"
               },
-              "publish.azurecr.io": {
+              {
+                "Server": "publish.azurecr.io",
                 "ServiceConnection": {
                   "Name": "publish-sc",
                   "TenantId": "tenant-publish",
@@ -59,7 +61,7 @@ public class PublishConfigurationBindingTests
                 "ResourceGroup": "rg-publish",
                 "Subscription": "sub-publish"
               }
-            }
+            ]
           }
         }
         """;
@@ -83,13 +85,13 @@ public class PublishConfigurationBindingTests
     }
 
     [Fact]
-    public void AddPublishConfiguration_BindsRegistryAuthenticationDictionary()
+    public void AddPublishConfiguration_BindsRegistryAuthenticationList()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
         config.RegistryAuthentication.Count.ShouldBe(2);
-        config.RegistryAuthentication.ShouldContainKey("build.azurecr.io");
-        config.RegistryAuthentication.ShouldContainKey("publish.azurecr.io");
+        config.RegistryAuthentication.ShouldContain(a => a.Server == "build.azurecr.io");
+        config.RegistryAuthentication.ShouldContain(a => a.Server == "publish.azurecr.io");
     }
 
     [Fact]
@@ -97,7 +99,8 @@ public class PublishConfigurationBindingTests
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
 
-        var buildAuth = config.RegistryAuthentication["build.azurecr.io"];
+        var buildAuth = config.FindRegistryAuthentication("build.azurecr.io");
+        buildAuth.ShouldNotBeNull();
         buildAuth.ServiceConnection.ShouldNotBeNull();
         buildAuth.ServiceConnection.Name.ShouldBe("build-sc");
         buildAuth.ServiceConnection.TenantId.ShouldBe("tenant-build");
@@ -206,14 +209,15 @@ public class PublishConfigurationBindingTests
                 "InternalMirrorRegistry": {
                   "Server": "shared.azurecr.io"
                 },
-                "RegistryAuthentication": {
-                  "shared.azurecr.io": {
+                "RegistryAuthentication": [
+                  {
+                    "Server": "shared.azurecr.io",
                     "ServiceConnection": {
                       "TenantId": "shared-tenant",
                       "ClientId": "shared-client"
                     }
                   }
-                }
+                ]
               }
             }
             """;

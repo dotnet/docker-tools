@@ -24,6 +24,12 @@ namespace Microsoft.DotNet.ImageBuilder.Configuration;
 public sealed record RegistryAuthentication
 {
     /// <summary>
+    /// The registry server address this authentication applies to.
+    /// Examples: "myregistry.azurecr.io", "ghcr.io".
+    /// </summary>
+    public string? Server { get; set; }
+
+    /// <summary>
     /// The Azure DevOps service connection for authenticating to this registry.
     /// Required for ACRs that we need to push to or manage.
     /// </summary>

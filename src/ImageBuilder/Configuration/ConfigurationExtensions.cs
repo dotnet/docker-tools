@@ -26,23 +26,12 @@ public static class ConfigurationExtensions
     /// <returns>The matching <see cref="RegistryAuthentication"/>, or null if not found.</returns>
     public static RegistryAuthentication? FindRegistryAuthentication(this PublishConfiguration publishConfig, string registryName)
     {
-        // Try exact match first
-        if (publishConfig.RegistryAuthentication.TryGetValue(registryName, out var auth))
-        {
-            return auth;
-        }
-
-        // Try normalized ACR name lookup (handle both "myacr" and "myacr.azurecr.io")
+        // Try normalized ACR name lookup (handles both "myacr" and "myacr.azurecr.io")
         var targetAcr = Acr.Parse(registryName);
-        foreach (var (key, value) in publishConfig.RegistryAuthentication)
-        {
-            var keyAcr = Acr.Parse(key);
-            if (keyAcr == targetAcr)
-            {
-                return value;
-            }
-        }
 
-        return null;
+        return publishConfig.RegistryAuthentication
+            .FirstOrDefault(auth =>
+                auth.Server is not null &&
+                Acr.Parse(auth.Server) == targetAcr);
     }
 }

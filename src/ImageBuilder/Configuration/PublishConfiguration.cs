@@ -34,13 +34,14 @@ public sealed record PublishConfiguration
     public RegistryEndpoint? PublicMirrorRegistry { get; set; }
 
     /// <summary>
-    /// Authentication details for container registries, keyed by registry server name.
+    /// Authentication details for container registries.
     /// </summary>
     /// <remarks>
-    /// The key should be the registry server address (e.g., "myregistry.azurecr.io").
-    /// Multiple registry endpoints can share the same authentication by using the same key.
+    /// Each entry should have a Server property set to the registry server address
+    /// (e.g., "myregistry.azurecr.io"). Multiple registry endpoints can share the
+    /// same authentication if they point to the same server.
     /// </remarks>
-    public Dictionary<string, RegistryAuthentication> RegistryAuthentication { get; set; } = new();
+    public List<RegistryAuthentication> RegistryAuthentication { get; set; } = [];
 
     /// <summary>
     /// Gets all registry endpoints that were provided in the publish configuration.

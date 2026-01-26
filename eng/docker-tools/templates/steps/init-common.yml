@@ -1,9 +1,305 @@
+# Consolidated initialization template for all jobs.
+# This template handles:
+# - Repository checkout (self and optionally versions repo)
+# - Common variable initialization (repoRoot, engDockerToolsPath, etc.)
+# - Docker environment setup
+# - ImageBuilder setup (pull or custom bootstrap)
+# - TestRunner setup (optional)
+#
+# Checkout behavior:
+# - Single-repo checkout (versionsRepoRef is empty):
+#   - Only 'self' is checked out
+#   - $(Build.Repository.LocalPath) points directly to the repo root
+#   - $(repoRoot) = $(Build.Repository.LocalPath)
+#
+# - Multi-repo checkout (versionsRepoRef is set):
+#   - Both 'self' and the versions repo are checked out
+#   - $(Build.Repository.LocalPath) points to the parent directory containing both repos
+#   - The source repo is at $(Build.Repository.LocalPath)/<repo-name>
+#   - The versions repo is at $(Build.Repository.LocalPath)/<versionsRepoPath>
+#   - $(repoRoot) = $(Build.Repository.LocalPath)/<repo-name>
+#   - $(versionsRepoRoot) = $(Build.Repository.LocalPath)/<versionsRepoPath>
+
 parameters:
-  condition: true
+################################################################################
+# Docker/ImageBuilder Parameters (from init-docker.yml)
+################################################################################
+- name: dockerClientOS
+  type: string
+  values:
+  - linux
+  - windows
+
+- name: setupImageBuilder
+  type: boolean
+  default: true
+
+- name: setupTestRunner
+  type: boolean
+  default: false
+
+# Whether existing Docker images will be deleted
+- name: cleanupDocker
+  type: boolean
+  default: false
+
+# Whether or not to run the steps in this template
+- name: condition
+  type: string
+  default: "true"
+
+# Custom steps to set up ImageBuilder instead of pulling it.
+# When provided, these steps run instead of the default pull-based setup.
+# The steps should result in $(imageNames.imageBuilder) being available locally.
+- name: customInitSteps
+  type: stepList
+  default: []
+
+################################################################################
+# Repository/Variables Parameters (from init-matrix-build-publish.yml)
+################################################################################
+- name: publishConfig
+  type: object
+  default: null
+
+- name: versionsRepoRef
+  type: string
+  default: ""
+
+- name: versionsRepoPath
+  type: string
+  default: "versions"
 
 steps:
+################################################################################
+# 1. Checkout
+################################################################################
+- checkout: self
+- ${{ if ne(parameters.versionsRepoRef, '') }}:
+  - checkout: ${{ parameters.versionsRepoRef }}
+    path: s/${{ parameters.versionsRepoPath }}
+    persistCredentials: true
+    fetchDepth: 1
+    condition: succeeded()
+
+################################################################################
+# 2. Set Common Variables
+################################################################################
 - powershell: |
-    $sourceBranch=$Env:BUILD_SOURCEBRANCH -replace "refs/heads/","" -replace "refs/tags/","" -replace "refs/pull/",""
+    # Source branch
+    $sourceBranch = $Env:BUILD_SOURCEBRANCH -replace "refs/heads/","" -replace "refs/tags/","" -replace "refs/pull/",""
     echo "##vso[task.setvariable variable=sourceBranch]$sourceBranch"
-  displayName: Define Source Branch Variable
+
+    # Common matrix and build options
+    $commonMatrixAndBuildOptions = "--source-repo $(publicGitRepoUri)"
+    if ("$(System.TeamProject)" -eq "internal" -and "$(Build.Reason)" -ne "PullRequest") {
+      $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --source-repo-prefix ${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }} --registry-override ${{ parameters.publishConfig.BuildRegistry.server }}"
+    }
+
+    if ("$(System.TeamProject)" -eq "public" -and "$(public-mirror.server)" -ne "") {
+      $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
+    }
+
+    # Repository paths - differ based on single vs multi-repo checkout
+    if ("${{ parameters.versionsRepoRef }}" -ne "") {
+      # Multi-repo checkout
+      $versionsBasePath = "${{ parameters.versionsRepoPath }}/"
+      $pipelineDisabledCache = "false"
+
+      $pathSeparatorIndex = "$(Build.Repository.Name)".IndexOf("/")
+      if ($pathSeparatorIndex -ge 0) {
+        $buildRepoName = "$(Build.Repository.Name)".Substring($pathSeparatorIndex + 1)
+      }
+      else {
+        $buildRepoName = "$(Build.Repository.Name)"
+      }
+
+      $repoRoot = "$(Build.Repository.LocalPath)/$buildRepoName"
+      $versionsRepoRoot = "$(Build.Repository.LocalPath)/${{ parameters.versionsRepoPath }}"
+      $engDockerToolsPath = "$repoRoot/$(engDockerToolsRelativePath)"
+
+      $engPath = "$repoRoot/eng"
+      $manifest = "$buildRepoName/$(manifest)"
+      $testResultsDirectory = "$buildRepoName/$testResultsDirectory"
+
+      if ("$(testScriptPath)") {
+        $testScriptPath = "$buildRepoName/$(testScriptPath)"
+      }
+
+      echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
+      echo "##vso[task.setvariable variable=repoRoot]$repoRoot"
+      echo "##vso[task.setvariable variable=versionsRepoRoot]$versionsRepoRoot"
+      echo "##vso[task.setvariable variable=engDockerToolsPath]$engDockerToolsPath"
+      echo "##vso[task.setvariable variable=manifest]$manifest"
+      echo "##vso[task.setvariable variable=engPath]$engPath"
+      echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"
+      echo "##vso[task.setvariable variable=testResultsDirectory]$testResultsDirectory"
+    }
+    else {
+      # Single-repo checkout
+      $versionsBasePath = ""
+      $pipelineDisabledCache = "true"
+      $repoRoot = "$(Build.Repository.LocalPath)"
+      $engDockerToolsPath = "$repoRoot/$(engDockerToolsRelativePath)"
+
+      echo "##vso[task.setvariable variable=repoRoot]$repoRoot"
+      echo "##vso[task.setvariable variable=engDockerToolsPath]$engDockerToolsPath"
+    }
+
+    echo "##vso[task.setvariable variable=commonMatrixAndBuildOptions]$commonMatrixAndBuildOptions"
+    echo "##vso[task.setvariable variable=versionsBasePath]$versionsBasePath"
+    echo "##vso[task.setvariable variable=pipelineDisabledCache]$pipelineDisabledCache"
+  displayName: Set Common Variables
   condition: and(succeeded(), ${{ parameters.condition }})
+
+# TSA Config copy for multi-repo checkout (1ES PT requirement)
+- ${{ if ne(parameters.versionsRepoRef, '') }}:
+  - task: CopyFiles@2
+    displayName: Copy TSA Config
+    condition: and(succeeded(), ${{ parameters.condition }})
+    inputs:
+      SourceFolder: '$(Build.Repository.LocalPath)/$(buildRepoName)'
+      Contents: '.config/tsaoptions.json'
+      TargetFolder: '$(Build.SourcesDirectory)'
+
+################################################################################
+# 3. Set Artifacts Path Variable (OS-specific)
+################################################################################
+- ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+  - script: echo "##vso[task.setvariable variable=artifactsPath]/artifacts"
+    displayName: Define Artifacts Path Variable
+    condition: and(succeeded(), ${{ parameters.condition }})
+- ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+  - powershell: echo "##vso[task.setvariable variable=artifactsPath]$(Build.ArtifactStagingDirectory)"
+    displayName: Define Artifacts Path Variable
+    condition: and(succeeded(), ${{ parameters.condition }})
+
+################################################################################
+# 4. Cleanup Docker Resources (OS-specific)
+################################################################################
+- ${{ if and(eq(parameters.dockerClientOS, 'linux'), eq(parameters.cleanupDocker, true)) }}:
+  - template: /eng/docker-tools/templates/steps/cleanup-docker-linux.yml@self
+    parameters:
+      condition: ${{ parameters.condition }}
+- ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+  - template: /eng/docker-tools/templates/steps/cleanup-docker-windows.yml@self
+    parameters:
+      condition: ${{ parameters.condition }}
+
+################################################################################
+# 5. Setup Image Builder (Optional)
+################################################################################
+- ${{ if eq(parameters.setupImageBuilder, true) }}:
+
+  # Custom ImageBuilder setup (e.g., bootstrap from source)
+  - ${{ if gt(length(parameters.customInitSteps), 0) }}:
+    # Set dockerClientOS variable so custom setup steps can use it
+    - script: echo "##vso[task.setvariable variable=dockerClientOS]${{ parameters.dockerClientOS }}"
+      displayName: Set dockerClientOS variable
+      condition: and(succeeded(), ${{ parameters.condition }})
+    - ${{ parameters.customInitSteps }}
+
+  # Default: Pull pre-built ImageBuilder image
+  - ${{ else }}:
+    - ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+      - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.imageBuilder)
+        displayName: Pull Image Builder
+        condition: and(succeeded(), ${{ parameters.condition }})
+
+    - ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+      - powershell: $(engDockerToolsPath)/Invoke-WithRetry.ps1 "docker pull $(imageNames.imageBuilder)"
+        displayName: Pull Image Builder
+        condition: and(succeeded(), ${{ parameters.condition }})
+      - script: docker create --name setupImageBuilder-$(Build.BuildId)-$(System.JobId) $(imageNames.imageBuilder)
+        displayName: Create Setup Container
+        condition: and(succeeded(), ${{ parameters.condition }})
+      - script: >
+          docker cp
+          setupImageBuilder-$(Build.BuildId)-$(System.JobId):/image-builder
+          $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+        displayName: Copy Image Builder
+        condition: and(succeeded(), ${{ parameters.condition }})
+      - script: docker rm -f setupImageBuilder-$(Build.BuildId)-$(System.JobId)
+        displayName: Cleanup Setup Container
+        condition: and(always(), ${{ parameters.condition }})
+        continueOnError: true
+
+  # Generate appsettings.json (common for both OS)
+  - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      condition: ${{ parameters.condition }}
+
+  # Build -withrepo image and define command variables (Linux only)
+  - ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+    - script: >-
+        docker build
+        -t $(imageNames.imageBuilder.withrepo)
+        --build-arg IMAGE=$(imageNames.imageBuilder)
+        -f $(engDockerToolsPath)/Dockerfile.WithRepo .
+      displayName: Build Image for Image Builder
+      condition: and(succeeded(), ${{ parameters.condition }})
+
+    - task: PowerShell@2
+      displayName: Define ImageBuilder Command Variables
+      condition: and(succeeded(), ${{ parameters.condition }})
+      inputs:
+        targetType: 'inline'
+        script: |
+          $imageBuilderImageName = "$(imageNames.imageBuilder.withrepo)"
+          Write-Host "##vso[task.setvariable variable=imageBuilderImageName]$imageBuilderImageName"
+
+          $dockerRunBaseCmd = @(
+            "docker run --rm"
+          )
+
+          $dockerRunArgs = @(
+            "-v /var/run/docker.sock:/var/run/docker.sock"
+            "-v $(Build.ArtifactStagingDirectory):$(artifactsPath)"
+            "-w /repo"
+            "$(imageBuilderDockerRunExtraOptions)"
+            "$(imageNames.imageBuilder.withrepo)"
+          )
+
+          $authedDockerRunArgs = @(
+            '-e'
+            'SYSTEM_ACCESSTOKEN=$env:SYSTEM_ACCESSTOKEN'
+            '-e'
+            'SYSTEM_OIDCREQUESTURI=$env:SYSTEM_OIDCREQUESTURI'
+          )
+
+          $dockerRunCmd = $dockerRunBaseCmd + $dockerRunArgs
+          $authedDockerRunCmd = $dockerRunBaseCmd + $authedDockerRunArgs + $dockerRunArgs
+
+          $runImageBuilderCmd = $($dockerRunCmd -join ' ')
+          $runAuthedImageBuilderCmd = $($authedDockerRunCmd -join ' ')
+
+          Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
+          Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"
+
+  # Define command variables (Windows only)
+  - ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+    - task: PowerShell@2
+      displayName: Define runImageBuilderCmd Variables
+      condition: and(succeeded(), ${{ parameters.condition }})
+      inputs:
+        targetType: 'inline'
+        script: |
+          $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
+          Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
+          Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runImageBuilderCmd"
+
+################################################################################
+# 6. Setup Test Runner (Optional, Linux only)
+################################################################################
+- ${{ if and(eq(parameters.setupTestRunner, true), eq(parameters.dockerClientOS, 'linux')) }}:
+  - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.testrunner)
+    displayName: Pull Test Runner
+    condition: and(succeeded(), ${{ parameters.condition }})
+  - script: >
+      docker build
+      -t $(imageNames.testRunner.withrepo)
+      --build-arg IMAGE=$(imageNames.testrunner)
+      -f $(engDockerToolsPath)/Dockerfile.WithRepo .
+    displayName: Build Test Runner Image
+    condition: and(succeeded(), ${{ parameters.condition }})

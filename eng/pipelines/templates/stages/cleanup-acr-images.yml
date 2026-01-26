@@ -20,7 +20,7 @@ stages:
     variables:
       dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
-    - template: /eng/docker-tools/templates/steps/init-docker.yml@self
+    - template: /eng/docker-tools/templates/steps/init-common.yml@self
       parameters:
         dockerClientOS: linux
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
@@ -69,7 +69,7 @@ stages:
     variables:
       dryRunArg: ${{ iif(parameters.enableDryRun, '--dry-run', '') }}
     steps:
-    - template: /eng/docker-tools/templates/steps/init-docker.yml@self
+    - template: /eng/docker-tools/templates/steps/init-common.yml@self
       parameters:
         dockerClientOS: linux
     - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data

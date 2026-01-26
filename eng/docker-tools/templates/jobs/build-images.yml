@@ -4,9 +4,9 @@ parameters:
   matrix: {}
   dockerClientOS: null
   buildJobTimeout: 60
-  commonInitStepsForMatrixAndBuild: []
   customInitSteps: []
   publishConfig: null
+  versionsRepoRef: ""
   noCache: false
   internalProjectName: null
   publicProjectName: null
@@ -29,11 +29,11 @@ jobs:
     imageInfoHostDir: $(Build.ArtifactStagingDirectory)/imageInfo
     imageInfoContainerDir: $(artifactsPath)/imageInfo
   steps:
-  - ${{ parameters.commonInitStepsForMatrixAndBuild }}
-  - template: /eng/docker-tools/templates/steps/init-docker.yml@self
+  - template: /eng/docker-tools/templates/steps/init-common.yml@self
     parameters:
       dockerClientOS: ${{ parameters.dockerClientOS }}
       publishConfig: ${{ parameters.publishConfig }}
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       cleanupDocker: true
       customInitSteps: ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self

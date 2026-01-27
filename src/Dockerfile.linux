@@ -21,6 +21,7 @@ WORKDIR /image-builder
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
+COPY ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj ./ImageBuilder.Models/
 RUN dotnet restore -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish

@@ -24,10 +24,10 @@ parameters:
   - pruneEol
 - name: age
   displayName: Age
-  type: int
+  type: number
 
 extends:
-  template: /eng/docker-tools/templates/1es-official.yml@self
+  template: /eng/docker-tools/templates/1es.yml@self
   parameters:
     serviceConnections:
     - name: $(clean.serviceConnectionName)

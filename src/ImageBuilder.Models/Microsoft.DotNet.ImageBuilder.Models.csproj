@@ -3,7 +3,7 @@
   <PropertyGroup Label="Project Settings">
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
+    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Label="Build Settings">
@@ -14,5 +14,9 @@
     <IsPackable>true</IsPackable>
     <Description>Core models used by Microsoft.DotNet.ImageBuilder.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
 
 </Project>

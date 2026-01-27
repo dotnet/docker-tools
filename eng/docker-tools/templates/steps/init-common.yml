@@ -80,10 +80,12 @@ steps:
 - powershell: |
     # Source branch
     $sourceBranch = $Env:BUILD_SOURCEBRANCH -replace "refs/heads/","" -replace "refs/tags/","" -replace "refs/pull/",""
+    Write-Host "Setting sourceBranch to '$sourceBranch'"
     echo "##vso[task.setvariable variable=sourceBranch]$sourceBranch"
 
     # Common matrix and build options (base)
     $commonMatrixAndBuildOptions = "--source-repo $(publicGitRepoUri)"
+    Write-Host "Setting commonMatrixAndBuildOptions to '$commonMatrixAndBuildOptions'"
     echo "##vso[task.setvariable variable=commonMatrixAndBuildOptions]$commonMatrixAndBuildOptions"
   displayName: Set Source Branch and Base Options
   condition: and(succeeded(), ${{ parameters.condition }})
@@ -105,6 +107,7 @@ steps:
         $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
       }
 
+      Write-Host "Setting commonMatrixAndBuildOptions to '$commonMatrixAndBuildOptions'"
       echo "##vso[task.setvariable variable=commonMatrixAndBuildOptions]$commonMatrixAndBuildOptions"
     displayName: Set Build Registry Options
     condition: and(succeeded(), ${{ parameters.condition }})
@@ -129,6 +132,11 @@ steps:
 # - pipelineDisabledCache: "true" disables caching, "false" enables it
 # - repoRoot, engDockerToolsPath: Resolved absolute paths for scripts
 - powershell: |
+    function Set-PipelineVariable($name, $value) {
+      Write-Host "Setting $name to '$value'"
+      echo "##vso[task.setvariable variable=$name]$value"
+    }
+
     # Repository paths - differ based on single vs multi-repo checkout
     if ("${{ parameters.versionsRepoRef }}" -ne "") {
       # Multi-repo checkout
@@ -155,14 +163,14 @@ steps:
         $testScriptPath = "$buildRepoName/$(testScriptPath)"
       }
 
-      echo "##vso[task.setvariable variable=buildRepoName]$buildRepoName"
-      echo "##vso[task.setvariable variable=repoRoot]$repoRoot"
-      echo "##vso[task.setvariable variable=versionsRepoRoot]$versionsRepoRoot"
-      echo "##vso[task.setvariable variable=engDockerToolsPath]$engDockerToolsPath"
-      echo "##vso[task.setvariable variable=manifest]$manifest"
-      echo "##vso[task.setvariable variable=engPath]$engPath"
-      echo "##vso[task.setvariable variable=testScriptPath]$testScriptPath"
-      echo "##vso[task.setvariable variable=testResultsDirectory]$testResultsDirectory"
+      Set-PipelineVariable "buildRepoName" $buildRepoName
+      Set-PipelineVariable "repoRoot" $repoRoot
+      Set-PipelineVariable "versionsRepoRoot" $versionsRepoRoot
+      Set-PipelineVariable "engDockerToolsPath" $engDockerToolsPath
+      Set-PipelineVariable "manifest" $manifest
+      Set-PipelineVariable "engPath" $engPath
+      Set-PipelineVariable "testScriptPath" $testScriptPath
+      Set-PipelineVariable "testResultsDirectory" $testResultsDirectory
     }
     else {
       # Single-repo checkout
@@ -171,12 +179,12 @@ steps:
       $repoRoot = "$(Build.Repository.LocalPath)"
       $engDockerToolsPath = "$repoRoot/$(engDockerToolsRelativePath)"
 
-      echo "##vso[task.setvariable variable=repoRoot]$repoRoot"
-      echo "##vso[task.setvariable variable=engDockerToolsPath]$engDockerToolsPath"
+      Set-PipelineVariable "repoRoot" $repoRoot
+      Set-PipelineVariable "engDockerToolsPath" $engDockerToolsPath
     }
 
-    echo "##vso[task.setvariable variable=versionsBasePath]$versionsBasePath"
-    echo "##vso[task.setvariable variable=pipelineDisabledCache]$pipelineDisabledCache"
+    Set-PipelineVariable "versionsBasePath" $versionsBasePath
+    Set-PipelineVariable "pipelineDisabledCache" $pipelineDisabledCache
   displayName: Set Repository Path Variables
   condition: and(succeeded(), ${{ parameters.condition }})
 
@@ -199,11 +207,15 @@ steps:
 # Windows: Uses Build.ArtifactStagingDirectory directly since ImageBuilder runs
 #          as an extracted executable, not in a container
 - ${{ if eq(parameters.dockerClientOS, 'linux') }}:
-  - script: echo "##vso[task.setvariable variable=artifactsPath]/artifacts"
+  - script: |
+      echo "Setting artifactsPath to '/artifacts'"
+      echo "##vso[task.setvariable variable=artifactsPath]/artifacts"
     displayName: Define Artifacts Path Variable
     condition: and(succeeded(), ${{ parameters.condition }})
 - ${{ if eq(parameters.dockerClientOS, 'windows') }}:
-  - powershell: echo "##vso[task.setvariable variable=artifactsPath]$(Build.ArtifactStagingDirectory)"
+  - powershell: |
+      Write-Host "Setting artifactsPath to '$(Build.ArtifactStagingDirectory)'"
+      echo "##vso[task.setvariable variable=artifactsPath]$(Build.ArtifactStagingDirectory)"
     displayName: Define Artifacts Path Variable
     condition: and(succeeded(), ${{ parameters.condition }})
 

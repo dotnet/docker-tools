@@ -116,6 +116,7 @@ jobs:
     - template: /eng/docker-tools/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
       parameters:
         condition: ne(variables.testScriptPath, '')
+        skipInit: true
   - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.dockerClientOS, 'linux')) }}:
     - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
       parameters:

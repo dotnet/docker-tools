@@ -6,11 +6,13 @@ using System.IO;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
@@ -18,20 +20,35 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class CopyBaseImagesCommandTests
     {
+        private const string SubscriptionId = "my subscription";
+        private const string ResourceGroup = "my resource group";
+        private const string DestinationRegistry = "mcr.microsoft.com";
+
+        private static PublishConfiguration CreatePublishConfig() => new()
+        {
+            RegistryAuthentication =
+            [
+                new RegistryAuthentication
+                {
+                    Server = DestinationRegistry,
+                    Subscription = SubscriptionId,
+                    ResourceGroup = ResourceGroup
+                }
+            ]
+        };
+
         [Fact]
         public async Task MultipleBaseTags()
         {
-            const string subscriptionId = "my subscription";
-
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
 
             CopyBaseImagesCommand command = new(
-                copyImageServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
+                copyImageServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                CreateOptionsMock(CreatePublishConfig()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.Subscription = subscriptionId;
-            command.Options.ResourceGroup = "my resource group";
             command.Options.RepoPrefix = "custom-repo/";
             command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
             command.Options.CredentialsOptions.Credentials.Add("my-registry.com", new RegistryCredentials("me", "secret"));
@@ -40,8 +57,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
             string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
             File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            const string registry = "mcr.microsoft.com";
 
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime",
@@ -56,11 +71,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     CreateImage(
                         CreatePlatformWithRepoBuildArg(
                             CreateDockerfile("1.0/aspnet/os/arm32v7", tempFolderContext, "$REPO:arm32v7"),
-                            $"{registry}/{command.Options.RepoPrefix}aspnet",
+                            $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
                             new string[] { "arm32v7" }),
                         CreatePlatformWithRepoBuildArg(
                             CreateDockerfile("1.0/aspnet/os/amd64", tempFolderContext, "$REPO:amd64"),
-                            $"{registry}/{command.Options.RepoPrefix}aspnet",
+                            $"{DestinationRegistry}/{command.Options.RepoPrefix}aspnet",
                             new string[] { "amd64" }))),
                 CreateRepo("test",
                     CreateImage(
@@ -68,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateDockerfile("1.0/test/os/amd64", tempFolderContext, "my-registry.com/repo:tag"),
                             new string[] { "amd64" })))
             );
-            manifest.Registry = registry;
+            manifest.Registry = DestinationRegistry;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -86,8 +101,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            subscriptionId,
-                            command.Options.ResourceGroup,
+                            SubscriptionId,
+                            ResourceGroup,
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
@@ -114,19 +129,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task OverridenBaseTag()
         {
-            const string subscriptionId = "my subscription";
             const string CustomRegistry = "contoso.azurecr.io";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IEnvironmentService> environmentServiceMock = new();
             Mock<ICopyImageService> copyImageServiceMock = new();
 
             CopyBaseImagesCommand command = new(
-                copyImageServiceMock.Object, Mock.Of<ILoggerService>(), Mock.Of<IGitService>());
+                copyImageServiceMock.Object,
+                Mock.Of<ILoggerService>(),
+                Mock.Of<IGitService>(),
+                CreateOptionsMock(CreatePublishConfig()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.Subscription = subscriptionId;
-            command.Options.ResourceGroup = "my resource group";
             command.Options.RepoPrefix = "custom-repo/";
             command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
             command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(os:.*)";
@@ -136,8 +150,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
             string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile.custom");
             File.WriteAllText(Path.Combine(tempFolderContext.Path, dockerfileRelativePath), "FROM repo:tag");
-
-            const string registry = "mcr.microsoft.com";
 
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime",
@@ -149,7 +161,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             CreateDockerfile("1.0/runtime/os2/arm32v7", tempFolderContext, "arm32v7/os2:tag"),
                             new string[] { "os2" })))
             );
-            manifest.Registry = registry;
+            manifest.Registry = DestinationRegistry;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -166,8 +178,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            subscriptionId,
-                            command.Options.ResourceGroup,
+                            SubscriptionId,
+                            ResourceGroup,
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,

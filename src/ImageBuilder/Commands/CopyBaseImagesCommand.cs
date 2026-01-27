@@ -7,7 +7,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -19,8 +21,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public CopyBaseImagesCommand(
             ICopyImageService copyImageService,
             ILoggerService loggerService,
-            IGitService gitService)
-            : base(copyImageService, loggerService)
+            IGitService gitService,
+            IOptions<PublishConfiguration> publishConfigOptions)
+            : base(copyImageService, loggerService, publishConfigOptions)
         {
             _gitService = gitService;
         }

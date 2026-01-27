@@ -12,18 +12,22 @@ using Azure.ResourceManager.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions, CopyAcrImagesOptionsBuilder>
     {
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
+        private readonly PublishConfiguration _publishConfig;
 
         public CopyAcrImagesCommand(
             ICopyImageService copyImageService,
-            ILoggerService loggerService)
-            : base(copyImageService, loggerService)
+            ILoggerService loggerService,
+            IOptions<PublishConfiguration> publishConfigOptions)
+            : base(copyImageService, loggerService, publishConfigOptions)
         {
+            _publishConfig = publishConfigOptions.Value;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!string.IsNullOrEmpty(Options.ImageInfoPath))
@@ -37,6 +41,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Copies the platform images as specified in the manifest between repositories of an ACR";
 
+        /// <summary>
+        /// Gets the subscription for the source registry from config.
+        /// </summary>
+        private string GetSourceSubscription()
+        {
+            var auth = _publishConfig.FindRegistryAuthentication(Options.SourceRegistry);
+            if (auth?.Subscription is null)
+            {
+                throw new InvalidOperationException(
+                    $"No subscription found for source registry '{Options.SourceRegistry}'. " +
+                    $"Ensure the registry is configured in the publish configuration.");
+            }
+
+            return auth.Subscription;
+        }
+
+        /// <summary>
+        /// Gets the resource group for the source registry from config.
+        /// </summary>
+        private string GetSourceResourceGroup()
+        {
+            var auth = _publishConfig.FindRegistryAuthentication(Options.SourceRegistry);
+            if (auth?.ResourceGroup is null)
+            {
+                throw new InvalidOperationException(
+                    $"No resource group found for source registry '{Options.SourceRegistry}'. " +
+                    $"Ensure the registry is configured in the publish configuration.");
+            }
+
+            return auth.ResourceGroup;
+        }
+
         public override async Task ExecuteAsync()
         {
             LoggerService.WriteHeading("COPYING IMAGES");
@@ -49,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                Options.Subscription, Options.ResourceGroup, Acr.Parse(Options.SourceRegistry).Name);
+                GetSourceSubscription(), GetSourceResourceGroup(), Acr.Parse(Options.SourceRegistry).Name);
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>

@@ -81,6 +81,7 @@ stages:
       customInitSteps:
       - ${{ parameters.customInitSteps }}
       - ${{ parameters.customCopyBaseImagesInitSteps }}
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/docker-tools/templates/jobs/generate-matrix.yml@self
     parameters:

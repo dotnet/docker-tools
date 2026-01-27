@@ -23,6 +23,9 @@ parameters:
 - name: forceDryRun
   type: boolean
   default: false
+- name: versionsRepoRef
+  type: string
+  default: ""
 
 jobs:
 - job: ${{ parameters.name }}
@@ -33,6 +36,7 @@ jobs:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
       customInitSteps: ${{ parameters.customInitSteps }}
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
       acr: ${{ parameters.acr }}

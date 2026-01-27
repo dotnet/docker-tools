@@ -1,44 +1,27 @@
-# Consolidated initialization template for all jobs.
-# This template handles:
-# - Repository checkout (self and optionally versions repo)
-# - Common variable initialization (repoRoot, engDockerToolsPath, etc.)
-# - Docker environment setup
-# - ImageBuilder setup (pull or custom bootstrap)
-# - TestRunner setup (optional)
-#
-# Checkout behavior:
-# - Single-repo checkout (versionsRepoRef is empty):
-#   - Only 'self' is checked out
-#   - $(Build.Repository.LocalPath) points directly to the repo root
-#   - $(repoRoot) = $(Build.Repository.LocalPath)
-#
-# - Multi-repo checkout (versionsRepoRef is set):
-#   - Both 'self' and the versions repo are checked out
-#   - $(Build.Repository.LocalPath) points to the parent directory containing both repos
-#   - The source repo is at $(Build.Repository.LocalPath)/<repo-name>
-#   - The versions repo is at $(Build.Repository.LocalPath)/<versionsRepoPath>
-#   - $(repoRoot) = $(Build.Repository.LocalPath)/<repo-name>
-#   - $(versionsRepoRoot) = $(Build.Repository.LocalPath)/<versionsRepoPath>
-
+# Common initialization steps for all Docker Tools pipeline jobs. It handles:
+# - Repository checkout (single or multi-repo with versions repo)
+# - Path resolution that adapts to checkout configuration
+# - ImageBuilder setup (containerized on Linux, native on Windows)
+# - Test runner setup
+# - Docker environment cleanup
 parameters:
-################################################################################
-# Docker/ImageBuilder Parameters (from init-docker.yml)
-################################################################################
 - name: dockerClientOS
   type: string
   values:
   - linux
   - windows
 
+# Whether to set up ImageBuilder
 - name: setupImageBuilder
   type: boolean
   default: true
 
+# Whether to set up the Test Runner environment
 - name: setupTestRunner
   type: boolean
   default: false
 
-# Whether existing Docker images will be deleted
+# Whether to delete existing Docker images
 - name: cleanupDocker
   type: boolean
   default: false
@@ -51,29 +34,35 @@ parameters:
 # Custom steps to set up ImageBuilder instead of pulling it.
 # When provided, these steps run instead of the default pull-based setup.
 # The steps should result in $(imageNames.imageBuilder) being available locally.
+# Used by bootstrap pipelines that build ImageBuilder from source.
 - name: customInitSteps
   type: stepList
   default: []
 
-################################################################################
-# Repository/Variables Parameters (from init-matrix-build-publish.yml)
-################################################################################
+# Registry and authentication configuration for publishing images.
+# Contains server URLs, repo prefixes, subscriptions, and resource groups.
+# When null, build/publish steps that require registry access will be skipped.
 - name: publishConfig
   type: object
   default: null
 
+# Reference to a versions repository (e.g., "dotnet-versions") for multi-repo checkout.
+# When set, enables image caching by providing access to historical image-info files.
+# When empty, single-repo checkout is used and caching is disabled.
 - name: versionsRepoRef
   type: string
   default: ""
-
+# Local path where the versions repository will be checked out.
+# Only used when versionsRepoRef is set.
 - name: versionsRepoPath
   type: string
   default: "versions"
 
 steps:
-################################################################################
-# 1. Checkout
-################################################################################
+# Repository Checkout
+# Multi-repo checkout is used when a versions repository is needed for caching.
+# The versions repo contains historical image-info files used to determine which
+# images need rebuilding. Credentials are persisted for later git operations.
 - checkout: self
 - ${{ if ne(parameters.versionsRepoRef, '') }}:
   - checkout: ${{ parameters.versionsRepoRef }}
@@ -82,9 +71,12 @@ steps:
     fetchDepth: 1
     condition: succeeded()
 
-################################################################################
-# 2. Set Common Variables
-################################################################################
+# Base Variable Initialization
+# Sets foundational variables that subsequent steps build upon:
+# - sourceBranch: Cleaned branch name without refs/ prefixes, used for filtering
+# - commonMatrixAndBuildOptions: Base CLI args shared by matrix generation and
+#   build commands. Starts with just --source-repo; registry-specific options
+#   are added conditionally below.
 - powershell: |
     # Source branch
     $sourceBranch = $Env:BUILD_SOURCEBRANCH -replace "refs/heads/","" -replace "refs/tags/","" -replace "refs/pull/",""
@@ -96,7 +88,12 @@ steps:
   displayName: Set Source Branch and Base Options
   condition: and(succeeded(), ${{ parameters.condition }})
 
-# Add internal build options when publishConfig is available
+# Build Registry Configuration
+# Extends commonMatrixAndBuildOptions with registry-specific settings:
+# - Internal builds: Use internal mirror registry prefix and build registry
+#   server to pull/push from private ACR instead of public MCR
+# - Public builds: Override non-MCR base images to use public mirror, reducing
+#   external dependencies and improving build reliability
 - ${{ if parameters.publishConfig }}:
   - powershell: |
       $commonMatrixAndBuildOptions = "$(commonMatrixAndBuildOptions)"
@@ -112,6 +109,25 @@ steps:
     displayName: Set Build Registry Options
     condition: and(succeeded(), ${{ parameters.condition }})
 
+# Repository Path Resolution
+# Resolves paths differently based on checkout mode:
+#
+# Multi-repo checkout (versionsRepoRef is set):
+# - Both main repo and versions repo are checked out side-by-side
+# - Paths must be prefixed with repo name (e.g., "dotnet-docker/src/manifest.json")
+# - Caching is ENABLED because versions repo provides historical image-info files
+# - Build.Repository.Name may include org prefix (e.g., "dotnet/dotnet-docker")
+#   which must be stripped to get the actual checkout directory name
+#
+# Single-repo checkout (versionsRepoRef is empty):
+# - Only the main repo is checked out at Build.Repository.LocalPath
+# - Paths are relative to repo root without prefix
+# - Caching is disabled because no versions repo means no historical image-info
+#
+# Key outputs:
+# - versionsBasePath: Prefix for paths in versions repo (empty or "versions/")
+# - pipelineDisabledCache: "true" disables caching, "false" enables it
+# - repoRoot, engDockerToolsPath: Resolved absolute paths for scripts
 - powershell: |
     # Repository paths - differ based on single vs multi-repo checkout
     if ("${{ parameters.versionsRepoRef }}" -ne "") {
@@ -164,7 +180,10 @@ steps:
   displayName: Set Repository Path Variables
   condition: and(succeeded(), ${{ parameters.condition }})
 
-# TSA Config copy for multi-repo checkout (1ES PT requirement)
+# TSA Configuration - 1ES Pipeline Templates require tsaoptions.json at
+# Build.SourcesDirectory. In a multi-repo checkout scenario,
+# Build.SourcesDirectory differs from the main repo's checkout location, so we
+# must copy the config file to the expected location.
 - ${{ if ne(parameters.versionsRepoRef, '') }}:
   - task: CopyFiles@2
     displayName: Copy TSA Config
@@ -174,9 +193,11 @@ steps:
       Contents: '.config/tsaoptions.json'
       TargetFolder: '$(Build.SourcesDirectory)'
 
-################################################################################
-# 3. Set Artifacts Path Variable (OS-specific)
-################################################################################
+# Artifacts Path Configuration
+# Linux: Uses /artifacts inside the container, which is mounted to the host's
+#        Build.ArtifactStagingDirectory via docker run -v
+# Windows: Uses Build.ArtifactStagingDirectory directly since ImageBuilder runs
+#          as an extracted executable, not in a container
 - ${{ if eq(parameters.dockerClientOS, 'linux') }}:
   - script: echo "##vso[task.setvariable variable=artifactsPath]/artifacts"
     displayName: Define Artifacts Path Variable
@@ -186,9 +207,10 @@ steps:
     displayName: Define Artifacts Path Variable
     condition: and(succeeded(), ${{ parameters.condition }})
 
-################################################################################
-# 4. Cleanup Docker Resources (OS-specific)
-################################################################################
+# Docker Cleanup - Removes existing Docker images and containers to ensure a clean build state.
+# Linux: Only runs when explicitly requested via cleanupDocker parameter
+# Windows: Always runs because Windows agents have limited disk space and
+#          accumulated images cause build failures
 - ${{ if and(eq(parameters.dockerClientOS, 'linux'), eq(parameters.cleanupDocker, true)) }}:
   - template: /eng/docker-tools/templates/steps/cleanup-docker-linux.yml@self
     parameters:
@@ -198,11 +220,18 @@ steps:
     parameters:
       condition: ${{ parameters.condition }}
 
-################################################################################
-# 5. Setup Image Builder (Optional)
-################################################################################
+# ImageBuilder Setup
+# Linux: Runs containerized
+# - Pull the ImageBuilder image from MCR
+# - Build a "withrepo" image that layers the source code into the container
+# - Generate docker run commands that mount Docker socket and artifact paths
+# Windows: Runs as extracted executable
+# - Pull the ImageBuilder image, create a temporary container, and copy out
+#   the executable to Build.BinariesDirectory
+# - Run directly as .exe (no container) because Windows containers have
+#   limitations with Docker-in-Docker and volume mounts
+# Custom setup (customInitSteps) overrides both Linux and Windows setup steps.
 - ${{ if eq(parameters.setupImageBuilder, true) }}:
-
   # Custom ImageBuilder setup (e.g., bootstrap from source)
   - ${{ if gt(length(parameters.customInitSteps), 0) }}:
     # Set dockerClientOS variable so custom setup steps can use it
@@ -210,15 +239,16 @@ steps:
       displayName: Set dockerClientOS variable
       condition: and(succeeded(), ${{ parameters.condition }})
     - ${{ parameters.customInitSteps }}
-
   # Default: Pull pre-built ImageBuilder image
   - ${{ else }}:
     - ${{ if eq(parameters.dockerClientOS, 'linux') }}:
       - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.imageBuilder)
         displayName: Pull Image Builder
         condition: and(succeeded(), ${{ parameters.condition }})
-
     - ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+      # Windows: Extract ImageBuilder executable from container image
+      # Windows containers don't support Docker socket mounting, so we run
+      # ImageBuilder as a native executable rather than in a container
       - powershell: $(engDockerToolsPath)/Invoke-WithRetry.ps1 "docker pull $(imageNames.imageBuilder)"
         displayName: Pull Image Builder
         condition: and(succeeded(), ${{ parameters.condition }})
@@ -236,13 +266,15 @@ steps:
         condition: and(always(), ${{ parameters.condition }})
         continueOnError: true
 
-  # Generate appsettings.json (common for both OS)
+  # Generate appsettings.json with publish configuration for ImageBuilder to read
   - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
       condition: ${{ parameters.condition }}
 
-  # Build -withrepo image and define command variables (Linux only)
+  # On Linux, build the "withrepo" image that includes the repo's source code.
+  # The withrepo image layers the checked-out repository into the ImageBuilder
+  # container at /repo, so ImageBuilder can access manifests and Dockerfiles
   - ${{ if eq(parameters.dockerClientOS, 'linux') }}:
     - script: >-
         docker build
@@ -251,7 +283,11 @@ steps:
         -f $(engDockerToolsPath)/Dockerfile.WithRepo .
       displayName: Build Image for Image Builder
       condition: and(succeeded(), ${{ parameters.condition }})
-
+    # Define runImageBuilderCmd and runAuthedImageBuilderCmd variables
+    # These are the primary interface for downstream ImageBuilder invocations:
+    # - runImageBuilderCmd: For operations that don't need Azure DevOps auth
+    # - runAuthedImageBuilderCmd: Passes OIDC tokens for ACR/Azure operations
+    # The commands mount Docker socket (for building images) and artifact directory
     - task: PowerShell@2
       displayName: Define ImageBuilder Command Variables
       condition: and(succeeded(), ${{ parameters.condition }})
@@ -289,7 +325,9 @@ steps:
           Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
           Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"
 
-  # Define command variables (Windows only)
+  # On Windows, point to the extracted executable path
+  # Both runImageBuilderCmd and runAuthedImageBuilderCmd are the same because
+  # Windows runs natively and inherits environment variables automatically
   - ${{ if eq(parameters.dockerClientOS, 'windows') }}:
     - task: PowerShell@2
       displayName: Define runImageBuilderCmd Variables
@@ -301,9 +339,10 @@ steps:
           Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
           Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runImageBuilderCmd"
 
-################################################################################
-# 6. Setup Test Runner (Optional, Linux only)
-################################################################################
+# Test Runner Setup (Linux only)
+# Like ImageBuilder, the test runner setup it uses the "withrepo" pattern to
+# include the repo source code (test projects) in the container.
+# This is Linux-only because Windows image tests run natively, same as ImageBuilder.
 - ${{ if and(eq(parameters.setupTestRunner, true), eq(parameters.dockerClientOS, 'linux')) }}:
   - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.testrunner)
     displayName: Pull Test Runner

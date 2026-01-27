@@ -1,5 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -20,13 +21,10 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ICopyImageService
 {
     Task ImportImageAsync(
-        string subscription,
-        string resourceGroup,
         string[] destTagNames,
-        string destRegistryName,
+        string destAcrName,
         string srcTagName,
         string? srcRegistryName = null,
-        ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false);
 }
@@ -49,16 +47,18 @@ public class CopyImageService : ICopyImageService
     }
 
     public async Task ImportImageAsync(
-        string subscription,
-        string resourceGroup,
         string[] destTagNames,
         string destAcrName,
         string srcTagName,
         string? srcRegistryName = null,
-        ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false)
     {
+        var destResourceId = _publishConfig.GetRegistryResource(destAcrName);
+        var srcResourceId = srcRegistryName is not null
+            ? _publishConfig.GetRegistryResource(srcRegistryName)
+            : null;
+
         Acr destAcr = Acr.Parse(destAcrName);
 
         ContainerRegistryImportSource importSrc = new(srcTagName)
@@ -86,8 +86,7 @@ public class CopyImageService : ICopyImageService
         if (!isDryRun)
         {
             ArmClient armClient = GetArmClientForAcr(destAcrName);
-            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(
-                ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcr.Name));
+            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
 
             try
             {

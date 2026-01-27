@@ -41,38 +41,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         protected override string Description => "Copies the platform images as specified in the manifest between repositories of an ACR";
 
-        /// <summary>
-        /// Gets the subscription for the source registry from config.
-        /// </summary>
-        private string GetSourceSubscription()
-        {
-            var auth = _publishConfig.FindRegistryAuthentication(Options.SourceRegistry);
-            if (auth?.Subscription is null)
-            {
-                throw new InvalidOperationException(
-                    $"No subscription found for source registry '{Options.SourceRegistry}'. " +
-                    $"Ensure the registry is configured in the publish configuration.");
-            }
-
-            return auth.Subscription;
-        }
-
-        /// <summary>
-        /// Gets the resource group for the source registry from config.
-        /// </summary>
-        private string GetSourceResourceGroup()
-        {
-            var auth = _publishConfig.FindRegistryAuthentication(Options.SourceRegistry);
-            if (auth?.ResourceGroup is null)
-            {
-                throw new InvalidOperationException(
-                    $"No resource group found for source registry '{Options.SourceRegistry}'. " +
-                    $"Ensure the registry is configured in the publish configuration.");
-            }
-
-            return auth.ResourceGroup;
-        }
-
         public override async Task ExecuteAsync()
         {
             LoggerService.WriteHeading("COPYING IMAGES");
@@ -84,8 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                GetSourceSubscription(), GetSourceResourceGroup(), Acr.Parse(Options.SourceRegistry).Name);
+            ResourceIdentifier sourceRegistryResource = _publishConfig.GetRegistryResource(Options.SourceRegistry);
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>
@@ -97,7 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                                 Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                                srcResourceId: resourceId)))
+                                srcResourceId: sourceRegistryResource)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
@@ -105,8 +72,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<(string SourceTag, string DestinationTag)> GetTagInfos(RepoInfo repo, PlatformInfo platform)
         {
-            List<(string SourceTag, string DestinationTag)> tags =
-                new List<(string SourceTag, string DestinationTag)>();
+            var tags = new List<(string SourceTag, string DestinationTag)>();
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value

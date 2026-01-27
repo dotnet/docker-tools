@@ -101,13 +101,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            SubscriptionId,
-                            ResourceGroup,
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
                             expectedTagInfo.Registry,
-                            null,
                             It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
                             false));
             }
@@ -178,13 +175,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            SubscriptionId,
-                            ResourceGroup,
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
                             expectedTagInfo.Registry,
-                            null,
                             It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
                             false));
             }

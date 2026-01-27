@@ -3595,13 +3595,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
-                        command.Options.Subscription,
-                        command.Options.ResourceGroup,
                         destTagNames,
                         destRegistryName,
                         srcTagName,
                         srcRegistryName,
-                        null,
                         It.IsAny<ContainerRegistryImportSourceCredentials>(),
                         false));
         }

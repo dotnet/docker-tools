@@ -124,13 +124,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            SubscriptionId,
-                            ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(SubscriptionId, ResourceGroup, SourceRegistry),
                             null,
                             false));
                 }
@@ -228,13 +225,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            SubscriptionId,
-                            ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(SubscriptionId, ResourceGroup, SourceRegistry),
                             null,
                             false));
                 }
@@ -344,13 +338,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            SubscriptionId,
-                            ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(SubscriptionId, ResourceGroup, SourceRegistry),
                             null,
                             false));
             }
@@ -460,13 +451,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            SubscriptionId,
-                            ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             It.IsAny<string>(),
                             null,
-                            ContainerRegistryResource.CreateResourceIdentifier(SubscriptionId, ResourceGroup, SourceRegistry),
                             null,
                             false));
             }

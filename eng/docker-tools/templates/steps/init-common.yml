@@ -16,11 +16,6 @@ parameters:
   type: boolean
   default: true
 
-# Whether to set up the Test Runner environment
-- name: setupTestRunner
-  type: boolean
-  default: false
-
 # Whether to delete existing Docker images
 - name: cleanupDocker
   type: boolean
@@ -250,19 +245,3 @@ steps:
       publishConfig: ${{ parameters.publishConfig }}
       condition: ${{ parameters.condition }}
       customInitSteps: ${{ parameters.customInitSteps }}
-
-# Test Runner Setup (Linux only)
-# Like ImageBuilder, the test runner setup it uses the "withrepo" pattern to
-# include the repo source code (test projects) in the container.
-# This is Linux-only because Windows image tests run natively, same as ImageBuilder.
-- ${{ if and(eq(parameters.setupTestRunner, true), eq(parameters.dockerClientOS, 'linux')) }}:
-  - powershell: $(engDockerToolsPath)/Pull-Image.ps1 $(imageNames.testrunner)
-    displayName: Pull Test Runner
-    condition: and(succeeded(), ${{ parameters.condition }})
-  - script: >
-      docker build
-      -t $(imageNames.testRunner.withrepo)
-      --build-arg IMAGE=$(imageNames.testrunner)
-      -f $(engDockerToolsPath)/Dockerfile.WithRepo .
-    displayName: Build Test Runner Image
-    condition: and(succeeded(), ${{ parameters.condition }})

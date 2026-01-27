@@ -2,6 +2,7 @@ parameters:
   pool: {}
   internalProjectName: null
   publicProjectName: null
+  customInitSteps: []
 
 jobs:
 - job: Build
@@ -16,6 +17,7 @@ jobs:
   - template: /eng/docker-tools/templates/steps/init-common.yml@self
     parameters:
       dockerClientOS: linux
+      customInitSteps: ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self
     parameters:
       targetPath: $(Build.ArtifactStagingDirectory)

@@ -221,6 +221,7 @@ stages:
       pool: ${{ parameters.linuxAmd64Pool }}
       internalProjectName: ${{ parameters.internalProjectName }}
       publicProjectName: ${{ parameters.publicProjectName }}
+      customInitSteps: ${{ parameters.customInitSteps }}
 
 ################################################################################
 # Test Images
@@ -249,7 +250,9 @@ stages:
         isTestStage: true
         internalProjectName: ${{ parameters.internalProjectName }}
         publicProjectName: ${{ parameters.publicProjectName }}
-        customInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
+        customInitSteps:
+        - ${{ parameters.customInitSteps }}
+        - ${{ parameters.customGenerateMatrixInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         versionsRepoRef: ${{ parameters.versionsRepoRef }}
     - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self

@@ -9,9 +9,6 @@ applyTo: "**/*.cs"
 For all new C# code:
 
 - Use file-scoped namespaces.
-- Use nullable reference types
-    - Use `<Nullable>enable</Nullable>` in project files for new projects.
-    - When adding code to existing files without nullable reference types enabled, add `#nullable enable` followed by `#nullable restore` in source files.
 - Use collection expresions - write `[1, 2, 3]` and not `new List<int> { 1, 2, 3 }`.
 - Use `var` for local variable declarations.
 - Use switch expressions and pattern matching.

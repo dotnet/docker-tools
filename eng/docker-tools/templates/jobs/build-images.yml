@@ -4,7 +4,12 @@ parameters:
   matrix: {}
   dockerClientOS: null
   buildJobTimeout: 60
+  # Custom steps to set up ImageBuilder instead of pulling from MCR (e.g., bootstrap from source).
+  # Runs before ImageBuilder pull. If non-empty, skips the default ImageBuilder pull.
   customInitSteps: []
+  # Custom steps that run after ImageBuilder is set up but before the build starts.
+  # Use for build-specific initialization (e.g., setting variables, additional setup).
+  customBuildInitSteps: []
   publishConfig: null
   versionsRepoRef: ""
   noCache: false
@@ -36,6 +41,7 @@ jobs:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
       cleanupDocker: true
       customInitSteps: ${{ parameters.customInitSteps }}
+  - ${{ parameters.customBuildInitSteps }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self
     parameters:
       publicSourceBranch: $(publicSourceBranch)

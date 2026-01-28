@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ICopyImageService copyImageService,
             ILoggerService loggerService,
             IOptions<PublishConfiguration> publishConfigOptions)
-            : base(copyImageService, loggerService, publishConfigOptions)
+            : base(copyImageService, loggerService)
         {
             _publishConfig = publishConfigOptions.Value;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>

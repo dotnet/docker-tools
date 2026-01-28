@@ -7,26 +7,20 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Options;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyBaseImagesCommand : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>
+    public class CopyBaseImagesCommand(
+        ICopyImageService copyImageService,
+        ILoggerService loggerService,
+        IGitService gitService)
+        : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
+            copyImageService,
+            loggerService)
     {
-        private readonly IGitService _gitService;
-
-        public CopyBaseImagesCommand(
-            ICopyImageService copyImageService,
-            ILoggerService loggerService,
-            IGitService gitService,
-            IOptions<PublishConfiguration> publishConfigOptions)
-            : base(copyImageService, loggerService, publishConfigOptions)
-        {
-            _gitService = gitService;
-        }
+        private readonly IGitService _gitService = gitService;
 
         protected override string Description => "Copies external base images from their source registry to ACR";
 

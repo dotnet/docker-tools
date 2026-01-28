@@ -24,19 +24,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private const string ResourceGroup = "my resource group";
         private const string DestinationRegistry = "mcr.microsoft.com";
 
-        private static PublishConfiguration CreatePublishConfig() => new()
-        {
-            RegistryAuthentication =
-            [
-                new RegistryAuthentication
-                {
-                    Server = DestinationRegistry,
-                    Subscription = SubscriptionId,
-                    ResourceGroup = ResourceGroup
-                }
-            ]
-        };
-
         [Fact]
         public async Task MultipleBaseTags()
         {
@@ -46,8 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CopyBaseImagesCommand command = new(
                 copyImageServiceMock.Object,
                 Mock.Of<ILoggerService>(),
-                Mock.Of<IGitService>(),
-                CreateOptionsMock(CreatePublishConfig()));
+                Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.RepoPrefix = "custom-repo/";
             command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));
@@ -135,8 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CopyBaseImagesCommand command = new(
                 copyImageServiceMock.Object,
                 Mock.Of<ILoggerService>(),
-                Mock.Of<IGitService>(),
-                CreateOptionsMock(CreatePublishConfig()));
+                Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.RepoPrefix = "custom-repo/";
             command.Options.CredentialsOptions.Credentials.Add("docker.io", new RegistryCredentials("user", "pass"));

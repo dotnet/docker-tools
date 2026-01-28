@@ -5,27 +5,20 @@
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
-using Microsoft.DotNet.ImageBuilder.Configuration;
-using Microsoft.Extensions.Options;
 
 #nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
-    where TOptions : CopyImagesOptions, new()
-    where TOptionsBuilder : CopyImagesOptionsBuilder, new()
+public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
+    ICopyImageService copyImageService,
+    ILoggerService loggerService)
+    : ManifestCommand<TOptions, TOptionsBuilder>
+        where TOptions : CopyImagesOptions, new()
+        where TOptionsBuilder : CopyImagesOptionsBuilder, new()
 {
-    private readonly ICopyImageService _copyImageService;
+    private readonly ICopyImageService _copyImageService = copyImageService;
 
-    public CopyImagesCommand(
-        ICopyImageService copyImageService,
-        ILoggerService loggerService)
-    {
-        LoggerService = loggerService;
-        _copyImageService = copyImageService;
-    }
-
-    protected ILoggerService LoggerService { get; }
+    protected ILoggerService LoggerService { get; } = loggerService;
 
     protected Task ImportImageAsync(
         string destTagName,

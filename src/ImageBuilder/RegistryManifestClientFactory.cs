@@ -21,12 +21,12 @@ public class RegistryManifestClientFactory(
     {
         RegistryInfo registryInfo = _registryResolver.Resolve(registry, credsHost);
 
-        if (registryInfo.OwnedAcr is not null)
+        if (registryInfo.RegistryAuthentication?.ServiceConnection is not null)
         {
-            // If we're here, we know we own the ACR and have a service
+            // If we're here, we have authentication configured with a service
             // connection we can use for authentication.
             // Create using Azure SDK.
-            var acr = registryInfo.OwnedAcr.ToAcr()!;
+            var acr = Acr.Parse(registryInfo.EffectiveRegistry);
             return _acrContentClientFactory.Create(acr, repo);
         }
 

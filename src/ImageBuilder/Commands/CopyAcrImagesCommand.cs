@@ -7,9 +7,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure.Core;
-using Azure.ResourceManager.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -48,9 +45,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                Options.Subscription, Options.ResourceGroup, Acr.Parse(Options.SourceRegistry).Name);
-
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>
                     repo.FilteredImages
@@ -61,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                                 Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                                srcResourceId: resourceId)))
+                                srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
@@ -69,8 +63,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<(string SourceTag, string DestinationTag)> GetTagInfos(RepoInfo repo, PlatformInfo platform)
         {
-            List<(string SourceTag, string DestinationTag)> tags =
-                new List<(string SourceTag, string DestinationTag)>();
+            var tags = new List<(string SourceTag, string DestinationTag)>();
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value

@@ -22,15 +22,15 @@ public class AcrClientFactory(
 
     public IAcrClient Create(string acrName)
     {
-        var acrConfig = _publishConfig.FindOwnedAcrByName(acrName);
-        if (acrConfig?.ServiceConnection is null)
+        var auth = _publishConfig.FindRegistryAuthentication(acrName);
+        if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
                 $"No service connection found for ACR '{acrName}'. " +
                 $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
         }
 
-        TokenCredential credential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
+        TokenCredential credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
         return new AcrClientWrapper(new ContainerRegistryClient(DockerHelper.GetAcrUri(acrName), credential));
     }
 }

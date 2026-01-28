@@ -28,16 +28,16 @@ public class RegistryResolver(IOptions<PublishConfiguration> publishConfigOption
             // passed in via the publish configuration.
             return new RegistryInfo(
                 EffectiveRegistry: DockerHelper.DockerHubApiRegistry,
-                OwnedAcr: null,
+                RegistryAuthentication: null,
                 ExplicitCredentials: explicitCreds);
         }
 
-        // Look up the ACR in the publish configuration
-        var ownedAcr = _publishConfig.FindOwnedAcrByName(registry);
+        // Look up the authentication in the publish configuration
+        var auth = _publishConfig.FindRegistryAuthentication(registry);
 
         return new RegistryInfo(
             EffectiveRegistry: registry,
-            OwnedAcr: ownedAcr,
+            RegistryAuthentication: auth,
             ExplicitCredentials: explicitCreds);
     }
 }

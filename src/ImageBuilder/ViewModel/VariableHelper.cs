@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             // Include any variables exclusively defined in the options
             if (Options.Variables is not null)
             {
-                foreach (KeyValuePair<string, string?> kvp in Options.Variables)
+                foreach (KeyValuePair<string, string> kvp in Options.Variables)
                 {
                     if (!ResolvedVariables.ContainsKey(kvp.Key))
                     {

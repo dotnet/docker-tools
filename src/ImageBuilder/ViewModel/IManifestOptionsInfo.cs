@@ -10,8 +10,8 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
     public interface IManifestOptionsInfo : IOptions
     {
         string Manifest { get; }
-        string RegistryOverride { get; }
-        string RepoPrefix { get; }
+        string? RegistryOverride { get; }
+        string? RepoPrefix { get; }
         IDictionary<string, string> Variables { get; }
 
         ManifestFilter GetManifestFilter();

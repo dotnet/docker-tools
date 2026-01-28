@@ -6,6 +6,10 @@ parameters:
   default: 'eng/renovate.json'
 
 # GitHub repository to run Renovate against, in the format 'owner/repo'.
+# This could technically be any repo but convention is to target the same
+# repo that contains the calling pipeline. The Renovate config file would
+# be co-located with the pipeline's repo and, in most cases, the config
+# file is specific to the repo being targeted.
 - name: gitHubRepo
   type: string
 

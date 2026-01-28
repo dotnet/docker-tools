@@ -48,8 +48,6 @@ jobs:
       value: 'always'
     ${{ else }}:
       value: ''
-  - name: logDirectory
-    value: $(Build.ArtifactStagingDirectory)/log
   pool:
     image: Azure-Linux-3-Amd64
     name: NetCore1ESPool-Internal
@@ -61,7 +59,7 @@ jobs:
     - output: pipelineArtifact
       displayName: Publish Renovate Log
       condition: succeededOrFailed()
-      targetPath: $(Build.ArtifactStagingDirectory)/log
+      targetPath: $(Build.ArtifactStagingDirectory)
       artifactName: $(Agent.JobName)_Logs_Attempt$(System.JobAttempt)
       sbomEnabled: false
 
@@ -69,9 +67,11 @@ jobs:
   - checkout: self
     fetchDepth: 1
   
-  - script: mkdir -p $(logDirectory) && chmod 770 $(logDirectory)
-    displayName: Create log directory
-  
+  # Allow write permissions for all users. This allows the Renovate log files to be written
+  # to this directory by the Renovate container.
+  - script: chmod a+w $(Build.ArtifactStagingDirectory)
+    displayName: Set permissions for log directory
+
   - script: >
       docker run
       --rm
@@ -79,7 +79,7 @@ jobs:
       --env LOG_FILE_LEVEL=debug
       --env LOG_FILE=/log/renovate-config-validator.json
       --volume $(Build.SourcesDirectory)/${{parameters.renovateConfigPath}}:/config/renovate.json
-      --volume $(logDirectory):/log
+      --volume $(Build.ArtifactStagingDirectory):/log
       ghcr.io/renovatebot/renovate:$(renovateVersion)
       renovate-config-validator /config/renovate.json
     displayName: Validate Renovate config
@@ -98,7 +98,7 @@ jobs:
       --env LOG_FILE="/log/renovate-log.json"
       --env RENOVATE_CONFIG_FILE=/config/renovate.json
       --volume $(Build.SourcesDirectory)/${{parameters.renovateConfigPath}}:/config/renovate.json
-      --volume $(logDirectory):/log
+      --volume $(Build.ArtifactStagingDirectory):/log
       --rm
       ghcr.io/renovatebot/renovate:$(renovateVersion)
     displayName: Run Renovate
@@ -112,8 +112,8 @@ jobs:
   
   - script: |
       echo "PRs created by Renovate:"
-      if [ -s "$(logDirectory)/renovate-log.json" ]; then
-        if ! jq -r 'select(.msg == "PR created" and .pr != null) | "https://github.com/\(.repository)/pull/\(.pr)"' "$(logDirectory)/renovate-log.json" | sort -u; then
+      if [ -s "$(Build.ArtifactStagingDirectory)/renovate-log.json" ]; then
+        if ! jq -r 'select(.msg == "PR created" and .pr != null) | "https://github.com/\(.repository)/pull/\(.pr)"' "$(Build.ArtifactStagingDirectory)/renovate-log.json" | sort -u; then
           echo "Failed to parse Renovate log file with jq."
         fi
       else

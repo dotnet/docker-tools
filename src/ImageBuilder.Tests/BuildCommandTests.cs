@@ -762,8 +762,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
 
 
@@ -1208,8 +1206,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
             command.Options.NoCache = noCache;
             command.Options.FilterOptions.Dockerfile.Paths = pathArgs;
 
@@ -1418,8 +1414,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
             const string ProductVersion = "1.0.1";
 
@@ -1731,8 +1725,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
             const string ProductVersion = "1.0.1";
 
@@ -2469,8 +2461,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
 
 
@@ -2693,8 +2683,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
 
@@ -3005,8 +2993,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoPrefix = SourceRepoPrefix;
             command.Options.RegistryOverride = RegistryOverride;
             command.Options.RepoPrefix = RepoPrefix;
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
 
 

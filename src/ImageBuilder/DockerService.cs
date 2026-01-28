@@ -8,7 +8,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class DockerService : IDockerService
@@ -81,4 +80,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

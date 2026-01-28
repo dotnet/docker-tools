@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class TrimUnchangedPlatformsOptions : Options
@@ -27,4 +26,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 );
     }
 }
-#nullable disable

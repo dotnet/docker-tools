@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class DockerHelper
@@ -262,4 +261,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

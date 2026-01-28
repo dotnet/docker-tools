@@ -7,7 +7,6 @@ using System.CommandLine;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 
-#nullable enable
 public class GenerateSigningPayloadsOptions : Options
 {
     public RegistryOptions RegistryOptions { get; set; } = new();

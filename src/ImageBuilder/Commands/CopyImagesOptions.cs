@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.CommandLine;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class CopyImagesOptions : ManifestOptions, IFilterableOptions

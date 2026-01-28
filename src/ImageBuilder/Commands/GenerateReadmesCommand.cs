@@ -15,7 +15,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class GenerateReadmesCommand(IEnvironmentService environmentService)

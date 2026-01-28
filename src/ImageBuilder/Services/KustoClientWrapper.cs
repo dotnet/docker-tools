@@ -12,7 +12,6 @@ using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
 
-#nullable enable
 
 namespace Microsoft.DotNet.ImageBuilder.Services
 {

@@ -6,7 +6,6 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface ILifecycleMetadataService

@@ -9,7 +9,6 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-#nullable enable
 public class RegistryOptions
 {
     public string Registry { get; set; } = string.Empty;

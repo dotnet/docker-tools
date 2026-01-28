@@ -5,7 +5,6 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 /// <summary>
 /// Represents the result of resolving a registry, including the effective registry endpoint,

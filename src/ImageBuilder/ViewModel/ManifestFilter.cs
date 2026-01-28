@@ -7,7 +7,6 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestFilter
@@ -88,4 +87,3 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
     }
 }
-#nullable disable

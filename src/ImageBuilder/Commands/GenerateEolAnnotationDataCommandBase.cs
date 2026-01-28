@@ -14,7 +14,6 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-#nullable enable
 
 public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBuilder>
     : Command<TOptions, TOptionsBuilder>

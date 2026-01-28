@@ -9,7 +9,6 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class ManifestOptions : Options, IManifestOptionsInfo

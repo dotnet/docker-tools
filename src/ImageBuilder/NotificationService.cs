@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class NotificationService : INotificationService

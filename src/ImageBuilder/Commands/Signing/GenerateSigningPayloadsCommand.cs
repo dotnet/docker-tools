@@ -14,7 +14,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 
-#nullable enable
 
 public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOptions, GenerateSigningPayloadsOptionsBuilder>
 {

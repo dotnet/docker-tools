@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IDockerService
@@ -42,4 +41,3 @@ namespace Microsoft.DotNet.ImageBuilder
         DateTime GetCreatedDate(string image, bool isDryRun);
     }
 }
-#nullable disable

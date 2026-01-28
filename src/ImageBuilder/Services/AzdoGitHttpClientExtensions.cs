@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public static class AzdoGitHttpClientExtensions
@@ -87,4 +86,3 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         }
     }
 }
-#nullable disable

@@ -17,7 +17,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotificationOptions, PostPublishNotificationOptionsBuilder>
@@ -331,4 +330,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
     }
 }
-#nullable disable

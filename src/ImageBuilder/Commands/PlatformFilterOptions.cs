@@ -7,7 +7,6 @@ using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class PlatformFilterOptions

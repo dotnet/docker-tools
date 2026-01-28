@@ -9,7 +9,6 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class McrStatusClient : IMcrStatusClient

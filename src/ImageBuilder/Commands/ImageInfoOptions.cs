@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class ImageInfoOptions : ManifestOptions
@@ -29,4 +28,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     });
     }
 }
-#nullable disable

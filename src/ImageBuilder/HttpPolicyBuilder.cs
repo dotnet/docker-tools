@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class HttpPolicyBuilder
@@ -82,4 +81,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

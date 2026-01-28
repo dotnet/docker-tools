@@ -3,7 +3,6 @@
   <PropertyGroup Label="Project Settings">
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>disable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Label="Build Settings">

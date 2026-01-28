@@ -9,7 +9,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Newtonsoft.Json;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 public class LifecycleMetadataService : ILifecycleMetadataService
 {

@@ -6,7 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 /// <summary>
 /// Implementation of <see cref="IRegistryResolver"/> that centralizes the logic

@@ -5,7 +5,6 @@
 using System;
 using Newtonsoft.Json;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public record EolDigestData

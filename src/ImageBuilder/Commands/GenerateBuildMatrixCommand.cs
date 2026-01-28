@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixOptionsBuilder>
@@ -630,4 +629,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable disable

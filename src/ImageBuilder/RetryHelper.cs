@@ -7,7 +7,6 @@ using Polly;
 using Polly.Contrib.WaitAndRetry;
 using Polly.Retry;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class RetryHelper
@@ -41,4 +40,3 @@ namespace Microsoft.DotNet.ImageBuilder
                 $"Retry {retryCount}/{maxRetries}, retrying in {timeToNextRetry.TotalSeconds} seconds...");
     }
 }
-#nullable disable

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ImageInfo
@@ -69,4 +68,3 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
     }
 }
-#nullable disable

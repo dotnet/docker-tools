@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class VariableHelper
@@ -135,4 +134,3 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
     }
 }
-#nullable disable

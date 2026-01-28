@@ -9,7 +9,6 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public class RegistryCredentialsProvider(
     IHttpClientProvider httpClientProvider,
     IAzureTokenCredentialProvider tokenCredentialProvider,

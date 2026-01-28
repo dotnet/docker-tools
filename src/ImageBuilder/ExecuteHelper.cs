@@ -9,7 +9,6 @@ using System.Text;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ExecuteHelper
@@ -167,4 +166,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

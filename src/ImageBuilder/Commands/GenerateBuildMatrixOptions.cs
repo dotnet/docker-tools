@@ -8,7 +8,6 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixOptions : ManifestOptions, IFilterableOptions

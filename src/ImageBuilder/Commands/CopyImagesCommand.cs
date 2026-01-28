@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public abstract class CopyImagesCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>

@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public abstract class GenerateArtifactsOptions : ManifestOptions
@@ -36,4 +35,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 );
     }
 }
-#nullable disable

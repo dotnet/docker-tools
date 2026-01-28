@@ -18,7 +18,6 @@ using Moq;
 using Xunit;
 using Xunit.Abstractions;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 public sealed class GenerateSigningPayloadsCommandTests : IDisposable

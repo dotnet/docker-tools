@@ -61,10 +61,12 @@ public class CopyImageService : ICopyImageService
 
         Acr destAcr = Acr.Parse(destAcrName);
 
+        // Azure ACR import only supports one source identifier. Use ResourceId for ACR-to-ACR
+        // imports (same tenant), or RegistryAddress for external registries.
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
             ResourceId = srcResourceId,
-            RegistryAddress = srcRegistryName,
+            RegistryAddress = srcResourceId is null ? srcRegistryName : null,
             Credentials = sourceCredentials
         };
 

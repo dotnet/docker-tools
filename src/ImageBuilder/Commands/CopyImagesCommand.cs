@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
-using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
 
 #nullable enable
@@ -25,7 +24,6 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
         string destRegistryName,
         string srcTagName,
         string? srcRegistryName = null,
-        ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
             _copyImageService.ImportImageAsync(
                 destTagNames: [destTagName],

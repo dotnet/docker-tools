@@ -6,16 +6,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure.ResourceManager.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
@@ -23,29 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class CopyAcrImagesCommandTests
     {
-        private const string SubscriptionId = "my subscription";
-        private const string ResourceGroup = "my resource group";
         private const string SourceRegistry = "my.custom.registry";
         private const string DestinationRegistry = "mcr.microsoft.com";
-
-        private static PublishConfiguration CreatePublishConfig() => new()
-        {
-            RegistryAuthentication =
-            [
-                new RegistryAuthentication
-                {
-                    Server = SourceRegistry,
-                    Subscription = SubscriptionId,
-                    ResourceGroup = ResourceGroup
-                },
-                new RegistryAuthentication
-                {
-                    Server = DestinationRegistry,
-                    Subscription = SubscriptionId,
-                    ResourceGroup = ResourceGroup
-                }
-            ]
-        };
 
         /// <summary>
         /// Verifies that image tags associated with a custom Dockerfile will by copied to ACR correctly.
@@ -59,8 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 CopyAcrImagesCommand command = new(
                     copyImageServiceMock.Object,
-                    Mock.Of<ILoggerService>(),
-                    CreateOptionsMock(CreatePublishConfig()));
+                    Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
                 command.Options.SourceRegistry = SourceRegistry;
@@ -127,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            null,
+                            SourceRegistry,
                             null,
                             false));
                 }
@@ -148,8 +123,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 var command = new CopyAcrImagesCommand(
                     copyImageServiceMock.Object,
-                    Mock.Of<ILoggerService>(),
-                    CreateOptionsMock(CreatePublishConfig()));
+                    Mock.Of<ILoggerService>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
                 command.Options.SourceRegistry = SourceRegistry;
@@ -228,7 +202,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            null,
+                            SourceRegistry,
                             null,
                             false));
                 }
@@ -249,8 +223,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var command = new CopyAcrImagesCommand(
                 copyImageServiceMock.Object,
-                Mock.Of<ILoggerService>(),
-                CreateOptionsMock(CreatePublishConfig()));
+                Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
@@ -341,7 +314,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            null,
+                            SourceRegistry,
                             null,
                             false));
             }
@@ -361,8 +334,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var command = new CopyAcrImagesCommand(
                 copyImageServiceMock.Object,
-                Mock.Of<ILoggerService>(),
-                CreateOptionsMock(CreatePublishConfig()));
+                Mock.Of<ILoggerService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
@@ -454,7 +426,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             It.IsAny<string>(),
-                            null,
+                            SourceRegistry,
                             null,
                             false));
             }

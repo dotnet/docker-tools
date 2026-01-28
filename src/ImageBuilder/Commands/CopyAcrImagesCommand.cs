@@ -7,27 +7,20 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure.Core;
-using Azure.ResourceManager.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions, CopyAcrImagesOptionsBuilder>
     {
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
-        private readonly PublishConfiguration _publishConfig;
 
         public CopyAcrImagesCommand(
             ICopyImageService copyImageService,
-            ILoggerService loggerService,
-            IOptions<PublishConfiguration> publishConfigOptions)
+            ILoggerService loggerService)
             : base(copyImageService, loggerService)
         {
-            _publishConfig = publishConfigOptions.Value;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!string.IsNullOrEmpty(Options.ImageInfoPath))
@@ -52,8 +45,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            ResourceIdentifier sourceRegistryResource = _publishConfig.GetRegistryResource(Options.SourceRegistry);
-
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>
                     repo.FilteredImages
@@ -64,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                                 Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                                srcResourceId: sourceRegistryResource)))
+                                srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);

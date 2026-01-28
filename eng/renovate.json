@@ -13,7 +13,9 @@
   // https://docs.renovatebot.com/key-concepts/presets/
   "extends": [
     // Enable detection of "# renovate: datasource=... depName=..." comments
-    // in Dockerfiles to track ARG/ENV version variables
+    // in Dockerfiles to track ARG/ENV version variables. Variable name
+    // must end with "_VERSION" to be detected by this preset.
+    // https://docs.renovatebot.com/presets-customManagers/#custommanagersdockerfileversions
     "customManagers:dockerfileVersions"
   ]
 }

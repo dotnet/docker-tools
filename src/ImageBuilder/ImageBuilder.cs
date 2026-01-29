@@ -49,8 +49,9 @@ public static class ImageBuilder
             builder.Services.AddSingleton<INotificationService, NotificationService>();
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<IOrasClient, OrasClient>();
-            builder.Services.AddSingleton<Oras.IOrasDescriptorService, Oras.OrasDotNetDescriptorService>();
-            builder.Services.AddSingleton<Oras.IOrasSignatureService, Oras.OrasDotNetSignatureService>();
+            builder.Services.AddSingleton<Oras.OrasDotNetService>();
+            builder.Services.AddSingleton<Oras.IOrasDescriptorService>(sp => sp.GetRequiredService<Oras.OrasDotNetService>());
+            builder.Services.AddSingleton<Oras.IOrasSignatureService>(sp => sp.GetRequiredService<Oras.OrasDotNetService>());
             builder.Services.AddSingleton<IProcessService, ProcessService>();
             builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();

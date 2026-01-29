@@ -10,6 +10,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
@@ -19,7 +21,8 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 public class EsrpSigningService(
     IProcessService processService,
     ILoggerService logger,
-    IEnvironmentService environmentService) : IEsrpSigningService
+    IEnvironmentService environmentService,
+    IOptions<PublishConfiguration> publishConfigOptions) : IEsrpSigningService
 {
     /// <summary>
     /// Environment variable set by MicroBuild plugin pointing to the signing tool location.
@@ -34,6 +37,7 @@ public class EsrpSigningService(
     private readonly IProcessService _processService = processService;
     private readonly ILoggerService _logger = logger;
     private readonly IEnvironmentService _environmentService = environmentService;
+    private readonly SigningConfiguration? _signingConfig = publishConfigOptions.Value.Signing;
 
     /// <inheritdoc/>
     public async Task SignFilesAsync(
@@ -48,7 +52,8 @@ public class EsrpSigningService(
             return;
         }
 
-        _logger.WriteMessage($"Signing {files.Length} files with certificate {signingKeyCode}");
+        var signType = _signingConfig?.SignType ?? "test";
+        _logger.WriteMessage($"Signing {files.Length} files with certificate {signingKeyCode} (signType: {signType})");
 
         var mbsignAppFolder = _environmentService.GetEnvironmentVariable(MBSignAppFolderEnv)
             ?? throw new InvalidOperationException(
@@ -61,7 +66,7 @@ public class EsrpSigningService(
             await File.WriteAllTextAsync(signListTempPath, signListJson, cancellationToken);
 
             var ddSignFilesPath = Path.Combine(mbsignAppFolder, DDSignFilesDllName);
-            var args = $"--roll-forward major \"{ddSignFilesPath}\" -- /filelist:\"{signListTempPath}\" /signType:real";
+            var args = $"--roll-forward major \"{ddSignFilesPath}\" -- /filelist:\"{signListTempPath}\" /signType:{signType}";
 
             // IProcessService.Execute is synchronous, wrap in Task.Run
             await Task.Run(() =>

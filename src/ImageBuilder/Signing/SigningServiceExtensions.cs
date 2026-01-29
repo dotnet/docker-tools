@@ -20,6 +20,7 @@ public static class SigningServiceExtensions
         builder.Services.TryAddSingleton<IEsrpSigningService, EsrpSigningService>();
         builder.Services.TryAddSingleton<IPayloadSigningService, PayloadSigningService>();
         builder.Services.TryAddSingleton<IBulkImageSigningService, BulkImageSigningService>();
+        builder.Services.TryAddSingleton<ISigningRequestGenerator, SigningRequestGenerator>();
 
         return builder;
     }

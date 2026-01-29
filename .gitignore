@@ -26,6 +26,7 @@ msbuild.wrn
 
 # .NET and tools directories
 .dotnet/
+.nuget/
 .packages/
 .tools/
 

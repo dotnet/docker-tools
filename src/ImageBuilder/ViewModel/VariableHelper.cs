@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class VariableHelper
@@ -54,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
             // Include any variables exclusively defined in the options
             if (Options.Variables is not null)
             {
-                foreach (KeyValuePair<string, string?> kvp in Options.Variables)
+                foreach (KeyValuePair<string, string> kvp in Options.Variables)
                 {
                     if (!ResolvedVariables.ContainsKey(kvp.Key))
                     {
@@ -135,4 +134,3 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
     }
 }
-#nullable disable

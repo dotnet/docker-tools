@@ -3,5 +3,4 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public record RegistryCredentials(string Username, string Password);

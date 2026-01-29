@@ -10,7 +10,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IImageCacheService
 {
     bool HasAnyCachedPlatforms { get; }

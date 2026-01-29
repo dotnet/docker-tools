@@ -4,7 +4,6 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IAcrClientFactory
 {
     IAcrClient Create(string acrName);

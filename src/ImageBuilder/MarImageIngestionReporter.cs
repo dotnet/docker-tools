@@ -10,7 +10,6 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 public interface IMarImageIngestionReporter
 {

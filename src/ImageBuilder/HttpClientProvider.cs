@@ -6,7 +6,6 @@ using System;
 using System.Net.Http;
 using System.Threading;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     internal class HttpClientProvider : IHttpClientProvider
@@ -52,4 +51,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

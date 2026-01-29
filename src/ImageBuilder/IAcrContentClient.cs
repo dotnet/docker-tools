@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IAcrContentClient : IRegistryManifestClient
 {
     public string RepositoryName { get; }

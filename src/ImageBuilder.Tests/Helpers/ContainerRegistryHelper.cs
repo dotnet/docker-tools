@@ -13,7 +13,6 @@ using Moq;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 
-#nullable enable
 internal static class ContainerRegistryHelper
 {
     public static ContainerRepository CreateContainerRepository(

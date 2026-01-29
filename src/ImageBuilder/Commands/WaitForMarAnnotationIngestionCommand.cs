@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMarAnnotationIngestionCommand : Command<WaitForMarAnnotationIngestionOptions, WaitForMarAnnotationIngestionOptionsBuilder>

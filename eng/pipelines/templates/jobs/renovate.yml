@@ -114,10 +114,12 @@ jobs:
       echo "PRs created by Renovate:"
       if [ -s "$(Build.ArtifactStagingDirectory)/renovate-log.json" ]; then
         if ! jq -r 'select(.msg == "PR created" and .pr != null) | "https://github.com/\(.repository)/pull/\(.pr)"' "$(Build.ArtifactStagingDirectory)/renovate-log.json" | sort -u; then
-          echo "Failed to parse Renovate log file with jq."
+          echo "##vso[task.logissue type=warning]Failed to parse Renovate log file with jq."
+          echo "##vso[task.complete result=SucceededWithIssues]"
         fi
       else
-        echo "No Renovate log file found or file is empty."
+        echo "##vso[task.logissue type=warning]No Renovate log file found or file is empty."
+        echo "##vso[task.complete result=SucceededWithIssues]"
       fi
     displayName: List created PRs
     condition: and(succeededOrFailed(), eq('${{ parameters.dryRun }}', false))

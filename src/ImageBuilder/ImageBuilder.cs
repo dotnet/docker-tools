@@ -8,6 +8,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
@@ -56,6 +57,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
             builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
+            builder.AddSigningServices();
 
             // Commands
             builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();

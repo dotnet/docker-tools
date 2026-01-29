@@ -10,6 +10,11 @@ namespace Microsoft.DotNet.ImageBuilder.Configuration;
 public sealed record SigningConfiguration
 {
     /// <summary>
+    /// Whether signing is enabled. Set via pipeline variable.
+    /// </summary>
+    public bool Enabled { get; set; }
+
+    /// <summary>
     /// Certificate ID used by DDSignFiles.dll for signing container images.
     /// </summary>
     public int ImageSigningKeyCode { get; set; }

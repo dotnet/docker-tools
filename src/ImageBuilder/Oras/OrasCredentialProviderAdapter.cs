@@ -11,23 +11,17 @@ namespace Microsoft.DotNet.ImageBuilder.Oras;
 /// <summary>
 /// Adapts <see cref="IRegistryCredentialsProvider"/> to the ORAS <see cref="ICredentialProvider"/> interface.
 /// </summary>
-public class OrasCredentialProviderAdapter : ICredentialProvider
+/// <remarks>
+/// Creates a new adapter instance.
+/// </remarks>
+/// <param name="credentialsProvider">The ImageBuilder credentials provider to wrap.</param>
+/// <param name="credentialsHost">Optional credentials host for registry-specific credential options.</param>
+public class OrasCredentialProviderAdapter(
+    IRegistryCredentialsProvider credentialsProvider,
+    IRegistryCredentialsHost? credentialsHost = null) : ICredentialProvider
 {
-    private readonly IRegistryCredentialsProvider _credentialsProvider;
-    private readonly IRegistryCredentialsHost? _credentialsHost;
-
-    /// <summary>
-    /// Creates a new adapter instance.
-    /// </summary>
-    /// <param name="credentialsProvider">The ImageBuilder credentials provider to wrap.</param>
-    /// <param name="credentialsHost">Optional credentials host for registry-specific credential options.</param>
-    public OrasCredentialProviderAdapter(
-        IRegistryCredentialsProvider credentialsProvider,
-        IRegistryCredentialsHost? credentialsHost = null)
-    {
-        _credentialsProvider = credentialsProvider;
-        _credentialsHost = credentialsHost;
-    }
+    private readonly IRegistryCredentialsProvider _credentialsProvider = credentialsProvider;
+    private readonly IRegistryCredentialsHost? _credentialsHost = credentialsHost;
 
     /// <inheritdoc/>
     public async Task<Credential> ResolveCredentialAsync(string hostname, CancellationToken cancellationToken)

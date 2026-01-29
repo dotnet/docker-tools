@@ -16,9 +16,14 @@ using OrasProject.Oras.Registry.Remote.Auth;
 namespace Microsoft.DotNet.ImageBuilder.Oras;
 
 /// <summary>
-/// ORAS .NET library implementation for pushing Notary v2 signatures.
+/// ORAS .NET library implementation for resolving OCI descriptors and pushing Notary v2 signatures.
 /// </summary>
-public class OrasDotNetSignatureService : IOrasSignatureService
+public class OrasDotNetService(
+    IRegistryCredentialsProvider credentialsProvider,
+    IHttpClientProvider httpClientProvider,
+    IMemoryCache cache,
+    ILoggerService logger,
+    IRegistryCredentialsHost? credentialsHost = null) : IOrasDescriptorService, IOrasSignatureService
 {
     /// <summary>
     /// OCI artifact type for Notary v2 signatures.
@@ -30,24 +35,17 @@ public class OrasDotNetSignatureService : IOrasSignatureService
     /// </summary>
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
-    private readonly IRegistryCredentialsProvider _credentialsProvider;
-    private readonly IRegistryCredentialsHost? _credentialsHost;
-    private readonly IHttpClientProvider _httpClientProvider;
-    private readonly IMemoryCache _cache;
-    private readonly ILoggerService _logger;
+    private readonly IRegistryCredentialsProvider _credentialsProvider = credentialsProvider;
+    private readonly IRegistryCredentialsHost? _credentialsHost = credentialsHost;
+    private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
+    private readonly IMemoryCache _cache = cache;
+    private readonly ILoggerService _logger = logger;
 
-    public OrasDotNetSignatureService(
-        IRegistryCredentialsProvider credentialsProvider,
-        IHttpClientProvider httpClientProvider,
-        IMemoryCache cache,
-        ILoggerService logger,
-        IRegistryCredentialsHost? credentialsHost = null)
+    /// <inheritdoc/>
+    public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
     {
-        _credentialsProvider = credentialsProvider;
-        _httpClientProvider = httpClientProvider;
-        _cache = cache;
-        _logger = logger;
-        _credentialsHost = credentialsHost;
+        var repo = CreateRepository(reference);
+        return await repo.ResolveAsync(reference, cancellationToken);
     }
 
     /// <inheritdoc/>
@@ -96,10 +94,13 @@ public class OrasDotNetSignatureService : IOrasSignatureService
             credentialProvider,
             new Cache(_cache));
 
-        return new Repository(new RepositoryOptions
+        var repositoryOptions = new RepositoryOptions
         {
             Reference = parsedRef,
             Client = authClient
-        });
+        };
+
+        var repository = new Repository(repositoryOptions);
+        return repository;
     }
 }

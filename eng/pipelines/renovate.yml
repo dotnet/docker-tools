@@ -2,6 +2,7 @@ trigger: none
 pr: none
 
 schedules:
+# Once per day at 3 AM UTC
 - cron: '0 3 * * *'
   displayName: Nightly Renovate run
   branches:

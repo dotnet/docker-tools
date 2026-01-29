@@ -1,6 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -31,6 +31,11 @@ public sealed record PublishConfiguration
     /// enabled so that it can be used in public PR validation.
     /// </summary>
     public RegistryConfiguration? PublicMirrorRegistry { get; set; }
+
+    /// <summary>
+    /// Configuration for container image signing via ESRP.
+    /// </summary>
+    public SigningConfiguration? Signing { get; set; }
 
     /// <summary>
     /// Gets all registries that were provided in the publish configuration.

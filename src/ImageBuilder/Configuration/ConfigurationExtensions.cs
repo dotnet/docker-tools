@@ -1,6 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
-
+// See the LICENSE file in the project root for more information.
 
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,6 +15,13 @@ public static class ConfigurationExtensions
         builder.Services
             .AddOptions<PublishConfiguration>()
             .BindConfiguration(PublishConfiguration.ConfigurationKey);
+    }
+
+    public static void AddBuildConfiguration(this IHostApplicationBuilder builder)
+    {
+        builder.Services
+            .AddOptions<BuildConfiguration>()
+            .BindConfiguration(BuildConfiguration.ConfigurationKey);
     }
 
     /// <summary>

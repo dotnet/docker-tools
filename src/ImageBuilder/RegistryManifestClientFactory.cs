@@ -5,7 +5,6 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 public class RegistryManifestClientFactory(
     IHttpClientProvider httpClientProvider,

@@ -6,7 +6,6 @@ using System.Text;
 using System.Threading.Tasks;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class BlobsClientExtensions
@@ -30,4 +29,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

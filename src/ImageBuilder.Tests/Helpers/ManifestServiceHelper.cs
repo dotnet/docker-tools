@@ -7,7 +7,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 
 internal static class ManifestServiceHelper

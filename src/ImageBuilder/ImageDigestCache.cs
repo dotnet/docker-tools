@@ -7,7 +7,6 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class ImageDigestCache(Lazy<IManifestService> manifestService)
@@ -44,4 +43,3 @@ namespace Microsoft.DotNet.ImageBuilder
                 () => _inner.Value.GetManifestDigestShaAsync(tag, isDryRun));
     }
 }
-#nullable disable

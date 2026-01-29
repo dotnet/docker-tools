@@ -1,0 +1,36 @@
+trigger: none
+pr: none
+
+schedules:
+# Once per day at 3 AM UTC
+- cron: '0 3 * * *'
+  displayName: Nightly Renovate run
+  branches:
+    include:
+    - main
+  always: true
+
+parameters:
+- name: dryRun
+  displayName: Dry Run (preview without creating PRs)
+  type: boolean
+  default: false
+- name: forceRecreatePR
+  displayName: Force Recreate PR (recreate even if closed)
+  type: boolean
+  default: false
+
+variables:
+- template: /eng/docker-tools/templates/variables/sdl-pool.yml@self
+
+extends:
+  template: /eng/docker-tools/templates/1es.yml@self
+  parameters:
+    stages:
+    - stage: Renovate
+      jobs:
+      - template: /eng/pipelines/templates/jobs/renovate.yml
+        parameters:
+          gitHubRepo: dotnet/docker-tools
+          dryRun: ${{ parameters.dryRun }}
+          forceRecreatePR: ${{ parameters.forceRecreatePR }}

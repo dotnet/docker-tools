@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class GenerateEolAnnotationDataForAllImagesCommand :

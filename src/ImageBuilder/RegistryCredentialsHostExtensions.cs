@@ -3,7 +3,6 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 internal static class RegistryCredentialsHostExtensions
 {
     public static RegistryCredentials? TryGetCredentials(this IRegistryCredentialsHost credsHost, string registry)

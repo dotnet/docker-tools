@@ -8,7 +8,6 @@ using Azure.Containers.ContainerRegistry;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IAcrClient
 {
     Task DeleteRepositoryAsync(string name);

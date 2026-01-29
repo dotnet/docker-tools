@@ -1,0 +1,125 @@
+parameters:
+
+# Path to the Renovate configuration file within the repository.
+- name: renovateConfigPath
+  type: string
+  default: 'eng/renovate.json'
+
+# GitHub repository to run Renovate against, in the format 'owner/repo'.
+# This could technically be any repo but convention is to target the same
+# repo that contains the calling pipeline. The Renovate config file would
+# be co-located with the pipeline's repo and, in most cases, the config
+# file is specific to the repo being targeted.
+- name: gitHubRepo
+  type: string
+
+# List of base branches to target for Renovate PRs.
+- name: baseBranches
+  type: object
+  default:
+  - main
+
+# When true, Renovate will run in dry run mode, which previews changes without creating PRs.
+# See the 'Run Renovate' step log output for details of what would have been changed.
+- name: dryRun
+  type: boolean
+  default: false
+
+# By default, Renovate will not recreate a PR for a given dependency/version pair that was previously closed.
+# This allows opting in to always recreating PRs even if they were previously closed.
+- name: forceRecreatePR
+  type: boolean
+  default: false
+
+jobs:
+- job: Renovate
+  displayName: Run Renovate
+  variables:
+  - group: dotnet-renovate-bot
+  - name: renovateVersion
+    value: '42'
+  - name: dryRunArg
+    ${{ if eq(parameters.dryRun, true) }}:
+      value: 'full'
+    ${{ else }}:
+      value: ''
+  - name: recreateWhenArg
+    ${{ if eq(parameters.forceRecreatePR, true) }}:
+      value: 'always'
+    ${{ else }}:
+      value: ''
+  pool:
+    image: Azure-Linux-3-Amd64
+    name: NetCore1ESPool-Internal
+    os: linux
+  
+  templateContext:
+    outputParentDirectory: $(Build.ArtifactStagingDirectory)
+    outputs:
+    - output: pipelineArtifact
+      displayName: Publish Renovate Log
+      condition: succeededOrFailed()
+      targetPath: $(Build.ArtifactStagingDirectory)
+      artifactName: $(Agent.JobName)_Logs_Attempt$(System.JobAttempt)
+      sbomEnabled: false
+
+  steps:
+  - checkout: self
+    fetchDepth: 1
+  
+  # Allow write permissions for all users. This allows the Renovate log files to be written
+  # to this directory by the Renovate container.
+  - script: chmod a+w $(Build.ArtifactStagingDirectory)
+    displayName: Set permissions for log directory
+
+  - script: >
+      docker run
+      --rm
+      --env LOG_LEVEL=info
+      --env LOG_FILE_LEVEL=debug
+      --env LOG_FILE=/log/renovate-config-validator.json
+      --volume $(Build.SourcesDirectory)/${{parameters.renovateConfigPath}}:/config/renovate.json
+      --volume $(Build.ArtifactStagingDirectory):/log
+      ghcr.io/renovatebot/renovate:$(renovateVersion)
+      renovate-config-validator /config/renovate.json
+    displayName: Validate Renovate config
+  
+  - script: >
+      docker run
+      --env-file $(Build.SourcesDirectory)/eng/renovate.env
+      --env RENOVATE_FORK_TOKEN
+      --env RENOVATE_TOKEN
+      --env RENOVATE_REPOSITORIES
+      --env RENOVATE_BASE_BRANCHES
+      --env RENOVATE_DRY_RUN
+      --env RENOVATE_RECREATE_WHEN
+      --env LOG_LEVEL=info
+      --env LOG_FILE_LEVEL=debug
+      --env LOG_FILE="/log/renovate-log.json"
+      --env RENOVATE_CONFIG_FILE=/config/renovate.json
+      --volume $(Build.SourcesDirectory)/${{parameters.renovateConfigPath}}:/config/renovate.json
+      --volume $(Build.ArtifactStagingDirectory):/log
+      --rm
+      ghcr.io/renovatebot/renovate:$(renovateVersion)
+    displayName: Run Renovate
+    env:
+      RENOVATE_FORK_TOKEN: $(BotAccount-dotnet-renovate-bot-PAT)
+      RENOVATE_TOKEN: $(BotAccount-dotnet-renovate-bot-PAT)
+      RENOVATE_REPOSITORIES: ${{parameters.gitHubRepo}}
+      RENOVATE_BASE_BRANCHES: ${{ convertToJson(parameters.baseBranches) }}
+      RENOVATE_DRY_RUN: $(dryRunArg)
+      RENOVATE_RECREATE_WHEN: $(recreateWhenArg)
+  
+  - script: |
+      echo "PRs created by Renovate:"
+      if [ -s "$(Build.ArtifactStagingDirectory)/renovate-log.json" ]; then
+        if ! jq -r 'select(.msg == "PR created" and .pr != null) | "https://github.com/\(.repository)/pull/\(.pr)"' "$(Build.ArtifactStagingDirectory)/renovate-log.json" | sort -u; then
+          echo "##vso[task.logissue type=warning]Failed to parse Renovate log file with jq."
+          echo "##vso[task.complete result=SucceededWithIssues]"
+        fi
+      else
+        echo "##vso[task.logissue type=warning]No Renovate log file found or file is empty."
+        echo "##vso[task.complete result=SucceededWithIssues]"
+      fi
+    displayName: List created PRs
+    condition: and(succeededOrFailed(), eq('${{ parameters.dryRun }}', false))

@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 public record Manifest

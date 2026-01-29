@@ -23,6 +23,12 @@ parameters:
   type: boolean
   default: false
 
+# When provided, ImageBuilder will not be pulled from MCR at the start of each
+# job and these steps will be run instead.
+- name: customInitSteps
+  type: stepList
+  default: []
+
 # Additional service connections needed by this pipeline that are not included
 # in the publishConfig.
 - name: additionalServiceConnections
@@ -47,6 +53,7 @@ stages:
     publicProjectName: ${{ parameters.publicProjectName }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     publishConfig: ${{ parameters.publishConfig }}
+    customInitSteps: ${{ parameters.customInitSteps }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
     ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

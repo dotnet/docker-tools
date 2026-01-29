@@ -8,7 +8,6 @@ using Azure.Identity;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 internal class AzureTokenCredentialProvider : IAzureTokenCredentialProvider
 {

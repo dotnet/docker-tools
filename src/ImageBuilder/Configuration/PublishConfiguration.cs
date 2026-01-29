@@ -34,6 +34,11 @@ public sealed record PublishConfiguration
     public RegistryEndpoint? PublicMirrorRegistry { get; set; }
 
     /// <summary>
+    /// Configuration for container image signing via ESRP.
+    /// </summary>
+    public SigningConfiguration? Signing { get; set; }
+
+    /// <summary>
     /// Authentication details for container registries.
     /// </summary>
     /// <remarks>

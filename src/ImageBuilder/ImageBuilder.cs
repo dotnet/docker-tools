@@ -42,12 +42,15 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
             builder.Services.AddSingleton<ILoggerService, LoggerService>();
+            builder.Services.AddMemoryCache();
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
             builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<IOrasClient, OrasClient>();
+            builder.Services.AddSingleton<Oras.IOrasDescriptorService, Oras.OrasDotNetDescriptorService>();
+            builder.Services.AddSingleton<Oras.IOrasSignatureService, Oras.OrasDotNetSignatureService>();
             builder.Services.AddSingleton<IProcessService, ProcessService>();
             builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();

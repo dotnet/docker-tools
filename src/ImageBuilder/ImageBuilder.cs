@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -70,7 +69,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
             builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForPublishCommand>();
             builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateSigningPayloadsCommand>();
             builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
             builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();
             builder.Services.AddSingleton<ICommand, IngestKustoImageInfoCommand>();

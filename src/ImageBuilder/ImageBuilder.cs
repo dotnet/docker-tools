@@ -5,10 +5,9 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
-using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.Extensions.Configuration;
+using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
@@ -25,6 +24,7 @@ public static class ImageBuilder
 
             // Configuration
             builder.AddPublishConfiguration();
+            builder.AddBuildConfiguration();
 
             // Services
             builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
@@ -42,17 +42,22 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
             builder.Services.AddSingleton<ILoggerService, LoggerService>();
+            builder.Services.AddMemoryCache();
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
             builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<IOrasClient, OrasClient>();
+            builder.Services.AddSingleton<Oras.OrasDotNetService>();
+            builder.Services.AddSingleton<Oras.IOrasDescriptorService>(sp => sp.GetRequiredService<Oras.OrasDotNetService>());
+            builder.Services.AddSingleton<Oras.IOrasSignatureService>(sp => sp.GetRequiredService<Oras.OrasDotNetService>());
             builder.Services.AddSingleton<IProcessService, ProcessService>();
             builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
             builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
+            builder.AddSigningServices();
 
             // Commands
             builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
@@ -65,7 +70,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
             builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForPublishCommand>();
             builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateSigningPayloadsCommand>();
             builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
             builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();
             builder.Services.AddSingleton<ICommand, IngestKustoImageInfoCommand>();

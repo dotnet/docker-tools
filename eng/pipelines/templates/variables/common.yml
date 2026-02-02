@@ -1,2 +1,4 @@
 variables:
 - template: /eng/docker-tools/templates/variables/dotnet/common.yml@self
+- name: publicGitRepoUri
+  value: https://github.com/dotnet/docker-tools

@@ -9,7 +9,6 @@ using System.Text.Json.Nodes;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IManifestService

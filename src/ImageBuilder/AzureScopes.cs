@@ -3,7 +3,6 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 internal static class AzureScopes
 {
     public const string ScopeSuffix = "/.default";

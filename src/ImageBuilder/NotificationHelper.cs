@@ -4,7 +4,6 @@
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class NotificationHelper
@@ -39,4 +38,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

@@ -10,7 +10,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 public class AcrClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,

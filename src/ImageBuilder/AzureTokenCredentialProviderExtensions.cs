@@ -7,7 +7,6 @@ using Azure.Core;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 internal static class AzureTokenCredentialProviderExtensions
 {
     public static ValueTask<AccessToken> GetTokenAsync(

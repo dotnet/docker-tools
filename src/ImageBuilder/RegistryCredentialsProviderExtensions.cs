@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 internal static class RegistryCredentialsProviderExtensions
 {
     public static async Task ExecuteWithCredentialsAsync(

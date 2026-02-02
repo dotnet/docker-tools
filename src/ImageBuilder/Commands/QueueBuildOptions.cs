@@ -8,7 +8,6 @@ using System.CommandLine.Parsing;
 using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class QueueBuildOptions : Options

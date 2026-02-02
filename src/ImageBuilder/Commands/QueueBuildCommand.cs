@@ -17,7 +17,6 @@ using Microsoft.VisualStudio.Services.WebApi;
 using Newtonsoft.Json;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildOptionsBuilder>
@@ -305,4 +304,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable disable

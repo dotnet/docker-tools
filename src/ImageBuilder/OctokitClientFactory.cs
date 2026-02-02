@@ -11,7 +11,6 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Helpers;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class OctokitClientFactory(ILoggerService loggerService) : IOctokitClientFactory

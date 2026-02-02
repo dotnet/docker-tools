@@ -8,7 +8,6 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 
 internal class AcrContentClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,

@@ -6,7 +6,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public abstract class ImageNameResolver
 {
     private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
@@ -92,7 +91,7 @@ public abstract class ImageNameResolver
 
     protected string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
         IsInInternallyOwnedRegistry(imageTag) ?
-            DockerHelper.TrimRegistry(imageTag).TrimStartString(_repoPrefix) :
+            DockerHelper.TrimRegistry(imageTag).TrimStartString(_repoPrefix ?? string.Empty) :
             imageTag;
 
     private bool IsInInternallyOwnedRegistry(string imageTag) =>

@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>

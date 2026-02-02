@@ -15,7 +15,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Polly;
 
-#nullable enable
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {

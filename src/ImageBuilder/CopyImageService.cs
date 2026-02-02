@@ -17,7 +17,6 @@ using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface ICopyImageService
 {
     Task ImportImageAsync(

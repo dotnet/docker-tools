@@ -12,7 +12,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public static class OAuthHelper

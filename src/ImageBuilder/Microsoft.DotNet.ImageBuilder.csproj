@@ -7,6 +7,9 @@
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Explicit Nullable setting required for Docker builds from src/ context (won't see root Directory.Build.props).
+         Tracking issue for fixing context directory: https://github.com/dotnet/docker-tools/issues/1592 -->
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -29,11 +32,11 @@
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="Polly" Version="8.5.2" />
+    <PackageReference Include="Polly" Version="8.6.5" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
-    <PackageReference Include="Polly.RateLimiting" Version="8.4.2" />
+    <PackageReference Include="Polly.RateLimiting" Version="8.6.5" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
-    <PackageReference Include="System.Linq.Async" Version="6.0.1" />
+    <PackageReference Include="System.Linq.Async" Version="7.0.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
 
     <!-- CVE-2024-0056: Upgrade System.Data.SqlClient implicitly referenced by Microsoft.TeamFoundationServer.Client -->

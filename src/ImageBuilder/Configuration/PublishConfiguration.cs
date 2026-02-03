@@ -1,5 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 
 using System.Collections.Generic;
@@ -14,30 +15,40 @@ public sealed record PublishConfiguration
     /// <summary>
     /// Images are built and pushed into this registry before testing and publishing.
     /// </summary>
-    public RegistryConfiguration? BuildRegistry { get; set; }
+    public RegistryEndpoint? BuildRegistry { get; set; }
 
     /// <summary>
     /// Images are copied from <see cref="BuildRegistry"/> to this registry during publishing.
     /// </summary>
-    public RegistryConfiguration? PublishRegistry { get; set; }
+    public RegistryEndpoint? PublishRegistry { get; set; }
 
     /// <summary>
     /// External image dependencies are mirrored to this registry.
     /// </summary>
-    public RegistryConfiguration? InternalMirrorRegistry { get; set; }
+    public RegistryEndpoint? InternalMirrorRegistry { get; set; }
 
     /// <summary>
     /// External images are mirrored to this registry. This registry has anonymous pull access
     /// enabled so that it can be used in public PR validation.
     /// </summary>
-    public RegistryConfiguration? PublicMirrorRegistry { get; set; }
+    public RegistryEndpoint? PublicMirrorRegistry { get; set; }
 
     /// <summary>
-    /// Gets all registries that were provided in the publish configuration.
+    /// Authentication details for container registries.
     /// </summary>
-    public IEnumerable<RegistryConfiguration> GetKnownRegistries()
+    /// <remarks>
+    /// Each entry should have a Server property set to the registry server address
+    /// (e.g., "myregistry.azurecr.io"). Multiple registry endpoints can share the
+    /// same authentication if they point to the same server.
+    /// </remarks>
+    public List<RegistryAuthentication> RegistryAuthentication { get; set; } = [];
+
+    /// <summary>
+    /// Gets all registry endpoints that were provided in the publish configuration.
+    /// </summary>
+    public IEnumerable<RegistryEndpoint> GetKnownRegistries()
     {
-        RegistryConfiguration?[] registries =
+        RegistryEndpoint?[] registries =
         [
             BuildRegistry,
             PublishRegistry,
@@ -46,7 +57,7 @@ public sealed record PublishConfiguration
         ];
 
         // Use OfType to filter out null values, since Where(x => x is not null)
-        // does not get rid of the nullable annotation on RegistryConfiguration?.
-        return registries.OfType<RegistryConfiguration>();
+        // does not get rid of the nullable annotation on RegistryEndpoint?.
+        return registries.OfType<RegistryEndpoint>();
     }
 }

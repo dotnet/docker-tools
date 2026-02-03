@@ -10,9 +10,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class CopyImagesOptions : ManifestOptions, IFilterableOptions
 {
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
-
-    public string ResourceGroup { get; set; } = string.Empty;
-    public string Subscription { get; set; } = string.Empty;
 }
 
 public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
@@ -22,16 +19,12 @@ public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
     public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
-            .._manifestFilterOptionsBuilder.GetCliOptions()
+            .._manifestFilterOptionsBuilder.GetCliOptions(),
         ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
             .._manifestFilterOptionsBuilder.GetCliArguments(),
-            new Argument<string>(nameof(CopyImagesOptions.Subscription),
-                "Azure subscription to operate on"),
-            new Argument<string>(nameof(CopyImagesOptions.ResourceGroup),
-                "Azure resource group to operate on"),
         ];
 }

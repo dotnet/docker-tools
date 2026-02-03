@@ -19,15 +19,15 @@ internal class AcrContentClientFactory(
 
     public IAcrContentClient Create(Acr acr, string repositoryName)
     {
-        var acrConfig = _publishConfig.FindOwnedAcrByName(acr.Server);
-        if (acrConfig?.ServiceConnection is null)
+        var auth = _publishConfig.FindRegistryAuthentication(acr.Server);
+        if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
                 $"No service connection found for ACR '{acr.Server}'. " +
                 $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
         }
 
-        var tokenCredential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
+        var tokenCredential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
 
         var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
         var wrapper = new AcrContentClientWrapper(client);

@@ -1,5 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Concurrent;
@@ -19,13 +20,10 @@ namespace Microsoft.DotNet.ImageBuilder;
 public interface ICopyImageService
 {
     Task ImportImageAsync(
-        string subscription,
-        string resourceGroup,
         string[] destTagNames,
-        string destRegistryName,
+        string destAcrName,
         string srcTagName,
         string? srcRegistryName = null,
-        ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false);
 }
@@ -48,22 +46,26 @@ public class CopyImageService : ICopyImageService
     }
 
     public async Task ImportImageAsync(
-        string subscription,
-        string resourceGroup,
         string[] destTagNames,
         string destAcrName,
         string srcTagName,
         string? srcRegistryName = null,
-        ResourceIdentifier? srcResourceId = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false)
     {
+        var destResourceId = _publishConfig.GetRegistryResource(destAcrName);
+        var srcResourceId = srcRegistryName is not null
+            ? _publishConfig.GetRegistryResource(srcRegistryName)
+            : null;
+
         Acr destAcr = Acr.Parse(destAcrName);
 
+        // Azure ACR import only supports one source identifier. Use ResourceId for ACR-to-ACR
+        // imports (same tenant), or RegistryAddress for external registries.
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
             ResourceId = srcResourceId,
-            RegistryAddress = srcRegistryName,
+            RegistryAddress = srcResourceId is null ? srcRegistryName : null,
             Credentials = sourceCredentials
         };
 
@@ -85,8 +87,7 @@ public class CopyImageService : ICopyImageService
         if (!isDryRun)
         {
             ArmClient armClient = GetArmClientForAcr(destAcrName);
-            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(
-                ContainerRegistryResource.CreateResourceIdentifier(subscription, resourceGroup, destAcr.Name));
+            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
 
             try
             {
@@ -111,10 +112,10 @@ public class CopyImageService : ICopyImageService
 
     private ArmClient GetArmClientForAcr(string acrName)
     {
-        // Look up the service connection for this ACR from the publish configuration
-        var acrConfig = _publishConfig.FindOwnedAcrByName(acrName);
+        // Look up the authentication for this ACR from the publish configuration
+        var auth = _publishConfig.FindRegistryAuthentication(acrName);
 
-        if (acrConfig?.ServiceConnection is null)
+        if (auth?.ServiceConnection is null)
         {
             throw new InvalidOperationException(
                 $"No service connection found for ACR '{acrName}'. " +
@@ -122,10 +123,10 @@ public class CopyImageService : ICopyImageService
         }
 
         // Cache ArmClient instances per service connection to avoid recreating them
-        string cacheKey = string.Join('|', acrConfig.ServiceConnection.TenantId, acrConfig.ServiceConnection.ClientId);
+        string cacheKey = string.Join('|', auth.ServiceConnection.TenantId, auth.ServiceConnection.ClientId);
         return _armClientCache.GetOrAdd(cacheKey, _ =>
         {
-            TokenCredential credential = _tokenCredentialProvider.GetCredential(acrConfig.ServiceConnection);
+            TokenCredential credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
             return new ArmClient(credential);
         });
     }

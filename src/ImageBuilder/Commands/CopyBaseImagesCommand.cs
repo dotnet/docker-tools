@@ -11,18 +11,15 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyBaseImagesCommand : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>
+    public class CopyBaseImagesCommand(
+        ICopyImageService copyImageService,
+        ILoggerService loggerService,
+        IGitService gitService)
+        : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
+            copyImageService,
+            loggerService)
     {
-        private readonly IGitService _gitService;
-
-        public CopyBaseImagesCommand(
-            ICopyImageService copyImageService,
-            ILoggerService loggerService,
-            IGitService gitService)
-            : base(copyImageService, loggerService)
-        {
-            _gitService = gitService;
-        }
+        private readonly IGitService _gitService = gitService;
 
         protected override string Description => "Copies external base images from their source registry to ACR";
 

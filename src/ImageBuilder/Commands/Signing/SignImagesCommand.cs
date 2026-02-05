@@ -55,8 +55,14 @@ public class SignImagesCommand(
         var imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
+        loggerService.WriteMessage($"Registry override: Registry='{Options.RegistryOverride.Registry}', RepoPrefix='{Options.RegistryOverride.RepoPrefix}'");
+
+        LogDigests(imageArtifactDetails);
+
         // Apply registry override to get fully-qualified image references
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
+
+        LogDigests(imageArtifactDetails);
 
         var platformRequests = await signingRequestGenerator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
         var manifestListRequests = await signingRequestGenerator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
@@ -77,6 +83,25 @@ public class SignImagesCommand(
         foreach (var result in results)
         {
             loggerService.WriteMessage($"  {result.ImageName}: signature digest {result.SignatureDigest}");
+        }
+    }
+
+    private void LogDigests(ImageArtifactDetails imageArtifactDetails)
+    {
+        foreach (var repo in imageArtifactDetails.Repos)
+        {
+            foreach (var image in repo.Images)
+            {
+                foreach (var platform in image.Platforms)
+                {
+                    loggerService.WriteMessage($"  repo={repo.Repo} platform.Digest={platform.Digest}");
+                }
+
+                if (image.Manifest is not null)
+                {
+                    loggerService.WriteMessage($"  repo={repo.Repo} manifest.Digest={image.Manifest.Digest}");
+                }
+            }
         }
     }
 }

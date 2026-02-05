@@ -112,40 +112,24 @@ public class EsrpSigningService(
     /// </summary>
     private static string GenerateSignListJson(string[] filePaths, int signingKeyCode)
     {
-        var signList = new JsonArray();
+        var signFiles = new JsonArray();
         foreach (var filePath in filePaths)
         {
-            signList.Add(new JsonObject
+            signFiles.Add(new JsonObject
             {
-                ["KeyCode"] = signingKeyCode.ToString(),
-                ["OperationCode"] = "SigntoolSign",
-                ["Parameters"] = new JsonObject(),
-                ["ToolName"] = "sign",
-                ["ToolVersion"] = "1.0"
+                ["SrcPath"] = filePath,
+                ["DstPath"] = filePath
             });
         }
 
         var root = new JsonObject
         {
-            ["Version"] = "1.0.0",
-            ["SignBatches"] = new JsonArray
+            ["SignFileRecordList"] = new JsonArray
             {
                 new JsonObject
                 {
-                    ["SourceLocationType"] = "UNC",
-                    ["SourceRootDirectory"] = Path.GetDirectoryName(filePaths[0]),
-                    ["DestinationLocationType"] = "UNC",
-                    ["DestinationRootDirectory"] = Path.GetDirectoryName(filePaths[0]),
-                    ["SignRequestFiles"] = new JsonArray(
-                        filePaths.Select(f => (JsonNode)new JsonObject
-                        {
-                            ["SourceLocation"] = Path.GetFileName(f),
-                            ["DestinationLocation"] = Path.GetFileName(f)
-                        }).ToArray()),
-                    ["SigningInfo"] = new JsonObject
-                    {
-                        ["Operations"] = signList
-                    }
+                    ["Certs"] = signingKeyCode.ToString(),
+                    ["SignFileList"] = signFiles
                 }
             }
         };

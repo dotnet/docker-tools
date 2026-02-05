@@ -49,7 +49,7 @@ public class SigningRequestGenerator : ISigningRequestGenerator
 
         foreach (var platform in platformReferences)
         {
-            var reference = $"{platform.Repo}@{platform.Digest}";
+            var reference = platform.Digest;
             _logger.WriteMessage($"  Platform reference: {reference}");
             var request = await CreateSigningRequestAsync(reference, cancellationToken);
             requests.Add(request);
@@ -79,7 +79,7 @@ public class SigningRequestGenerator : ISigningRequestGenerator
 
         foreach (var manifest in manifestReferences)
         {
-            var reference = $"{manifest.Repo}@{manifest.Digest}";
+            var reference = manifest.Digest;
             _logger.WriteMessage($"  Manifest reference: {reference}");
             var request = await CreateSigningRequestAsync(reference, cancellationToken);
             requests.Add(request);

@@ -44,8 +44,11 @@ public class OrasDotNetService(
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
     {
+        _logger.WriteMessage($"Resolving descriptor for reference: {reference}");
         var repo = CreateRepository(reference);
-        return await repo.ResolveAsync(reference, cancellationToken);
+        var descriptor = await repo.ResolveAsync(reference, cancellationToken);
+        _logger.WriteMessage($"Resolved descriptor: mediaType={descriptor.MediaType}, digest={descriptor.Digest}, size={descriptor.Size}");
+        return descriptor;
     }
 
     /// <inheritdoc/>
@@ -87,7 +90,9 @@ public class OrasDotNetService(
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag").</param>
     private Repository CreateRepository(string reference)
     {
+        _logger.WriteMessage($"Creating ORAS repository for: {reference}");
         var parsedRef = Reference.Parse(reference);
+        _logger.WriteMessage($"Parsed reference: Registry={parsedRef.Registry}, Repository={parsedRef.Repository}, Reference={parsedRef.ContentReference}");
         var credentialProvider = new OrasCredentialProviderAdapter(_credentialsProvider, _credentialsHost);
         var authClient = new Client(
             _httpClientProvider.GetClient(),

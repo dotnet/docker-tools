@@ -32,6 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ICopyImageService> copyImageServiceMock = new();
 
             CopyBaseImagesCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 copyImageServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>());
@@ -120,6 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ICopyImageService> copyImageServiceMock = new();
 
             CopyBaseImagesCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 copyImageServiceMock.Object,
                 Mock.Of<ILoggerService>(),
                 Mock.Of<IGitService>());

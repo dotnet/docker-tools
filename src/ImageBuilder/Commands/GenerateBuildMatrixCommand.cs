@@ -26,7 +26,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILoggerService loggerService) : base()
+        public GenerateBuildMatrixCommand(
+            IManifestInfoProvider manifestInfoProvider,
+            IImageCacheService imageCacheService,
+            IManifestServiceFactory manifestServiceFactory,
+            ILoggerService loggerService)
+            : base(manifestInfoProvider)
         {
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

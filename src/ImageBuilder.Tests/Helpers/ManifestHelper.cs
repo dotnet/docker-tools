@@ -131,5 +131,25 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
             return manifestOptionsMock.Object;
         }
+
+        /// <summary>
+        /// Creates a mock <see cref="IManifestInfoProvider"/> that can be used in tests.
+        /// The provider will load and return a <see cref="ManifestInfo"/> when <see cref="IManifestInfoProvider.LoadManifest"/> is called.
+        /// </summary>
+        public static Mock<IManifestInfoProvider> CreateManifestInfoProviderMock()
+        {
+            Mock<IManifestInfoProvider> manifestInfoProviderMock = new Mock<IManifestInfoProvider>();
+            ManifestInfo manifestInfo = null;
+
+            manifestInfoProviderMock
+                .Setup(o => o.LoadManifest(It.IsAny<IManifestOptionsInfo>()))
+                .Callback<IManifestOptionsInfo>(options => manifestInfo = ManifestInfo.Load(options));
+
+            manifestInfoProviderMock
+                .SetupGet(o => o.Manifest)
+                .Returns(() => manifestInfo);
+
+            return manifestInfoProviderMock;
+        }
     }
 }

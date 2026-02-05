@@ -18,7 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
         public WaitForMcrImageIngestionCommand(
-            ILoggerService loggerService, IMarImageIngestionReporter imageIngestionReporter)
+            IManifestInfoProvider manifestInfoProvider,
+            ILoggerService loggerService,
+            IMarImageIngestionReporter imageIngestionReporter)
+            : base(manifestInfoProvider)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));

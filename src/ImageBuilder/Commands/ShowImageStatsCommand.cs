@@ -11,12 +11,9 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>
+    public class ShowImageStatsCommand(IManifestInfoProvider manifestInfoProvider)
+        : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>(manifestInfoProvider)
     {
-        public ShowImageStatsCommand() : base()
-        {
-        }
-
         protected override string Description => "Displays statistics about the number of images";
 
         public override Task ExecuteAsync()

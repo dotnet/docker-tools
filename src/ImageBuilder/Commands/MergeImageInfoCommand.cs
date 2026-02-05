@@ -13,7 +13,8 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>
+    public partial class MergeImageInfoCommand(IManifestInfoProvider manifestInfoProvider)
+        : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>(manifestInfoProvider)
     {
         protected override string Description => "Merges the content of multiple image info files into one file";
 

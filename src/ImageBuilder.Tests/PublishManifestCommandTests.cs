@@ -49,6 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IDockerService>(),
                 Mock.Of<ILoggerService>(),
@@ -308,6 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IDockerService> dockerServiceMock = new();
 
             PublishManifestCommand command = new PublishManifestCommand(
+                CreateManifestInfoProviderMock().Object,
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
@@ -437,6 +439,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new PublishManifestCommand(
+                CreateManifestInfoProviderMock().Object,
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),
@@ -628,6 +631,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
                 Mock.Of<ILoggerService>(),

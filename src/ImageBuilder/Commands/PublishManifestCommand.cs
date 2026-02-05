@@ -24,12 +24,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private ConcurrentBag<string> _publishedManifestTags = new();
 
         public PublishManifestCommand(
+            IManifestInfoProvider manifestInfoProvider,
             IManifestServiceFactory manifestServiceFactory,
             IDockerService dockerService,
             ILoggerService loggerService,
             IDateTimeService dateTimeService,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider)
+            : base(manifestInfoProvider)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

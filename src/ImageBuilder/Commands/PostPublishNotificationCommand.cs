@@ -26,9 +26,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IOctokitClientFactory _octokitClientFactory;
 
         public PostPublishNotificationCommand(
+            IManifestInfoProvider manifestInfoProvider,
             IVssConnectionFactory connectionFactory,
             INotificationService notificationService,
             IOctokitClientFactory octokitClientFactory)
+            : base(manifestInfoProvider)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));

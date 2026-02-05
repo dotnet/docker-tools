@@ -44,6 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 Mock.Of<ILoggerService>(),
                 imageIngestionReporterMock.Object);
 
@@ -177,6 +178,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 Mock.Of<ILoggerService>(),
                 imageIngestionReporterMock.Object);
 

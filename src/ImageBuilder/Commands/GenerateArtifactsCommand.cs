@@ -38,7 +38,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private TimeSpan _documentGenerationTime = TimeSpan.Zero;
         private TimeSpan _artifactGenerationTime = TimeSpan.Zero;
 
-        protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
+        protected GenerateArtifactsCommand(
+            IManifestInfoProvider manifestInfoProvider,
+            IEnvironmentService environmentService)
+            : base(manifestInfoProvider)
         {
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }

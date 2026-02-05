@@ -18,9 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
+            IManifestInfoProvider manifestInfoProvider,
             ICopyImageService copyImageService,
             ILoggerService loggerService)
-            : base(copyImageService, loggerService)
+            : base(manifestInfoProvider, copyImageService, loggerService)
         {
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {

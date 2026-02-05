@@ -14,7 +14,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService _dockerService;
         private readonly ILoggerService _loggerService;
 
-        public GetBaseImageStatusCommand(IDockerService dockerService, ILoggerService loggerService)
+        public GetBaseImageStatusCommand(
+            IManifestInfoProvider manifestInfoProvider,
+            IDockerService dockerService,
+            ILoggerService loggerService)
+            : base(manifestInfoProvider)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));

@@ -222,7 +222,7 @@ ABC-123";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object);
+            GenerateReadmesCommand command = new GenerateReadmesCommand(CreateManifestInfoProviderMock().Object, _environmentServiceMock.Object);
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

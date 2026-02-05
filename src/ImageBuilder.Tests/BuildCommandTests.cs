@@ -3536,6 +3536,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IOptions<PublishConfiguration>? publishOptions = null)
         {
             BuildCommand command = new(
+                CreateManifestInfoProviderMock().Object,
                 dockerService ?? Mock.Of<IDockerService>(),
                 loggerService ?? Mock.Of<ILoggerService>(),
                 gitService ?? Mock.Of<IGitService>(),

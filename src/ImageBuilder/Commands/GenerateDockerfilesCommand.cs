@@ -15,7 +15,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesOptionsBuilder>
     {
 
-        public GenerateDockerfilesCommand(IEnvironmentService environmentService) : base(environmentService)
+        public GenerateDockerfilesCommand(
+            IManifestInfoProvider manifestInfoProvider,
+            IEnvironmentService environmentService)
+            : base(manifestInfoProvider, environmentService)
         {
         }
 

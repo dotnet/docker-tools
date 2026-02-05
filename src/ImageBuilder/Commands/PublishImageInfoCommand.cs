@@ -17,7 +17,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILoggerService _loggerService;
         private const string CommitMessage = "Merging Docker image info updates from build";
 
-        public PublishImageInfoCommand(IGitService gitService, IOctokitClientFactory octokitClientFactory, ILoggerService loggerService)
+        public PublishImageInfoCommand(
+            IManifestInfoProvider manifestInfoProvider,
+            IGitService gitService,
+            IOctokitClientFactory octokitClientFactory,
+            ILoggerService loggerService)
+            : base(manifestInfoProvider)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));

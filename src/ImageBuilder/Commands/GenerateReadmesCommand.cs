@@ -18,8 +18,10 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public partial class GenerateReadmesCommand(IEnvironmentService environmentService)
-        : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService)
+    public partial class GenerateReadmesCommand(
+        IManifestInfoProvider manifestInfoProvider,
+        IEnvironmentService environmentService)
+        : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(manifestInfoProvider, environmentService)
     {
         private const string ArtifactName = "Readme";
 

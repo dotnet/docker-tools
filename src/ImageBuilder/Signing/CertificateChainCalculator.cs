@@ -75,6 +75,15 @@ public static class CertificateChainCalculator
 
         for (var i = 0; i < mapLength; i++)
         {
+            // COSE header keys can be integers or text strings (RFC 8152 §3.1).
+            // We only care about the integer key 33 (x5chain), so skip text string keys.
+            if (reader.PeekState() == CborReaderState.TextString)
+            {
+                reader.SkipValue(); // skip the text key
+                reader.SkipValue(); // skip its value
+                continue;
+            }
+
             var key = reader.ReadInt32();
 
             if (key == CoseX5ChainKey)

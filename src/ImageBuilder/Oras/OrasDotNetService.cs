@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -29,6 +30,11 @@ public class OrasDotNetService(
     /// OCI artifact type for Notary v2 signatures.
     /// </summary>
     private const string NotarySignatureArtifactType = "application/vnd.cncf.notary.signature";
+
+    /// <summary>
+    /// Media type for COSE signature envelopes per the Notary v2 spec.
+    /// </summary>
+    private const string CoseMediaType = "application/cose";
 
     /// <summary>
     /// Annotation key for the certificate chain thumbprints per the Notary v2 spec.
@@ -59,6 +65,12 @@ public class OrasDotNetService(
     {
         var repo = CreateRepository(result.ImageName);
 
+        var payloadBytes = await File.ReadAllBytesAsync(result.SignedPayload.FullName, cancellationToken);
+        var signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
+
+        using var payloadStream = new MemoryStream(payloadBytes);
+        await repo.PushAsync(signatureLayerDescriptor, payloadStream, cancellationToken);
+
         var annotations = new Dictionary<string, string>
         {
             [CertificateChainAnnotation] = result.CertificateChain
@@ -67,7 +79,8 @@ public class OrasDotNetService(
         var options = new PackManifestOptions
         {
             ManifestAnnotations = annotations,
-            Subject = subjectDescriptor
+            Subject = subjectDescriptor,
+            Layers = [signatureLayerDescriptor]
         };
 
         _logger.WriteMessage($"Pushing signature for {result.ImageName}");

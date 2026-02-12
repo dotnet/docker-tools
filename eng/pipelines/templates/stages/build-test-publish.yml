@@ -39,12 +39,12 @@ stages:
 - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
   - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
     parameters:
-      serviceConnections:
-      - name: ${{ parameters.publishConfig.InternalMirrorRegistry.serviceConnection.name }}
-      - name: ${{ parameters.publishConfig.BuildRegistry.serviceConnection.name }}
-      - name: ${{ parameters.publishConfig.PublishRegistry.serviceConnection.name }}
-      - ${{ each serviceConnection in parameters.additionalServiceConnections }}:
-        - name: ${{ serviceConnection.name }}
+      publishConfig: ${{ parameters.publishConfig }}
+      usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+        - ${{ parameters.publishConfig.PublishRegistry.server }}
+        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+      serviceConnections: ${{ parameters.additionalServiceConnections }}
 
 - template: /eng/docker-tools/templates/stages/dotnet/build-test-publish-repo.yml@self
   parameters:

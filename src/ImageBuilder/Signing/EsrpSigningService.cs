@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -28,6 +29,12 @@ public class EsrpSigningService(
     /// Environment variable set by MicroBuild plugin pointing to the signing tool location.
     /// </summary>
     private const string MBSignAppFolderEnv = "MBSIGN_APPFOLDER";
+
+    /// <summary>
+    /// Environment variable containing the base64-encoded SSL certificate for ESRP authentication.
+    /// Required on Linux/macOS where there is no certificate store; set by the MicroBuild signing plugin.
+    /// </summary>
+    private const string VsEngEsrpSslEnv = "VSENGESRPSSL";
 
     /// <summary>
     /// The signing tool DLL provided by MicroBuild.
@@ -58,6 +65,17 @@ public class EsrpSigningService(
         var mbsignAppFolder = _environmentService.GetEnvironmentVariable(MBSignAppFolderEnv)
             ?? throw new InvalidOperationException(
                 $"{MBSignAppFolderEnv} environment variable is not set. Was the MicroBuild signing plugin installed?");
+
+        // On non-Windows platforms, DDSignFiles.dll reads the SSL certificate from an environment variable
+        // (there is no certificate store). Without it, DDSignFiles.dll retries auth endlessly until timeout.
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+            && string.IsNullOrEmpty(_environmentService.GetEnvironmentVariable(VsEngEsrpSslEnv)))
+        {
+            throw new InvalidOperationException(
+                $"{VsEngEsrpSslEnv} environment variable is not set. " +
+                "On Linux, DDSignFiles.dll requires this for ESRP authentication. " +
+                "Ensure the MicroBuild signing plugin environment variables are forwarded to the container.");
+        }
 
         var signListTempPath = Path.Combine(Path.GetTempPath(), $"SignList_{Guid.NewGuid()}.json");
         try

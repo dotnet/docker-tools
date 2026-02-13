@@ -12,13 +12,13 @@ public class GenerateEolAnnotationDataForAllImagesCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
 {
     public GenerateEolAnnotationDataForAllImagesCommand(
-        ILogger<GenerateEolAnnotationDataForAllImagesCommand> loggerService,
+        ILogger<GenerateEolAnnotationDataForAllImagesCommand> logger,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
         : base(
-            loggerService,
+            logger,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,

@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 {
     public class ManifestInfo
     {
-        private static readonly ILogger Logger = StandaloneLoggerFactory.CreateLogger<ManifestInfo>();
+        private static readonly ILogger<ManifestInfo> _logger = StandaloneLoggerFactory.CreateLogger<ManifestInfo>();
 
         /// <summary>
         /// All of the repos that are defined in the manifest.
@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
         public static ManifestInfo Load(IManifestOptionsInfo options)
         {
-            Logger.LogInformation("READING MANIFEST");
+            _logger.LogInformation("READING MANIFEST");
 
             ManifestInfo manifest = ManifestInfo.Create(
                 options.Manifest,
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
 
             if (options.IsVerbose)
             {
-                Logger.LogInformation(JsonConvert.SerializeObject(manifest, Formatting.Indented));
+                _logger.LogInformation(JsonConvert.SerializeObject(manifest, Formatting.Indented));
             }
 
             return manifest;

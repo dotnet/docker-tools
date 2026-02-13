@@ -12,11 +12,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ShowManifestSchemaCommand : Command<Options, CliOptionsBuilder>
     {
-        private readonly ILogger _loggerService;
+        private readonly ILogger<ShowManifestSchemaCommand> _logger;
 
-        public ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> loggerService)
+        public ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> logger)
         {
-            _loggerService = loggerService;
+            _logger = logger;
         }
 
         protected override string Description => "Outputs manifest file schema";
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             JSchema schema = generator.Generate(typeof(Manifest));
 
-            _loggerService.LogInformation(schema.ToString());
+            _logger.LogInformation(schema.ToString());
 
             return Task.CompletedTask;
         }

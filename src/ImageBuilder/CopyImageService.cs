@@ -30,17 +30,17 @@ public interface ICopyImageService
 
 public class CopyImageService : ICopyImageService
 {
-    private readonly ILogger _loggerService;
+    private readonly ILogger<CopyImageService> _logger;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig;
     private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
     public CopyImageService(
-        ILogger<CopyImageService> loggerService,
+        ILogger<CopyImageService> logger,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IOptions<PublishConfiguration> publishConfigOptions)
     {
-        _loggerService = loggerService;
+        _logger = logger;
         _tokenCredentialProvider = tokenCredentialProvider;
         _publishConfig = publishConfigOptions.Value;
     }
@@ -82,7 +82,7 @@ public class CopyImageService : ICopyImageService
             .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
             .ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
-        _loggerService.LogInformation($"{action} {formattedDestinationImages} from '{sourceImageName}'");
+        _logger.LogInformation($"{action} {formattedDestinationImages} from '{sourceImageName}'");
 
         if (!isDryRun)
         {
@@ -91,7 +91,7 @@ public class CopyImageService : ICopyImageService
 
             try
             {
-                await RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                await RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                     .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
             }
             catch (Exception e)
@@ -99,14 +99,14 @@ public class CopyImageService : ICopyImageService
                 string errorMsg = $"Importing Failure: {formattedDestinationImages}";
                 errorMsg += Environment.NewLine + e.ToString();
 
-                _loggerService.LogInformation(errorMsg);
+                _logger.LogInformation(errorMsg);
 
                 throw;
             }
         }
         else
         {
-            _loggerService.LogInformation("Importing skipped due to dry run.");
+            _logger.LogInformation("Importing skipped due to dry run.");
         }
     }
 

@@ -27,13 +27,13 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
 
     protected GenerateEolAnnotationDataCommandBase(
-        ILogger loggerService,
+        ILogger logger,
         IAcrContentClientFactory acrContentClientFactory,
         IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {
-        LoggerService = loggerService;
+        LoggerService = logger;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;

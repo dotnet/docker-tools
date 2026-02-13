@@ -8,7 +8,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal static class StandaloneLoggerFactory
 {
-    public static ILogger CreateLogger<T>() =>
+    public static ILogger<T> CreateLogger<T>() =>
         ImageBuilder.Services.GetRequiredService<ILogger<T>>();
 
     public static ILogger CreateLogger(string categoryName) =>

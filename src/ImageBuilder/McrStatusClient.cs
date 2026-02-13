@@ -18,26 +18,26 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly HttpClient _httpClient;
         private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
-        private readonly ILogger _loggerService;
+        private readonly ILogger<McrStatusClient> _logger;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IServiceConnection _serviceConnection;
 
         public McrStatusClient(
             IHttpClientProvider httpClientProvider,
-            ILogger<McrStatusClient> loggerService,
+            ILogger<McrStatusClient> logger,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IServiceConnection serviceConnection)
         {
-            ArgumentNullException.ThrowIfNull(loggerService);
+            ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(httpClientProvider);
 
             _httpClient = httpClientProvider.GetClient();
             _httpPolicy = HttpPolicyBuilder.Create()
-                .WithMeteredRetryPolicy(loggerService)
-                .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, loggerService)
-                .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), loggerService)
+                .WithMeteredRetryPolicy(logger)
+                .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, logger)
+                .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), logger)
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");
-            _loggerService = loggerService;
+            _logger = logger;
             _tokenCredentialProvider = tokenCredentialProvider;
             _serviceConnection = serviceConnection;
         }

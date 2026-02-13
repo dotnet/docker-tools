@@ -9,14 +9,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
     ICopyImageService copyImageService,
-    ILogger loggerService)
+    ILogger logger)
     : ManifestCommand<TOptions, TOptionsBuilder>
         where TOptions : CopyImagesOptions, new()
         where TOptionsBuilder : CopyImagesOptionsBuilder, new()
 {
     private readonly ICopyImageService _copyImageService = copyImageService;
 
-    protected ILogger LoggerService { get; } = loggerService;
+    protected ILogger LoggerService { get; } = logger;
 
     protected Task ImportImageAsync(
         string destTagName,

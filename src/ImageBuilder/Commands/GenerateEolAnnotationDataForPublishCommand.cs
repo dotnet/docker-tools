@@ -16,13 +16,13 @@ public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
     public GenerateEolAnnotationDataForPublishCommand(
-        ILogger<GenerateEolAnnotationDataForPublishCommand> loggerService,
+        ILogger<GenerateEolAnnotationDataForPublishCommand> logger,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
         : base(
-            loggerService,
+            logger,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,

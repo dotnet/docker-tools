@@ -1043,7 +1043,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILogger<GenerateEolAnnotationDataForPublishCommand>> loggerServiceMock = new();
             lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
             GenerateEolAnnotationDataForPublishCommand command = new(
-                loggerService: loggerServiceMock.Object,
+                logger: loggerServiceMock.Object,
                 acrClientFactory: registryClientFactory,
                 acrContentClientFactory: registryContentClientFactory,
                 lifecycleMetadataService: lifecycleMetadataService,

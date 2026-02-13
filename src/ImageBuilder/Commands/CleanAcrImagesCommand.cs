@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IAcrClientFactory _acrClientFactory;
         private readonly IAcrContentClientFactory _acrContentClientFactory;
-        private readonly ILogger _loggerService;
+        private readonly ILogger<CleanAcrImagesCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
@@ -31,13 +31,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public CleanAcrImagesCommand(
             IAcrClientFactory acrClientFactory,
             IAcrContentClientFactory acrContentClientFactory,
-            ILogger<CleanAcrImagesCommand> loggerService,
+            ILogger<CleanAcrImagesCommand> logger,
             ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
         }
@@ -53,15 +53,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
-            _loggerService.LogInformation("FINDING IMAGES TO CLEAN");
+            _logger.LogInformation("FINDING IMAGES TO CLEAN");
 
-            _loggerService.LogInformation($"Connecting to ACR '{Options.RegistryName}'");
+            _logger.LogInformation($"Connecting to ACR '{Options.RegistryName}'");
             IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryName);
 
-            _loggerService.LogInformation($"Querying catalog of ACR '{Options.RegistryName}'");
+            _logger.LogInformation($"Querying catalog of ACR '{Options.RegistryName}'");
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
-            _loggerService.LogInformation("DELETING IMAGES");
+            _logger.LogInformation("DELETING IMAGES");
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
@@ -121,35 +121,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task LogSummaryAsync(IAcrClient acrClient, List<string> deletedRepos, List<string> deletedImages)
         {
-            _loggerService.LogInformation("SUMMARY");
+            _logger.LogInformation("SUMMARY");
 
-            _loggerService.LogInformation("Deleted repositories:");
+            _logger.LogInformation("Deleted repositories:");
             foreach (string deletedRepo in deletedRepos)
             {
-                _loggerService.LogInformation($"\t{deletedRepo}");
+                _logger.LogInformation($"\t{deletedRepo}");
             }
 
-            _loggerService.LogInformation(string.Empty);
+            _logger.LogInformation(string.Empty);
 
-            _loggerService.LogInformation("Deleted images:");
+            _logger.LogInformation("Deleted images:");
             foreach (string deletedImage in deletedImages)
             {
-                _loggerService.LogInformation($"\t{deletedImage}");
+                _logger.LogInformation($"\t{deletedImage}");
             }
 
-            _loggerService.LogInformation(string.Empty);
+            _logger.LogInformation(string.Empty);
 
-            _loggerService.LogInformation("DELETED DATA");
-            _loggerService.LogInformation($"Total images deleted: {deletedImages.Count}");
-            _loggerService.LogInformation($"Total repos deleted: {deletedRepos.Count}");
-            _loggerService.LogInformation(string.Empty);
+            _logger.LogInformation("DELETED DATA");
+            _logger.LogInformation($"Total images deleted: {deletedImages.Count}");
+            _logger.LogInformation($"Total repos deleted: {deletedRepos.Count}");
+            _logger.LogInformation(string.Empty);
 
-            _loggerService.LogInformation("<Querying remaining data...>");
+            _logger.LogInformation("<Querying remaining data...>");
 
             // Requery the catalog to get the latest info after things have been deleted
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
-            _loggerService.LogInformation($"Total repos remaining: {await repositoryNames.CountAsync()}");
+            _logger.LogInformation($"Total repos remaining: {await repositoryNames.CountAsync()}");
 
         }
 
@@ -157,10 +157,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrClient acrClient, IAcrContentClient acrContentClient, List<string> deletedImages, List<string> deletedRepos, ContainerRepository repository,
             Func<ArtifactManifestProperties, Task<bool>> canDeleteManifest)
         {
-            _loggerService.LogInformation($"Querying manifests for repo '{repository.Name}'");
+            _logger.LogInformation($"Querying manifests for repo '{repository.Name}'");
             IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync();
             int manifestCount = await manifestProperties.CountAsync();
-            _loggerService.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
+            _logger.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
 
             ArtifactManifestProperties[] allManifests = await manifestProperties.ToArrayAsync();
 
@@ -222,7 +222,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string imageId = $"{repository.Name}@{manifest.Digest}";
 
-            _loggerService.LogInformation($"Deleted image '{imageId}'");
+            _logger.LogInformation($"Deleted image '{imageId}'");
 
             lock (deletedImages)
             {
@@ -264,7 +264,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 messageBuilder.AppendLine($"\t{tag}");
             }
 
-            _loggerService.LogInformation(messageBuilder.ToString());
+            _logger.LogInformation(messageBuilder.ToString());
 
             lock (deletedRepos)
             {
@@ -284,7 +284,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
         {
-            if(_lifecycleMetadataService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _loggerService, isDryRun: false, out Manifest? lifecycleArtifactManifest) &&
+            if(_lifecycleMetadataService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _logger, isDryRun: false, out Manifest? lifecycleArtifactManifest) &&
                 lifecycleArtifactManifest?.Annotations != null)
             {
                 return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation]), expirationDays);

@@ -13,12 +13,12 @@ using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class OctokitClientFactory(ILogger<OctokitClientFactory> loggerService) : IOctokitClientFactory
+    public class OctokitClientFactory(ILogger<OctokitClientFactory> logger) : IOctokitClientFactory
     {
         private static readonly ProductHeaderValue s_productHeaderValue =
             new(name: Assembly.GetExecutingAssembly().GetName().Name);
 
-        private readonly ILogger _loggerService = loggerService;
+        private readonly ILogger<OctokitClientFactory> _logger = logger;
 
         public async Task<IGitHubClient> CreateGitHubClientAsync(GitHubAuthOptions authOptions)
         {
@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 var installationToken = await appClient.GitHubApps.CreateInstallationToken(appInstallation.Id);
 
-                _loggerService.LogInformation(
+                _logger.LogInformation(
                     $"GitHub App token created for App ID {appInstallation.AppId} and installation "
                     + $"{appInstallation.Id} with expiration {installationToken.ExpiresAt}");
 

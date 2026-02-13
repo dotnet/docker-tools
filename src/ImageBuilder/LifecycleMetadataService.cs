@@ -23,7 +23,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         _orasClient = orasClient;
     }
 
-    public bool IsDigestAnnotatedForEol(string digest, ILogger loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
+    public bool IsDigestAnnotatedForEol(string digest, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
     {
         string stdOut = _orasClient.RunOrasCommand(
             args: [
@@ -34,7 +34,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
             ],
             isDryRun: isDryRun);
 
-        if (LifecycleAnnotationExists(stdOut, loggerService, out lifecycleArtifactManifest))
+        if (LifecycleAnnotationExists(stdOut, logger, out lifecycleArtifactManifest))
         {
             return true;
         }
@@ -43,7 +43,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         return false;
     }
 
-    public bool AnnotateEolDigest(string digest, DateOnly date, ILogger loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
+    public bool AnnotateEolDigest(string digest, DateOnly date, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
     {
         try
         {
@@ -75,7 +75,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         }
         catch (InvalidOperationException ex)
         {
-            loggerService.LogError($"Failed to annotate EOL for digest '{digest}': {ex.Message}");
+            logger.LogError($"Failed to annotate EOL for digest '{digest}': {ex.Message}");
             lifecycleArtifactManifest = null;
             return false;
         }
@@ -83,7 +83,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         return true;
     }
 
-    private static bool LifecycleAnnotationExists(string json, ILogger loggerService, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
+    private static bool LifecycleAnnotationExists(string json, ILogger logger, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
     {
         try
         {
@@ -96,7 +96,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         }
         catch (JsonException ex)
         {
-            loggerService.LogError($"Failed to deserialize 'oras discover' json: {ex.Message}");
+            logger.LogError($"Failed to deserialize 'oras discover' json: {ex.Message}");
         }
 
         lifecycleArtifactManifest = null;

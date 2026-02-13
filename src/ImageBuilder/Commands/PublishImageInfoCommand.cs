@@ -14,21 +14,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IGitService _gitService;
         private readonly IOctokitClientFactory _octokitClientFactory;
-        private readonly ILogger _loggerService;
+        private readonly ILogger<PublishImageInfoCommand> _logger;
         private const string CommitMessage = "Merging Docker image info updates from build";
 
-        public PublishImageInfoCommand(IGitService gitService, IOctokitClientFactory octokitClientFactory, ILogger<PublishImageInfoCommand> loggerService)
+        public PublishImageInfoCommand(IGitService gitService, IOctokitClientFactory octokitClientFactory, ILogger<PublishImageInfoCommand> logger)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _octokitClientFactory = octokitClientFactory ?? throw new ArgumentNullException(nameof(octokitClientFactory));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override string Description => "Publishes a build's merged image info.";
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.LogInformation("PUBLISHING IMAGE INFO");
+            _logger.LogInformation("PUBLISHING IMAGE INFO");
 
             string repoPath = Path.Combine(Path.GetTempPath(), "imagebuilder-repos", Options.GitOptions.Repo);
             if (Directory.Exists(repoPath))
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             try
             {
-                _loggerService.LogInformation("Cloning GitHub repo");
+                _logger.LogInformation("Cloning GitHub repo");
 
                 CloneOptions cloneOptions = new() { BranchName = Options.GitOptions.Branch };
                 CredentialsHandler credentials = await GetCredentialsAsync();
@@ -77,7 +77,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Options.IsDryRun)
             {
-                _loggerService.LogInformation("Skipping commit and push due to dry run.");
+                _logger.LogInformation("Skipping commit and push due to dry run.");
                 return;
             }
 
@@ -87,19 +87,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Commit commit;
             try
             {
-                _loggerService.LogInformation("Committing changes...");
+                _logger.LogInformation("Committing changes...");
                 commit = repo.Commit(CommitMessage, sig, sig);
-                _loggerService.LogInformation($"Created commit {commit.Sha}: '{commit.Message}'");
+                _logger.LogInformation($"Created commit {commit.Sha}: '{commit.Message}'");
             }
             catch (EmptyCommitException)
             {
-                _loggerService.LogInformation("No changes detected in the image info file. Skipping commit and push.");
+                _logger.LogInformation("No changes detected in the image info file. Skipping commit and push.");
                 return;
             }
 
             Branch branch = repo.Branches[Options.GitOptions.Branch];
 
-            _loggerService.LogInformation("Pushing changes to GitHub");
+            _logger.LogInformation("Pushing changes to GitHub");
             repo.Network.Push(branch,
                 new PushOptions
                 {
@@ -107,7 +107,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 });
 
             Uri gitHubCommitUrl = GitHelper.GetCommitUrl(Options.GitOptions, commit.Sha);
-            _loggerService.LogInformation(
+            _logger.LogInformation(
                 $"The '{Options.GitOptions.Path}' file was updated. Remote URL: {gitHubCommitUrl}");
         }
 

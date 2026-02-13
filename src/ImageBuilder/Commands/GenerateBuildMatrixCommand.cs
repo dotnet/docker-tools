@@ -22,15 +22,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
         private readonly IImageCacheService _imageCacheService;
-        private readonly ILogger _loggerService;
-        private ILogger Logger => _loggerService;
+        private readonly ILogger<GenerateBuildMatrixCommand> _logger;
+        private ILogger Logger => _logger;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> loggerService) : base()
+        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base()
         {
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
                 if (Options.ImageInfoPath != null)
@@ -455,7 +455,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (platformMapping.PlatformData is null)
                     {
-                        _loggerService.LogInformation($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
+                        _logger.LogInformation($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
                         subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
                         return;
                     }
@@ -471,7 +471,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
 
-                    _loggerService.LogInformation(
+                    _logger.LogInformation(
                         $"Image '{platformMapping.PlatformInfo.DockerfilePath}' cache state is {cacheResult.State}. Included in matrix: {includePlatformInMatrix}");
 
                     if (includePlatformInMatrix)

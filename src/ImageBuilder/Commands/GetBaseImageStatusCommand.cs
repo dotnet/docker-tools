@@ -12,12 +12,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
-        private readonly ILogger _loggerService;
+        private readonly ILogger<GetBaseImageStatusCommand> _logger;
 
-        public GetBaseImageStatusCommand(IDockerService dockerService, ILogger<GetBaseImageStatusCommand> loggerService)
+        public GetBaseImageStatusCommand(IDockerService dockerService, ILogger<GetBaseImageStatusCommand> logger)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override string Description => "Displays the status of the referenced external base images";
@@ -55,13 +55,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Distinct()
                 .ToList();
 
-            _loggerService.LogInformation("PULLING LATEST BASE IMAGES");
+            _logger.LogInformation("PULLING LATEST BASE IMAGES");
             foreach ((string Tag, string Platform) imageTag in platformTags)
             {
                 _dockerService.PullImage(imageTag.Tag, imageTag.Platform, Options.IsDryRun);
             }
 
-            _loggerService.LogInformation("QUERYING STATUS");
+            _logger.LogInformation("QUERYING STATUS");
             var statuses = platformTags
                 .Select(imageTag => new
                 {
@@ -70,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 })
                 .ToList();
 
-            _loggerService.LogInformation("BASE IMAGE STATUS SUMMARY");
+            _logger.LogInformation("BASE IMAGE STATUS SUMMARY");
             foreach (var status in statuses)
             {
                 TimeSpan timeDiff = DateTime.Now - status.DateCreated;
@@ -83,9 +83,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     days = $"{totalDays} days, ";
                 }
 
-                _loggerService.LogInformation(status.Tag);
-                _loggerService.LogInformation($"Created {days}{timeDiff.Minutes} minutes ago");
-                _loggerService.LogInformation(string.Empty);
+                _logger.LogInformation(status.Tag);
+                _logger.LogInformation($"Created {days}{timeDiff.Minutes} minutes ago");
+                _logger.LogInformation(string.Empty);
             }
         }
     }

@@ -15,26 +15,26 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class VssConnectionFactory : IVssConnectionFactory
     {
-        private readonly ILogger _loggerService;
+        private readonly ILogger<VssConnectionFactory> _logger;
 
-        public VssConnectionFactory(ILogger<VssConnectionFactory> loggerService)
+        public VssConnectionFactory(ILogger<VssConnectionFactory> logger)
         {
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public IVssConnection Create(Uri baseUrl, VssCredentials credentials)
         {
-            return new VssConnectionWrapper(_loggerService, new VssConnection(baseUrl, credentials));
+            return new VssConnectionWrapper(StandaloneLoggerFactory.CreateLogger<VssConnectionWrapper>(), new VssConnection(baseUrl, credentials));
         }
 
         private class VssConnectionWrapper : IVssConnection
         {
-            private readonly ILogger _loggerService;
+            private readonly ILogger<VssConnectionWrapper> _logger;
             private readonly VssConnection _inner;
 
-            public VssConnectionWrapper(ILogger loggerService, VssConnection inner)
+            public VssConnectionWrapper(ILogger<VssConnectionWrapper> logger, VssConnection inner)
             {
-                _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                 _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             }
 
@@ -45,22 +45,22 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
             public IProjectHttpClient GetProjectHttpClient()
             {
-                return new ProjectHttpClientWrapper(_loggerService, _inner.GetClient<ProjectHttpClient>());
+                return new ProjectHttpClientWrapper(StandaloneLoggerFactory.CreateLogger<ProjectHttpClientWrapper>(), _inner.GetClient<ProjectHttpClient>());
             }
 
             public IBuildHttpClient GetBuildHttpClient()
             {
-                return new BuildHttpClientWrapper(_loggerService, _inner.GetClient<WebApi.BuildHttpClient>());
+                return new BuildHttpClientWrapper(StandaloneLoggerFactory.CreateLogger<BuildHttpClientWrapper>(), _inner.GetClient<WebApi.BuildHttpClient>());
             }
 
             private class ProjectHttpClientWrapper : IProjectHttpClient
             {
-                private readonly ILogger _loggerService;
+                private readonly ILogger<ProjectHttpClientWrapper> _logger;
                 private readonly ProjectHttpClient _inner;
 
-                public ProjectHttpClientWrapper(ILogger loggerService, ProjectHttpClient inner)
+                public ProjectHttpClientWrapper(ILogger<ProjectHttpClientWrapper> logger, ProjectHttpClient inner)
                 {
-                    _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+                    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));
                 }
 
@@ -70,18 +70,18 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 }
 
                 public Task<TeamProject> GetProjectAsync(string projectId) =>
-                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                         .ExecuteAsync(() => _inner.GetProject(projectId));
             }
 
             private class BuildHttpClientWrapper : IBuildHttpClient
             {
-                private readonly ILogger _loggerService;
+                private readonly ILogger<BuildHttpClientWrapper> _logger;
                 private readonly WebApi.BuildHttpClient _inner;
 
-                public BuildHttpClientWrapper(ILogger loggerService, WebApi.BuildHttpClient inner)
+                public BuildHttpClientWrapper(ILogger<BuildHttpClientWrapper> logger, WebApi.BuildHttpClient inner)
                 {
-                    _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+                    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));
                 }
 
@@ -91,14 +91,14 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 }
 
                 public Task<List<string>> AddBuildTagAsync(Guid project, int buildId, string tag) =>
-                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                         .ExecuteAsync(() => _inner.AddBuildTagAsync(project, buildId, tag));
 
                 public Task<WebApi.Build> GetBuildAsync(Guid projectId, int buildId) =>
                     _inner.GetBuildAsync(projectId, buildId);
 
                 public Task<IPagedList<WebApi.Build>> GetBuildsAsync(Guid projectId, IEnumerable<int> definitions = null, WebApi.BuildStatus? statusFilter = null) =>
-                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                    RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                         .ExecuteAsync(() => _inner.GetBuildsAsync2(projectId, definitions: definitions, statusFilter: statusFilter));
 
                 public Task<WebApi.Timeline> GetBuildTimelineAsync(Guid projectId, int buildId) =>

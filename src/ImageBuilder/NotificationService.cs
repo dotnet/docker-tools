@@ -12,12 +12,12 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public class NotificationService : INotificationService
     {
-        private readonly ILogger _loggerService;
+        private readonly ILogger<NotificationService> _logger;
         private readonly IOctokitClientFactory _octokitClientFactory;
 
-        public NotificationService(ILogger<NotificationService> loggerService, IOctokitClientFactory octokitClientFactory)
+        public NotificationService(ILogger<NotificationService> logger, IOctokitClientFactory octokitClientFactory)
         {
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _octokitClientFactory = octokitClientFactory
                 ?? throw new ArgumentNullException(nameof(octokitClientFactory));
         }
@@ -55,24 +55,24 @@ namespace Microsoft.DotNet.ImageBuilder
                 }
             }
 
-            _loggerService.LogInformation("POSTED NOTIFICATION:");
-            _loggerService.LogInformation($"Issue URL: {issue?.HtmlUrl ?? "SKIPPED"}");
-            _loggerService.LogInformation($"Title: {title}");
-            _loggerService.LogInformation($"Labels: {string.Join(", ", labels)}");
-            _loggerService.LogInformation($"Description:");
-            _loggerService.LogInformation($"====BEGIN DESCRIPTION MARKDOWN===");
-            _loggerService.LogInformation(description);
-            _loggerService.LogInformation($"====END DESCRIPTION MARKDOWN===");
+            _logger.LogInformation("POSTED NOTIFICATION:");
+            _logger.LogInformation($"Issue URL: {issue?.HtmlUrl ?? "SKIPPED"}");
+            _logger.LogInformation($"Title: {title}");
+            _logger.LogInformation($"Labels: {string.Join(", ", labels)}");
+            _logger.LogInformation($"Description:");
+            _logger.LogInformation($"====BEGIN DESCRIPTION MARKDOWN===");
+            _logger.LogInformation(description);
+            _logger.LogInformation($"====END DESCRIPTION MARKDOWN===");
 
             if (comments != null)
             {
-                _loggerService.LogInformation($"====BEGIN COMMENTS MARKDOWN===");
+                _logger.LogInformation($"====BEGIN COMMENTS MARKDOWN===");
                 for (int i = 0; i < comments.Count(); i++)
                 {
-                    _loggerService.LogInformation($"====COMMENT {i + 1} MARKDOWN===");
-                    _loggerService.LogInformation(comments.ElementAt(i));
+                    _logger.LogInformation($"====COMMENT {i + 1} MARKDOWN===");
+                    _logger.LogInformation(comments.ElementAt(i));
                 }
-                _loggerService.LogInformation($"====END COMMENTS MARKDOWN===");
+                _logger.LogInformation($"====END COMMENTS MARKDOWN===");
             }
 
             if (issue is null)
@@ -83,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Immediately close issues which aren't failures, since open issues should represent actionable items
             if (!labels.Where(l => l.Contains(Commands.NotificationLabels.Failure)).Any())
             {
-                _loggerService.LogInformation("No failure label found in the notification labels.");
+                _logger.LogInformation("No failure label found in the notification labels.");
                 await github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed });
             }
         }

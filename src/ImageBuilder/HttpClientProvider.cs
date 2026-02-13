@@ -13,15 +13,15 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly Lazy<HttpClient> _httpClient;
         private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
-        public HttpClientProvider(ILogger<HttpClientProvider> loggerService)
+        public HttpClientProvider(ILogger<HttpClientProvider> logger)
         {
-            if (loggerService is null)
+            if (logger is null)
             {
-                throw new ArgumentNullException(nameof(loggerService));
+                throw new ArgumentNullException(nameof(logger));
             }
 
-            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(loggerService)));
-            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(loggerService)));
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(StandaloneLoggerFactory.CreateLogger<LoggingHandler>())));
+            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(StandaloneLoggerFactory.CreateLogger<LoggingHandler>())));
         }
 
         public HttpClient GetClient() => _httpClient.Value;
@@ -30,17 +30,17 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private class LoggingHandler : MessageProcessingHandler
         {
-            private readonly ILogger _loggerService;
+            private readonly ILogger<LoggingHandler> _logger;
 
-            public LoggingHandler(ILogger loggerService)
+            public LoggingHandler(ILogger<LoggingHandler> logger)
             {
-                _loggerService = loggerService;
+                _logger = logger;
                 InnerHandler = new HttpClientHandler();
             }
 
             protected override HttpRequestMessage ProcessRequest(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                _loggerService.LogInformation($"Sending HTTP request: {request.RequestUri}");
+                _logger.LogInformation($"Sending HTTP request: {request.RequestUri}");
                 return request;
             }
 

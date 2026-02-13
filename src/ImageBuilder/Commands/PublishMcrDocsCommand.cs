@@ -21,21 +21,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService _gitService;
         private readonly IGitHubClientFactory _gitHubClientFactory;
-        private readonly ILogger _loggerService;
+        private readonly ILogger<PublishMcrDocsCommand> _logger;
 
         public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
-            ILogger<PublishMcrDocsCommand> loggerService) : base()
+            ILogger<PublishMcrDocsCommand> logger) : base()
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override string Description => "Publishes the readmes to MCR";
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.LogInformation("PUBLISHING MCR DOCS");
+            _logger.LogInformation("PUBLISHING MCR DOCS");
 
             ValidateReadmeFilenames(Manifest);
 
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (GitObject gitObject in gitObjects)
             {
-                _loggerService.LogInformation(
+                _logger.LogInformation(
                     $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
             }
 
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 using IGitHubClient gitHubClient = await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun);
 
-                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
+                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_logger).ExecuteAsync(async () =>
                 {
                     GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
                     {
@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (gitRef != null)
                     {
-                        _loggerService.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                        _logger.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
                 });
             }
@@ -109,11 +109,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
                 if (currentContent == gitObject.Content)
                 {
-                    _loggerService.LogInformation($"File '{gitObject.Path}' has not changed.");
+                    _logger.LogInformation($"File '{gitObject.Path}' has not changed.");
                 }
                 else
                 {
-                    _loggerService.LogInformation($"File '{gitObject.Path}' has changed.");
+                    _logger.LogInformation($"File '{gitObject.Path}' has changed.");
                     updatedGitObjects.Add(gitObject);
                 }
             }

@@ -22,16 +22,17 @@ public interface IMarImageIngestionReporter
 }
 public class MarImageIngestionReporter : IMarImageIngestionReporter
 {
-    private readonly ILogger<MarImageIngestionReporter> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
     private readonly IEnvironmentService _environmentService;
 
     public MarImageIngestionReporter(
         ILogger<MarImageIngestionReporter> logger,
+        ILoggerFactory loggerFactory,
         IMcrStatusClientFactory mcrStatusClientFactory,
         IEnvironmentService environmentService)
     {
-        _logger = logger;
+        _loggerFactory = loggerFactory;
         _mcrStatusClientFactory = mcrStatusClientFactory;
         _environmentService = environmentService;
     }
@@ -48,7 +49,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
         var mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
         var reporter = new ReporterImpl(
-            StandaloneLoggerFactory.CreateLogger<ReporterImpl>(),
+            _loggerFactory,
             mcrStatusClient,
             _environmentService,
             timeout,
@@ -67,10 +68,10 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
         private readonly TimeSpan _requeryDelay;
         private readonly DateTime? _minimumQueueTime;
 
-        public ReporterImpl(ILogger<ReporterImpl> logger, IMcrStatusClient statusClient, IEnvironmentService environmentService,
+        public ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
             TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
         {
-            _logger = logger;
+            _logger = loggerFactory.CreateLogger<ReporterImpl>();
             _statusClient = statusClient;
             _environmentService = environmentService;
             _timeout = timeout;

@@ -10,18 +10,20 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     internal class HttpClientProvider : IHttpClientProvider
     {
+        private readonly ILoggerFactory _loggerFactory;
         private readonly Lazy<HttpClient> _httpClient;
         private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
-        public HttpClientProvider(ILogger<HttpClientProvider> logger)
+        public HttpClientProvider(ILoggerFactory loggerFactory)
         {
-            if (logger is null)
+            if (loggerFactory is null)
             {
-                throw new ArgumentNullException(nameof(logger));
+                throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(StandaloneLoggerFactory.CreateLogger<LoggingHandler>())));
-            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(StandaloneLoggerFactory.CreateLogger<LoggingHandler>())));
+            _loggerFactory = loggerFactory;
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(_loggerFactory)));
+            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(_loggerFactory)));
         }
 
         public HttpClient GetClient() => _httpClient.Value;
@@ -32,9 +34,10 @@ namespace Microsoft.DotNet.ImageBuilder
         {
             private readonly ILogger<LoggingHandler> _logger;
 
-            public LoggingHandler(ILogger<LoggingHandler> logger)
+            public LoggingHandler(ILoggerFactory loggerFactory)
             {
-                _logger = logger;
+                ArgumentNullException.ThrowIfNull(loggerFactory);
+                _logger = loggerFactory.CreateLogger<LoggingHandler>();
                 InnerHandler = new HttpClientHandler();
             }
 

@@ -13,11 +13,14 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     internal class GitHubClientFactory(
         ILogger<GitHubClientFactory> logger,
+        ILoggerFactory loggerFactory,
         IOctokitClientFactory octokitClientFactory)
         : IGitHubClientFactory
     {
         private readonly ILogger<GitHubClientFactory> _logger = logger
             ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILoggerFactory _loggerFactory = loggerFactory
+            ?? throw new ArgumentNullException(nameof(loggerFactory));
 
         private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
             ?? throw new ArgumentNullException(nameof(octokitClientFactory));
@@ -31,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 user: gitOptions.Username,
                 email: gitOptions.Email);
 
-            return new GitHubClientWrapper(StandaloneLoggerFactory.CreateLogger<GitHubClientWrapper>(), new GitHubClient(auth), isDryRun);
+            return new GitHubClientWrapper(_loggerFactory, new GitHubClient(auth), isDryRun);
         }
 
         // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled
@@ -41,9 +44,9 @@ namespace Microsoft.DotNet.ImageBuilder
             private readonly GitHubClient _innerClient;
             private readonly bool _isDryRun;
 
-            public GitHubClientWrapper(ILogger<GitHubClientWrapper> logger, GitHubClient innerClient, bool isDryRun)
+            public GitHubClientWrapper(ILoggerFactory loggerFactory, GitHubClient innerClient, bool isDryRun)
             {
-                _logger = logger;
+                _logger = loggerFactory.CreateLogger<GitHubClientWrapper>();
                 _innerClient = innerClient;
                 _isDryRun = isDryRun;
             }

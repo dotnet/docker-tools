@@ -16,25 +16,29 @@ namespace Microsoft.DotNet.ImageBuilder.Services
     internal class VssConnectionFactory : IVssConnectionFactory
     {
         private readonly ILogger<VssConnectionFactory> _logger;
+        private readonly ILoggerFactory _loggerFactory;
 
-        public VssConnectionFactory(ILogger<VssConnectionFactory> logger)
+        public VssConnectionFactory(ILogger<VssConnectionFactory> logger, ILoggerFactory loggerFactory)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
         }
 
         public IVssConnection Create(Uri baseUrl, VssCredentials credentials)
         {
-            return new VssConnectionWrapper(StandaloneLoggerFactory.CreateLogger<VssConnectionWrapper>(), new VssConnection(baseUrl, credentials));
+            return new VssConnectionWrapper(_loggerFactory, new VssConnection(baseUrl, credentials));
         }
 
         private class VssConnectionWrapper : IVssConnection
         {
             private readonly ILogger<VssConnectionWrapper> _logger;
+            private readonly ILoggerFactory _loggerFactory;
             private readonly VssConnection _inner;
 
-            public VssConnectionWrapper(ILogger<VssConnectionWrapper> logger, VssConnection inner)
+            public VssConnectionWrapper(ILoggerFactory loggerFactory, VssConnection inner)
             {
-                _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+                _loggerFactory = loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory));
+                _logger = _loggerFactory.CreateLogger<VssConnectionWrapper>();
                 _inner = inner ?? throw new ArgumentNullException(nameof(inner));
             }
 
@@ -45,12 +49,12 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
             public IProjectHttpClient GetProjectHttpClient()
             {
-                return new ProjectHttpClientWrapper(StandaloneLoggerFactory.CreateLogger<ProjectHttpClientWrapper>(), _inner.GetClient<ProjectHttpClient>());
+                return new ProjectHttpClientWrapper(_loggerFactory, _inner.GetClient<ProjectHttpClient>());
             }
 
             public IBuildHttpClient GetBuildHttpClient()
             {
-                return new BuildHttpClientWrapper(StandaloneLoggerFactory.CreateLogger<BuildHttpClientWrapper>(), _inner.GetClient<WebApi.BuildHttpClient>());
+                return new BuildHttpClientWrapper(_loggerFactory, _inner.GetClient<WebApi.BuildHttpClient>());
             }
 
             private class ProjectHttpClientWrapper : IProjectHttpClient
@@ -58,9 +62,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 private readonly ILogger<ProjectHttpClientWrapper> _logger;
                 private readonly ProjectHttpClient _inner;
 
-                public ProjectHttpClientWrapper(ILogger<ProjectHttpClientWrapper> logger, ProjectHttpClient inner)
+                public ProjectHttpClientWrapper(ILoggerFactory loggerFactory, ProjectHttpClient inner)
                 {
-                    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+                    ArgumentNullException.ThrowIfNull(loggerFactory);
+                    _logger = loggerFactory.CreateLogger<ProjectHttpClientWrapper>();
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));
                 }
 
@@ -79,9 +84,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 private readonly ILogger<BuildHttpClientWrapper> _logger;
                 private readonly WebApi.BuildHttpClient _inner;
 
-                public BuildHttpClientWrapper(ILogger<BuildHttpClientWrapper> logger, WebApi.BuildHttpClient inner)
+                public BuildHttpClientWrapper(ILoggerFactory loggerFactory, WebApi.BuildHttpClient inner)
                 {
-                    _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+                    ArgumentNullException.ThrowIfNull(loggerFactory);
+                    _logger = loggerFactory.CreateLogger<BuildHttpClientWrapper>();
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));
                 }
 

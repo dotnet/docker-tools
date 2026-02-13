@@ -25,7 +25,7 @@ public class SigningRequestGeneratorTests
             .ReturnsAsync((string reference, CancellationToken _) => new Descriptor
             {
                 MediaType = "application/vnd.oci.image.manifest.v1+json",
-                Digest = reference.Split('@')[1],
+                Digest = reference,
                 Size = 1234
             });
 
@@ -58,8 +58,8 @@ public class SigningRequestGeneratorTests
         var requests = await generator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
 
         requests.Count.ShouldBe(2);
-        requests[0].ImageName.ShouldBe("myregistry.azurecr.io/dotnet/runtime@sha256:abc123");
-        requests[1].ImageName.ShouldBe("myregistry.azurecr.io/dotnet/runtime@sha256:def456");
+        requests[0].ImageName.ShouldBe("sha256:abc123");
+        requests[1].ImageName.ShouldBe("sha256:def456");
     }
 
     [Fact]
@@ -105,7 +105,7 @@ public class SigningRequestGeneratorTests
         var requests = await generator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
 
         requests.Count.ShouldBe(1);
-        requests[0].ImageName.ShouldBe("myregistry.azurecr.io/dotnet/runtime@sha256:abc123");
+        requests[0].ImageName.ShouldBe("sha256:abc123");
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public class SigningRequestGeneratorTests
             .ReturnsAsync((string reference, CancellationToken _) => new Descriptor
             {
                 MediaType = "application/vnd.oci.image.index.v1+json",
-                Digest = reference.Split('@')[1],
+                Digest = reference,
                 Size = 5678
             });
 
@@ -150,7 +150,7 @@ public class SigningRequestGeneratorTests
         var requests = await generator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
 
         requests.Count.ShouldBe(1);
-        requests[0].ImageName.ShouldBe("myregistry.azurecr.io/dotnet/runtime@sha256:manifest123");
+        requests[0].ImageName.ShouldBe("sha256:manifest123");
         requests[0].Payload.TargetArtifact.MediaType.ShouldBe("application/vnd.oci.image.index.v1+json");
     }
 

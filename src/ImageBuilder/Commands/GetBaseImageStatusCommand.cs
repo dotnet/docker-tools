@@ -12,9 +12,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
 
-        public GetBaseImageStatusCommand(IDockerService dockerService, ILoggerService loggerService)
+        public GetBaseImageStatusCommand(IDockerService dockerService, ILogger loggerService)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -55,13 +55,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Distinct()
                 .ToList();
 
-            _loggerService.WriteHeading("PULLING LATEST BASE IMAGES");
+            _loggerService.LogInformation("PULLING LATEST BASE IMAGES");
             foreach ((string Tag, string Platform) imageTag in platformTags)
             {
                 _dockerService.PullImage(imageTag.Tag, imageTag.Platform, Options.IsDryRun);
             }
 
-            _loggerService.WriteHeading("QUERYING STATUS");
+            _loggerService.LogInformation("QUERYING STATUS");
             var statuses = platformTags
                 .Select(imageTag => new
                 {
@@ -70,7 +70,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 })
                 .ToList();
 
-            _loggerService.WriteHeading("BASE IMAGE STATUS SUMMARY");
+            _loggerService.LogInformation("BASE IMAGE STATUS SUMMARY");
             foreach (var status in statuses)
             {
                 TimeSpan timeDiff = DateTime.Now - status.DateCreated;
@@ -83,9 +83,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     days = $"{totalDays} days, ";
                 }
 
-                _loggerService.WriteSubheading(status.Tag);
-                _loggerService.WriteMessage($"Created {days}{timeDiff.Minutes} minutes ago");
-                _loggerService.WriteMessage();
+                _loggerService.LogInformation(status.Tag);
+                _loggerService.LogInformation($"Created {days}{timeDiff.Minutes} minutes ago");
+                _loggerService.LogInformation(string.Empty);
             }
         }
     }

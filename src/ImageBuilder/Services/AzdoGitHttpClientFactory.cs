@@ -11,9 +11,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public class AzdoGitHttpClientFactory : IAzdoGitHttpClientFactory
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
 
-        public AzdoGitHttpClientFactory(ILoggerService loggerService)
+        public AzdoGitHttpClientFactory(ILogger loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
@@ -23,10 +23,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
         private class GitHttpClientWrapper : IAzdoGitHttpClient
         {
-            private readonly ILoggerService _loggerService;
+            private readonly ILogger _loggerService;
             private readonly GitHttpClient _gitHttpClient;
 
-            public GitHttpClientWrapper(ILoggerService loggerService, GitHttpClient gitHttpClient)
+            public GitHttpClientWrapper(ILogger loggerService, GitHttpClient gitHttpClient)
             {
                 _loggerService = loggerService;
                 _gitHttpClient = gitHttpClient;

@@ -30,13 +30,13 @@ public interface ICopyImageService
 
 public class CopyImageService : ICopyImageService
 {
-    private readonly ILoggerService _loggerService;
+    private readonly ILogger _loggerService;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig;
     private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
     public CopyImageService(
-        ILoggerService loggerService,
+        ILogger loggerService,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IOptions<PublishConfiguration> publishConfigOptions)
     {
@@ -82,7 +82,7 @@ public class CopyImageService : ICopyImageService
             .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
             .ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
-        _loggerService.WriteMessage($"{action} {formattedDestinationImages} from '{sourceImageName}'");
+        _loggerService.LogInformation($"{action} {formattedDestinationImages} from '{sourceImageName}'");
 
         if (!isDryRun)
         {
@@ -99,14 +99,14 @@ public class CopyImageService : ICopyImageService
                 string errorMsg = $"Importing Failure: {formattedDestinationImages}";
                 errorMsg += Environment.NewLine + e.ToString();
 
-                _loggerService.WriteMessage(errorMsg);
+                _loggerService.LogInformation(errorMsg);
 
                 throw;
             }
         }
         else
         {
-            _loggerService.WriteMessage("Importing skipped due to dry run.");
+            _loggerService.LogInformation("Importing skipped due to dry run.");
         }
     }
 

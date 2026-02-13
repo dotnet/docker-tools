@@ -36,7 +36,9 @@ try
 }
 catch (Exception e)
 {
-    Logger.WriteError(e.ToString());
+    using var loggerFactory = LoggerFactory.Create(builder => builder.AddSimpleConsole());
+    ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");
+    logger.LogError(e, "Unhandled exception");
 }
 
 return 1;

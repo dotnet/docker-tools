@@ -196,7 +196,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -287,7 +287,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -379,7 +379,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -541,7 +541,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -641,7 +641,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -773,7 +773,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -829,7 +829,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 

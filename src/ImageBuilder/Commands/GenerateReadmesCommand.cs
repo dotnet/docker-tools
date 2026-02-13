@@ -18,8 +18,8 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public partial class GenerateReadmesCommand(IEnvironmentService environmentService)
-        : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService)
+    public partial class GenerateReadmesCommand(IEnvironmentService environmentService, ILogger logger)
+        : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService, logger)
     {
         private const string ArtifactName = "Readme";
 
@@ -32,7 +32,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </summary>
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING READMES");
+            Logger.LogInformation("GENERATING READMES");
 
             // Generate Product Family Readme
             await GenerateArtifactsAsync(
@@ -119,13 +119,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             var repoTagGroups = GenerateRepoTagGroups(repo);
 
-            Logger.WriteSubheading("GENERATING TAGS LISTING");
+            Logger.LogInformation("GENERATING TAGS LISTING");
             string tagsMarkdown = GenerateMarkdownTables(repoTagGroups);
 
             if (Options.IsVerbose)
             {
-                Logger.WriteSubheading($"Tags Documentation:");
-                Logger.WriteMessage(tagsMarkdown);
+                Logger.LogInformation($"Tags Documentation:");
+                Logger.LogInformation(tagsMarkdown);
             }
 
             var updatedReadme = ReadmeHelper.UpdateTagsListing(readme, tagsMarkdown);

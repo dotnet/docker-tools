@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly Lazy<HttpClient> _httpClient;
         private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
-        public HttpClientProvider(ILoggerService loggerService)
+        public HttpClientProvider(ILogger loggerService)
         {
             if (loggerService is null)
             {
@@ -30,9 +30,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private class LoggingHandler : MessageProcessingHandler
         {
-            private readonly ILoggerService _loggerService;
+            private readonly ILogger _loggerService;
 
-            public LoggingHandler(ILoggerService loggerService)
+            public LoggingHandler(ILogger loggerService)
             {
                 _loggerService = loggerService;
                 InnerHandler = new HttpClientHandler();
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
             protected override HttpRequestMessage ProcessRequest(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                _loggerService.WriteMessage($"Sending HTTP request: {request.RequestUri}");
+                _loggerService.LogInformation($"Sending HTTP request: {request.RequestUri}");
                 return request;
             }
 

@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IAcrClientFactory _acrClientFactory;
         private readonly IAcrContentClientFactory _acrContentClientFactory;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public CleanAcrImagesCommand(
             IAcrClientFactory acrClientFactory,
             IAcrContentClientFactory acrContentClientFactory,
-            ILoggerService loggerService,
+            ILogger loggerService,
             ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {
@@ -53,15 +53,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             Regex repoNameFilterRegex = new(ManifestFilter.GetFilterRegexPattern(Options.RepoName));
 
-            _loggerService.WriteHeading("FINDING IMAGES TO CLEAN");
+            _loggerService.LogInformation("FINDING IMAGES TO CLEAN");
 
-            _loggerService.WriteSubheading($"Connecting to ACR '{Options.RegistryName}'");
+            _loggerService.LogInformation($"Connecting to ACR '{Options.RegistryName}'");
             IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryName);
 
-            _loggerService.WriteSubheading($"Querying catalog of ACR '{Options.RegistryName}'");
+            _loggerService.LogInformation($"Querying catalog of ACR '{Options.RegistryName}'");
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
-            _loggerService.WriteHeading("DELETING IMAGES");
+            _loggerService.LogInformation("DELETING IMAGES");
 
             List<string> deletedRepos = new List<string>();
             List<string> deletedImages = new List<string>();
@@ -121,35 +121,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task LogSummaryAsync(IAcrClient acrClient, List<string> deletedRepos, List<string> deletedImages)
         {
-            _loggerService.WriteHeading("SUMMARY");
+            _loggerService.LogInformation("SUMMARY");
 
-            _loggerService.WriteSubheading("Deleted repositories:");
+            _loggerService.LogInformation("Deleted repositories:");
             foreach (string deletedRepo in deletedRepos)
             {
-                _loggerService.WriteMessage($"\t{deletedRepo}");
+                _loggerService.LogInformation($"\t{deletedRepo}");
             }
 
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
 
-            _loggerService.WriteSubheading("Deleted images:");
+            _loggerService.LogInformation("Deleted images:");
             foreach (string deletedImage in deletedImages)
             {
-                _loggerService.WriteMessage($"\t{deletedImage}");
+                _loggerService.LogInformation($"\t{deletedImage}");
             }
 
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
 
-            _loggerService.WriteSubheading("DELETED DATA");
-            _loggerService.WriteMessage($"Total images deleted: {deletedImages.Count}");
-            _loggerService.WriteMessage($"Total repos deleted: {deletedRepos.Count}");
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation("DELETED DATA");
+            _loggerService.LogInformation($"Total images deleted: {deletedImages.Count}");
+            _loggerService.LogInformation($"Total repos deleted: {deletedRepos.Count}");
+            _loggerService.LogInformation(string.Empty);
 
-            _loggerService.WriteMessage("<Querying remaining data...>");
+            _loggerService.LogInformation("<Querying remaining data...>");
 
             // Requery the catalog to get the latest info after things have been deleted
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
 
-            _loggerService.WriteSubheading($"Total repos remaining: {await repositoryNames.CountAsync()}");
+            _loggerService.LogInformation($"Total repos remaining: {await repositoryNames.CountAsync()}");
 
         }
 
@@ -157,10 +157,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrClient acrClient, IAcrContentClient acrContentClient, List<string> deletedImages, List<string> deletedRepos, ContainerRepository repository,
             Func<ArtifactManifestProperties, Task<bool>> canDeleteManifest)
         {
-            _loggerService.WriteMessage($"Querying manifests for repo '{repository.Name}'");
+            _loggerService.LogInformation($"Querying manifests for repo '{repository.Name}'");
             IAsyncEnumerable<ArtifactManifestProperties> manifestProperties = repository.GetAllManifestPropertiesAsync();
             int manifestCount = await manifestProperties.CountAsync();
-            _loggerService.WriteMessage($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
+            _loggerService.LogInformation($"Finished querying manifests for repo '{repository.Name}'. Manifest count: {manifestCount}");
 
             ArtifactManifestProperties[] allManifests = await manifestProperties.ToArrayAsync();
 
@@ -222,7 +222,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string imageId = $"{repository.Name}@{manifest.Digest}";
 
-            _loggerService.WriteMessage($"Deleted image '{imageId}'");
+            _loggerService.LogInformation($"Deleted image '{imageId}'");
 
             lock (deletedImages)
             {
@@ -264,7 +264,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 messageBuilder.AppendLine($"\t{tag}");
             }
 
-            _loggerService.WriteMessage(messageBuilder.ToString());
+            _loggerService.LogInformation(messageBuilder.ToString());
 
             lock (deletedRepos)
             {

@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return new HttpPolicyBuilder();
         }
 
-        public HttpPolicyBuilder WithMeteredRetryPolicy(ILoggerService loggerService)
+        public HttpPolicyBuilder WithMeteredRetryPolicy(ILogger loggerService)
         {
             _policies.Add(Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
@@ -37,20 +37,20 @@ namespace Microsoft.DotNet.ImageBuilder
             return this;
         }
 
-        public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILoggerService loggerService)
+        public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILogger loggerService)
         {
             _policies.Add(Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
                 .RetryAsync(1, async (result, retryCount, context) =>
                 {
-                    loggerService.WriteMessage(
+                    loggerService.LogInformation(
                         $"Unauthorized status code returned for '{result.Result.RequestMessage?.RequestUri}'. Refreshing access token and retrying.");
                     await refreshAccessToken();
                 }));
             return this;
         }
 
-        public HttpPolicyBuilder WithNotFoundRetryPolicy(TimeSpan timeout, TimeSpan retryFrequency, ILoggerService loggerService)
+        public HttpPolicyBuilder WithNotFoundRetryPolicy(TimeSpan timeout, TimeSpan retryFrequency, ILogger loggerService)
         {
             IEnumerable<TimeSpan> sleepDurations = Enumerable
                 .Repeat(retryFrequency.TotalSeconds, (int)(timeout.TotalSeconds / retryFrequency.TotalSeconds))
@@ -58,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
                 .WaitAndRetryAsync(sleepDurations, (result, duration) =>
                 {
-                    loggerService.WriteMessage(
+                    loggerService.LogInformation(
                         $"NotFound status code returned for '{result.Result.RequestMessage?.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
                 }));
             return this;

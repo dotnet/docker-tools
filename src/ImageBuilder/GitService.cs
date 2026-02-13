@@ -7,9 +7,9 @@ using LibGit2Sharp;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class GitService(ILoggerService logger) : IGitService
+    public class GitService(ILogger logger) : IGitService
     {
-        private readonly ILoggerService _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         public string GetCommitSha(string filePath, bool useFullHash = false)
         {
@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public IRepository CloneRepository(string sourceUrl, string workdirPath, CloneOptions options)
         {
-            _logger.WriteMessage($"Cloning repository {sourceUrl} to {workdirPath}");
+            _logger.LogInformation($"Cloning repository {sourceUrl} to {workdirPath}");
             Repository.Clone(sourceUrl, workdirPath, options);
             return new Repository(workdirPath);
         }
@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder
             // Due to the Stage method's dependency on the Diff class, it prevents it from being easily used
             // with its default implementation due to https://github.com/libgit2/libgit2sharp/issues/1856.
 
-            _logger.WriteMessage($"Staging {path} in repository {repository.Info.WorkingDirectory}");
+            _logger.LogInformation($"Staging {path} in repository {repository.Info.WorkingDirectory}");
             LibGit2Sharp.Commands.Stage(repository, path);
         }
     }

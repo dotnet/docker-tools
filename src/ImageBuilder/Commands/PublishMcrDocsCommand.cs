@@ -21,10 +21,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService _gitService;
         private readonly IGitHubClientFactory _gitHubClientFactory;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
 
         public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
-            ILoggerService loggerService) : base()
+            ILogger loggerService) : base()
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
@@ -35,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("PUBLISHING MCR DOCS");
+            _loggerService.LogInformation("PUBLISHING MCR DOCS");
 
             ValidateReadmeFilenames(Manifest);
 
@@ -50,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (GitObject gitObject in gitObjects)
             {
-                _loggerService.WriteMessage(
+                _loggerService.LogInformation(
                     $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
             }
 
@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (gitRef != null)
                     {
-                        _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                        _loggerService.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
                 });
             }
@@ -109,11 +109,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
                 if (currentContent == gitObject.Content)
                 {
-                    _loggerService.WriteMessage($"File '{gitObject.Path}' has not changed.");
+                    _loggerService.LogInformation($"File '{gitObject.Path}' has not changed.");
                 }
                 else
                 {
-                    _loggerService.WriteMessage($"File '{gitObject.Path}' has changed.");
+                    _loggerService.LogInformation($"File '{gitObject.Path}' has changed.");
                     updatedGitObjects.Add(gitObject);
                 }
             }

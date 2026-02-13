@@ -12,11 +12,11 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 namespace Microsoft.DotNet.ImageBuilder
 {
     internal class GitHubClientFactory(
-        ILoggerService loggerService,
+        ILogger loggerService,
         IOctokitClientFactory octokitClientFactory)
         : IGitHubClientFactory
     {
-        private readonly ILoggerService _loggerService = loggerService
+        private readonly ILogger _loggerService = loggerService
             ?? throw new ArgumentNullException(nameof(loggerService));
 
         private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
@@ -37,11 +37,11 @@ namespace Microsoft.DotNet.ImageBuilder
         // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled
         private class GitHubClientWrapper : IGitHubClient
         {
-            private readonly ILoggerService _loggerService;
+            private readonly ILogger _loggerService;
             private readonly GitHubClient _innerClient;
             private readonly bool _isDryRun;
 
-            public GitHubClientWrapper(ILoggerService loggerService, GitHubClient innerClient, bool isDryRun)
+            public GitHubClientWrapper(ILogger loggerService, GitHubClient innerClient, bool isDryRun)
             {
                 _loggerService = loggerService;
                 _innerClient = innerClient;

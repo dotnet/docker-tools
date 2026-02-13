@@ -22,12 +22,12 @@ public interface IMarImageIngestionReporter
 }
 public class MarImageIngestionReporter : IMarImageIngestionReporter
 {
-    private readonly ILoggerService _loggerService;
+    private readonly ILogger _loggerService;
     private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
     private readonly IEnvironmentService _environmentService;
 
     public MarImageIngestionReporter(
-        ILoggerService loggerService,
+        ILogger loggerService,
         IMcrStatusClientFactory mcrStatusClientFactory,
         IEnvironmentService environmentService)
     {
@@ -60,14 +60,14 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
     private class ReporterImpl
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IMcrStatusClient _statusClient;
         private readonly IEnvironmentService _environmentService;
         private readonly TimeSpan _timeout;
         private readonly TimeSpan _requeryDelay;
         private readonly DateTime? _minimumQueueTime;
 
-        public ReporterImpl(ILoggerService loggerService, IMcrStatusClient statusClient, IEnvironmentService environmentService,
+        public ReporterImpl(ILogger loggerService, IMcrStatusClient statusClient, IEnvironmentService environmentService,
             TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
         {
             _loggerService = loggerService;
@@ -84,9 +84,9 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                 .Select(digestInfo => ReportImageStatusAsync(digestInfo))
                 .ToList();
             IEnumerable<ImageResultInfo> imageResultInfos = await TaskHelper.WhenAll(tasks, _timeout);
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
             await LogResults(imageResultInfos);
-            _loggerService.WriteMessage("Image ingestion complete!");
+            _loggerService.LogInformation("Image ingestion complete!");
         }
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo)
@@ -123,7 +123,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             stringBuilder.AppendLine($"Querying image status for '{qualifiedDigest}'");
             stringBuilder.AppendLine("Remaining tags:");
             digestInfo.RemainingTags.ForEach(tag => stringBuilder.AppendLine(tag));
-            _loggerService.WriteMessage(stringBuilder.ToString());
+            _loggerService.LogInformation(stringBuilder.ToString());
 
             ImageResult imageResult = await _statusClient.GetImageResultAsync(digestInfo.Digest);
 
@@ -170,7 +170,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
                 }
 
-                _loggerService.WriteMessage(stringBuilder.ToString());
+                _loggerService.LogInformation(stringBuilder.ToString());
             }
 
             return new ImageResultInfo(imageResult, digestInfo);
@@ -199,7 +199,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
         private async Task LogResults(IEnumerable<ImageResultInfo> imageResultInfos)
         {
-            _loggerService.WriteHeading("IMAGE RESULTS");
+            _loggerService.LogInformation("IMAGE RESULTS");
 
             List<Task<string>> failedStatusTasks = new List<Task<string>>();
 
@@ -230,36 +230,36 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
             if (failedStatusTasks.Any())
             {
-                _loggerService.WriteMessage();
-                _loggerService.WriteMessage("Querying details of failed results...");
-                _loggerService.WriteMessage();
+                _loggerService.LogInformation(string.Empty);
+                _loggerService.LogInformation("Querying details of failed results...");
+                _loggerService.LogInformation(string.Empty);
 
                 await Task.WhenAll(failedStatusTasks);
             }
 
             if (successfulResults.Any())
             {
-                _loggerService.WriteSubheading("Successful results");
+                _loggerService.LogInformation("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
                 {
-                    _loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
+                    _loggerService.LogInformation(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
                     string tags = string.Join(", ",
                         imageResult.ImageResult.Value
                             .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
                             .Select(imageStatus => imageStatus.Tag));
-                    _loggerService.WriteMessage($"\tTags: {tags}");
-                    _loggerService.WriteMessage();
+                    _loggerService.LogInformation($"\tTags: {tags}");
+                    _loggerService.LogInformation(string.Empty);
                 }
             }
 
             if (failedStatusTasks.Any())
             {
-                _loggerService.WriteSubheading("Failed results");
+                _loggerService.LogInformation("Failed results");
 
                 foreach (Task<string> failedStatusTask in failedStatusTasks)
                 {
-                    _loggerService.WriteError(failedStatusTask.Result);
-                    _loggerService.WriteMessage();
+                    _loggerService.LogError(failedStatusTask.Result);
+                    _loggerService.LogInformation(string.Empty);
                 }
 
                 _environmentService.Exit(1);

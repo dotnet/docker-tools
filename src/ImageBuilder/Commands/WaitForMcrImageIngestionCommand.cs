@@ -14,11 +14,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionOptionsBuilder>
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
         public WaitForMcrImageIngestionCommand(
-            ILoggerService loggerService, IMarImageIngestionReporter imageIngestionReporter)
+            ILogger loggerService, IMarImageIngestionReporter imageIngestionReporter)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));
@@ -28,11 +28,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("WAITING FOR IMAGE INGESTION");
+            _loggerService.LogInformation("WAITING FOR IMAGE INGESTION");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                _loggerService.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image ingestion wait."));
                 return;
             }

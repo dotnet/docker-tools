@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ExecuteHelper
     {
-        private static readonly ILoggerService s_loggerService = new LoggerService();
+        private static readonly ILogger s_loggerService = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
 
         public static string Execute(
             string fileName,
@@ -75,7 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder
             info.RedirectStandardError = true;
             executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
             string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
-            s_loggerService.WriteSubheading($"{prefix}: {executeMessageOverride}");
+            s_loggerService.LogInformation($"{prefix}: {executeMessageOverride}");
 
             if (isDryRun)
             {
@@ -86,7 +86,7 @@ namespace Microsoft.DotNet.ImageBuilder
             stopwatch.Start();
             ProcessResult processResult = executor(info);
             stopwatch.Stop();
-            s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+            s_loggerService.LogInformation($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
 
             if (processResult.Process.ExitCode != 0)
             {

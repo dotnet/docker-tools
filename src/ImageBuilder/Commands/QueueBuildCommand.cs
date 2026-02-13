@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class QueueBuildCommand : Command<QueueBuildOptions, QueueBuildOptionsBuilder>
     {
         private readonly IVssConnectionFactory _connectionFactory;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly INotificationService _notificationService;
 
         // The number of most recent builds that must have failed consecutively before skipping the queuing of another build
@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public QueueBuildCommand(
             IVssConnectionFactory connectionFactory,
-            ILoggerService loggerService,
+            ILogger loggerService,
             INotificationService notificationService)
         {
             _connectionFactory = connectionFactory;
@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                _loggerService.WriteMessage(
+                _loggerService.LogInformation(
                     $"None of the subscriptions have base images that are out-of-date. No rebuild necessary.");
             }
         }
@@ -92,7 +92,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (!pathsToRebuild.Any())
             {
-                _loggerService.WriteMessage($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
+                _loggerService.LogInformation($"All images for subscription '{subscription}' are using up-to-date base images. No rebuild necessary.");
                 return;
             }
 
@@ -102,7 +102,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string parameters = "{\"" + subscription.PipelineTrigger.PathVariable + "\": \"" + formattedPathsToRebuild + "\"}";
 
-            _loggerService.WriteMessage($"Queueing build for subscription {subscription} with parameters {parameters}.");
+            _loggerService.LogInformation($"Queueing build for subscription {subscription} with parameters {parameters}.");
 
             if (Options.IsDryRun)
             {
@@ -140,9 +140,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         recentFailedBuilds = recentFailedBuildsLocal;
                         if (shouldDisallowBuild)
                         {
-                            _loggerService.WriteMessage(
+                            _loggerService.LogInformation(
                                 PipelineHelper.FormatErrorCommand("Unable to queue build due to too many recent build failures."));
-                            _loggerService.WriteMessage(PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
+                            _loggerService.LogInformation(PipelineHelper.SetResult(PipelineResult.SucceededWithIssues));
                         }
                         else
                         {
@@ -185,7 +185,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 category = "Queued";
                 string webLink = queuedBuild.GetWebLink();
-                _loggerService.WriteMessage($"Queued build {webLink}");
+                _loggerService.LogInformation($"Queued build {webLink}");
                 notificationMarkdown.AppendLine($"[Build Link]({webLink})");
             }
             else if (recentFailedBuilds is not null)
@@ -207,7 +207,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 string message = builder.ToString();
 
-                _loggerService.WriteMessage(message);
+                _loggerService.LogInformation(message);
                 notificationMarkdown.AppendLine(message);
             }
             else if (inProgressBuilds is not null)
@@ -226,7 +226,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 string message = builder.ToString();
 
-                _loggerService.WriteMessage(message);
+                _loggerService.LogInformation(message);
                 notificationMarkdown.AppendLine(message);
             }
             else if (exception != null)
@@ -259,7 +259,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.GitOptions.Owner == string.Empty ||
                 Options.GitOptions.Repo == string.Empty)
             {
-                _loggerService.WriteMessage(
+                _loggerService.LogInformation(
                     "Skipping posting of notification because GitHub auth token, owner, and repo options were not provided.");
             }
             else

@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private const int DefaultMaxTries = 10;
         private const int DefaultRetryMillisecondsDelay = 5000;
+        private static readonly ILogger Logger = StandaloneLoggerFactory.CreateLogger(nameof(GitHelper));
 
         public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
@@ -86,13 +87,13 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             else
             {
-                Logger.WriteMessage($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
-                Logger.WriteMessage();
+                Logger.LogInformation($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
+                Logger.LogInformation(string.Empty);
                 foreach (GitObject gitObject in changes)
                 {
-                    Logger.WriteMessage($"{gitObject.Path}:");
-                    Logger.WriteMessage(gitObject.Content);
-                    Logger.WriteMessage();
+                    Logger.LogInformation($"{gitObject.Path}:");
+                    Logger.LogInformation(gitObject.Content);
+                    Logger.LogInformation(string.Empty);
                 }
 
                 return null;

@@ -18,13 +18,13 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly HttpClient _httpClient;
         private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IServiceConnection _serviceConnection;
 
         public McrStatusClient(
             IHttpClientProvider httpClientProvider,
-            ILoggerService loggerService,
+            ILogger loggerService,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IServiceConnection serviceConnection)
         {

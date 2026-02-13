@@ -51,9 +51,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Manifest manifest;
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest));
+                o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest));
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest));
+                o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest));
 
             string[] expectedAnnotationDigests =
                 [
@@ -106,7 +106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Manifest manifest;
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest),
+                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest),
                 Times.Never());
         }
 
@@ -128,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Manifest manifest;
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest),
+                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest),
                 Times.Never());
         }
 
@@ -152,7 +152,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string eolDigestsListPath = Path.Combine(tempFolderContext.Path, "eol-digests.json");
             File.WriteAllText(eolDigestsListPath, JsonConvert.SerializeObject(eolAnnotations));
 
-            Mock<ILoggerService> loggerServiceMock = new();
+            Mock<ILogger> loggerServiceMock = new();
             lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful, useNonMatchingDate);
             AnnotateEolDigestsCommand command = new(
                 loggerServiceMock.Object,
@@ -177,7 +177,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out digest1Annotation))
+                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out digest1Annotation))
                 .Returns(digestAnnotationIsSuccessful);
 
             Manifest digest2Annotation = new()
@@ -186,7 +186,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out digest2Annotation))
+                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out digest2Annotation))
                 .Returns(digestAnnotationIsSuccessful);
 
             return lifecycleMetadataServiceMock;
@@ -213,7 +213,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(digest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out manifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(digest, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest))
                 .Returns(digestAlreadyAnnotated);
         }
     }

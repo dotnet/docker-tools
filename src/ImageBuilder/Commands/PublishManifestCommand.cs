@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IDateTimeService _dateTimeService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public PublishManifestCommand(
             IManifestServiceFactory manifestServiceFactory,
             IDockerService dockerService,
-            ILoggerService loggerService,
+            ILogger loggerService,
             IDateTimeService dateTimeService,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider)
@@ -47,11 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("GENERATING MANIFESTS");
+            _loggerService.LogInformation("GENERATING MANIFESTS");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                _loggerService.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping manifest publishing."));
                 return;
             }
@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
         {
-            _loggerService.WriteSubheading("SETTING TAG INFO");
+            _loggerService.LogInformation("SETTING TAG INFO");
 
             IEnumerable<ImageData> images = imageArtifactDetails.Repos
                 .SelectMany(repo => repo.Images)
@@ -219,21 +219,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteManifestSummary()
         {
-            _loggerService.WriteHeading("MANIFEST TAGS PUBLISHED");
+            _loggerService.LogInformation("MANIFEST TAGS PUBLISHED");
 
             if (_publishedManifestTags.Any())
             {
                 foreach (string tag in _publishedManifestTags)
                 {
-                    _loggerService.WriteMessage(tag);
+                    _loggerService.LogInformation(tag);
                 }
             }
             else
             {
-                _loggerService.WriteMessage("No manifests published");
+                _loggerService.LogInformation("No manifests published");
             }
 
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
         }
     }
 }

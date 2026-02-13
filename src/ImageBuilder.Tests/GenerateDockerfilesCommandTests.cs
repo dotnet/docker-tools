@@ -114,7 +114,7 @@ ENV TEST2 Value1";
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            GenerateDockerfilesCommand command = new(Mock.Of<IEnvironmentService>());
+            GenerateDockerfilesCommand command = new(Mock.Of<IEnvironmentService>(), Mock.Of<ILogger>());
             command.Options.Manifest = manifestPath;
             command.LoadManifest();
 
@@ -265,7 +265,7 @@ ENV TEST2 Value1";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(_environmentServiceMock.Object);
+            GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(_environmentServiceMock.Object, Mock.Of<ILogger>());
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

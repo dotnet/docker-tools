@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesCommand(
         ICopyImageService copyImageService,
-        ILoggerService loggerService,
+        ILogger loggerService,
         IGitService gitService)
         : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
             copyImageService,
@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            LoggerService.WriteHeading("COPYING IMAGES");
+            LoggerService.LogInformation("COPYING IMAGES");
 
             Options.BaseImageOverrideOptions.Validate();
 

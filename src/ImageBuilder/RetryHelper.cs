@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder
         public const int WaitFactor = 5;
         public const int MaxRetries = 5;
 
-        public static AsyncRetryPolicy GetWaitAndRetryPolicy<TException>(ILoggerService loggerService, int medianFirstRetryDelaySeconds = WaitFactor)
+        public static AsyncRetryPolicy GetWaitAndRetryPolicy<TException>(ILogger loggerService, int medianFirstRetryDelaySeconds = WaitFactor)
             where TException : Exception =>
             Policy
                 .Handle<TException>()
@@ -23,20 +23,20 @@ namespace Microsoft.DotNet.ImageBuilder
                     GetOnRetryDelegate(MaxRetries, loggerService));
 
         public static Action<DelegateResult<T>, TimeSpan, int, Context> GetOnRetryDelegate<T>(
-            int maxRetries, ILoggerService loggerService) =>
+            int maxRetries, ILogger loggerService) =>
             (delegateResult, timeToNextRetry, retryCount, context) =>
                 LogRetryMessage(loggerService, timeToNextRetry, retryCount, maxRetries);
 
         public static Action<Exception, TimeSpan, int, Context> GetOnRetryDelegate(
-            int maxRetries, ILoggerService loggerService) =>
+            int maxRetries, ILogger loggerService) =>
             (exception, timeToNextRetry, retryCount, context) =>
             {
-                loggerService.WriteError(exception.ToString());
+                loggerService.LogError(exception.ToString());
                 LogRetryMessage(loggerService, timeToNextRetry, retryCount, maxRetries);
             };
 
-        private static void LogRetryMessage(ILoggerService loggerService, TimeSpan timeToNextRetry, int retryCount, int maxRetries) =>
-            loggerService.WriteMessage(
+        private static void LogRetryMessage(ILogger loggerService, TimeSpan timeToNextRetry, int retryCount, int maxRetries) =>
+            loggerService.LogInformation(
                 $"Retry {retryCount}/{maxRetries}, retrying in {timeToNextRetry.TotalSeconds} seconds...");
     }
 }

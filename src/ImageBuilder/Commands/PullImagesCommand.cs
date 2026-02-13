@@ -13,9 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class PullImagesCommand : ManifestCommand<PullImagesOptions, PullImagesOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
 
-        public PullImagesCommand(IDockerService dockerService, ILoggerService loggerService)
+        public PullImagesCommand(IDockerService dockerService, ILogger loggerService)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -53,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Distinct()
                 .ToList();
 
-            _loggerService.WriteHeading("PULLING IMAGES");
+            _loggerService.LogInformation("PULLING IMAGES");
             foreach ((string tag, string platform) in platformTags)
             {
                 _dockerService.PullImage(tag, platform, Options.IsDryRun);
@@ -61,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Options.OutputVariableName is not null)
             {
-                _loggerService.WriteMessage(
+                _loggerService.LogInformation(
                     PipelineHelper.FormatOutputVariable(
                         Options.OutputVariableName,
                         string.Join(',', platformTags.Select(platformTag => platformTag.Tag))));

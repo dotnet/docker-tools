@@ -12,7 +12,7 @@ public class GenerateEolAnnotationDataForAllImagesCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
 {
     public GenerateEolAnnotationDataForAllImagesCommand(
-        ILoggerService loggerService,
+        ILogger loggerService,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,

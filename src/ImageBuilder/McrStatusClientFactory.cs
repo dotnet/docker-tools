@@ -12,12 +12,12 @@ public interface IMcrStatusClientFactory
 public class McrStatusClientFactory(
     IHttpClientProvider httpClientProvider,
     IAzureTokenCredentialProvider tokenCredentialProvider,
-    ILoggerService loggerService)
+    ILogger loggerService)
     : IMcrStatusClientFactory
 {
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
-    private readonly ILoggerService _loggerService = loggerService;
+    private readonly ILogger _loggerService = loggerService;
 
     public IMcrStatusClient Create(IServiceConnection serviceConnection)
     {

@@ -13,12 +13,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IEnvironmentService _environmentService;
         private readonly Lazy<IMcrStatusClient> _mcrStatusClient;
 
         public WaitForMcrDocIngestionCommand(
-            ILoggerService loggerService,
+            ILogger loggerService,
             IMcrStatusClientFactory mcrStatusClientFactory,
             IEnvironmentService environmentService)
         {
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("QUERYING COMMIT RESULT");
+            _loggerService.LogInformation("QUERYING COMMIT RESULT");
 
             if (!Options.IsDryRun)
             {
@@ -40,9 +40,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 LogSuccessfulResults(result);
             }
 
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
 
-            _loggerService.WriteMessage("Doc ingestion successfully completed!");
+            _loggerService.LogInformation("Doc ingestion successfully completed!");
         }
 
         private async Task<CommitResult> WaitForIngestionAsync(IMcrStatusClient statusClient)
@@ -57,7 +57,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (CommitStatus commitStatus in commitResult.Value)
                 {
-                    _loggerService.WriteMessage(
+                    _loggerService.LogInformation(
                         $"Readme status results for commit digest '{Options.CommitDigest}' with request ID '{commitStatus.OnboardingRequestId}': {commitStatus.OverallStatus}");
 
                     switch (commitStatus.OverallStatus)
@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             await Task.Delay(Options.IngestionOptions.RequeryDelay);
                             break;
                         case StageStatus.Failed:
-                            _loggerService.WriteError(await GetFailureResultsAsync(statusClient, commitStatus));
+                            _loggerService.LogError(await GetFailureResultsAsync(statusClient, commitStatus));
                             break;
                         case StageStatus.Succeeded:
                             isComplete = true;
@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (commitResult.Value.All(status => status.OverallStatus == StageStatus.Failed))
                 {
-                    _loggerService.WriteError("Doc ingestion failed.");
+                    _loggerService.LogError("Doc ingestion failed.");
                     _environmentService.Exit(1);
                 }
 
@@ -96,11 +96,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void LogSuccessfulResults(CommitResult commitResult)
         {
-            _loggerService.WriteMessage("Commit info:");
-            _loggerService.WriteMessage($"\tCommit digest: {commitResult.CommitDigest}");
-            _loggerService.WriteMessage($"\tBranch: {commitResult.Branch}");
-            _loggerService.WriteMessage("\tFiles updated:");
-            commitResult.ContentFiles.ForEach(file => _loggerService.WriteMessage($"\t\t{file}"));
+            _loggerService.LogInformation("Commit info:");
+            _loggerService.LogInformation($"\tCommit digest: {commitResult.CommitDigest}");
+            _loggerService.LogInformation($"\tBranch: {commitResult.Branch}");
+            _loggerService.LogInformation("\tFiles updated:");
+            commitResult.ContentFiles.ForEach(file => _loggerService.LogInformation($"\t\t{file}"));
         }
 
         private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus)

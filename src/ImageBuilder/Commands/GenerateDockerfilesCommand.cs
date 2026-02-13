@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesOptionsBuilder>
     {
 
-        public GenerateDockerfilesCommand(IEnvironmentService environmentService) : base(environmentService)
+        public GenerateDockerfilesCommand(IEnvironmentService environmentService, ILogger logger) : base(environmentService, logger)
         {
         }
 
@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING DOCKERFILES");
+            Logger.LogInformation("GENERATING DOCKERFILES");
 
             await GenerateArtifactsAsync(
                 Manifest.GetFilteredPlatforms(),

@@ -15,9 +15,9 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class VssConnectionFactory : IVssConnectionFactory
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
 
-        public VssConnectionFactory(ILoggerService loggerService)
+        public VssConnectionFactory(ILogger loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }
@@ -29,10 +29,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
         private class VssConnectionWrapper : IVssConnection
         {
-            private readonly ILoggerService _loggerService;
+            private readonly ILogger _loggerService;
             private readonly VssConnection _inner;
 
-            public VssConnectionWrapper(ILoggerService loggerService, VssConnection inner)
+            public VssConnectionWrapper(ILogger loggerService, VssConnection inner)
             {
                 _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
                 _inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -55,10 +55,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
             private class ProjectHttpClientWrapper : IProjectHttpClient
             {
-                private readonly ILoggerService _loggerService;
+                private readonly ILogger _loggerService;
                 private readonly ProjectHttpClient _inner;
 
-                public ProjectHttpClientWrapper(ILoggerService loggerService, ProjectHttpClient inner)
+                public ProjectHttpClientWrapper(ILogger loggerService, ProjectHttpClient inner)
                 {
                     _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));
@@ -76,10 +76,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 
             private class BuildHttpClientWrapper : IBuildHttpClient
             {
-                private readonly ILoggerService _loggerService;
+                private readonly ILogger _loggerService;
                 private readonly WebApi.BuildHttpClient _inner;
 
-                public BuildHttpClientWrapper(ILoggerService loggerService, WebApi.BuildHttpClient inner)
+                public BuildHttpClientWrapper(ILogger loggerService, WebApi.BuildHttpClient inner)
                 {
                     _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
                     _inner = inner ?? throw new ArgumentNullException(nameof(inner));

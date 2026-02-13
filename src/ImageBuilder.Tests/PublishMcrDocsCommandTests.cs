@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
             IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -119,7 +119,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
             IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger>());
             command.Options.Manifest = manifestPath;
             command.Options.ExcludeProductFamilyReadme = true;
             command.Options.RootPath = Path.Combine(tempFolderContext.Path, "dir");
@@ -189,7 +189,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
             IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger>());
             command.Options.Manifest = manifestPath;
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();

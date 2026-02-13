@@ -25,7 +25,7 @@ public interface IImageCacheService
 }
 public class ImageCacheService : IImageCacheService
 {
-    private readonly ILoggerService _loggerService;
+    private readonly ILogger _loggerService;
     private readonly IGitService _gitService;
 
     private readonly object _cachedPlatformsLock = new();
@@ -33,7 +33,7 @@ public class ImageCacheService : IImageCacheService
     // Metadata about Dockerfiles whose images have been retrieved from the cache
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
 
-    public ImageCacheService(ILoggerService loggerService, IGitService gitService)
+    public ImageCacheService(ILogger loggerService, IGitService gitService)
     {
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
@@ -128,7 +128,7 @@ public class ImageCacheService : IImageCacheService
         bool isLocalBaseImageExpected,
         bool isDryRun)
     {
-        _loggerService.WriteMessage($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
+        _loggerService.LogInformation($"Checking for cached image for '{platform.DockerfilePathRelativeToManifest}'");
 
         // If the previously published image was based on an image that is still the latest version AND
         // the Dockerfile hasn't changed since it was last published
@@ -139,8 +139,8 @@ public class ImageCacheService : IImageCacheService
             return true;
         }
 
-        _loggerService.WriteMessage("CACHE MISS");
-        _loggerService.WriteMessage();
+        _loggerService.LogInformation("CACHE MISS");
+        _loggerService.LogInformation(string.Empty);
 
         return false;
     }
@@ -153,11 +153,11 @@ public class ImageCacheService : IImageCacheService
         bool isLocalImageExpected,
         bool isDryRun)
     {
-        _loggerService.WriteMessage();
+        _loggerService.LogInformation(string.Empty);
 
         if (platform.FinalStageFromImage is null)
         {
-            _loggerService.WriteMessage($"Image does not have a base image. By default, it is considered up-to-date.");
+            _loggerService.LogInformation($"Image does not have a base image. By default, it is considered up-to-date.");
             return true;
         }
 
@@ -192,9 +192,9 @@ public class ImageCacheService : IImageCacheService
 
         bool baseImageDigestMatches = imageInfoSha?.Equals(currentSha, StringComparison.OrdinalIgnoreCase) == true;
 
-        _loggerService.WriteMessage($"Image info's base image digest SHA: {imageInfoSha}");
-        _loggerService.WriteMessage($"Latest base image digest SHA: {currentSha}");
-        _loggerService.WriteMessage($"Base image digests match: {baseImageDigestMatches}");
+        _loggerService.LogInformation($"Image info's base image digest SHA: {imageInfoSha}");
+        _loggerService.LogInformation($"Latest base image digest SHA: {currentSha}");
+        _loggerService.LogInformation($"Base image digests match: {baseImageDigestMatches}");
         return baseImageDigestMatches;
     }
 
@@ -207,10 +207,10 @@ public class ImageCacheService : IImageCacheService
             commitShaMatches = srcPlatformData.CommitUrl.Equals(currentCommitUrl, StringComparison.OrdinalIgnoreCase);
         }
 
-        _loggerService.WriteMessage();
-        _loggerService.WriteMessage($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
-        _loggerService.WriteMessage($"Latest Dockerfile commit: {currentCommitUrl}");
-        _loggerService.WriteMessage($"Dockerfile commits match: {commitShaMatches}");
+        _loggerService.LogInformation(string.Empty);
+        _loggerService.LogInformation($"Image info's Dockerfile commit: {srcPlatformData.CommitUrl}");
+        _loggerService.LogInformation($"Latest Dockerfile commit: {currentCommitUrl}");
+        _loggerService.LogInformation($"Dockerfile commits match: {commitShaMatches}");
         return commitShaMatches;
     }
 

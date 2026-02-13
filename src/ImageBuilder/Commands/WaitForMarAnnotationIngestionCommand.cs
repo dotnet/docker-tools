@@ -12,11 +12,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMarAnnotationIngestionCommand : Command<WaitForMarAnnotationIngestionOptions, WaitForMarAnnotationIngestionOptionsBuilder>
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
         public WaitForMarAnnotationIngestionCommand(
-            ILoggerService loggerService, IMarImageIngestionReporter imageIngestionReporter)
+            ILogger loggerService, IMarImageIngestionReporter imageIngestionReporter)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));
@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("WAITING FOR ANNOTATION INGESTION");
+            _loggerService.LogInformation("WAITING FOR ANNOTATION INGESTION");
 
             string[] annotationDigests = File.ReadAllLines(Options.AnnotationDigestsPath);
             IEnumerable<DigestInfo> digests = annotationDigests

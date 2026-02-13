@@ -41,7 +41,8 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
-            builder.Services.AddSingleton<ILoggerService, LoggerService>();
+            builder.Services.AddSingleton<ILogger>(sp =>
+                sp.GetRequiredService<ILoggerFactory>().CreateLogger("ImageBuilder"));
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
             builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();

@@ -17,10 +17,10 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class KustoClientWrapper : IKustoClient
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
-        public KustoClientWrapper(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
+        public KustoClientWrapper(ILogger loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _loggerService = loggerService;
             _tokenCredentialProvider = tokenCredentialProvider;
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             string table,
             IServiceConnection serviceConnection)
         {
-            _loggerService.WriteSubheading("INGESTING DATA INTO KUSTO");
+            _loggerService.LogInformation("INGESTING DATA INTO KUSTO");
 
             var connectionString = $"https://{cluster}.kusto.windows.net";
             var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                 for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
                 {
-                    _loggerService.WriteMessage(
+                    _loggerService.LogInformation(
                         $"Waiting for ingestion from source ID {sourceOptions.SourceId} to complete...");
                     await Task.Delay(TimeSpan.FromSeconds(30));
                     ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
@@ -83,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             KustoIngestionProperties properties,
             StreamSourceOptions sourceOptions)
         {
-            _loggerService.WriteMessage(
+            _loggerService.LogInformation(
                 $"Ingesting {csv.Length} bytes of data to Kusto (source ID: {sourceOptions.SourceId})");
 
             using MemoryStream stream = new();

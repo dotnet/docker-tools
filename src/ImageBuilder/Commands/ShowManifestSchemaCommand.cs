@@ -12,9 +12,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ShowManifestSchemaCommand : Command<Options, CliOptionsBuilder>
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
 
-        public ShowManifestSchemaCommand(ILoggerService loggerService)
+        public ShowManifestSchemaCommand(ILogger loggerService)
         {
             _loggerService = loggerService;
         }
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             JSchema schema = generator.Generate(typeof(Manifest));
 
-            _loggerService.WriteMessage(schema.ToString());
+            _loggerService.LogInformation(schema.ToString());
 
             return Task.CompletedTask;
         }

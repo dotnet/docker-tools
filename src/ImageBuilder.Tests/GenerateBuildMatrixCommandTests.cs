@@ -255,7 +255,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
             SetCacheResult(imageCacheServiceMock, dockerfileSdk2Path, ImageCacheState.NotCached);
 
-            GenerateBuildMatrixCommand command = new(imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILoggerService>());
+            GenerateBuildMatrixCommand command = new(imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -1546,6 +1546,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         private static GenerateBuildMatrixCommand CreateCommand() =>
-            new(Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILoggerService>());
+            new(Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger>());
     }
 }

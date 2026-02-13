@@ -1665,7 +1665,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
             private readonly GetStaleImagesCommand command;
-            private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
+            private readonly Mock<ILogger> loggerServiceMock = new Mock<ILogger>();
             private readonly string osType;
             private readonly IOctokitClientFactory octokitClientFactory;
             private readonly IGitService gitService;
@@ -1731,10 +1731,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
             {
                 IInvocation invocation = this.loggerServiceMock.Invocations
-                    .First(invocation => invocation.Method.Name == nameof(ILoggerService.WriteMessage) &&
-                        invocation.Arguments[0].ToString().StartsWith("##vso"));
+                    .First(invocation => invocation.Method.Name == nameof(ILogger.Log) &&
+                        invocation.Arguments[2]?.ToString()?.StartsWith("##vso") == true);
 
-                string message = invocation.Arguments[0].ToString();
+                string message = invocation.Arguments[2].ToString();
                 int variableNameStartIndex = message.IndexOf("=") + 1;
                 string actualVariableName = message.Substring(variableNameStartIndex, message.IndexOf(";") - variableNameStartIndex);
                 Assert.Equal(VariableName, actualVariableName);

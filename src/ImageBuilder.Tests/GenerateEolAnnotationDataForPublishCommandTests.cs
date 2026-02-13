@@ -433,7 +433,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Manifest lifecycleArtifactManifest;
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
@@ -1040,7 +1040,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string repoPrefix = DefaultRepoPrefix,
             ILifecycleMetadataService lifecycleMetadataService = null)
         {
-            Mock<ILoggerService> loggerServiceMock = new();
+            Mock<ILogger> loggerServiceMock = new();
             lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
             GenerateEolAnnotationDataForPublishCommand command = new(
                 loggerService: loggerServiceMock.Object,
@@ -1060,13 +1060,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             Manifest lifecycleArtifactManifest;
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(false);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             {
                 lifecycleMetadataServiceMock
-                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                     .Returns(digestAnnotated.Value);
             }
 

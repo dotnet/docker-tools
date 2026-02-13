@@ -16,7 +16,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
     public GenerateEolAnnotationDataForPublishCommand(
-        ILoggerService loggerService,
+        ILogger loggerService,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
@@ -36,7 +36,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
     {
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
-            LoggerService.WriteMessage("No digests to annotate because no image info files were provided.");
+            LoggerService.LogInformation("No digests to annotate because no image info files were provided.");
             return [];
         }
 
@@ -72,7 +72,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
         }
         catch (Exception e)
         {
-            LoggerService.WriteError($"Error occurred while generating EOL annotation data: {e}");
+            LoggerService.LogError($"Error occurred while generating EOL annotation data: {e}");
             throw;
         }
     }

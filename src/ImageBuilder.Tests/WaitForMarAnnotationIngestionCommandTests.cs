@@ -29,7 +29,7 @@ public class WaitForMarAnnotationIngestionCommandTests
 
         Mock<IMarImageIngestionReporter> ingestionReporter = new();
         WaitForMarAnnotationIngestionCommand cmd = new(
-            Mock.Of<ILoggerService>(),
+            Mock.Of<ILogger>(),
             ingestionReporter.Object);
         cmd.Options.AnnotationDigestsPath = annotationsDigestsPath;
 

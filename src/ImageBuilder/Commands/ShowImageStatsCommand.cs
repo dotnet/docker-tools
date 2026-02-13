@@ -13,15 +13,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>
     {
-        public ShowImageStatsCommand() : base()
-        {
-        }
+        private readonly ILogger Logger;
+
+        public ShowImageStatsCommand(ILogger logger) : base() =>
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         protected override string Description => "Displays statistics about the number of images";
 
         public override Task ExecuteAsync()
         {
-            Logger.WriteHeading("IMAGE STATISTICS");
+            Logger.LogInformation("IMAGE STATISTICS");
 
             PlatformInfo[] platforms = Manifest.GetFilteredPlatforms().ToArray();
             LogGeneralStats(platforms);
@@ -46,8 +47,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .OrderBy(name => name)
                 .Select(name => $"{name}");
 
-            Logger.WriteMessage();
-            Logger.WriteHeading(
+            Logger.LogInformation(string.Empty);
+            Logger.LogInformation(
                 FormatBaseImageStats(
                     $"External Base Images ({externalBaseImages.Count()})",
                     "Dependent Images",
@@ -68,7 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .SelectMany(image => image.SharedTags)
                     .Count();
 
-                Logger.WriteMessage(
+                Logger.LogInformation(
                     FormatBaseImageStats(
                         baseImage,
                         dependentPlatforms.Length,
@@ -85,26 +86,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             TagInfo[] undocumentedPlatformTags = platformTags.Where(tag => tag.Model.DocType == TagDocumentationType.Undocumented).ToArray();
             TagInfo[] undocumentedSharedTags = sharedTags.Where(tag => tag.Model.DocType == TagDocumentationType.Undocumented).ToArray();
 
-            Logger.WriteMessage($"Total Unique Images:  {platforms.Length}");
-            Logger.WriteMessage($"Total Simple Tags:  {platformTags.Length}");
+            Logger.LogInformation($"Total Unique Images:  {platforms.Length}");
+            Logger.LogInformation($"Total Simple Tags:  {platformTags.Length}");
 
             if (undocumentedPlatformTags.Length > 0)
             {
-                Logger.WriteMessage($"    Total Undocumented Simple Tags:  {undocumentedPlatformTags.Length}");
+                Logger.LogInformation($"    Total Undocumented Simple Tags:  {undocumentedPlatformTags.Length}");
             }
 
-            Logger.WriteMessage($"Total Shared Tags:  {sharedTags.Length}");
+            Logger.LogInformation($"Total Shared Tags:  {sharedTags.Length}");
 
             if (undocumentedSharedTags.Length > 0)
             {
-                Logger.WriteMessage($"    Total Undocumented Shared Tags:  {undocumentedSharedTags.Length}");
+                Logger.LogInformation($"    Total Undocumented Shared Tags:  {undocumentedSharedTags.Length}");
             }
 
-            Logger.WriteMessage($"Total Tags:  {platformTags.Length + sharedTags.Length}");
+            Logger.LogInformation($"Total Tags:  {platformTags.Length + sharedTags.Length}");
 
             if (undocumentedPlatformTags.Length > 0 && undocumentedSharedTags.Length > 0)
             {
-                Logger.WriteMessage($"    Total Undocumented Tags:  {undocumentedPlatformTags.Length + undocumentedSharedTags.Length}");
+                Logger.LogInformation($"    Total Undocumented Tags:  {undocumentedPlatformTags.Length + undocumentedSharedTags.Length}");
             }
         }
     }

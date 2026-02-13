@@ -20,7 +20,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger _loggerService;
+        private ILogger Logger => _loggerService;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
         private readonly ICopyImageService _copyImageService;
@@ -45,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public BuildCommand(
             IDockerService dockerService,
-            ILoggerService loggerService,
+            ILogger loggerService,
             IGitService gitService,
             IProcessService processService,
             ICopyImageService copyImageService,
@@ -146,7 +147,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> builtDigests = _builtPlatforms
                     .Select(platform => DockerHelper.GetDigestString(platform.PlatformInfo!.RepoName, DockerHelper.GetDigestSha(platform.Digest)))
                     .Distinct();
-                _loggerService.WriteMessage(
+                _loggerService.LogInformation(
                     PipelineHelper.FormatOutputVariable(
                         Options.OutputVariableName,
                         string.Join(',', builtDigests)));
@@ -306,7 +307,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task BuildImagesAsync()
         {
-            _loggerService.WriteHeading("BUILDING IMAGES");
+            _loggerService.LogInformation("BUILDING IMAGES");
 
             ImageArtifactDetails? srcImageArtifactDetails = null;
             if (Options.ImageInfoSourcePath != null)
@@ -493,7 +494,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (firstTag is not null)
                 {
                     long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun);
-                    _loggerService.WriteMessage($"Image size (on disk): {size} bytes");
+                    _loggerService.LogInformation($"Image size (on disk): {size} bytes");
                 }
 
                 if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
@@ -548,9 +549,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
         {
-            _loggerService.WriteMessage();
-            _loggerService.WriteMessage("CACHE HIT");
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
+            _loggerService.LogInformation("CACHE HIT");
+            _loggerService.LogInformation(string.Empty);
 
             // When a cache hit occurs on an image, we copy the image from its source location (e.g. mcr.microsoft.com) to its
             // destination location (e.g. staging repo in ACR). Copying only occurs if push is enabled since it will result in
@@ -624,11 +625,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task PullBaseImagesAsync()
         {
-            Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+            Logger.LogInformation("PULLING LATEST BASE IMAGES");
 
             if (Options.IsSkipPullingEnabled)
             {
-                Logger.WriteMessage("No external base images to pull");
+                Logger.LogInformation("No external base images to pull");
                 return;
             }
 
@@ -654,7 +655,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (pulledTags.Count <= 0)
             {
-                Logger.WriteMessage("No external base images to pull");
+                Logger.LogInformation("No external base images to pull");
                 return;
             }
 
@@ -705,7 +706,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (Options.IsPushEnabled)
             {
-                _loggerService.WriteHeading("PUSHING BUILT IMAGES");
+                _loggerService.LogInformation("PUSHING BUILT IMAGES");
 
                 foreach (TagInfo tag in _processedTags)
                 {
@@ -729,7 +730,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.QualifiedName);
-                    _loggerService.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    _loggerService.LogInformation($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\s\r\n]*");
                     dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
                     updateDockerfile = true;
@@ -739,8 +740,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // Don't overwrite the original dockerfile - write it to a new path.
                     dockerfilePath += ".temp";
-                    _loggerService.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
-                    _loggerService.WriteMessage(dockerfileContents);
+                    _loggerService.LogInformation($"Writing updated Dockerfile: {dockerfilePath}");
+                    _loggerService.LogInformation(dockerfileContents);
                     File.WriteAllText(dockerfilePath, dockerfileContents);
                 }
             }
@@ -750,21 +751,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteBuildSummary()
         {
-            _loggerService.WriteHeading("IMAGES BUILT");
+            _loggerService.LogInformation("IMAGES BUILT");
 
             if (_processedTags.Any())
             {
                 foreach (TagInfo tag in _processedTags)
                 {
-                    _loggerService.WriteMessage(tag.FullyQualifiedName);
+                    _loggerService.LogInformation(tag.FullyQualifiedName);
                 }
             }
             else
             {
-                _loggerService.WriteMessage("No images built");
+                _loggerService.LogInformation("No images built");
             }
 
-            _loggerService.WriteMessage();
+            _loggerService.LogInformation(string.Empty);
         }
     }
 }

@@ -44,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 imageIngestionReporterMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -177,7 +177,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger>(),
                 imageIngestionReporterMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

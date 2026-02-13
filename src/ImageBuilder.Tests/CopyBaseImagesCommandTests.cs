@@ -10,6 +10,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -33,7 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             CopyBaseImagesCommand command = new(
                 copyImageServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<CopyBaseImagesCommand>>(),
                 Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.RepoPrefix = "custom-repo/";
@@ -121,7 +122,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             CopyBaseImagesCommand command = new(
                 copyImageServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<CopyBaseImagesCommand>>(),
                 Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.RepoPrefix = "custom-repo/";

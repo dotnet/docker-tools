@@ -19,8 +19,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public CopyAcrImagesCommand(
             ICopyImageService copyImageService,
-            ILoggerService loggerService)
-            : base(copyImageService, loggerService)
+            ILogger<CopyAcrImagesCommand> logger)
+            : base(copyImageService, logger)
         {
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
@@ -37,11 +37,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            LoggerService.WriteHeading("COPYING IMAGES");
+            LoggerService.LogInformation("COPYING IMAGES");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                LoggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                LoggerService.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image copy."));
                 return;
             }
@@ -104,12 +104,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        LoggerService.WriteMessage($"Unable to find image info data for path '{platform.DockerfilePath}'.");
+                        LoggerService.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                     }
                 }
                 else
                 {
-                    LoggerService.WriteMessage($"Unable to find image info data for repo '{repo.Name}'.");
+                    LoggerService.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
                 }
             }
             else

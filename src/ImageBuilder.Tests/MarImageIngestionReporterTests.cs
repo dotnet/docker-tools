@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.MarStatusHelper;
@@ -196,7 +197,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -287,7 +289,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -379,7 +382,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -541,7 +545,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -641,7 +646,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new Mock<IEnvironmentService>();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -773,7 +779,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -829,7 +836,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var statusClientFactoryMock = CreateMarStatusClientFactoryMock(statusClientMock.Object);
 
             MarImageIngestionReporter reporter = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<MarImageIngestionReporter>>(),
+                LoggerFactory.Create(_ => { }),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 

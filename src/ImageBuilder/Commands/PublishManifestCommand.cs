@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<PublishManifestCommand> _logger;
         private readonly IDateTimeService _dateTimeService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
@@ -26,13 +26,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public PublishManifestCommand(
             IManifestServiceFactory manifestServiceFactory,
             IDockerService dockerService,
-            ILoggerService loggerService,
+            ILogger<PublishManifestCommand> logger,
             IDateTimeService dateTimeService,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
@@ -47,11 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("GENERATING MANIFESTS");
+            _logger.LogInformation("GENERATING MANIFESTS");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping manifest publishing."));
                 return;
             }
@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task SaveTagInfoToImageInfoFileAsync(DateTime createdDate, ImageArtifactDetails imageArtifactDetails)
         {
-            _loggerService.WriteSubheading("SETTING TAG INFO");
+            _logger.LogInformation("SETTING TAG INFO");
 
             IEnumerable<ImageData> images = imageArtifactDetails.Repos
                 .SelectMany(repo => repo.Images)
@@ -219,21 +219,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteManifestSummary()
         {
-            _loggerService.WriteHeading("MANIFEST TAGS PUBLISHED");
+            _logger.LogInformation("MANIFEST TAGS PUBLISHED");
 
             if (_publishedManifestTags.Any())
             {
                 foreach (string tag in _publishedManifestTags)
                 {
-                    _loggerService.WriteMessage(tag);
+                    _logger.LogInformation(tag);
                 }
             }
             else
             {
-                _loggerService.WriteMessage("No manifests published");
+                _logger.LogInformation("No manifests published");
             }
 
-            _loggerService.WriteMessage();
+            _logger.LogInformation(string.Empty);
         }
     }
 }

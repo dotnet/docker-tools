@@ -38,9 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private TimeSpan _documentGenerationTime = TimeSpan.Zero;
         private TimeSpan _artifactGenerationTime = TimeSpan.Zero;
 
-        protected GenerateArtifactsCommand(IEnvironmentService environmentService) : base()
+        protected ILogger Logger { get; }
+
+        protected GenerateArtifactsCommand(IEnvironmentService environmentService, ILogger logger) : base()
         {
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
+            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected async Task GenerateArtifactsAsync<TContext>(
@@ -95,9 +98,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             long allArtifactsEndTime = Stopwatch.GetTimestamp();
             TimeSpan allArtifactsTime = Stopwatch.GetElapsedTime(allArtifactsStartTime, allArtifactsEndTime);
 
-            Logger.WriteMessage($"Time spent building documents: {_documentGenerationTime.TotalMilliseconds} ms");
-            Logger.WriteMessage($"Time spent generating artifacts: {_artifactGenerationTime.TotalMilliseconds} ms");
-            Logger.WriteMessage($"Total elapsed time: {allArtifactsTime.TotalMilliseconds} ms");
+            Logger.LogInformation($"Time spent building documents: {_documentGenerationTime.TotalMilliseconds} ms");
+            Logger.LogInformation($"Time spent generating artifacts: {_artifactGenerationTime.TotalMilliseconds} ms");
+            Logger.LogInformation($"Total elapsed time: {allArtifactsTime.TotalMilliseconds} ms");
         }
 
         private async Task GenerateArtifactAsync<TContext>(
@@ -108,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string artifactName,
             Func<string, TContext, string> postProcess)
         {
-            Logger.WriteSubheading($"Generating '{artifactPath}' from '{templatePath}'");
+            Logger.LogInformation($"Generating '{artifactPath}' from '{templatePath}'");
 
             string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false);
 
@@ -123,12 +126,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     await File.ReadAllTextAsync(artifactPath) : string.Empty;
                 if (currentArtifact == generatedArtifact)
                 {
-                    Logger.WriteMessage($"{artifactName} in sync with template");
+                    Logger.LogInformation($"{artifactName} in sync with template");
                 }
                 else if (Options.Validate)
                 {
                     int differIndex = StringExtensions.DiffersAtIndex(currentArtifact, generatedArtifact);
-                    Logger.WriteError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
+                    Logger.LogError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
                         + $"Current:   '{GetSnippet(currentArtifact, differIndex)}'{Environment.NewLine}"
                         + $"Generated: '{GetSnippet(generatedArtifact, differIndex)}'");
                     _outOfSyncArtifacts.Add(artifactPath);
@@ -136,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 else if (!Options.IsDryRun)
                 {
                     await File.WriteAllTextAsync(artifactPath, generatedArtifact);
-                    Logger.WriteMessage($"Updated '{artifactPath}'");
+                    Logger.LogInformation($"Updated '{artifactPath}'");
                 }
             }
         }
@@ -211,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Options.IsVerbose)
             {
-                Logger.WriteMessage($"Template:{Environment.NewLine}{template}");
+                Logger.LogInformation($"Template:{Environment.NewLine}{template}");
             }
 
             try
@@ -229,7 +232,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (Options.IsVerbose)
                 {
-                    Logger.WriteMessage($"Generated:{Environment.NewLine}{artifact}");
+                    Logger.LogInformation($"Generated:{Environment.NewLine}{artifact}");
                 }
             }
             catch (ParseException e)
@@ -242,7 +245,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 (int startLine, int startColumn) = GetTextLocationFromIndex(template, e.LocationStart - e.LocationLength, indentLength);
                 (int endLine, int endColumn) = GetTextLocationFromIndex(template, e.LocationStart, indentLength);
 
-                Logger.WriteError($"""
+                Logger.LogError($"""
                     Template parsing error in file {templatePath}:{startLine},{startColumn},{endLine},{endColumn}
                     Message: {e.Message}
                     {e}
@@ -261,13 +264,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (_outOfSyncArtifacts.Any())
                 {
                     string artifacts = string.Join(Environment.NewLine, _outOfSyncArtifacts);
-                    Logger.WriteError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
+                    Logger.LogError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
                 }
 
                 if (_invalidTemplates.Any())
                 {
                     string templateList = string.Join(Environment.NewLine, _invalidTemplates);
-                    Logger.WriteError($"Invalid Templates:{Environment.NewLine}{templateList}");
+                    Logger.LogError($"Invalid Templates:{Environment.NewLine}{templateList}");
                 }
 
                 _environmentService.Exit(1);

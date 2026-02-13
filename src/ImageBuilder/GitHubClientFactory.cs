@@ -12,12 +12,15 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 namespace Microsoft.DotNet.ImageBuilder
 {
     internal class GitHubClientFactory(
-        ILoggerService loggerService,
+        ILogger<GitHubClientFactory> logger,
+        ILoggerFactory loggerFactory,
         IOctokitClientFactory octokitClientFactory)
         : IGitHubClientFactory
     {
-        private readonly ILoggerService _loggerService = loggerService
-            ?? throw new ArgumentNullException(nameof(loggerService));
+        private readonly ILogger<GitHubClientFactory> _logger = logger
+            ?? throw new ArgumentNullException(nameof(logger));
+        private readonly ILoggerFactory _loggerFactory = loggerFactory
+            ?? throw new ArgumentNullException(nameof(loggerFactory));
 
         private readonly IOctokitClientFactory _octokitClientFactory = octokitClientFactory
             ?? throw new ArgumentNullException(nameof(octokitClientFactory));
@@ -31,19 +34,19 @@ namespace Microsoft.DotNet.ImageBuilder
                 user: gitOptions.Username,
                 email: gitOptions.Email);
 
-            return new GitHubClientWrapper(_loggerService, new GitHubClient(auth), isDryRun);
+            return new GitHubClientWrapper(_loggerFactory, new GitHubClient(auth), isDryRun);
         }
 
         // Wrapper class to ensure that no operations with side-effects are invoked when the dry-run option is enabled
         private class GitHubClientWrapper : IGitHubClient
         {
-            private readonly ILoggerService _loggerService;
+            private readonly ILogger<GitHubClientWrapper> _logger;
             private readonly GitHubClient _innerClient;
             private readonly bool _isDryRun;
 
-            public GitHubClientWrapper(ILoggerService loggerService, GitHubClient innerClient, bool isDryRun)
+            public GitHubClientWrapper(ILoggerFactory loggerFactory, GitHubClient innerClient, bool isDryRun)
             {
-                _loggerService = loggerService;
+                _logger = loggerFactory.CreateLogger<GitHubClientWrapper>();
                 _innerClient = innerClient;
                 _isDryRun = isDryRun;
             }
@@ -59,19 +62,19 @@ namespace Microsoft.DotNet.ImageBuilder
                 _innerClient.CreateGitRemoteUrl(project);
 
             public Task<GitCommit> GetCommitAsync(GitHubProject project, string sha) =>
-                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                     .ExecuteAsync(() => _innerClient.GetCommitAsync(project, sha));
 
             public Task<GitHubContents> GetGitHubFileAsync(string path, GitHubProject project, string @ref) =>
-                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                     .ExecuteAsync(() => _innerClient.GetGitHubFileAsync(path, project, @ref));
 
             public Task<string> GetGitHubFileContentsAsync(string path, GitHubBranch branch) =>
-                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                     .ExecuteAsync(() => _innerClient.GetGitHubFileContentsAsync(path, branch));
 
             public Task<string> GetGitHubFileContentsAsync(string path, GitHubProject project, string @ref) =>
-                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                     .ExecuteAsync(() => _innerClient.GetGitHubFileContentsAsync(path, project, @ref));
 
             public Task<string> GetMyAuthorIdAsync() =>
@@ -126,7 +129,7 @@ namespace Microsoft.DotNet.ImageBuilder
             }
 
             public Task<GitHubPullRequest> SearchPullRequestsAsync(GitHubProject project, string headPrefix, string author, string sortType = "created") =>
-                RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
+                RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
                     .ExecuteAsync(() => _innerClient.SearchPullRequestsAsync(project, headPrefix, author, sortType));
 
             public Task UpdateGitHubPullRequestAsync(GitHubProject project, int number, string title = null, string body = null, string state = null, bool? maintainersCanModify = null)

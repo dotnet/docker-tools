@@ -27,20 +27,20 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
 
     protected GenerateEolAnnotationDataCommandBase(
-        ILoggerService loggerService,
+        ILogger logger,
         IAcrContentClientFactory acrContentClientFactory,
         IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {
-        LoggerService = loggerService;
+        LoggerService = logger;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;
         _registryCredentialsProvider = registryCredentialsProvider;
     }
 
-    protected ILoggerService LoggerService { get; }
+    protected ILogger LoggerService { get; }
 
     public sealed override async Task ExecuteAsync()
     {
@@ -59,7 +59,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     protected async Task<IEnumerable<EolDigestData>> GetAllImageDigestsFromRegistryAsync(
         Func<string, bool>? repoNameFilter = null)
     {
-        LoggerService.WriteMessage("Querying registry for all image digests...");
+        LoggerService.LogInformation("Querying registry for all image digests...");
 
         if (Options.IsDryRun)
         {
@@ -123,7 +123,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];
         Parallel.ForEach(unsupportedDigests, digest =>
         {
-            LoggerService.WriteMessage($"Checking digest for existing annotation: {digest.Digest}");
+            LoggerService.LogInformation($"Checking digest for existing annotation: {digest.Digest}");
             if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, LoggerService, Options.IsDryRun, out _))
             {
                 digestsToAnnotate.Add(digest);

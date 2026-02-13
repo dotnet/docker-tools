@@ -10,6 +10,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -35,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 CopyAcrImagesCommand command = new(
                     copyImageServiceMock.Object,
-                    Mock.Of<ILoggerService>());
+                    Mock.Of<ILogger<CopyAcrImagesCommand>>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
                 command.Options.SourceRegistry = SourceRegistry;
@@ -123,7 +124,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 var command = new CopyAcrImagesCommand(
                     copyImageServiceMock.Object,
-                    Mock.Of<ILoggerService>());
+                    Mock.Of<ILogger<CopyAcrImagesCommand>>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
                 command.Options.SourceRegistry = SourceRegistry;
@@ -223,7 +224,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var command = new CopyAcrImagesCommand(
                 copyImageServiceMock.Object,
-                Mock.Of<ILoggerService>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;
@@ -334,7 +335,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var command = new CopyAcrImagesCommand(
                 copyImageServiceMock.Object,
-                Mock.Of<ILoggerService>());
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
             command.Options.SourceRegistry = SourceRegistry;

@@ -17,11 +17,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions, IngestKustoImageInfoOptionsBuilder>
     {
         private readonly IKustoClient _kustoClient;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<IngestKustoImageInfoCommand> _logger;
 
-        public IngestKustoImageInfoCommand(ILoggerService loggerService, IKustoClient kustoClient)
+        public IngestKustoImageInfoCommand(ILogger<IngestKustoImageInfoCommand> logger, IKustoClient kustoClient)
         {
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));
         }
 
@@ -29,11 +29,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("INGESTING IMAGE INFO DATA INTO KUSTO");
+            _logger.LogInformation("INGESTING IMAGE INFO DATA INTO KUSTO");
 
             (string imageInfo, string layerInfo) = GetImageInfoCsv();
-            _loggerService.WriteMessage($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
-            _loggerService.WriteMessage($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
+            _logger.LogInformation($"Image Info to Ingest:{Environment.NewLine}{imageInfo}{Environment.NewLine}");
+            _logger.LogInformation($"Image Layer to Ingest:{Environment.NewLine}{layerInfo}{Environment.NewLine}");
 
             if (string.IsNullOrEmpty(imageInfo))
             {
@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     throw new InvalidOperationException("Unexpected layer info when image info is empty.");
                 }
 
-                _loggerService.WriteMessage("Skipping ingestion due to empty image info data.");
+                _logger.LogInformation("Skipping ingestion due to empty image info data.");
                 return;
             }
 
@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                _loggerService.WriteMessage($"(Dry run) Skipping ingestion of data into {table}.");
+                _logger.LogInformation($"(Dry run) Skipping ingestion of data into {table}.");
             }
         }
     }

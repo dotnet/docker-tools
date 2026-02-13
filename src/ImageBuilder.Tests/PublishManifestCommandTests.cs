@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -51,7 +52,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new(
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IDockerService>(),
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -310,7 +311,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 Mock.Of<IDateTimeService>(),
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -439,7 +440,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -630,7 +631,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new(
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());

@@ -14,22 +14,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions, TrimUnchangedPlatformsOptionsBuilder>
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
 
-        public TrimUnchangedPlatformsCommand(ILoggerService loggerService)
+        public TrimUnchangedPlatformsCommand(ILogger<TrimUnchangedPlatformsCommand> logger)
         {
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override string Description => "Trims platforms marked as unchanged from the image info file";
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("TRIMMING UNCHANGED PLATFORMS");
+            _logger.LogInformation("TRIMMING UNCHANGED PLATFORMS");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                _loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping trimming unchanged platforms."));
                 return;
             }
@@ -62,7 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             // But it's not set because we haven't used ImageInfoHelper to load it, we've just deserialized it directly.
                             // Using ImageInfoHelper requires having the manifest but that seems unnecessary since it's not needed for the logic
                             // of this command other than this simple logging statement.
-                            _loggerService.WriteMessage($"Removing unchanged platform '{platform.GetIdentifier(excludeProductVersion: true)}'");
+                            _logger.LogInformation($"Removing unchanged platform '{platform.GetIdentifier(excludeProductVersion: true)}'");
                             image.Platforms.Remove(platform);
                         }
                     }

@@ -13,16 +13,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<WaitForMcrDocIngestionCommand> _logger;
         private readonly IEnvironmentService _environmentService;
         private readonly Lazy<IMcrStatusClient> _mcrStatusClient;
 
         public WaitForMcrDocIngestionCommand(
-            ILoggerService loggerService,
+            ILogger<WaitForMcrDocIngestionCommand> logger,
             IMcrStatusClientFactory mcrStatusClientFactory,
             IEnvironmentService environmentService)
         {
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _mcrStatusClient = new Lazy<IMcrStatusClient>(() => mcrStatusClientFactory.Create(Options.MarServiceConnection));
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
         }
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("QUERYING COMMIT RESULT");
+            _logger.LogInformation("QUERYING COMMIT RESULT");
 
             if (!Options.IsDryRun)
             {
@@ -40,9 +40,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 LogSuccessfulResults(result);
             }
 
-            _loggerService.WriteMessage();
+            _logger.LogInformation(string.Empty);
 
-            _loggerService.WriteMessage("Doc ingestion successfully completed!");
+            _logger.LogInformation("Doc ingestion successfully completed!");
         }
 
         private async Task<CommitResult> WaitForIngestionAsync(IMcrStatusClient statusClient)
@@ -57,7 +57,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (CommitStatus commitStatus in commitResult.Value)
                 {
-                    _loggerService.WriteMessage(
+                    _logger.LogInformation(
                         $"Readme status results for commit digest '{Options.CommitDigest}' with request ID '{commitStatus.OnboardingRequestId}': {commitStatus.OverallStatus}");
 
                     switch (commitStatus.OverallStatus)
@@ -67,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             await Task.Delay(Options.IngestionOptions.RequeryDelay);
                             break;
                         case StageStatus.Failed:
-                            _loggerService.WriteError(await GetFailureResultsAsync(statusClient, commitStatus));
+                            _logger.LogError(await GetFailureResultsAsync(statusClient, commitStatus));
                             break;
                         case StageStatus.Succeeded:
                             isComplete = true;
@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (commitResult.Value.All(status => status.OverallStatus == StageStatus.Failed))
                 {
-                    _loggerService.WriteError("Doc ingestion failed.");
+                    _logger.LogError("Doc ingestion failed.");
                     _environmentService.Exit(1);
                 }
 
@@ -96,11 +96,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void LogSuccessfulResults(CommitResult commitResult)
         {
-            _loggerService.WriteMessage("Commit info:");
-            _loggerService.WriteMessage($"\tCommit digest: {commitResult.CommitDigest}");
-            _loggerService.WriteMessage($"\tBranch: {commitResult.Branch}");
-            _loggerService.WriteMessage("\tFiles updated:");
-            commitResult.ContentFiles.ForEach(file => _loggerService.WriteMessage($"\t\t{file}"));
+            _logger.LogInformation("Commit info:");
+            _logger.LogInformation($"\tCommit digest: {commitResult.CommitDigest}");
+            _logger.LogInformation($"\tBranch: {commitResult.Branch}");
+            _logger.LogInformation("\tFiles updated:");
+            commitResult.ContentFiles.ForEach(file => _logger.LogInformation($"\t\t{file}"));
         }
 
         private async Task<string> GetFailureResultsAsync(IMcrStatusClient statusClient, CommitStatus commitStatus)

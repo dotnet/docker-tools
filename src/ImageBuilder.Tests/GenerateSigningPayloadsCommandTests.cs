@@ -14,9 +14,10 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 using Xunit.Abstractions;
+using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
@@ -123,7 +124,7 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         IOrasClient orasClient)
     {
         GenerateSigningPayloadsCommand command = new(
-            Mock.Of<ILoggerService>(),
+            Mock.Of<Microsoft.Extensions.Logging.ILogger<GenerateSigningPayloadsCommand>>(),
             orasClient,
             Mock.Of<IRegistryCredentialsProvider>());
         command.Options.ImageInfoPath = imageInfoPath;

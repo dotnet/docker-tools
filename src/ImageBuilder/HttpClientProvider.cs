@@ -10,18 +10,20 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     internal class HttpClientProvider : IHttpClientProvider
     {
+        private readonly ILoggerFactory _loggerFactory;
         private readonly Lazy<HttpClient> _httpClient;
         private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
-        public HttpClientProvider(ILoggerService loggerService)
+        public HttpClientProvider(ILoggerFactory loggerFactory)
         {
-            if (loggerService is null)
+            if (loggerFactory is null)
             {
-                throw new ArgumentNullException(nameof(loggerService));
+                throw new ArgumentNullException(nameof(loggerFactory));
             }
 
-            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(loggerService)));
-            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(loggerService)));
+            _loggerFactory = loggerFactory;
+            _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(_loggerFactory)));
+            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(_loggerFactory)));
         }
 
         public HttpClient GetClient() => _httpClient.Value;
@@ -30,17 +32,18 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private class LoggingHandler : MessageProcessingHandler
         {
-            private readonly ILoggerService _loggerService;
+            private readonly ILogger<LoggingHandler> _logger;
 
-            public LoggingHandler(ILoggerService loggerService)
+            public LoggingHandler(ILoggerFactory loggerFactory)
             {
-                _loggerService = loggerService;
+                ArgumentNullException.ThrowIfNull(loggerFactory);
+                _logger = loggerFactory.CreateLogger<LoggingHandler>();
                 InnerHandler = new HttpClientHandler();
             }
 
             protected override HttpRequestMessage ProcessRequest(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                _loggerService.WriteMessage($"Sending HTTP request: {request.RequestUri}");
+                _logger.LogInformation($"Sending HTTP request: {request.RequestUri}");
                 return request;
             }
 

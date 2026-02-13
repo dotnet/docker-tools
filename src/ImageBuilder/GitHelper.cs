@@ -86,13 +86,14 @@ namespace Microsoft.DotNet.ImageBuilder
             }
             else
             {
-                Logger.WriteMessage($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
-                Logger.WriteMessage();
+                ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(GitHelper));
+                logger.LogInformation($"The following files would have been updated at {gitOptions.Owner}/{gitOptions.Repo}/{gitOptions.Branch}:");
+                logger.LogInformation(string.Empty);
                 foreach (GitObject gitObject in changes)
                 {
-                    Logger.WriteMessage($"{gitObject.Path}:");
-                    Logger.WriteMessage(gitObject.Content);
-                    Logger.WriteMessage();
+                    logger.LogInformation($"{gitObject.Path}:");
+                    logger.LogInformation(gitObject.Content);
+                    logger.LogInformation(string.Empty);
                 }
 
                 return null;

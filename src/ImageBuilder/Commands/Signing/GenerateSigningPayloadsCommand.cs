@@ -22,7 +22,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
     public GenerateSigningPayloadsCommand(
-        ILogger loggerService,
+        ILogger<GenerateSigningPayloadsCommand> loggerService,
         IOrasClient orasClient,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {

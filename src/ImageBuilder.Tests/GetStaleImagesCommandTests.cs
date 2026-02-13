@@ -1665,7 +1665,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
             private readonly GetStaleImagesCommand command;
-            private readonly Mock<ILogger> loggerServiceMock = new Mock<ILogger>();
+            private readonly Mock<ILogger<GetStaleImagesCommand>> loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
             private readonly string osType;
             private readonly IOctokitClientFactory octokitClientFactory;
             private readonly IGitService gitService;

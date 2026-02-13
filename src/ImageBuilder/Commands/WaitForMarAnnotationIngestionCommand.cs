@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
         public WaitForMarAnnotationIngestionCommand(
-            ILogger loggerService, IMarImageIngestionReporter imageIngestionReporter)
+            ILogger<WaitForMarAnnotationIngestionCommand> loggerService, IMarImageIngestionReporter imageIngestionReporter)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));

@@ -123,7 +123,7 @@ public sealed class GenerateSigningPayloadsCommandTests : IDisposable
         IOrasClient orasClient)
     {
         GenerateSigningPayloadsCommand command = new(
-            Mock.Of<ILogger>(),
+            Mock.Of<Microsoft.Extensions.Logging.ILogger<GenerateSigningPayloadsCommand>>(),
             orasClient,
             Mock.Of<IRegistryCredentialsProvider>());
         command.Options.ImageInfoPath = imageInfoPath;

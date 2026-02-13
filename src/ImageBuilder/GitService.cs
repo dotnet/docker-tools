@@ -7,7 +7,7 @@ using LibGit2Sharp;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class GitService(ILogger logger) : IGitService
+    public class GitService(ILogger<GitService> logger) : IGitService
     {
         private readonly ILogger _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 

@@ -36,7 +36,7 @@ public class CopyImageService : ICopyImageService
     private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
     public CopyImageService(
-        ILogger loggerService,
+        ILogger<CopyImageService> loggerService,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IOptions<PublishConfiguration> publishConfigOptions)
     {

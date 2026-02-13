@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
-            ILogger loggerService,
+            ILogger<GetStaleImagesCommand> loggerService,
             IOctokitClientFactory octokitClientFactory,
             IGitService gitService)
         {

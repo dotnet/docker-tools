@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
     {
         private readonly ILogger _loggerService;
 
-        public AzdoGitHttpClientFactory(ILogger loggerService)
+        public AzdoGitHttpClientFactory(ILogger<AzdoGitHttpClientFactory> loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }

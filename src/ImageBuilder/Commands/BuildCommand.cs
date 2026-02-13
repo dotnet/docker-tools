@@ -46,7 +46,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public BuildCommand(
             IDockerService dockerService,
-            ILogger loggerService,
+            ILogger<BuildCommand> loggerService,
             IGitService gitService,
             IProcessService processService,
             ICopyImageService copyImageService,

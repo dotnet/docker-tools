@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             CopyBaseImagesCommand command = new(
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger<CopyBaseImagesCommand>>(),
                 Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.RepoPrefix = "custom-repo/";
@@ -121,7 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             CopyBaseImagesCommand command = new(
                 copyImageServiceMock.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger<CopyBaseImagesCommand>>(),
                 Mock.Of<IGitService>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.RepoPrefix = "custom-repo/";

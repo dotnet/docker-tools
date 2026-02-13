@@ -30,7 +30,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public QueueBuildCommand(
             IVssConnectionFactory connectionFactory,
-            ILogger loggerService,
+            ILogger<QueueBuildCommand> loggerService,
             INotificationService notificationService)
         {
             _connectionFactory = connectionFactory;

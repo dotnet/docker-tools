@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger Logger;
 
-        public ShowImageStatsCommand(ILogger logger) : base() =>
+        public ShowImageStatsCommand(ILogger<ShowImageStatsCommand> logger) : base() =>
             Logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         protected override string Description => "Displays statistics about the number of images";

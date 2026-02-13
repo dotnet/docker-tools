@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesCommand(
         ICopyImageService copyImageService,
-        ILogger loggerService,
+        ILogger<CopyBaseImagesCommand> loggerService,
         IGitService gitService)
         : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
             copyImageService,

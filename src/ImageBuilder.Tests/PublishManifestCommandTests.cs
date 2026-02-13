@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new(
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IDockerService>(),
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -310,7 +310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 Mock.Of<IDateTimeService>(),
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -439,7 +439,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new PublishManifestCommand(
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -630,7 +630,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             PublishManifestCommand command = new(
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILogger>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());

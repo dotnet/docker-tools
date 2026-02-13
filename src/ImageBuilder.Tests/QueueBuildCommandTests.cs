@@ -597,7 +597,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private QueueBuildCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
             {
-                Mock<ILogger> loggerServiceMock = new();
+                Mock<ILogger<QueueBuildCommand>> loggerServiceMock = new();
 
                 QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
                 command.Options.AzdoOptions.Organization = BuildOrganization;

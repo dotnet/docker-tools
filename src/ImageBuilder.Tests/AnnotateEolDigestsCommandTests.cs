@@ -152,7 +152,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string eolDigestsListPath = Path.Combine(tempFolderContext.Path, "eol-digests.json");
             File.WriteAllText(eolDigestsListPath, JsonConvert.SerializeObject(eolAnnotations));
 
-            Mock<ILogger> loggerServiceMock = new();
+            Mock<ILogger<AnnotateEolDigestsCommand>> loggerServiceMock = new();
             lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(digestAlreadyAnnotated, digestAnnotationIsSuccessful, useNonMatchingDate);
             AnnotateEolDigestsCommand command = new(
                 loggerServiceMock.Object,

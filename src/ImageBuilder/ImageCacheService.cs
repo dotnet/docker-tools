@@ -33,7 +33,7 @@ public class ImageCacheService : IImageCacheService
     // Metadata about Dockerfiles whose images have been retrieved from the cache
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
 
-    public ImageCacheService(ILogger loggerService, IGitService gitService)
+    public ImageCacheService(ILogger<ImageCacheService> loggerService, IGitService gitService)
     {
         _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));

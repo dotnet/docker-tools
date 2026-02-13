@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<IMcrStatusClient> _mcrStatusClient;
 
         public WaitForMcrDocIngestionCommand(
-            ILogger loggerService,
+            ILogger<WaitForMcrDocIngestionCommand> loggerService,
             IMcrStatusClientFactory mcrStatusClientFactory,
             IEnvironmentService environmentService)
         {

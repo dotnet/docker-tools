@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger _loggerService;
 
-        public ShowManifestSchemaCommand(ILogger loggerService)
+        public ShowManifestSchemaCommand(ILogger<ShowManifestSchemaCommand> loggerService)
         {
             _loggerService = loggerService;
         }

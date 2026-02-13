@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public PublishManifestCommand(
             IManifestServiceFactory manifestServiceFactory,
             IDockerService dockerService,
-            ILogger loggerService,
+            ILogger<PublishManifestCommand> loggerService,
             IDateTimeService dateTimeService,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider)

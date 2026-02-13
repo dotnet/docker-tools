@@ -12,7 +12,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 namespace Microsoft.DotNet.ImageBuilder
 {
     internal class GitHubClientFactory(
-        ILogger loggerService,
+        ILogger<GitHubClientFactory> loggerService,
         IOctokitClientFactory octokitClientFactory)
         : IGitHubClientFactory
     {

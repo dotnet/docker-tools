@@ -21,7 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ShowManifestSchemaCommand_Execute()
         {
-            Mock<ILogger> loggerServiceMock = new Mock<ILogger>();
+            Mock<ILogger<ShowManifestSchemaCommand>> loggerServiceMock = new Mock<ILogger<ShowManifestSchemaCommand>>();
 
             ShowManifestSchemaCommand command = new ShowManifestSchemaCommand(loggerServiceMock.Object);
 

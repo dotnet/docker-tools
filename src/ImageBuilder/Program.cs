@@ -9,6 +9,7 @@ using System.CommandLine.Builder;
 using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.Extensions.DependencyInjection;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
 try
@@ -36,9 +37,16 @@ try
 }
 catch (Exception e)
 {
-    using var loggerFactory = LoggerFactory.Create(builder => builder.AddSimpleConsole());
-    ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");
-    logger.LogError(e, "Unhandled exception");
+    ILoggerFactory? loggerFactory = ImageBuilder.Services.GetService<ILoggerFactory>();
+    if (loggerFactory is not null)
+    {
+        ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");
+        logger.LogError(e, "Unhandled exception");
+    }
+    else
+    {
+        Console.Error.WriteLine(e);
+    }
 }
 
 return 1;

@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger _loggerService;
 
-        public TrimUnchangedPlatformsCommand(ILogger loggerService)
+        public TrimUnchangedPlatformsCommand(ILogger<TrimUnchangedPlatformsCommand> loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }

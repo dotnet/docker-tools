@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         private readonly ILogger _loggerService;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
-        public KustoClientWrapper(ILogger loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
+        public KustoClientWrapper(ILogger<KustoClientWrapper> loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
         {
             _loggerService = loggerService;
             _tokenCredentialProvider = tokenCredentialProvider;

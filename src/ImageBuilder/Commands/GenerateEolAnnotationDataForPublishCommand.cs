@@ -16,7 +16,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
     public GenerateEolAnnotationDataForPublishCommand(
-        ILogger loggerService,
+        ILogger<GenerateEolAnnotationDataForPublishCommand> loggerService,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,

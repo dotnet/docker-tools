@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 public static class ImageBuilder
 {
     public static IEnumerable<ICommand> Commands => ServiceProvider.Value.GetServices<ICommand>();
+    internal static IServiceProvider Services => ServiceProvider.Value;
 
     private static Lazy<IServiceProvider> ServiceProvider { get; } = new(() =>
         {
@@ -41,8 +42,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
-            builder.Services.AddSingleton<ILogger>(sp =>
-                sp.GetRequiredService<ILoggerFactory>().CreateLogger("ImageBuilder"));
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
             builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();

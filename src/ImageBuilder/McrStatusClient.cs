@@ -24,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public McrStatusClient(
             IHttpClientProvider httpClientProvider,
-            ILogger loggerService,
+            ILogger<McrStatusClient> loggerService,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IServiceConnection serviceConnection)
         {

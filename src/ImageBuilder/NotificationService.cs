@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly ILogger _loggerService;
         private readonly IOctokitClientFactory _octokitClientFactory;
 
-        public NotificationService(ILogger loggerService, IOctokitClientFactory octokitClientFactory)
+        public NotificationService(ILogger<NotificationService> loggerService, IOctokitClientFactory octokitClientFactory)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _octokitClientFactory = octokitClientFactory

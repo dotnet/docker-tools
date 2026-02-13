@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IKustoClient _kustoClient;
         private readonly ILogger _loggerService;
 
-        public IngestKustoImageInfoCommand(ILogger loggerService, IKustoClient kustoClient)
+        public IngestKustoImageInfoCommand(ILogger<IngestKustoImageInfoCommand> loggerService, IKustoClient kustoClient)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));

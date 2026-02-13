@@ -27,7 +27,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
     private readonly IEnvironmentService _environmentService;
 
     public MarImageIngestionReporter(
-        ILogger loggerService,
+        ILogger<MarImageIngestionReporter> loggerService,
         IMcrStatusClientFactory mcrStatusClientFactory,
         IEnvironmentService environmentService)
     {

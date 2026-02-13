@@ -150,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         actualImageArtifactDetailsContents = File.ReadAllText(path);
                     });
 
-                PublishImageInfoCommand command = new(gitServiceMock.Object, Mock.Of<IOctokitClientFactory>(), Mock.Of<ILogger>());
+                PublishImageInfoCommand command = new(gitServiceMock.Object, Mock.Of<IOctokitClientFactory>(), Mock.Of<ILogger<PublishImageInfoCommand>>());
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions = gitOptions;
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");

@@ -18,7 +18,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public partial class GenerateReadmesCommand(IEnvironmentService environmentService, ILogger logger)
+    public partial class GenerateReadmesCommand(IEnvironmentService environmentService, ILogger<GenerateReadmesCommand> logger)
         : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService, logger)
     {
         private const string ArtifactName = "Readme";

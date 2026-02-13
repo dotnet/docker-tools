@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly Lazy<HttpClient> _httpClient;
         private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
-        public HttpClientProvider(ILogger loggerService)
+        public HttpClientProvider(ILogger<HttpClientProvider> loggerService)
         {
             if (loggerService is null)
             {

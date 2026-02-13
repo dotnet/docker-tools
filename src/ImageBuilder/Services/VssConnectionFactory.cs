@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
     {
         private readonly ILogger _loggerService;
 
-        public VssConnectionFactory(ILogger loggerService)
+        public VssConnectionFactory(ILogger<VssConnectionFactory> loggerService)
         {
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
         }

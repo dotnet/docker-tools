@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public CleanAcrImagesCommand(
             IAcrClientFactory acrClientFactory,
             IAcrContentClientFactory acrContentClientFactory,
-            ILogger loggerService,
+            ILogger<CleanAcrImagesCommand> loggerService,
             ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {

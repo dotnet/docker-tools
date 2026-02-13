@@ -13,7 +13,7 @@ using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class OctokitClientFactory(ILogger loggerService) : IOctokitClientFactory
+    public class OctokitClientFactory(ILogger<OctokitClientFactory> loggerService) : IOctokitClientFactory
     {
         private static readonly ProductHeaderValue s_productHeaderValue =
             new(name: Assembly.GetExecutingAssembly().GetName().Name);

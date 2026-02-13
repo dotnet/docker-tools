@@ -1040,7 +1040,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string repoPrefix = DefaultRepoPrefix,
             ILifecycleMetadataService lifecycleMetadataService = null)
         {
-            Mock<ILogger> loggerServiceMock = new();
+            Mock<ILogger<GenerateEolAnnotationDataForPublishCommand>> loggerServiceMock = new();
             lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
             GenerateEolAnnotationDataForPublishCommand command = new(
                 loggerService: loggerServiceMock.Object,

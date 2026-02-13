@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         };
 
         public AnnotateEolDigestsCommand(
-            ILogger loggerService,
+            ILogger<AnnotateEolDigestsCommand> loggerService,
             ILifecycleMetadataService lifecycleMetadataService,
             IRegistryCredentialsProvider registryCredentialsProvider)
         {

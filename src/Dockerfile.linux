@@ -27,11 +27,11 @@ RUN dotnet restore -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBui
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true --no-restore -o out
+RUN dotnet publish -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --no-restore -o out
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-azurelinux3.0
+FROM mcr.microsoft.com/dotnet/runtime:9.0-azurelinux3.0
 
 # install tooling
 RUN tdnf install -y \

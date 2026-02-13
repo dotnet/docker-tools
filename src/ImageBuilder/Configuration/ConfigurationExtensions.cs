@@ -21,6 +21,13 @@ public static class ConfigurationExtensions
             .BindConfiguration(PublishConfiguration.ConfigurationKey);
     }
 
+    public static void AddBuildConfiguration(this IHostApplicationBuilder builder)
+    {
+        builder.Services
+            .AddOptions<BuildConfiguration>()
+            .BindConfiguration(BuildConfiguration.ConfigurationKey);
+    }
+
     /// <summary>
     /// Finds authentication details for a registry by name.
     /// </summary>

@@ -7,5 +7,7 @@ namespace Microsoft.DotNet.ImageBuilder
     public interface IEnvironmentService
     {
         void Exit(int exitCode);
+
+        string? GetEnvironmentVariable(string variable);
     }
 }

@@ -38,7 +38,8 @@ namespace Microsoft.DotNet.ImageBuilder
             {
                 foreach (ImageData imageData in repo.Images)
                 {
-                    if (imageData.Manifest is not null)
+                    if (imageData.Manifest is not null
+                        && !string.IsNullOrEmpty(imageData.Manifest.Digest))
                     {
                         imageData.Manifest.Digest =
                             overrideOptions.ApplyOverrideToDigest(imageData.Manifest.Digest, repoName: repo.Repo);
@@ -46,8 +47,11 @@ namespace Microsoft.DotNet.ImageBuilder
 
                     foreach (PlatformData platformData in imageData.Platforms)
                     {
-                        platformData.Digest =
-                            overrideOptions.ApplyOverrideToDigest(platformData.Digest, repoName: repo.Repo);
+                        if (!string.IsNullOrEmpty(platformData.Digest))
+                        {
+                            platformData.Digest =
+                                overrideOptions.ApplyOverrideToDigest(platformData.Digest, repoName: repo.Repo);
+                        }
                     }
                 }
             }

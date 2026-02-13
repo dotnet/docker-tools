@@ -11,10 +11,11 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
 using Xunit.Abstractions;
+using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {

@@ -6,14 +6,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Nodes;
-using System.Threading;
 using System.Threading.Tasks;
+using System.Threading;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
-
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests

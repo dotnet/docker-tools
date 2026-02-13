@@ -11,10 +11,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 public class SignImagesOptions : Options
 {
     public string ImageInfoPath { get; set; } = string.Empty;
+    public RegistryOptions RegistryOverride { get; set; } = new();
 }
 
 public class SignImagesOptionsBuilder : CliOptionsBuilder
 {
+    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: true);
+
     public override IEnumerable<Argument> GetCliArguments() =>
         base.GetCliArguments()
             .Concat(
@@ -22,4 +25,8 @@ public class SignImagesOptionsBuilder : CliOptionsBuilder
                 new Argument<string>(nameof(SignImagesOptions.ImageInfoPath),
                     "Path to merged image info file containing images to sign")
             ]);
+
+    public override IEnumerable<Option> GetCliOptions() =>
+        base.GetCliOptions()
+            .Concat(_registryOptionsBuilder.GetCliOptions());
 }

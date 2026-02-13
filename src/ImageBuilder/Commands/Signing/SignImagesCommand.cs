@@ -55,6 +55,9 @@ public class SignImagesCommand(
         var imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
+        // Apply registry override to get fully-qualified image references
+        imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
+
         var platformRequests = await signingRequestGenerator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
         var manifestListRequests = await signingRequestGenerator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
         var allRequests = platformRequests.Concat(manifestListRequests).ToList();

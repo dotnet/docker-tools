@@ -10,11 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
-using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -29,8 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
-        private readonly IBulkImageSigningService _signingService;
-        private readonly PublishConfiguration _publishConfiguration;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -54,9 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService,
-            IBulkImageSigningService signingService,
-            IOptions<PublishConfiguration> publishConfigOptions)
+            IImageCacheService imageCacheService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
@@ -66,8 +59,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
-            _signingService = signingService ?? throw new ArgumentNullException(nameof(signingService));
-            _publishConfiguration = publishConfigOptions?.Value ?? throw new ArgumentNullException(nameof(publishConfigOptions));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -117,7 +108,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 await ExecuteWithDockerCredentialsAsync(async () =>
                     {
                         PushImages();
-                        await SignImagesAsync();
                         await PublishImageInfoAsync();
                     });
             }
@@ -156,26 +146,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         Options.OutputVariableName,
                         string.Join(',', builtDigests)));
             }
-        }
-
-        private async Task SignImagesAsync()
-        {
-            if (Options.IsDryRun)
-            {
-                _loggerService.WriteMessage("Skipping image signing in dry-run mode.");
-                return;
-            }
-
-            var signingConfig = _publishConfiguration.Signing;
-            if (signingConfig is null)
-            {
-                _loggerService.WriteMessage("Signing configuration not provided. Skipping image signing.");
-                return;
-            }
-
-            // TODO: Generate signing requests from built platforms
-            // For now, this is a placeholder for the signing integration
-            _loggerService.WriteMessage("Image signing is configured but not yet fully implemented.");
         }
 
         private async Task PublishImageInfoAsync()

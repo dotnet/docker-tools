@@ -5,6 +5,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -82,6 +83,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, QueueBuildCommand>();
             builder.Services.AddSingleton<ICommand, ShowImageStatsCommand>();
             builder.Services.AddSingleton<ICommand, ShowManifestSchemaCommand>();
+            builder.Services.AddSingleton<ICommand, SignImagesCommand>();
             builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
             builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
             builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();

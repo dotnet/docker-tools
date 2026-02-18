@@ -23,6 +23,7 @@ public class EsrpSigningService(
     IProcessService processService,
     ILoggerService logger,
     IEnvironmentService environmentService,
+    IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions) : IEsrpSigningService
 {
     /// <summary>
@@ -44,6 +45,7 @@ public class EsrpSigningService(
     private readonly IProcessService _processService = processService;
     private readonly ILoggerService _logger = logger;
     private readonly IEnvironmentService _environmentService = environmentService;
+    private readonly IFileSystem _fileSystem = fileSystem;
     private readonly SigningConfiguration? _signingConfig = publishConfigOptions.Value.Signing;
 
     /// <inheritdoc/>
@@ -81,7 +83,7 @@ public class EsrpSigningService(
         try
         {
             var signListJson = GenerateSignListJson(files, signingKeyCode);
-            await File.WriteAllTextAsync(signListTempPath, signListJson, cancellationToken);
+            await _fileSystem.WriteAllTextAsync(signListTempPath, signListJson, cancellationToken);
 
             var ddSignFilesPath = Path.Combine(mbsignAppFolder, DDSignFilesDllName);
             var args = $"--roll-forward major \"{ddSignFilesPath}\" -- /filelist:\"{signListTempPath}\" /signType:{signType}";
@@ -102,9 +104,9 @@ public class EsrpSigningService(
         }
         finally
         {
-            if (File.Exists(signListTempPath))
+            if (_fileSystem.FileExists(signListTempPath))
             {
-                File.Delete(signListTempPath);
+                _fileSystem.DeleteFile(signListTempPath);
             }
         }
     }

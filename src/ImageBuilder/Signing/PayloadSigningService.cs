@@ -19,12 +19,14 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 public class PayloadSigningService(
     IEsrpSigningService esrpSigningService,
     ILoggerService logger,
+    IFileSystem fileSystem,
     IOptions<BuildConfiguration> buildConfigOptions) : IPayloadSigningService
 {
     private const string SigningPayloadsSubdirectory = "signing-payloads";
 
     private readonly IEsrpSigningService _esrpSigningService = esrpSigningService;
     private readonly ILoggerService _logger = logger;
+    private readonly IFileSystem _fileSystem = fileSystem;
     private readonly BuildConfiguration _buildConfig = buildConfigOptions.Value;
 
     /// <inheritdoc/>
@@ -58,7 +60,7 @@ public class PayloadSigningService(
             var request = requestList[i];
             var signedFile = payloadFiles[i];
 
-            var certChain = CertificateChainCalculator.CalculateCertificateChainThumbprints(signedFile.FullName);
+            var certChain = CertificateChainCalculator.CalculateCertificateChainThumbprints(signedFile.FullName, _fileSystem);
 
             results.Add(new PayloadSigningResult(request.ImageName, signedFile, certChain));
         }
@@ -79,7 +81,7 @@ public class PayloadSigningService(
         }
 
         var payloadDir = Path.Combine(_buildConfig.ArtifactStagingDirectory, SigningPayloadsSubdirectory);
-        return Directory.CreateDirectory(payloadDir);
+        return _fileSystem.CreateDirectory(payloadDir);
     }
 
     /// <summary>
@@ -96,7 +98,7 @@ public class PayloadSigningService(
             var safeFilename = SanitizeDigestForFilename(digest) + ".payload";
             var filePath = Path.Combine(directory.FullName, safeFilename);
 
-            File.WriteAllText(filePath, request.Payload.ToJson());
+            _fileSystem.WriteAllText(filePath, request.Payload.ToJson());
             files.Add(new FileInfo(filePath));
 
             _logger.WriteMessage($"Wrote payload for {request.ImageName} to {safeFilename}");

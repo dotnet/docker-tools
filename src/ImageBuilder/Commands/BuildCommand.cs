@@ -21,7 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly IDockerService _dockerService;
         private readonly ILogger<BuildCommand> _logger;
-        private ILogger Logger => _logger;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
         private readonly ICopyImageService _copyImageService;
@@ -625,11 +624,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task PullBaseImagesAsync()
         {
-            Logger.LogInformation("PULLING LATEST BASE IMAGES");
+            _logger.LogInformation("PULLING LATEST BASE IMAGES");
 
             if (Options.IsSkipPullingEnabled)
             {
-                Logger.LogInformation("No external base images to pull");
+                _logger.LogInformation("No external base images to pull");
                 return;
             }
 
@@ -655,7 +654,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (pulledTags.Count <= 0)
             {
-                Logger.LogInformation("No external base images to pull");
+                _logger.LogInformation("No external base images to pull");
                 return;
             }
 

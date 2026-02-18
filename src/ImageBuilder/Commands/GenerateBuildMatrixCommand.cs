@@ -23,7 +23,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
         private readonly IImageCacheService _imageCacheService;
         private readonly ILogger<GenerateBuildMatrixCommand> _logger;
-        private ILogger Logger => _logger;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
@@ -51,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.LogInformation("GENERATING BUILD MATRIX");
+            _logger.LogInformation("GENERATING BUILD MATRIX");
 
             IEnumerable<BuildMatrixInfo> matrices = await GenerateMatrixInfoAsync();
             LogDiagnostics(matrices);
@@ -370,7 +369,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         return $" \"{leg.Name}\": {{{variables} }}";
                     })
                     .Aggregate((working, next) => $"{working},{next}");
-                Logger.LogInformation(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
+                _logger.LogInformation(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
             }
         }
 
@@ -429,7 +428,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return platformMappings.Select(platformMapping => platformMapping.PlatformInfo);
             }
 
-            Logger.LogInformation("Trimming platforms based on image cache state...");
+            _logger.LogInformation("Trimming platforms based on image cache state...");
 
             // Here we will trim the platforms based on their image cache state. This reduces the amount of jobs that need to
             // be run. Otherwise, you may spin up a bunch of jobs that end up processing a bunch of cached images and
@@ -588,13 +587,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Write out the matrices in a human friendly format
             foreach (BuildMatrixInfo matrix in matrices)
             {
-                Logger.LogInformation($"  {matrix.Name}:");
+                _logger.LogInformation($"  {matrix.Name}:");
                 foreach (BuildLegInfo leg in matrix.OrderedLegs)
                 {
-                    Logger.LogInformation($"    {leg.Name}:");
+                    _logger.LogInformation($"    {leg.Name}:");
                     foreach ((string Name, string Value) in leg.Variables)
                     {
-                        Logger.LogInformation($"      {Name}: {Value}");
+                        _logger.LogInformation($"      {Name}: {Value}");
                     }
                 }
             }

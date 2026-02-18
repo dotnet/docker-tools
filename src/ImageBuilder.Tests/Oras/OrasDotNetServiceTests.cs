@@ -46,10 +46,8 @@ public class OrasDotNetServiceTests
         var service = CreateService();
         var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
-#pragma warning disable CS8625
         var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
-            await service.PushSignatureAsync(subjectDescriptor, null));
-#pragma warning restore CS8625
+            await service.PushSignatureAsync(subjectDescriptor, null!));
 
         exception.ShouldNotBeNull();
         exception.ParamName.ShouldBe("result");
@@ -63,10 +61,8 @@ public class OrasDotNetServiceTests
     {
         var service = CreateService();
 
-#pragma warning disable CS8604
         var exception = await Should.ThrowAsync<ArgumentException>(async () =>
-            await service.GetDescriptorAsync(reference));
-#pragma warning restore CS8604
+            await service.GetDescriptorAsync(reference!));
 
         exception.ShouldNotBeNull();
     }
@@ -80,10 +76,8 @@ public class OrasDotNetServiceTests
             new FileInfo("/tmp/test.cose"),
             "[\"thumbprint\"]");
 
-#pragma warning disable CS8625
         var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
-            await service.PushSignatureAsync(null, signedPayload));
-#pragma warning restore CS8625
+            await service.PushSignatureAsync(null!, signedPayload));
 
         exception.ShouldNotBeNull();
         exception.ParamName.ShouldBe("subjectDescriptor");

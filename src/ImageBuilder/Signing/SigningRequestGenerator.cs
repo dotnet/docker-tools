@@ -36,20 +36,15 @@ public class SigningRequestGenerator : ISigningRequestGenerator
             .SelectMany(repo => repo.Images
                 .SelectMany(image => image.Platforms
                     .Where(platform => !string.IsNullOrEmpty(platform.Digest))
-                    .Select(platform => new
-                    {
-                        Repo = repo.Repo,
-                        Digest = platform.Digest
-                    })))
+                    .Select(platform => platform.Digest)))
             .ToList();
 
         _logger.WriteMessage($"Generating signing requests for {platformReferences.Count} platform images.");
 
         var requests = new List<ImageSigningRequest>();
 
-        foreach (var platform in platformReferences)
+        foreach (var reference in platformReferences)
         {
-            var reference = platform.Digest;
             _logger.WriteMessage($"  Platform reference: {reference}");
             var request = await CreateSigningRequestAsync(reference, cancellationToken);
             requests.Add(request);
@@ -66,20 +61,15 @@ public class SigningRequestGenerator : ISigningRequestGenerator
         var manifestReferences = imageArtifactDetails.Repos
             .SelectMany(repo => repo.Images
                 .Where(image => image.Manifest is not null && !string.IsNullOrEmpty(image.Manifest.Digest))
-                .Select(image => new
-                {
-                    Repo = repo.Repo,
-                    Digest = image.Manifest!.Digest
-                }))
+                .Select(image => image.Manifest!.Digest))
             .ToList();
 
         _logger.WriteMessage($"Generating signing requests for {manifestReferences.Count} manifest lists.");
 
         var requests = new List<ImageSigningRequest>();
 
-        foreach (var manifest in manifestReferences)
+        foreach (var reference in manifestReferences)
         {
-            var reference = manifest.Digest;
             _logger.WriteMessage($"  Manifest reference: {reference}");
             var request = await CreateSigningRequestAsync(reference, cancellationToken);
             requests.Add(request);

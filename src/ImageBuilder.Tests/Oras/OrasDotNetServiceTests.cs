@@ -55,6 +55,40 @@ public class OrasDotNetServiceTests
         exception.ParamName.ShouldBe("result");
     }
 
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task GetDescriptorAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
+    {
+        var service = CreateService();
+
+#pragma warning disable CS8604
+        var exception = await Should.ThrowAsync<ArgumentException>(async () =>
+            await service.GetDescriptorAsync(reference));
+#pragma warning restore CS8604
+
+        exception.ShouldNotBeNull();
+    }
+
+    [Fact]
+    public async Task PushSignatureAsync_NullSubjectDescriptor_ThrowsArgumentNullException()
+    {
+        var service = CreateService();
+        var signedPayload = new PayloadSigningResult(
+            "registry.io/repo:tag",
+            new FileInfo("/tmp/test.cose"),
+            "[\"thumbprint\"]");
+
+#pragma warning disable CS8625
+        var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
+            await service.PushSignatureAsync(null, signedPayload));
+#pragma warning restore CS8625
+
+        exception.ShouldNotBeNull();
+        exception.ParamName.ShouldBe("subjectDescriptor");
+    }
+
     private static OrasDotNetService CreateService()
     {
         var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();

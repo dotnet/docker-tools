@@ -8,7 +8,6 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Services;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
@@ -26,6 +25,14 @@ public static class ImageBuilder
 
             // Configuration
             builder.AddPublishConfiguration();
+
+            // Logging
+            builder.Logging.AddSimpleConsole(options =>
+            {
+                options.IncludeScopes = true;
+                options.SingleLine = true;
+                options.TimestampFormat = "HH:mm:ss ";
+            });
 
             // Services
             builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();

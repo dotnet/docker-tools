@@ -21,6 +21,7 @@ public sealed record SigningConfiguration
 
     /// <summary>
     /// Certificate ID used by DDSignFiles.dll for signing referrer artifacts (SBOMs, etc.).
+    /// TODO: Implement usage of this property when adding support for signing referrer artifacts.
     /// </summary>
     public int ReferrerSigningKeyCode { get; set; }
 

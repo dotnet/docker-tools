@@ -86,7 +86,9 @@ public class EsrpSigningService(
             var ddSignFilesPath = Path.Combine(mbsignAppFolder, DDSignFilesDllName);
             var args = $"--roll-forward major \"{ddSignFilesPath}\" -- /filelist:\"{signListTempPath}\" /signType:{signType}";
 
-            // IProcessService.Execute is synchronous, wrap in Task.Run
+            // IProcessService.Execute is synchronous, so wrap in Task.Run.
+            // The cancellation token prevents Task.Run from starting if already cancelled,
+            // but IProcessService.Execute does not accept a token.
             await Task.Run(() =>
             {
                 _processService.Execute(

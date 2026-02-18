@@ -33,6 +33,7 @@ public static class CertificateChainCalculator
     /// <returns>JSON array of hex-encoded SHA256 thumbprints (e.g., ["abc123...", "def456..."]).</returns>
     public static string CalculateCertificateChainThumbprints(string signedPayloadPath)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(signedPayloadPath);
         var fileBytes = File.ReadAllBytes(signedPayloadPath);
         var reader = new CborReader(fileBytes);
 
@@ -44,7 +45,8 @@ public static class CertificateChainCalculator
         }
 
         // COSE_Sign1 structure is an array: [protected, unprotected, payload, signature]
-        var arrayLength = reader.ReadStartArray();
+        var arrayLength = reader.ReadStartArray()
+            ?? throw new InvalidOperationException("Indefinite-length COSE_Sign1 arrays are not supported.");
         if (arrayLength < 2)
         {
             throw new InvalidOperationException("Invalid COSE_Sign1 structure.");
@@ -70,7 +72,8 @@ public static class CertificateChainCalculator
     /// </summary>
     private static List<byte[]> ReadX5ChainFromMap(CborReader reader)
     {
-        var mapLength = reader.ReadStartMap();
+        var mapLength = reader.ReadStartMap()
+            ?? throw new InvalidOperationException("Indefinite-length CBOR maps are not supported.");
         var x5chainArray = new List<byte[]>();
 
         for (var i = 0; i < mapLength; i++)
@@ -98,7 +101,8 @@ public static class CertificateChainCalculator
                 else if (state == CborReaderState.StartArray)
                 {
                     // Array of certificates
-                    var certArrayLength = reader.ReadStartArray();
+                    var certArrayLength = reader.ReadStartArray()
+                        ?? throw new InvalidOperationException("Indefinite-length certificate arrays are not supported.");
                     for (var j = 0; j < certArrayLength; j++)
                     {
                         x5chainArray.Add(reader.ReadByteString());

@@ -7,6 +7,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Oras;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
@@ -17,12 +18,12 @@ public class BulkImageSigningService(
     IPayloadSigningService payloadSigningService,
     IOrasDescriptorService descriptorService,
     IOrasSignatureService signatureService,
-    ILoggerService logger) : IBulkImageSigningService
+    ILogger<BulkImageSigningService> logger) : IBulkImageSigningService
 {
     private readonly IPayloadSigningService _payloadSigningService = payloadSigningService;
     private readonly IOrasDescriptorService _descriptorService = descriptorService;
     private readonly IOrasSignatureService _signatureService = signatureService;
-    private readonly ILoggerService _logger = logger;
+    private readonly ILogger<BulkImageSigningService> _logger = logger;
 
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ImageSigningResult>> SignImagesAsync(
@@ -36,7 +37,7 @@ public class BulkImageSigningService(
             return [];
         }
 
-        _logger.WriteMessage($"Signing {requestList.Count} images...");
+        _logger.LogInformation("Signing {Count} images...", requestList.Count);
 
         // Step 1: Sign all payloads via ESRP
         var signedPayloads = await _payloadSigningService.SignPayloadsAsync(
@@ -57,7 +58,7 @@ public class BulkImageSigningService(
             results.Add(new ImageSigningResult(signedPayload.ImageName, signatureDigest));
         }
 
-        _logger.WriteMessage($"Successfully signed {results.Count} images.");
+        _logger.LogInformation("Successfully signed {Count} images.", results.Count);
 
         return results;
     }

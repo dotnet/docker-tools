@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Signing;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
@@ -17,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 /// Reads image references from a merged image-info.json file and signs each image.
 /// </summary>
 public class SignImagesCommand(
-    ILoggerService loggerService,
+    ILogger<SignImagesCommand> logger,
     IBulkImageSigningService signingService,
     ISigningRequestGenerator signingRequestGenerator,
     IOptions<PublishConfiguration> publishConfigOptions)
@@ -30,32 +31,32 @@ public class SignImagesCommand(
 
     public override async Task ExecuteAsync()
     {
-        loggerService.WriteHeading("SIGNING CONTAINER IMAGES");
+        logger.LogInformation("SIGNING CONTAINER IMAGES");
 
         var signingConfig = _publishConfiguration.Signing;
         if (signingConfig is null || !signingConfig.Enabled)
         {
-            loggerService.WriteMessage("Signing is not enabled. Skipping image signing.");
+            logger.LogInformation("Signing is not enabled. Skipping image signing.");
             return;
         }
 
         if (!File.Exists(Options.ImageInfoPath))
         {
-            loggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+            logger.LogInformation(PipelineHelper.FormatWarningCommand(
                 "Image info file not found. Skipping image signing."));
             return;
         }
 
         if (Options.IsDryRun)
         {
-            loggerService.WriteMessage("Dry run enabled. Skipping actual signing.");
+            logger.LogInformation("Dry run enabled. Skipping actual signing.");
             return;
         }
 
         var imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
-        loggerService.WriteMessage($"Registry override: Registry='{Options.RegistryOverride.Registry}', RepoPrefix='{Options.RegistryOverride.RepoPrefix}'");
+        logger.LogInformation("Registry override: Registry='{Registry}', RepoPrefix='{RepoPrefix}'", Options.RegistryOverride.Registry, Options.RegistryOverride.RepoPrefix);
 
         LogDigests(imageArtifactDetails);
 
@@ -70,19 +71,19 @@ public class SignImagesCommand(
 
         if (allRequests.Count == 0)
         {
-            loggerService.WriteMessage("No images to sign.");
+            logger.LogInformation("No images to sign.");
             return;
         }
 
         var keyCode = signingConfig.ImageSigningKeyCode;
-        loggerService.WriteMessage($"Signing {allRequests.Count} image(s) ({platformRequests.Count} platforms, {manifestListRequests.Count} manifest lists) with key code {keyCode}...");
+        logger.LogInformation("Signing {Count} image(s) ({PlatformCount} platforms, {ManifestCount} manifest lists) with key code {KeyCode}...", allRequests.Count, platformRequests.Count, manifestListRequests.Count, keyCode);
 
         var results = await signingService.SignImagesAsync(allRequests, keyCode);
 
-        loggerService.WriteMessage($"Successfully signed {results.Count} image(s).");
+        logger.LogInformation("Successfully signed {Count} image(s).", results.Count);
         foreach (var result in results)
         {
-            loggerService.WriteMessage($"  {result.ImageName}: signature digest {result.SignatureDigest}");
+            logger.LogInformation("  {ImageName}: signature digest {SignatureDigest}", result.ImageName, result.SignatureDigest);
         }
     }
 
@@ -94,12 +95,12 @@ public class SignImagesCommand(
             {
                 foreach (var platform in image.Platforms)
                 {
-                    loggerService.WriteMessage($"  repo={repo.Repo} platform.Digest={platform.Digest}");
+                    logger.LogInformation("  repo={Repo} platform.Digest={Digest}", repo.Repo, platform.Digest);
                 }
 
                 if (image.Manifest is not null)
                 {
-                    loggerService.WriteMessage($"  repo={repo.Repo} manifest.Digest={image.Manifest.Digest}");
+                    logger.LogInformation("  repo={Repo} manifest.Digest={Digest}", repo.Repo, image.Manifest.Digest);
                 }
             }
         }

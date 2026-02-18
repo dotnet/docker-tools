@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Oras;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
@@ -17,11 +18,11 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 public class SigningRequestGenerator : ISigningRequestGenerator
 {
     private readonly IOrasDescriptorService _descriptorService;
-    private readonly ILoggerService _logger;
+    private readonly ILogger<SigningRequestGenerator> _logger;
 
     public SigningRequestGenerator(
         IOrasDescriptorService descriptorService,
-        ILoggerService logger)
+        ILogger<SigningRequestGenerator> logger)
     {
         _descriptorService = descriptorService;
         _logger = logger;
@@ -39,13 +40,13 @@ public class SigningRequestGenerator : ISigningRequestGenerator
                     .Select(platform => platform.Digest)))
             .ToList();
 
-        _logger.WriteMessage($"Generating signing requests for {platformReferences.Count} platform images.");
+        _logger.LogInformation("Generating signing requests for {Count} platform images.", platformReferences.Count);
 
         var requests = new List<ImageSigningRequest>();
 
         foreach (var reference in platformReferences)
         {
-            _logger.WriteMessage($"  Platform reference: {reference}");
+            _logger.LogInformation("  Platform reference: {Reference}", reference);
             var request = await CreateSigningRequestAsync(reference, cancellationToken);
             requests.Add(request);
         }
@@ -64,13 +65,13 @@ public class SigningRequestGenerator : ISigningRequestGenerator
                 .Select(image => image.Manifest!.Digest))
             .ToList();
 
-        _logger.WriteMessage($"Generating signing requests for {manifestReferences.Count} manifest lists.");
+        _logger.LogInformation("Generating signing requests for {Count} manifest lists.", manifestReferences.Count);
 
         var requests = new List<ImageSigningRequest>();
 
         foreach (var reference in manifestReferences)
         {
-            _logger.WriteMessage($"  Manifest reference: {reference}");
+            _logger.LogInformation("  Manifest reference: {Reference}", reference);
             var request = await CreateSigningRequestAsync(reference, cancellationToken);
             requests.Add(request);
         }
@@ -85,7 +86,7 @@ public class SigningRequestGenerator : ISigningRequestGenerator
         string reference,
         CancellationToken cancellationToken)
     {
-        _logger.WriteMessage($"Fetching descriptor for {reference}");
+        _logger.LogInformation("Fetching descriptor for {Reference}", reference);
 
         var descriptor = await _descriptorService.GetDescriptorAsync(reference, cancellationToken);
 

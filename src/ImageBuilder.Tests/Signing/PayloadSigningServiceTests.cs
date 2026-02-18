@@ -13,6 +13,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.Options;
 using Moq;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 
@@ -177,7 +178,7 @@ public class PayloadSigningServiceTests
 
         return new PayloadSigningService(
             (mockEsrp ?? new Mock<IEsrpSigningService>()).Object,
-            Mock.Of<ILoggerService>(),
+            Mock.Of<ILogger<PayloadSigningService>>(),
             fileSystem.Object,
             Options.Create(buildConfig));
     }

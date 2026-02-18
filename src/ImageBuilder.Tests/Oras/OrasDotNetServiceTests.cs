@@ -11,6 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Caching.Memory;
 using Moq;
+using Microsoft.Extensions.Logging;
 using OrasProject.Oras.Oci;
 using Shouldly;
 using Xunit;
@@ -91,7 +92,7 @@ public class OrasDotNetServiceTests
             .Setup(p => p.GetClient())
             .Returns(new HttpClient());
         var cache = Mock.Of<IMemoryCache>();
-        var logger = Mock.Of<ILoggerService>();
+        var logger = Mock.Of<ILogger<OrasDotNetService>>();
 
         return new OrasDotNetService(
             credentialsProvider,

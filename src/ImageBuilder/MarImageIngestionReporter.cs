@@ -22,16 +22,16 @@ public interface IMarImageIngestionReporter
 }
 public class MarImageIngestionReporter : IMarImageIngestionReporter
 {
-    private readonly ILoggerService _loggerService;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly IMcrStatusClientFactory _mcrStatusClientFactory;
     private readonly IEnvironmentService _environmentService;
 
     public MarImageIngestionReporter(
-        ILoggerService loggerService,
+        ILoggerFactory loggerFactory,
         IMcrStatusClientFactory mcrStatusClientFactory,
         IEnvironmentService environmentService)
     {
-        _loggerService = loggerService;
+        _loggerFactory = loggerFactory;
         _mcrStatusClientFactory = mcrStatusClientFactory;
         _environmentService = environmentService;
     }
@@ -48,7 +48,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
         var mcrStatusClient = _mcrStatusClientFactory.Create(serviceConnection);
         var reporter = new ReporterImpl(
-            _loggerService,
+            _loggerFactory,
             mcrStatusClient,
             _environmentService,
             timeout,
@@ -60,17 +60,17 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
     private class ReporterImpl
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<ReporterImpl> _logger;
         private readonly IMcrStatusClient _statusClient;
         private readonly IEnvironmentService _environmentService;
         private readonly TimeSpan _timeout;
         private readonly TimeSpan _requeryDelay;
         private readonly DateTime? _minimumQueueTime;
 
-        public ReporterImpl(ILoggerService loggerService, IMcrStatusClient statusClient, IEnvironmentService environmentService,
+        public ReporterImpl(ILoggerFactory loggerFactory, IMcrStatusClient statusClient, IEnvironmentService environmentService,
             TimeSpan timeout, TimeSpan requeryDelay, DateTime? minimumQueueTime)
         {
-            _loggerService = loggerService;
+            _logger = loggerFactory.CreateLogger<ReporterImpl>();
             _statusClient = statusClient;
             _environmentService = environmentService;
             _timeout = timeout;
@@ -84,9 +84,9 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                 .Select(digestInfo => ReportImageStatusAsync(digestInfo))
                 .ToList();
             IEnumerable<ImageResultInfo> imageResultInfos = await TaskHelper.WhenAll(tasks, _timeout);
-            _loggerService.WriteMessage();
+            _logger.LogInformation(string.Empty);
             await LogResults(imageResultInfos);
-            _loggerService.WriteMessage("Image ingestion complete!");
+            _logger.LogInformation("Image ingestion complete!");
         }
 
         private async Task<ImageResultInfo> ReportImageStatusAsync(DigestInfo digestInfo)
@@ -123,7 +123,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
             stringBuilder.AppendLine($"Querying image status for '{qualifiedDigest}'");
             stringBuilder.AppendLine("Remaining tags:");
             digestInfo.RemainingTags.ForEach(tag => stringBuilder.AppendLine(tag));
-            _loggerService.WriteMessage(stringBuilder.ToString());
+            _logger.LogInformation(stringBuilder.ToString());
 
             ImageResult imageResult = await _statusClient.GetImageResultAsync(digestInfo.Digest);
 
@@ -170,7 +170,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
                     }
                 }
 
-                _loggerService.WriteMessage(stringBuilder.ToString());
+                _logger.LogInformation(stringBuilder.ToString());
             }
 
             return new ImageResultInfo(imageResult, digestInfo);
@@ -199,7 +199,7 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
         private async Task LogResults(IEnumerable<ImageResultInfo> imageResultInfos)
         {
-            _loggerService.WriteHeading("IMAGE RESULTS");
+            _logger.LogInformation("IMAGE RESULTS");
 
             List<Task<string>> failedStatusTasks = new List<Task<string>>();
 
@@ -230,36 +230,36 @@ public class MarImageIngestionReporter : IMarImageIngestionReporter
 
             if (failedStatusTasks.Any())
             {
-                _loggerService.WriteMessage();
-                _loggerService.WriteMessage("Querying details of failed results...");
-                _loggerService.WriteMessage();
+                _logger.LogInformation(string.Empty);
+                _logger.LogInformation("Querying details of failed results...");
+                _logger.LogInformation(string.Empty);
 
                 await Task.WhenAll(failedStatusTasks);
             }
 
             if (successfulResults.Any())
             {
-                _loggerService.WriteSubheading("Successful results");
+                _logger.LogInformation("Successful results");
                 foreach (ImageResultInfo imageResult in successfulResults)
                 {
-                    _loggerService.WriteMessage(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
+                    _logger.LogInformation(GetQualifiedDigest(imageResult.DigestInfo.Repo, imageResult.DigestInfo.Digest));
                     string tags = string.Join(", ",
                         imageResult.ImageResult.Value
                             .Where(imageStatus => imageStatus.OverallStatus == StageStatus.Succeeded)
                             .Select(imageStatus => imageStatus.Tag));
-                    _loggerService.WriteMessage($"\tTags: {tags}");
-                    _loggerService.WriteMessage();
+                    _logger.LogInformation($"\tTags: {tags}");
+                    _logger.LogInformation(string.Empty);
                 }
             }
 
             if (failedStatusTasks.Any())
             {
-                _loggerService.WriteSubheading("Failed results");
+                _logger.LogInformation("Failed results");
 
                 foreach (Task<string> failedStatusTask in failedStatusTasks)
                 {
-                    _loggerService.WriteError(failedStatusTask.Result);
-                    _loggerService.WriteMessage();
+                    _logger.LogError(failedStatusTask.Result);
+                    _logger.LogInformation(string.Empty);
                 }
 
                 _environmentService.Exit(1);

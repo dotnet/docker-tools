@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Logging;
 using OrasProject.Oras;
 using OrasProject.Oras.Oci;
 using OrasProject.Oras.Registry;
@@ -24,7 +25,7 @@ public class OrasDotNetService(
     IRegistryCredentialsProvider credentialsProvider,
     IHttpClientProvider httpClientProvider,
     IMemoryCache cache,
-    ILoggerService logger,
+    ILogger<OrasDotNetService> logger,
     IRegistryCredentialsHost? credentialsHost = null) : IOrasDescriptorService, IOrasSignatureService
 {
     /// <summary>
@@ -46,16 +47,16 @@ public class OrasDotNetService(
     private readonly IRegistryCredentialsHost? _credentialsHost = credentialsHost;
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IMemoryCache _cache = cache;
-    private readonly ILoggerService _logger = logger;
+    private readonly ILogger<OrasDotNetService> _logger = logger;
 
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
-        _logger.WriteMessage($"Resolving descriptor for reference: {reference}");
+        _logger.LogInformation("Resolving descriptor for reference: {Reference}", reference);
         var repo = CreateRepository(reference);
         var descriptor = await repo.ResolveAsync(reference, cancellationToken);
-        _logger.WriteMessage($"Resolved descriptor: mediaType={descriptor.MediaType}, digest={descriptor.Digest}, size={descriptor.Size}");
+        _logger.LogInformation("Resolved descriptor: mediaType={MediaType}, digest={Digest}, size={Size}", descriptor.MediaType, descriptor.Digest, descriptor.Size);
         return descriptor;
     }
 
@@ -88,7 +89,7 @@ public class OrasDotNetService(
             Layers = [signatureLayerDescriptor]
         };
 
-        _logger.WriteMessage($"Pushing signature for {result.ImageName}");
+        _logger.LogInformation("Pushing signature for {ImageName}", result.ImageName);
 
         var signatureDescriptor = await Packer.PackManifestAsync(
             repo,
@@ -97,7 +98,7 @@ public class OrasDotNetService(
             options,
             cancellationToken);
 
-        _logger.WriteMessage($"Signature pushed: {signatureDescriptor.Digest}");
+        _logger.LogInformation("Signature pushed: {Digest}", signatureDescriptor.Digest);
 
         return signatureDescriptor.Digest;
     }
@@ -108,9 +109,9 @@ public class OrasDotNetService(
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag").</param>
     private Repository CreateRepository(string reference)
     {
-        _logger.WriteMessage($"Creating ORAS repository for: {reference}");
+        _logger.LogInformation("Creating ORAS repository for: {Reference}", reference);
         var parsedRef = Reference.Parse(reference);
-        _logger.WriteMessage($"Parsed reference: Registry={parsedRef.Registry}, Repository={parsedRef.Repository}, Reference={parsedRef.ContentReference}");
+        _logger.LogInformation("Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}", parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
         var credentialProvider = new OrasCredentialProviderAdapter(_credentialsProvider, _credentialsHost);
         var authClient = new Client(
             _httpClientProvider.GetClient(),

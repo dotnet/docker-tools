@@ -12,6 +12,7 @@ using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
@@ -21,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 /// </summary>
 public class EsrpSigningService(
     IProcessService processService,
-    ILoggerService logger,
+    ILogger<EsrpSigningService> logger,
     IEnvironmentService environmentService,
     IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions) : IEsrpSigningService
@@ -43,7 +44,7 @@ public class EsrpSigningService(
     private const string DDSignFilesDllName = "DDSignFiles.dll";
 
     private readonly IProcessService _processService = processService;
-    private readonly ILoggerService _logger = logger;
+    private readonly ILogger<EsrpSigningService> _logger = logger;
     private readonly IEnvironmentService _environmentService = environmentService;
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly SigningConfiguration? _signingConfig = publishConfigOptions.Value.Signing;
@@ -57,12 +58,12 @@ public class EsrpSigningService(
         var files = filePaths.ToArray();
         if (files.Length == 0)
         {
-            _logger.WriteMessage("No files to sign.");
+            _logger.LogInformation("No files to sign.");
             return;
         }
 
         var signType = _signingConfig?.SignType ?? "test";
-        _logger.WriteMessage($"Signing {files.Length} files with certificate {signingKeyCode} (signType: {signType})");
+        _logger.LogInformation("Signing {Count} files with certificate {KeyCode} (signType: {SignType})", files.Length, signingKeyCode, signType);
 
         var mbsignAppFolder = _environmentService.GetEnvironmentVariable(MBSignAppFolderEnv)
             ?? throw new InvalidOperationException(
@@ -100,7 +101,7 @@ public class EsrpSigningService(
                     errorMessage: "ESRP signing failed");
             }, cancellationToken);
 
-            _logger.WriteMessage("ESRP signing completed successfully.");
+            _logger.LogInformation("ESRP signing completed successfully.");
         }
         finally
         {

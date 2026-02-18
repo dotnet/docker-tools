@@ -17,12 +17,12 @@ namespace Microsoft.DotNet.ImageBuilder.Services
 {
     internal class KustoClientWrapper : IKustoClient
     {
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<KustoClientWrapper> _logger;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
-        public KustoClientWrapper(ILoggerService loggerService, IAzureTokenCredentialProvider tokenCredentialProvider)
+        public KustoClientWrapper(ILogger<KustoClientWrapper> logger, IAzureTokenCredentialProvider tokenCredentialProvider)
         {
-            _loggerService = loggerService;
+            _logger = logger;
             _tokenCredentialProvider = tokenCredentialProvider;
         }
 
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             string table,
             IServiceConnection serviceConnection)
         {
-            _loggerService.WriteSubheading("INGESTING DATA INTO KUSTO");
+            _logger.LogInformation("INGESTING DATA INTO KUSTO");
 
             var connectionString = $"https://{cluster}.kusto.windows.net";
             var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
@@ -51,7 +51,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                     .Or<Kusto.Ingest.Exceptions.KustoException>()
                     .WaitAndRetryAsync(
                         Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
-                        RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _loggerService));
+                        RetryHelper.GetOnRetryDelegate(RetryHelper.MaxRetries, _logger));
 
                 IKustoIngestionResult result = await retryPolicy.ExecuteAsync(
                     () => IngestFromStreamAsync(csv, client, properties, sourceOptions));
@@ -59,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
                 IngestionStatus ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
                 for (int i = 0; i < 10 && ingestionStatus.Status == Status.Pending; i++)
                 {
-                    _loggerService.WriteMessage(
+                    _logger.LogInformation(
                         $"Waiting for ingestion from source ID {sourceOptions.SourceId} to complete...");
                     await Task.Delay(TimeSpan.FromSeconds(30));
                     ingestionStatus = result.GetIngestionStatusBySourceId(sourceOptions.SourceId);
@@ -83,7 +83,7 @@ namespace Microsoft.DotNet.ImageBuilder.Services
             KustoIngestionProperties properties,
             StreamSourceOptions sourceOptions)
         {
-            _loggerService.WriteMessage(
+            _logger.LogInformation(
                 $"Ingesting {csv.Length} bytes of data to Kusto (source ID: {sourceOptions.SourceId})");
 
             using MemoryStream stream = new();

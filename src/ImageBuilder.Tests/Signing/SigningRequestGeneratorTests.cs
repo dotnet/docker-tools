@@ -8,6 +8,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Moq;
+using Microsoft.Extensions.Logging;
 using OrasProject.Oras.Oci;
 using Shouldly;
 using Xunit;
@@ -29,7 +30,7 @@ public class SigningRequestGeneratorTests
                 Size = 1234
             });
 
-        var mockLogger = new Mock<ILoggerService>();
+        var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
 
         var generator = new SigningRequestGenerator(mockDescriptorService.Object, mockLogger.Object);
 
@@ -75,7 +76,7 @@ public class SigningRequestGeneratorTests
                 Size = 1234
             });
 
-        var mockLogger = new Mock<ILoggerService>();
+        var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
 
         var generator = new SigningRequestGenerator(mockDescriptorService.Object, mockLogger.Object);
 
@@ -121,7 +122,7 @@ public class SigningRequestGeneratorTests
                 Size = 5678
             });
 
-        var mockLogger = new Mock<ILoggerService>();
+        var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
 
         var generator = new SigningRequestGenerator(mockDescriptorService.Object, mockLogger.Object);
 
@@ -158,7 +159,7 @@ public class SigningRequestGeneratorTests
     public async Task GenerateManifestListSigningRequestsAsync_SkipsImagesWithoutManifest()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
-        var mockLogger = new Mock<ILoggerService>();
+        var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
 
         var generator = new SigningRequestGenerator(mockDescriptorService.Object, mockLogger.Object);
 
@@ -193,7 +194,7 @@ public class SigningRequestGeneratorTests
     public async Task GeneratePlatformSigningRequestsAsync_ReturnsEmptyForEmptyInput()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
-        var mockLogger = new Mock<ILoggerService>();
+        var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
 
         var generator = new SigningRequestGenerator(mockDescriptorService.Object, mockLogger.Object);
 

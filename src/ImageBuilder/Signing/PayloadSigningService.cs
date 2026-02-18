@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
@@ -18,14 +19,14 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 /// </summary>
 public class PayloadSigningService(
     IEsrpSigningService esrpSigningService,
-    ILoggerService logger,
+    ILogger<PayloadSigningService> logger,
     IFileSystem fileSystem,
     IOptions<BuildConfiguration> buildConfigOptions) : IPayloadSigningService
 {
     private const string SigningPayloadsSubdirectory = "signing-payloads";
 
     private readonly IEsrpSigningService _esrpSigningService = esrpSigningService;
-    private readonly ILoggerService _logger = logger;
+    private readonly ILogger<PayloadSigningService> _logger = logger;
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly BuildConfiguration _buildConfig = buildConfigOptions.Value;
 
@@ -42,7 +43,7 @@ public class PayloadSigningService(
         }
 
         var payloadDirectory = GetPayloadDirectory();
-        _logger.WriteMessage($"Writing {requestList.Count} payloads to {payloadDirectory.FullName}");
+        _logger.LogInformation("Writing {Count} payloads to {Directory}", requestList.Count, payloadDirectory.FullName);
 
         // Write all payloads to disk
         var payloadFiles = WritePayloadsToDisk(requestList, payloadDirectory);
@@ -101,7 +102,7 @@ public class PayloadSigningService(
             _fileSystem.WriteAllText(filePath, request.Payload.ToJson());
             files.Add(new FileInfo(filePath));
 
-            _logger.WriteMessage($"Wrote payload for {request.ImageName} to {safeFilename}");
+            _logger.LogInformation("Wrote payload for {ImageName} to {Filename}", request.ImageName, safeFilename);
         }
 
         return files;

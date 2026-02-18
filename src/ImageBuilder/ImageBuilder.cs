@@ -18,6 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 public static class ImageBuilder
 {
     public static IEnumerable<ICommand> Commands => ServiceProvider.Value.GetServices<ICommand>();
+    internal static IServiceProvider Services => ServiceProvider.Value;
 
     private static Lazy<IServiceProvider> ServiceProvider { get; } = new(() =>
         {
@@ -26,6 +27,14 @@ public static class ImageBuilder
             // Configuration
             builder.AddPublishConfiguration();
             builder.AddBuildConfiguration();
+
+            // Logging
+            builder.Logging.AddSimpleConsole(options =>
+            {
+                options.IncludeScopes = true;
+                options.SingleLine = true;
+                options.TimestampFormat = "HH:mm:ss ";
+            });
 
             // Services
             builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
@@ -43,7 +52,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
             builder.Services.AddSingleton<IFileSystem, FileSystem>();
-            builder.Services.AddSingleton<ILoggerService, LoggerService>();
             builder.Services.AddMemoryCache();
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();

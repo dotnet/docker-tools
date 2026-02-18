@@ -11,6 +11,7 @@ using Cottle;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
@@ -222,7 +223,7 @@ ABC-123";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object);
+            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object, Mock.Of<ILogger<GenerateReadmesCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

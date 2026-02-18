@@ -9,6 +9,7 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.Options;
 using Moq;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 
@@ -143,7 +144,7 @@ public class EsrpSigningServiceTests
 
         return new EsrpSigningService(
             (mockProcess ?? new Mock<IProcessService>()).Object,
-            Mock.Of<ILoggerService>(),
+            Mock.Of<ILogger<EsrpSigningService>>(),
             mockEnv.Object,
             (mockFileSystem ?? new Mock<IFileSystem>()).Object,
             Options.Create(publishConfig));

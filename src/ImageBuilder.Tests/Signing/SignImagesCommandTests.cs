@@ -16,6 +16,7 @@ using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
+using Microsoft.Extensions.Logging;
 using Shouldly;
 using Xunit;
 
@@ -182,7 +183,7 @@ public class SignImagesCommandTests
         var publishConfig = new PublishConfiguration { Signing = signingConfig };
 
         return new SignImagesCommand(
-            Mock.Of<ILoggerService>(),
+            Mock.Of<ILogger<SignImagesCommand>>(),
             (mockSigning ?? new Mock<IBulkImageSigningService>()).Object,
             (mockRequestGen ?? new Mock<ISigningRequestGenerator>()).Object,
             Options.Create(publishConfig));

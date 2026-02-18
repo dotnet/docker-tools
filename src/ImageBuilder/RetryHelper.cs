@@ -14,29 +14,29 @@ namespace Microsoft.DotNet.ImageBuilder
         public const int WaitFactor = 5;
         public const int MaxRetries = 5;
 
-        public static AsyncRetryPolicy GetWaitAndRetryPolicy<TException>(ILoggerService loggerService, int medianFirstRetryDelaySeconds = WaitFactor)
+        public static AsyncRetryPolicy GetWaitAndRetryPolicy<TException>(ILogger logger, int medianFirstRetryDelaySeconds = WaitFactor)
             where TException : Exception =>
             Policy
                 .Handle<TException>()
                 .WaitAndRetryAsync(
                     Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(medianFirstRetryDelaySeconds), MaxRetries),
-                    GetOnRetryDelegate(MaxRetries, loggerService));
+                    GetOnRetryDelegate(MaxRetries, logger));
 
         public static Action<DelegateResult<T>, TimeSpan, int, Context> GetOnRetryDelegate<T>(
-            int maxRetries, ILoggerService loggerService) =>
+            int maxRetries, ILogger logger) =>
             (delegateResult, timeToNextRetry, retryCount, context) =>
-                LogRetryMessage(loggerService, timeToNextRetry, retryCount, maxRetries);
+                LogRetryMessage(logger, timeToNextRetry, retryCount, maxRetries);
 
         public static Action<Exception, TimeSpan, int, Context> GetOnRetryDelegate(
-            int maxRetries, ILoggerService loggerService) =>
+            int maxRetries, ILogger logger) =>
             (exception, timeToNextRetry, retryCount, context) =>
             {
-                loggerService.WriteError(exception.ToString());
-                LogRetryMessage(loggerService, timeToNextRetry, retryCount, maxRetries);
+                logger.LogError(exception, "Retry error");
+                LogRetryMessage(logger, timeToNextRetry, retryCount, maxRetries);
             };
 
-        private static void LogRetryMessage(ILoggerService loggerService, TimeSpan timeToNextRetry, int retryCount, int maxRetries) =>
-            loggerService.WriteMessage(
+        private static void LogRetryMessage(ILogger logger, TimeSpan timeToNextRetry, int retryCount, int maxRetries) =>
+            logger.LogInformation(
                 $"Retry {retryCount}/{maxRetries}, retrying in {timeToNextRetry.TotalSeconds} seconds...");
     }
 }

@@ -11,6 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Moq;
+using Microsoft.Extensions.Logging;
 using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 using Shouldly;
 using Xunit;
@@ -132,6 +133,6 @@ public class BulkImageSigningServiceTests
             (mockPayloadSigning ?? new Mock<IPayloadSigningService>()).Object,
             (mockDescriptor ?? new Mock<IOrasDescriptorService>()).Object,
             (mockSignature ?? new Mock<IOrasSignatureService>()).Object,
-            Mock.Of<ILoggerService>());
+            Mock.Of<ILogger<BulkImageSigningService>>());
     }
 }

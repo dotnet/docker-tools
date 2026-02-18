@@ -47,11 +47,12 @@ public class OrasDotNetServiceTests
         var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
 #pragma warning disable CS8625
-        var exception = await Should.ThrowAsync<NullReferenceException>(async () =>
+        var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>
             await service.PushSignatureAsync(subjectDescriptor, null));
 #pragma warning restore CS8625
 
         exception.ShouldNotBeNull();
+        exception.ParamName.ShouldBe("result");
     }
 
     private static OrasDotNetService CreateService()

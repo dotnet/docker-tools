@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -50,6 +51,7 @@ public class OrasDotNetService(
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
         _logger.WriteMessage($"Resolving descriptor for reference: {reference}");
         var repo = CreateRepository(reference);
         var descriptor = await repo.ResolveAsync(reference, cancellationToken);
@@ -63,6 +65,9 @@ public class OrasDotNetService(
         PayloadSigningResult result,
         CancellationToken cancellationToken = default)
     {
+        ArgumentNullException.ThrowIfNull(subjectDescriptor);
+        ArgumentNullException.ThrowIfNull(result);
+
         var repo = CreateRepository(result.ImageName);
 
         var payloadBytes = await File.ReadAllBytesAsync(result.SignedPayload.FullName, cancellationToken);

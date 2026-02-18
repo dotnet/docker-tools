@@ -20,6 +20,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     where TOptions : GenerateEolAnnotationDataOptions, new()
     where TOptionsBuilder : GenerateEolAnnotationDataOptionsBuilder, new()
 {
+    private readonly ILogger _logger;
     private readonly IAcrContentClientFactory _acrContentClientFactory;
     private readonly IAcrClientFactory _acrClientFactory;
     private readonly ILifecycleMetadataService _lifecycleMetadataService;
@@ -27,20 +28,18 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     private readonly DateOnly _eolDate = DateOnly.FromDateTime(DateTime.UtcNow); // default EOL date
 
     protected GenerateEolAnnotationDataCommandBase(
-        ILoggerService loggerService,
+        ILogger logger,
         IAcrContentClientFactory acrContentClientFactory,
         IAcrClientFactory acrClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {
-        LoggerService = loggerService;
+        _logger = logger;
         _acrContentClientFactory = acrContentClientFactory;
         _acrClientFactory = acrClientFactory;
         _lifecycleMetadataService = lifecycleMetadataService;
         _registryCredentialsProvider = registryCredentialsProvider;
     }
-
-    protected ILoggerService LoggerService { get; }
 
     public sealed override async Task ExecuteAsync()
     {
@@ -59,7 +58,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
     protected async Task<IEnumerable<EolDigestData>> GetAllImageDigestsFromRegistryAsync(
         Func<string, bool>? repoNameFilter = null)
     {
-        LoggerService.WriteMessage("Querying registry for all image digests...");
+        _logger.LogInformation("Querying registry for all image digests...");
 
         if (Options.IsDryRun)
         {
@@ -123,8 +122,8 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];
         Parallel.ForEach(unsupportedDigests, digest =>
         {
-            LoggerService.WriteMessage($"Checking digest for existing annotation: {digest.Digest}");
-            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, LoggerService, Options.IsDryRun, out _))
+            _logger.LogInformation($"Checking digest for existing annotation: {digest.Digest}");
+            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, _logger, Options.IsDryRun, out _))
             {
                 digestsToAnnotate.Add(digest);
             }

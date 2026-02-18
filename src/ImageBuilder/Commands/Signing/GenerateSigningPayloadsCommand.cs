@@ -17,20 +17,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 
 public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOptions, GenerateSigningPayloadsOptionsBuilder>
 {
-    private readonly ILoggerService _loggerService;
+    private readonly ILogger<GenerateSigningPayloadsCommand> _logger;
     private readonly IOrasClient _orasClient;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
 
     public GenerateSigningPayloadsCommand(
-        ILoggerService loggerService,
+        ILogger<GenerateSigningPayloadsCommand> logger,
         IOrasClient orasClient,
         IRegistryCredentialsProvider registryCredentialsProvider)
     {
-        ArgumentNullException.ThrowIfNull(loggerService, nameof(loggerService));
+        ArgumentNullException.ThrowIfNull(logger, nameof(logger));
         ArgumentNullException.ThrowIfNull(orasClient, nameof(orasClient));
         ArgumentNullException.ThrowIfNull(registryCredentialsProvider, nameof(registryCredentialsProvider));
 
-        _loggerService = loggerService;
+        _logger = logger;
         _orasClient = orasClient;
         _registryCredentialsProvider = registryCredentialsProvider;
     }
@@ -53,22 +53,22 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         ArgumentException.ThrowIfNullOrWhiteSpace(Options.PayloadOutputDirectory, nameof(Options.PayloadOutputDirectory));
         FileHelper.CreateDirectoryIfNotExists(Options.PayloadOutputDirectory, throwIfNotEmpty: true);
 
-        _loggerService.WriteHeading("GENERATING SIGNING PAYLOADS");
+        _logger.LogInformation("GENERATING SIGNING PAYLOADS");
 
-        _loggerService.WriteSubheading("Reading digests from image info file");
+        _logger.LogInformation("Reading digests from image info file");
         ImageArtifactDetails imageInfo = ImageInfoHelper
             .DeserializeImageArtifactDetails(Options.ImageInfoPath)
             .ApplyRegistryOverride(Options.RegistryOptions);
         IReadOnlyList<string> digests = ImageInfoHelper.GetAllDigests(imageInfo);
 
-        _loggerService.WriteSubheading("Generating signing payloads");
+        _logger.LogInformation("Generating signing payloads");
         IReadOnlyList<Payload> payloads = CreatePayloads(digests);
 
         // It is possible for two of our images, built separately, from different Dockerfiles, to have the same digest.
         // In this situation, they are literally the same image, so one signature payload will suffice.
         payloads = payloads.Distinct().ToList();
 
-        _loggerService.WriteSubheading("Writing payloads to disk");
+        _logger.LogInformation("Writing payloads to disk");
         await WritePayloadsToDiskAsync(payloads, Options.PayloadOutputDirectory);
     }
 
@@ -89,7 +89,7 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         string taskCompletedMessage = Options.IsDryRun
             ? $"Dry run: Done! Would have written {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}"
             : $"Done! Wrote {outputFiles.Count} signing payloads to {Options.PayloadOutputDirectory}";
-        _loggerService.WriteMessage(taskCompletedMessage);
+        _logger.LogInformation(taskCompletedMessage);
     }
 
     private async Task<string> WritePayloadToDiskAsync(Payload payload, string outputDirectory)
@@ -101,11 +101,11 @@ public class GenerateSigningPayloadsCommand : Command<GenerateSigningPayloadsOpt
         if (!Options.IsDryRun)
         {
             await File.WriteAllTextAsync(payloadPath, payload.ToJson());
-            _loggerService.WriteMessage($"Wrote signing payload to disk: {payloadPath}");
+            _logger.LogInformation($"Wrote signing payload to disk: {payloadPath}");
         }
         else
         {
-            _loggerService.WriteMessage($"Dry run: Would have written signing payload to disk: {payloadPath}");
+            _logger.LogInformation($"Dry run: Would have written signing payload to disk: {payloadPath}");
         }
 
         return fileName;

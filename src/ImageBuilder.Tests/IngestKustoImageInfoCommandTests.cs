@@ -12,10 +12,11 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
 using Xunit.Abstractions;
+using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -282,7 +283,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Callback<string, string, string, string, IServiceConnection>(
                     (csv, _, _, table, _) => ingestedData.Add(table, csv));
 
-            IngestKustoImageInfoCommand command = new(Mock.Of<ILoggerService>(), kustoClientMock.Object);
+            IngestKustoImageInfoCommand command = new(Mock.Of<ILogger<IngestKustoImageInfoCommand>>(), kustoClientMock.Object);
             command.Options.ImageInfoPath = imageInfoPath;
             command.Options.Manifest = manifestPath;
             command.Options.ImageTable = "ImageInfo";

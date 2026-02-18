@@ -30,17 +30,17 @@ public interface ICopyImageService
 
 public class CopyImageService : ICopyImageService
 {
-    private readonly ILoggerService _loggerService;
+    private readonly ILogger<CopyImageService> _logger;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig;
     private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
     public CopyImageService(
-        ILoggerService loggerService,
+        ILogger<CopyImageService> logger,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IOptions<PublishConfiguration> publishConfigOptions)
     {
-        _loggerService = loggerService;
+        _logger = logger;
         _tokenCredentialProvider = tokenCredentialProvider;
         _publishConfig = publishConfigOptions.Value;
     }
@@ -53,26 +53,12 @@ public class CopyImageService : ICopyImageService
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false)
     {
-        Acr destAcr = Acr.Parse(destAcrName);
-
-        string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
-        string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
-        var destinationImageNames = destTagNames
-            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
-            .ToList();
-        string formattedDestinationImages = string.Join(", ", destinationImageNames);
-        _loggerService.WriteMessage($"{action} {formattedDestinationImages} from '{sourceImageName}'");
-
-        if (isDryRun)
-        {
-            _loggerService.WriteMessage("Importing skipped due to dry run.");
-            return;
-        }
-
         var destResourceId = _publishConfig.GetRegistryResource(destAcrName);
         var srcResourceId = srcRegistryName is not null
             ? _publishConfig.GetRegistryResource(srcRegistryName)
             : null;
+
+        Acr destAcr = Acr.Parse(destAcrName);
 
         // Azure ACR import only supports one source identifier. Use ResourceId for ACR-to-ACR
         // imports (same tenant), or RegistryAddress for external registries.
@@ -90,22 +76,34 @@ public class CopyImageService : ICopyImageService
 
         importImageContent.TargetTags.AddRange(destTagNames);
 
-        ArmClient armClient = GetArmClientForAcr(destAcrName);
-        ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
+        string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
+        string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
+        var destinationImageNames = destTagNames
+            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
+            .ToList();
+        string formattedDestinationImages = string.Join(", ", destinationImageNames);
+        _logger.LogInformation($"{action} {formattedDestinationImages} from '{sourceImageName}'");
 
-        try
+        if (!isDryRun)
         {
-            await RetryHelper.GetWaitAndRetryPolicy<Exception>(_loggerService)
-                .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
+            ArmClient armClient = GetArmClientForAcr(destAcrName);
+            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
+
+            try
+            {
+                await RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
+                    .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Importing Failure: {DestinationImages}", formattedDestinationImages);
+
+                throw;
+            }
         }
-        catch (Exception e)
+        else
         {
-            string errorMsg = $"Importing Failure: {formattedDestinationImages}";
-            errorMsg += Environment.NewLine + e.ToString();
-
-            _loggerService.WriteMessage(errorMsg);
-
-            throw;
+            _logger.LogInformation("Importing skipped due to dry run.");
         }
     }
 

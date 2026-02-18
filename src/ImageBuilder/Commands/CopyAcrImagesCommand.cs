@@ -15,13 +15,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions, CopyAcrImagesOptionsBuilder>
     {
+        private readonly ILogger _logger;
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
             ICopyImageService copyImageService,
-            ILoggerService loggerService)
-            : base(copyImageService, loggerService)
+            ILogger<CopyAcrImagesCommand> logger)
+            : base(copyImageService, logger)
         {
+            _logger = logger;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!string.IsNullOrEmpty(Options.ImageInfoPath))
@@ -37,11 +39,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            LoggerService.WriteHeading("COPYING IMAGES");
+            _logger.LogInformation("COPYING IMAGES");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                LoggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image copy."));
                 return;
             }
@@ -104,12 +106,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        LoggerService.WriteMessage($"Unable to find image info data for path '{platform.DockerfilePath}'.");
+                        _logger.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                     }
                 }
                 else
                 {
-                    LoggerService.WriteMessage($"Unable to find image info data for repo '{repo.Name}'.");
+                    _logger.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
                 }
             }
             else

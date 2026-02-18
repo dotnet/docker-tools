@@ -7,12 +7,12 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
+using Microsoft.DotNet.VersionTools.Automation;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
@@ -38,7 +38,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
             IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -119,7 +119,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
             IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.ExcludeProductFamilyReadme = true;
             command.Options.RootPath = Path.Combine(tempFolderContext.Path, "dir");
@@ -189,7 +189,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
             IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
 
-            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILoggerService>());
+            PublishMcrDocsCommand command = new(Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();

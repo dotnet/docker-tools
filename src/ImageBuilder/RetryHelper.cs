@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder
             int maxRetries, ILogger logger) =>
             (exception, timeToNextRetry, retryCount, context) =>
             {
-                logger.LogError(exception.ToString());
+                logger.LogError(exception, "Retry error");
                 LogRetryMessage(logger, timeToNextRetry, retryCount, maxRetries);
             };
 

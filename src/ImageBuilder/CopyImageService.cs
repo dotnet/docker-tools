@@ -96,10 +96,7 @@ public class CopyImageService : ICopyImageService
             }
             catch (Exception e)
             {
-                string errorMsg = $"Importing Failure: {formattedDestinationImages}";
-                errorMsg += Environment.NewLine + e.ToString();
-
-                _logger.LogInformation(errorMsg);
+                _logger.LogError(e, "Importing Failure: {DestinationImages}", formattedDestinationImages);
 
                 throw;
             }

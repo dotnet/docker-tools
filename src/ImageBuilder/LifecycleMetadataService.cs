@@ -75,7 +75,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         }
         catch (InvalidOperationException ex)
         {
-            logger.LogError($"Failed to annotate EOL for digest '{digest}': {ex.Message}");
+            logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
             lifecycleArtifactManifest = null;
             return false;
         }
@@ -96,7 +96,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         }
         catch (JsonException ex)
         {
-            logger.LogError($"Failed to deserialize 'oras discover' json: {ex.Message}");
+            logger.LogError(ex, "Failed to deserialize 'oras discover' json");
         }
 
         lifecycleArtifactManifest = null;

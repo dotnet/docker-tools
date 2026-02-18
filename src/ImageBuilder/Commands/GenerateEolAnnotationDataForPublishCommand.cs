@@ -15,6 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 public class GenerateEolAnnotationDataForPublishCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
 {
+    private readonly ILogger _logger;
+
     public GenerateEolAnnotationDataForPublishCommand(
         ILogger<GenerateEolAnnotationDataForPublishCommand> logger,
         IAcrClientFactory acrClientFactory,
@@ -28,6 +30,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
             lifecycleMetadataService,
             registryCredentialsProvider)
     {
+        _logger = logger;
     }
 
     protected override string Description => "Generate EOL annotation data for all images not described in the new image info file";
@@ -36,7 +39,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
     {
         if (!File.Exists(Options.OldImageInfoPath) && !File.Exists(Options.NewImageInfoPath))
         {
-            LoggerService.LogInformation("No digests to annotate because no image info files were provided.");
+            _logger.LogInformation("No digests to annotate because no image info files were provided.");
             return [];
         }
 
@@ -72,7 +75,7 @@ public class GenerateEolAnnotationDataForPublishCommand :
         }
         catch (Exception e)
         {
-            LoggerService.LogError($"Error occurred while generating EOL annotation data: {e}");
+            _logger.LogError(e, "Error occurred while generating EOL annotation data");
             throw;
         }
     }

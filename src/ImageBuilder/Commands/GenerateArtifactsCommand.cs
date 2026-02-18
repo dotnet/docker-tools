@@ -38,12 +38,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private TimeSpan _documentGenerationTime = TimeSpan.Zero;
         private TimeSpan _artifactGenerationTime = TimeSpan.Zero;
 
-        protected ILogger Logger { get; }
+        private readonly ILogger _logger;
 
         protected GenerateArtifactsCommand(IEnvironmentService environmentService, ILogger logger) : base()
         {
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
-            Logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected async Task GenerateArtifactsAsync<TContext>(
@@ -98,9 +98,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             long allArtifactsEndTime = Stopwatch.GetTimestamp();
             TimeSpan allArtifactsTime = Stopwatch.GetElapsedTime(allArtifactsStartTime, allArtifactsEndTime);
 
-            Logger.LogInformation($"Time spent building documents: {_documentGenerationTime.TotalMilliseconds} ms");
-            Logger.LogInformation($"Time spent generating artifacts: {_artifactGenerationTime.TotalMilliseconds} ms");
-            Logger.LogInformation($"Total elapsed time: {allArtifactsTime.TotalMilliseconds} ms");
+            _logger.LogInformation($"Time spent building documents: {_documentGenerationTime.TotalMilliseconds} ms");
+            _logger.LogInformation($"Time spent generating artifacts: {_artifactGenerationTime.TotalMilliseconds} ms");
+            _logger.LogInformation($"Total elapsed time: {allArtifactsTime.TotalMilliseconds} ms");
         }
 
         private async Task GenerateArtifactAsync<TContext>(
@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string artifactName,
             Func<string, TContext, string> postProcess)
         {
-            Logger.LogInformation($"Generating '{artifactPath}' from '{templatePath}'");
+            _logger.LogInformation($"Generating '{artifactPath}' from '{templatePath}'");
 
             string generatedArtifact = await RenderTemplateAsync(templatePath, context, getState, Value.EmptyMap, null, trimTemplate: false);
 
@@ -126,12 +126,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     await File.ReadAllTextAsync(artifactPath) : string.Empty;
                 if (currentArtifact == generatedArtifact)
                 {
-                    Logger.LogInformation($"{artifactName} in sync with template");
+                    _logger.LogInformation($"{artifactName} in sync with template");
                 }
                 else if (Options.Validate)
                 {
                     int differIndex = StringExtensions.DiffersAtIndex(currentArtifact, generatedArtifact);
-                    Logger.LogError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
+                    _logger.LogError($"{artifactName} out of sync with template starting at index '{differIndex}'{Environment.NewLine}"
                         + $"Current:   '{GetSnippet(currentArtifact, differIndex)}'{Environment.NewLine}"
                         + $"Generated: '{GetSnippet(generatedArtifact, differIndex)}'");
                     _outOfSyncArtifacts.Add(artifactPath);
@@ -139,7 +139,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 else if (!Options.IsDryRun)
                 {
                     await File.WriteAllTextAsync(artifactPath, generatedArtifact);
-                    Logger.LogInformation($"Updated '{artifactPath}'");
+                    _logger.LogInformation($"Updated '{artifactPath}'");
                 }
             }
         }
@@ -214,7 +214,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Options.IsVerbose)
             {
-                Logger.LogInformation($"Template:{Environment.NewLine}{template}");
+                _logger.LogInformation($"Template:{Environment.NewLine}{template}");
             }
 
             try
@@ -232,7 +232,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 if (Options.IsVerbose)
                 {
-                    Logger.LogInformation($"Generated:{Environment.NewLine}{artifact}");
+                    _logger.LogInformation($"Generated:{Environment.NewLine}{artifact}");
                 }
             }
             catch (ParseException e)
@@ -245,11 +245,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 (int startLine, int startColumn) = GetTextLocationFromIndex(template, e.LocationStart - e.LocationLength, indentLength);
                 (int endLine, int endColumn) = GetTextLocationFromIndex(template, e.LocationStart, indentLength);
 
-                Logger.LogError($"""
-                    Template parsing error in file {templatePath}:{startLine},{startColumn},{endLine},{endColumn}
-                    Message: {e.Message}
-                    {e}
-                """);
+                _logger.LogError(e, "Template parsing error in file {TemplatePath}:{StartLine},{StartColumn},{EndLine},{EndColumn}",
+                    templatePath, startLine, startColumn, endLine, endColumn);
 
                 _invalidTemplates.Add(templatePath);
             }
@@ -264,13 +261,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (_outOfSyncArtifacts.Any())
                 {
                     string artifacts = string.Join(Environment.NewLine, _outOfSyncArtifacts);
-                    Logger.LogError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
+                    _logger.LogError($"Out of sync with templates:{Environment.NewLine}{artifacts}");
                 }
 
                 if (_invalidTemplates.Any())
                 {
                     string templateList = string.Join(Environment.NewLine, _invalidTemplates);
-                    Logger.LogError($"Invalid Templates:{Environment.NewLine}{templateList}");
+                    _logger.LogError($"Invalid Templates:{Environment.NewLine}{templateList}");
                 }
 
                 _environmentService.Exit(1);

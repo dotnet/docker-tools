@@ -15,8 +15,7 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
         where TOptionsBuilder : CopyImagesOptionsBuilder, new()
 {
     private readonly ICopyImageService _copyImageService = copyImageService;
-
-    protected ILogger LoggerService { get; } = logger;
+    private readonly ILogger _logger = logger;
 
     protected Task ImportImageAsync(
         string destTagName,

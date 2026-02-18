@@ -19,6 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             copyImageService,
             logger)
     {
+        private readonly ILogger _logger = logger;
         private readonly IGitService _gitService = gitService;
 
         protected override string Description => "Copies external base images from their source registry to ACR";
@@ -36,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            LoggerService.LogInformation("COPYING IMAGES");
+            _logger.LogInformation("COPYING IMAGES");
 
             Options.BaseImageOverrideOptions.Validate();
 

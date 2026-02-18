@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public partial class GenerateReadmesCommand(IEnvironmentService environmentService, ILogger<GenerateReadmesCommand> logger)
         : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(environmentService, logger)
     {
+        private readonly ILogger _logger = logger;
         private const string ArtifactName = "Readme";
 
         protected override string Description =>
@@ -32,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </summary>
         public override async Task ExecuteAsync()
         {
-            Logger.LogInformation("GENERATING READMES");
+            _logger.LogInformation("GENERATING READMES");
 
             // Generate Product Family Readme
             await GenerateArtifactsAsync(
@@ -119,13 +120,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             var repoTagGroups = GenerateRepoTagGroups(repo);
 
-            Logger.LogInformation("GENERATING TAGS LISTING");
+            _logger.LogInformation("GENERATING TAGS LISTING");
             string tagsMarkdown = GenerateMarkdownTables(repoTagGroups);
 
             if (Options.IsVerbose)
             {
-                Logger.LogInformation($"Tags Documentation:");
-                Logger.LogInformation(tagsMarkdown);
+                _logger.LogInformation($"Tags Documentation:");
+                _logger.LogInformation(tagsMarkdown);
             }
 
             var updatedReadme = ReadmeHelper.UpdateTagsListing(readme, tagsMarkdown);

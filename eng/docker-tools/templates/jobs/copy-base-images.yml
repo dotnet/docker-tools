@@ -11,13 +11,7 @@ parameters:
 - name: acr
   type: object
   default: null
-# Custom steps to set up ImageBuilder instead of pulling from MCR (e.g., bootstrap from source).
-# Runs before ImageBuilder pull. If non-empty, skips the default ImageBuilder pull.
 - name: customInitSteps
-  type: stepList
-  default: []
-# Custom steps that run after ImageBuilder is set up but before copy-base-images runs.
-- name: customCopyBaseImagesInitSteps
   type: stepList
   default: []
 - name: additionalOptions
@@ -43,7 +37,6 @@ jobs:
       publishConfig: ${{ parameters.publishConfig }}
       customInitSteps: ${{ parameters.customInitSteps }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-  - ${{ parameters.customCopyBaseImagesInitSteps }}
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
       acr: ${{ parameters.acr }}

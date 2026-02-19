@@ -16,15 +16,10 @@ parameters:
 stages:
 - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
   parameters:
-    serviceConnections:
-    - name: ${{ parameters.publishConfig.InternalMirrorRegistry.serviceConnection.name }}
-    # Workaround for https://github.com/dotnet/docker-tools/issues/1914:
-    # "ACR authentication can fail when using two different service connections for the same ACR"
-    # Both InternalMirrorRegistry and BuildRegistry point to the same ACR, but
-    # have different service connections. BuildRegistry is listed first in the
-    # publish config, so we have to declare it here since it will be used for
-    # ACR authentication.
-    - name: ${{ parameters.publishConfig.BuildRegistry.serviceConnection.name }}
+    publishConfig: ${{ parameters.publishConfig }}
+    usesRegistries:
+      - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+      - ${{ parameters.publishConfig.BuildRegistry.server }}
 
 - stage: CheckBaseImages
   displayName: Check Base Images

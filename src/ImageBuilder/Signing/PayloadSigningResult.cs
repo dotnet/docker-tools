@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
@@ -10,9 +11,11 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 /// Result of signing a payload via ESRP.
 /// </summary>
 /// <param name="ImageName">Full tag/reference to manifest or manifest list.</param>
+/// <param name="Descriptor">OCI descriptor for the image, used as the subject when pushing signatures.</param>
 /// <param name="SignedPayload">Signed payload file stored on disk.</param>
 /// <param name="CertificateChain">Certificate chain in io.cncf.notary.x509chain.thumbprint#S256 format.</param>
 public sealed record PayloadSigningResult(
     string ImageName,
+    OrasDescriptor Descriptor,
     FileInfo SignedPayload,
     string CertificateChain);

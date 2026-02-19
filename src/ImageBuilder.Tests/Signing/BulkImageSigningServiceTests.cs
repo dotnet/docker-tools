@@ -34,13 +34,15 @@ public class BulkImageSigningServiceTests
     public async Task SignImagesAsync_OrchestratesSigningAndPush()
     {
         var mockPayloadSigning = new Mock<IPayloadSigningService>();
-        var mockDescriptor = new Mock<IOrasDescriptorService>();
         var mockSignature = new Mock<IOrasSignatureService>();
 
         var request = CreateRequest("registry.io/repo@sha256:abc123");
 
+        var subjectDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+
         var signedPayload = new PayloadSigningResult(
             "registry.io/repo@sha256:abc123",
+            subjectDescriptor,
             new FileInfo("/tmp/signed.cose"),
             "[\"thumbprint1\"]");
 
@@ -51,25 +53,16 @@ public class BulkImageSigningServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync([signedPayload]);
 
-        var subjectDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
-
-        mockDescriptor
-            .Setup(s => s.GetDescriptorAsync("registry.io/repo@sha256:abc123", It.IsAny<CancellationToken>()))
-            .ReturnsAsync(subjectDescriptor);
-
         mockSignature
             .Setup(s => s.PushSignatureAsync(subjectDescriptor, signedPayload, It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:sigdigest");
 
-        var service = CreateService(mockPayloadSigning, mockDescriptor, mockSignature);
+        var service = CreateService(mockPayloadSigning, mockSignature);
 
         await service.SignImagesAsync([request], signingKeyCode: 100);
 
         mockPayloadSigning.Verify(
             s => s.SignPayloadsAsync(It.IsAny<IEnumerable<ImageSigningRequest>>(), 100, It.IsAny<CancellationToken>()),
-            Times.Once);
-        mockDescriptor.Verify(
-            s => s.GetDescriptorAsync("registry.io/repo@sha256:abc123", It.IsAny<CancellationToken>()),
             Times.Once);
         mockSignature.Verify(
             s => s.PushSignatureAsync(subjectDescriptor, signedPayload, It.IsAny<CancellationToken>()),
@@ -80,13 +73,15 @@ public class BulkImageSigningServiceTests
     public async Task SignImagesAsync_ReturnsCorrectResults()
     {
         var mockPayloadSigning = new Mock<IPayloadSigningService>();
-        var mockDescriptor = new Mock<IOrasDescriptorService>();
         var mockSignature = new Mock<IOrasSignatureService>();
 
         var request = CreateRequest("registry.io/repo@sha256:abc123");
 
+        var subjectDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+
         var signedPayload = new PayloadSigningResult(
             "registry.io/repo@sha256:abc123",
+            subjectDescriptor,
             new FileInfo("/tmp/signed.cose"),
             "[\"thumbprint1\"]");
 
@@ -97,15 +92,11 @@ public class BulkImageSigningServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync([signedPayload]);
 
-        mockDescriptor
-            .Setup(s => s.GetDescriptorAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json"));
-
         mockSignature
             .Setup(s => s.PushSignatureAsync(It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:sigdigest");
 
-        var service = CreateService(mockPayloadSigning, mockDescriptor, mockSignature);
+        var service = CreateService(mockPayloadSigning, mockSignature);
 
         var results = await service.SignImagesAsync([request], signingKeyCode: 100);
 
@@ -121,17 +112,16 @@ public class BulkImageSigningServiceTests
             "sha256:abc123",
             1234);
         var payload = new Payload(descriptor);
-        return new ImageSigningRequest(imageName, payload);
+        var orasDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        return new ImageSigningRequest(imageName, orasDescriptor, payload);
     }
 
     private static BulkImageSigningService CreateService(
         Mock<IPayloadSigningService>? mockPayloadSigning = null,
-        Mock<IOrasDescriptorService>? mockDescriptor = null,
         Mock<IOrasSignatureService>? mockSignature = null)
     {
         return new BulkImageSigningService(
             (mockPayloadSigning ?? new Mock<IPayloadSigningService>()).Object,
-            (mockDescriptor ?? new Mock<IOrasDescriptorService>()).Object,
             (mockSignature ?? new Mock<IOrasSignatureService>()).Object,
             Mock.Of<ILogger<BulkImageSigningService>>());
     }

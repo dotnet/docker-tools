@@ -63,7 +63,7 @@ public class PayloadSigningService(
 
             var certChain = CertificateChainCalculator.CalculateCertificateChainThumbprints(signedFile.FullName, _fileSystem);
 
-            results.Add(new PayloadSigningResult(request.ImageName, signedFile, certChain));
+            results.Add(new PayloadSigningResult(request.ImageName, request.Descriptor, signedFile, certChain));
         }
 
         return results;

@@ -17,6 +17,7 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
 using Microsoft.Extensions.Logging;
+using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 using Shouldly;
 using Xunit;
 
@@ -140,7 +141,8 @@ public class SignImagesCommandTests
             "sha256:abc123",
             1234);
         var payload = new Payload(descriptor);
-        return new ImageSigningRequest(imageName, payload);
+        var orasDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        return new ImageSigningRequest(imageName, orasDescriptor, payload);
     }
 
     /// <summary>

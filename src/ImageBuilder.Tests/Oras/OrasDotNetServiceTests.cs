@@ -27,13 +27,14 @@ public class OrasDotNetServiceTests
         var nonExistentFile = Path.Combine(tempFolder.Path, "nonexistent.cose");
         var fileInfo = new FileInfo(nonExistentFile);
 
-        var result = new PayloadSigningResult(
-            "registry.io/repo:tag",
-            fileInfo,
-            "sha256:abcd1234");
-
         var service = CreateService();
         var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+
+        var result = new PayloadSigningResult(
+            "registry.io/repo:tag",
+            subjectDescriptor,
+            fileInfo,
+            "sha256:abcd1234");
 
         var exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
             await service.PushSignatureAsync(subjectDescriptor, result));
@@ -72,8 +73,10 @@ public class OrasDotNetServiceTests
     public async Task PushSignatureAsync_NullSubjectDescriptor_ThrowsArgumentNullException()
     {
         var service = CreateService();
+        var descriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
         var signedPayload = new PayloadSigningResult(
             "registry.io/repo:tag",
+            descriptor,
             new FileInfo("/tmp/test.cose"),
             "[\"thumbprint\"]");
 

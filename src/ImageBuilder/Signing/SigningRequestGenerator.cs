@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Linq;
@@ -8,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Oras;
-using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
@@ -82,19 +82,22 @@ public class SigningRequestGenerator : ISigningRequestGenerator
     /// <summary>
     /// Creates a signing request by fetching the OCI descriptor from the registry.
     /// </summary>
+    /// <param name="imageReference">The image reference (digest) to fetch the descriptor for.</param>
     private async Task<ImageSigningRequest> CreateSigningRequestAsync(
-        string reference,
+        string imageReference,
         CancellationToken cancellationToken)
     {
-        _logger.LogInformation("Fetching descriptor for {Reference}", reference);
+        _logger.LogInformation("Fetching descriptor for {Reference}", imageReference);
 
-        var descriptor = await _descriptorService.GetDescriptorAsync(reference, cancellationToken);
+        var descriptor = await _descriptorService.GetDescriptorAsync(imageReference, cancellationToken);
 
-        var payload = new Payload(new Models.Oci.Descriptor(
-            descriptor.MediaType,
-            descriptor.Digest,
-            descriptor.Size));
+        var ociDescriptor = new Models.Oci.Descriptor(
+            MediaType: descriptor.MediaType,
+            Digest: descriptor.Digest,
+            Size: descriptor.Size);
 
-        return new ImageSigningRequest(reference, payload);
+        var payload = new Payload(TargetArtifact: ociDescriptor);
+
+        return new ImageSigningRequest(imageReference, descriptor, payload);
     }
 }

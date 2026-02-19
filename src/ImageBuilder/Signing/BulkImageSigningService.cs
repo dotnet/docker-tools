@@ -16,12 +16,10 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 /// </summary>
 public class BulkImageSigningService(
     IPayloadSigningService payloadSigningService,
-    IOrasDescriptorService descriptorService,
     IOrasSignatureService signatureService,
     ILogger<BulkImageSigningService> logger) : IBulkImageSigningService
 {
     private readonly IPayloadSigningService _payloadSigningService = payloadSigningService;
-    private readonly IOrasDescriptorService _descriptorService = descriptorService;
     private readonly IOrasSignatureService _signatureService = signatureService;
     private readonly ILogger<BulkImageSigningService> _logger = logger;
 
@@ -47,13 +45,9 @@ public class BulkImageSigningService(
         var results = new List<ImageSigningResult>();
         foreach (var signedPayload in signedPayloads)
         {
-            // Get the subject descriptor (the image being signed)
-            var subjectDescriptor = await _descriptorService.GetDescriptorAsync(
-                signedPayload.ImageName, cancellationToken);
-
             // Push the signature as a referrer artifact
             var signatureDigest = await _signatureService.PushSignatureAsync(
-                subjectDescriptor, signedPayload, cancellationToken);
+                signedPayload.Descriptor, signedPayload, cancellationToken);
 
             results.Add(new ImageSigningResult(signedPayload.ImageName, signatureDigest));
         }

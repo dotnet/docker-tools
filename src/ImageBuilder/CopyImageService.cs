@@ -71,7 +71,11 @@ public class CopyImageService : ICopyImageService
         }
 
         var destResourceId = _publishConfig.GetRegistryResource(destAcrName);
-        var srcResourceId = srcRegistryName is not null
+
+        // Only look up the source resource ID for registries in the publish config (i.e. ACRs).
+        // External registries like docker.io use RegistryAddress + Credentials instead.
+        ResourceIdentifier? srcResourceId = srcRegistryName is not null
+            && _publishConfig.FindRegistryAuthentication(srcRegistryName) is not null
             ? _publishConfig.GetRegistryResource(srcRegistryName)
             : null;
 

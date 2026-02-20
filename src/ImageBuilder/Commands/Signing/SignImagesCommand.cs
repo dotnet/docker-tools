@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -46,12 +47,6 @@ public class SignImagesCommand(
             return;
         }
 
-        if (Options.IsDryRun)
-        {
-            logger.LogInformation("Dry run enabled. Skipping image signing.");
-            return;
-        }
-
         string imageInfoContents = await fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
         ImageArtifactDetails imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
@@ -62,7 +57,22 @@ public class SignImagesCommand(
         // Apply registry override to get fully-qualified image references
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
+        List<string> digests = imageArtifactDetails.GetAllDigests();
         int keyCode = signingConfig.ImageSigningKeyCode;
+
+        if (Options.IsDryRun)
+        {
+            logger.LogInformation(
+                "(Dry run) Would have signed {Count} image(s) with key code {KeyCode}.",
+                digests.Count, keyCode);
+            foreach (string digest in digests)
+            {
+                logger.LogInformation("(Dry run) Would have signed {Digest}", digest);
+            }
+
+            return;
+        }
+
         logger.LogInformation("Signing images with key code {KeyCode}.", keyCode);
 
         IReadOnlyList<ImageSigningResult> results =

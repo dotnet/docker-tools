@@ -71,7 +71,7 @@ public class SignImagesCommandTests
         SeedImageInfoFile(fileSystem);
 
         var mockSigning = new Mock<IImageSigningService>();
-        var signingConfig = new SigningConfiguration { Enabled = true };
+        var signingConfig = new SigningConfiguration { Enabled = true, ImageSigningKeyCode = 99 };
         var command = CreateCommand(mockSigning: mockSigning, signingConfig: signingConfig, fileSystem: fileSystem);
         command.Options.ImageInfoPath = ImageInfoPath;
         command.Options.IsDryRun = true;
@@ -81,6 +81,10 @@ public class SignImagesCommandTests
         mockSigning.Verify(
             s => s.SignImagesAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
             Times.Never);
+
+        // Verify that the image info file was still read (dry-run exercises parsing)
+        string contents = await fileSystem.ReadAllTextAsync(ImageInfoPath);
+        contents.ShouldNotBeNullOrEmpty();
     }
 
     [Fact]

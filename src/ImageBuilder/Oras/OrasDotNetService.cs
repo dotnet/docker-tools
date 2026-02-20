@@ -56,12 +56,12 @@ public class OrasDotNetService(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
 
-        _logger.LogInformation("Resolving descriptor for reference: {Reference}", reference);
+        _logger.LogDebug("Fetching descriptor for reference: {Reference}", reference);
 
         Repository repository = CreateRepository(reference);
         Descriptor descriptor = await repository.ResolveAsync(reference, cancellationToken);
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Resolved descriptor: mediaType={MediaType}, digest={Digest}, size={Size}",
             descriptor.MediaType, descriptor.Digest, descriptor.Size);
 
@@ -97,7 +97,7 @@ public class OrasDotNetService(
             Layers = [signatureLayerDescriptor]
         };
 
-        _logger.LogInformation("Pushing signature for {ImageName}", result.ImageName);
+        _logger.LogDebug("Pushing signature for {ImageName}", result.ImageName);
 
         Descriptor signatureDescriptor =
             await Packer.PackManifestAsync(
@@ -107,7 +107,7 @@ public class OrasDotNetService(
                 options: options,
                 cancellationToken);
 
-        _logger.LogInformation("Signature pushed: {Digest}", signatureDescriptor.Digest);
+        _logger.LogDebug("Signature pushed: {Digest}", signatureDescriptor.Digest);
 
         return signatureDescriptor.Digest;
     }

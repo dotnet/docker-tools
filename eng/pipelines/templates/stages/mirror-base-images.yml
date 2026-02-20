@@ -21,8 +21,9 @@ parameters:
 stages:
 - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
   parameters:
-    serviceConnections:
-    - name: ${{ parameters.publishConfig.PublicMirrorRegistry.serviceConnection.name }}
+    publishConfig: ${{ parameters.publishConfig }}
+    usesRegistries:
+      - ${{ parameters.publishConfig.PublicMirrorRegistry.server }}
 
 - stage: MirrorBaseImages
   displayName: Mirror Base Images

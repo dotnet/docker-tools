@@ -53,12 +53,27 @@ public class CopyImageService : ICopyImageService
         ContainerRegistryImportSourceCredentials? sourceCredentials = null,
         bool isDryRun = false)
     {
+        Acr destAcr = Acr.Parse(destAcrName);
+
+        string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
+        string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
+        var destinationImageNames = destTagNames
+            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
+            .ToList();
+        string formattedDestinationImages = string.Join(", ", destinationImageNames);
+        _logger.LogInformation("{Action} {DestinationImages} from '{SourceImage}'",
+            action, formattedDestinationImages, sourceImageName);
+
+        if (isDryRun)
+        {
+            _logger.LogInformation("Importing skipped due to dry run.");
+            return;
+        }
+
         var destResourceId = _publishConfig.GetRegistryResource(destAcrName);
         var srcResourceId = srcRegistryName is not null
             ? _publishConfig.GetRegistryResource(srcRegistryName)
             : null;
-
-        Acr destAcr = Acr.Parse(destAcrName);
 
         // Azure ACR import only supports one source identifier. Use ResourceId for ACR-to-ACR
         // imports (same tenant), or RegistryAddress for external registries.
@@ -76,34 +91,19 @@ public class CopyImageService : ICopyImageService
 
         importImageContent.TargetTags.AddRange(destTagNames);
 
-        string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
-        string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
-        var destinationImageNames = destTagNames
-            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
-            .ToList();
-        string formattedDestinationImages = string.Join(", ", destinationImageNames);
-        _logger.LogInformation($"{action} {formattedDestinationImages} from '{sourceImageName}'");
+        ArmClient armClient = GetArmClientForAcr(destAcrName);
+        ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
 
-        if (!isDryRun)
+        try
         {
-            ArmClient armClient = GetArmClientForAcr(destAcrName);
-            ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
-
-            try
-            {
-                await RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                    .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
-            }
-            catch (Exception e)
-            {
-                _logger.LogError(e, "Importing Failure: {DestinationImages}", formattedDestinationImages);
-
-                throw;
-            }
+            await RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
+                .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
         }
-        else
+        catch (Exception e)
         {
-            _logger.LogInformation("Importing skipped due to dry run.");
+            _logger.LogError(e, "Importing Failure: {DestinationImages}", formattedDestinationImages);
+
+            throw;
         }
     }
 

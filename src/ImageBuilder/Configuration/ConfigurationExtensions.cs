@@ -40,7 +40,7 @@ public static class ConfigurationExtensions
                 && Acr.Parse(auth.Server) == targetAcr);
     }
 
-    public static ResourceIdentifier GetRegistryResource(this PublishConfiguration publishConfig, string registry)
+    public static ResourceIdentifier GetAcrResource(this PublishConfiguration publishConfig, string registry)
     {
         var registryAuthentication = publishConfig.FindRegistryAuthentication(registry)
             ?? throw new InvalidOperationException(

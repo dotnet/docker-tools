@@ -33,7 +33,7 @@ public class OrasDotNetServiceTests
         var result = new PayloadSigningResult(
             "registry.io/repo:tag",
             subjectDescriptor,
-            fileInfo,
+            fileInfo.FullName,
             "sha256:abcd1234");
 
         var exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
@@ -77,7 +77,7 @@ public class OrasDotNetServiceTests
         var signedPayload = new PayloadSigningResult(
             "registry.io/repo:tag",
             descriptor,
-            new FileInfo("/tmp/test.cose"),
+            "/tmp/test.cose",
             "[\"thumbprint\"]");
 
         var exception = await Should.ThrowAsync<ArgumentNullException>(async () =>

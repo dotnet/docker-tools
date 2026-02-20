@@ -43,7 +43,7 @@ public class BulkImageSigningServiceTests
         var signedPayload = new PayloadSigningResult(
             "registry.io/repo@sha256:abc123",
             subjectDescriptor,
-            new FileInfo("/tmp/signed.cose"),
+            "/tmp/signed.cose",
             "[\"thumbprint1\"]");
 
         mockPayloadSigning
@@ -82,7 +82,7 @@ public class BulkImageSigningServiceTests
         var signedPayload = new PayloadSigningResult(
             "registry.io/repo@sha256:abc123",
             subjectDescriptor,
-            new FileInfo("/tmp/signed.cose"),
+            "/tmp/signed.cose",
             "[\"thumbprint1\"]");
 
         mockPayloadSigning

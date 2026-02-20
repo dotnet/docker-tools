@@ -71,7 +71,7 @@ public class OrasDotNetService(
 
         var repo = CreateRepository(result.ImageName);
 
-        var payloadBytes = await File.ReadAllBytesAsync(result.SignedPayload.FullName, cancellationToken);
+        var payloadBytes = await File.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
         var signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
 
         using var payloadStream = new MemoryStream(payloadBytes);

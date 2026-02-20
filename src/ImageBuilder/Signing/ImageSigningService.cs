@@ -10,35 +10,39 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Oras;
+using Microsoft.Extensions.Logging;
 using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
 /// <summary>
-/// Generates signing requests from image artifact details by fetching OCI descriptors from the registry.
+/// Service for signing container images and pushing signatures to the registry.
+/// Resolves OCI descriptors, signs payloads via ESRP, and pushes signature artifacts.
 /// </summary>
-public class SigningRequestGenerator : ISigningRequestGenerator
+public class ImageSigningService(
+    IOrasDescriptorService descriptorService,
+    IOrasSignatureService signatureService,
+    IPayloadSigningService payloadSigningService,
+    ILogger<ImageSigningService> logger) : IImageSigningService
 {
-    private readonly IOrasDescriptorService _descriptorService;
-    private readonly ILogger<SigningRequestGenerator> _logger;
-
-    public SigningRequestGenerator(
-        IOrasDescriptorService descriptorService,
-        ILogger<SigningRequestGenerator> logger)
-    {
-        _descriptorService = descriptorService;
-        _logger = logger;
-    }
+    private readonly IOrasDescriptorService _descriptorService = descriptorService;
+    private readonly IOrasSignatureService _signatureService = signatureService;
+    private readonly IPayloadSigningService _payloadSigningService = payloadSigningService;
+    private readonly ILogger<ImageSigningService> _logger = logger;
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<ImageSigningRequest>> GenerateSigningRequestsAsync(
+    public async Task<IReadOnlyList<ImageSigningResult>> SignImagesAsync(
         ImageArtifactDetails imageArtifactDetails,
+        int signingKeyCode,
         CancellationToken cancellationToken = default)
     {
         IReadOnlyList<string> imageDigests = ExtractAllImageDigests(imageArtifactDetails);
+        if (imageDigests.Count == 0) return [];
 
-        _logger.LogInformation("Generating signing requests for {Count} images.", imageDigests.Count);
+        _logger.LogInformation("Signing {Count} digests.", imageDigests.Count);
 
+        // Step 1: Generate signing requests by fetching OCI descriptors in parallel
+        _logger.LogInformation("Generating {Count} signing requests.", imageDigests.Count);
         ConcurrentBag<ImageSigningRequest> requests = [];
         await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
         {
@@ -47,9 +51,24 @@ public class SigningRequestGenerator : ISigningRequestGenerator
             requests.Add(request);
         });
 
-        _logger.LogInformation("Generated {Count} signing requests.", imageDigests.Count);
+        // Step 2: Sign all payloads via ESRP
+        _logger.LogInformation("Signing {Count} images.", requests.Count);
+        IReadOnlyList<PayloadSigningResult> signedPayloads =
+            await _payloadSigningService.SignPayloadsAsync(requests, signingKeyCode, cancellationToken);
 
-        return requests.ToList();
+        // Step 3: Push signatures to registry in parallel
+        _logger.LogInformation("Pushing {Count} signatures to registry.", signedPayloads.Count);
+        ConcurrentBag<ImageSigningResult> results = [];
+        await Parallel.ForEachAsync(signedPayloads, cancellationToken, async (signedPayload, ct) =>
+        {
+            string signatureDigest =
+                await _signatureService.PushSignatureAsync(signedPayload.Descriptor, signedPayload, ct);
+            ImageSigningResult result = new(signedPayload.ImageName, signatureDigest);
+            results.Add(result);
+        });
+
+        _logger.LogInformation("Signed {Count} digests.", results.Count);
+        return results.ToList();
     }
 
     /// <summary>
@@ -83,11 +102,9 @@ public class SigningRequestGenerator : ISigningRequestGenerator
 
         var payload = new Payload(TargetArtifact: ociDescriptor);
 
-        var request = new ImageSigningRequest(
+        return new ImageSigningRequest(
             ImageName: imageDigest,
             Descriptor: descriptor,
             Payload: payload);
-
-        return request;
     }
 }

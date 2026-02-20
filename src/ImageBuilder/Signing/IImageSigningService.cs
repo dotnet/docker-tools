@@ -10,20 +10,23 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
 /// <summary>
-/// Generates signing requests from image artifact details.
+/// Service for signing container images and pushing signatures to the registry.
 /// </summary>
-public interface ISigningRequestGenerator
+public interface IImageSigningService
 {
     /// <summary>
-    /// Creates signing requests for all images (platforms and manifest lists) in the given artifact details.
+    /// Signs all images described in the artifact details by resolving OCI descriptors, signing payloads via ESRP,
+    /// and pushing signature artifacts to the registry.
     /// </summary>
     /// <param name="imageArtifactDetails">The image artifact details containing platform and manifest list digests.</param>
+    /// <param name="signingKeyCode">Certificate ID used by DDSignFiles.dll.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>
-    /// Signing requests for each digest in <paramref name="imageArtifactDetails"/>.
-    /// There are no guarantees about the ordering of the returned requests.
+    /// Results containing the digest of each signature artifact pushed to the registry.
+    /// The order of the returned items is not guaranteed.
     /// </returns>
-    Task<IReadOnlyList<ImageSigningRequest>> GenerateSigningRequestsAsync(
+    Task<IReadOnlyList<ImageSigningResult>> SignImagesAsync(
         ImageArtifactDetails imageArtifactDetails,
+        int signingKeyCode,
         CancellationToken cancellationToken = default);
 }

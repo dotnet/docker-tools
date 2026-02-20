@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -19,8 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 /// </summary>
 public class SignImagesCommand(
     ILogger<SignImagesCommand> logger,
-    IBulkImageSigningService signingService,
-    ISigningRequestGenerator signingRequestGenerator,
+    IImageSigningService signingService,
     IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions)
     : Command<SignImagesOptions, SignImagesOptionsBuilder>
@@ -64,21 +62,11 @@ public class SignImagesCommand(
         // Apply registry override to get fully-qualified image references
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
-        IReadOnlyList<ImageSigningRequest> requests =
-            await signingRequestGenerator.GenerateSigningRequestsAsync(imageArtifactDetails);
-
-        if (requests.Count == 0)
-        {
-            logger.LogInformation("No images to sign.");
-            return;
-        }
-
         int keyCode = signingConfig.ImageSigningKeyCode;
-        logger.LogInformation(
-            "Signing {Count} image(s) with key code {KeyCode}.",
-            requests.Count, keyCode);
+        logger.LogInformation("Signing images with key code {KeyCode}.", keyCode);
 
-        IReadOnlyList<ImageSigningResult> results = await signingService.SignImagesAsync(requests, keyCode);
+        IReadOnlyList<ImageSigningResult> results =
+            await signingService.SignImagesAsync(imageArtifactDetails, keyCode);
 
         logger.LogInformation("Successfully signed {Count} image(s).", results.Count);
         foreach (ImageSigningResult result in results)

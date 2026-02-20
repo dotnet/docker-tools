@@ -3,11 +3,17 @@ parameters:
   testMatrixType: platformVersionedOs
   buildMatrixCustomBuildLegGroupArgs: ""
   testMatrixCustomBuildLegGroupArgs: ""
+  # Custom steps to set up ImageBuilder instead of pulling from MCR (e.g., bootstrap from source).
+  # Runs before ImageBuilder pull. If non-empty, skips the default ImageBuilder pull.
+  customInitSteps: []
+  # Custom steps that run after ImageBuilder is set up but before copy-base-images runs.
   customCopyBaseImagesInitSteps: []
+  # Custom steps that run after ImageBuilder is set up but before matrix generation runs.
   customGenerateMatrixInitSteps: []
+  # Custom steps that run after ImageBuilder is set up but before the build starts.
+  # Use for build-specific initialization (e.g., setting variables, additional setup).
   customBuildInitSteps: []
   customTestInitSteps: []
-  customInitSteps: []
   sourceBuildPipelineRunId: ""
 
   linuxAmdBuildJobTimeout: 60
@@ -78,9 +84,8 @@ stages:
       publishConfig: ${{ parameters.publishConfig }}
       pool: ${{ parameters.linuxAmd64Pool }}
       additionalOptions: "--manifest '$(manifest)' $(imageBuilder.pathArgs) $(manifestVariables)"
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customCopyBaseImagesInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customCopyBaseImagesInitSteps: ${{ parameters.customCopyBaseImagesInitSteps }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/docker-tools/templates/jobs/generate-matrix.yml@self
@@ -92,9 +97,8 @@ stages:
       internalProjectName: ${{ parameters.internalProjectName }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customGenerateMatrixInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customGenerateMatrixInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/docker-tools/templates/jobs/build-images.yml@self
@@ -105,9 +109,8 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxAmdBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -121,9 +124,8 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -137,9 +139,8 @@ stages:
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -153,9 +154,8 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -169,9 +169,8 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -185,9 +184,8 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -201,9 +199,8 @@ stages:
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
-      customInitSteps:
-      - ${{ parameters.customInitSteps }}
-      - ${{ parameters.customBuildInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+      customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
       publishConfig: ${{ parameters.publishConfig }}
       internalProjectName: ${{ parameters.internalProjectName }}
@@ -251,9 +248,8 @@ stages:
         isTestStage: true
         internalProjectName: ${{ parameters.internalProjectName }}
         publicProjectName: ${{ parameters.publicProjectName }}
-        customInitSteps:
-        - ${{ parameters.customInitSteps }}
-        - ${{ parameters.customGenerateMatrixInitSteps }}
+        customInitSteps: ${{ parameters.customInitSteps }}
+        customGenerateMatrixInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
         versionsRepoRef: ${{ parameters.versionsRepoRef }}
     - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self

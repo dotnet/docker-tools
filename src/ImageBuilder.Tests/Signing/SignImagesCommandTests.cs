@@ -104,11 +104,8 @@ public class SignImagesCommandTests
 
         var mockRequestGen = new Mock<ISigningRequestGenerator>();
         mockRequestGen
-            .Setup(g => g.GeneratePlatformSigningRequestsAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ImageSigningRequest> { platformRequest });
-        mockRequestGen
-            .Setup(g => g.GenerateManifestListSigningRequestsAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<ImageSigningRequest> { manifestRequest });
+            .Setup(g => g.GenerateSigningRequestsAsync(It.IsAny<ImageArtifactDetails>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ImageSigningRequest> { platformRequest, manifestRequest });
 
         var mockSigning = new Mock<IBulkImageSigningService>();
         mockSigning

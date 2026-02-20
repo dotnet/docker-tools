@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 public class SigningRequestGeneratorTests
 {
     [Fact]
-    public async Task GeneratePlatformSigningRequestsAsync_ReturnsPlatformRequests()
+    public async Task GenerateSigningRequestsAsync_ReturnsPlatformAndManifestListRequests()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
         mockDescriptorService
@@ -45,6 +45,11 @@ public class SigningRequestGeneratorTests
                     [
                         new ImageData
                         {
+                            Manifest = new ManifestData
+                            {
+                                Digest = "sha256:manifest123",
+                                SharedTags = ["8.0", "latest"]
+                            },
                             Platforms =
                             [
                                 new PlatformData { Digest = "sha256:abc123", SimpleTags = ["8.0-alpine"] },
@@ -56,15 +61,16 @@ public class SigningRequestGeneratorTests
             ]
         };
 
-        var requests = await generator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
+        var requests = await generator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
-        requests.Count.ShouldBe(2);
+        requests.Count.ShouldBe(3);
         requests[0].ImageName.ShouldBe("sha256:abc123");
         requests[1].ImageName.ShouldBe("sha256:def456");
+        requests[2].ImageName.ShouldBe("sha256:manifest123");
     }
 
     [Fact]
-    public async Task GeneratePlatformSigningRequestsAsync_SkipsPlatformsWithoutDigest()
+    public async Task GenerateSigningRequestsAsync_SkipsPlatformsWithoutDigest()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
         mockDescriptorService
@@ -103,14 +109,14 @@ public class SigningRequestGeneratorTests
             ]
         };
 
-        var requests = await generator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
+        var requests = await generator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
         requests.Count.ShouldBe(1);
         requests[0].ImageName.ShouldBe("sha256:abc123");
     }
 
     [Fact]
-    public async Task GenerateManifestListSigningRequestsAsync_ReturnsManifestListRequests()
+    public async Task GenerateSigningRequestsAsync_BuildsCorrectPayload()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
         mockDescriptorService
@@ -148,7 +154,7 @@ public class SigningRequestGeneratorTests
             ]
         };
 
-        var requests = await generator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
+        var requests = await generator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
         requests.Count.ShouldBe(1);
         requests[0].ImageName.ShouldBe("sha256:manifest123");
@@ -156,7 +162,7 @@ public class SigningRequestGeneratorTests
     }
 
     [Fact]
-    public async Task GenerateManifestListSigningRequestsAsync_SkipsImagesWithoutManifest()
+    public async Task GenerateSigningRequestsAsync_SkipsImagesWithoutManifest()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
         var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
@@ -175,23 +181,23 @@ public class SigningRequestGeneratorTests
                         new ImageData
                         {
                             Manifest = null,
-                            Platforms = [new PlatformData { Digest = "sha256:abc123" }]
+                            Platforms = []
                         }
                     ]
                 }
             ]
         };
 
-        var requests = await generator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
+        var requests = await generator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
-        requests.Count.ShouldBe(0);
+        requests.ShouldBeEmpty();
         mockDescriptorService.Verify(
             s => s.GetDescriptorAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
 
     [Fact]
-    public async Task GeneratePlatformSigningRequestsAsync_ReturnsEmptyForEmptyInput()
+    public async Task GenerateSigningRequestsAsync_ReturnsEmptyForEmptyInput()
     {
         var mockDescriptorService = new Mock<IOrasDescriptorService>();
         var mockLogger = new Mock<ILogger<SigningRequestGenerator>>();
@@ -200,7 +206,7 @@ public class SigningRequestGeneratorTests
 
         var imageArtifactDetails = new ImageArtifactDetails { Repos = [] };
 
-        var requests = await generator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
+        var requests = await generator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
         requests.ShouldBeEmpty();
     }

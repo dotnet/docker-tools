@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Oras;
+using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 
 namespace Microsoft.DotNet.ImageBuilder.Signing;
 
@@ -29,50 +30,20 @@ public class SigningRequestGenerator : ISigningRequestGenerator
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<ImageSigningRequest>> GeneratePlatformSigningRequestsAsync(
+    public async Task<IReadOnlyList<ImageSigningRequest>> GenerateSigningRequestsAsync(
         ImageArtifactDetails imageArtifactDetails,
         CancellationToken cancellationToken = default)
     {
-        var platformReferences = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images
-                .SelectMany(image => image.Platforms
-                    .Where(platform => !string.IsNullOrEmpty(platform.Digest))
-                    .Select(platform => platform.Digest)))
-            .ToList();
+        IReadOnlyList<string> imageDigests = ExtractAllImageDigests(imageArtifactDetails);
 
-        _logger.LogInformation("Generating signing requests for {Count} platform images.", platformReferences.Count);
+        _logger.LogInformation("Generating signing requests for {Count} images.", imageDigests.Count);
 
         var requests = new List<ImageSigningRequest>();
 
-        foreach (var reference in platformReferences)
+        foreach (string imageDigest in imageDigests)
         {
-            _logger.LogInformation("Platform reference: {Reference}", reference);
-            var request = await CreateSigningRequestAsync(reference, cancellationToken);
-            requests.Add(request);
-        }
-
-        return requests;
-    }
-
-    /// <inheritdoc/>
-    public async Task<IReadOnlyList<ImageSigningRequest>> GenerateManifestListSigningRequestsAsync(
-        ImageArtifactDetails imageArtifactDetails,
-        CancellationToken cancellationToken = default)
-    {
-        var manifestReferences = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images
-                .Where(image => image.Manifest is not null && !string.IsNullOrEmpty(image.Manifest.Digest))
-                .Select(image => image.Manifest!.Digest))
-            .ToList();
-
-        _logger.LogInformation("Generating signing requests for {Count} manifest lists.", manifestReferences.Count);
-
-        var requests = new List<ImageSigningRequest>();
-
-        foreach (var reference in manifestReferences)
-        {
-            _logger.LogInformation("Manifest reference: {Reference}", reference);
-            var request = await CreateSigningRequestAsync(reference, cancellationToken);
+            OrasDescriptor descriptor = await _descriptorService.GetDescriptorAsync(imageDigest, cancellationToken);
+            ImageSigningRequest request = ConstructSigningRequest(imageDigest, descriptor);
             requests.Add(request);
         }
 
@@ -80,17 +51,29 @@ public class SigningRequestGenerator : ISigningRequestGenerator
     }
 
     /// <summary>
-    /// Creates a signing request by fetching the OCI descriptor from the registry.
+    /// Extracts all digest references (platform manifests and manifest lists) from the artifact details.
     /// </summary>
-    /// <param name="imageReference">The image reference (digest) to fetch the descriptor for.</param>
-    private async Task<ImageSigningRequest> CreateSigningRequestAsync(
-        string imageReference,
-        CancellationToken cancellationToken)
+    private static IReadOnlyList<string> ExtractAllImageDigests(ImageArtifactDetails imageArtifactDetails)
     {
-        _logger.LogInformation("Fetching descriptor for {Reference}", imageReference);
+        IEnumerable<string> platformDigests = imageArtifactDetails.Repos
+            .SelectMany(repo => repo.Images
+                .SelectMany(image => image.Platforms
+                    .Where(platform => !string.IsNullOrEmpty(platform.Digest))
+                    .Select(platform => platform.Digest)));
 
-        var descriptor = await _descriptorService.GetDescriptorAsync(imageReference, cancellationToken);
+        IEnumerable<string> manifestListDigests = imageArtifactDetails.Repos
+            .SelectMany(repo => repo.Images
+                .Where(image => image.Manifest is not null && !string.IsNullOrEmpty(image.Manifest.Digest))
+                .Select(image => image.Manifest.Digest));
 
+        return [..platformDigests, ..manifestListDigests];
+    }
+
+    /// <summary>
+    /// Builds an <see cref="ImageSigningRequest"/> from a reference and its resolved OCI descriptor.
+    /// </summary>
+    private static ImageSigningRequest ConstructSigningRequest(string imageDigest, OrasDescriptor descriptor)
+    {
         var ociDescriptor = new Models.Oci.Descriptor(
             MediaType: descriptor.MediaType,
             Digest: descriptor.Digest,
@@ -98,6 +81,11 @@ public class SigningRequestGenerator : ISigningRequestGenerator
 
         var payload = new Payload(TargetArtifact: ociDescriptor);
 
-        return new ImageSigningRequest(imageReference, descriptor, payload);
+        var request = new ImageSigningRequest(
+            ImageName: imageDigest,
+            Descriptor: descriptor,
+            Payload: payload);
+
+        return request;
     }
 }

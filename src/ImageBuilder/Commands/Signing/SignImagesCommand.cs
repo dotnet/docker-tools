@@ -64,14 +64,10 @@ public class SignImagesCommand(
         // Apply registry override to get fully-qualified image references
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
-        IReadOnlyList<ImageSigningRequest> platformRequests =
-            await signingRequestGenerator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
-        IReadOnlyList<ImageSigningRequest> manifestListRequests =
-            await signingRequestGenerator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
+        IReadOnlyList<ImageSigningRequest> requests =
+            await signingRequestGenerator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
-        List<ImageSigningRequest> allRequests = [..platformRequests, ..manifestListRequests];
-
-        if (allRequests.Count == 0)
+        if (requests.Count == 0)
         {
             logger.LogInformation("No images to sign.");
             return;
@@ -79,10 +75,10 @@ public class SignImagesCommand(
 
         int keyCode = signingConfig.ImageSigningKeyCode;
         logger.LogInformation(
-            "Signing {Count} image(s) ({PlatformCount} platforms, {ManifestCount} manifest lists) with key code {KeyCode}.",
-            allRequests.Count, platformRequests.Count, manifestListRequests.Count, keyCode);
+            "Signing {Count} image(s) with key code {KeyCode}.",
+            requests.Count, keyCode);
 
-        IReadOnlyList<ImageSigningResult> results = await signingService.SignImagesAsync(allRequests, keyCode);
+        IReadOnlyList<ImageSigningResult> results = await signingService.SignImagesAsync(requests, keyCode);
 
         logger.LogInformation("Successfully signed {Count} image(s).", results.Count);
         foreach (ImageSigningResult result in results)

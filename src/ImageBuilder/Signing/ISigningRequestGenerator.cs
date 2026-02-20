@@ -14,22 +14,12 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 public interface ISigningRequestGenerator
 {
     /// <summary>
-    /// Creates signing requests for platform images from ImageArtifactDetails.
+    /// Creates signing requests for all images (platforms and manifest lists) in the given artifact details.
     /// </summary>
-    /// <param name="imageArtifactDetails">The image artifact details containing platform digests.</param>
+    /// <param name="imageArtifactDetails">The image artifact details containing platform and manifest list digests.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Signing requests for each platform image with a digest.</returns>
-    Task<IReadOnlyList<ImageSigningRequest>> GeneratePlatformSigningRequestsAsync(
-        ImageArtifactDetails imageArtifactDetails,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Creates signing requests for manifest lists from ImageArtifactDetails.
-    /// </summary>
-    /// <param name="imageArtifactDetails">The image artifact details containing manifest list digests.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Signing requests for each manifest list with a digest.</returns>
-    Task<IReadOnlyList<ImageSigningRequest>> GenerateManifestListSigningRequestsAsync(
+    /// <returns>Signing requests for each image with a digest.</returns>
+    Task<IReadOnlyList<ImageSigningRequest>> GenerateSigningRequestsAsync(
         ImageArtifactDetails imageArtifactDetails,
         CancellationToken cancellationToken = default);
 }

@@ -4,7 +4,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -58,12 +60,14 @@ public class OrasDotNetService(
 
         _logger.LogDebug("Fetching descriptor for reference: {Reference}", reference);
 
+        long startTime = Stopwatch.GetTimestamp();
         Repository repository = CreateRepository(reference);
         Descriptor descriptor = await repository.ResolveAsync(reference, cancellationToken);
 
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
         _logger.LogDebug(
-            "Resolved descriptor: mediaType={MediaType}, digest={Digest}, size={Size}",
-            descriptor.MediaType, descriptor.Digest, descriptor.Size);
+            "Resolved descriptor: mediaType={MediaType}, digest={Digest}, size={Size} in {Elapsed}",
+            descriptor.MediaType, descriptor.Digest, descriptor.Size, elapsed);
 
         return descriptor;
     }
@@ -99,6 +103,7 @@ public class OrasDotNetService(
 
         _logger.LogDebug("Pushing signature for {ImageName}", result.ImageName);
 
+        long startTime = Stopwatch.GetTimestamp();
         Descriptor signatureDescriptor =
             await Packer.PackManifestAsync(
                 pusher: repository,
@@ -107,7 +112,8 @@ public class OrasDotNetService(
                 options: options,
                 cancellationToken);
 
-        _logger.LogDebug("Signature pushed: {Digest}", signatureDescriptor.Digest);
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
+        _logger.LogDebug("Signature pushed: {Digest} in {Elapsed}", signatureDescriptor.Digest, elapsed);
 
         return signatureDescriptor.Digest;
     }
@@ -118,24 +124,23 @@ public class OrasDotNetService(
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag").</param>
     private Repository CreateRepository(string reference)
     {
-        _logger.LogDebug("Creating ORAS repository for: {Reference}", reference);
-        var parsedRef = Reference.Parse(reference);
-        _logger.LogDebug(
+        _logger.LogTrace("Creating ORAS repository for: {Reference}", reference);
+        Reference parsedRef = Reference.Parse(reference);
+        _logger.LogTrace(
             "Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}",
             parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
 
-        var authClient = new Client(
-            _httpClientProvider.GetClient(),
-            _credentialProvider,
-            new Cache(_cache));
+        HttpClient httpClient = _httpClientProvider.GetClient();
+        Cache cache = new(_cache);
+        Client authClient = new(httpClient, _credentialProvider, cache);
 
-        var repositoryOptions = new RepositoryOptions
+        RepositoryOptions repositoryOptions = new()
         {
             Reference = parsedRef,
             Client = authClient
         };
 
-        var repository = new Repository(repositoryOptions);
+        Repository repository = new(repositoryOptions);
         return repository;
     }
 }

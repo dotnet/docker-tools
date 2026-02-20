@@ -6,7 +6,6 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -32,12 +31,6 @@ public class EsrpSigningService(
     private const string MBSignAppFolderEnv = "MBSIGN_APPFOLDER";
 
     /// <summary>
-    /// Environment variable containing the base64-encoded SSL certificate for ESRP authentication.
-    /// Required on Linux/macOS where there is no certificate store; set by the MicroBuild signing plugin.
-    /// </summary>
-    private const string VsEngEsrpSslEnv = "VSENGESRPSSL";
-
-    /// <summary>
     /// The signing tool DLL provided by MicroBuild.
     /// </summary>
     private const string DDSignFilesDllName = "DDSignFiles.dll";
@@ -54,60 +47,52 @@ public class EsrpSigningService(
         int signingKeyCode,
         CancellationToken cancellationToken = default)
     {
-        var files = filePaths.ToArray();
-        if (files.Length == 0)
+        string[] filesToSign = filePaths.ToArray();
+        if (filesToSign.Length == 0)
         {
             _logger.LogInformation("No files to sign.");
             return;
         }
 
-        var signType = _signingConfig?.SignType ?? "test";
-        _logger.LogInformation("Signing {Count} files with certificate {KeyCode} (signType: {SignType})", files.Length, signingKeyCode, signType);
+        string signType = _signingConfig?.SignType ?? "test";
+        _logger.LogInformation(
+            "Signing {Count} files with certificate {KeyCode} (signType: {SignType})",
+            filesToSign.Length, signingKeyCode, signType);
 
-        var mbsignAppFolder = _environmentService.GetEnvironmentVariable(MBSignAppFolderEnv)
+        string microBuildSigningAppDir = _environmentService.GetEnvironmentVariable(MBSignAppFolderEnv)
             ?? throw new InvalidOperationException(
                 $"{MBSignAppFolderEnv} environment variable is not set. Was the MicroBuild signing plugin installed?");
+        string ddSignFilesDllPath = Path.Combine(microBuildSigningAppDir, DDSignFilesDllName);
 
-        // On non-Windows platforms, DDSignFiles.dll reads the SSL certificate from an environment variable
-        // (there is no certificate store). Without it, DDSignFiles.dll retries auth endlessly until timeout.
-        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            && string.IsNullOrEmpty(_environmentService.GetEnvironmentVariable(VsEngEsrpSslEnv)))
-        {
-            throw new InvalidOperationException(
-                $"{VsEngEsrpSslEnv} environment variable is not set. " +
-                "On Linux, DDSignFiles.dll requires this for ESRP authentication. " +
-                "Ensure the MicroBuild signing plugin environment variables are forwarded to the container.");
-        }
+        string signListFileName = $"SignList_{Guid.NewGuid()}.json";
+        string signListFilePath = Path.Combine(Path.GetTempPath(), signListFileName);
 
-        var signListTempPath = Path.Combine(Path.GetTempPath(), $"SignList_{Guid.NewGuid()}.json");
+        string signListJsonContent = GenerateSignListJson(filesToSign, signingKeyCode);
+        await _fileSystem.WriteAllTextAsync(signListFilePath, signListJsonContent, cancellationToken);
+
+        string[] args =
+        [
+            "--roll-forward",
+            "major",
+            $"\"{ddSignFilesDllPath}\"",
+            "--",
+            $"/filelist:\"{signListFilePath}\"",
+            $"/signType:{signType}"
+        ];
+
         try
         {
-            var signListJson = GenerateSignListJson(files, signingKeyCode);
-            await _fileSystem.WriteAllTextAsync(signListTempPath, signListJson, cancellationToken);
+            _processService.Execute(
+                fileName: "dotnet",
+                args: string.Join(' ', args),
+                isDryRun: false,
+                errorMessage: "ESRP signing failed");
 
-            var ddSignFilesPath = Path.Combine(mbsignAppFolder, DDSignFilesDllName);
-            var args = $"--roll-forward major \"{ddSignFilesPath}\" -- /filelist:\"{signListTempPath}\" /signType:{signType}";
-
-            // IProcessService.Execute is synchronous, so wrap in Task.Run.
-            // The cancellation token prevents Task.Run from starting if already cancelled,
-            // but IProcessService.Execute does not accept a token.
-            await Task.Run(() =>
-            {
-                _processService.Execute(
-                    "dotnet",
-                    args,
-                    isDryRun: false,
-                    errorMessage: "ESRP signing failed");
-            }, cancellationToken);
-
-            _logger.LogInformation("ESRP signing completed successfully.");
+            _logger.LogInformation("ESRP signing completed.");
         }
         finally
         {
-            if (_fileSystem.FileExists(signListTempPath))
-            {
-                _fileSystem.DeleteFile(signListTempPath);
-            }
+            _fileSystem.DeleteFile(signListFilePath);
         }
     }
 

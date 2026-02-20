@@ -30,14 +30,6 @@ public static class CertificateChainCalculator
     /// Calculates SHA256 thumbprints for each certificate in the x5chain from a COSE_Sign1 envelope.
     /// </summary>
     /// <param name="signedPayloadPath">Path to the COSE signature envelope file.</param>
-    /// <returns>JSON array of hex-encoded SHA256 thumbprints (e.g., ["abc123...", "def456..."]).</returns>
-    public static string CalculateCertificateChainThumbprints(string signedPayloadPath) =>
-        CalculateCertificateChainThumbprints(signedPayloadPath, new FileSystem());
-
-    /// <summary>
-    /// Calculates SHA256 thumbprints for each certificate in the x5chain from a COSE_Sign1 envelope.
-    /// </summary>
-    /// <param name="signedPayloadPath">Path to the COSE signature envelope file.</param>
     /// <param name="fileSystem">Filesystem abstraction for reading the file.</param>
     /// <returns>JSON array of hex-encoded SHA256 thumbprints (e.g., ["abc123...", "def456..."]).</returns>
     public static string CalculateCertificateChainThumbprints(string signedPayloadPath, IFileSystem fileSystem)

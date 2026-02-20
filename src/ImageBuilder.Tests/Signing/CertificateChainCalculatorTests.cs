@@ -3,41 +3,26 @@
 
 using System;
 using System.Formats.Cbor;
-using System.IO;
 using System.Security.Cryptography;
 using System.Text.Json;
 using Microsoft.DotNet.ImageBuilder.Signing;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Shouldly;
 using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
-public class CertificateChainCalculatorTests : IDisposable
+public class CertificateChainCalculatorTests
 {
-    private readonly string _tempDir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-
-    public CertificateChainCalculatorTests()
-    {
-        Directory.CreateDirectory(_tempDir);
-    }
-
-    public void Dispose()
-    {
-        if (Directory.Exists(_tempDir))
-        {
-            Directory.Delete(_tempDir, recursive: true);
-        }
-    }
-
     [Fact]
     public void CalculateCertificateChainThumbprints_IntegerKeysOnly_ReturnsThumbprints()
     {
         byte[] cert1 = [0x30, 0x82, 0x01, 0x00];
         byte[] cert2 = [0x30, 0x82, 0x02, 0x00];
 
-        var filePath = WriteCoseSign1(cert1, cert2, includeTextKey: false);
+        var (fileSystem, filePath) = WriteCoseSign1(cert1, cert2, includeTextKey: false);
 
-        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath);
+        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
 
         var thumbprints = JsonSerializer.Deserialize<string[]>(result);
         thumbprints.ShouldNotBeNull();
@@ -51,9 +36,9 @@ public class CertificateChainCalculatorTests : IDisposable
     {
         byte[] cert = [0x30, 0x82, 0x03, 0x00];
 
-        var filePath = WriteCoseSign1(cert, includeTextKey: true);
+        var (fileSystem, filePath) = WriteCoseSign1(cert, includeTextKey: true);
 
-        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath);
+        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
 
         var thumbprints = JsonSerializer.Deserialize<string[]>(result);
         thumbprints.ShouldNotBeNull();
@@ -66,9 +51,9 @@ public class CertificateChainCalculatorTests : IDisposable
     {
         byte[] cert = [0x30, 0x82, 0x04, 0x00];
 
-        var filePath = WriteCoseSign1SingleCert(cert);
+        var (fileSystem, filePath) = WriteCoseSign1SingleCert(cert);
 
-        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath);
+        var result = CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem);
 
         var thumbprints = JsonSerializer.Deserialize<string[]>(result);
         thumbprints.ShouldNotBeNull();
@@ -79,10 +64,10 @@ public class CertificateChainCalculatorTests : IDisposable
     [Fact]
     public void CalculateCertificateChainThumbprints_MissingX5Chain_ThrowsException()
     {
-        var filePath = WriteCoseSign1WithoutX5Chain();
+        var (fileSystem, filePath) = WriteCoseSign1WithoutX5Chain();
 
         Should.Throw<InvalidOperationException>(
-            () => CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath))
+            () => CertificateChainCalculator.CalculateCertificateChainThumbprints(filePath, fileSystem))
             .Message.ShouldContain("x5chain not found");
     }
 
@@ -90,7 +75,8 @@ public class CertificateChainCalculatorTests : IDisposable
     /// Writes a COSE_Sign1 envelope with an x5chain array of certificates.
     /// Optionally includes a text string key in the unprotected header map.
     /// </summary>
-    private string WriteCoseSign1(byte[] cert1, byte[]? cert2 = null, bool includeTextKey = false)
+    private static (InMemoryFileSystem FileSystem, string FilePath) WriteCoseSign1(
+        byte[] cert1, byte[]? cert2 = null, bool includeTextKey = false)
     {
         var writer = new CborWriter();
         writer.WriteTag((CborTag)18); // COSE_Sign1
@@ -130,15 +116,16 @@ public class CertificateChainCalculatorTests : IDisposable
 
         writer.WriteEndArray();
 
-        var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid()}.cose");
-        File.WriteAllBytes(filePath, writer.Encode());
-        return filePath;
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = "/test/payload.cose";
+        fileSystem.AddFile(filePath, writer.Encode());
+        return (fileSystem, filePath);
     }
 
     /// <summary>
     /// Writes a COSE_Sign1 envelope with a single certificate (byte string, not array).
     /// </summary>
-    private string WriteCoseSign1SingleCert(byte[] cert)
+    private static (InMemoryFileSystem FileSystem, string FilePath) WriteCoseSign1SingleCert(byte[] cert)
     {
         var writer = new CborWriter();
         writer.WriteTag((CborTag)18);
@@ -155,15 +142,16 @@ public class CertificateChainCalculatorTests : IDisposable
         writer.WriteByteString([0xFF, 0xFE]);
         writer.WriteEndArray();
 
-        var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid()}.cose");
-        File.WriteAllBytes(filePath, writer.Encode());
-        return filePath;
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = "/test/payload.cose";
+        fileSystem.AddFile(filePath, writer.Encode());
+        return (fileSystem, filePath);
     }
 
     /// <summary>
     /// Writes a COSE_Sign1 envelope with no x5chain key.
     /// </summary>
-    private string WriteCoseSign1WithoutX5Chain()
+    private static (InMemoryFileSystem FileSystem, string FilePath) WriteCoseSign1WithoutX5Chain()
     {
         var writer = new CborWriter();
         writer.WriteTag((CborTag)18);
@@ -180,9 +168,10 @@ public class CertificateChainCalculatorTests : IDisposable
         writer.WriteByteString([0xFF, 0xFE]);
         writer.WriteEndArray();
 
-        var filePath = Path.Combine(_tempDir, $"{Guid.NewGuid()}.cose");
-        File.WriteAllBytes(filePath, writer.Encode());
-        return filePath;
+        var fileSystem = new InMemoryFileSystem();
+        var filePath = "/test/payload.cose";
+        fileSystem.AddFile(filePath, writer.Encode());
+        return (fileSystem, filePath);
     }
 
     private static string ComputeSha256Hex(byte[] data) =>

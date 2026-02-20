@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 
@@ -19,14 +18,16 @@ public class SignImagesOptionsBuilder : CliOptionsBuilder
     private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: true);
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        base.GetCliArguments()
-            .Concat(
-            [
-                new Argument<string>(nameof(SignImagesOptions.ImageInfoPath),
-                    "Path to merged image info file containing images to sign")
-            ]);
+    [
+        ..base.GetCliArguments(),
+        new Argument<string>(
+            name: nameof(SignImagesOptions.ImageInfoPath),
+            description: "Path to merged image info file containing images to sign")
+    ];
 
     public override IEnumerable<Option> GetCliOptions() =>
-        base.GetCliOptions()
-            .Concat(_registryOptionsBuilder.GetCliOptions());
+    [
+        ..base.GetCliOptions(),
+        .._registryOptionsBuilder.GetCliOptions()
+    ];
 }

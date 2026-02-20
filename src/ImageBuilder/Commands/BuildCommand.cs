@@ -10,10 +10,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -28,7 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
-        private readonly PublishConfiguration _publishConfiguration;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -52,8 +49,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService,
-            IOptions<PublishConfiguration> publishConfigOptions)
+            IImageCacheService imageCacheService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -63,7 +59,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
-            _publishConfiguration = publishConfigOptions?.Value ?? throw new ArgumentNullException(nameof(publishConfigOptions));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);

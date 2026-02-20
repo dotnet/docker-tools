@@ -26,7 +26,8 @@ public class OrasDotNetService(
     IHttpClientProvider httpClientProvider,
     IMemoryCache cache,
     ILogger<OrasDotNetService> logger,
-    IRegistryCredentialsHost? credentialsHost = null) : IOrasDescriptorService, IOrasSignatureService
+    IRegistryCredentialsHost? credentialsHost = null)
+        : IOrasDescriptorService, IOrasSignatureService
 {
     /// <summary>
     /// OCI artifact type for Notary v2 signatures.
@@ -43,20 +44,25 @@ public class OrasDotNetService(
     /// </summary>
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
-    private readonly IRegistryCredentialsProvider _credentialsProvider = credentialsProvider;
-    private readonly IRegistryCredentialsHost? _credentialsHost = credentialsHost;
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IMemoryCache _cache = cache;
     private readonly ILogger<OrasDotNetService> _logger = logger;
+    private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
 
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+
         _logger.LogInformation("Resolving descriptor for reference: {Reference}", reference);
-        var repo = CreateRepository(reference);
-        var descriptor = await repo.ResolveAsync(reference, cancellationToken);
-        _logger.LogInformation("Resolved descriptor: mediaType={MediaType}, digest={Digest}, size={Size}", descriptor.MediaType, descriptor.Digest, descriptor.Size);
+
+        Repository repository = CreateRepository(reference);
+        Descriptor descriptor = await repository.ResolveAsync(reference, cancellationToken);
+
+        _logger.LogInformation(
+            "Resolved descriptor: mediaType={MediaType}, digest={Digest}, size={Size}",
+            descriptor.MediaType, descriptor.Digest, descriptor.Size);
+
         return descriptor;
     }
 
@@ -69,20 +75,20 @@ public class OrasDotNetService(
         ArgumentNullException.ThrowIfNull(subjectDescriptor);
         ArgumentNullException.ThrowIfNull(result);
 
-        var repo = CreateRepository(result.ImageName);
+        Repository repository = CreateRepository(result.ImageName);
 
-        var payloadBytes = await File.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
-        var signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
+        byte[] payloadBytes = await File.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
+        Descriptor signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
 
-        using var payloadStream = new MemoryStream(payloadBytes);
-        await repo.PushAsync(signatureLayerDescriptor, payloadStream, cancellationToken);
+        using MemoryStream payloadStream = new(payloadBytes);
+        await repository.PushAsync(signatureLayerDescriptor, payloadStream, cancellationToken);
 
-        var annotations = new Dictionary<string, string>
+        Dictionary<string, string> annotations = new()
         {
             [CertificateChainAnnotation] = result.CertificateChain
         };
 
-        var options = new PackManifestOptions
+        PackManifestOptions options = new()
         {
             ManifestAnnotations = annotations,
             Subject = subjectDescriptor,
@@ -91,12 +97,13 @@ public class OrasDotNetService(
 
         _logger.LogInformation("Pushing signature for {ImageName}", result.ImageName);
 
-        var signatureDescriptor = await Packer.PackManifestAsync(
-            repo,
-            Packer.ManifestVersion.Version1_1,
-            NotarySignatureArtifactType,
-            options,
-            cancellationToken);
+        Descriptor signatureDescriptor =
+            await Packer.PackManifestAsync(
+                pusher: repository,
+                version: Packer.ManifestVersion.Version1_1,
+                artifactType: NotarySignatureArtifactType,
+                options: options,
+                cancellationToken);
 
         _logger.LogInformation("Signature pushed: {Digest}", signatureDescriptor.Digest);
 
@@ -109,13 +116,15 @@ public class OrasDotNetService(
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag").</param>
     private Repository CreateRepository(string reference)
     {
-        _logger.LogInformation("Creating ORAS repository for: {Reference}", reference);
+        _logger.LogDebug("Creating ORAS repository for: {Reference}", reference);
         var parsedRef = Reference.Parse(reference);
-        _logger.LogInformation("Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}", parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
-        var credentialProvider = new OrasCredentialProviderAdapter(_credentialsProvider, _credentialsHost);
+        _logger.LogDebug(
+            "Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}",
+            parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
+
         var authClient = new Client(
             _httpClientProvider.GetClient(),
-            credentialProvider,
+            _credentialProvider,
             new Cache(_cache));
 
         var repositoryOptions = new RepositoryOptions

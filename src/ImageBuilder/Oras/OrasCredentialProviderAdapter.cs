@@ -26,13 +26,17 @@ public class OrasCredentialProviderAdapter(
     /// <inheritdoc/>
     public async Task<Credential> ResolveCredentialAsync(string hostname, CancellationToken cancellationToken)
     {
-        var creds = await _credentialsProvider.GetCredentialsAsync(hostname, _credentialsHost);
+        RegistryCredentials? registryCredentials =
+            await _credentialsProvider.GetCredentialsAsync(hostname, _credentialsHost);
 
-        if (creds is null)
-        {
-            return default;
-        }
+        if (registryCredentials is null) return default;
 
-        return new Credential(creds.Username, creds.Password, RefreshToken: string.Empty, AccessToken: string.Empty);
+        var orasCredential = new Credential(
+            Username: registryCredentials.Username,
+            Password: registryCredentials.Password,
+            RefreshToken: string.Empty,
+            AccessToken: string.Empty);
+
+        return orasCredential;
     }
 }

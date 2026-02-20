@@ -30,7 +30,7 @@ public class OrasDotNetService(
     IFileSystem fileSystem,
     ILogger<OrasDotNetService> logger,
     IRegistryCredentialsHost? credentialsHost = null)
-        : IOrasDescriptorService, IOrasSignatureService
+        : IOrasService
 {
     /// <summary>
     /// OCI artifact type for Notary v2 signatures.

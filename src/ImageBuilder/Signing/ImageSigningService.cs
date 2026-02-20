@@ -20,13 +20,11 @@ namespace Microsoft.DotNet.ImageBuilder.Signing;
 /// Resolves OCI descriptors, signs payloads via ESRP, and pushes signature artifacts.
 /// </summary>
 public class ImageSigningService(
-    IOrasDescriptorService descriptorService,
-    IOrasSignatureService signatureService,
+    IOrasService orasService,
     IPayloadSigningService payloadSigningService,
     ILogger<ImageSigningService> logger) : IImageSigningService
 {
-    private readonly IOrasDescriptorService _descriptorService = descriptorService;
-    private readonly IOrasSignatureService _signatureService = signatureService;
+    private readonly IOrasService _orasService = orasService;
     private readonly IPayloadSigningService _payloadSigningService = payloadSigningService;
     private readonly ILogger<ImageSigningService> _logger = logger;
 
@@ -46,7 +44,7 @@ public class ImageSigningService(
         ConcurrentBag<ImageSigningRequest> requests = [];
         await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
         {
-            OrasDescriptor descriptor = await _descriptorService.GetDescriptorAsync(imageDigest, ct);
+            OrasDescriptor descriptor = await _orasService.GetDescriptorAsync(imageDigest, ct);
             ImageSigningRequest request = ConstructSigningRequest(imageDigest, descriptor);
             requests.Add(request);
         });
@@ -62,7 +60,7 @@ public class ImageSigningService(
         await Parallel.ForEachAsync(signedPayloads, cancellationToken, async (signedPayload, ct) =>
         {
             string signatureDigest =
-                await _signatureService.PushSignatureAsync(signedPayload.Descriptor, signedPayload, ct);
+                await _orasService.PushSignatureAsync(signedPayload.Descriptor, signedPayload, ct);
             ImageSigningResult result = new(signedPayload.ImageName, signatureDigest);
             results.Add(result);
         });

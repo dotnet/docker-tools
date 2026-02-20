@@ -34,8 +34,8 @@ public class ImageSigningServiceTests
     [Fact]
     public async Task SignImagesAsync_SkipsImagesWithoutManifestOrDigest()
     {
-        var mockDescriptor = new Mock<IOrasDescriptorService>();
-        var service = CreateService(mockDescriptor: mockDescriptor);
+        var mockOras = new Mock<IOrasService>();
+        var service = CreateService(mockOras: mockOras);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -59,7 +59,7 @@ public class ImageSigningServiceTests
         var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
 
         results.ShouldBeEmpty();
-        mockDescriptor.Verify(
+        mockOras.Verify(
             s => s.GetDescriptorAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
             Times.Never);
     }
@@ -67,11 +67,10 @@ public class ImageSigningServiceTests
     [Fact]
     public async Task SignImagesAsync_SkipsPlatformsWithoutDigest()
     {
-        var mockDescriptor = CreateMockDescriptorService();
+        var mockOras = CreateMockOrasService();
         var mockPayloadSigning = CreateMockPayloadSigning();
-        var mockSignature = CreateMockSignatureService();
 
-        var service = CreateService(mockDescriptor, mockPayloadSigning, mockSignature);
+        var service = CreateService(mockOras, mockPayloadSigning);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -104,7 +103,7 @@ public class ImageSigningServiceTests
     [Fact]
     public async Task SignImagesAsync_OrchestratesFullPipeline()
     {
-        var mockDescriptor = CreateMockDescriptorService();
+        var mockOras = CreateMockOrasService();
 
         var subjectDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
         var signedPayload = new PayloadSigningResult(
@@ -121,13 +120,12 @@ public class ImageSigningServiceTests
                 It.IsAny<CancellationToken>()))
             .ReturnsAsync([signedPayload]);
 
-        var mockSignature = new Mock<IOrasSignatureService>();
-        mockSignature
+        mockOras
             .Setup(s => s.PushSignatureAsync(
                 It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:sigdigest");
 
-        var service = CreateService(mockDescriptor, mockPayloadSigning, mockSignature);
+        var service = CreateService(mockOras, mockPayloadSigning);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -152,13 +150,13 @@ public class ImageSigningServiceTests
 
         var results = await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 42);
 
-        mockDescriptor.Verify(
+        mockOras.Verify(
             s => s.GetDescriptorAsync("sha256:abc123", It.IsAny<CancellationToken>()),
             Times.Once);
         mockPayloadSigning.Verify(
             s => s.SignPayloadsAsync(It.IsAny<IEnumerable<ImageSigningRequest>>(), 42, It.IsAny<CancellationToken>()),
             Times.Once);
-        mockSignature.Verify(
+        mockOras.Verify(
             s => s.PushSignatureAsync(It.IsAny<OrasDescriptor>(), signedPayload, It.IsAny<CancellationToken>()),
             Times.Once);
 
@@ -169,11 +167,10 @@ public class ImageSigningServiceTests
     [Fact]
     public async Task SignImagesAsync_ResolvesPlatformAndManifestListDigests()
     {
-        var mockDescriptor = CreateMockDescriptorService();
+        var mockOras = CreateMockOrasService();
         var mockPayloadSigning = CreateMockPayloadSigning();
-        var mockSignature = CreateMockSignatureService();
 
-        var service = CreateService(mockDescriptor, mockPayloadSigning, mockSignature);
+        var service = CreateService(mockOras, mockPayloadSigning);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -213,8 +210,8 @@ public class ImageSigningServiceTests
     [Fact]
     public async Task SignImagesAsync_BuildsCorrectPayload()
     {
-        var mockDescriptor = new Mock<IOrasDescriptorService>();
-        mockDescriptor
+        var mockOras = new Mock<IOrasService>();
+        mockOras
             .Setup(s => s.GetDescriptorAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string reference, CancellationToken _) => new OrasDescriptor
             {
@@ -234,7 +231,7 @@ public class ImageSigningServiceTests
                 (reqs, _, _) => capturedRequests.AddRange(reqs))
             .ReturnsAsync([]);
 
-        var service = CreateService(mockDescriptor, mockPayloadSigning);
+        var service = CreateService(mockOras, mockPayloadSigning);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -265,9 +262,9 @@ public class ImageSigningServiceTests
         capturedRequests[0].Payload.TargetArtifact.MediaType.ShouldBe("application/vnd.oci.image.index.v1+json");
     }
 
-    private static Mock<IOrasDescriptorService> CreateMockDescriptorService() 
+    private static Mock<IOrasService> CreateMockOrasService() 
     {
-        var mock = new Mock<IOrasDescriptorService>();
+        var mock = new Mock<IOrasService>();
         mock
             .Setup(s => s.GetDescriptorAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((string reference, CancellationToken _) => new OrasDescriptor
@@ -276,6 +273,11 @@ public class ImageSigningServiceTests
                 Digest = reference,
                 Size = 1234
             });
+        mock
+            .Setup(s => s.PushSignatureAsync(
+                It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((OrasDescriptor _, PayloadSigningResult p, CancellationToken _) =>
+                $"sha256:sig-{p.ImageName}");
         return mock;
     }
 
@@ -294,25 +296,12 @@ public class ImageSigningServiceTests
         return mock;
     }
 
-    private static Mock<IOrasSignatureService> CreateMockSignatureService()
-    {
-        var mock = new Mock<IOrasSignatureService>();
-        mock
-            .Setup(s => s.PushSignatureAsync(
-                It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((OrasDescriptor _, PayloadSigningResult p, CancellationToken _) =>
-                $"sha256:sig-{p.ImageName}");
-        return mock;
-    }
-
     private static ImageSigningService CreateService(
-        Mock<IOrasDescriptorService>? mockDescriptor = null,
-        Mock<IPayloadSigningService>? mockPayloadSigning = null,
-        Mock<IOrasSignatureService>? mockSignature = null)
+        Mock<IOrasService>? mockOras = null,
+        Mock<IPayloadSigningService>? mockPayloadSigning = null)
     {
         return new ImageSigningService(
-            (mockDescriptor ?? new Mock<IOrasDescriptorService>()).Object,
-            (mockSignature ?? new Mock<IOrasSignatureService>()).Object,
+            (mockOras ?? new Mock<IOrasService>()).Object,
             (mockPayloadSigning ?? new Mock<IPayloadSigningService>()).Object,
             Mock.Of<ILogger<ImageSigningService>>());
     }

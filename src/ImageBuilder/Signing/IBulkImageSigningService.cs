@@ -19,7 +19,10 @@ public interface IBulkImageSigningService
     /// <param name="requests">Signing requests containing image references and payloads.</param>
     /// <param name="signingKeyCode">Certificate ID used by DDSignFiles.dll.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Results containing the digest of each signature artifact pushed to the registry.</returns>
+    /// <returns>
+    /// Results containing the digest of each signature artifact pushed to the registry.
+    /// The order of the returned items is not guaranteed.
+    /// </returns>
     Task<IReadOnlyList<ImageSigningResult>> SignImagesAsync(
         IEnumerable<ImageSigningRequest> requests,
         int signingKeyCode,

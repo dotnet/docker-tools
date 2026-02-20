@@ -58,8 +58,6 @@ public class SignImagesCommand(
 
         logger.LogInformation("Registry override: Registry='{Registry}', RepoPrefix='{RepoPrefix}'", Options.RegistryOverride.Registry, Options.RegistryOverride.RepoPrefix);
 
-        LogDigests(imageArtifactDetails);
-
         // Apply registry override to get fully-qualified image references
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 

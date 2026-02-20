@@ -74,7 +74,6 @@ public class SignImagesCommand(
         }
 
         logger.LogInformation("Signing images with key code {KeyCode}.", keyCode);
-
         IReadOnlyList<ImageSigningResult> results =
             await signingService.SignImagesAsync(imageArtifactDetails, keyCode);
 

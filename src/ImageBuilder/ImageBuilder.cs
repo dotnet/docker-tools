@@ -36,7 +36,10 @@ public static class ImageBuilder
                 options.TimestampFormat = "HH:mm:ss ";
             });
 
-            // Services
+            // Register abstractions
+            builder.Services.AddSingleton<IFileSystem, FileSystem>();
+
+            // Register services
             builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
             builder.Services.AddSingleton<IAzureTokenCredentialProvider, AzureTokenCredentialProvider>();
             builder.Services.AddSingleton<IAcrClientFactory, AcrClientFactory>();
@@ -51,7 +54,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
-            builder.Services.AddSingleton<IFileSystem, FileSystem>();
             builder.Services.AddMemoryCache();
             builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
@@ -67,7 +69,10 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
             builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
-            builder.AddSigningServices();
+
+            builder.Services.AddSingleton<IEsrpSigningService, EsrpSigningService>();
+            builder.Services.AddSingleton<IPayloadSigningService, PayloadSigningService>();
+            builder.Services.AddSingleton<IImageSigningService, ImageSigningService>();
 
             // Commands
             builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();

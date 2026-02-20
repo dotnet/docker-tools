@@ -45,7 +45,12 @@ public class ImageSigningService(
         int signingKeyCode,
         CancellationToken cancellationToken = default)
     {
-        IReadOnlyList<string> imageDigests = ExtractAllImageDigests(imageArtifactDetails);
+        List<string> imageDigests =
+            imageArtifactDetails
+                .GetAllDigests()
+                .Where(digest => !string.IsNullOrEmpty(digest))
+                .ToList();
+
         if (imageDigests.Count == 0) return [];
 
         _logger.LogInformation("Signing {Count} digests.", imageDigests.Count);
@@ -142,25 +147,6 @@ public class ImageSigningService(
             .ToList();
 
         return results;
-    }
-
-    /// <summary>
-    /// Extracts all digest references (platform manifests and manifest lists) from the artifact details.
-    /// </summary>
-    private static IReadOnlyList<string> ExtractAllImageDigests(ImageArtifactDetails imageArtifactDetails)
-    {
-        IEnumerable<string> platformDigests = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images
-                .SelectMany(image => image.Platforms
-                    .Where(platform => !string.IsNullOrEmpty(platform.Digest))
-                    .Select(platform => platform.Digest)));
-
-        IEnumerable<string> manifestListDigests = imageArtifactDetails.Repos
-            .SelectMany(repo => repo.Images
-                .Where(image => image.Manifest is not null && !string.IsNullOrEmpty(image.Manifest.Digest))
-                .Select(image => image.Manifest.Digest));
-
-        return [..platformDigests, ..manifestListDigests];
     }
 
     /// <summary>

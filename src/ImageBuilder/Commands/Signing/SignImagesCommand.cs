@@ -33,7 +33,7 @@ public class SignImagesCommand(
     {
         logger.LogInformation("SIGNING CONTAINER IMAGES");
 
-        var signingConfig = _publishConfiguration.Signing;
+        SigningConfiguration? signingConfig = _publishConfiguration.Signing;
         if (signingConfig is null || !signingConfig.Enabled)
         {
             logger.LogInformation("Signing is not enabled. Skipping image signing.");
@@ -42,30 +42,33 @@ public class SignImagesCommand(
 
         if (!File.Exists(Options.ImageInfoPath))
         {
-            logger.LogInformation(PipelineHelper.FormatWarningCommand(
-                "Image info file not found. Skipping image signing."));
+            string warning = PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image signing.");
+            logger.LogWarning(warning);
             return;
         }
 
         if (Options.IsDryRun)
         {
-            logger.LogInformation("Dry run enabled. Skipping actual signing.");
+            logger.LogInformation("Dry run enabled. Skipping image signing.");
             return;
         }
 
         var imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
-        logger.LogInformation("Registry override: Registry='{Registry}', RepoPrefix='{RepoPrefix}'", Options.RegistryOverride.Registry, Options.RegistryOverride.RepoPrefix);
+        logger.LogDebug(
+            "Registry override: Registry='{Registry}', RepoPrefix='{RepoPrefix}'",
+            Options.RegistryOverride.Registry, Options.RegistryOverride.RepoPrefix);
 
         // Apply registry override to get fully-qualified image references
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
-        LogDigests(imageArtifactDetails);
+        IReadOnlyList<ImageSigningRequest> platformRequests =
+            await signingRequestGenerator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
+        IReadOnlyList<ImageSigningRequest> manifestListRequests =
+            await signingRequestGenerator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
 
-        var platformRequests = await signingRequestGenerator.GeneratePlatformSigningRequestsAsync(imageArtifactDetails);
-        var manifestListRequests = await signingRequestGenerator.GenerateManifestListSigningRequestsAsync(imageArtifactDetails);
-        var allRequests = platformRequests.Concat(manifestListRequests).ToList();
+        List<ImageSigningRequest> allRequests = [..platformRequests, ..manifestListRequests];
 
         if (allRequests.Count == 0)
         {
@@ -73,34 +76,17 @@ public class SignImagesCommand(
             return;
         }
 
-        var keyCode = signingConfig.ImageSigningKeyCode;
-        logger.LogInformation("Signing {Count} image(s) ({PlatformCount} platforms, {ManifestCount} manifest lists) with key code {KeyCode}...", allRequests.Count, platformRequests.Count, manifestListRequests.Count, keyCode);
+        int keyCode = signingConfig.ImageSigningKeyCode;
+        logger.LogInformation(
+            "Signing {Count} image(s) ({PlatformCount} platforms, {ManifestCount} manifest lists) with key code {KeyCode}.",
+            allRequests.Count, platformRequests.Count, manifestListRequests.Count, keyCode);
 
-        var results = await signingService.SignImagesAsync(allRequests, keyCode);
+        IReadOnlyList<ImageSigningResult> results = await signingService.SignImagesAsync(allRequests, keyCode);
 
         logger.LogInformation("Successfully signed {Count} image(s).", results.Count);
-        foreach (var result in results)
-        {
-            logger.LogInformation("  {ImageName}: signature digest {SignatureDigest}", result.ImageName, result.SignatureDigest);
-        }
-    }
-
-    private void LogDigests(ImageArtifactDetails imageArtifactDetails)
-    {
-        foreach (var repo in imageArtifactDetails.Repos)
-        {
-            foreach (var image in repo.Images)
-            {
-                foreach (var platform in image.Platforms)
-                {
-                    logger.LogInformation("  repo={Repo} platform.Digest={Digest}", repo.Repo, platform.Digest);
-                }
-
-                if (image.Manifest is not null)
-                {
-                    logger.LogInformation("  repo={Repo} manifest.Digest={Digest}", repo.Repo, image.Manifest.Digest);
-                }
-            }
-        }
+        foreach (ImageSigningResult result in results)
+            logger.LogInformation(
+                "{ImageName}: signature digest {SignatureDigest}",
+                result.ImageName, result.SignatureDigest);
     }
 }

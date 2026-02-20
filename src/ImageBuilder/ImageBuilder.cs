@@ -69,7 +69,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
 
             builder.Services.AddSingleton<IEsrpSigningService, EsrpSigningService>();
-            builder.Services.AddSingleton<IPayloadSigningService, PayloadSigningService>();
             builder.Services.AddSingleton<IImageSigningService, ImageSigningService>();
 
             // Commands

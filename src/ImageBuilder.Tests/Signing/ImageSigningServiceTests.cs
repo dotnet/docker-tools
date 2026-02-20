@@ -2,13 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
+using System.Formats.Cbor;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Signing;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Options;
 using Moq;
 using Microsoft.Extensions.Logging;
 using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
@@ -19,6 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
 public class ImageSigningServiceTests
 {
+    private const string ArtifactStagingDir = "/artifacts/staging";
+
     [Fact]
     public async Task SignImagesAsync_EmptyInput_ReturnsEmpty()
     {
@@ -68,9 +75,10 @@ public class ImageSigningServiceTests
     public async Task SignImagesAsync_SkipsPlatformsWithoutDigest()
     {
         var mockOras = CreateMockOrasService();
-        var mockPayloadSigning = CreateMockPayloadSigning();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
 
-        var service = CreateService(mockOras, mockPayloadSigning);
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -104,28 +112,15 @@ public class ImageSigningServiceTests
     public async Task SignImagesAsync_OrchestratesFullPipeline()
     {
         var mockOras = CreateMockOrasService();
-
-        var subjectDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
-        var signedPayload = new PayloadSigningResult(
-            "myregistry.azurecr.io/dotnet/runtime@sha256:abc123",
-            subjectDescriptor,
-            "/tmp/signed.cose",
-            "[\"thumbprint1\"]");
-
-        var mockPayloadSigning = new Mock<IPayloadSigningService>();
-        mockPayloadSigning
-            .Setup(s => s.SignPayloadsAsync(
-                It.IsAny<IEnumerable<ImageSigningRequest>>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync([signedPayload]);
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
 
         mockOras
             .Setup(s => s.PushSignatureAsync(
                 It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync("sha256:sigdigest");
 
-        var service = CreateService(mockOras, mockPayloadSigning);
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -153,11 +148,12 @@ public class ImageSigningServiceTests
         mockOras.Verify(
             s => s.GetDescriptorAsync("sha256:abc123", It.IsAny<CancellationToken>()),
             Times.Once);
-        mockPayloadSigning.Verify(
-            s => s.SignPayloadsAsync(It.IsAny<IEnumerable<ImageSigningRequest>>(), 42, It.IsAny<CancellationToken>()),
+        mockEsrp.Verify(
+            e => e.SignFilesAsync(It.IsAny<IEnumerable<string>>(), 42, It.IsAny<CancellationToken>()),
             Times.Once);
         mockOras.Verify(
-            s => s.PushSignatureAsync(It.IsAny<OrasDescriptor>(), signedPayload, It.IsAny<CancellationToken>()),
+            s => s.PushSignatureAsync(
+                It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
         results.Count.ShouldBe(1);
@@ -168,9 +164,10 @@ public class ImageSigningServiceTests
     public async Task SignImagesAsync_ResolvesPlatformAndManifestListDigests()
     {
         var mockOras = CreateMockOrasService();
-        var mockPayloadSigning = CreateMockPayloadSigning();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
 
-        var service = CreateService(mockOras, mockPayloadSigning);
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -208,7 +205,7 @@ public class ImageSigningServiceTests
     }
 
     [Fact]
-    public async Task SignImagesAsync_BuildsCorrectPayload()
+    public async Task SignImagesAsync_WritesCorrectPayloadToDisk()
     {
         var mockOras = new Mock<IOrasService>();
         mockOras
@@ -220,18 +217,10 @@ public class ImageSigningServiceTests
                 Size = 5678
             });
 
-        var capturedRequests = new List<ImageSigningRequest>();
-        var mockPayloadSigning = new Mock<IPayloadSigningService>();
-        mockPayloadSigning
-            .Setup(s => s.SignPayloadsAsync(
-                It.IsAny<IEnumerable<ImageSigningRequest>>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
-            .Callback<IEnumerable<ImageSigningRequest>, int, CancellationToken>(
-                (reqs, _, _) => capturedRequests.AddRange(reqs))
-            .ReturnsAsync([]);
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
 
-        var service = CreateService(mockOras, mockPayloadSigning);
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -257,12 +246,45 @@ public class ImageSigningServiceTests
 
         await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
 
-        capturedRequests.Count.ShouldBe(1);
-        capturedRequests[0].ImageName.ShouldBe("sha256:manifest123");
-        capturedRequests[0].Payload.TargetArtifact.MediaType.ShouldBe("application/vnd.oci.image.index.v1+json");
+        fileSystem.FilesWritten.ShouldContain(
+            path => path.Contains("sha256-manifest123") && path.EndsWith(".payload"));
     }
 
-    private static Mock<IOrasService> CreateMockOrasService() 
+    [Fact]
+    public async Task SignImagesAsync_MissingArtifactStagingDir_ThrowsInvalidOperation()
+    {
+        var mockOras = CreateMockOrasService();
+        var buildConfig = new BuildConfiguration { ArtifactStagingDirectory = "" };
+        var service = CreateService(mockOras, buildConfig: buildConfig);
+
+        var imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            [
+                new RepoData
+                {
+                    Repo = "registry.io/repo",
+                    Images =
+                    [
+                        new ImageData
+                        {
+                            Platforms =
+                            [
+                                new PlatformData { Digest = "sha256:abc123" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        var ex = await Should.ThrowAsync<InvalidOperationException>(
+            () => service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100));
+
+        ex.Message.ShouldContain("ArtifactStagingDirectory");
+    }
+
+    private static Mock<IOrasService> CreateMockOrasService()
     {
         var mock = new Mock<IOrasService>();
         mock
@@ -281,28 +303,69 @@ public class ImageSigningServiceTests
         return mock;
     }
 
-    private static Mock<IPayloadSigningService> CreateMockPayloadSigning()
+    /// <summary>
+    /// Creates an ESRP mock that overwrites payload files with minimal COSE_Sign1 bytes,
+    /// simulating what ESRP does in production.
+    /// </summary>
+    private static Mock<IEsrpSigningService> CreateEsrpMockWithCoseOverwrite(InMemoryFileSystem fileSystem)
     {
-        var mock = new Mock<IPayloadSigningService>();
-        var subjectDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
+        var mock = new Mock<IEsrpSigningService>();
         mock
-            .Setup(s => s.SignPayloadsAsync(
-                It.IsAny<IEnumerable<ImageSigningRequest>>(),
-                It.IsAny<int>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync((IEnumerable<ImageSigningRequest> reqs, int _, CancellationToken _) =>
-                reqs.Select(r => new PayloadSigningResult(
-                    r.ImageName, subjectDescriptor, "/tmp/signed.cose", "[\"thumbprint1\"]")).ToList());
+            .Setup(e => e.SignFilesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<string>, int, CancellationToken>((files, _, _) =>
+            {
+                foreach (var file in files)
+                {
+                    fileSystem.AddFile(file, CreateMinimalCoseSign1Bytes());
+                }
+            })
+            .Returns(Task.CompletedTask);
         return mock;
+    }
+
+    /// <summary>
+    /// Creates minimal valid COSE_Sign1 bytes with a single certificate in the x5chain.
+    /// </summary>
+    private static byte[] CreateMinimalCoseSign1Bytes()
+    {
+        var writer = new CborWriter();
+        writer.WriteTag((CborTag)18); // COSE_Sign1
+
+        writer.WriteStartArray(4);
+
+        // Protected header (empty byte string)
+        writer.WriteByteString([]);
+
+        // Unprotected header with x5chain (key 33)
+        writer.WriteStartMap(1);
+        writer.WriteInt32(33);
+        writer.WriteByteString([0x01, 0x02, 0x03]); // fake cert bytes
+        writer.WriteEndMap();
+
+        // Payload
+        writer.WriteByteString([]);
+
+        // Signature
+        writer.WriteByteString([]);
+
+        writer.WriteEndArray();
+        return writer.Encode();
     }
 
     private static ImageSigningService CreateService(
         Mock<IOrasService>? mockOras = null,
-        Mock<IPayloadSigningService>? mockPayloadSigning = null)
+        Mock<IEsrpSigningService>? mockEsrp = null,
+        InMemoryFileSystem? fileSystem = null,
+        BuildConfiguration? buildConfig = null)
     {
+        buildConfig ??= new BuildConfiguration { ArtifactStagingDirectory = ArtifactStagingDir };
+        fileSystem ??= new InMemoryFileSystem();
+
         return new ImageSigningService(
             (mockOras ?? new Mock<IOrasService>()).Object,
-            (mockPayloadSigning ?? new Mock<IPayloadSigningService>()).Object,
-            Mock.Of<ILogger<ImageSigningService>>());
+            (mockEsrp ?? CreateEsrpMockWithCoseOverwrite(fileSystem)).Object,
+            Mock.Of<ILogger<ImageSigningService>>(),
+            fileSystem,
+            Options.Create(buildConfig));
     }
 }

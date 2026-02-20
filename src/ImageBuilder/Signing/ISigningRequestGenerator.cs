@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
 using System.Threading;
@@ -18,7 +19,10 @@ public interface ISigningRequestGenerator
     /// </summary>
     /// <param name="imageArtifactDetails">The image artifact details containing platform and manifest list digests.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>Signing requests for each image with a digest.</returns>
+    /// <returns>
+    /// Signing requests for each digest in <paramref name="imageArtifactDetails"/>.
+    /// There are no guarantees about the ordering of the returned requests.
+    /// </returns>
     Task<IReadOnlyList<ImageSigningRequest>> GenerateSigningRequestsAsync(
         ImageArtifactDetails imageArtifactDetails,
         CancellationToken cancellationToken = default);

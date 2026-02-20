@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -38,16 +39,17 @@ public class SigningRequestGenerator : ISigningRequestGenerator
 
         _logger.LogInformation("Generating signing requests for {Count} images.", imageDigests.Count);
 
-        var requests = new List<ImageSigningRequest>();
-
-        foreach (string imageDigest in imageDigests)
+        ConcurrentBag<ImageSigningRequest> requests = [];
+        await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
         {
-            OrasDescriptor descriptor = await _descriptorService.GetDescriptorAsync(imageDigest, cancellationToken);
+            OrasDescriptor descriptor = await _descriptorService.GetDescriptorAsync(imageDigest, ct);
             ImageSigningRequest request = ConstructSigningRequest(imageDigest, descriptor);
             requests.Add(request);
-        }
+        });
 
-        return requests;
+        _logger.LogInformation("Generated {Count} signing requests.", imageDigests.Count);
+
+        return requests.ToList();
     }
 
     /// <summary>

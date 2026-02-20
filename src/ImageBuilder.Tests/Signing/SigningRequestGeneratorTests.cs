@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -64,9 +65,9 @@ public class SigningRequestGeneratorTests
         var requests = await generator.GenerateSigningRequestsAsync(imageArtifactDetails);
 
         requests.Count.ShouldBe(3);
-        requests[0].ImageName.ShouldBe("sha256:abc123");
-        requests[1].ImageName.ShouldBe("sha256:def456");
-        requests[2].ImageName.ShouldBe("sha256:manifest123");
+        requests.Select(r => r.ImageName).ShouldBe(
+            ["sha256:abc123", "sha256:def456", "sha256:manifest123"],
+            ignoreOrder: true);
     }
 
     [Fact]

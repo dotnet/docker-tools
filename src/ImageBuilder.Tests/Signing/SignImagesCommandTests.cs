@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -25,6 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
 public class SignImagesCommandTests
 {
+    private const string ImageInfoPath = "/data/image-info.json";
+
     [Fact]
     public async Task ExecuteAsync_SigningDisabled_SkipsSigning()
     {
@@ -70,13 +71,13 @@ public class SignImagesCommandTests
     [Fact]
     public async Task ExecuteAsync_DryRun_SkipsSigning()
     {
-        using var tempFolder = TestHelper.UseTempFolder();
-        var imageInfoPath = WriteImageInfoFile(tempFolder.Path);
+        var fileSystem = new InMemoryFileSystem();
+        SeedImageInfoFile(fileSystem);
 
         var mockSigning = new Mock<IBulkImageSigningService>();
         var signingConfig = new SigningConfiguration { Enabled = true };
-        var command = CreateCommand(mockSigning: mockSigning, signingConfig: signingConfig);
-        command.Options.ImageInfoPath = imageInfoPath;
+        var command = CreateCommand(mockSigning: mockSigning, signingConfig: signingConfig, fileSystem: fileSystem);
+        command.Options.ImageInfoPath = ImageInfoPath;
         command.Options.IsDryRun = true;
 
         await command.ExecuteAsync();
@@ -89,8 +90,8 @@ public class SignImagesCommandTests
     [Fact]
     public async Task ExecuteAsync_SignsAllPlatformsAndManifestLists()
     {
-        using var tempFolder = TestHelper.UseTempFolder();
-        var imageInfoPath = WriteImageInfoFile(tempFolder.Path);
+        var fileSystem = new InMemoryFileSystem();
+        SeedImageInfoFile(fileSystem);
 
         var signingConfig = new SigningConfiguration
         {
@@ -121,8 +122,9 @@ public class SignImagesCommandTests
         var command = CreateCommand(
             mockSigning: mockSigning,
             mockRequestGen: mockRequestGen,
-            signingConfig: signingConfig);
-        command.Options.ImageInfoPath = imageInfoPath;
+            signingConfig: signingConfig,
+            fileSystem: fileSystem);
+        command.Options.ImageInfoPath = ImageInfoPath;
 
         await command.ExecuteAsync();
 
@@ -146,9 +148,9 @@ public class SignImagesCommandTests
     }
 
     /// <summary>
-    /// Writes a minimal image-info.json file to the temp folder and returns its path.
+    /// Seeds a minimal image-info.json into the in-memory file system.
     /// </summary>
-    private static string WriteImageInfoFile(string directory)
+    private static void SeedImageInfoFile(InMemoryFileSystem fileSystem)
     {
         var imageArtifactDetails = new ImageArtifactDetails
         {
@@ -172,15 +174,14 @@ public class SignImagesCommandTests
             ]
         };
 
-        var path = Path.Combine(directory, "image-info.json");
-        File.WriteAllText(path, JsonHelper.SerializeObject(imageArtifactDetails));
-        return path;
+        fileSystem.AddFile(ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
     }
 
     private static SignImagesCommand CreateCommand(
         Mock<IBulkImageSigningService>? mockSigning = null,
         Mock<ISigningRequestGenerator>? mockRequestGen = null,
-        SigningConfiguration? signingConfig = null)
+        SigningConfiguration? signingConfig = null,
+        IFileSystem? fileSystem = null)
     {
         var publishConfig = new PublishConfiguration { Signing = signingConfig };
 
@@ -188,6 +189,7 @@ public class SignImagesCommandTests
             Mock.Of<ILogger<SignImagesCommand>>(),
             (mockSigning ?? new Mock<IBulkImageSigningService>()).Object,
             (mockRequestGen ?? new Mock<ISigningRequestGenerator>()).Object,
+            fileSystem ?? new InMemoryFileSystem(),
             Options.Create(publishConfig));
     }
 }

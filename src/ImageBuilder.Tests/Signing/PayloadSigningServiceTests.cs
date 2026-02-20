@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,6 +10,7 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Signing;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
 using Microsoft.Extensions.Logging;
@@ -37,45 +37,26 @@ public class PayloadSigningServiceTests
     [Fact]
     public async Task SignPayloadsAsync_WritesPayloadsToDisk()
     {
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem
-            .Setup(fs => fs.CreateDirectory(It.IsAny<string>()))
-            .Returns(new DirectoryInfo(ArtifactStagingDir));
-
-        var mockEsrp = new Mock<IEsrpSigningService>();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
         var request = CreateRequest("registry.io/repo@sha256:abc123");
 
-        // CertificateChainCalculator will be called after signing — mock the file read
-        mockFileSystem
-            .Setup(fs => fs.ReadAllBytes(It.IsAny<string>()))
-            .Returns(CreateMinimalCoseSign1Bytes());
-
-        var service = CreateService(mockEsrp: mockEsrp, mockFileSystem: mockFileSystem);
+        var service = CreateService(mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         await service.SignPayloadsAsync([request], signingKeyCode: 100);
 
-        mockFileSystem.Verify(
-            fs => fs.WriteAllText(
-                It.Is<string>(path => path.Contains("sha256-abc123") && path.EndsWith(".payload")),
-                It.IsAny<string>()),
-            Times.Once);
+        fileSystem.FilesWritten.ShouldContain(
+            path => path.Contains("sha256-abc123") && path.EndsWith(".payload"));
     }
 
     [Fact]
     public async Task SignPayloadsAsync_CallsEsrpWithCorrectFilePaths()
     {
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem
-            .Setup(fs => fs.CreateDirectory(It.IsAny<string>()))
-            .Returns(new DirectoryInfo(ArtifactStagingDir));
-        mockFileSystem
-            .Setup(fs => fs.ReadAllBytes(It.IsAny<string>()))
-            .Returns(CreateMinimalCoseSign1Bytes());
-
-        var mockEsrp = new Mock<IEsrpSigningService>();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
         var request = CreateRequest("registry.io/repo@sha256:abc123");
 
-        var service = CreateService(mockEsrp: mockEsrp, mockFileSystem: mockFileSystem);
+        var service = CreateService(mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         await service.SignPayloadsAsync([request], signingKeyCode: 42);
 
@@ -104,25 +85,17 @@ public class PayloadSigningServiceTests
     [Fact]
     public async Task SignPayloadsAsync_SanitizesDigestForFilename()
     {
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem
-            .Setup(fs => fs.CreateDirectory(It.IsAny<string>()))
-            .Returns(new DirectoryInfo(ArtifactStagingDir));
-        mockFileSystem
-            .Setup(fs => fs.ReadAllBytes(It.IsAny<string>()))
-            .Returns(CreateMinimalCoseSign1Bytes());
-
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
         var request = CreateRequest("registry.io/repo@sha256:abc123");
-        var service = CreateService(mockFileSystem: mockFileSystem);
+
+        var service = CreateService(mockEsrp: mockEsrp, fileSystem: fileSystem);
 
         await service.SignPayloadsAsync([request], signingKeyCode: 100);
 
         // Verify the filename replaces ":" with "-"
-        mockFileSystem.Verify(
-            fs => fs.WriteAllText(
-                It.Is<string>(path => path.Contains("sha256-abc123.payload")),
-                It.IsAny<string>()),
-            Times.Once);
+        fileSystem.FilesWritten.ShouldContain(
+            path => path.Contains("sha256-abc123.payload"));
     }
 
     private static ImageSigningRequest CreateRequest(string imageName)
@@ -134,6 +107,27 @@ public class PayloadSigningServiceTests
         var payload = new Payload(descriptor);
         var orasDescriptor = OrasDescriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
         return new ImageSigningRequest(imageName, orasDescriptor, payload);
+    }
+
+    /// <summary>
+    /// Creates an ESRP mock that overwrites payload files with minimal COSE_Sign1 bytes,
+    /// simulating what ESRP does in production. This allows CertificateChainCalculator
+    /// to read the signed payloads from the in-memory file system.
+    /// </summary>
+    private static Mock<IEsrpSigningService> CreateEsrpMockWithCoseOverwrite(InMemoryFileSystem fileSystem)
+    {
+        var mockEsrp = new Mock<IEsrpSigningService>();
+        mockEsrp
+            .Setup(e => e.SignFilesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+            .Callback<IEnumerable<string>, int, CancellationToken>((files, _, _) =>
+            {
+                foreach (var file in files)
+                {
+                    fileSystem.AddFile(file, CreateMinimalCoseSign1Bytes());
+                }
+            })
+            .Returns(Task.CompletedTask);
+        return mockEsrp;
     }
 
     /// <summary>
@@ -168,20 +162,15 @@ public class PayloadSigningServiceTests
 
     private static PayloadSigningService CreateService(
         Mock<IEsrpSigningService>? mockEsrp = null,
-        Mock<IFileSystem>? mockFileSystem = null,
+        InMemoryFileSystem? fileSystem = null,
         BuildConfiguration? buildConfig = null)
     {
         buildConfig ??= new BuildConfiguration { ArtifactStagingDirectory = ArtifactStagingDir };
 
-        var fileSystem = mockFileSystem ?? new Mock<IFileSystem>();
-        fileSystem
-            .Setup(fs => fs.CreateDirectory(It.IsAny<string>()))
-            .Returns(new DirectoryInfo(ArtifactStagingDir));
-
         return new PayloadSigningService(
             (mockEsrp ?? new Mock<IEsrpSigningService>()).Object,
             Mock.Of<ILogger<PayloadSigningService>>(),
-            fileSystem.Object,
+            fileSystem ?? new InMemoryFileSystem(),
             Options.Create(buildConfig));
     }
 }

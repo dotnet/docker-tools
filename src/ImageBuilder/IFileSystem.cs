@@ -29,6 +29,16 @@ public interface IFileSystem
     byte[] ReadAllBytes(string path);
 
     /// <summary>
+    /// Asynchronously opens a binary file, reads the contents into a byte array, and then closes the file.
+    /// </summary>
+    Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Opens a text file, reads all the text in the file, and then closes the file.
+    /// </summary>
+    Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Determines whether the specified file exists.
     /// </summary>
     bool FileExists(string path);

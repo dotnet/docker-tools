@@ -25,6 +25,7 @@ public class OrasDotNetService(
     IRegistryCredentialsProvider credentialsProvider,
     IHttpClientProvider httpClientProvider,
     IMemoryCache cache,
+    IFileSystem fileSystem,
     ILogger<OrasDotNetService> logger,
     IRegistryCredentialsHost? credentialsHost = null)
         : IOrasDescriptorService, IOrasSignatureService
@@ -46,6 +47,7 @@ public class OrasDotNetService(
 
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
     private readonly IMemoryCache _cache = cache;
+    private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
 
@@ -77,7 +79,7 @@ public class OrasDotNetService(
 
         Repository repository = CreateRepository(result.ImageName);
 
-        byte[] payloadBytes = await File.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
+        byte[] payloadBytes = await _fileSystem.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
         Descriptor signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
 
         using MemoryStream payloadStream = new(payloadBytes);

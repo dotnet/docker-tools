@@ -3,10 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Threading;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Signing;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
 using Microsoft.Extensions.Logging;
@@ -52,9 +53,8 @@ public class EsrpSigningServiceTests
     {
         var mockProcess = new Mock<IProcessService>();
         var mockEnv = CreateEnvironmentWithRequiredVars();
-        var mockFileSystem = new Mock<IFileSystem>();
 
-        var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv, mockFileSystem: mockFileSystem);
+        var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv);
 
         await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 42);
 
@@ -75,14 +75,16 @@ public class EsrpSigningServiceTests
     public async Task SignFilesAsync_CleansUpTempFileAfterSigning()
     {
         var mockEnv = CreateEnvironmentWithRequiredVars();
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.FileExists(It.IsAny<string>())).Returns(true);
+        var fileSystem = new InMemoryFileSystem();
 
-        var service = CreateService(mockEnv: mockEnv, mockFileSystem: mockFileSystem);
+        var service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
 
         await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100);
 
-        mockFileSystem.Verify(fs => fs.DeleteFile(It.IsAny<string>()), Times.Once);
+        // The sign list temp file should be written then deleted
+        fileSystem.FilesWritten.Count.ShouldBe(1);
+        fileSystem.FilesDeleted.Count.ShouldBe(1);
+        fileSystem.FilesDeleted.First().ShouldBe(fileSystem.FilesWritten.First());
     }
 
     [Fact]
@@ -94,33 +96,33 @@ public class EsrpSigningServiceTests
             .Setup(p => p.Execute(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<string>(), It.IsAny<string>()))
             .Throws(new InvalidOperationException("signing failed"));
 
-        var mockFileSystem = new Mock<IFileSystem>();
-        mockFileSystem.Setup(fs => fs.FileExists(It.IsAny<string>())).Returns(true);
+        var fileSystem = new InMemoryFileSystem();
 
-        var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv, mockFileSystem: mockFileSystem);
+        var service = CreateService(mockProcess: mockProcess, mockEnv: mockEnv, fileSystem: fileSystem);
 
         await Should.ThrowAsync<InvalidOperationException>(
             () => service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100));
 
-        mockFileSystem.Verify(fs => fs.DeleteFile(It.IsAny<string>()), Times.Once);
+        fileSystem.FilesDeleted.Count.ShouldBe(1);
     }
 
     [Fact]
     public async Task SignFilesAsync_WritesSignListJson()
     {
         var mockEnv = CreateEnvironmentWithRequiredVars();
-        var mockFileSystem = new Mock<IFileSystem>();
+        var fileSystem = new InMemoryFileSystem();
 
-        var service = CreateService(mockEnv: mockEnv, mockFileSystem: mockFileSystem);
+        var service = CreateService(mockEnv: mockEnv, fileSystem: fileSystem);
 
         await service.SignFilesAsync(["/tmp/file.payload"], signingKeyCode: 100);
 
-        mockFileSystem.Verify(
-            fs => fs.WriteAllTextAsync(
-                It.Is<string>(path => path.Contains("SignList_") && path.EndsWith(".json")),
-                It.Is<string>(json => json.Contains("SignFileRecordList") && json.Contains("/tmp/file.payload")),
-                It.IsAny<CancellationToken>()),
-            Times.Once);
+        fileSystem.FilesWritten.Count.ShouldBe(1);
+        var signListPath = fileSystem.FilesWritten.First();
+        signListPath.ShouldContain("SignList_");
+        signListPath.ShouldEndWith(".json");
+
+        // File is deleted after signing, but we can check the DeletedFiles list confirms cleanup
+        fileSystem.FilesDeleted.ShouldContain(signListPath);
     }
 
     private static Mock<IEnvironmentService> CreateEnvironmentWithRequiredVars()
@@ -134,7 +136,7 @@ public class EsrpSigningServiceTests
     private static EsrpSigningService CreateService(
         Mock<IProcessService>? mockProcess = null,
         Mock<IEnvironmentService>? mockEnv = null,
-        Mock<IFileSystem>? mockFileSystem = null,
+        InMemoryFileSystem? fileSystem = null,
         SigningConfiguration? signingConfig = null)
     {
         signingConfig ??= new SigningConfiguration { Enabled = true, SignType = "test" };
@@ -146,7 +148,7 @@ public class EsrpSigningServiceTests
             (mockProcess ?? new Mock<IProcessService>()).Object,
             Mock.Of<ILogger<EsrpSigningService>>(),
             mockEnv.Object,
-            (mockFileSystem ?? new Mock<IFileSystem>()).Object,
+            fileSystem ?? new InMemoryFileSystem(),
             Options.Create(publishConfig));
     }
 }

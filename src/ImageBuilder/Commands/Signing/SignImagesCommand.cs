@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -21,6 +21,7 @@ public class SignImagesCommand(
     ILogger<SignImagesCommand> logger,
     IBulkImageSigningService signingService,
     ISigningRequestGenerator signingRequestGenerator,
+    IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions)
     : Command<SignImagesOptions, SignImagesOptionsBuilder>
 {
@@ -40,7 +41,7 @@ public class SignImagesCommand(
             return;
         }
 
-        if (!File.Exists(Options.ImageInfoPath))
+        if (!fileSystem.FileExists(Options.ImageInfoPath))
         {
             string warning = PipelineHelper.FormatWarningCommand("Image info file not found. Skipping image signing.");
             logger.LogWarning(warning);
@@ -53,8 +54,8 @@ public class SignImagesCommand(
             return;
         }
 
-        var imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
-        var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
+        string imageInfoContents = await fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
+        ImageArtifactDetails imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
         logger.LogDebug(
             "Registry override: Registry='{Registry}', RepoPrefix='{RepoPrefix}'",

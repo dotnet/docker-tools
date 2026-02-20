@@ -23,17 +23,14 @@ public class OrasDotNetServiceTests
     [Fact]
     public async Task PushSignatureAsync_ReadsPayloadFile()
     {
-        using var tempFolder = TestHelper.UseTempFolder();
-        var nonExistentFile = Path.Combine(tempFolder.Path, "nonexistent.cose");
-        var fileInfo = new FileInfo(nonExistentFile);
-
-        var service = CreateService();
+        var fileSystem = new InMemoryFileSystem();
+        var service = CreateService(fileSystem);
         var subjectDescriptor = Descriptor.Create([], "application/vnd.oci.image.manifest.v1+json");
 
         var result = new PayloadSigningResult(
             "registry.io/repo:tag",
             subjectDescriptor,
-            fileInfo.FullName,
+            "/nonexistent/file.cose",
             "sha256:abcd1234");
 
         var exception = await Should.ThrowAsync<FileNotFoundException>(async () =>
@@ -87,7 +84,7 @@ public class OrasDotNetServiceTests
         exception.ParamName.ShouldBe("subjectDescriptor");
     }
 
-    private static OrasDotNetService CreateService()
+    private static OrasDotNetService CreateService(IFileSystem? fileSystem = null)
     {
         var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
         var httpClientProvider = new Mock<IHttpClientProvider>();
@@ -101,6 +98,7 @@ public class OrasDotNetServiceTests
             credentialsProvider,
             httpClientProvider.Object,
             cache,
+            fileSystem ?? new InMemoryFileSystem(),
             logger);
     }
 }

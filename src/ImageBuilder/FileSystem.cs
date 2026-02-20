@@ -26,6 +26,14 @@ internal sealed class FileSystem : IFileSystem
         File.ReadAllBytes(path);
 
     /// <inheritdoc/>
+    public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
+        File.ReadAllBytesAsync(path, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>
+        File.ReadAllTextAsync(path, cancellationToken);
+
+    /// <inheritdoc/>
     public bool FileExists(string path) =>
         File.Exists(path);
 

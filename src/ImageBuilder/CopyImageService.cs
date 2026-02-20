@@ -70,10 +70,16 @@ public class CopyImageService : ICopyImageService
             return;
         }
 
-        var destResourceId = _publishConfig.GetRegistryResource(destAcrName);
-        var srcResourceId = srcRegistryName is not null
-            ? _publishConfig.GetRegistryResource(srcRegistryName)
-            : null;
+        var destResourceId = _publishConfig.GetAcrResource(destAcrName);
+
+        // Only look up the source resource ID for registries in the publish config (i.e. ACRs).
+        // External registries like docker.io use RegistryAddress + Credentials instead.
+        ResourceIdentifier? srcResourceId =
+            // TODO: In the future, ACR credentials (user/pw) could be passed via PublishConfiguration
+            // as well, and resolved here.
+            srcRegistryName is not null && _publishConfig.FindRegistryAuthentication(srcRegistryName) is not null
+                ? _publishConfig.GetAcrResource(srcRegistryName)
+                : null;
 
         // Azure ACR import only supports one source identifier. Use ResourceId for ACR-to-ACR
         // imports (same tenant), or RegistryAddress for external registries.

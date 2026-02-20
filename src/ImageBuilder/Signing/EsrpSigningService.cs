@@ -8,7 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.Json;
-using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -113,32 +112,23 @@ public class EsrpSigningService(
     }
 
     /// <summary>
-    /// Generates the sign list JSON required by DDSignFiles.dll.
+    /// Generates the signing list JSON required by DDSignFiles.dll.
     /// </summary>
-    private static string GenerateSignListJson(string[] filePaths, int signingKeyCode)
+    private static string GenerateSignListJson(IEnumerable<string> payloadFilePaths, int signingKeyCode)
     {
-        var signFiles = new JsonArray();
-        foreach (var filePath in filePaths)
-        {
-            signFiles.Add(new JsonObject
-            {
-                ["SrcPath"] = filePath,
-                ["DstPath"] = filePath
-            });
-        }
+        IEnumerable<SignFileEntry> signFiles =
+            payloadFilePaths.Select(path => new SignFileEntry(SrcPath: path, DstPath: path));
 
-        var root = new JsonObject
-        {
-            ["SignFileRecordList"] = new JsonArray
-            {
-                new JsonObject
-                {
-                    ["Certs"] = signingKeyCode.ToString(),
-                    ["SignFileList"] = signFiles
-                }
-            }
-        };
+        string keycodeString = signingKeyCode.ToString();
+        var record = new SignFileRecord(Certs: keycodeString, SignFileList: signFiles);
+        var signList = new SignList(SignFileRecordList: [record]);
 
-        return root.ToJsonString(new JsonSerializerOptions { WriteIndented = true });
+        return JsonSerializer.Serialize(signList, s_esrpJsonOptions);
     }
+
+    // Models for ESRP/MicroBuild signing service
+    private static readonly JsonSerializerOptions s_esrpJsonOptions = new() { WriteIndented = true };
+    private record SignList(IEnumerable<SignFileRecord> SignFileRecordList);
+    private record SignFileRecord(string Certs, IEnumerable<SignFileEntry> SignFileList);
+    private record SignFileEntry(string SrcPath, string DstPath);
 }

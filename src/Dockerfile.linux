@@ -6,6 +6,14 @@
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
 
+# download root CA certificates for signature verification
+WORKDIR /
+RUN mkdir -p notation-trust/certs/test notation-trust/certs/supplychain \
+    && curl -fSL --output notation-trust/certs/test/root-ca.crt \
+       "https://www.microsoft.com/pkiops/certs/Microsoft%20RSA%20Testing%20Root%20Certificate%20Authority%202019.crt" \
+    && curl -fSL --output notation-trust/certs/supplychain/root-ca.crt \
+       "https://www.microsoft.com/pkiops/certs/Microsoft%20Supply%20Chain%20RSA%20Root%20CA%202022.crt"
+
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
@@ -30,8 +38,13 @@ RUN tdnf install -y \
       docker-cli \
       git \
       moby-engine \
+      notation \
       oras \
     && tdnf clean all
+
+# install notation trust materials (root CA certs + trust policies)
+COPY --from=build-env ["/notation-trust/", "/notation-trust/"]
+COPY ["notation-trust/policies/", "/notation-trust/policies/"]
 
 # install image-builder
 WORKDIR /image-builder

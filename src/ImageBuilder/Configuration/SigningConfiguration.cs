@@ -21,7 +21,6 @@ public sealed record SigningConfiguration
 
     /// <summary>
     /// Certificate ID used by DDSignFiles.dll for signing referrer artifacts (SBOMs, etc.).
-    /// TODO: Implement usage of this property when adding support for signing referrer artifacts.
     /// </summary>
     public int ReferrerSigningKeyCode { get; set; }
 
@@ -29,4 +28,9 @@ public sealed record SigningConfiguration
     /// The sign type to use with DDSignFiles.dll. Use "test" for non-production and "real" for production.
     /// </summary>
     public string SignType { get; set; } = "test";
+
+    /// <summary>
+    /// Name of the notation trust store to use for signature verification (e.g., "supplychain" or "test").
+    /// </summary>
+    public string TrustStoreName { get; set; } = "test";
 }

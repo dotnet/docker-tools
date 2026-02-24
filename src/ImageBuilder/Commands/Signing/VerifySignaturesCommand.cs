@@ -23,6 +23,7 @@ public class VerifySignaturesCommand(
     ILogger<VerifySignaturesCommand> logger,
     INotationClient notationClient,
     IRegistryCredentialsProvider registryCredentialsProvider,
+    IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions)
     : Command<VerifySignaturesOptions, VerifySignaturesOptionsBuilder>
 {
@@ -42,7 +43,7 @@ public class VerifySignaturesCommand(
             return;
         }
 
-        if (!File.Exists(Options.ImageInfoPath))
+        if (!fileSystem.FileExists(Options.ImageInfoPath))
         {
             string warning = PipelineHelper.FormatWarningCommand(
                 "Image info file not found. Skipping signature verification.");
@@ -58,7 +59,7 @@ public class VerifySignaturesCommand(
 
         SetupTrustConfiguration(signingConfig);
 
-        var imageInfoContents = await File.ReadAllTextAsync(Options.ImageInfoPath);
+        var imageInfoContents = await fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
 
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
@@ -141,7 +142,7 @@ public class VerifySignaturesCommand(
         var trustStoreName = signingConfig.TrustStoreName;
 
         var certPath = Path.Combine(Options.TrustMaterialsPath, "certs", trustStoreName, "root-ca.crt");
-        if (!File.Exists(certPath))
+        if (!fileSystem.FileExists(certPath))
         {
             throw new FileNotFoundException(
                 $"Root CA certificate not found at '{certPath}'. " +
@@ -152,7 +153,7 @@ public class VerifySignaturesCommand(
         notationClient.AddCertificate("ca", trustStoreName, certPath);
 
         var policyPath = Path.Combine(Options.TrustMaterialsPath, "policies", $"{trustStoreName}.json");
-        if (!File.Exists(policyPath))
+        if (!fileSystem.FileExists(policyPath))
         {
             throw new FileNotFoundException(
                 $"Trust policy not found at '{policyPath}'. " +

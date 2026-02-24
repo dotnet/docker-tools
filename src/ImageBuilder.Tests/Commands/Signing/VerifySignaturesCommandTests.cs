@@ -5,7 +5,6 @@
 using System;
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Notation;
@@ -19,13 +18,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Commands.Signing;
 
 public class VerifySignaturesCommandTests
 {
-    [Fact]
-    public async Task VerifySignatures_VerifiesAllImages()
-    {
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        var imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-        
-        var imageInfoJson = """
+    private const string ImageInfoPath = "/data/image-info.json";
+    private const string TrustBasePath = "/notation-trust";
+
+    private static readonly string s_imageInfoJson = """
         {
           "repos": [
             {
@@ -64,16 +60,20 @@ public class VerifySignaturesCommandTests
           ]
         }
         """;
-        
-        File.WriteAllText(imageInfoPath, imageInfoJson);
-        var trustBasePath = CreateTrustMaterials(tempFolderContext.Path);
-        
+
+    [Fact]
+    public async Task VerifySignatures_VerifiesAllImages()
+    {
+        var fileSystem = new InMemoryFileSystem();
+        SeedImageInfoFile(fileSystem);
+        SeedTrustMaterials(fileSystem);
+
         var notationClientMock = new Mock<INotationClient>();
-        var command = CreateCommand(notationClientMock.Object, trustBasePath: trustBasePath);
-        command.Options.ImageInfoPath = imageInfoPath;
-        
+        var command = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
+        command.Options.ImageInfoPath = ImageInfoPath;
+
         await command.ExecuteAsync();
-        
+
         notationClientMock.Verify(
             x => x.AddCertificate("ca", "test", It.IsAny<string>()),
             Times.Once);
@@ -95,62 +95,20 @@ public class VerifySignaturesCommandTests
     [Fact]
     public async Task VerifySignatures_FailsWhenVerificationFails()
     {
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        var imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-        
-        var imageInfoJson = """
-        {
-          "repos": [
-            {
-              "repo": "dotnet/image-builder",
-              "images": [
-                {
-                  "platforms": [
-                    {
-                      "digest": "registry.io/repo@sha256:aaa",
-                      "dockerfile": "Dockerfile",
-                      "simpleTags": ["tag1"],
-                      "osType": "Linux",
-                      "osVersion": "ubuntu22.04",
-                      "architecture": "amd64",
-                      "created": "2024-01-01T00:00:00Z",
-                      "commitUrl": "https://github.com/dotnet/dotnet-docker/commit/abc123"
-                    },
-                    {
-                      "digest": "registry.io/repo@sha256:bbb",
-                      "dockerfile": "Dockerfile.windows",
-                      "simpleTags": ["tag2"],
-                      "osType": "Windows",
-                      "osVersion": "nanoserver-ltsc2022",
-                      "architecture": "amd64",
-                      "created": "2024-01-01T00:00:00Z",
-                      "commitUrl": "https://github.com/dotnet/dotnet-docker/commit/abc123"
-                    }
-                  ],
-                  "manifest": {
-                    "digest": "registry.io/repo@sha256:ccc",
-                    "sharedTags": ["latest"]
-                  }
-                }
-              ]
-            }
-          ]
-        }
-        """;
-        
-        File.WriteAllText(imageInfoPath, imageInfoJson);
-        var trustBasePath = CreateTrustMaterials(tempFolderContext.Path);
-        
+        var fileSystem = new InMemoryFileSystem();
+        SeedImageInfoFile(fileSystem);
+        SeedTrustMaterials(fileSystem);
+
         var notationClientMock = new Mock<INotationClient>();
         notationClientMock.Setup(x => x.Verify("registry.io/repo@sha256:bbb", false))
             .Throws(new InvalidOperationException("Verification failed"));
-        
-        var command = CreateCommand(notationClientMock.Object, trustBasePath: trustBasePath);
-        command.Options.ImageInfoPath = imageInfoPath;
-        
+
+        var command = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
+        command.Options.ImageInfoPath = ImageInfoPath;
+
         var exception = await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync());
         exception.Message.ShouldContain("Signature verification failed for 1 of 3 image(s)");
-        
+
         notationClientMock.Verify(
             x => x.Verify("registry.io/repo@sha256:aaa", false),
             Times.Once);
@@ -165,65 +123,36 @@ public class VerifySignaturesCommandTests
     [Fact]
     public async Task VerifySignatures_SkipsWhenSigningDisabled()
     {
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        var imageInfoPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-        
-        var imageInfoJson = """
-        {
-          "repos": [
-            {
-              "repo": "dotnet/image-builder",
-              "images": [
-                {
-                  "platforms": [
-                    {
-                      "digest": "registry.io/repo@sha256:aaa",
-                      "dockerfile": "Dockerfile",
-                      "simpleTags": ["tag1"],
-                      "osType": "Linux",
-                      "osVersion": "ubuntu22.04",
-                      "architecture": "amd64",
-                      "created": "2024-01-01T00:00:00Z",
-                      "commitUrl": "https://github.com/dotnet/dotnet-docker/commit/abc123"
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-        """;
-        
-        File.WriteAllText(imageInfoPath, imageInfoJson);
-        
+        var fileSystem = new InMemoryFileSystem();
+        SeedImageInfoFile(fileSystem);
+
         var notationClientMock = new Mock<INotationClient>();
-        var command = CreateCommand(notationClientMock.Object, signingEnabled: false);
-        command.Options.ImageInfoPath = imageInfoPath;
-        
+        var command = CreateCommand(notationClientMock.Object, signingEnabled: false, fileSystem: fileSystem);
+        command.Options.ImageInfoPath = ImageInfoPath;
+
         await command.ExecuteAsync();
-        
+
         notationClientMock.VerifyNoOtherCalls();
     }
 
     [Fact]
     public async Task VerifySignatures_SkipsWhenImageInfoMissing()
     {
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-        var imageInfoPath = Path.Combine(tempFolderContext.Path, "non-existent.json");
-        
+        var fileSystem = new InMemoryFileSystem();
+
         var notationClientMock = new Mock<INotationClient>();
-        var command = CreateCommand(notationClientMock.Object);
-        command.Options.ImageInfoPath = imageInfoPath;
-        
+        var command = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
+        command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
+
         await command.ExecuteAsync();
-        
+
         notationClientMock.VerifyNoOtherCalls();
     }
 
     private static VerifySignaturesCommand CreateCommand(
         INotationClient notationClient,
         bool signingEnabled = true,
-        string? trustBasePath = null)
+        IFileSystem? fileSystem = null)
     {
         var logger = Mock.Of<ILogger<VerifySignaturesCommand>>();
         var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
@@ -236,30 +165,29 @@ public class VerifySignaturesCommandTests
             }
         };
         var options = Microsoft.Extensions.Options.Options.Create(publishConfig);
-        
-        var command = new VerifySignaturesCommand(logger, notationClient, credentialsProvider, options);
-        if (trustBasePath is not null)
-        {
-            command.Options.TrustMaterialsPath = trustBasePath;
-        }
+
+        var command = new VerifySignaturesCommand(
+            logger, notationClient, credentialsProvider, fileSystem ?? new InMemoryFileSystem(), options);
+        command.Options.TrustMaterialsPath = TrustBasePath;
         return command;
     }
 
     /// <summary>
-    /// Creates the trust materials directory structure expected by VerifySignaturesCommand.
+    /// Seeds the image-info.json file into the in-memory file system.
     /// </summary>
-    private static string CreateTrustMaterials(string basePath)
+    private static void SeedImageInfoFile(InMemoryFileSystem fileSystem) =>
+        fileSystem.AddFile(ImageInfoPath, s_imageInfoJson);
+
+    /// <summary>
+    /// Seeds the trust materials (root CA certificate and trust policy) into the in-memory file system.
+    /// </summary>
+    private static void SeedTrustMaterials(InMemoryFileSystem fileSystem)
     {
-        var trustPath = Path.Combine(basePath, "notation-trust");
-        var certDir = Path.Combine(trustPath, "certs", "test");
-        var policyDir = Path.Combine(trustPath, "policies");
-        
-        Directory.CreateDirectory(certDir);
-        Directory.CreateDirectory(policyDir);
-        
-        File.WriteAllText(Path.Combine(certDir, "root-ca.crt"), "fake-cert-data");
-        File.WriteAllText(Path.Combine(policyDir, "test.json"), """{"version":"1.0","trustPolicies":[]}""");
-        
-        return trustPath;
+        fileSystem.AddFile(
+            Path.Combine(TrustBasePath, "certs", "test", "root-ca.crt"),
+            "fake-cert-data");
+        fileSystem.AddFile(
+            Path.Combine(TrustBasePath, "policies", "test.json"),
+            """{"version":"1.0","trustPolicies":[]}""");
     }
 }

@@ -60,6 +60,7 @@ steps:
 - template: /eng/docker-tools/templates/steps/generate-appsettings.yml@self
   parameters:
     publishConfig: ${{ parameters.publishConfig }}
+    artifactStagingDirectory: $(artifactsPath)
     condition: ${{ parameters.condition }}
 
 # On Linux, build the "withrepo" image that includes the repo's source code.
@@ -96,7 +97,6 @@ steps:
           "-v $(Build.ArtifactStagingDirectory):$(artifactsPath)"
           "-w /repo"
           "$(imageBuilderDockerRunExtraOptions)"
-          "$(imageNames.imageBuilder.withrepo)"
         )
 
         $authedDockerRunArgs = @(
@@ -106,8 +106,71 @@ steps:
           'SYSTEM_OIDCREQUESTURI=$env:SYSTEM_OIDCREQUESTURI'
         )
 
-        $dockerRunCmd = $dockerRunBaseCmd + $dockerRunArgs
-        $authedDockerRunCmd = $dockerRunBaseCmd + $authedDockerRunArgs + $dockerRunArgs
+        # Add MicroBuild signing mount and env vars when signing is enabled.
+        # DDSignFiles.dll (from MicroBuild) requires several environment variables for ESRP authentication
+        # and signing. The MicroBuild Signing Plugin sets these on the host agent, but they must be
+        # explicitly forwarded into the Docker container.
+        $signingArgs = @()
+        $signingEnabled = "${{ parameters.publishConfig.Signing.Enabled }}"
+        if ($signingEnabled -eq "True" -and $env:MBSIGN_APPFOLDER) {
+          $signingArgs = @(
+            # Mount the MicroBuild signing plugin directory (contains DDSignFiles.dll and esrpcli.dll)
+            "-v"
+            "$env:MBSIGN_APPFOLDER`:/microbuild"
+            "-e"
+            "MBSIGN_APPFOLDER=/microbuild"
+
+            # MicroBuild plugin variables for DDSignFiles.dll
+            "-e"
+            'VSENGESRPSSL=$env:VSENGESRPSSL'          # SSL certificate (base64) for ESRP auth on Linux
+            "-e"
+            'USEESRPCLI=$env:USEESRPCLI'              # Selects ESRP CLI signing path
+            "-e"
+            'MBSIGN_CONNECTEDSERVICE=$env:MBSIGN_CONNECTEDSERVICE'  # ESRP service connection ID
+
+            # Container-local temp/workspace paths (host paths aren't accessible inside the container)
+            "-e"
+            "MBSIGNTEMPDIR=/tmp/MicroBuildSign"       # Working directory for DDSignFiles.dll
+            "-e"
+            "PIPELINE_WORKSPACE=$(artifactsPath)"     # Root directory for ESRP CLI file path resolution
+            "-e"
+            "AGENT_TEMPDIRECTORY=/tmp"
+
+            # Azure DevOps pipeline variables for ESRP bearer token auth (ESRPUtils.GetAccountInfo)
+            "-e"
+            'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI=$env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'
+            "-e"
+            'BUILD_BUILDID=$env:BUILD_BUILDID'
+            "-e"
+            'SYSTEM_TEAMPROJECT=$env:SYSTEM_TEAMPROJECT'
+            "-e"
+            'BUILD_SOURCEBRANCH=$env:BUILD_SOURCEBRANCH'
+
+            # Azure DevOps pipeline variables for ESRP CLI federated token (ESRPCliDll.GetFederatedTokenData)
+            "-e"
+            'SYSTEM_JOBID=$env:SYSTEM_JOBID'
+            "-e"
+            'SYSTEM_PLANID=$env:SYSTEM_PLANID'
+            "-e"
+            'SYSTEM_TEAMPROJECTID=$env:SYSTEM_TEAMPROJECTID'
+            "-e"
+            'SYSTEM_HOSTTYPE=$env:SYSTEM_HOSTTYPE'
+            "-e"
+            'SYSTEM_COLLECTIONURI=$env:SYSTEM_COLLECTIONURI'
+
+            # Azure DevOps pipeline variables for DDSignFilesConfiguration
+            "-e"
+            'BUILD_DEFINITIONNAME=$env:BUILD_DEFINITIONNAME'
+            "-e"
+            'BUILD_BUILDNUMBER=$env:BUILD_BUILDNUMBER'
+          )
+          Write-Host "MicroBuild signing enabled, mounting $env:MBSIGN_APPFOLDER to /microbuild"
+        } elseif ($signingEnabled -eq "True") {
+          Write-Warning "MBSIGN_APPFOLDER not set - signing will not work"
+        }
+
+        $dockerRunCmd = $dockerRunBaseCmd + $signingArgs + $dockerRunArgs + @("$(imageNames.imageBuilder.withrepo)")
+        $authedDockerRunCmd = $dockerRunBaseCmd + $signingArgs + $authedDockerRunArgs + $dockerRunArgs + @("$(imageNames.imageBuilder.withrepo)")
 
         $runImageBuilderCmd = $($dockerRunCmd -join ' ')
         $runAuthedImageBuilderCmd = $($authedDockerRunCmd -join ' ')

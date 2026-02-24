@@ -53,6 +53,14 @@ parameters:
   type: string
   default: "versions"
 
+# When true on Linux, sets artifactsPath to $(Build.ArtifactStagingDirectory) instead of
+# /artifacts. This creates an identity volume mount so container paths match host paths,
+# which is required for MicroBuild ESRP signing (the ESRP CLI emits ##vso commands with
+# container-internal paths that the AzDO agent must resolve on the host).
+- name: useHostArtifactsPath
+  type: boolean
+  default: false
+
 steps:
 # Repository Checkout
 # Multi-repo checkout is used when a versions repository is needed for caching.
@@ -201,7 +209,15 @@ steps:
 #        Build.ArtifactStagingDirectory via docker run -v
 # Windows: Uses Build.ArtifactStagingDirectory directly since ImageBuilder runs
 #          as an extracted executable, not in a container
-- ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+# When useHostArtifactsPath is true, Linux also uses Build.ArtifactStagingDirectory
+# so that container paths match host paths (required for ESRP signing).
+- ${{ if and(eq(parameters.dockerClientOS, 'linux'), eq(parameters.useHostArtifactsPath, true)) }}:
+  - script: |
+      echo "Setting artifactsPath to '$(Build.ArtifactStagingDirectory)'"
+      echo "##vso[task.setvariable variable=artifactsPath]$(Build.ArtifactStagingDirectory)"
+    displayName: Define Artifacts Path Variable
+    condition: and(succeeded(), ${{ parameters.condition }})
+- ${{ elseif eq(parameters.dockerClientOS, 'linux') }}:
   - script: |
       echo "Setting artifactsPath to '/artifacts'"
       echo "##vso[task.setvariable variable=artifactsPath]/artifacts"

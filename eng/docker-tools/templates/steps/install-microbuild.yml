@@ -1,0 +1,103 @@
+# Installs the MicroBuild signing plugin for ESRP container image signing.
+# After installation, MBSIGN_APPFOLDER environment variable points to DDSignFiles.dll location.
+parameters:
+- name: dockerClientOS
+  type: string
+  values:
+  - linux
+  - windows
+
+- name: signType
+  type: string
+  default: test
+  values:
+  - test
+  - real
+
+- name: condition
+  type: string
+  default: "true"
+
+- name: microBuildOutputFolder
+  type: string
+  default: $(Agent.TempDirectory)/MicroBuild
+
+# Use preview MicroBuild task for preview plugin versions (e.g., from MicroBuildTestDNCEng feed)
+- name: enablePreviewMicrobuild
+  type: boolean
+  default: false
+
+steps:
+# Install .NET SDK on Linux - needed to download the MicroBuild plugin nupkgs when nuget.exe is unavailable.
+# Install to an isolated location so the repo's global.json doesn't interfere.
+- ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+  - task: UseDotNet@2
+    displayName: Install .NET SDK for MicroBuild Plugin
+    condition: and(succeeded(), ${{ parameters.condition }})
+    inputs:
+      packageType: sdk
+      version: 8.0.x
+      installationPath: ${{ parameters.microBuildOutputFolder }}/.dotnet
+
+  # Create a global.json in the MicroBuild folder that pins to the installed SDK.
+  # This prevents the repo's global.json from causing SDK resolution failures.
+  - script: |
+      mkdir -p ${{ parameters.microBuildOutputFolder }}
+      version=$(dotnet --version)
+      cat > ${{ parameters.microBuildOutputFolder }}/global.json << EOF
+      {
+        "sdk": {
+          "version": "$version"
+        }
+      }
+      EOF
+    displayName: Create global.json for MicroBuild
+    condition: and(succeeded(), ${{ parameters.condition }})
+
+# Use MicroBuildSigningPluginPreview@4 for preview versions (e.g., from test feeds)
+# Use MicroBuildSigningPlugin@4 for production versions
+- ${{ if eq(parameters.enablePreviewMicrobuild, true) }}:
+  - task: MicroBuildSigningPluginPreview@4
+    displayName: Install MicroBuild Signing Plugin (Preview)
+    condition: and(succeeded(), ${{ parameters.condition }})
+    inputs:
+      version: $(MicroBuildPluginVersion)
+      ${{ if eq(parameters.signType, 'test') }}:
+        signType: test
+      ${{ else }}:
+        signType: real
+      zipSources: false
+      feedSource: $(MicroBuildFeedSource)
+      ConnectedServiceName: 'MicroBuild Signing Task (DevDiv)'
+      ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+        ConnectedPMEServiceName: c24de2a5-cc7a-493d-95e4-8e5ff5cad2bc
+        workingDirectory: ${{ parameters.microBuildOutputFolder }}
+      ${{ else }}:
+        ConnectedPMEServiceName: 248d384a-b39b-46e3-8ad5-c2c210d5e7ca
+    env:
+      TeamName: $(TeamName)
+      MicroBuildOutputFolderOverride: $(Agent.TempDirectory)/MicroBuild
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+- ${{ else }}:
+  - task: MicroBuildSigningPlugin@4
+    displayName: Install MicroBuild Signing Plugin
+    condition: and(succeeded(), ${{ parameters.condition }})
+    inputs:
+      version: $(MicroBuildPluginVersion)
+      ${{ if eq(parameters.signType, 'test') }}:
+        signType: test
+      ${{ else }}:
+        signType: real
+      zipSources: false
+      feedSource: $(MicroBuildFeedSource)
+      ConnectedServiceName: 'MicroBuild Signing Task (DevDiv)'
+      ${{ if eq(parameters.dockerClientOS, 'linux') }}:
+        ConnectedPMEServiceName: c24de2a5-cc7a-493d-95e4-8e5ff5cad2bc
+        workingDirectory: ${{ parameters.microBuildOutputFolder }}
+      ${{ else }}:
+        ConnectedPMEServiceName: 248d384a-b39b-46e3-8ad5-c2c210d5e7ca
+    env:
+      TeamName: $(TeamName)
+      MicroBuildOutputFolderOverride: $(Agent.TempDirectory)/MicroBuild
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)

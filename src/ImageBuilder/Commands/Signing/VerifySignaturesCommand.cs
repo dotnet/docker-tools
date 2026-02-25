@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -76,9 +77,9 @@ public class VerifySignaturesCommand(
 
         logger.LogInformation("Verifying signatures for {Count} image(s)...", imageReferences.Count);
 
-        var failures = new List<(string Reference, Exception Error)>();
+        ConcurrentBag<(string Reference, Exception Error)> failures = [];
 
-        foreach (var reference in imageReferences)
+        await Parallel.ForEachAsync(imageReferences, (reference, _) =>
         {
             try
             {
@@ -91,7 +92,9 @@ public class VerifySignaturesCommand(
                 logger.LogError(ex, "Failed: {Reference}", reference);
                 failures.Add((reference, ex));
             }
-        }
+
+            return ValueTask.CompletedTask;
+        });
 
         if (failures.Count > 0)
         {

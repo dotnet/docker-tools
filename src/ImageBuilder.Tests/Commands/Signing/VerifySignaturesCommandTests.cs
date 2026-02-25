@@ -69,7 +69,7 @@ public class VerifySignaturesCommandTests
         SeedTrustMaterials(fileSystem);
 
         var notationClientMock = new Mock<INotationClient>();
-        var command = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
+        var (command, _) = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
         command.Options.ImageInfoPath = ImageInfoPath;
 
         await command.ExecuteAsync();
@@ -103,11 +103,12 @@ public class VerifySignaturesCommandTests
         notationClientMock.Setup(x => x.Verify("registry.io/repo@sha256:bbb", false))
             .Throws(new InvalidOperationException("Verification failed"));
 
-        var command = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
+        var (command, environmentServiceMock) = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
         command.Options.ImageInfoPath = ImageInfoPath;
 
-        var exception = await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync());
-        exception.Message.ShouldContain("Signature verification failed for 1 of 3 image(s)");
+        await command.ExecuteAsync();
+
+        environmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
 
         notationClientMock.Verify(
             x => x.Verify("registry.io/repo@sha256:aaa", false),
@@ -127,7 +128,7 @@ public class VerifySignaturesCommandTests
         SeedImageInfoFile(fileSystem);
 
         var notationClientMock = new Mock<INotationClient>();
-        var command = CreateCommand(notationClientMock.Object, signingEnabled: false, fileSystem: fileSystem);
+        var (command, _) = CreateCommand(notationClientMock.Object, signingEnabled: false, fileSystem: fileSystem);
         command.Options.ImageInfoPath = ImageInfoPath;
 
         await command.ExecuteAsync();
@@ -141,7 +142,7 @@ public class VerifySignaturesCommandTests
         var fileSystem = new InMemoryFileSystem();
 
         var notationClientMock = new Mock<INotationClient>();
-        var command = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
+        var (command, _) = CreateCommand(notationClientMock.Object, fileSystem: fileSystem);
         command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
 
         await command.ExecuteAsync();
@@ -149,13 +150,14 @@ public class VerifySignaturesCommandTests
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    private static VerifySignaturesCommand CreateCommand(
+    private static (VerifySignaturesCommand Command, Mock<IEnvironmentService> EnvironmentServiceMock) CreateCommand(
         INotationClient notationClient,
         bool signingEnabled = true,
         IFileSystem? fileSystem = null)
     {
         var logger = Mock.Of<ILogger<VerifySignaturesCommand>>();
         var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
+        var environmentServiceMock = new Mock<IEnvironmentService>();
         var publishConfig = new PublishConfiguration
         {
             Signing = new SigningConfiguration
@@ -167,9 +169,9 @@ public class VerifySignaturesCommandTests
         var options = Microsoft.Extensions.Options.Options.Create(publishConfig);
 
         var command = new VerifySignaturesCommand(
-            logger, notationClient, credentialsProvider, fileSystem ?? new InMemoryFileSystem(), options);
+            logger, notationClient, credentialsProvider, environmentServiceMock.Object, fileSystem ?? new InMemoryFileSystem(), options);
         command.Options.TrustMaterialsPath = TrustBasePath;
-        return command;
+        return (command, environmentServiceMock);
     }
 
     /// <summary>

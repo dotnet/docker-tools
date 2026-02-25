@@ -24,6 +24,7 @@ public class VerifySignaturesCommand(
     ILogger<VerifySignaturesCommand> logger,
     INotationClient notationClient,
     IRegistryCredentialsProvider registryCredentialsProvider,
+    IEnvironmentService environmentService,
     IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions)
     : Command<VerifySignaturesOptions, VerifySignaturesOptionsBuilder>
@@ -104,11 +105,11 @@ public class VerifySignaturesCommand(
                 logger.LogError("{Reference}: {Message}", reference, error.Message);
             }
 
-            throw new InvalidOperationException(
-                $"Signature verification failed for {failures.Count} of {imageReferences.Count} image(s).");
+            environmentService.ExitCode = 1;
         }
 
-        logger.LogInformation("Successfully verified signatures for {Count} image(s).", imageReferences.Count);
+        var successCount = imageReferences.Count - failures.Count;
+        logger.LogInformation("Verified signatures for {Success}/{Total} image(s).", successCount, imageReferences.Count);
     }
 
     /// <summary>

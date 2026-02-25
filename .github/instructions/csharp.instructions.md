@@ -52,7 +52,7 @@ For all new C# code:
 ## Comments
 
 - Add XML documentation comments for new **public** or **internal** types and members.
-- Primary documentation belongs on interfaces, implementations should use`<inheritdoc/>` unless additional context is needed.
+- Primary documentation belongs on interfaces, implementations should use `<inheritdoc/>` unless additional context is needed.
 - Comments that simply restate the member or parameter name do not provide value.
 - Comments should provide additional context or explain non-obvious behavior, especially for parameters.
 - Comments inside methods should explain "why," not "what".

@@ -6,11 +6,24 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Moq;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
     public static class TestHelper
     {
+        /// <summary>
+        /// Creates an <see cref="IManifestJsonService"/> that delegates to <see cref="ManifestInfo.Load"/>.
+        /// </summary>
+        public static IManifestJsonService CreateManifestJsonService()
+        {
+            var mock = new Mock<IManifestJsonService>();
+            mock.Setup(s => s.Load(It.IsAny<IManifestOptionsInfo>()))
+                .Returns<IManifestOptionsInfo>(ManifestInfo.Load);
+            return mock.Object;
+        }
+
         public static TempFolderContext UseTempFolder()
         {
             return new TempFolderContext();

@@ -23,8 +23,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IGitHubClientFactory _gitHubClientFactory;
         private readonly ILogger<PublishMcrDocsCommand> _logger;
 
-        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
-            ILogger<PublishMcrDocsCommand> logger) : base()
+        public PublishMcrDocsCommand(IManifestJsonService manifestJsonService, IGitService gitService, IGitHubClientFactory gitHubClientFactory,
+            ILogger<PublishMcrDocsCommand> logger) : base(manifestJsonService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));

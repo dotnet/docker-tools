@@ -12,10 +12,12 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesCommand(
+        IManifestJsonService manifestJsonService,
         ICopyImageService copyImageService,
         ILogger<CopyBaseImagesCommand> logger,
         IGitService gitService)
         : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
+            manifestJsonService,
             copyImageService,
             logger)
     {

@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IKustoClient _kustoClient;
         private readonly ILogger<IngestKustoImageInfoCommand> _logger;
 
-        public IngestKustoImageInfoCommand(ILogger<IngestKustoImageInfoCommand> logger, IKustoClient kustoClient)
+        public IngestKustoImageInfoCommand(IManifestJsonService manifestJsonService, ILogger<IngestKustoImageInfoCommand> logger, IKustoClient kustoClient) : base(manifestJsonService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _kustoClient = kustoClient ?? throw new ArgumentNullException(nameof(kustoClient));

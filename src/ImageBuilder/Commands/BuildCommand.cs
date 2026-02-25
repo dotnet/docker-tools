@@ -41,6 +41,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private ImageArtifactDetails? _imageArtifactDetails;
 
         public BuildCommand(
+            IManifestJsonService manifestJsonService,
             IDockerService dockerService,
             ILogger<BuildCommand> logger,
             IGitService gitService,
@@ -49,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService)
+            IImageCacheService imageCacheService) : base(manifestJsonService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

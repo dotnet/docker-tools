@@ -15,7 +15,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IDockerService _dockerService;
         private readonly ILogger<PullImagesCommand> _logger;
 
-        public PullImagesCommand(IDockerService dockerService, ILogger<PullImagesCommand> logger)
+        public PullImagesCommand(IManifestJsonService manifestJsonService, IDockerService dockerService, ILogger<PullImagesCommand> logger) : base(manifestJsonService)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

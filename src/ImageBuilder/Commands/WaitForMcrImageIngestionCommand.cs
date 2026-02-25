@@ -18,7 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IMarImageIngestionReporter _imageIngestionReporter;
 
         public WaitForMcrImageIngestionCommand(
-            ILogger<WaitForMcrImageIngestionCommand> logger, IMarImageIngestionReporter imageIngestionReporter)
+            IManifestJsonService manifestJsonService,
+            ILogger<WaitForMcrImageIngestionCommand> logger, IMarImageIngestionReporter imageIngestionReporter) : base(manifestJsonService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageIngestionReporter = imageIngestionReporter ?? throw new ArgumentNullException(nameof(imageIngestionReporter));

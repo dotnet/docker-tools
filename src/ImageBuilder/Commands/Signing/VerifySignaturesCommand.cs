@@ -119,7 +119,7 @@ public class VerifySignaturesCommand(
     private async Task LoginToRegistriesAsync(List<string> imageReferences)
     {
         var registries = imageReferences
-            .Select(r => r.Split('/')[0])
+            .Select(r => ImageName.Parse(r).Registry)
             .Distinct()
             .ToList();
 

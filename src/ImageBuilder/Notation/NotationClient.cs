@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+
 namespace Microsoft.DotNet.ImageBuilder.Notation;
 
 /// <inheritdoc/>
@@ -33,11 +35,19 @@ public class NotationClient : INotationClient
     /// <inheritdoc/>
     public void Login(string server, string username, string password)
     {
-        ExecuteHelper.Execute(
-            fileName: NotationExecutable,
-            args: $"login -u {username} --password-stdin {server}",
+        var info = new ProcessStartInfo(NotationExecutable, $"login -u {username} --password-stdin {server}")
+        {
+            RedirectStandardInput = true
+        };
+
+        ExecuteHelper.ExecuteWithRetry(
+            info,
+            process =>
+            {
+                process.StandardInput.WriteLine(password);
+                process.StandardInput.Close();
+            },
             isDryRun: false,
-            executeMessageOverride: $"notation login -u {username} --password-stdin {server}",
-            standardInput: password);
+            executeMessageOverride: $"notation login -u {username} --password-stdin {server}");
     }
 }

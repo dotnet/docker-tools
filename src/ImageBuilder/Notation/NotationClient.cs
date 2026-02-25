@@ -35,8 +35,9 @@ public class NotationClient : INotationClient
     {
         ExecuteHelper.Execute(
             fileName: NotationExecutable,
-            args: $"login -u {username} -p {password} {server}",
+            args: $"login -u {username} --password-stdin {server}",
             isDryRun: false,
-            executeMessageOverride: $"notation login -u {username} -p ******** {server}");
+            executeMessageOverride: $"notation login -u {username} --password-stdin {server}",
+            standardInput: password);
     }
 }

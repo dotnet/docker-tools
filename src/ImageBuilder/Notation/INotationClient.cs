@@ -29,12 +29,4 @@ public interface INotationClient
     /// <param name="storeName">Name of the trust store (e.g., "supplychain").</param>
     /// <param name="certPath">Path to the certificate file.</param>
     void AddCertificate(string storeType, string storeName, string certPath);
-
-    /// <summary>
-    /// Logs in to a registry for authenticated operations.
-    /// </summary>
-    /// <param name="server">Registry server (e.g., "myregistry.azurecr.io").</param>
-    /// <param name="username">Username for authentication.</param>
-    /// <param name="password">Password or token for authentication.</param>
-    void Login(string server, string username, string password);
 }

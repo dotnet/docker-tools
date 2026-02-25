@@ -31,23 +31,4 @@ public class NotationClient : INotationClient
             fileName: NotationExecutable,
             args: $"cert add --type {storeType} --store {storeName} {certPath}",
             isDryRun: false);
-
-    /// <inheritdoc/>
-    public void Login(string server, string username, string password)
-    {
-        var info = new ProcessStartInfo(NotationExecutable, $"login -u {username} --password-stdin {server}")
-        {
-            RedirectStandardInput = true
-        };
-
-        ExecuteHelper.ExecuteWithRetry(
-            info,
-            process =>
-            {
-                process.StandardInput.WriteLine(password);
-                process.StandardInput.Close();
-            },
-            isDryRun: false,
-            executeMessageOverride: $"notation login -u {username} --password-stdin {server}");
-    }
 }

@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Notation;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
@@ -29,6 +28,11 @@ public class VerifySignaturesCommand(
     IOptions<PublishConfiguration> publishConfigOptions)
     : Command<VerifySignaturesOptions, VerifySignaturesOptionsBuilder>
 {
+    private readonly ILogger<VerifySignaturesCommand> _logger = logger;
+    private readonly INotationClient _notationClient = notationClient;
+    private readonly IRegistryCredentialsProvider _registryCredentialsProvider = registryCredentialsProvider;
+    private readonly IEnvironmentService _environmentService = environmentService;
+    private readonly IFileSystem _fileSystem = fileSystem;
     private readonly PublishConfiguration _publishConfiguration = publishConfigOptions.Value;
 
     protected override string Description =>
@@ -36,47 +40,46 @@ public class VerifySignaturesCommand(
 
     public override async Task ExecuteAsync()
     {
-        logger.LogInformation("VERIFYING CONTAINER IMAGE SIGNATURES");
+        _logger.LogInformation("VERIFYING CONTAINER IMAGE SIGNATURES");
 
         var signingConfig = _publishConfiguration.Signing;
         if (signingConfig is null || !signingConfig.Enabled)
         {
-            logger.LogInformation("Signing is not enabled. Skipping signature verification.");
+            _logger.LogInformation("Signing is not enabled. Skipping signature verification.");
             return;
         }
 
-        if (!fileSystem.FileExists(Options.ImageInfoPath))
+        if (!_fileSystem.FileExists(Options.ImageInfoPath))
         {
             string warning = PipelineHelper.FormatWarningCommand(
                 "Image info file not found. Skipping signature verification.");
-            logger.LogWarning("{Warning}", warning);
+            _logger.LogWarning("{Warning}", warning);
             return;
         }
 
         if (Options.IsDryRun)
         {
-            logger.LogInformation("Dry run enabled. Skipping actual verification.");
+            _logger.LogInformation("Dry run enabled. Skipping actual verification.");
             return;
         }
 
         SetupTrustConfiguration(signingConfig);
 
-        var imageInfoContents = await fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
+        var imageInfoContents = await _fileSystem.ReadAllTextAsync(Options.ImageInfoPath);
         var imageArtifactDetails = ImageArtifactDetails.FromJson(imageInfoContents);
-
         imageArtifactDetails = imageArtifactDetails.ApplyRegistryOverride(Options.RegistryOverride);
 
         var imageReferences = GetAllImageReferences(imageArtifactDetails);
 
         if (imageReferences.Count == 0)
         {
-            logger.LogInformation("No images to verify.");
+            _logger.LogInformation("No images to verify.");
             return;
         }
 
         await LoginToRegistriesAsync(imageReferences);
 
-        logger.LogInformation("Verifying signatures for {Count} image(s)...", imageReferences.Count);
+        _logger.LogInformation("Verifying signatures for {Count} image(s)...", imageReferences.Count);
 
         ConcurrentBag<(string Reference, Exception Error)> failures = [];
 
@@ -84,13 +87,13 @@ public class VerifySignaturesCommand(
         {
             try
             {
-                logger.LogInformation("Verifying: {Reference}", reference);
-                notationClient.Verify(reference, Options.IsDryRun);
-                logger.LogInformation("OK: {Reference}", reference);
+                _logger.LogInformation("Verifying: {Reference}", reference);
+                _notationClient.Verify(reference, Options.IsDryRun);
+                _logger.LogInformation("OK: {Reference}", reference);
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "Failed: {Reference}", reference);
+                _logger.LogError(ex, "Failed: {Reference}", reference);
                 failures.Add((reference, ex));
             }
 
@@ -99,17 +102,17 @@ public class VerifySignaturesCommand(
 
         if (failures.Count > 0)
         {
-            logger.LogError("Signature verification failed for {Count} image(s)", failures.Count);
+            _logger.LogError("Signature verification failed for {Count} image(s)", failures.Count);
             foreach (var (reference, error) in failures)
             {
-                logger.LogError("{Reference}: {Message}", reference, error.Message);
+                _logger.LogError("{Reference}: {Message}", reference, error.Message);
             }
 
-            environmentService.ExitCode = 1;
+            _environmentService.ExitCode = 1;
         }
 
         var successCount = imageReferences.Count - failures.Count;
-        logger.LogInformation("Verified signatures for {Success}/{Total} image(s).", successCount, imageReferences.Count);
+        _logger.LogInformation("Verified signatures for {Success}/{Total} image(s).", successCount, imageReferences.Count);
     }
 
     /// <summary>
@@ -125,14 +128,14 @@ public class VerifySignaturesCommand(
 
         foreach (var registry in registries)
         {
-            var credentials = await registryCredentialsProvider.GetCredentialsAsync(registry, credsHost: null);
+            var credentials = await _registryCredentialsProvider.GetCredentialsAsync(registry, credsHost: null);
             if (credentials is null)
             {
-                logger.LogInformation("No credentials found for '{Registry}'. Notation may fail if the registry requires authentication.", registry);
+                _logger.LogInformation("No credentials found for '{Registry}'. Notation may fail if the registry requires authentication.", registry);
                 continue;
             }
 
-            logger.LogInformation("Logging in to '{Registry}' for notation...", registry);
+            _logger.LogInformation("Logging in to '{Registry}' for notation...", registry);
             DockerHelper.Login(credentials, registry, isDryRun: false);
         }
     }
@@ -146,26 +149,26 @@ public class VerifySignaturesCommand(
         var trustStoreName = signingConfig.TrustStoreName;
 
         var certPath = Path.Combine(Options.TrustMaterialsPath, "certs", trustStoreName, "root-ca.crt");
-        if (!fileSystem.FileExists(certPath))
+        if (!_fileSystem.FileExists(certPath))
         {
             throw new FileNotFoundException(
                 $"Root CA certificate not found at '{certPath}'. " +
                 $"Ensure the trust store name '{trustStoreName}' is valid.");
         }
 
-        logger.LogInformation("Adding root CA certificate from '{CertPath}' to trust store '{TrustStoreName}'...", certPath, trustStoreName);
-        notationClient.AddCertificate("ca", trustStoreName, certPath);
+        _logger.LogInformation("Adding root CA certificate from '{CertPath}' to trust store '{TrustStoreName}'...", certPath, trustStoreName);
+        _notationClient.AddCertificate("ca", trustStoreName, certPath);
 
         var policyPath = Path.Combine(Options.TrustMaterialsPath, "policies", $"{trustStoreName}.json");
-        if (!fileSystem.FileExists(policyPath))
+        if (!_fileSystem.FileExists(policyPath))
         {
             throw new FileNotFoundException(
                 $"Trust policy not found at '{policyPath}'. " +
                 $"Ensure the trust store name '{trustStoreName}' is valid.");
         }
 
-        logger.LogInformation("Importing trust policy from '{PolicyPath}'...", policyPath);
-        notationClient.ImportTrustPolicy(policyPath);
+        _logger.LogInformation("Importing trust policy from '{PolicyPath}'...", policyPath);
+        _notationClient.ImportTrustPolicy(policyPath);
     }
 
     /// <summary>

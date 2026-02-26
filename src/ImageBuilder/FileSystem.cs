@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <summary>
 /// Default filesystem implementation that delegates to <see cref="File"/> and <see cref="Directory"/>.
 /// </summary>
-internal sealed class FileSystem : IFileSystem
+public sealed class FileSystem : IFileSystem
 {
     /// <inheritdoc/>
     public void WriteAllText(string path, string contents) =>
@@ -28,6 +28,10 @@ internal sealed class FileSystem : IFileSystem
     /// <inheritdoc/>
     public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
         File.ReadAllBytesAsync(path, cancellationToken);
+
+    /// <inheritdoc/>
+    public string ReadAllText(string path) =>
+        File.ReadAllText(path);
 
     /// <inheritdoc/>
     public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default) =>

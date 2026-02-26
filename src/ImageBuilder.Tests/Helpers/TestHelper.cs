@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
         /// manifest JSON files from the filesystem (e.g., temp folder-based tests).
         /// </summary>
         public static IManifestJsonService CreateManifestJsonService() =>
-            new ManifestJsonService(new LoggerFactory().CreateLogger<ManifestJsonService>());
+            new ManifestJsonService(new FileSystem(), new LoggerFactory().CreateLogger<ManifestJsonService>());
 
         public static TempFolderContext UseTempFolder()
         {

@@ -75,6 +75,14 @@ internal sealed class InMemoryFileSystem : IFileSystem
     public Task<byte[]> ReadAllBytesAsync(string path, CancellationToken cancellationToken = default) =>
         Task.FromResult(ReadAllBytes(path));
 
+    public string ReadAllText(string path)
+    {
+        FilesRead.Add(path);
+        return _files.TryGetValue(path, out var bytes)
+            ? Encoding.UTF8.GetString(bytes)
+            : throw new FileNotFoundException("File not found", path);
+    }
+
     public Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default)
     {
         FilesRead.Add(path);

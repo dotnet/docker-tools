@@ -23,8 +23,9 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// for OCI/Docker image manifests. The naming overlap is due to "manifest" being an overloaded term:
 /// this service deals with the repository's <c>manifest.json</c> build metadata files.
 /// </remarks>
-public class ManifestJsonService(ILogger<ManifestJsonService> logger) : IManifestJsonService
+public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonService> logger) : IManifestJsonService
 {
+    private readonly IFileSystem _fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
     private readonly ILogger<ManifestJsonService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
     /// <inheritdoc />
@@ -104,7 +105,7 @@ public class ManifestJsonService(ILogger<ManifestJsonService> logger) : IManifes
     /// </summary>
     private Manifest LoadModel(string path, string manifestDirectory)
     {
-        var manifestJson = File.ReadAllText(path);
+        var manifestJson = _fileSystem.ReadAllText(path);
         var model = JsonConvert.DeserializeObject<Manifest>(manifestJson)
             ?? throw new InvalidOperationException($"Failed to deserialize manifest from '{path}'.");
 
@@ -115,7 +116,7 @@ public class ManifestJsonService(ILogger<ManifestJsonService> logger) : IManifes
             foreach (var includePath in model.Includes)
             {
                 ModelExtensions.ValidateFileReference(includePath, manifestDirectory);
-                manifestJson = File.ReadAllText(Path.Combine(manifestDirectory, includePath));
+                manifestJson = _fileSystem.ReadAllText(Path.Combine(manifestDirectory, includePath));
                 var includeModel = JsonConvert.DeserializeObject<Manifest>(manifestJson)
                     ?? throw new InvalidOperationException($"Failed to deserialize included manifest from '{includePath}'.");
                 foreach (var kvp in includeModel.Variables)

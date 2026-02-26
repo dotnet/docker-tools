@@ -36,6 +36,11 @@ public interface IFileSystem
     /// <summary>
     /// Opens a text file, reads all the text in the file, and then closes the file.
     /// </summary>
+    string ReadAllText(string path);
+
+    /// <summary>
+    /// Asynchronously opens a text file, reads all the text in the file, and then closes the file.
+    /// </summary>
     Task<string> ReadAllTextAsync(string path, CancellationToken cancellationToken = default);
 
     /// <summary>

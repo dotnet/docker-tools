@@ -13,6 +13,7 @@ using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 using Polly;
 
 
@@ -25,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<CleanAcrImagesCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
+        private readonly PublishConfiguration _publishConfig;
 
         private const int MaxConcurrentDeleteRequestsPerRepo = 5;
 
@@ -33,13 +35,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IAcrContentClientFactory acrContentClientFactory,
             ILogger<CleanAcrImagesCommand> logger,
             ILifecycleMetadataService lifecycleMetadataService,
-            IRegistryCredentialsProvider registryCredentialsProvider)
+            IRegistryCredentialsProvider registryCredentialsProvider,
+            IOptions<PublishConfiguration> publishConfigOptions)
         {
             _acrClientFactory = acrClientFactory ?? throw new ArgumentNullException(nameof(acrClientFactory));
             _acrContentClientFactory = acrContentClientFactory;
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _lifecycleMetadataService = lifecycleMetadataService ?? throw new ArgumentNullException(nameof(lifecycleMetadataService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
+            _publishConfig = publishConfigOptions.Value;
         }
 
         protected override string Description => "Removes unnecessary images from an ACR";
@@ -56,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation("FINDING IMAGES TO CLEAN");
 
             _logger.LogInformation($"Connecting to ACR '{Options.RegistryName}'");
-            IAcrClient acrClient = _acrClientFactory.Create(Options.RegistryName);
+            IAcrClient acrClient = CreateAcrClient(Options.RegistryName);
 
             _logger.LogInformation($"Querying catalog of ACR '{Options.RegistryName}'");
             IAsyncEnumerable<string> repositoryNames = acrClient.GetRepositoryNamesAsync();
@@ -75,10 +79,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .Select(repoName => acrClient.GetRepository(repoName))
                         .Select(repo =>
                         {
-                            IAcrContentClient acrContentClient =
-                                _acrContentClientFactory.Create(
-                                    Acr.Parse(Options.RegistryName),
-                                    repo.Name);
+                            Acr acr = Acr.Parse(Options.RegistryName);
+                            IAcrContentClient acrContentClient = CreateAcrContentClient(acr, repo.Name);
                             return ProcessRepoAsync(acrClient, acrContentClient, repo, deletedRepos, deletedImages);
                         })
                         .ToArrayAsync();
@@ -292,5 +294,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return false;
         }
+
+        /// <summary>
+        /// Creates an ACR client, using the dedicated clean service connection if configured.
+        /// Falls back to the default registry authentication lookup.
+        /// </summary>
+        private IAcrClient CreateAcrClient(string acrName) =>
+            _publishConfig.CleanServiceConnection is { } svc
+                ? _acrClientFactory.Create(acrName, svc)
+                : _acrClientFactory.Create(acrName);
+
+        /// <summary>
+        /// Creates an ACR content client, using the dedicated clean service connection if configured.
+        /// Falls back to the default registry authentication lookup.
+        /// </summary>
+        private IAcrContentClient CreateAcrContentClient(Acr acr, string repositoryName) =>
+            _publishConfig.CleanServiceConnection is { } svc
+                ? _acrContentClientFactory.Create(acr, repositoryName, svc)
+                : _acrContentClientFactory.Create(acr, repositoryName);
     }
 }

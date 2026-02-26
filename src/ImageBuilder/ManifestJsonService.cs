@@ -35,7 +35,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
 
         _logger.LogInformation("READING MANIFEST");
 
-        var manifest = Create(
+        ManifestInfo manifest = Create(
             options.Manifest,
             options.GetManifestFilter(),
             options);
@@ -54,16 +54,17 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
     /// </summary>
     private ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
     {
-        var manifestDirectory = PathHelper.GetNormalizedDirectory(manifestPath);
-        var model = LoadModel(manifestPath, manifestDirectory);
+        string manifestDirectory = PathHelper.GetNormalizedDirectory(manifestPath);
+        Manifest model = LoadModel(manifestPath, manifestDirectory);
         model.Validate(manifestDirectory);
 
-        var manifestInfo = new ManifestInfo
+        ManifestInfo manifestInfo = new()
         {
             Model = model,
             Registry = options.RegistryOverride ?? model.Registry,
             Directory = manifestDirectory
         };
+
         manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetRepoById);
         manifestInfo.AllRepos = manifestInfo.Model.Repos
             .Select(repo => RepoInfo.Create(
@@ -86,7 +87,7 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
         }
 
         IEnumerable<string> repoNames = manifestInfo.AllRepos.Select(repo => repo.QualifiedName).ToArray();
-        foreach (var platform in manifestInfo.GetAllPlatforms())
+        foreach (PlatformInfo? platform in manifestInfo.GetAllPlatforms())
         {
             platform.Initialize(repoNames, manifestInfo.Registry);
         }
@@ -105,26 +106,28 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
     /// </summary>
     private Manifest LoadModel(string path, string manifestDirectory)
     {
-        var manifestJson = _fileSystem.ReadAllText(path);
-        var model = JsonConvert.DeserializeObject<Manifest>(manifestJson)
+        string manifestJson = _fileSystem.ReadAllText(path);
+        Manifest model = JsonConvert.DeserializeObject<Manifest>(manifestJson)
             ?? throw new InvalidOperationException($"Failed to deserialize manifest from '{path}'.");
 
         if (model.Includes is not null)
         {
             model.Variables ??= new Dictionary<string, string>();
 
-            foreach (var includePath in model.Includes)
+            foreach (string? includePath in model.Includes)
             {
                 ModelExtensions.ValidateFileReference(includePath, manifestDirectory);
                 manifestJson = _fileSystem.ReadAllText(Path.Combine(manifestDirectory, includePath));
-                var includeModel = JsonConvert.DeserializeObject<Manifest>(manifestJson)
-                    ?? throw new InvalidOperationException($"Failed to deserialize included manifest from '{includePath}'.");
-                foreach (var kvp in includeModel.Variables)
+                Manifest includeModel = JsonConvert.DeserializeObject<Manifest>(manifestJson)
+                    ?? throw new InvalidOperationException(
+                        $"Failed to deserialize included manifest from '{includePath}'.");
+                foreach (KeyValuePair<string, string> kvp in includeModel.Variables)
                 {
                     if (model.Variables.ContainsKey(kvp.Key))
                     {
                         throw new InvalidOperationException(
-                            $"The manifest contains multiple '{kvp.Key}' variables.  Each variable name must be unique.");
+                            $"The manifest contains multiple '{kvp.Key}' variables."
+                            + " Each variable name must be unique.");
                     }
 
                     model.Variables.Add(kvp.Key, kvp.Value);
@@ -150,13 +153,14 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
     /// </summary>
     private static Repo ConsolidateReposWithSameName(IGrouping<string, Repo> grouping)
     {
-        // Validate that all repos which share the same name also don't have non-empty, conflicting values for the other settings
+        // Validate that all repos which share the same name also don't have
+        // non-empty, conflicting values for the other settings
         IEnumerable<PropertyInfo> propertiesToValidate = typeof(Repo).GetProperties()
             .Where(prop => prop.Name != nameof(Repo.Images) && prop.Name != nameof(Repo.Readmes));
-        foreach (var property in propertiesToValidate)
+        foreach (PropertyInfo property in propertiesToValidate)
         {
-            var distinctNonEmptyPropertyValues = grouping
-                .Select(repo => property.GetValue(repo))
+            List<string> distinctNonEmptyPropertyValues = grouping
+                .Select(property.GetValue)
                 .Distinct()
                 .Select(item => item?.ToString())
                 .Where(val => !string.IsNullOrEmpty(val))
@@ -166,13 +170,15 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
             if (distinctNonEmptyPropertyValues.Count > 1)
             {
                 throw new InvalidOperationException(
-                    "The manifest contains multiple repos with the same name that also do not have the same " +
-                    $"value for the '{property.Name}' property. Distinct values: {string.Join(", ", distinctNonEmptyPropertyValues)}");
+                    "The manifest contains multiple repos with the same name that also do not have the same "
+                    + $"value for the '{property.Name}' property. Distinct values: "
+                    + string.Join(", ", distinctNonEmptyPropertyValues));
             }
         }
 
-        // Create a new consolidated repo model instance that contains whichever non-empty state was set amongst the group of repos.
-        // All of the images within the repos are combined together into a single set.
+        // Create a new consolidated repo model instance that contains whichever non-empty state
+        // was set amongst the group of repos. All of the images within the repos are combined
+        // together into a single set.
         return new Repo
         {
             Name = grouping.Key,

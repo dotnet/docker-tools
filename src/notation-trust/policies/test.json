@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "trustPolicies": [
+    {
+      "name": "test",
+      "registryScopes": ["*"],
+      "signatureVerification": { "level": "strict" },
+      "trustStores": ["ca:test"],
+      "trustedIdentities": [
+        "x509.subject: CN=Gen Purpose NoCS 3072 384 Test 1 (DO NOT TRUST),O=Microsoft Corporation,L=Redmond,S=Washington,C=US"
+      ]
+    }
+  ]
+}

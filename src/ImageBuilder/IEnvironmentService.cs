@@ -8,6 +8,11 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         void Exit(int exitCode);
 
+        /// <summary>
+        /// Gets or sets the exit code for the process, allowing graceful shutdown.
+        /// </summary>
+        int ExitCode { get; set; }
+
         string? GetEnvironmentVariable(string variable);
     }
 }

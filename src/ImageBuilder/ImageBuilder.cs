@@ -59,6 +59,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
             builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();
             builder.Services.AddSingleton<INotificationService, NotificationService>();
+            builder.Services.AddSingleton<Notation.INotationClient, Notation.NotationClient>();
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<IOrasClient, OrasClient>();
             builder.Services.AddSingleton<Oras.IOrasService, Oras.OrasDotNetService>();
@@ -96,6 +97,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, ShowManifestSchemaCommand>();
             builder.Services.AddSingleton<ICommand, SignImagesCommand>();
             builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
+            builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
             builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
             builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
             builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();

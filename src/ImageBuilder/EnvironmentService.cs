@@ -13,6 +13,12 @@ namespace Microsoft.DotNet.ImageBuilder
             Environment.Exit(exitCode);
         }
 
+        public int ExitCode
+        {
+            get => Environment.ExitCode;
+            set => Environment.ExitCode = value;
+        }
+
         public string? GetEnvironmentVariable(string variable)
         {
             return Environment.GetEnvironmentVariable(variable);

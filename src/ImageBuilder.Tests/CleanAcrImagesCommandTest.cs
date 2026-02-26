@@ -10,8 +10,10 @@ using System.Threading.Tasks;
 using System.Threading;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
@@ -25,9 +27,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task StagingRepos()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string stagingRepo1Name = "build-staging/repo1";
             const string stagingRepo2Name = "build-staging/repo2";
             const string repo1Digest1 = "sha256:repo1digest1";
@@ -55,9 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "build-staging/*";
             command.Options.Action = CleanAcrImagesAction.Delete;
@@ -72,9 +69,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task PublicNightlyRepos()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string publicRepo1Name = "public/dotnet/core-nightly/repo1";
             const string publicRepo2Name = "public/dotnet/core/repo2";
             const string publicRepo3Name = "public/dotnet/core-nightly/repo3";
@@ -127,9 +121,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient, repo3ContentClient, repo4ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "public/dotnet/*nightly/*";
             command.Options.Action = CleanAcrImagesAction.PruneDangling;
@@ -152,9 +144,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DeleteEmptyTestRepo()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string repo1Name = "test/repo1";
             const string repo2Name = "test/repo2";
 
@@ -177,9 +166,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
@@ -197,9 +184,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DeleteAllExpiredImagesTestRepo()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string repo1Name = "test/repo1";
 
             const string repo1Digest1 = "sha256:repo1digest1";
@@ -221,9 +205,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrClientFactory acrClientFactory = CreateAcrClientFactory(AcrName, acrClientMock.Object);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, Mock.Of<IAcrContentClientFactory>(), Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
@@ -237,9 +219,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task TestRepos()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string repo1Name = "test/repo1";
             const string repo2Name = "test/repo2";
 
@@ -275,9 +254,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IAcrContentClientFactory acrContentClientFactory = CreateAcrContentClientFactory(AcrName, [repo1ContentClientMock, repo2ContentClientMock]);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;
@@ -297,9 +274,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task DeleteEolImages()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string repo1Name = "test/repo1";
 
             const string repo1Digest1 = "sha256:digest1";
@@ -337,9 +311,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = CreateLifecycleMetadataServiceMock(age, repo1Name);
 
             CleanAcrImagesCommand command = new CleanAcrImagesCommand(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), lifecycleMetadataServiceMock.Object, Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "test/*";
             command.Options.Action = CleanAcrImagesAction.PruneEol;
@@ -356,9 +328,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task ExcludedImages()
         {
-            const string subscription = "my sub";
-            const string resourceGroup = "group";
-
             const string publicRepo1Name = "public/dotnet/nightly/repo1";
             const string publicRepo2Name = "public/dotnet/nightly/repo2";
 
@@ -392,9 +361,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 AcrName, [repo1ContentClient, repo2ContentClient]);
 
             CleanAcrImagesCommand command = new(
-                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>());
-            command.Options.Subscription = subscription;
-            command.Options.ResourceGroup = resourceGroup;
+                acrClientFactory, acrContentClientFactory, Mock.Of<ILogger<CleanAcrImagesCommand>>(), Mock.Of<ILifecycleMetadataService>(), Mock.Of<IRegistryCredentialsProvider>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.RegistryName = AcrName;
             command.Options.RepoName = "public/dotnet/nightly/*";
             command.Options.Action = CleanAcrImagesAction.PruneAll;

@@ -39,6 +39,13 @@ public sealed record PublishConfiguration
     public SigningConfiguration? Signing { get; set; }
 
     /// <summary>
+    /// Service connection used for ACR cleanup operations (e.g., deleting images and repos).
+    /// This is separate from the per-registry service connections in <see cref="RegistryAuthentication"/>
+    /// because cleanup operations may require different RBAC permissions.
+    /// </summary>
+    public ServiceConnection? CleanServiceConnection { get; set; }
+
+    /// <summary>
     /// Authentication details for container registries.
     /// </summary>
     /// <remarks>

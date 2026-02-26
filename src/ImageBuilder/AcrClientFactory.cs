@@ -29,7 +29,12 @@ public class AcrClientFactory(
                 $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
         }
 
-        TokenCredential credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
+        return Create(acrName, auth.ServiceConnection);
+    }
+
+    public IAcrClient Create(string acrName, IServiceConnection serviceConnection)
+    {
+        TokenCredential credential = _tokenCredentialProvider.GetCredential(serviceConnection);
         return new AcrClientWrapper(new ContainerRegistryClient(DockerHelper.GetAcrUri(acrName), credential));
     }
 }

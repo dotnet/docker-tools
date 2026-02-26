@@ -27,6 +27,7 @@ stages:
     - template: /eng/docker-tools/templates/steps/init-common.yml@self
       parameters:
         dockerClientOS: linux
+        publishConfig: ${{ parameters.publishConfig }}
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         internalProjectName: internal

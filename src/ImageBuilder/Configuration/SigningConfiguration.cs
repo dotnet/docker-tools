@@ -32,5 +32,5 @@ public sealed record SigningConfiguration
     /// <summary>
     /// Name of the notation trust store to use for signature verification (e.g., "supplychain" or "test").
     /// </summary>
-    public string TrustStoreName { get; set; } = "test";
+    public string TrustStoreName { get; set; } = string.Empty;
 }

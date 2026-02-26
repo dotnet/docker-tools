@@ -27,10 +27,13 @@ internal class AcrContentClientFactory(
                 $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
         }
 
-        var tokenCredential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
+        return Create(acr, repositoryName, auth.ServiceConnection);
+    }
 
+    public IAcrContentClient Create(Acr acr, string repositoryName, IServiceConnection serviceConnection)
+    {
+        var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
         var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
-        var wrapper = new AcrContentClientWrapper(client);
-        return wrapper;
+        return new AcrContentClientWrapper(client);
     }
 }

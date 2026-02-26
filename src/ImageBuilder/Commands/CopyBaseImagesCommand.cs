@@ -21,6 +21,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             copyImageService,
             logger)
     {
+        private readonly IManifestJsonService _manifestJsonService = manifestJsonService;
         private readonly ILogger _logger = logger;
         private readonly IGitService _gitService = gitService;
 
@@ -59,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 manifests =
                     SubscriptionHelper.GetSubscriptionManifests(
-                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService,
+                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService,
                         options => options.RegistryOverride = Options.RegistryOverride)
                     .Select(subscriptionManifest => subscriptionManifest.Manifest);
                 fullRegistryName = Options.RegistryOverride;

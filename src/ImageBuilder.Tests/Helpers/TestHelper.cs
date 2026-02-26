@@ -6,23 +6,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Moq;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
     public static class TestHelper
     {
         /// <summary>
-        /// Creates an <see cref="IManifestJsonService"/> that delegates to <see cref="ManifestInfo.Load"/>.
+        /// Creates a real <see cref="ManifestJsonService"/> for use in tests that load
+        /// manifest JSON files from the filesystem (e.g., temp folder-based tests).
         /// </summary>
-        public static IManifestJsonService CreateManifestJsonService()
-        {
-            var mock = new Mock<IManifestJsonService>();
-            mock.Setup(s => s.Load(It.IsAny<IManifestOptionsInfo>()))
-                .Returns<IManifestOptionsInfo>(ManifestInfo.Load);
-            return mock.Object;
-        }
+        public static IManifestJsonService CreateManifestJsonService() =>
+            new ManifestJsonService(new LoggerFactory().CreateLogger<ManifestJsonService>());
 
         public static TempFolderContext UseTempFolder()
         {

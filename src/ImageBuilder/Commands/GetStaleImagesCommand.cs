@@ -19,16 +19,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);
         private readonly Lazy<IManifestService> _manifestService;
+        private readonly IManifestJsonService _manifestJsonService;
         private readonly ILogger<GetStaleImagesCommand> _logger;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
 
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
+            IManifestJsonService manifestJsonService,
             ILogger<GetStaleImagesCommand> logger,
             IOctokitClientFactory octokitClientFactory,
             IGitService gitService)
         {
+            _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
             _logger = logger;
             _octokitClientFactory = octokitClientFactory;
             _gitService = gitService;
@@ -52,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
                 SubscriptionHelper.GetSubscriptionManifests(
-                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService)
+                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService)
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {

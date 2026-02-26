@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
 
-            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
             string expected = JsonHelper.SerializeObject(imageArtifactDetails);
 
             ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
@@ -164,7 +164,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
 
-            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
             string expected = JsonHelper.SerializeObject(imageArtifactDetails);
 
             ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
@@ -255,7 +255,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
 
-            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
             string expected = JsonHelper.SerializeObject(imageArtifactDetails);
 
             ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
@@ -1093,7 +1093,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonHelper.SerializeObject(manifest));
 
-            ManifestInfo manifestInfo = ManifestInfo.Load(new FakeManifestOptions(manifestPath));
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(new FakeManifestOptions(manifestPath));
 
             ImageArtifactDetails source = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(imageArtifactDetails), manifestInfo);
             ImageArtifactDetails target = ImageInfoHelper.LoadFromContent(JsonHelper.SerializeObject(targetImageArtifactDetails), manifestInfo);

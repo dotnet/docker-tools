@@ -17,7 +17,7 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         public static IEnumerable<(Subscription Subscription, ManifestInfo Manifest)> GetSubscriptionManifests(
             string subscriptionsPath, ManifestFilterOptions filterOptions,
-            IGitService gitService, Action<ManifestOptions>? configureOptions = null)
+            IGitService gitService, IManifestJsonService manifestJsonService, Action<ManifestOptions>? configureOptions = null)
         {
             string subscriptionsJson = File.ReadAllText(subscriptionsPath);
             Subscription[]? subscriptions = JsonConvert.DeserializeObject<Subscription[]>(subscriptionsJson);
@@ -31,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder
             foreach (Subscription subscription in subscriptions)
             {
                 ManifestInfo? manifest = GetSubscriptionManifest(
-                    subscription, filterOptions, gitService, configureOptions);
+                    subscription, filterOptions, gitService, manifestJsonService, configureOptions);
                 if (manifest is not null)
                 {
                     subscriptionManifests.Add((subscription, manifest));
@@ -42,7 +42,8 @@ namespace Microsoft.DotNet.ImageBuilder
         }
 
         private static ManifestInfo? GetSubscriptionManifest(Subscription subscription,
-            ManifestFilterOptions filterOptions, IGitService gitService, Action<ManifestOptions>? configureOptions)
+            ManifestFilterOptions filterOptions, IGitService gitService, IManifestJsonService manifestJsonService,
+            Action<ManifestOptions>? configureOptions)
         {
             // If the command is filtered with an OS type that does not match the OsType filter of the subscription,
             // then there are no images that need to be inspected.
@@ -74,7 +75,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
                 configureOptions?.Invoke(manifestOptions);
 
-                return ManifestInfo.Load(manifestOptions);
+                return manifestJsonService.Load(manifestOptions);
             }
             finally
             {

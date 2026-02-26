@@ -81,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Load manifest
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -192,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Load manifest
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -293,7 +293,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Load manifest
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -480,7 +480,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 // Load manifest
                 IManifestOptionsInfo manifestOptions = GetManifestOptions(ManifestFilePath);
-                ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+                ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
                 RepoInfo repo = manifestInfo.AllRepos.First();
 
                 // Execute tags metadata generator and deserialize its output

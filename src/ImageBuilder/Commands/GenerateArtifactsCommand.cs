@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private readonly ILogger _logger;
 
-        protected GenerateArtifactsCommand(IEnvironmentService environmentService, ILogger logger) : base()
+        protected GenerateArtifactsCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger logger) : base(manifestJsonService)
         {
             _environmentService = environmentService ?? throw new ArgumentNullException(nameof(environmentService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));

@@ -12,13 +12,16 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesCommand(
+        IManifestJsonService manifestJsonService,
         ICopyImageService copyImageService,
         ILogger<CopyBaseImagesCommand> logger,
         IGitService gitService)
         : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
+            manifestJsonService,
             copyImageService,
             logger)
     {
+        private readonly IManifestJsonService _manifestJsonService = manifestJsonService;
         private readonly ILogger _logger = logger;
         private readonly IGitService _gitService = gitService;
 
@@ -57,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 manifests =
                     SubscriptionHelper.GetSubscriptionManifests(
-                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService,
+                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService,
                         options => options.RegistryOverride = Options.RegistryOverride)
                     .Select(subscriptionManifest => subscriptionManifest.Manifest);
                 fullRegistryName = Options.RegistryOverride;

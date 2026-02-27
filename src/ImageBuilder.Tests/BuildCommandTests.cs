@@ -3525,6 +3525,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         #nullable enable
         private static BuildCommand CreateBuildCommand(
+            IManifestJsonService? manifestJsonService = null,
             IDockerService? dockerService = null,
             ILogger<BuildCommand>? loggerService = null,
             IGitService? gitService = null,
@@ -3536,6 +3537,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IImageCacheService? imageCacheService = null)
         {
             BuildCommand command = new(
+                manifestJsonService ?? TestHelper.CreateManifestJsonService(),
                 dockerService ?? Mock.Of<IDockerService>(),
                 loggerService ?? Mock.Of<ILogger<BuildCommand>>(),
                 gitService ?? Mock.Of<IGitService>(),

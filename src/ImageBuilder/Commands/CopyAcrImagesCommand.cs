@@ -19,9 +19,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
+            IManifestJsonService manifestJsonService,
             ICopyImageService copyImageService,
             ILogger<CopyAcrImagesCommand> logger)
-            : base(copyImageService, logger)
+            : base(manifestJsonService, copyImageService, logger)
         {
             _logger = logger;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>

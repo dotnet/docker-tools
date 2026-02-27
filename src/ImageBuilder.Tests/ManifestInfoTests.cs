@@ -139,7 +139,7 @@ $@"
             DockerfileHelper.CreateDockerfile(s_dockerfilePath, tempFolderContext);
 
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
 
             Assert.Equal(3, manifestInfo.Model.Repos.Length);
             Assert.Equal("testRepo1", manifestInfo.Model.Repos[0].Name);
@@ -167,7 +167,7 @@ $@"
             DockerfileHelper.CreateDockerfile(s_dockerfilePath, tempFolderContext);
 
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            return ManifestInfo.Load(manifestOptions);
+            return TestHelper.CreateManifestJsonService().Load(manifestOptions);
         }
 
         private static string CreateRepo(string repoName, string dockerfilePath, string tag = "testTag") =>

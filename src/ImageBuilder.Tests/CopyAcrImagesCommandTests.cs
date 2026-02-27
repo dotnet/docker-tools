@@ -35,6 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Mock<ICopyImageService> copyImageServiceMock = new();
 
                 CopyAcrImagesCommand command = new(
+                    TestHelper.CreateManifestJsonService(),
                     copyImageServiceMock.Object,
                     Mock.Of<ILogger<CopyAcrImagesCommand>>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -123,6 +124,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 var copyImageServiceMock = new Mock<ICopyImageService>();
 
                 var command = new CopyAcrImagesCommand(
+                    TestHelper.CreateManifestJsonService(),
                     copyImageServiceMock.Object,
                     Mock.Of<ILogger<CopyAcrImagesCommand>>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -223,6 +225,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var copyImageServiceMock = new Mock<ICopyImageService>();
 
             var command = new CopyAcrImagesCommand(
+                TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
                 Mock.Of<ILogger<CopyAcrImagesCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -334,6 +337,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             var copyImageServiceMock = new Mock<ICopyImageService>();
 
             var command = new CopyAcrImagesCommand(
+                TestHelper.CreateManifestJsonService(),
                 copyImageServiceMock.Object,
                 Mock.Of<ILogger<CopyAcrImagesCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");

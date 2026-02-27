@@ -15,6 +15,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>
     {
+        public MergeImageInfoCommand(IManifestJsonService manifestJsonService) : base(manifestJsonService) { }
+
         protected override string Description => "Merges the content of multiple image info files into one file";
 
         public override Task ExecuteAsync()

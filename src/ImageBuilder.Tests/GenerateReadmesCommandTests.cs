@@ -223,7 +223,7 @@ ABC-123";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateReadmesCommand command = new GenerateReadmesCommand(_environmentServiceMock.Object, Mock.Of<ILogger<GenerateReadmesCommand>>());
+            GenerateReadmesCommand command = new GenerateReadmesCommand(TestHelper.CreateManifestJsonService(), _environmentServiceMock.Object, Mock.Of<ILogger<GenerateReadmesCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

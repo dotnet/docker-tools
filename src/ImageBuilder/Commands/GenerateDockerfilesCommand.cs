@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private readonly ILogger _logger;
 
-        public GenerateDockerfilesCommand(IEnvironmentService environmentService, ILogger<GenerateDockerfilesCommand> logger) : base(environmentService, logger)
+        public GenerateDockerfilesCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger<GenerateDockerfilesCommand> logger) : base(manifestJsonService, environmentService, logger)
         {
             _logger = logger;
         }

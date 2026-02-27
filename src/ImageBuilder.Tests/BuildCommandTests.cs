@@ -590,6 +590,60 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that arm/v7 is compatible with arm/ (empty variant) since containerd
+        /// treats them as equivalent, similar to arm64/v8 and arm64/.
+        /// </summary>
+        [Theory]
+        [InlineData("v7", null)]
+        [InlineData(null, "v7")]
+        [InlineData(null, null)]
+        [InlineData("v7", "v7")]
+        public async Task BuildCommand_ArmVariantCompatibility(string manifestVariant, string baseImageVariant)
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            dockerServiceMock
+                .Setup(o => o.GetImageArch(baseImageTag, false))
+                .Returns((Architecture.ARM, baseImageVariant));
+
+            BuildCommand command = CreateBuildCommand(
+                dockerService: dockerServiceMock.Object,
+                copyImageService: Mock.Of<ICopyImageService>(),
+                manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
+
+            Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: manifestVariant);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            platform
+                        }))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
+        }
+
+        /// <summary>
         /// Verifies that manifest-defined and globally-defined build args can be used.
         /// </summary>
         [Fact]

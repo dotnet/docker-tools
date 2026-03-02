@@ -16,9 +16,8 @@ jobs:
   steps:
 
   # Install MicroBuild signing plugin for ESRP container image signing
-  - template: /eng/docker-tools/templates/steps/install-microbuild.yml@self
+  - template: /eng/docker-tools/templates/steps/install-microbuild-linux.yml@self
     parameters:
-      dockerClientOS: linux
       signType: ${{ parameters.publishConfig.Signing.SignType }}
 
   # Setup docker and ImageBuilder

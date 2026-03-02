@@ -100,10 +100,8 @@ steps:
         )
 
         $authedDockerRunArgs = @(
-          '-e'
-          'SYSTEM_ACCESSTOKEN=$env:SYSTEM_ACCESSTOKEN'
-          '-e'
-          'SYSTEM_OIDCREQUESTURI=$env:SYSTEM_OIDCREQUESTURI'
+          "-e", 'SYSTEM_ACCESSTOKEN=$env:SYSTEM_ACCESSTOKEN'
+          "-e", 'SYSTEM_OIDCREQUESTURI=$env:SYSTEM_OIDCREQUESTURI'
         )
 
         # Add MicroBuild signing mount and env vars when signing is enabled.
@@ -115,54 +113,41 @@ steps:
         if ($signingEnabled -eq "True" -and $env:MBSIGN_APPFOLDER) {
           $signingArgs = @(
             # Mount the MicroBuild signing plugin directory (contains DDSignFiles.dll and esrpcli.dll)
-            "-v"
-            "$env:MBSIGN_APPFOLDER`:/microbuild"
-            "-e"
-            "MBSIGN_APPFOLDER=/microbuild"
+            "-v", "$env:MBSIGN_APPFOLDER`:/microbuild"
+            # Use a container-local mount path for the plugin.
+            "-e", "MBSIGN_APPFOLDER=/microbuild"
 
             # MicroBuild plugin variables for DDSignFiles.dll
-            "-e"
-            'VSENGESRPSSL=$env:VSENGESRPSSL'          # SSL certificate (base64) for ESRP auth on Linux
-            "-e"
-            'USEESRPCLI=$env:USEESRPCLI'              # Selects ESRP CLI signing path
-            "-e"
-            'MBSIGN_CONNECTEDSERVICE=$env:MBSIGN_CONNECTEDSERVICE'  # ESRP service connection ID
+            # SSL certificate (base64) for ESRP auth on Linux.
+            "-e", 'VSENGESRPSSL=$env:VSENGESRPSSL'
+            # Selects ESRP CLI signing path.
+            "-e", 'USEESRPCLI=$env:USEESRPCLI'
+            # ESRP service connection ID.
+            "-e", 'MBSIGN_CONNECTEDSERVICE=$env:MBSIGN_CONNECTEDSERVICE'
 
             # Container-local temp/workspace paths (host paths aren't accessible inside the container)
-            "-e"
-            "MBSIGNTEMPDIR=/tmp/MicroBuildSign"       # Working directory for DDSignFiles.dll
-            "-e"
-            "PIPELINE_WORKSPACE=$(artifactsPath)"     # Root directory for ESRP CLI file path resolution
-            "-e"
-            "AGENT_TEMPDIRECTORY=/tmp"
+            # Working directory for DDSignFiles.dll.
+            "-e", "MBSIGNTEMPDIR=/tmp/MicroBuildSign"
+            # Root directory for ESRP CLI file path resolution.
+            "-e", "PIPELINE_WORKSPACE=$(artifactsPath)"
+            "-e", "AGENT_TEMPDIRECTORY=/tmp"
 
             # Azure DevOps pipeline variables for ESRP bearer token auth (ESRPUtils.GetAccountInfo)
-            "-e"
-            'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI=$env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'
-            "-e"
-            'BUILD_BUILDID=$env:BUILD_BUILDID'
-            "-e"
-            'SYSTEM_TEAMPROJECT=$env:SYSTEM_TEAMPROJECT'
-            "-e"
-            'BUILD_SOURCEBRANCH=$env:BUILD_SOURCEBRANCH'
+            "-e", 'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI=$env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'
+            "-e", 'BUILD_BUILDID=$env:BUILD_BUILDID'
+            "-e", 'SYSTEM_TEAMPROJECT=$env:SYSTEM_TEAMPROJECT'
+            "-e", 'BUILD_SOURCEBRANCH=$env:BUILD_SOURCEBRANCH'
 
             # Azure DevOps pipeline variables for ESRP CLI federated token (ESRPCliDll.GetFederatedTokenData)
-            "-e"
-            'SYSTEM_JOBID=$env:SYSTEM_JOBID'
-            "-e"
-            'SYSTEM_PLANID=$env:SYSTEM_PLANID'
-            "-e"
-            'SYSTEM_TEAMPROJECTID=$env:SYSTEM_TEAMPROJECTID'
-            "-e"
-            'SYSTEM_HOSTTYPE=$env:SYSTEM_HOSTTYPE'
-            "-e"
-            'SYSTEM_COLLECTIONURI=$env:SYSTEM_COLLECTIONURI'
+            "-e", 'SYSTEM_JOBID=$env:SYSTEM_JOBID'
+            "-e", 'SYSTEM_PLANID=$env:SYSTEM_PLANID'
+            "-e", 'SYSTEM_TEAMPROJECTID=$env:SYSTEM_TEAMPROJECTID'
+            "-e", 'SYSTEM_HOSTTYPE=$env:SYSTEM_HOSTTYPE'
+            "-e", 'SYSTEM_COLLECTIONURI=$env:SYSTEM_COLLECTIONURI'
 
             # Azure DevOps pipeline variables for DDSignFilesConfiguration
-            "-e"
-            'BUILD_DEFINITIONNAME=$env:BUILD_DEFINITIONNAME'
-            "-e"
-            'BUILD_BUILDNUMBER=$env:BUILD_BUILDNUMBER'
+            "-e", 'BUILD_DEFINITIONNAME=$env:BUILD_DEFINITIONNAME'
+            "-e", 'BUILD_BUILDNUMBER=$env:BUILD_BUILDNUMBER'
           )
           Write-Host "MicroBuild signing enabled, mounting $env:MBSIGN_APPFOLDER to /microbuild"
         } elseif ($signingEnabled -eq "True") {

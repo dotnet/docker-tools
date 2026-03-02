@@ -6,14 +6,11 @@ parameters:
 - name: signEnabled
   type: boolean
   default: true
-- name: condition
-  type: string
-  default: "true"
 
 steps:
 - task: PowerShell@2
   displayName: Configure ImageBuilder Signing Options
-  condition: and(succeeded(), ${{ parameters.condition }})
+  condition: succeeded()
   inputs:
     targetType: 'inline'
     script: |

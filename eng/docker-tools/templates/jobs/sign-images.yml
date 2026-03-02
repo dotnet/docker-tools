@@ -20,6 +20,10 @@ jobs:
     parameters:
       signType: ${{ parameters.publishConfig.Signing.SignType }}
 
+  - template: /eng/docker-tools/templates/steps/configure-imagebuilder-signing.yml@self
+    parameters:
+      signEnabled: ${{ parameters.publishConfig.Signing.Enabled }}
+
   # Setup docker and ImageBuilder
   - template: /eng/docker-tools/templates/steps/init-common.yml@self
     parameters:

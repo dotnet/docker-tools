@@ -1,0 +1,69 @@
+# Configures ImageBuilder docker run options for MicroBuild/ESRP image signing.
+# This step must be ran before init-imagebuilder.yml.
+# The output of this step is the imageBuilderDockerRunExtraOptions variable, which contains extra
+# docker run arguments required for signing and is used in the init-imagebuilder.yml step.
+parameters:
+- name: signEnabled
+  type: boolean
+  default: true
+- name: condition
+  type: string
+  default: "true"
+
+steps:
+- task: PowerShell@2
+  displayName: Configure ImageBuilder Signing Options
+  condition: and(succeeded(), ${{ parameters.condition }})
+  inputs:
+    targetType: 'inline'
+    script: |
+      $imageBuilderDockerRunExtraOptions = ""
+      $signEnabled = "${{ parameters.signEnabled }}"
+
+      if ($signEnabled -eq "True" -and $env:MBSIGN_APPFOLDER) {
+        $signingArgs = @(
+          # Mount the MicroBuild signing plugin directory (contains DDSignFiles.dll and esrpcli.dll).
+          "-v", "$env:MBSIGN_APPFOLDER`:/microbuild"
+          # Use a container-local mount path for the plugin.
+          "-e", "MBSIGN_APPFOLDER=/microbuild"
+
+          # MicroBuild plugin variables for DDSignFiles.dll.
+          # SSL certificate (base64) for ESRP auth on Linux.
+          "-e", 'VSENGESRPSSL=$env:VSENGESRPSSL'
+          # Selects ESRP CLI signing path.
+          "-e", 'USEESRPCLI=$env:USEESRPCLI'
+          # ESRP service connection ID.
+          "-e", 'MBSIGN_CONNECTEDSERVICE=$env:MBSIGN_CONNECTEDSERVICE'
+
+          # Container-local temp/workspace paths (host paths aren't accessible inside the container).
+          # Working directory for DDSignFiles.dll.
+          "-e", "MBSIGNTEMPDIR=/tmp/MicroBuildSign"
+          # Root directory for ESRP CLI file path resolution.
+          "-e", "PIPELINE_WORKSPACE=$(artifactsPath)"
+          "-e", "AGENT_TEMPDIRECTORY=/tmp"
+
+          # Azure DevOps pipeline variables for ESRP bearer token auth (ESRPUtils.GetAccountInfo).
+          "-e", 'SYSTEM_TEAMFOUNDATIONCOLLECTIONURI=$env:SYSTEM_TEAMFOUNDATIONCOLLECTIONURI'
+          "-e", 'BUILD_BUILDID=$env:BUILD_BUILDID'
+          "-e", 'SYSTEM_TEAMPROJECT=$env:SYSTEM_TEAMPROJECT'
+          "-e", 'BUILD_SOURCEBRANCH=$env:BUILD_SOURCEBRANCH'
+
+          # Azure DevOps pipeline variables for ESRP CLI federated token (ESRPCliDll.GetFederatedTokenData).
+          "-e", 'SYSTEM_JOBID=$env:SYSTEM_JOBID'
+          "-e", 'SYSTEM_PLANID=$env:SYSTEM_PLANID'
+          "-e", 'SYSTEM_TEAMPROJECTID=$env:SYSTEM_TEAMPROJECTID'
+          "-e", 'SYSTEM_HOSTTYPE=$env:SYSTEM_HOSTTYPE'
+          "-e", 'SYSTEM_COLLECTIONURI=$env:SYSTEM_COLLECTIONURI'
+
+          # Azure DevOps pipeline variables for DDSignFilesConfiguration.
+          "-e", 'BUILD_DEFINITIONNAME=$env:BUILD_DEFINITIONNAME'
+          "-e", 'BUILD_BUILDNUMBER=$env:BUILD_BUILDNUMBER'
+        )
+
+        $imageBuilderDockerRunExtraOptions = $signingArgs -join ' '
+        Write-Host "MicroBuild signing enabled, mounting $env:MBSIGN_APPFOLDER to /microbuild"
+      } elseif ($signEnabled -eq "True") {
+        Write-Warning "MBSIGN_APPFOLDER not set - signing will not work"
+      }
+
+      Write-Host "##vso[task.setvariable variable=imageBuilderDockerRunExtraOptions]$imageBuilderDockerRunExtraOptions"

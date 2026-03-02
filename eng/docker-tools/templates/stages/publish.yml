@@ -50,6 +50,9 @@ stages:
   condition: "
     and(
       not(canceled()),
+      or(
+        ne(lower('${{ parameters.publishConfig.Signing.Enabled }}'), 'true'),
+        in(dependencies.Sign.result, 'Succeeded', 'SucceededWithIssues')),
       and(
         contains(variables['stages'], 'publish'),
         or(

@@ -75,9 +75,9 @@ variables:
 # MicroBuild signing plugin feed source
 - name: MicroBuildFeedSource
   # Live feed
-  # value: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
+  value: https://dnceng.pkgs.visualstudio.com/_packaging/MicroBuildToolset/nuget/v3/index.json
   # Test feed
-  value: https://pkgs.dev.azure.com/dnceng/_packaging/MicroBuildTestDNCEng/nuget/v3/index.json
+  # value: https://pkgs.dev.azure.com/dnceng/_packaging/MicroBuildTestDNCEng/nuget/v3/index.json
   # https://pkgs.dev.azure.com/dnceng/_packaging/MicroBuildTestDNCEng%40Local/nuget/v3/index.json
   # dnceng/public: https://pkgs.dev.azure.com/dnceng/_packaging/MicroBuildTestDNCEng/nuget/v3/index.json
   # dnceng/internal: https://pkgs.dev.azure.com/dnceng/_packaging/MicroBuildTestDNCEng%40Local/nuget/v3/index.json
@@ -86,8 +86,8 @@ variables:
 # MicroBuild signing plugin version
 - name: MicroBuildPluginVersion
   # Live version
-  # value: latest
+  value: latest
   # Test version
-  value: 1.1.1233-g8d354617b3
+  # value: 1.1.1233-g8d354617b3
 
 - group: DotNet-Docker-Common-2

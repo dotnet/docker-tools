@@ -37,13 +37,6 @@ jobs:
       artifactName: image-info
       pipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 
-  # Debug: print signing-related environment variables when System.Debug is enabled
-  - script: |
-      echo "=== Signing-related environment variables ==="
-      printenv | grep -iE '^(MBSIGN|VSENGESRP|USEESRPCLI|PIPELINE_WORKSPACE|AGENT_TEMP|SYSTEM_(ACCESSTOKEN|OIDC|JOBID|PLANID|TEAMPROJECT|HOSTTYPE|COLLECTIONURI|TEAMFOUNDATION)|BUILD_(BUILDID|SOURCEBRANCH|DEFINITIONNAME|BUILDNUMBER))' | sed 's/\(VSENGESRPSSL=\).*/\1[REDACTED]/' | sed 's/\(SYSTEM_ACCESSTOKEN=\).*/\1[REDACTED]/' | sort
-    displayName: 🔍 Debug - Print Signing Environment Variables
-    condition: and(succeeded(), eq(variables['System.Debug'], 'true'))
-
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: 🔏 Sign Container Images

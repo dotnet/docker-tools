@@ -27,7 +27,6 @@ jobs:
       setupImageBuilder: true
       customInitSteps: ${{ parameters.customInitSteps }}
       publishConfig: ${{ parameters.publishConfig }}
-      useHostArtifactsPath: true
 
   # Download merged image-info artifact from Post_Build stage (or from a previous pipeline run)
   - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self

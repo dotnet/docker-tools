@@ -20,7 +20,6 @@ jobs:
     parameters:
       dockerClientOS: linux
       signType: ${{ parameters.publishConfig.Signing.SignType }}
-      enablePreviewMicrobuild: false
 
   # Setup docker and ImageBuilder
   - template: /eng/docker-tools/templates/steps/init-common.yml@self

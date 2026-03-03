@@ -21,14 +21,24 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-$dotnetInstallDir = "$PSScriptRoot/../.dotnet"
-
 Push-Location $PSScriptRoot
 
 try {
-    & ../eng/docker-tools/Install-DotNetSdk.ps1 $dotnetInstallDir
+    if ($env:OS -ne 'Windows_NT') {
+        # On Linux, use the bash tools.sh (tools.ps1 uses dotnet-install.ps1
+        # which doesn't work reliably on Linux)
+        $engCommonDir = (Resolve-Path "$PSScriptRoot/../eng/common").Path
+        $initScript = "source '$engCommonDir/tools.sh'; InitializeDotNetCli true; echo `$_InitializeDotNetCli"
+        $dotnetInstallDir = (& bash -c $initScript | Select-Object -Last 1).Trim()
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to initialize .NET SDK via tools.sh"
+        }
+    } else {
+        . $PSScriptRoot/../eng/common/tools.ps1
+        $dotnetInstallDir = InitializeDotNetCli $true
+    }
 
-    $cmd = "$DotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
+    $cmd = "$dotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
 
     Write-Output "Executing '$cmd'"
     Invoke-Expression $cmd

@@ -84,7 +84,9 @@ public class RegistryApiClient : IRegistryManifestClient
             string errorContent = await response.Content.ReadAsStringAsync();
 
             throw new HttpRequestException(
-                $"Response status code does not indicate success: {response.StatusCode}. Reason: '{response.ReasonPhrase}'. Error content:{Environment.NewLine}{errorContent}");
+                $"Response status code does not indicate success: {response.StatusCode}. Reason: '{response.ReasonPhrase}'. Error content:{Environment.NewLine}{errorContent}",
+                inner: null,
+                response.StatusCode);
         }
         response.EnsureSuccessStatusCode();
 

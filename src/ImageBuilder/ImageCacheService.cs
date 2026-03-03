@@ -1,10 +1,14 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
+using Azure;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -23,6 +27,7 @@ public interface IImageCacheService
         bool isLocalBaseImageExpected,
         bool isDryRun);
 }
+
 public class ImageCacheService : IImageCacheService
 {
     private readonly ILogger<ImageCacheService> _logger;
@@ -179,8 +184,10 @@ public class ImageCacheService : IImageCacheService
             {
                 currentSha = await imageDigestCache.GetManifestDigestShaAsync(queryImage, isDryRun);
             }
-            // Handle cases where the image is not found in the registry yet
-            catch (Exception)
+            // Handle cases where the image is not found in the registry yet.
+            // Other errors (e.g., authentication failures) should propagate so
+            // they are not silently swallowed. See https://github.com/dotnet/docker-tools/issues/1964
+            catch (Exception ex) when (IsImageNotFoundException(ex))
             {
                 currentSha = null;
             }
@@ -217,6 +224,14 @@ public class ImageCacheService : IImageCacheService
     private static string GetBuildCacheKey(PlatformInfo platform) =>
         $"{platform.DockerfilePathRelativeToManifest}-" +
         string.Join('-', platform.BuildArgs.Select(kvp => $"{kvp.Key}={kvp.Value}").ToArray());
+
+    /// <summary>
+    /// Returns true if the exception represents an HTTP 404 Not Found response,
+    /// indicating the image does not exist in the registry.
+    /// </summary>
+    private static bool IsImageNotFoundException(Exception ex) =>
+        (ex is HttpRequestException { StatusCode: HttpStatusCode.NotFound }) ||
+        (ex is RequestFailedException { Status: 404 });
 }
 
 [Flags]

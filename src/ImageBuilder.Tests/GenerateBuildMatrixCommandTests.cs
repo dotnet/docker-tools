@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -1547,26 +1548,99 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
-        /// Demonstrates the bug from https://github.com/dotnet/docker-tools/issues/1964.
-        /// When the manifest digest query for an external base image fails (e.g., due to missing
-        /// ACR authentication), the exception is silently swallowed in <see cref="ImageCacheService"/>,
-        /// causing the platform to be treated as "not cached" even though the Dockerfile is unchanged
-        /// and image-info has a valid prior build with a matching base image digest.
+        /// Verifies that when a base image digest query fails with a non-404 error (e.g., authentication
+        /// failure due to missing RegistryAuthentication config), the exception propagates rather than
+        /// being silently swallowed. This is the fix for https://github.com/dotnet/docker-tools/issues/1964.
         /// </summary>
         [Fact]
-        public async Task TrimCachedImages_ExternalBaseImageDigestQueryFailure_CausesIncorrectCacheMiss()
+        public async Task TrimCachedImages_DigestQueryAuthFailure_Throws()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
+            GenerateBuildMatrixCommand command = SetupTrimCacheTest(
+                tempFolderContext,
+                digestQueryThrows: true);
+
+            command.LoadManifest();
+
+            // The digest query throws a generic exception (simulating auth failure).
+            // This should propagate instead of being silently swallowed.
+            await Assert.ThrowsAsync<Exception>(command.GenerateMatrixInfoAsync);
+        }
+
+        /// <summary>
+        /// Verifies that when a base image is not found in the registry (HTTP 404), it is treated as
+        /// a cache miss and the platform is included in the matrix. This handles the case where a new
+        /// image hasn't been published yet.
+        /// </summary>
+        [Fact]
+        public async Task TrimCachedImages_DigestQueryReturnsNotFound_CacheMiss()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IManifestService> manifestServiceMock = new();
+            manifestServiceMock
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ThrowsAsync(new HttpRequestException("Not Found", null, System.Net.HttpStatusCode.NotFound));
+
+            GenerateBuildMatrixCommand command = SetupTrimCacheTest(
+                tempFolderContext,
+                manifestServiceMock: manifestServiceMock);
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            // Image not found → cache miss → platform should be included in the matrix
+            Assert.Single(matrixInfos);
+            Assert.Single(matrixInfos.First().Legs);
+        }
+
+        /// <summary>
+        /// Verifies that when the base image digest matches (auth is working and digest is unchanged),
+        /// and the Dockerfile commit also matches, the platform is correctly cached and trimmed from
+        /// the matrix.
+        /// </summary>
+        [Fact]
+        public async Task TrimCachedImages_DigestAndCommitMatch_PlatformIsCached()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            const string baseImageDigestSha = "sha256:ea71a031ed91cd46b00d438876550bc765da43b4ae40f331a12daf62f0937758";
+
+            // Create a mock that returns a matching digest for any image query
+            Mock<IManifestService> manifestServiceMock = new();
+            manifestServiceMock
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(baseImageDigestSha);
+
+            GenerateBuildMatrixCommand command = SetupTrimCacheTest(
+                tempFolderContext,
+                manifestServiceMock: manifestServiceMock);
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            // Digest matches and Dockerfile unchanged → platform is cached → trimmed from matrix
+            Assert.Empty(matrixInfos);
+        }
+
+        /// <summary>
+        /// Sets up a <see cref="GenerateBuildMatrixCommand"/> with a single platform that has an
+        /// external base image, suitable for testing cache trimming behavior.
+        /// </summary>
+        private static GenerateBuildMatrixCommand SetupTrimCacheTest(
+            TempFolderContext tempFolderContext,
+            IEnumerable<ManifestServiceHelper.ImageDigestResults> externalImageDigestResults = null,
+            bool digestQueryThrows = false,
+            Mock<IManifestService> manifestServiceMock = null)
+        {
             const string sourceRepoUrl = "https://github.com/dotnet/test";
             const string commitSha = "abc123def456";
             const string baseImageDigestSha = "sha256:ea71a031ed91cd46b00d438876550bc765da43b4ae40f331a12daf62f0937758";
 
-            // Create a Dockerfile with an external base image (alpine:3.20)
             string runtimeDepsRelativeDir = "1.0/runtime-deps/os/amd64";
             string dockerfilePath = CreateDockerfile(runtimeDepsRelativeDir, tempFolderContext, "alpine:3.20");
 
-            // Create manifest - no registry set (defaults to empty/mcr)
             Manifest manifest = CreateManifest(
                 CreateRepo("runtime-deps",
                     CreateImage(
@@ -1574,21 +1648,27 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             string commitUrl = $"{sourceRepoUrl}/blob/{commitSha}/{PathHelper.NormalizePath(dockerfilePath)}";
 
-            // Mock git service: Dockerfile is unchanged (same commit SHA)
             Mock<IGitService> gitServiceMock = new();
             gitServiceMock
                 .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
                 .Returns(commitSha);
 
-            // Mock manifest service factory: digest queries throw for ALL images.
-            // This simulates the auth failure when RegistryAuthentication is not configured
-            // for the mirror ACR (the root cause of issue #1964).
-            // By default, CreateManifestServiceFactoryMock creates a manifest service that throws
-            // on GetManifestDigestShaAsync for all images.
-            Mock<IManifestServiceFactory> manifestServiceFactoryMock =
-                ManifestServiceHelper.CreateManifestServiceFactoryMock();
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock;
+            if (manifestServiceMock is not null)
+            {
+                manifestServiceFactoryMock = ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock);
+            }
+            else if (digestQueryThrows)
+            {
+                // Default mock throws a generic exception on all digest queries
+                manifestServiceFactoryMock = ManifestServiceHelper.CreateManifestServiceFactoryMock();
+            }
+            else
+            {
+                manifestServiceFactoryMock = ManifestServiceHelper.CreateManifestServiceFactoryMock(
+                    externalImageDigestResults: externalImageDigestResults ?? []);
+            }
 
-            // Use the REAL ImageCacheService (not mocked) to test the actual caching logic
             ImageCacheService imageCacheService = new(
                 Mock.Of<ILogger<ImageCacheService>>(),
                 gitServiceMock.Object);
@@ -1610,9 +1690,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Path.Combine(tempFolderContext.Path, command.Options.Manifest),
                 JsonConvert.SerializeObject(manifest));
 
-            // Create image-info with a valid prior build:
-            // - The base image digest is recorded
-            // - The commit URL matches the current commit (Dockerfile unchanged)
             ImageArtifactDetails imageArtifactDetails = new()
             {
                 Repos =
@@ -1639,18 +1716,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
 
-            command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-
-            // The platform should be cached and trimmed from the matrix because:
-            // 1. The Dockerfile hasn't changed (commit SHA matches)
-            // 2. If auth were working correctly, the base image digest query would succeed
-            //    and return the same digest recorded in image-info
-            //
-            // BUG: Because the digest query fails (due to missing RegistryAuthentication config),
-            // the exception is caught in IsBaseImageDigestUpToDateAsync, currentSha is set to null,
-            // and the digest comparison always returns false → cache miss → platform stays in matrix.
-            Assert.Empty(matrixInfos);
+            return command;
         }
 
         private static GenerateBuildMatrixCommand CreateCommand() =>

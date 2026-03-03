@@ -4,6 +4,8 @@
 using System;
 using System.Threading.Tasks;
 using Azure.Core;
+using Azure.ResourceManager;
+using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
@@ -26,7 +28,7 @@ public class CopyImageServiceTests
         var emptyConfig = new PublishConfiguration();
         var service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
-            Mock.Of<IAzureTokenCredentialProvider>(),
+            Mock.Of<IAcrRegistryImporter>(),
             ConfigurationHelper.CreateOptionsMock(emptyConfig));
 
         await Should.NotThrowAsync(() =>
@@ -66,35 +68,28 @@ public class CopyImageServiceTests
             ]
         };
 
-        var mockCredProvider = new Mock<IAzureTokenCredentialProvider>();
-        mockCredProvider
-            .Setup(x => x.GetCredential(It.IsAny<ServiceConnection>()))
-            .Returns(Mock.Of<TokenCredential>());
+        var mockImporter = new Mock<IAcrRegistryImporter>();
 
         var service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
-            mockCredProvider.Object,
+            mockImporter.Object,
             ConfigurationHelper.CreateOptionsMock(publishConfig));
 
-        try
-        {
-            await service.ImportImageAsync(
-                destTagNames: ["mirror/repo:tag"],
-                destAcrName: "myacr.azurecr.io",
-                srcTagName: "repo:tag",
-                srcRegistryName: "docker.io",
-                isDryRun: false);
-        }
-        catch (InvalidOperationException ex) when (ex.Message.Contains("No authentication details found"))
-        {
-            Assert.Fail($"External source registries should not require publish configuration: {ex.Message}");
-        }
-        catch
-        {
-            // ARM SDK failures are expected with mocked credentials
-        }
+        await service.ImportImageAsync(
+            destTagNames: ["mirror/repo:tag"],
+            destAcrName: "myacr.azurecr.io",
+            srcTagName: "repo:tag",
+            srcRegistryName: "docker.io",
+            isDryRun: false);
 
-        // Verify execution reached the ARM client (past the registry lookup)
-        mockCredProvider.Verify(x => x.GetCredential(It.IsAny<ServiceConnection>()), Times.Once);
+        // Verify the importer was called, proving execution reached the import step
+        // (past the external registry lookup that previously threw)
+        mockImporter.Verify(
+            x => x.ImportImageAsync(
+                "myacr.azurecr.io",
+                It.IsAny<ResourceIdentifier>(),
+                It.Is<ContainerRegistryImportImageContent>(c =>
+                    c.Source.RegistryAddress == "docker.io" && c.Source.ResourceId == null!)),
+            Times.Once);
     }
 }

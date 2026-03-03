@@ -44,6 +44,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IAzureTokenCredentialProvider, AzureTokenCredentialProvider>();
             builder.Services.AddSingleton<IAcrClientFactory, AcrClientFactory>();
             builder.Services.AddSingleton<IAcrContentClientFactory, AcrContentClientFactory>();
+            builder.Services.AddSingleton<IAcrRegistryImporter, AcrRegistryImporter>();
             builder.Services.AddSingleton<ICopyImageService, CopyImageService>();
             builder.Services.AddSingleton<IDateTimeService, DateTimeService>();
             builder.Services.AddSingleton<IDockerService, DockerService>();

@@ -444,14 +444,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             (Models.Manifest.Architecture baseImageArch, string? baseImageVariant) =
                 _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
 
-            // Containerd normalizes arm64/v8 to arm64 with no variant.
-            // In other words, arm64/v8 and arm64/ are compatible.
-            // We still want to check variants if either variant is not "v8" or empty.
+            // The containerd/platforms library treats default variants as implicit. Its normalizeArch
+            // function maps arm/"" to arm/v7, arm64/v8 to arm64/"", and amd64/v1 to amd64/"". Its
+            // Parse function then strips v7 back off for arm (the canonical form omits the default).
+            // The matcher.Match normalizes both sides before comparing, so arm/"" and arm/v7 always
+            // match, as do arm64/"" and arm64/v8.
+            // See https://github.com/containerd/containerd/blob/d1d9d07f1960f7f3648298e44963a263eac87fa5/vendor/github.com/containerd/platforms/platforms.go
+            //
+            // Image producers (buildkit, umoci/rockcraft) may omit the default variant from the OCI
+            // image config, which is valid per the OCI spec (variant is OPTIONAL). We mirror
+            // containerd's equivalence here so that our validation doesn't reject these images.
             // See https://github.com/moby/buildkit/issues/4039
-            bool skipVariantCheck = platform.Model.Architecture == Models.Manifest.Architecture.ARM64
-                && baseImageArch == Models.Manifest.Architecture.ARM64
-                && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
-                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant)));
+            bool skipVariantCheck =
+                (platform.Model.Architecture == Models.Manifest.Architecture.ARM64
+                    && baseImageArch == Models.Manifest.Architecture.ARM64
+                    && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
+                        && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant))))
+                || (platform.Model.Architecture == Models.Manifest.Architecture.ARM
+                    && baseImageArch == Models.Manifest.Architecture.ARM
+                    && ((platform.Model.Variant == "v7" || string.IsNullOrEmpty(platform.Model.Variant))
+                        && (baseImageVariant == "v7" || string.IsNullOrEmpty(baseImageVariant))));
 
             if (platform.Model.Architecture != baseImageArch || (!skipVariantCheck && platform.Model.Variant != baseImageVariant))
             {

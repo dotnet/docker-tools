@@ -81,16 +81,9 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        $imageBuilderDockerRunExtraOptions = ""
-
-        if ($env:MBSIGN_APPFOLDER) {
-          # Mount the MicroBuild signing plugin directory (contains DDSignFiles.dll and esrpcli.dll).
-          $imageBuilderDockerRunExtraOptions = "-v $env:MBSIGN_APPFOLDER`:/microbuild"
-          Write-Host "MicroBuild signing enabled, mounting $env:MBSIGN_APPFOLDER to /microbuild"
-        } else {
-          Write-Warning "MBSIGN_APPFOLDER not set - signing will not work"
-        }
-
+        # Mount the MicroBuild signing plugin directory (contains DDSignFiles.dll and esrpcli.dll).
+        $imageBuilderDockerRunExtraOptions = "-v $env:MBSIGN_APPFOLDER`:/microbuild"
+        Write-Host "MicroBuild signing enabled, mounting $env:MBSIGN_APPFOLDER to /microbuild"
         Write-Host "##vso[task.setvariable variable=imageBuilderDockerRunExtraOptions]$imageBuilderDockerRunExtraOptions"
 
         # Write the signing env file for docker --env-file.

@@ -12,7 +12,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// Abstracts ACR image import operations via the Azure Resource Manager SDK,
 /// allowing tests to mock the ARM interaction.
 /// </summary>
-public interface IAcrRegistryImporter
+public interface IAcrImageImporter
 {
     /// <summary>
     /// Imports an image into an Azure Container Registry using the ARM SDK.

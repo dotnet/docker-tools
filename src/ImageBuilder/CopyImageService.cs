@@ -26,12 +26,12 @@ public interface ICopyImageService
 public class CopyImageService : ICopyImageService
 {
     private readonly ILogger<CopyImageService> _logger;
-    private readonly IAcrRegistryImporter _acrRegistryImporter;
+    private readonly IAcrImageImporter _acrRegistryImporter;
     private readonly PublishConfiguration _publishConfig;
 
     public CopyImageService(
         ILogger<CopyImageService> logger,
-        IAcrRegistryImporter acrRegistryImporter,
+        IAcrImageImporter acrRegistryImporter,
         IOptions<PublishConfiguration> publishConfigOptions)
     {
         _logger = logger;

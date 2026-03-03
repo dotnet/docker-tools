@@ -16,15 +16,15 @@ using Microsoft.Extensions.Options;
 namespace Microsoft.DotNet.ImageBuilder;
 
 /// <inheritdoc />
-internal class AcrRegistryImporter : IAcrRegistryImporter
+internal class AcrImageImporter : IAcrImageImporter
 {
-    private readonly ILogger<AcrRegistryImporter> _logger;
+    private readonly ILogger<AcrImageImporter> _logger;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig;
     private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
-    public AcrRegistryImporter(
-        ILogger<AcrRegistryImporter> logger,
+    public AcrImageImporter(
+        ILogger<AcrImageImporter> logger,
         IAzureTokenCredentialProvider tokenCredentialProvider,
         IOptions<PublishConfiguration> publishConfigOptions)
     {

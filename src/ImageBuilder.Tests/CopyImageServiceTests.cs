@@ -28,7 +28,7 @@ public class CopyImageServiceTests
         var emptyConfig = new PublishConfiguration();
         var service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
-            Mock.Of<IAcrRegistryImporter>(),
+            Mock.Of<IAcrImageImporter>(),
             ConfigurationHelper.CreateOptionsMock(emptyConfig));
 
         await Should.NotThrowAsync(() =>
@@ -68,7 +68,7 @@ public class CopyImageServiceTests
             ]
         };
 
-        var mockImporter = new Mock<IAcrRegistryImporter>();
+        var mockImporter = new Mock<IAcrImageImporter>();
 
         var service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),

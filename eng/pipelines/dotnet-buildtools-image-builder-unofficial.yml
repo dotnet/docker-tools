@@ -19,6 +19,11 @@ parameters:
   type: boolean
   default: false
 
+- name: enableSigning
+  displayName: Enable container image signing
+  type: boolean
+  default: false
+
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
@@ -61,6 +66,7 @@ extends:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-nonprod.yml@self
       parameters:
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        enableSigning: ${{ parameters.enableSigning }}
         stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
         stagesTemplateParameters:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}

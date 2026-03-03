@@ -138,6 +138,11 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             ValidateFileReference(platform.ResolveDockerfilePath(manifestDirectory), manifestDirectory);
             ValidateFileReference(platform.DockerfileTemplate, manifestDirectory);
+
+            if (platform.BuildContext is not null)
+            {
+                ValidatePathIsRelative(platform.BuildContext);
+            }
         }
 
         private static void ValidateUniqueTags(Repo repo)

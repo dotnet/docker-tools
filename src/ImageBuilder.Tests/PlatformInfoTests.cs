@@ -83,5 +83,44 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             Assert.Equal(expectedDisplayName, platformInfo.GetOSDisplayName());
         }
+
+        [Fact]
+        public void BuildContextPath_DefaultsToDockerfileDirectory()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string dockerfilePath = DockerfileHelper.CreateDockerfile("src/runtime/os", tempFolderContext);
+
+            Platform platform = CreatePlatform(dockerfilePath, [ "test" ]);
+
+            VariableHelper variableHelper = new(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
+            PlatformInfo platformInfo = PlatformInfo.Create(
+                platform, "", "test", variableHelper, tempFolderContext.Path);
+
+            string expectedContextPath = PathHelper.NormalizePath(
+                Path.Combine(tempFolderContext.Path, "src/runtime/os"));
+
+            Assert.Equal(expectedContextPath, platformInfo.BuildContextPath);
+        }
+
+        [Fact]
+        public void BuildContextPath_UsesExplicitBuildContext()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            string dockerfilePath = DockerfileHelper.CreateDockerfile("src/runtime/os", tempFolderContext);
+
+            Platform platform = CreatePlatform(dockerfilePath, [ "test" ]);
+            platform.BuildContext = "src";
+
+            VariableHelper variableHelper = new(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
+            PlatformInfo platformInfo = PlatformInfo.Create(
+                platform, "", "test", variableHelper, tempFolderContext.Path);
+
+            string expectedContextPath = PathHelper.NormalizePath(
+                Path.Combine(tempFolderContext.Path, "src"));
+
+            Assert.Equal(expectedContextPath, platformInfo.BuildContextPath);
+        }
     }
 }

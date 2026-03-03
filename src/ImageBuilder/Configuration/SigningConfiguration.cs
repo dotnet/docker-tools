@@ -9,6 +9,11 @@ namespace Microsoft.DotNet.ImageBuilder.Configuration;
 /// </summary>
 public sealed record SigningConfiguration
 {
+    // When modifying this class, ensure the following files are also updated accordingly:
+    // - documentation/signing.md
+    // - publish-config-prod.yml
+    // - publish-config-nonprod.yml
+
     /// <summary>
     /// Whether signing is enabled. Set via pipeline variable.
     /// </summary>

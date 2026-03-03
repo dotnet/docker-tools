@@ -33,20 +33,13 @@ stages:
   ${{ if eq(parameters.isStandalonePublish, true) }}:
     dependsOn: []
   ${{ else }}:
-    ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
-      ${{ if eq(parameters.publishConfig.Signing.Enabled, true) }}:
-        dependsOn:
-        - Test
-        - Sign
-      ${{ else }}:
-        dependsOn: Test
-    ${{ else }}:
-      ${{ if eq(parameters.publishConfig.Signing.Enabled, true) }}:
-        dependsOn:
-        - Post_Build
-        - Sign
-      ${{ else }}:
-        dependsOn: Post_Build
+    dependsOn:
+    - ${{ if eq(parameters.publishConfig.Signing.Enabled, true) }}:
+      - Sign
+    - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
+      - Test
+    - ${{ else }}:
+      - Post_Build
   condition: "
     and(
       not(canceled()),

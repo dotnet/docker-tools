@@ -1546,6 +1546,113 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return platform;
         }
 
+        /// <summary>
+        /// Demonstrates the bug from https://github.com/dotnet/docker-tools/issues/1964.
+        /// When the manifest digest query for an external base image fails (e.g., due to missing
+        /// ACR authentication), the exception is silently swallowed in <see cref="ImageCacheService"/>,
+        /// causing the platform to be treated as "not cached" even though the Dockerfile is unchanged
+        /// and image-info has a valid prior build with a matching base image digest.
+        /// </summary>
+        [Fact]
+        public async Task TrimCachedImages_ExternalBaseImageDigestQueryFailure_CausesIncorrectCacheMiss()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            const string sourceRepoUrl = "https://github.com/dotnet/test";
+            const string commitSha = "abc123def456";
+            const string baseImageDigestSha = "sha256:ea71a031ed91cd46b00d438876550bc765da43b4ae40f331a12daf62f0937758";
+
+            // Create a Dockerfile with an external base image (alpine:3.20)
+            string runtimeDepsRelativeDir = "1.0/runtime-deps/os/amd64";
+            string dockerfilePath = CreateDockerfile(runtimeDepsRelativeDir, tempFolderContext, "alpine:3.20");
+
+            // Create manifest - no registry set (defaults to empty/mcr)
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        CreatePlatform(dockerfilePath, ["tag"]))));
+
+            string commitUrl = $"{sourceRepoUrl}/blob/{commitSha}/{PathHelper.NormalizePath(dockerfilePath)}";
+
+            // Mock git service: Dockerfile is unchanged (same commit SHA)
+            Mock<IGitService> gitServiceMock = new();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(commitSha);
+
+            // Mock manifest service factory: digest queries throw for ALL images.
+            // This simulates the auth failure when RegistryAuthentication is not configured
+            // for the mirror ACR (the root cause of issue #1964).
+            // By default, CreateManifestServiceFactoryMock creates a manifest service that throws
+            // on GetManifestDigestShaAsync for all images.
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock =
+                ManifestServiceHelper.CreateManifestServiceFactoryMock();
+
+            // Use the REAL ImageCacheService (not mocked) to test the actual caching logic
+            ImageCacheService imageCacheService = new(
+                Mock.Of<ILogger<ImageCacheService>>(),
+                gitServiceMock.Object);
+
+            GenerateBuildMatrixCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                imageCacheService,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
+            command.Options.TrimCachedImages = true;
+            command.Options.SourceRepoUrl = sourceRepoUrl;
+            command.Options.SourceRepoPrefix = "mirror/";
+
+            File.WriteAllText(
+                Path.Combine(tempFolderContext.Path, command.Options.Manifest),
+                JsonConvert.SerializeObject(manifest));
+
+            // Create image-info with a valid prior build:
+            // - The base image digest is recorded
+            // - The commit URL matches the current commit (Dockerfile unchanged)
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime-deps",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfilePath),
+                                        baseImageDigest: $"library/alpine@{baseImageDigestSha}",
+                                        commitUrl: commitUrl,
+                                        simpleTags: ["tag"])
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            // The platform should be cached and trimmed from the matrix because:
+            // 1. The Dockerfile hasn't changed (commit SHA matches)
+            // 2. If auth were working correctly, the base image digest query would succeed
+            //    and return the same digest recorded in image-info
+            //
+            // BUG: Because the digest query fails (due to missing RegistryAuthentication config),
+            // the exception is caught in IsBaseImageDigestUpToDateAsync, currentSha is set to null,
+            // and the digest comparison always returns false → cache miss → platform stays in matrix.
+            Assert.Empty(matrixInfos);
+        }
+
         private static GenerateBuildMatrixCommand CreateCommand() =>
             new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
     }

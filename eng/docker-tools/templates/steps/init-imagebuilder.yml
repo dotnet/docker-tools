@@ -100,8 +100,8 @@ steps:
         )
 
         $authedDockerRunArgs = @(
-          "-e", 'SYSTEM_ACCESSTOKEN=$env:SYSTEM_ACCESSTOKEN'
-          "-e", 'SYSTEM_OIDCREQUESTURI=$env:SYSTEM_OIDCREQUESTURI'
+          "-e", 'SYSTEM_ACCESSTOKEN'
+          "-e", 'SYSTEM_OIDCREQUESTURI'
         )
 
         $dockerRunCmd = $dockerRunBaseCmd + $dockerRunArgs + @("$(imageNames.imageBuilder.withrepo)")

@@ -53,6 +53,12 @@ parameters:
   type: string
   default: "versions"
 
+# Path to an env file for docker --env-file.
+# Passed through to init-imagebuilder.yml.
+- name: envFilePath
+  type: string
+  default: ""
+
 steps:
 # Repository Checkout
 # Multi-repo checkout is used when a versions repository is needed for caching.
@@ -245,3 +251,4 @@ steps:
       publishConfig: ${{ parameters.publishConfig }}
       condition: ${{ parameters.condition }}
       customInitSteps: ${{ parameters.customInitSteps }}
+      envFilePath: ${{ parameters.envFilePath }}

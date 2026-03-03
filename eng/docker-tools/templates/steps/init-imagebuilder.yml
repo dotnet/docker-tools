@@ -21,6 +21,13 @@ parameters:
   type: stepList
   default: []
 
+# Path to an env file for docker --env-file.
+# When set, --env-file is added to the docker run commands so the container
+# receives the environment variables defined in the file.
+- name: envFilePath
+  type: string
+  default: ""
+
 steps:
 # Custom ImageBuilder setup (e.g., bootstrap from source)
 - ${{ if gt(length(parameters.customInitSteps), 0) }}:
@@ -98,6 +105,11 @@ steps:
           "-w /repo"
           "$(imageBuilderDockerRunExtraOptions)"
         )
+
+        $envFilePath = "${{ parameters.envFilePath }}"
+        if ($envFilePath) {
+          $dockerRunArgs += "--env-file $envFilePath"
+        }
 
         $authedDockerRunArgs = @(
           "-e", 'SYSTEM_ACCESSTOKEN'

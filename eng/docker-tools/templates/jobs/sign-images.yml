@@ -16,13 +16,10 @@ jobs:
   steps:
 
   # Install MicroBuild signing plugin for ESRP container image signing
-  - template: /eng/docker-tools/templates/steps/install-microbuild-linux.yml@self
+  - template: /eng/docker-tools/templates/steps/init-signing-linux.yml@self
     parameters:
       signType: ${{ parameters.publishConfig.Signing.SignType }}
-
-  - template: /eng/docker-tools/templates/steps/configure-imagebuilder-signing.yml@self
-    parameters:
-      signEnabled: ${{ parameters.publishConfig.Signing.Enabled }}
+      envFileVariableName: signingEnvFilePath
 
   # Setup docker and ImageBuilder
   - template: /eng/docker-tools/templates/steps/init-common.yml@self
@@ -31,6 +28,7 @@ jobs:
       setupImageBuilder: true
       customInitSteps: ${{ parameters.customInitSteps }}
       publishConfig: ${{ parameters.publishConfig }}
+      envFilePath: $(signingEnvFilePath)
 
   # Download merged image-info artifact from Post_Build stage (or from a previous pipeline run)
   - template: /eng/docker-tools/templates/steps/download-build-artifact.yml@self

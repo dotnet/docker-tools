@@ -14,10 +14,27 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
+/// <summary>
+/// Service for determining whether a Docker image can be retrieved from a cache
+/// rather than being rebuilt.
+/// </summary>
 public interface IImageCacheService
 {
+    /// <summary>
+    /// Gets whether any platforms have been identified as cached during this session.
+    /// </summary>
     bool HasAnyCachedPlatforms { get; }
 
+    /// <summary>
+    /// Checks whether a previously built image can be reused from cache.
+    /// </summary>
+    /// <param name="srcImageData">Image data from the source image-info file, if available.</param>
+    /// <param name="platformData">Platform data for the image being checked.</param>
+    /// <param name="imageDigestCache">Cache for looking up image digests from registries.</param>
+    /// <param name="imageNameResolver">Resolver for constructing image names for digest queries.</param>
+    /// <param name="sourceRepoUrl">URL of the source repository containing the Dockerfiles.</param>
+    /// <param name="isLocalBaseImageExpected">Whether the base image is expected to exist locally rather than in a remote registry.</param>
+    /// <param name="isDryRun">Whether this is a dry run that should skip actual registry calls.</param>
     Task<ImageCacheResult> CheckForCachedImageAsync(
         ImageData? srcImageData,
         PlatformData platformData,
@@ -28,6 +45,7 @@ public interface IImageCacheService
         bool isDryRun);
 }
 
+/// <inheritdoc/>
 public class ImageCacheService : IImageCacheService
 {
     private readonly ILogger<ImageCacheService> _logger;
@@ -35,7 +53,10 @@ public class ImageCacheService : IImageCacheService
 
     private readonly object _cachedPlatformsLock = new();
 
-    // Metadata about Dockerfiles whose images have been retrieved from the cache
+    /// <summary>
+    /// Metadata about Dockerfiles whose images have been retrieved from the cache.
+    /// Keyed by the build cache key derived from the platform's Dockerfile path and build args.
+    /// </summary>
     private readonly Dictionary<string, PlatformData> _cachedPlatforms = [];
 
     public ImageCacheService(ILogger<ImageCacheService> logger, IGitService gitService)
@@ -44,6 +65,7 @@ public class ImageCacheService : IImageCacheService
         _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
     }
 
+    /// <inheritdoc/>
     public bool HasAnyCachedPlatforms
     {
         get
@@ -55,6 +77,7 @@ public class ImageCacheService : IImageCacheService
         }
     }
 
+    /// <inheritdoc/>
     public async Task<ImageCacheResult> CheckForCachedImageAsync(
         ImageData? srcImageData,
         PlatformData platformData,
@@ -119,11 +142,18 @@ public class ImageCacheService : IImageCacheService
         return new ImageCacheResult(cacheState, isNewCacheHit, srcPlatformData);
     }
 
+    /// <summary>
+    /// Checks whether the source platform data has all its expected tags published.
+    /// </summary>
     private static bool CachedPlatformHasAllTagsPublished(PlatformData srcPlatformData) =>
         (srcPlatformData.PlatformInfo?.Tags ?? [])
             .Select(tag => tag.Name)
             .AreEquivalent(srcPlatformData.SimpleTags);
 
+    /// <summary>
+    /// Determines whether a previously published image can be reused by comparing the base image
+    /// digest and Dockerfile commit against the current state.
+    /// </summary>
     private async Task<bool> CheckForCachedImageFromImageInfoAsync(
         PlatformInfo platform,
         PlatformData srcPlatformData,
@@ -150,6 +180,10 @@ public class ImageCacheService : IImageCacheService
         return false;
     }
 
+    /// <summary>
+    /// Checks whether the base image digest recorded in image-info matches the current digest
+    /// available from the registry.
+    /// </summary>
     private async Task<bool> IsBaseImageDigestUpToDateAsync(
         PlatformInfo platform,
         PlatformData srcPlatformData,
@@ -205,6 +239,10 @@ public class ImageCacheService : IImageCacheService
         return baseImageDigestMatches;
     }
 
+    /// <summary>
+    /// Checks whether the Dockerfile has changed since the last published build by comparing
+    /// the current git commit URL against the one recorded in image-info.
+    /// </summary>
     private bool IsDockerfileUpToDate(PlatformInfo platform, PlatformData srcPlatformData, string? sourceRepoUrl)
     {
         string currentCommitUrl = _gitService.GetDockerfileCommitUrl(platform, sourceRepoUrl);
@@ -221,6 +259,10 @@ public class ImageCacheService : IImageCacheService
         return commitShaMatches;
     }
 
+    /// <summary>
+    /// Builds a cache key that uniquely identifies a platform build based on its Dockerfile path
+    /// and build arguments.
+    /// </summary>
     private static string GetBuildCacheKey(PlatformInfo platform) =>
         $"{platform.DockerfilePathRelativeToManifest}-" +
         string.Join('-', platform.BuildArgs.Select(kvp => $"{kvp.Key}={kvp.Value}").ToArray());
@@ -253,4 +295,10 @@ public enum ImageCacheState
     CachedWithMissingTags = Cached | 2
 }
 
+/// <summary>
+/// The result of checking whether an image is cached.
+/// </summary>
+/// <param name="State">The cache state of the image.</param>
+/// <param name="IsNewCacheHit">Whether this is a newly discovered cache hit (not previously known in this session).</param>
+/// <param name="Platform">The source platform data associated with the cached image, if available.</param>
 public record ImageCacheResult(ImageCacheState State, bool IsNewCacheHit, PlatformData? Platform);

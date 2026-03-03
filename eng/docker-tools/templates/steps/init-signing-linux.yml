@@ -106,7 +106,7 @@ steps:
 
           # Container-local temp/workspace paths (host paths aren't accessible inside the container)
           "MBSIGNTEMPDIR=/tmp/MicroBuildSign"
-          "PIPELINE_WORKSPACE=$(artifactsPath)"
+          "PIPELINE_WORKSPACE=$(Build.ArtifactStagingDirectory)"
           "AGENT_TEMPDIRECTORY=/tmp"
 
           # Azure DevOps pipeline variables for ESRP bearer token auth (ESRPUtils.GetAccountInfo)

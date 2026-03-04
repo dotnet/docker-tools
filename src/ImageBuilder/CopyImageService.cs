@@ -2,14 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Concurrent;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure;
 using Azure.Core;
-using Azure.ResourceManager;
-using Azure.ResourceManager.ContainerRegistry;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.Extensions.Options;
@@ -31,17 +26,16 @@ public interface ICopyImageService
 public class CopyImageService : ICopyImageService
 {
     private readonly ILogger<CopyImageService> _logger;
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
+    private readonly IAcrImageImporter _acrRegistryImporter;
     private readonly PublishConfiguration _publishConfig;
-    private readonly ConcurrentDictionary<string, ArmClient> _armClientCache = new();
 
     public CopyImageService(
         ILogger<CopyImageService> logger,
-        IAzureTokenCredentialProvider tokenCredentialProvider,
+        IAcrImageImporter acrRegistryImporter,
         IOptions<PublishConfiguration> publishConfigOptions)
     {
         _logger = logger;
-        _tokenCredentialProvider = tokenCredentialProvider;
+        _acrRegistryImporter = acrRegistryImporter;
         _publishConfig = publishConfigOptions.Value;
     }
 
@@ -97,40 +91,6 @@ public class CopyImageService : ICopyImageService
 
         importImageContent.TargetTags.AddRange(destTagNames);
 
-        ArmClient armClient = GetArmClientForAcr(destAcrName);
-        ContainerRegistryResource registryResource = armClient.GetContainerRegistryResource(destResourceId);
-
-        try
-        {
-            await RetryHelper.GetWaitAndRetryPolicy<Exception>(_logger)
-                .ExecuteAsync(() => registryResource.ImportImageAsync(WaitUntil.Completed, importImageContent));
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Importing Failure: {DestinationImages}", formattedDestinationImages);
-
-            throw;
-        }
-    }
-
-    private ArmClient GetArmClientForAcr(string acrName)
-    {
-        // Look up the authentication for this ACR from the publish configuration
-        var auth = _publishConfig.FindRegistryAuthentication(acrName);
-
-        if (auth?.ServiceConnection is null)
-        {
-            throw new InvalidOperationException(
-                $"No service connection found for ACR '{acrName}'. " +
-                $"Ensure the ACR is configured in the publish configuration with a valid service connection.");
-        }
-
-        // Cache ArmClient instances per service connection to avoid recreating them
-        string cacheKey = string.Join('|', auth.ServiceConnection.TenantId, auth.ServiceConnection.ClientId);
-        return _armClientCache.GetOrAdd(cacheKey, _ =>
-        {
-            TokenCredential credential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
-            return new ArmClient(credential);
-        });
+        await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, importImageContent);
     }
 }

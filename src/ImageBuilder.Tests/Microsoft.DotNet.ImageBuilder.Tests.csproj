@@ -21,7 +21,7 @@
     <PackageReference Include="Shouldly" Version="4.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <!-- Exclude System.Linq.Async (transitive from ImageBuilder) - its APIs are built into .NET 10+ -->
-    <PackageReference Include="System.Linq.Async" Version="6.0.1" ExcludeAssets="compile" PrivateAssets="all" />
+    <PackageReference Include="System.Linq.Async" Version="7.0.0" ExcludeAssets="compile" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

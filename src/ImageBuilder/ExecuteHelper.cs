@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,13 +9,10 @@ using System.Text;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class ExecuteHelper
     {
-        private static readonly ILoggerService s_loggerService = new LoggerService();
-
         public static string Execute(
             string fileName,
             string args,
@@ -73,10 +70,11 @@ namespace Microsoft.DotNet.ImageBuilder
             string? errorMessage = null,
             string? executeMessageOverride = null)
         {
+            ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
             info.RedirectStandardError = true;
             executeMessageOverride ??= $"{info.FileName} {info.Arguments}";
             string prefix = isDryRun ? "EXECUTING [DRY RUN]" : "EXECUTING";
-            s_loggerService.WriteSubheading($"{prefix}: {executeMessageOverride}");
+            logger.LogInformation($"{prefix}: {executeMessageOverride}");
 
             if (isDryRun)
             {
@@ -87,7 +85,7 @@ namespace Microsoft.DotNet.ImageBuilder
             stopwatch.Start();
             ProcessResult processResult = executor(info);
             stopwatch.Stop();
-            s_loggerService.WriteSubheading($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
+            logger.LogInformation($"EXECUTION ELAPSED TIME: {stopwatch.Elapsed}");
 
             if (processResult.Process.ExitCode != 0)
             {
@@ -142,11 +140,12 @@ namespace Microsoft.DotNet.ImageBuilder
 
         private static ProcessResult ExecuteWithRetry(ProcessStartInfo info, Func<ProcessStartInfo, ProcessResult> executor)
         {
+            ILogger logger = StandaloneLoggerFactory.CreateLogger(nameof(ExecuteHelper));
             ProcessResult processResult = Policy
                 .HandleResult<ProcessResult>(result => result.Process.ExitCode != 0)
                 .WaitAndRetry(
                     Backoff.ExponentialBackoff(TimeSpan.FromSeconds(1), RetryHelper.MaxRetries, RetryHelper.WaitFactor),
-                    RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, s_loggerService))
+                    RetryHelper.GetOnRetryDelegate<ProcessResult>(RetryHelper.MaxRetries, logger))
                 .Execute(() => executor(info));
 
             return processResult;
@@ -167,4 +166,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

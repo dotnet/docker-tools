@@ -6,20 +6,19 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class GenerateEolAnnotationDataForAllImagesCommand :
     GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
 {
     public GenerateEolAnnotationDataForAllImagesCommand(
-        ILoggerService loggerService,
+        ILogger<GenerateEolAnnotationDataForAllImagesCommand> logger,
         IAcrClientFactory acrClientFactory,
         IAcrContentClientFactory acrContentClientFactory,
         ILifecycleMetadataService lifecycleMetadataService,
         IRegistryCredentialsProvider registryCredentialsProvider)
         : base(
-            loggerService,
+            logger,
             acrContentClientFactory,
             acrClientFactory,
             lifecycleMetadataService,

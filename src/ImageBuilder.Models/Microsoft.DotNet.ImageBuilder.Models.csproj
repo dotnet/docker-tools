@@ -3,6 +3,8 @@
   <PropertyGroup Label="Project Settings">
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Explicit Nullable setting required for Docker builds from src/ context (won't see root Directory.Build.props).
+         Tracking issue for fixing context directory: https://github.com/dotnet/docker-tools/issues/1592 -->
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
@@ -14,5 +16,9 @@
     <IsPackable>true</IsPackable>
     <Description>Core models used by Microsoft.DotNet.ImageBuilder.</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+  </ItemGroup>
 
 </Project>

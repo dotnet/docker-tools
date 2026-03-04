@@ -23,6 +23,12 @@ parameters:
   type: boolean
   default: false
 
+# When provided, ImageBuilder will not be pulled from MCR at the start of each
+# job and these steps will be run instead.
+- name: customInitSteps
+  type: stepList
+  default: []
+
 # Additional service connections needed by this pipeline that are not included
 # in the publishConfig.
 - name: additionalServiceConnections
@@ -33,12 +39,12 @@ stages:
 - ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
   - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
     parameters:
-      serviceConnections:
-      - name: ${{ parameters.publishConfig.InternalMirrorRegistry.serviceConnection.name }}
-      - name: ${{ parameters.publishConfig.BuildRegistry.serviceConnection.name }}
-      - name: ${{ parameters.publishConfig.PublishRegistry.serviceConnection.name }}
-      - ${{ each serviceConnection in parameters.additionalServiceConnections }}:
-        - name: ${{ serviceConnection.name }}
+      publishConfig: ${{ parameters.publishConfig }}
+      usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+        - ${{ parameters.publishConfig.PublishRegistry.server }}
+        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+      serviceConnections: ${{ parameters.additionalServiceConnections }}
 
 - template: /eng/docker-tools/templates/stages/dotnet/build-test-publish-repo.yml@self
   parameters:
@@ -47,6 +53,7 @@ stages:
     publicProjectName: ${{ parameters.publicProjectName }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     publishConfig: ${{ parameters.publishConfig }}
+    customInitSteps: ${{ parameters.customInitSteps }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
     ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

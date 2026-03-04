@@ -6,11 +6,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure.ResourceManager.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -21,24 +21,26 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     public class CopyAcrImagesCommandTests
     {
+        private const string SourceRegistry = "my.custom.registry";
+        private const string DestinationRegistry = "mcr.microsoft.com";
+
         /// <summary>
         /// Verifies that image tags associated with a custom Dockerfile will by copied to ACR correctly.
         /// </summary>
         [Fact]
         public async Task CopyAcrImagesCommand_CustomDockerfileName()
         {
-            const string subscriptionId = "my subscription";
-
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
                 Mock<ICopyImageService> copyImageServiceMock = new();
 
-                CopyAcrImagesCommand command = new(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
+                CopyAcrImagesCommand command = new(
+                    TestHelper.CreateManifestJsonService(),
+                    copyImageServiceMock.Object,
+                    Mock.Of<ILogger<CopyAcrImagesCommand>>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-                command.Options.Subscription = subscriptionId;
-                command.Options.ResourceGroup = "my resource group";
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
-                command.Options.SourceRegistry = "my.custom.registry";
+                command.Options.SourceRegistry = SourceRegistry;
                 command.Options.ImageInfoPath = "image-info.json";
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
@@ -51,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         ManifestHelper.CreateImage(
                             ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2" })))
                 );
-                manifest.Registry = "mcr.microsoft.com";
+                manifest.Registry = DestinationRegistry;
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -99,13 +101,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            subscriptionId,
-                            command.Options.ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
+                            SourceRegistry,
                             null,
                             false));
                 }
@@ -120,19 +119,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task CopyAcrImagesCommand_SharedDockerfile()
         {
-            const string subscriptionId = "my subscription";
-
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
             {
-                var environmentServiceMock = new Mock<IEnvironmentService>();
                 var copyImageServiceMock = new Mock<ICopyImageService>();
 
-                var command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
+                var command = new CopyAcrImagesCommand(
+                    TestHelper.CreateManifestJsonService(),
+                    copyImageServiceMock.Object,
+                    Mock.Of<ILogger<CopyAcrImagesCommand>>());
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-                command.Options.Subscription = subscriptionId;
-                command.Options.ResourceGroup = "my resource group";
                 command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
-                command.Options.SourceRegistry = "my.custom.registry";
+                command.Options.SourceRegistry = SourceRegistry;
                 command.Options.ImageInfoPath = "image-info.json";
 
                 const string runtimeRelativeDir = "1.0/runtime/os";
@@ -146,7 +143,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1a", "tag1b" }, osVersion: "alpine3.10"),
                             ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag2a" }, osVersion: "alpine3.11")))
                 );
-                manifest.Registry = "mcr.microsoft.com";
+                manifest.Registry = DestinationRegistry;
 
                 File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -205,13 +202,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 {
                     copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            subscriptionId,
-                            command.Options.ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
+                            SourceRegistry,
                             null,
                             false));
                 }
@@ -226,19 +220,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task CopyAcrImagesCommand_RuntimeDepsSharing()
         {
-            const string subscriptionId = "my subscription";
-
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            var environmentServiceMock = new Mock<IEnvironmentService>();
             var copyImageServiceMock = new Mock<ICopyImageService>();
 
-            var command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
+            var command = new CopyAcrImagesCommand(
+                TestHelper.CreateManifestJsonService(),
+                copyImageServiceMock.Object,
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.Subscription = subscriptionId;
-            command.Options.ResourceGroup = "my resource group";
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
-            command.Options.SourceRegistry = "my.custom.registry";
+            command.Options.SourceRegistry = SourceRegistry;
             command.Options.ImageInfoPath = "image-info.json";
 
             string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("3.1/runtime-deps/os", tempFolderContext);
@@ -258,7 +250,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         },
                         productVersion: "5.0"))
             );
-            manifest.Registry = "mcr.microsoft.com";
+            manifest.Registry = DestinationRegistry;
 
             File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
 
@@ -323,13 +315,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            subscriptionId,
-                            command.Options.ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
-                            null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
+                            SourceRegistry,
                             null,
                             false));
             }
@@ -343,19 +332,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [Fact]
         public async Task SyndicatedTags()
         {
-            const string subscriptionId = "my subscription";
-
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            var environmentServiceMock = new Mock<IEnvironmentService>();
             var copyImageServiceMock = new Mock<ICopyImageService>();
 
-            var command = new CopyAcrImagesCommand(copyImageServiceMock.Object, Mock.Of<ILoggerService>());
+            var command = new CopyAcrImagesCommand(
+                TestHelper.CreateManifestJsonService(),
+                copyImageServiceMock.Object,
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.Subscription = subscriptionId;
-            command.Options.ResourceGroup = "my resource group";
             command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
-            command.Options.SourceRegistry = "my.custom.registry";
+            command.Options.SourceRegistry = SourceRegistry;
             command.Options.ImageInfoPath = "image-info.json";
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -368,7 +355,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     ManifestHelper.CreateImage(
                         ManifestHelper.CreatePlatform(dockerfileRelativePath, new string[] { "tag1", "tag2", "tag3" })))
             );
-            manifest.Registry = "mcr.microsoft.com";
+            manifest.Registry = DestinationRegistry;
 
             const string syndicatedRepo2 = "runtime2";
             const string syndicatedRepo3 = "runtime3";
@@ -441,13 +428,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             {
                 copyImageServiceMock.Verify(o =>
                         o.ImportImageAsync(
-                            subscriptionId,
-                            command.Options.ResourceGroup,
                             new string[] { expectedTag },
                             manifest.Registry,
                             It.IsAny<string>(),
-                            null,
-                            ContainerRegistryResource.CreateResourceIdentifier(subscriptionId, command.Options.ResourceGroup, command.Options.SourceRegistry),
+                            SourceRegistry,
                             null,
                             false));
             }

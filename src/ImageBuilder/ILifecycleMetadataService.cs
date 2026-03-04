@@ -6,12 +6,11 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface ILifecycleMetadataService
 {
-    bool IsDigestAnnotatedForEol(string digest, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
+    bool IsDigestAnnotatedForEol(string digest, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
 
-    bool AnnotateEolDigest(string digest, DateOnly date, ILoggerService loggerService, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
+    bool AnnotateEolDigest(string digest, DateOnly date, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
 }

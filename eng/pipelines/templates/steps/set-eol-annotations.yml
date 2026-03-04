@@ -7,11 +7,6 @@ steps:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
       displayName: "Generate EOL Data for all images in ${{ parameters.acr.server }}"
-      serviceConnections:
-      - name: acr
-        id: ${{ parameters.acr.serviceConnection.id }}
-        tenantId: ${{ parameters.acr.serviceConnection.tenantId }}
-        clientId: ${{ parameters.acr.serviceConnection.clientId }}
       internalProjectName: internal
       args: >-
         generateEolAnnotationDataForAllImages

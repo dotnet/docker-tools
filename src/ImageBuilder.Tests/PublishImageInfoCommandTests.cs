@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,6 +13,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
 using Moq;
 using Newtonsoft.Json;
@@ -149,7 +151,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         actualImageArtifactDetailsContents = File.ReadAllText(path);
                     });
 
-                PublishImageInfoCommand command = new(gitServiceMock.Object, Mock.Of<IOctokitClientFactory>(), Mock.Of<ILoggerService>());
+                PublishImageInfoCommand command = new(TestHelper.CreateManifestJsonService(), gitServiceMock.Object, Mock.Of<IOctokitClientFactory>(), Mock.Of<ILogger<PublishImageInfoCommand>>());
                 command.Options.ImageInfoPath = file;
                 command.Options.GitOptions = gitOptions;
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");

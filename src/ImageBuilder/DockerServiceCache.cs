@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     /// <summary>
@@ -70,4 +69,3 @@ namespace Microsoft.DotNet.ImageBuilder
             _inner.PushManifestList(tag, isDryRun);
     }
 }
-#nullable disable

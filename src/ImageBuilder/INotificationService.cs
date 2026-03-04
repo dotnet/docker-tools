@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface INotificationService

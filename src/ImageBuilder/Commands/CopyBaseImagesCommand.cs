@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,21 +9,21 @@ using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyBaseImagesCommand : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>
+    public class CopyBaseImagesCommand(
+        IManifestJsonService manifestJsonService,
+        ICopyImageService copyImageService,
+        ILogger<CopyBaseImagesCommand> logger,
+        IGitService gitService)
+        : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
+            manifestJsonService,
+            copyImageService,
+            logger)
     {
-        private readonly IGitService _gitService;
-
-        public CopyBaseImagesCommand(
-            ICopyImageService copyImageService,
-            ILoggerService loggerService,
-            IGitService gitService)
-            : base(copyImageService, loggerService)
-        {
-            _gitService = gitService;
-        }
+        private readonly IManifestJsonService _manifestJsonService = manifestJsonService;
+        private readonly ILogger _logger = logger;
+        private readonly IGitService _gitService = gitService;
 
         protected override string Description => "Copies external base images from their source registry to ACR";
 
@@ -40,7 +40,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            LoggerService.WriteHeading("COPYING IMAGES");
+            _logger.LogInformation("COPYING IMAGES");
 
             Options.BaseImageOverrideOptions.Validate();
 
@@ -60,7 +60,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 manifests =
                     SubscriptionHelper.GetSubscriptionManifests(
-                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService,
+                        Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService,
                         options => options.RegistryOverride = Options.RegistryOverride)
                     .Select(subscriptionManifest => subscriptionManifest.Manifest);
                 fullRegistryName = Options.RegistryOverride;

@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Polly;
 using Polly.Contrib.WaitAndRetry;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class HttpPolicyBuilder
@@ -25,7 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
             return new HttpPolicyBuilder();
         }
 
-        public HttpPolicyBuilder WithMeteredRetryPolicy(ILoggerService loggerService)
+        public HttpPolicyBuilder WithMeteredRetryPolicy(ILogger logger)
         {
             _policies.Add(Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
@@ -34,24 +33,24 @@ namespace Microsoft.DotNet.ImageBuilder
                     ioException.InnerException is SocketException)
                 .WaitAndRetryAsync(
                     Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
-                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, loggerService)));
+                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, logger)));
             return this;
         }
 
-        public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILoggerService loggerService)
+        public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILogger logger)
         {
             _policies.Add(Policy
                 .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.Unauthorized)
                 .RetryAsync(1, async (result, retryCount, context) =>
                 {
-                    loggerService.WriteMessage(
+                    logger.LogInformation(
                         $"Unauthorized status code returned for '{result.Result.RequestMessage?.RequestUri}'. Refreshing access token and retrying.");
                     await refreshAccessToken();
                 }));
             return this;
         }
 
-        public HttpPolicyBuilder WithNotFoundRetryPolicy(TimeSpan timeout, TimeSpan retryFrequency, ILoggerService loggerService)
+        public HttpPolicyBuilder WithNotFoundRetryPolicy(TimeSpan timeout, TimeSpan retryFrequency, ILogger logger)
         {
             IEnumerable<TimeSpan> sleepDurations = Enumerable
                 .Repeat(retryFrequency.TotalSeconds, (int)(timeout.TotalSeconds / retryFrequency.TotalSeconds))
@@ -59,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder
             _policies.Add(Policy.HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.NotFound)
                 .WaitAndRetryAsync(sleepDurations, (result, duration) =>
                 {
-                    loggerService.WriteMessage(
+                    logger.LogInformation(
                         $"NotFound status code returned for '{result.Result.RequestMessage?.RequestUri}'. Retrying in {retryFrequency.TotalSeconds} seconds.");
                 }));
             return this;
@@ -82,4 +81,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

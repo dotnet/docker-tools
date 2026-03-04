@@ -14,7 +14,6 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 /// <summary>
 /// A specialized type of <see cref="HttpClient"/> that is preconfigured to handle the OAuth flow of container registries.
 /// </summary>
@@ -192,4 +191,3 @@ public class RegistryHttpClient : HttpClient
         }
     }
 }
-#nullable disable

@@ -8,7 +8,6 @@ using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-#nullable enable
 public class MarIngestionOptions
 {
     public TimeSpan WaitTimeout { get; set; }

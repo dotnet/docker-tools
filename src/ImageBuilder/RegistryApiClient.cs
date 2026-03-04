@@ -13,7 +13,6 @@ using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 /// <summary>
 /// Client used for querying the REST API of container registries.
 /// </summary>

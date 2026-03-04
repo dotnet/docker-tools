@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixOptionsBuilder>
@@ -23,14 +22,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
         private readonly IImageCacheService _imageCacheService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<GenerateBuildMatrixCommand> _logger;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        public GenerateBuildMatrixCommand(IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILoggerService loggerService) : base()
+        public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
         {
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
                 if (Options.ImageInfoPath != null)
@@ -51,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING BUILD MATRIX");
+            _logger.LogInformation("GENERATING BUILD MATRIX");
 
             IEnumerable<BuildMatrixInfo> matrices = await GenerateMatrixInfoAsync();
             LogDiagnostics(matrices);
@@ -355,7 +354,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return consolidatedSubGraphs;
         }
 
-        private static void EmitVstsVariables(IEnumerable<BuildMatrixInfo> matrices)
+        private void EmitVstsVariables(IEnumerable<BuildMatrixInfo> matrices)
         {
             // Emit the special syntax to set a VSTS build definition matrix variable
             // ##vso[task.setvariable variable=x;isoutput=true]{ \"a\": { \"v1\": \"1\" }, \"b\": { \"v1\": \"2\" } }
@@ -370,7 +369,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         return $" \"{leg.Name}\": {{{variables} }}";
                     })
                     .Aggregate((working, next) => $"{working},{next}");
-                Logger.WriteMessage(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
+                _logger.LogInformation(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
             }
         }
 
@@ -429,7 +428,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return platformMappings.Select(platformMapping => platformMapping.PlatformInfo);
             }
 
-            Logger.WriteMessage("Trimming platforms based on image cache state...");
+            _logger.LogInformation("Trimming platforms based on image cache state...");
 
             // Here we will trim the platforms based on their image cache state. This reduces the amount of jobs that need to
             // be run. Otherwise, you may spin up a bunch of jobs that end up processing a bunch of cached images and
@@ -455,7 +454,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     if (platformMapping.PlatformData is null)
                     {
-                        _loggerService.WriteMessage($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
+                        _logger.LogInformation($"Image info not found for '{platformMapping.PlatformInfo.DockerfilePath}'. Including path in matrix.");
                         subgraphNonCachedPlatforms.Add(platformMapping.PlatformInfo);
                         return;
                     }
@@ -471,7 +470,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     bool includePlatformInMatrix = !cacheResult.State.HasFlag(ImageCacheState.Cached);
 
-                    _loggerService.WriteMessage(
+                    _logger.LogInformation(
                         $"Image '{platformMapping.PlatformInfo.DockerfilePath}' cache state is {cacheResult.State}. Included in matrix: {includePlatformInMatrix}");
 
                     if (includePlatformInMatrix)
@@ -583,18 +582,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return platformId.OS.GetDockerName();
         }
 
-        private static void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
+        private void LogDiagnostics(IEnumerable<BuildMatrixInfo> matrices)
         {
             // Write out the matrices in a human friendly format
             foreach (BuildMatrixInfo matrix in matrices)
             {
-                Logger.WriteMessage($"  {matrix.Name}:");
+                _logger.LogInformation($"  {matrix.Name}:");
                 foreach (BuildLegInfo leg in matrix.OrderedLegs)
                 {
-                    Logger.WriteMessage($"    {leg.Name}:");
+                    _logger.LogInformation($"    {leg.Name}:");
                     foreach ((string Name, string Value) in leg.Variables)
                     {
-                        Logger.WriteMessage($"      {Name}: {Value}");
+                        _logger.LogInformation($"      {Name}: {Value}");
                     }
                 }
             }
@@ -630,4 +629,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable disable

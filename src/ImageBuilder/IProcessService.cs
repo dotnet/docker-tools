@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public interface IProcessService
@@ -13,4 +12,3 @@ namespace Microsoft.DotNet.ImageBuilder
         string? Execute(ProcessStartInfo info, bool isDryRun, string? errorMessage = null, string? executeMessageOverride = null);
     }
 }
-#nullable disable

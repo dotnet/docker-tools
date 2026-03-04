@@ -17,7 +17,6 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotificationOptions, PostPublishNotificationOptionsBuilder>
@@ -27,9 +26,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IOctokitClientFactory _octokitClientFactory;
 
         public PostPublishNotificationCommand(
+            IManifestJsonService manifestJsonService,
             IVssConnectionFactory connectionFactory,
             INotificationService notificationService,
-            IOctokitClientFactory octokitClientFactory)
+            IOctokitClientFactory octokitClientFactory) : base(manifestJsonService)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _notificationService = notificationService ?? throw new ArgumentNullException(nameof(notificationService));
@@ -331,4 +331,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
     }
 }
-#nullable disable

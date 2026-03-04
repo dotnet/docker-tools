@@ -1,0 +1,28 @@
+# Bootstrap ImageBuilder by building it from source.
+# This template builds ImageBuilder directly from source code, bypassing the need
+# to pull a pre-built image.
+#
+# On Linux: Builds the Docker image using Dockerfile.linux
+# On Windows: Installs dotnet SDK and builds locally with dotnet publish
+#             (since Windows runs the exe directly, not in a container)
+#
+# The result is tagged/placed so that subsequent steps work without modification.
+# The imageNames.imageBuilder variable is overridden to point to the bootstrapped image.
+
+steps:
+# Override the imageBuilder variable with a local bootstrap tag
+- script: echo "##vso[task.setvariable variable=imageNames.imageBuilder]imagebuilder-bootstrap:$(Build.BuildId)"
+  displayName: Set bootstrap ImageBuilder tag
+  condition: eq(variables['Agent.OS'], 'Linux')
+
+- script: docker build -t imagebuilder-bootstrap:$(Build.BuildId) -f $(repoRoot)/src/Dockerfile.linux $(repoRoot)/src/
+  displayName: Bootstrap ImageBuilder from source (Linux)
+  condition: eq(variables['Agent.OS'], 'Linux')
+
+- powershell: $(engDockerToolsPath)/Install-DotNetSdk.ps1 -InstallPath "$(Build.SourcesDirectory)/.dotnet"
+  displayName: Install .NET SDK (Windows)
+  condition: eq(variables['Agent.OS'], 'Windows_NT')
+
+- powershell: $(Build.SourcesDirectory)/.dotnet/dotnet publish $(repoRoot)/src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained -o $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+  displayName: Bootstrap ImageBuilder from source (Windows)
+  condition: eq(variables['Agent.OS'], 'Windows_NT')

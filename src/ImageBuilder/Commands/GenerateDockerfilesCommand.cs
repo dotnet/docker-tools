@@ -1,3 +1,4 @@
+﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -13,16 +14,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesOptionsBuilder>
     {
+        private readonly ILogger _logger;
 
-        public GenerateDockerfilesCommand(IEnvironmentService environmentService) : base(environmentService)
+        public GenerateDockerfilesCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger<GenerateDockerfilesCommand> logger) : base(manifestJsonService, environmentService, logger)
         {
+            _logger = logger;
         }
 
         protected override string Description => "Generates the Dockerfiles from Cottle based templates (http://r3c.github.io/cottle/)";
 
         public override async Task ExecuteAsync()
         {
-            Logger.WriteHeading("GENERATING DOCKERFILES");
+            _logger.LogInformation("GENERATING DOCKERFILES");
 
             await GenerateArtifactsAsync(
                 Manifest.GetFilteredPlatforms(),

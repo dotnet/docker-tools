@@ -3,7 +3,6 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public record ImageName
 {
     public ImageName(string? registry, string repo, string? tag, string? digest)

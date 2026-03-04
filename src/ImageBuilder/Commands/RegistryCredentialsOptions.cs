@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class RegistryCredentialsOptions : IRegistryCredentialsHost
@@ -30,4 +29,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public IEnumerable<Argument> GetCliArguments() => [];
     }
 }
-#nullable disable

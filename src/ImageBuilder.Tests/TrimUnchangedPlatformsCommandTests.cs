@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -238,7 +239,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = new TempFolderContext();
 
-            TrimUnchangedPlatformsCommand command = new TrimUnchangedPlatformsCommand(Mock.Of<ILoggerService>());
+            TrimUnchangedPlatformsCommand command = new TrimUnchangedPlatformsCommand(Mock.Of<ILogger<TrimUnchangedPlatformsCommand>>());
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
 
             File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(input));

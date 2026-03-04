@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -12,10 +13,10 @@ using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
-
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
@@ -432,7 +433,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Manifest lifecycleArtifactManifest;
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(true);
 
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
@@ -1039,10 +1040,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string repoPrefix = DefaultRepoPrefix,
             ILifecycleMetadataService lifecycleMetadataService = null)
         {
-            Mock<ILoggerService> loggerServiceMock = new();
+            Mock<ILogger<GenerateEolAnnotationDataForPublishCommand>> loggerServiceMock = new();
             lifecycleMetadataService = lifecycleMetadataService ?? CreateLifecycleMetadataService([]);
             GenerateEolAnnotationDataForPublishCommand command = new(
-                loggerService: loggerServiceMock.Object,
+                logger: loggerServiceMock.Object,
                 acrClientFactory: registryClientFactory,
                 acrContentClientFactory: registryContentClientFactory,
                 lifecycleMetadataService: lifecycleMetadataService,
@@ -1059,13 +1060,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             Manifest lifecycleArtifactManifest;
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                 .Returns(false);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             {
                 lifecycleMetadataServiceMock
-                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILoggerService>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
+                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
                     .Returns(digestAnnotated.Value);
             }
 

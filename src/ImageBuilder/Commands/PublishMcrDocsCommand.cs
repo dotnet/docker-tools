@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Mcr;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
@@ -20,21 +21,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService _gitService;
         private readonly IGitHubClientFactory _gitHubClientFactory;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<PublishMcrDocsCommand> _logger;
 
-        public PublishMcrDocsCommand(IGitService gitService, IGitHubClientFactory gitHubClientFactory,
-            ILoggerService loggerService) : base()
+        public PublishMcrDocsCommand(IManifestJsonService manifestJsonService, IGitService gitService, IGitHubClientFactory gitHubClientFactory,
+            ILogger<PublishMcrDocsCommand> logger) : base(manifestJsonService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override string Description => "Publishes the readmes to MCR";
 
         public override async Task ExecuteAsync()
         {
-            _loggerService.WriteHeading("PUBLISHING MCR DOCS");
+            _logger.LogInformation("PUBLISHING MCR DOCS");
 
             ValidateReadmeFilenames(Manifest);
 
@@ -49,7 +50,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             foreach (GitObject gitObject in gitObjects)
             {
-                _loggerService.WriteMessage(
+                _logger.LogInformation(
                     $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
             }
 
@@ -57,7 +58,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             {
                 using IGitHubClient gitHubClient = await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun);
 
-                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_loggerService).ExecuteAsync(async () =>
+                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_logger).ExecuteAsync(async () =>
                 {
                     GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
                     {
@@ -66,7 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                     if (gitRef != null)
                     {
-                        _loggerService.WriteMessage(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                        _logger.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
                     }
                 });
             }
@@ -108,11 +109,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
                 if (currentContent == gitObject.Content)
                 {
-                    _loggerService.WriteMessage($"File '{gitObject.Path}' has not changed.");
+                    _logger.LogInformation($"File '{gitObject.Path}' has not changed.");
                 }
                 else
                 {
-                    _loggerService.WriteMessage($"File '{gitObject.Path}' has changed.");
+                    _logger.LogInformation($"File '{gitObject.Path}' has changed.");
                     updatedGitObjects.Add(gitObject);
                 }
             }

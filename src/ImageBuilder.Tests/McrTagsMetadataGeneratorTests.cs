@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -7,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using Microsoft.DotNet.ImageBuilder.Mcr;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.McrTags;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
@@ -79,7 +81,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Load manifest
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -190,7 +192,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Load manifest
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -291,7 +293,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // Load manifest
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
-            ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+            ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
             RepoInfo repo = manifestInfo.AllRepos.First();
 
             Mock<IGitService> gitServiceMock = new Mock<IGitService>();
@@ -478,7 +480,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 // Load manifest
                 IManifestOptionsInfo manifestOptions = GetManifestOptions(ManifestFilePath);
-                ManifestInfo manifestInfo = ManifestInfo.Load(manifestOptions);
+                ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
                 RepoInfo repo = manifestInfo.AllRepos.First();
 
                 // Execute tags metadata generator and deserialize its output

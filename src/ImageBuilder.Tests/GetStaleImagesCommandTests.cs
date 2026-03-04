@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -7,8 +8,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using System.Text.Json.Nodes;
+using System.Text;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -17,15 +18,16 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.VersionTools.Automation;
+using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
+using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
-using WebApi = Microsoft.TeamFoundation.Build.WebApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -1664,7 +1666,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly Dictionary<string, string> imageDigests = new Dictionary<string, string>();
             private readonly string subscriptionsPath;
             private readonly GetStaleImagesCommand command;
-            private readonly Mock<ILoggerService> loggerServiceMock = new Mock<ILoggerService>();
+            private readonly Mock<ILogger<GetStaleImagesCommand>> loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
             private readonly string osType;
             private readonly IOctokitClientFactory octokitClientFactory;
             private readonly IGitService gitService;
@@ -1730,10 +1732,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             public void Verify(IDictionary<Subscription, IList<string>> expectedPathsBySubscription)
             {
                 IInvocation invocation = this.loggerServiceMock.Invocations
-                    .First(invocation => invocation.Method.Name == nameof(ILoggerService.WriteMessage) &&
-                        invocation.Arguments[0].ToString().StartsWith("##vso"));
+                    .First(invocation => invocation.Method.Name == nameof(ILogger.Log) &&
+                        invocation.Arguments[2]?.ToString()?.StartsWith("##vso") == true);
 
-                string message = invocation.Arguments[0].ToString();
+                string message = invocation.Arguments[2].ToString();
                 int variableNameStartIndex = message.IndexOf("=") + 1;
                 string actualVariableName = message.Substring(variableNameStartIndex, message.IndexOf(";") - variableNameStartIndex);
                 Assert.Equal(VariableName, actualVariableName);
@@ -1766,7 +1768,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestServiceFactoryMock.Object, this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
+                    this.ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;

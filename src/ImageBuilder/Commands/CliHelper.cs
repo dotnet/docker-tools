@@ -7,7 +7,6 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Linq;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public static class CliHelper
@@ -72,4 +71,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public static string FormatAlias(string alias) => $"--{alias}";
     }
 }
-#nullable disable

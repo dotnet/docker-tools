@@ -3,7 +3,6 @@
 
 using System.Diagnostics;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class ProcessService : IProcessService
@@ -17,4 +16,3 @@ namespace Microsoft.DotNet.ImageBuilder
             ExecuteHelper.Execute(info, isDryRun, errorMessage, executeMessageOverride);
     }
 }
-#nullable disable

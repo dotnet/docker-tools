@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.TeamFoundation.SourceControl.WebApi;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Services
 {
     public interface IAzdoGitHttpClient : IDisposable
@@ -18,4 +17,3 @@ namespace Microsoft.DotNet.ImageBuilder.Services
         Task<GitCommit> GetCommitAsync(string commitId, Guid repositoryId);
     }
 }
-#nullable disable

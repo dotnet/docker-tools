@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class MergeImageInfoOptions : ManifestOptions

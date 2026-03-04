@@ -9,7 +9,6 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Image
 {
     public class PlatformData : IComparable<PlatformData>
@@ -137,4 +136,3 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Image
 
     public record Layer(string Digest, long Size);
 }
-#nullable disable

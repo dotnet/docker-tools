@@ -30,6 +30,7 @@ For all new C# code:
 - Reuse existing methods or services as much as possible.
 - Use composition over inheritance.
 - Use LINQ instead of for loops when working with collections.
+- Place private nested types at the end of the containing class.
 
 ## Error Handling & Edge Cases
 

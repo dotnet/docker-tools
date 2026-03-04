@@ -16,6 +16,12 @@ For all new C# code:
 - Use `"""triple-quoted strings"""` for multi-line string literals. These can be interpolated as well.
 - Use expression-bodied members for simple getters and setters.
 
+## Naming
+
+- Avoid single-letter variable names, except for simple loop counters (e.g. `i`, `j`).
+- Avoid abbreviations or acronyms in names, except for widely known and accepted abbreviations (e.g. `Id`, `Url`, `Http`).
+- Prefer clarity over brevity - a longer descriptive name is better than a short ambiguous one.
+
 ## Code Design Rules
 
 - Use immutable records instead of classes for DTOs.

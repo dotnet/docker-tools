@@ -10,7 +10,7 @@ For all new C# code:
 
 - Use file-scoped namespaces.
 - Use collection expresions - write `[1, 2, 3]` and not `new List<int> { 1, 2, 3 }`.
-- Use `var` for local variable declarations.
+- Use explicit type declarations instead of `var` for local variables.
 - Use switch expressions and pattern matching.
 - Use string interpolation (`$"Hello, {name}!"`) instead of `string.Format` or concatenation.
 - Use `"""triple-quoted strings"""` for multi-line string literals. These can be interpolated as well.

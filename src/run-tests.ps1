@@ -15,8 +15,7 @@ param(
     [switch]$DisableHttpVerification,
     [switch]$PullImages,
     [string]$ImageInfoPath,
-    [ValidateSet("functional", "pre-build")]
-    [string[]]$TestCategories = @("functional")
+    [string[]]$TestCategories = @()
 )
 
 Set-StrictMode -Version Latest
@@ -26,23 +25,17 @@ $dotnetInstallDir = "$PSScriptRoot/../.dotnet"
 
 Push-Location $PSScriptRoot
 
-if ($TestCategories.Contains("pre-build")) {
-    Write-Output "There are no pre-build tests"
+try {
+    & ../eng/docker-tools/Install-DotNetSdk.ps1 $dotnetInstallDir
+
+    $cmd = "$DotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
+
+    Write-Output "Executing '$cmd'"
+    Invoke-Expression $cmd
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed: '$cmd'"
+    }
 }
-
-if ($TestCategories.Contains("functional")) {
-    try {
-        & ../eng/docker-tools/Install-DotNetSdk.ps1 $dotnetInstallDir
-
-        $cmd = "$DotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"
-
-        Write-Output "Executing '$cmd'"
-        Invoke-Expression $cmd
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed: '$cmd'"
-        }
-    }
-    finally {
-        Pop-Location
-    }
+finally {
+    Pop-Location
 }

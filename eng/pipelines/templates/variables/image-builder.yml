@@ -17,3 +17,5 @@ variables:
   value: ./src/run-tests.ps1
 - name: testResultsDirectory
   value: src/ImageBuilder.Tests/TestResults/
+- name: preBuildTestScriptPath
+  value: ""

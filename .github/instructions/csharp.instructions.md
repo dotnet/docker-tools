@@ -10,11 +10,17 @@ For all new C# code:
 
 - Use file-scoped namespaces.
 - Use collection expresions - write `[1, 2, 3]` and not `new List<int> { 1, 2, 3 }`.
-- Use `var` for local variable declarations.
+- Use explicit type declarations instead of `var` for local variables.
 - Use switch expressions and pattern matching.
 - Use string interpolation (`$"Hello, {name}!"`) instead of `string.Format` or concatenation.
 - Use `"""triple-quoted strings"""` for multi-line string literals. These can be interpolated as well.
 - Use expression-bodied members for simple getters and setters.
+
+## Naming
+
+- Avoid single-letter variable names, except for simple loop counters (e.g. `i`, `j`).
+- Avoid abbreviations or acronyms in names, except for widely known and accepted abbreviations (e.g. `Id`, `Url`, `Http`).
+- Prefer clarity over brevity - a longer descriptive name is better than a short ambiguous one.
 
 ## Code Design Rules
 
@@ -24,6 +30,7 @@ For all new C# code:
 - Reuse existing methods or services as much as possible.
 - Use composition over inheritance.
 - Use LINQ instead of for loops when working with collections.
+- Place private nested types at the end of the containing class.
 
 ## Error Handling & Edge Cases
 

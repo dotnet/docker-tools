@@ -20,6 +20,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Oras;
 
 public class OrasDotNetServiceTests
 {
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public async Task GetReferrersAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
+    {
+        var service = CreateService();
+
+        var exception = await Should.ThrowAsync<ArgumentException>(async () =>
+            await service.GetReferrersAsync(reference!));
+
+        exception.ShouldNotBeNull();
+    }
+
     [Fact]
     public async Task PushSignatureAsync_ReadsPayloadFile()
     {

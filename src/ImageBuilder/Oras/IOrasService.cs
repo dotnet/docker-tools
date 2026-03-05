@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -33,4 +34,15 @@ public interface IOrasService
         Descriptor subjectDescriptor,
         PayloadSigningResult result,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns the fully-qualified references of all OCI referrers for the given image.
+    /// </summary>
+    /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag" or "registry.io/repo@sha256:...").</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>
+    /// A list of digest-based image references (e.g., "registry.io/repo@sha256:abc...")
+    /// for every referrer associated with the image.
+    /// </returns>
+    Task<IReadOnlyList<string>> GetReferrersAsync(string reference, CancellationToken cancellationToken = default);
 }

@@ -118,6 +118,33 @@ public class OrasDotNetService(
         return signatureDescriptor.Digest;
     }
 
+    /// <inheritdoc/>
+    public async Task<IReadOnlyList<string>> GetReferrersAsync(string reference, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+
+        _logger.LogDebug("Fetching referrers for reference: {Reference}", reference);
+
+        long startTime = Stopwatch.GetTimestamp();
+        Repository repository = CreateRepository(reference);
+        Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
+
+        List<string> referrers = [];
+        Reference parsedRef = Reference.Parse(reference);
+
+        await foreach (Descriptor referrer in repository.FetchReferrersAsync(subjectDescriptor, cancellationToken))
+        {
+            string referrerReference = $"{parsedRef.Registry}/{parsedRef.Repository}@{referrer.Digest}";
+            referrers.Add(referrerReference);
+            _logger.LogDebug("Found referrer: {Referrer} (artifactType={ArtifactType})", referrerReference, referrer.ArtifactType);
+        }
+
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
+        _logger.LogDebug("Found {Count} referrer(s) for {Reference} in {Elapsed}", referrers.Count, reference, elapsed);
+
+        return referrers;
+    }
+
     /// <summary>
     /// Creates an authenticated ORAS repository client for the given reference.
     /// </summary>

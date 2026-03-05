@@ -50,6 +50,7 @@ public class PlatformSerializationTests
                 ["DOTNET_VERSION"] = "8.0.0",
                 ["ASPNET_VERSION"] = "8.0.0"
             },
+            BuildContext = "src/runtime/8.0/jammy",
             Dockerfile = "src/runtime/8.0/jammy/arm64v8/Dockerfile",
             DockerfileTemplate = "src/runtime/Dockerfile.linux.template",
             OS = OS.Linux,
@@ -71,6 +72,7 @@ public class PlatformSerializationTests
                 "DOTNET_VERSION": "8.0.0",
                 "ASPNET_VERSION": "8.0.0"
               },
+              "buildContext": "src/runtime/8.0/jammy",
               "dockerfile": "src/runtime/8.0/jammy/arm64v8/Dockerfile",
               "dockerfileTemplate": "src/runtime/Dockerfile.linux.template",
               "os": "Linux",
@@ -95,6 +97,7 @@ public class PlatformSerializationTests
         {
             Architecture = Architecture.ARM,
             BuildArgs = new Dictionary<string, string> { ["VERSION"] = "8.0" },
+            BuildContext = "src",
             Dockerfile = "src/Dockerfile",
             DockerfileTemplate = "src/Dockerfile.template",
             OS = OS.Linux,
@@ -266,6 +269,7 @@ public class PlatformSerializationTests
     {
         Assert.Equal(expected.Architecture, actual.Architecture);
         Assert.Equal(expected.BuildArgs, actual.BuildArgs);
+        Assert.Equal(expected.BuildContext, actual.BuildContext);
         Assert.Equal(expected.Dockerfile, actual.Dockerfile);
         Assert.Equal(expected.DockerfileTemplate, actual.DockerfileTemplate);
         Assert.Equal(expected.OS, actual.OS);

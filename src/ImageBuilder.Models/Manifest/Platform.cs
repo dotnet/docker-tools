@@ -29,6 +29,11 @@ public class Platform
     public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
 
     [Description(
+        "Relative path to the build context directory for the `docker build` command. " +
+        "If not specified, the directory containing the Dockerfile is used.")]
+    public string? BuildContext { get; set; }
+
+    [Description(
         "Relative path to the associated Dockerfile. This can be a file or a " +
         "directory. If it is a directory, the file name defaults to Dockerfile."
         )]

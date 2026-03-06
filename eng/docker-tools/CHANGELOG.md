@@ -35,7 +35,7 @@ Service connections are now referenced per-job via
 
 ---
 
-## 2026-03-06: ImageBuilder packaged as .NET tool (breaking)
+## 2026-03-20: ImageBuilder packaged as .NET tool (breaking)
 
 ImageBuilder is now packaged as a .NET tool and the executable has been renamed from `Microsoft.DotNet.ImageBuilder` to `imagebuilder`.
 

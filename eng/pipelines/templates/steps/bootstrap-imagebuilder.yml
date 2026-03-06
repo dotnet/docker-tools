@@ -23,6 +23,6 @@ steps:
   displayName: Install .NET SDK (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')
 
-- powershell: $(Build.SourcesDirectory)/.dotnet/dotnet publish $(repoRoot)/src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained -o $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+- powershell: $(Build.SourcesDirectory)/.dotnet/dotnet publish $(repoRoot)/src/ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained -o $(Build.BinariesDirectory)/.imagebuilder
   displayName: Bootstrap ImageBuilder from source (Windows)
   condition: eq(variables['Agent.OS'], 'Windows_NT')

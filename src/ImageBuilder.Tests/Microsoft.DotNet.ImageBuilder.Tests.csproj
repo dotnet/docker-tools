@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
@@ -20,6 +20,8 @@
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
+    <!-- Exclude System.Linq.Async (transitive from ImageBuilder) - its APIs are built into .NET 10+ -->
+    <PackageReference Include="System.Linq.Async" Version="7.0.0" ExcludeAssets="compile" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>

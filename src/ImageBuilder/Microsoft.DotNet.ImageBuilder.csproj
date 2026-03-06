@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
+    <AssemblyName>imagebuilder</AssemblyName>
     <PublishTrimmed>False</PublishTrimmed>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>
@@ -10,6 +11,14 @@
     <!-- Explicit Nullable setting required for Docker builds from src/ context (won't see root Directory.Build.props).
          Tracking issue for fixing context directory: https://github.com/dotnet/docker-tools/issues/1592 -->
     <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Label="Tool Packaging">
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>imagebuilder</ToolCommandName>
+    <PackageId>Microsoft.DotNet.ImageBuilder</PackageId>
+    <Description>CLI tool that orchestrates Docker image builds.</Description>
   </PropertyGroup>
 
   <PropertyGroup>

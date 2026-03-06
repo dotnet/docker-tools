@@ -4,6 +4,22 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
+## 2026-03-06: ImageBuilder is now packaged as a .NET tool
+
+ImageBuilder is now packaged as a .NET tool.
+The ImageBuilder executable has been renamed from `Microsoft.DotNet.ImageBuilder` to `imagebuilder`.
+
+**Changes:**
+- ImageBuilder is now packaged as a .NET tool.
+- The executable/assembly name has been changed from `Microsoft.DotNet.ImageBuilder` to `imagebuilder`
+- The Windows staging folder name has been changed from `.Microsoft.DotNet.ImageBuilder` to `.imagebuilder`
+- The ImageBuilder version has been updated to `0.3.0`.
+
+**Impact:**
+- Any custom scripts referencing `Microsoft.DotNet.ImageBuilder.exe` or the `.Microsoft.DotNet.ImageBuilder/` folder must be updated to reference `imagebuilder.exe` and `.imagebuilder/` respectively.
+
+---
+
 ## 2026-03-04: Pre-build validation gated by `preBuildTestScriptPath` variable
 
 The `PreBuildValidation` job condition now checks the new `preBuildTestScriptPath` variable instead of `testScriptPath`.

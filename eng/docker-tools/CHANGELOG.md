@@ -35,6 +35,23 @@ Service connections are now referenced per-job via
 
 ---
 
+## 2026-03-06: ImageBuilder packaged as .NET tool (breaking)
+
+ImageBuilder is now packaged as a .NET tool and the executable has been renamed from `Microsoft.DotNet.ImageBuilder` to `imagebuilder`.
+
+**Changes:**
+- ImageBuilder is packed as a .NET tool via `PackAsTool`, producing the NuGet package `Microsoft.DotNet.ImageBuilder`
+- The executable/assembly name changed from `Microsoft.DotNet.ImageBuilder` to `imagebuilder`
+- The Windows staging folder changed from `.Microsoft.DotNet.ImageBuilder` to `.imagebuilder`
+- The version has been bumped to `0.3.0` to reflect this breaking change
+
+**Impact:**
+- Docker container ENTRYPOINT updated: `/image-builder/Microsoft.DotNet.ImageBuilder` → `/image-builder/imagebuilder`
+- Windows pipeline scripts reference the new executable name `imagebuilder.exe`
+- Any custom scripts referencing `Microsoft.DotNet.ImageBuilder.exe` or the `.Microsoft.DotNet.ImageBuilder` folder must be updated
+
+---
+
 ## 2026-03-04: Pre-build validation gated by `preBuildTestScriptPath` variable
 
 - Pull request: [#1997](https://github.com/dotnet/docker-tools/pull/1997)

@@ -28,7 +28,9 @@ try {
         # On Linux, use the bash tools.sh (tools.ps1 uses dotnet-install.ps1
         # which doesn't work reliably on Linux)
         $engCommonDir = (Resolve-Path "$PSScriptRoot/../eng/common").Path
-        $initScript = "source '$engCommonDir/tools.sh'; InitializeDotNetCli true; echo `$_InitializeDotNetCli"
+        # InitializeToolset triggers Arcade's InstallDotNetCore target which installs
+        # additional runtimes defined in global.json's tools.runtimes section.
+        $initScript = "source '$engCommonDir/tools.sh'; InitializeDotNetCli true; InitializeToolset; echo `$_InitializeDotNetCli"
         $dotnetInstallDir = (& bash -c $initScript | Select-Object -Last 1).Trim()
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to initialize .NET SDK via tools.sh"
@@ -36,6 +38,9 @@ try {
     } else {
         . $PSScriptRoot/../eng/common/tools.ps1
         $dotnetInstallDir = InitializeDotNetCli $true
+        # Triggers Arcade's InstallDotNetCore target to install additional runtimes
+        # defined in global.json's tools.runtimes section.
+        InitializeToolset
     }
 
     $cmd = "$dotnetInstallDir/dotnet test $PSScriptRoot/ImageBuilder.Tests/Microsoft.DotNet.ImageBuilder.Tests.csproj --logger:trx"

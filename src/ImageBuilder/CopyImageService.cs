@@ -2,11 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.Core;
 using Azure.ResourceManager.ContainerRegistry.Models;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.Services.Common;
 
@@ -27,15 +29,18 @@ public class CopyImageService : ICopyImageService
 {
     private readonly ILogger<CopyImageService> _logger;
     private readonly IAcrImageImporter _acrRegistryImporter;
+    private readonly IOrasService _orasService;
     private readonly PublishConfiguration _publishConfig;
 
     public CopyImageService(
         ILogger<CopyImageService> logger,
         IAcrImageImporter acrRegistryImporter,
+        IOrasService orasService,
         IOptions<PublishConfiguration> publishConfigOptions)
     {
         _logger = logger;
         _acrRegistryImporter = acrRegistryImporter;
+        _orasService = orasService;
         _publishConfig = publishConfigOptions.Value;
     }
 
@@ -92,5 +97,31 @@ public class CopyImageService : ICopyImageService
         importImageContent.TargetTags.AddRange(destTagNames);
 
         await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, importImageContent);
+
+        // Discover and import all OCI referrers (signatures, SBOMs, etc.) for the source image.
+        string sourceImageReference = DockerHelper.GetImageName(srcRegistryName, srcTagName);
+        IReadOnlyList<string> referrers = await _orasService.GetReferrersAsync(sourceImageReference);
+
+        string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
+        foreach (string referrer in referrers)
+        {
+            _logger.LogInformation("Importing referrer '{Referrer}' to '{DestAcr}/{DestRepo}'", referrer, destAcrName, destRepo);
+
+            string referrerDigestReference = DockerHelper.TrimRegistry(referrer, srcRegistryName);
+            ContainerRegistryImportSource referrerImportSrc = new(referrerDigestReference)
+            {
+                ResourceId = srcResourceId,
+                RegistryAddress = srcResourceId is null ? srcRegistryName : null,
+                Credentials = sourceCredentials
+            };
+
+            ContainerRegistryImportImageContent referrerImportContent = new(referrerImportSrc)
+            {
+                Mode = ContainerRegistryImportMode.Force,
+            };
+            referrerImportContent.UntaggedTargetRepositories.Add(destRepo);
+
+            await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, referrerImportContent);
+        }
     }
 }

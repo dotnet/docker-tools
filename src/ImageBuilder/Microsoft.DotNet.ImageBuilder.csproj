@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <AssemblyName>imagebuilder</AssemblyName>
     <PublishTrimmed>False</PublishTrimmed>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>Microsoft.DotNet.ImageBuilder</RootNamespace>

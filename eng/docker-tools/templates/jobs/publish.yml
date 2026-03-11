@@ -53,6 +53,13 @@ jobs:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
 
+  - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+        - ${{ parameters.publishConfig.PublishRegistry.server }}
+
   - template: /eng/docker-tools/templates/steps/retain-build.yml@self
 
   - pwsh: |

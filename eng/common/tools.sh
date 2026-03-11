@@ -394,6 +394,7 @@ function InitializeNativeTools() {
 
 function InitializeToolset {
   if [[ -n "${_InitializeToolset:-}" ]]; then
+    echo "InitializeToolset: Using cached _InitializeToolset='$_InitializeToolset'"
     return
   fi
 
@@ -407,11 +408,14 @@ function InitializeToolset {
   if [[ -a "$toolset_location_file" ]]; then
     local path=`cat "$toolset_location_file"`
     if [[ -a "$path" ]]; then
+      echo "InitializeToolset: Using cached toolset location file '$toolset_location_file' -> '$path'"
       # return value
       _InitializeToolset="$path"
       return
     fi
   fi
+
+  echo "InitializeToolset: No cache hit. Running MSBuild restore to initialize toolset."
 
   if [[ "$restore" != true ]]; then
     Write-PipelineTelemetryError -category 'InitializeToolset' "Toolset version $toolset_version has not been restored."

@@ -702,10 +702,12 @@ function InitializeToolset() {
   # For Unified Build/Source-build support, check whether the environment variable is
   # set. If it is, then use this as the toolset build project.
   if ($env:_InitializeToolset -ne $null) {
+    Write-Host "InitializeToolset: Using env var _InitializeToolset='$($env:_InitializeToolset)'"
     return $global:_InitializeToolset = $env:_InitializeToolset
   }
 
   if (Test-Path variable:global:_InitializeToolset) {
+    Write-Host "InitializeToolset: Using cached global _InitializeToolset='$global:_InitializeToolset'"
     return $global:_InitializeToolset
   }
 
@@ -717,9 +719,12 @@ function InitializeToolset() {
   if (Test-Path $toolsetLocationFile) {
     $path = Get-Content $toolsetLocationFile -TotalCount 1
     if (Test-Path $path) {
+      Write-Host "InitializeToolset: Using cached toolset location file '$toolsetLocationFile' -> '$path'"
       return $global:_InitializeToolset = $path
     }
   }
+
+  Write-Host "InitializeToolset: No cache hit. Running MSBuild restore to initialize toolset."
 
   if (-not $restore) {
     Write-PipelineTelemetryError -Category 'InitializeToolset' -Message "Toolset version $toolsetVersion has not been restored."

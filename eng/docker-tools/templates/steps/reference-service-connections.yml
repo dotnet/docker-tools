@@ -11,6 +11,9 @@ parameters:
 - name: usesRegistries
   type: object
   default: []
+- name: dockerClientOS
+  type: string
+  default: linux
 
 steps:
 - ${{ each auth in parameters.publishConfig.RegistryAuthentication }}:
@@ -19,6 +22,9 @@ steps:
       displayName: Reference ${{ auth.serviceConnection.name }}
       inputs:
         azureSubscription: ${{ auth.serviceConnection.name }}
-        scriptType: pscore
+        ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+          scriptType: ps
+        ${{ else }}:
+          scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: Write-Host "Service connection referenced for OIDC"

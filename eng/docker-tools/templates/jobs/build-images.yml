@@ -45,6 +45,7 @@ jobs:
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
+      dockerClientOS: ${{ parameters.dockerClientOS }}
       usesRegistries:
         - ${{ parameters.publishConfig.BuildRegistry.server }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self

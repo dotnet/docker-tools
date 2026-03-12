@@ -6,6 +6,7 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ## 2026-03-12: Service connection OIDC changes
 
+- Pull request: [#2013](https://github.com/dotnet/docker-tools/pull/2013)
 - Issue: [#2012](https://github.com/dotnet/docker-tools/issues/2012)
 
 `setup-service-connections.yml` has been removed. Azure DevOps no longer

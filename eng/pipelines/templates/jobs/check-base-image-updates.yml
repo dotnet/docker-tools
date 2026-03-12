@@ -38,6 +38,12 @@ jobs:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
 
+  - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      usesRegistries:
+        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
       acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}

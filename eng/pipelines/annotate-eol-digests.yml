@@ -16,9 +16,6 @@ variables:
 extends:
   template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
-    serviceConnections:
-    - name: $(publish.serviceConnectionName)
-    - name: $(marStatus.serviceConnectionName)
     stages:
     - stage: eolAnnotate
       displayName: Annotate EOL images
@@ -30,6 +27,11 @@ extends:
         - template: /eng/docker-tools/templates/steps/init-common.yml@self
           parameters:
             dockerClientOS: linux
+        - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+          parameters:
+            serviceConnections:
+            - name: $(publish.serviceConnectionName)
+            - name: $(marStatus.serviceConnectionName)
         - template: /eng/docker-tools/templates/steps/annotate-eol-digests.yml@self
           parameters:
             dataFile: /repo/${{ parameters.dataFile }}

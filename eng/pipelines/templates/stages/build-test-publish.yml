@@ -29,23 +29,13 @@ parameters:
   type: stepList
   default: []
 
-# Additional service connections needed by this pipeline that are not included
-# in the publishConfig.
+# Additional service connections not in publishConfig.RegistryAuthentication
+# that need OIDC token access (e.g., kusto, marStatus). Shape: [{ name: string }]
 - name: additionalServiceConnections
   type: object
   default: []
 
 stages:
-- ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
-  - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
-    parameters:
-      publishConfig: ${{ parameters.publishConfig }}
-      usesRegistries:
-        - ${{ parameters.publishConfig.BuildRegistry.server }}
-        - ${{ parameters.publishConfig.PublishRegistry.server }}
-        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
-      serviceConnections: ${{ parameters.additionalServiceConnections }}
-
 - template: /eng/docker-tools/templates/stages/dotnet/build-test-publish-repo.yml@self
   parameters:
     noCache: ${{ parameters.noCache }}
@@ -54,6 +44,7 @@ stages:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     publishConfig: ${{ parameters.publishConfig }}
     customInitSteps: ${{ parameters.customInitSteps }}
+    additionalServiceConnections: ${{ parameters.additionalServiceConnections }}
     ${{ if ne(parameters.versionsRepoRef, '') }}:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
     ${{ if eq(variables['Build.Reason'], 'PullRequest') }}:

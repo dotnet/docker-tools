@@ -19,7 +19,7 @@ Service connections are now referenced per-job via
   `1es-unofficial.yml` - they are no longer accepted.
 - Remove any calls to `setup-service-connections.yml` from stage templates.
 - Non-registry service connections (e.g., kusto, marStatus) should be passed
-  via `additionalServiceConnections` on `build-test-publish.yml`.
+  via `additionalServiceConnections` to the job templates that need them.
 
 ---
 

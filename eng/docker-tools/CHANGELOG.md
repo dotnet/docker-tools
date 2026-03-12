@@ -4,6 +4,25 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
+## 2026-03-12: Service connection OIDC changes
+
+- Issue: [#2012](https://github.com/dotnet/docker-tools/issues/2012)
+
+`setup-service-connections.yml` has been removed. Azure DevOps no longer
+issues OIDC tokens for service connections referenced in a separate stage.
+Service connections are now referenced per-job via
+`reference-service-connections.yml`.
+
+**How to update:**
+
+- Remove any `serviceConnections` parameters passed to `1es-official.yml` or
+  `1es-unofficial.yml` - they are no longer accepted.
+- Remove any calls to `setup-service-connections.yml` from stage templates.
+- Non-registry service connections (e.g., kusto, marStatus) should be passed
+  via `additionalServiceConnections` on `build-test-publish.yml`.
+
+---
+
 ## 2026-03-04: Pre-build validation gated by `preBuildTestScriptPath` variable
 
 The `PreBuildValidation` job condition now checks the new `preBuildTestScriptPath` variable instead of `testScriptPath`.

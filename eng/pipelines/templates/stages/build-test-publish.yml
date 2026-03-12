@@ -29,8 +29,8 @@ parameters:
   type: stepList
   default: []
 
-# Additional service connections needed by this pipeline that are not included
-# in the publishConfig.
+# Additional service connections not in publishConfig.RegistryAuthentication
+# that need OIDC token access (e.g., kusto, marStatus). Shape: [{ name: string }]
 - name: additionalServiceConnections
   type: object
   default: []

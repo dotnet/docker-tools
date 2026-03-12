@@ -12,6 +12,8 @@ parameters:
   # When true, overrides the commit SHA in merged image info files to use the current repository commit.
   # This ensures that updated images reference the correct commit in their commitUrl properties.
   overrideImageInfoCommit: false
+  # Service connections not in publishConfig.RegistryAuthentication that need OIDC
+  # token access during publish (e.g., kusto, marStatus). Shape: [{ name: string }]
   additionalServiceConnections: []
 
 jobs:

@@ -13,6 +13,8 @@ parameters:
   sourceBuildPipelineRunId: ''
   versionsRepoRef: null
   overrideImageInfoCommit: false
+  # Service connections not in publishConfig.RegistryAuthentication that need OIDC
+  # token access during publish (e.g., kusto, marStatus). Shape: [{ name: string }]
   additionalServiceConnections: []
 
 stages:

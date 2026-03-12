@@ -32,7 +32,8 @@ parameters:
   # Publish parameters
   customPublishInitSteps: []
 
-  # Additional service connections not in publishConfig (e.g. kusto, marStatus)
+  # Additional service connections not in publishConfig.RegistryAuthentication
+  # that need OIDC token access (e.g., kusto, marStatus). Shape: [{ name: string }]
   additionalServiceConnections: []
 
   # Other common parameters

@@ -50,8 +50,17 @@ dotnet run --project src/ImageBuilder -- --help
 
 The `eng/docker-tools/` directory contains shared PowerShell scripts and Azure Pipelines templates used across all .NET Docker repositories.
 This repository is the source of truth for these files - changes made here are automatically synchronized to consuming repositories.
+Breaking changes to `eng/docker-tools/` must be documented in `eng/docker-tools/CHANGELOG.md` with actionable migration steps for downstream repos.
 
 For comprehensive documentation on the docker-tools infrastructure, pipeline architecture, image building workflows, and troubleshooting, see [eng/docker-tools/DEV-GUIDE.md](eng/docker-tools/DEV-GUIDE.md).
+
+### Service Connections and Authentication
+
+`publishConfig` is the source of truth for registry authentication. Registry service connections live in `publishConfig.RegistryAuthentication`. Non-registry connections (e.g., kusto, marStatus, cleanServiceConnection) are separate fields or passed via `additionalServiceConnections`.
+
+ImageBuilder runs inside a Docker container. The env vars `SYSTEM_ACCESSTOKEN` and `SYSTEM_OIDCREQUESTURI` must be explicitly passed into the container for OIDC authentication to work. Config is baked into the container via `appsettings.json`.
+
+Every job that authenticates to Azure via `AzurePipelinesCredential` must include `reference-service-connections.yml` with only the service connections it actually needs. Pipeline templates that run on both Linux and Windows must pass `dockerClientOS` to `reference-service-connections.yml` so it uses the correct PowerShell variant.
 
 ## ImageBuilder Build and Deployment Workflow
 
@@ -122,6 +131,7 @@ When making changes to ImageBuilder, pipeline templates, or infrastructure:
 - Update [eng/docker-tools/DEV-GUIDE.md](eng/docker-tools/DEV-GUIDE.md) if you change pipeline architecture, workflows, or add new capabilities
 - Update [src/README.md](src/README.md) if you change how ImageBuilder container images are built
 - Update [documentation/manifest-file.md](documentation/manifest-file.md) if you modify the manifest schema
+- Update [eng/docker-tools/CHANGELOG.md](eng/docker-tools/CHANGELOG.md) if you make breaking changes to `eng/docker-tools/` templates
 - Update this file (AGENTS.md) if you add projects, change fundamental workflows, or modify architecture that affects how developers work with the codebase
 
 Keep documentation synchronized with code changes so future developers have accurate guidance.

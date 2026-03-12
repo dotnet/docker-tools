@@ -13,6 +13,7 @@ parameters:
   sourceBuildPipelineRunId: ''
   versionsRepoRef: null
   overrideImageInfoCommit: false
+  additionalServiceConnections: []
 
 stages:
 - template: /eng/docker-tools/templates/stages/publish.yml@self
@@ -22,6 +23,7 @@ stages:
     publishConfig: ${{ parameters.publishConfig }}
     isStandalonePublish: ${{ parameters.isStandalonePublish }}
     customInitSteps: ${{ parameters.customInitSteps }}
+    additionalServiceConnections: ${{ parameters.additionalServiceConnections }}
     sourceBuildPipelineDefinitionId: ${{ parameters.sourceBuildPipelineDefinitionId }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     versionsRepoRef: ${{ parameters.versionsRepoRef }}

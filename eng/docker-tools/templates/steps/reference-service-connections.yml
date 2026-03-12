@@ -1,14 +1,20 @@
-# Emit AzureCLI@2 steps to explicitly reference service connections from
-# publishConfig.RegistryAuthentication for the specified registries.
-# This is required so that Azure DevOps will issue OIDC tokens for these
-# service connections when requested from the current stage.
+# Emit AzureCLI@2 steps to explicitly reference service connections so that
+# Azure DevOps will issue OIDC tokens for them in the current stage.
+#
+# Service connections can be specified in two ways:
+# - Via publishConfig.RegistryAuthentication + usesRegistries (for registry connections)
+# - Via serviceConnections (direct list of {name: string} for non-registry connections)
 #
 # This is the per-job equivalent of setup-service-connections.yml (which
 # operates at the stage level).
 parameters:
 - name: publishConfig
   type: object
+  default: {}
 - name: usesRegistries
+  type: object
+  default: []
+- name: serviceConnections
   type: object
   default: []
 - name: dockerClientOS
@@ -16,6 +22,17 @@ parameters:
   default: linux
 
 steps:
+- ${{ each serviceConnection in parameters.serviceConnections }}:
+  - task: AzureCLI@2
+    displayName: Reference ${{ serviceConnection.name }}
+    inputs:
+      azureSubscription: ${{ serviceConnection.name }}
+      ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+        scriptType: ps
+      ${{ else }}:
+        scriptType: pscore
+      scriptLocation: inlineScript
+      inlineScript: Write-Host "Service connection referenced for OIDC"
 - ${{ each auth in parameters.publishConfig.RegistryAuthentication }}:
   - ${{ if containsValue(parameters.usesRegistries, auth.server) }}:
     - task: AzureCLI@2

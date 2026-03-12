@@ -25,6 +25,8 @@ parameters:
   # internally built images still reference public Dockerfiles.
   overrideImageInfoCommit: false
 
+  additionalServiceConnections: []
+
 ################################################################################
 # Publish Images
 ################################################################################
@@ -77,3 +79,4 @@ stages:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
       versionsRepoPath: ${{ parameters.versionsRepoPath }}
       overrideImageInfoCommit: ${{ parameters.overrideImageInfoCommit }}
+      additionalServiceConnections: ${{ parameters.additionalServiceConnections }}

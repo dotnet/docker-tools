@@ -12,6 +12,7 @@ parameters:
   # When true, overrides the commit SHA in merged image info files to use the current repository commit.
   # This ensures that updated images reference the correct commit in their commitUrl properties.
   overrideImageInfoCommit: false
+  additionalServiceConnections: []
 
 jobs:
 - job: Publish
@@ -59,6 +60,7 @@ jobs:
       usesRegistries:
         - ${{ parameters.publishConfig.BuildRegistry.server }}
         - ${{ parameters.publishConfig.PublishRegistry.server }}
+      serviceConnections: ${{ parameters.additionalServiceConnections }}
 
   - template: /eng/docker-tools/templates/steps/retain-build.yml@self
 

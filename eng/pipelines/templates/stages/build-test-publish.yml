@@ -36,16 +36,6 @@ parameters:
   default: []
 
 stages:
-- ${{ if ne(variables['Build.Reason'], 'PullRequest') }}:
-  - template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
-    parameters:
-      publishConfig: ${{ parameters.publishConfig }}
-      usesRegistries:
-        - ${{ parameters.publishConfig.BuildRegistry.server }}
-        - ${{ parameters.publishConfig.PublishRegistry.server }}
-        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
-      serviceConnections: ${{ parameters.additionalServiceConnections }}
-
 - template: /eng/docker-tools/templates/stages/dotnet/build-test-publish-repo.yml@self
   parameters:
     noCache: ${{ parameters.noCache }}

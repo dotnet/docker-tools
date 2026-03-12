@@ -24,12 +24,6 @@ variables:
 extends:
   template: /eng/docker-tools/templates/1es-official.yml@self
   parameters:
-    serviceConnections:
-    # For image removal
-    - name: $(clean.serviceConnectionName)
-    # For EOL annotations
-    - name: $(build.serviceConnectionName)
-    - name: $(public-mirror.serviceConnectionName)
     stages:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:

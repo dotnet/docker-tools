@@ -29,8 +29,6 @@ parameters:
 extends:
   template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    serviceConnections:
-    - name: $(clean.serviceConnectionName)
     stages:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:

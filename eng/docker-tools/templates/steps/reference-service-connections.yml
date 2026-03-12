@@ -34,28 +34,35 @@ parameters:
 - name: dockerClientOS
   type: string
   default: linux
+# The internal Azure DevOps project name. Reference steps are only emitted
+# for internal non-PR builds, since public projects don't have these service
+# connections.
+- name: internalProjectName
+  type: string
+  default: internal
 
 steps:
-- ${{ each serviceConnection in parameters.serviceConnections }}:
-  - task: AzureCLI@2
-    displayName: Reference ${{ serviceConnection.name }}
-    inputs:
-      azureSubscription: ${{ serviceConnection.name }}
-      ${{ if eq(parameters.dockerClientOS, 'windows') }}:
-        scriptType: ps
-      ${{ else }}:
-        scriptType: pscore
-      scriptLocation: inlineScript
-      inlineScript: Write-Host "Service connection referenced for OIDC"
-- ${{ each auth in parameters.publishConfig.RegistryAuthentication }}:
-  - ${{ if containsValue(parameters.usesRegistries, auth.server) }}:
+- ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
+  - ${{ each serviceConnection in parameters.serviceConnections }}:
     - task: AzureCLI@2
-      displayName: Reference ${{ auth.serviceConnection.name }}
+      displayName: Reference ${{ serviceConnection.name }}
       inputs:
-        azureSubscription: ${{ auth.serviceConnection.name }}
+        azureSubscription: ${{ serviceConnection.name }}
         ${{ if eq(parameters.dockerClientOS, 'windows') }}:
           scriptType: ps
         ${{ else }}:
           scriptType: pscore
         scriptLocation: inlineScript
         inlineScript: Write-Host "Service connection referenced for OIDC"
+  - ${{ each auth in parameters.publishConfig.RegistryAuthentication }}:
+    - ${{ if containsValue(parameters.usesRegistries, auth.server) }}:
+      - task: AzureCLI@2
+        displayName: Reference ${{ auth.serviceConnection.name }}
+        inputs:
+          azureSubscription: ${{ auth.serviceConnection.name }}
+          ${{ if eq(parameters.dockerClientOS, 'windows') }}:
+            scriptType: ps
+          ${{ else }}:
+            scriptType: pscore
+          scriptLocation: inlineScript
+          inlineScript: Write-Host "Service connection referenced for OIDC"

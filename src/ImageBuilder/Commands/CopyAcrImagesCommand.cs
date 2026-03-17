@@ -36,7 +36,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
         }
 
-        protected override string Description => "Copies the platform images as specified in the manifest between repositories of an ACR";
+        protected override string Description => "Copies the platform images and manifest lists as specified in the manifest between repositories of an ACR";
 
         public override async Task ExecuteAsync()
         {
@@ -49,11 +49,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            IEnumerable<Task> importTasks = Manifest.FilteredRepos
+            IEnumerable<Task> platformImportTasks = Manifest.FilteredRepos
                 .Select(repo =>
                     repo.FilteredImages
                         .SelectMany(image => image.FilteredPlatforms)
-                        .SelectMany(platform => GetTagInfos(repo, platform))
+                        .SelectMany(platform => GetPlatformTagInfos(repo, platform))
                         .Select(tagInfo =>
                             ImportImageAsync(
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
@@ -62,10 +62,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
-            await Task.WhenAll(importTasks);
+            IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos()
+                .Select(tagInfo =>
+                    ImportImageAsync(
+                        DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
+                        Manifest.Registry,
+                        DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
+                        srcRegistryName: Options.SourceRegistry));
+
+            await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
         }
 
-        private IEnumerable<(string SourceTag, string DestinationTag)> GetTagInfos(RepoInfo repo, PlatformInfo platform)
+        private IEnumerable<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(RepoInfo repo, PlatformInfo platform)
         {
             var tags = new List<(string SourceTag, string DestinationTag)>();
 
@@ -122,6 +130,58 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             return tags;
+        }
+
+        private IEnumerable<(string SourceTag, string DestinationTag)> GetManifestListTagInfos()
+        {
+            if (_imageArtifactDetails.Value is null)
+            {
+                yield break;
+            }
+
+            foreach (RepoInfo repo in Manifest.FilteredRepos)
+            {
+                RepoData repoData = _imageArtifactDetails.Value.Repos
+                    .FirstOrDefault(repoData => repoData.Repo == repo.Name);
+
+                if (repoData is null)
+                {
+                    continue;
+                }
+
+                foreach (ImageData imageData in repoData.Images)
+                {
+                    if (imageData.Manifest is null)
+                    {
+                        continue;
+                    }
+
+                    foreach (string sharedTag in imageData.Manifest.SharedTags)
+                    {
+                        string destinationTag = TagInfo.GetFullyQualifiedName(repo.QualifiedName, sharedTag);
+                        string sourceTag = GetSourceTag(destinationTag);
+                        yield return (sourceTag, destinationTag);
+
+                        // Copy syndicated manifest list tags
+                        if (imageData.ManifestImage is not null)
+                        {
+                            TagInfo tagInfo = imageData.ManifestImage.SharedTags
+                                .FirstOrDefault(t => t.Name == sharedTag);
+
+                            if (tagInfo?.SyndicatedRepo is not null)
+                            {
+                                foreach (string syndicatedDestinationTagName in tagInfo.SyndicatedDestinationTags)
+                                {
+                                    destinationTag = TagInfo.GetFullyQualifiedName(
+                                        $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
+                                        syndicatedDestinationTagName);
+                                    yield return (sourceTag, destinationTag);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         private string GetSourceTag(string destinationTag) =>

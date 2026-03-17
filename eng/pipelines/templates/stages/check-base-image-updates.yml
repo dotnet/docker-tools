@@ -14,13 +14,6 @@ parameters:
   type: string
 
 stages:
-- template: /eng/docker-tools/templates/stages/setup-service-connections.yml@self
-  parameters:
-    publishConfig: ${{ parameters.publishConfig }}
-    usesRegistries:
-      - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
-      - ${{ parameters.publishConfig.BuildRegistry.server }}
-
 - stage: CheckBaseImages
   displayName: Check Base Images
   dependsOn: []

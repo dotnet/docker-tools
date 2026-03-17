@@ -24,6 +24,11 @@ stages:
       parameters:
         dockerClientOS: linux
         publishConfig: ${{ parameters.publishConfig }}
+    - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+      parameters:
+        publishConfig: ${{ parameters.publishConfig }}
+        serviceConnections:
+        - ${{ parameters.publishConfig.cleanServiceConnection }}
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         internalProjectName: ${{ parameters.internalProjectName }}
@@ -69,6 +74,14 @@ stages:
       parameters:
         dockerClientOS: linux
         publishConfig: ${{ parameters.publishConfig }}
+    - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+      parameters:
+        publishConfig: ${{ parameters.publishConfig }}
+        usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+        - ${{ parameters.publishConfig.PublicMirrorRegistry.server }}
+        serviceConnections:
+        - name: $(marStatus.serviceConnectionName)
     - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
       displayName: Create EOL Annotation Data Directory
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self

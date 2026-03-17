@@ -28,6 +28,11 @@ stages:
       parameters:
         dockerClientOS: linux
         publishConfig: ${{ parameters.publishConfig }}
+    - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+      parameters:
+        publishConfig: ${{ parameters.publishConfig }}
+        serviceConnections:
+        - ${{ parameters.publishConfig.cleanServiceConnection }}
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self
       parameters:
         internalProjectName: internal

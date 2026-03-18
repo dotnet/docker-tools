@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands.Signing;
 
@@ -17,23 +18,29 @@ public class VerifySignaturesOptions : Options
     /// Defaults to /notation-trust which is baked into the container image.
     /// </summary>
     public string TrustMaterialsPath { get; set; } = "/notation-trust";
-}
 
-public class VerifySignaturesOptionsBuilder : CliOptionsBuilder
-{
     private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: true);
+
+    private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
+    {
+        Description = "Path to merged image info file containing images to verify"
+    };
 
     public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
-            new Argument<string>(
-                name: nameof(VerifySignaturesOptions.ImageInfoPath),
-                description: "Path to merged image info file containing images to verify")
+            ImageInfoPathArgument,
         ];
 
     public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
-            .._registryOptionsBuilder.GetCliOptions()
+            .._registryOptionsBuilder.GetCliOptions(),
         ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+    }
 }

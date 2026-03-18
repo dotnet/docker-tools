@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -22,42 +22,49 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
 
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-    }
 
-    public class GetStaleImagesOptionsBuilder : CliOptionsBuilder
-    {
-        private readonly GitOptionsBuilder _gitOptionsBuilder = GitOptionsBuilder.BuildWithDefaults();
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
-        private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new();
-        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-        private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
+        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildWithDefaults();
+
+        private static readonly Argument<string> VariableNameArgument = new(nameof(VariableName))
+        {
+            Description = "The Azure Pipeline variable name to assign the image paths to"
+        };
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_subscriptionOptionsBuilder.GetCliOptions())
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(_gitOptionsBuilder.GetCliOptions())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
-                .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions());
+        [
+            ..base.GetCliOptions(),
+            ..SubscriptionOptions.GetCliOptions(),
+            ..FilterOptions.GetCliOptions(),
+            ..GitBuilder.GetCliOptions(),
+            ..CredentialsOptions.GetCliOptions(),
+            ..BaseImageOverrideOptions.GetCliOptions(),
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_subscriptionOptionsBuilder.GetCliArguments())
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments())
-                .Concat(_gitOptionsBuilder.GetCliArguments())
-                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments()
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(GetStaleImagesOptions.VariableName),
-                            "The Azure Pipeline variable name to assign the image paths to")
-                    }));
+        [
+            ..base.GetCliArguments(),
+            ..SubscriptionOptions.GetCliArguments(),
+            ..FilterOptions.GetCliArguments(),
+            ..GitBuilder.GetCliArguments(),
+            ..CredentialsOptions.GetCliArguments(),
+            VariableNameArgument,
+        ];
 
-        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() =>
-            [
-                ..base.GetValidators(),
-                .._gitOptionsBuilder.GetValidators()
-            ];
+        public override IEnumerable<Action<CommandResult>> GetValidators() =>
+        [
+            ..base.GetValidators(),
+            ..GitBuilder.GetValidators(),
+        ];
 
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            SubscriptionOptions.Bind(result);
+            FilterOptions.Bind(result);
+            GitBuilder.Bind(result, GitOptions);
+            CredentialsOptions.Bind(result);
+            BaseImageOverrideOptions.Bind(result);
+            VariableName = result.GetValue(VariableNameArgument) ?? string.Empty;
+        }
     }
 }

@@ -9,6 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public static class SystemCommandLineExtensions
 {
-    public static bool Has(this CommandResult commandResult, IOption option) =>
-        commandResult.FindResultFor(option)?.Tokens?.Count > 0;
+    public static bool Has(this CommandResult commandResult, Option option) =>
+        commandResult.GetResult(option)?.Tokens?.Count > 0;
 }

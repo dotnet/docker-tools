@@ -4,27 +4,29 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class CopyImagesOptions : ManifestOptions, IFilterableOptions
 {
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
-}
-
-public class CopyImagesOptionsBuilder : ManifestOptionsBuilder
-{
-    private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [
-            ..base.GetCliOptions(),
-            .._manifestFilterOptionsBuilder.GetCliOptions(),
-        ];
+    [
+        ..base.GetCliOptions(),
+        ..FilterOptions.GetCliOptions(),
+    ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [
-            ..base.GetCliArguments(),
-            .._manifestFilterOptionsBuilder.GetCliArguments(),
-        ];
+    [
+        ..base.GetCliArguments(),
+        ..FilterOptions.GetCliArguments(),
+    ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        FilterOptions.Bind(result);
+    }
 }

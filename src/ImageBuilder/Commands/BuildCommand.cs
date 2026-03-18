@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
+    public class BuildCommand : ManifestCommand<BuildOptions>
     {
         private readonly IDockerService _dockerService;
         private readonly ILogger<BuildCommand> _logger;

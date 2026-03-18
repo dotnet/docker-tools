@@ -4,9 +4,8 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using System.CommandLine.Parsing;
 using System.Text.RegularExpressions;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -14,9 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// Defines options that allow the caller to configure whether and how base image tags defined in a Dockerfile
 /// are to be overriden.
 /// </summary>
+/// <remarks>
 /// This allows for images to be sourced from a different location than described in the Dockerfile.
 /// For example, the Build command implements this by pulling an image from the overriden location, retagging it with the
-/// tag used in the Dockerfile, and continue with the rest of the build.<remarks>
+/// tag used in the Dockerfile, and continue with the rest of the build.
 /// </remarks>
 public class BaseImageOverrideOptions
 {
@@ -26,6 +26,16 @@ public class BaseImageOverrideOptions
     public string? RegexPattern { get; set; }
 
     public string? Substitution { get; set; }
+
+    private static readonly Option<string?> RegexPatternOption = new(CliHelper.FormatAlias(BaseOverrideRegexName))
+    {
+        Description = $"Regular expression identifying base image tags to apply string substitution to (requires {BaseOverrideSubName} to be set)"
+    };
+
+    private static readonly Option<string?> SubstitutionOption = new(CliHelper.FormatAlias(BaseOverrideSubName))
+    {
+        Description = $"Regular expression substitution that overrides a matching base image tag (requires {BaseOverrideRegexName} to be set)"
+    };
 
     public void Validate()
     {
@@ -45,19 +55,15 @@ public class BaseImageOverrideOptions
 
         return imageName;
     }
-}
 
-public class BaseImageOverrideOptionsBuilder
-{
     public IEnumerable<Option> GetCliOptions() =>
-        new Option[]
-        {
-            CreateOption<string?>(BaseImageOverrideOptions.BaseOverrideRegexName, nameof(BaseImageOverrideOptions.RegexPattern),
-                    $"Regular expression identifying base image tags to apply string substitution to (requires {BaseImageOverrideOptions.BaseOverrideSubName} to be set)"),
-                CreateOption<string?>(BaseImageOverrideOptions.BaseOverrideSubName, nameof(BaseImageOverrideOptions.Substitution),
-                    $"Regular expression substitution that overrides a matching base image tag (requires {BaseImageOverrideOptions.BaseOverrideRegexName} to be set)")
-        };
+        [RegexPatternOption, SubstitutionOption];
 
-    public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
+    public IEnumerable<Argument> GetCliArguments() => [];
+
+    public void Bind(ParseResult result)
+    {
+        RegexPattern = result.GetValue(RegexPatternOption);
+        Substitution = result.GetValue(SubstitutionOption);
+    }
 }
-

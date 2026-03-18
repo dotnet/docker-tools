@@ -4,8 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -15,31 +14,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? SourceRepoBranch { get; set; }
 
-        public GenerateReadmesOptions() : base()
+        private static readonly Option<string?> SourceBranchOption = new(CliHelper.FormatAlias("source-branch"))
         {
-        }
-    }
+            Description = "Repo branch of the Dockerfile sources (default is commit SHA)"
+        };
 
-    public class GenerateReadmesOptionsBuilder : GenerateArtifactsOptionsBuilder
-    {
+        private static readonly Argument<string> SourceRepoUrlArgument = new(nameof(SourceRepoUrl))
+        {
+            Description = "Repo URL of the Dockerfile sources"
+        };
+
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(
-                    new Option[]
-                    {
-                        CreateOption<string?>("source-branch", nameof(GenerateReadmesOptions.SourceRepoBranch),
-                            "Repo branch of the Dockerfile sources (default is commit SHA)")
-                    }
-                );
+            [..base.GetCliOptions(), SourceBranchOption];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(GenerateReadmesOptions.SourceRepoUrl),
-                            "Repo URL of the Dockerfile sources")
-                    }
-                );
+            [..base.GetCliArguments(), SourceRepoUrlArgument];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            SourceRepoBranch = result.GetValue(SourceBranchOption);
+            SourceRepoUrl = result.GetValue(SourceRepoUrlArgument) ?? string.Empty;
+        }
     }
 }

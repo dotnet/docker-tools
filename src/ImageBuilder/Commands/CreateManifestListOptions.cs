@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -12,26 +13,32 @@ public class CreateManifestListOptions : ManifestOptions, IFilterableOptions
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
     public string ImageInfoPath { get; set; } = string.Empty;
-}
 
-public class CreateManifestListOptionsBuilder : ManifestOptionsBuilder
-{
-    private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
-    private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+    private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
+    {
+        Description = "Path to the image info file to read and update with manifest list digests"
+    };
 
     public override IEnumerable<Option> GetCliOptions() =>
     [
         ..base.GetCliOptions(),
-        .._manifestFilterOptionsBuilder.GetCliOptions(),
-        .._registryCredentialsOptionsBuilder.GetCliOptions(),
+        ..FilterOptions.GetCliOptions(),
+        ..CredentialsOptions.GetCliOptions(),
     ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
     [
         ..base.GetCliArguments(),
-        .._manifestFilterOptionsBuilder.GetCliArguments(),
-        .._registryCredentialsOptionsBuilder.GetCliArguments(),
-        new Argument<string>(nameof(CreateManifestListOptions.ImageInfoPath),
-            "Path to the image info file to read and update with manifest list digests"),
+        ..FilterOptions.GetCliArguments(),
+        ..CredentialsOptions.GetCliArguments(),
+        ImageInfoPathArgument,
     ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        FilterOptions.Bind(result);
+        CredentialsOptions.Bind(result);
+        ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+    }
 }

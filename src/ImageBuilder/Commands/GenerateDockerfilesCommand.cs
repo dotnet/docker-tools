@@ -12,7 +12,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions, GenerateDockerfilesOptionsBuilder>
+    public class GenerateDockerfilesCommand : GenerateArtifactsCommand<GenerateDockerfilesOptions>
     {
         private readonly ILogger _logger;
 

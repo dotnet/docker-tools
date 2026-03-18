@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class GenerateEolAnnotationDataForPublishCommand :
-    GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions, GenerateEolAnnotationDataOptionsForPublishBuilder>
+    GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataForPublishOptions>
 {
     private readonly ILogger _logger;
 

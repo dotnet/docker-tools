@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions, MergeImageInfoOptionsBuilder>
+    public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
     {
         public MergeImageInfoCommand(IManifestJsonService manifestJsonService) : base(manifestJsonService) { }
 

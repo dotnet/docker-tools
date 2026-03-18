@@ -107,8 +107,17 @@ steps:
         $dockerRunCmd = $dockerRunBaseCmd + $dockerRunArgs
         $authedDockerRunCmd = $dockerRunBaseCmd + $authedDockerRunArgs + $dockerRunArgs
 
-        $runImageBuilderCmd = $($dockerRunCmd -join ' ')
-        $runAuthedImageBuilderCmd = $($authedDockerRunCmd -join ' ')
+        # Base commands without image name for templates that need to insert
+        # extra docker run args before the image name (e.g. signing)
+        $runImageBuilderBaseCmd = $($dockerRunCmd -join ' ')
+        $runAuthedImageBuilderBaseCmd = $($authedDockerRunCmd -join ' ')
+
+        Write-Host "##vso[task.setvariable variable=runImageBuilderBaseCmd]$runImageBuilderBaseCmd"
+        Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderBaseCmd]$runAuthedImageBuilderBaseCmd"
+
+        # Full commands with image name for direct invocation by other templates
+        $runImageBuilderCmd = "$runImageBuilderBaseCmd $imageBuilderImageName"
+        $runAuthedImageBuilderCmd = "$runAuthedImageBuilderBaseCmd $imageBuilderImageName"
 
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runAuthedImageBuilderCmd"
@@ -126,6 +135,10 @@ steps:
         $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runImageBuilderCmd"
+        # On Windows the base commands are the same as the full commands since
+        # there is no container image name to append
+        Write-Host "##vso[task.setvariable variable=runImageBuilderBaseCmd]$runImageBuilderCmd"
+        Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderBaseCmd]$runImageBuilderCmd"
         # Set imageBuilderImageName to empty - on Windows there is no container image
         # since ImageBuilder runs as a native exe. run-imagebuilder.yml appends this
         # variable to the command line, so it must be defined (but empty) to avoid

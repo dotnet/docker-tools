@@ -65,7 +65,7 @@ steps:
             $serviceConnectionsArgs += "$($connection.tenantId):$($connection.clientId):$($connection.id)"
         }
 
-        $(runAuthedImageBuilderCmd) ${{ parameters.linuxOnlyExtraDockerRunArgs }} $(imageBuilderImageName) ${{ parameters.args }} @serviceConnectionsArgs
+        $(runAuthedImageBuilderBaseCmd) ${{ parameters.linuxOnlyExtraDockerRunArgs }} $(imageBuilderImageName) ${{ parameters.args }} @serviceConnectionsArgs
 
 - ${{ else }}:
 
@@ -78,4 +78,4 @@ steps:
     inputs:
       targetType: 'inline'
       script: >-
-        $(runImageBuilderCmd) ${{ parameters.linuxOnlyExtraDockerRunArgs }} $(imageBuilderImageName) ${{ parameters.args }}
+        $(runImageBuilderBaseCmd) ${{ parameters.linuxOnlyExtraDockerRunArgs }} $(imageBuilderImageName) ${{ parameters.args }}

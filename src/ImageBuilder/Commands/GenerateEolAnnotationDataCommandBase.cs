@@ -15,10 +15,9 @@ using Newtonsoft.Json;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 
-public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBuilder>
-    : Command<TOptions, TOptionsBuilder>
+public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
+    : Command<TOptions>
     where TOptions : GenerateEolAnnotationDataOptions, new()
-    where TOptionsBuilder : GenerateEolAnnotationDataOptionsBuilder, new()
 {
     private readonly ILogger _logger;
     private readonly IAcrContentClientFactory _acrContentClientFactory;

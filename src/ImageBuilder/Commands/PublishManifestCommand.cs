@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishManifestCommand : ManifestCommand<PublishManifestOptions, PublishManifestOptionsBuilder>
+    public class PublishManifestCommand : ManifestCommand<PublishManifestOptions>
     {
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IDockerService _dockerService;

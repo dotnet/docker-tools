@@ -5,8 +5,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -17,30 +16,41 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool ContinuousMode { get; set; }
 
         public TimeSpan ContinuousModeDelay { get; set; }
-    }
 
-    public class GetBaseImageStatusOptionsBuilder : ManifestOptionsBuilder
-    {
         private static readonly TimeSpan ContinuousModeDelayDefault = TimeSpan.FromSeconds(10);
 
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
-            new ManifestFilterOptionsBuilder();
+        private static readonly Option<bool> ContinuousModeOption = new(CliHelper.FormatAlias("continuous"))
+        {
+            Description = "Runs the status check continuously"
+        };
+
+        private static readonly Option<TimeSpan> ContinuousModeDelayOption = new(CliHelper.FormatAlias("continuous-delay"))
+        {
+            Description = $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
+            DefaultValueFactory = _ => ContinuousModeDelayDefault,
+            CustomParser = argResult => TimeSpan.FromSeconds(int.Parse(argResult.GetTokenValue()))
+        };
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(
-                    new Option[]
-                    {
-                        CreateOption<bool>("continuous", nameof(GetBaseImageStatusOptions.ContinuousMode),
-                            "Runs the status check continuously"),
-                        CreateOption("continuous-delay", nameof(GetBaseImageStatusOptions.ContinuousModeDelay),
-                            $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
-                            val => TimeSpan.FromSeconds(int.Parse(val)), ContinuousModeDelayDefault)
-                    });
+        [
+            ..base.GetCliOptions(),
+            ..FilterOptions.GetCliOptions(),
+            ContinuousModeOption,
+            ContinuousModeDelayOption,
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
+        [
+            ..base.GetCliArguments(),
+            ..FilterOptions.GetCliArguments(),
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            FilterOptions.Bind(result);
+            ContinuousMode = result.GetValue(ContinuousModeOption);
+            ContinuousModeDelay = result.GetValue(ContinuousModeDelayOption);
+        }
     }
 }

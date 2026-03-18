@@ -698,7 +698,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 IList<string> paths = pathString
                     .Split(" ", StringSplitOptions.RemoveEmptyEntries)
                     .Select(p => p.Trim().Trim('\''))
-                    .Except([ CliHelper.FormatAlias(DockerfileFilterOptionsBuilder.PathOptionName) ])
+                    .Except([ CliHelper.FormatAlias(DockerfileFilterOptions.PathOptionName) ])
                     .ToList();
                 return CompareLists(expectedPaths, paths);
             }

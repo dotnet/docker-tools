@@ -4,4 +4,11 @@ variables:
 - template: /eng/docker-tools/templates/variables/dnceng-signing.yml@self
 - template: /eng/docker-tools/templates/variables/dnceng-project-names.yml@self
 
+# $(dockerHubRegistryCreds) is needed by the copy-base-images step in
+# eng/docker-tools/templates/stages/build-and-test.yml#L73-L78, even during a dry-run.
+# This is a placeholder that gets replaced when referencing the secrets.yml
+# variable template.
+- name: dockerHubRegistryCreds
+  value: --registry-creds 'docker.io=placeholder;placeholder'
+
 - group: DotNet-Docker-Common-2

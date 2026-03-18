@@ -21,20 +21,10 @@ $ErrorActionPreference = 'Stop'
 $RepoRoot = (Resolve-Path "$PSScriptRoot/..").Path
 $engCommonDir = Join-Path $RepoRoot 'eng' 'common'
 
-if ($env:OS -ne 'Windows_NT') {
-    # On Linux, use the bash tools.sh (tools.ps1 uses dotnet-install.ps1
-    # which doesn't work reliably on Linux)
-    $initScript = "source '$engCommonDir/tools.sh'; InitializeDotNetCli true; InitializeToolset; echo `$_InitializeDotNetCli"
-    $output = & bash -c $initScript
-    if ($LASTEXITCODE -ne 0) {
-        throw "Failed to initialize .NET SDK via tools.sh"
-    }
-    # The last line of output is the dotnet install directory echoed by tools.sh
-    ($output | Select-Object -Last 1).Trim()
-} else {
-    $ci = $true
-    . (Join-Path $engCommonDir 'tools.ps1')
-    $dotnetInstallDir = InitializeDotNetCli $true
-    InitializeToolset
-    $dotnetInstallDir
-}
+$dotnetInstallScriptUrl = 'https://dot.net/v1/dotnet-install.ps1'
+$dotnetInstallScriptPath = Join-Path $PSScriptRoot 'dotnet-install.ps1'
+
+Invoke-WebRequest -Uri $dotnetInstallScriptUrl -OutFile $dotnetInstallScriptPath
+Write-Host "Downloaded '$dotnetInstallScriptUrl' to '$dotnetInstallScriptPath'."
+
+& $dotnetInstallScriptPath -Channel LTS -Architecture x64

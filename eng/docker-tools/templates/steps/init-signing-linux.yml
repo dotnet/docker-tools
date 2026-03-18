@@ -26,21 +26,24 @@ parameters:
   default: ""
 
 steps:
-# Install .NET SDK on Linux - needed to download the MicroBuild plugin nupkgs when nuget.exe is unavailable.
-# Install to an isolated location so the repo's global.json doesn't interfere.
-- task: UseDotNet@2
+# Install .NET 8.0 SDK for MicroBuild plugin installation using dotnet-install.sh.
+# We avoid UseDotNet@2 because it sets DOTNET_ROOT globally, which breaks PowerShell
+# (pwsh) on Azure Linux 3 where pwsh requires the .NET 9.0 runtime from the system
+# .NET installation. Instead, we install to an isolated directory and only expose it
+# to the MicroBuild task via its env block.
+- powershell: >
+    ./eng/docker-tools/Install-DotNetSdk.ps1
+    -InstallPath "${{ parameters.microBuildOutputFolder }}/.dotnet"
+    -Channel "8.0"
   displayName: Install .NET SDK for MicroBuild Plugin
   condition: and(succeeded(), ${{ parameters.condition }})
-  inputs:
-    packageType: sdk
-    version: 8.0.x
-    installationPath: ${{ parameters.microBuildOutputFolder }}/.dotnet
 
 # Create a global.json in the MicroBuild folder that pins to the installed SDK.
-# This prevents the repo's global.json from causing SDK resolution failures.
+# This prevents the repo's global.json from causing SDK resolution failures
+# when MicroBuild runs dotnet restore from this directory.
 - script: |
     mkdir -p ${{ parameters.microBuildOutputFolder }}
-    version=$(dotnet --version)
+    version=$(${{ parameters.microBuildOutputFolder }}/.dotnet/dotnet --version)
     cat > ${{ parameters.microBuildOutputFolder }}/global.json << EOF
     {
       "sdk": {
@@ -69,6 +72,7 @@ steps:
     TeamName: $(TeamName)
     MicroBuildOutputFolderOverride: $(Agent.TempDirectory)/MicroBuild
     SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+    PATH: ${{ parameters.microBuildOutputFolder }}/.dotnet:$(PATH)
 
 # Configure ImageBuilder docker run options and write env file for signing.
 # Sets imageBuilderDockerRunExtraOptions with the plugin volume mount and,

@@ -16,6 +16,12 @@ parameters:
   type: string
   default: $(Agent.TempDirectory)/MicroBuild
 
+# Name of the pipeline variable to set with the signing docker run options.
+# The variable will contain both the MicroBuild plugin volume mount and
+# the --env-file flag, ready to pass as extraDockerRunOptions to run-imagebuilder.
+- name: dockerRunOptionsVariableName
+  type: string
+
 steps:
 # Install .NET 8.0 SDK for MicroBuild plugin installation using dotnet-install.sh.
 # We avoid UseDotNet@2 because it sets DOTNET_ROOT globally, which breaks PowerShell
@@ -115,4 +121,4 @@ steps:
       # - Env file with signing environment variables
       $signingDockerRunOptions = "-v $env:MBSIGN_APPFOLDER`:/microbuild --env-file `"$envFilePath`""
       Write-Host "signingDockerRunOptions: $signingDockerRunOptions"
-      Write-Host "##vso[task.setvariable variable=signingDockerRunOptions]$signingDockerRunOptions"
+      Write-Host "##vso[task.setvariable variable=${{ parameters.dockerRunOptionsVariableName }}]$signingDockerRunOptions"

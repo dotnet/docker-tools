@@ -28,6 +28,7 @@ jobs:
   - template: /eng/docker-tools/templates/steps/init-signing-linux.yml@self
     parameters:
       signType: ${{ parameters.publishConfig.Signing.SignType }}
+      dockerRunOptionsVariableName: signingDockerRunOptions
 
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:
@@ -46,7 +47,7 @@ jobs:
     parameters:
       displayName: 🔏 Sign Container Images
       internalProjectName: ${{ parameters.internalProjectName }}
-      extraDockerRunOptions: $(signingDockerRunOptions)
+      linuxOnlyExtraDockerRunArgs: $(signingDockerRunOptions)
       args: >-
         signImages
         $(artifactsPath)/image-info/image-info.json
@@ -57,7 +58,7 @@ jobs:
     parameters:
       displayName: ✅ Verify Container Image Signatures
       internalProjectName: ${{ parameters.internalProjectName }}
-      extraDockerRunOptions: $(signingDockerRunOptions)
+      linuxOnlyExtraDockerRunArgs: $(signingDockerRunOptions)
       args: >-
         verifySignatures
         $(artifactsPath)/image-info/image-info.json

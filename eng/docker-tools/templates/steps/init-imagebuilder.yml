@@ -126,4 +126,8 @@ steps:
         $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runImageBuilderCmd"
+        # Set imageBuilderImageName to empty - on Windows there is no container image
+        # since ImageBuilder runs as a native exe. run-imagebuilder.yml appends this
+        # variable to the command line, so it must be defined (but empty) to avoid
+        # leaving an unexpanded $(imageBuilderImageName) literal in the script.
         Write-Host "##vso[task.setvariable variable=imageBuilderImageName]"

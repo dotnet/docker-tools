@@ -29,7 +29,7 @@ steps:
 # .NET installation. Instead, we install to an isolated directory and only expose it
 # to the MicroBuild task via its env block.
 - powershell: >
-    ./eng/docker-tools/Install-DotNetSdk.ps1
+    $(engDockerToolsPath)/Install-DotNetSdk.ps1
     -InstallPath "${{ parameters.microBuildOutputFolder }}/.dotnet"
     -Channel "8.0"
   displayName: Install .NET SDK for MicroBuild Plugin

@@ -515,7 +515,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.ImportImageAsync(
                     new string[] { $"test/runtime:tag1" },
                     DestinationRegistry,
-                    It.IsAny<string>(),
+                    "test/runtime:tag1",
                     SourceRegistry,
                     null,
                     false));
@@ -525,7 +525,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.ImportImageAsync(
                     new string[] { $"test/runtime:shared1" },
                     DestinationRegistry,
-                    It.IsAny<string>(),
+                    "test/runtime:shared1",
                     SourceRegistry,
                     null,
                     false));
@@ -534,7 +534,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.ImportImageAsync(
                     new string[] { $"test/runtime:shared2" },
                     DestinationRegistry,
-                    It.IsAny<string>(),
+                    "test/runtime:shared2",
                     SourceRegistry,
                     null,
                     false));
@@ -627,7 +627,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.ImportImageAsync(
                     new string[] { $"test/runtime:tag1" },
                     DestinationRegistry,
-                    It.IsAny<string>(),
+                    "test/runtime:tag1",
                     SourceRegistry,
                     null,
                     false));
@@ -637,17 +637,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 o.ImportImageAsync(
                     new string[] { $"test/runtime:shared1" },
                     DestinationRegistry,
-                    It.IsAny<string>(),
+                    "test/runtime:shared1",
                     SourceRegistry,
                     null,
                     false));
 
-            // Syndicated manifest list shared tag
+            // Syndicated manifest list shared tag - source should be from syndicated repo
             copyImageServiceMock.Verify(o =>
                 o.ImportImageAsync(
                     new string[] { $"test/runtime2:syn-shared1" },
                     DestinationRegistry,
-                    It.IsAny<string>(),
+                    "test/runtime2:syn-shared1",
                     SourceRegistry,
                     null,
                     false));

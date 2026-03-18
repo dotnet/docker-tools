@@ -175,7 +175,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                     destinationTag = TagInfo.GetFullyQualifiedName(
                                         $"{Manifest.Registry}/{Options.RepoPrefix}{tagInfo.SyndicatedRepo}",
                                         syndicatedDestinationTagName);
-                                    yield return (sourceTag, destinationTag);
+                                    yield return (GetSourceTag(destinationTag), destinationTag);
                                 }
                             }
                         }

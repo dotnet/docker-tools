@@ -29,6 +29,12 @@ parameters:
   type: string
   default: "linux"
 
+# Additional docker run options inserted before the image name.
+# Used for signing (volume mounts, env files) or other job-specific docker configuration.
+- name: extraDockerRunOptions
+  type: string
+  default: ""
+
 steps:
 - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest')) }}:
 
@@ -56,7 +62,7 @@ steps:
             $serviceConnectionsArgs += "$($connection.tenantId):$($connection.clientId):$($connection.id)"
         }
 
-        $(runAuthedImageBuilderCmd) ${{ parameters.args }} @serviceConnectionsArgs
+        $(runAuthedImageBuilderCmd) ${{ parameters.extraDockerRunOptions }} $(imageBuilderImageName) ${{ parameters.args }} @serviceConnectionsArgs
 
 - ${{ else }}:
 
@@ -69,4 +75,4 @@ steps:
     inputs:
       targetType: 'inline'
       script: >-
-        $(runImageBuilderCmd) ${{ parameters.args }}
+        $(runImageBuilderCmd) ${{ parameters.extraDockerRunOptions }} $(imageBuilderImageName) ${{ parameters.args }}

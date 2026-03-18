@@ -1,5 +1,7 @@
 variables:
 - template: /eng/docker-tools/templates/variables/common.yml@self
-- template: /eng/docker-tools/templates/variables/pool-and-signing.yml@self
+- template: /eng/docker-tools/templates/variables/dnceng-build-pools.yml@self
+- template: /eng/docker-tools/templates/variables/dnceng-signing.yml@self
+- template: /eng/docker-tools/templates/variables/dnceng-project-names.yml@self
 
 - group: DotNet-Docker-Common-2

@@ -98,6 +98,11 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         foreach (ImageData image in images)
         {
+            if (image.ManifestImage is null || image.ManifestRepo is null)
+            {
+                continue;
+            }
+
             image.Manifest.Created = createdDate;
 
             TagInfo sharedTag = image.ManifestImage.SharedTags.First();

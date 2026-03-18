@@ -12,6 +12,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup Label="Tool Packaging">
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>imagebuilder</ToolCommandName>
+    <PackageId>Microsoft.DotNet.ImageBuilder</PackageId>
+    <Description>CLI tool that orchestrates Docker image builds.</Description>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- The "Cottle" templating package does not have a strong name. -->
     <SignAssembly>false</SignAssembly>

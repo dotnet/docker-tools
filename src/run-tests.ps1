@@ -26,20 +26,11 @@ Push-Location $PSScriptRoot
 try {
     $repoRoot = (Resolve-Path "$PSScriptRoot/..").Path
 
-    if ($env:OS -ne 'Windows_NT') {
-        # On Linux, use the bash tools.sh (tools.ps1 uses dotnet-install.ps1
-        # which doesn't work reliably on Linux)
-        $engCommonDir = (Resolve-Path "$PSScriptRoot/../eng/common").Path
-        $initScript = "source '$engCommonDir/tools.sh'; InitializeDotNetCli true; InitializeToolset; echo `$_InitializeDotNetCli"
-        $dotnetInstallDir = (& bash -c $initScript | Select-Object -Last 1).Trim()
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to initialize .NET SDK via tools.sh"
-        }
-    } else {
-        . $PSScriptRoot/../eng/common/tools.ps1
-        $dotnetInstallDir = InitializeDotNetCli $true
-        InitializeToolset
+    $output = & "$repoRoot/eng/init-sdk.ps1" -RepoRoot $repoRoot
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to initialize .NET SDK"
     }
+    $dotnetInstallDir = ($output | Select-Object -Last 1).Trim()
 
     # Install additional runtimes from global.json. InitializeToolset resolves the Arcade
     # SDK but doesn't trigger restore. Build.proj delegates to Tools.proj for restore, which

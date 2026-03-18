@@ -98,7 +98,7 @@ public static class ManifestListHelper
     {
         return tags
             .Select(tag => BuildManifestListInfo(repo, image, imageArtifactDetails, tag, getImageName, getTagRepresentative))
-            .Where(manifestListInfo => manifestListInfo is not null)!;
+            .OfType<ManifestListInfo>();
     }
 
     private static ManifestListInfo? BuildManifestListInfo(

@@ -12,6 +12,14 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup Label="Tool Packaging">
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>imagebuilder</ToolCommandName>
+    <PackageId>Microsoft.DotNet.ImageBuilder</PackageId>
+    <Description>CLI tool that orchestrates Docker image builds.</Description>
+  </PropertyGroup>
+
   <PropertyGroup>
     <!-- The "Cottle" templating package does not have a strong name. -->
     <SignAssembly>false</SignAssembly>
@@ -24,25 +32,26 @@
     <PackageReference Include="Cottle" Version="2.1.0" />
     <PackageReference Include="LibGit2Sharp" Version="0.31.0" />
     <PackageReference Include="Microsoft.Azure.Kusto.Ingest" Version="14.1.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.13" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.13" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.13" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.14" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.14" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.14" />
     <PackageReference Include="Microsoft.Deployment.DotNet.Releases" Version="1.0.1" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
-    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="19.225.2" />
+    <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageReference Include="Octokit" Version="14.0.0" />
     <PackageReference Include="OrasProject.Oras" Version="0.5.0" />
     <PackageReference Include="Polly" Version="8.6.6" />
-    <PackageReference Include="System.Formats.Cbor" Version="9.0.0" />
+    <PackageReference Include="System.Formats.Cbor" Version="9.0.14" />
     <PackageReference Include="Polly.Contrib.WaitAndRetry" Version="1.1.1" />
     <PackageReference Include="Polly.RateLimiting" Version="8.6.6" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta1.20574.7" />
     <PackageReference Include="System.Linq.Async" Version="7.0.0" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
 
-    <!-- CVE-2024-0056: Upgrade System.Data.SqlClient implicitly referenced by Microsoft.TeamFoundationServer.Client -->
-    <PackageReference Include="System.Data.SqlClient" Version="4.8.6" />
+    <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+
     <!-- CVE-2024-38095: Upgrade version of System.Formats.Asn1 implicitly referenced by Microsoft.DotNet.VersionTools -->
     <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
   </ItemGroup>

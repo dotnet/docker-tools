@@ -49,8 +49,9 @@ namespace Microsoft.DotNet.ImageBuilder
                 {
                     foreach (string comment in comments)
                     {
-                        IssueComment postedComment =
-                            await github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment);
+                        await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
+                            .ExecuteAsync(() =>
+                                github.Issue.Comment.Create(repoOwner, repoName, issue.Number, comment));
                     }
                 }
             }
@@ -80,11 +81,15 @@ namespace Microsoft.DotNet.ImageBuilder
                 return;
             }
 
-            // Immediately close issues which aren't failures, since open issues should represent actionable items
+            // Immediately close issues which aren't failures, since open issues should represent actionable items.
+            // Retry with backoff to handle GitHub's eventual consistency - the issue may not be fully
+            // propagated across GitHub's backend services immediately after creation.
             if (!labels.Where(l => l.Contains(Commands.NotificationLabels.Failure)).Any())
             {
                 _logger.LogInformation("No failure label found in the notification labels.");
-                await github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed });
+                await RetryHelper.GetWaitAndRetryPolicy<ApiException>(_logger)
+                    .ExecuteAsync(() =>
+                        github.Issue.Update(repoOwner, repoName, issue.Number, new IssueUpdate { State = ItemState.Closed }));
             }
         }
     }

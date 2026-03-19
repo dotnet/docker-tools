@@ -18,6 +18,10 @@ variables:
 # Skip CG detection (for debugging project builds, etc.)
 - name: skipComponentGovernanceDetection
   value: false
+# Exclude eng/common from CG builds - these are Arcade infrastructure projects
+# that require internal NuGet feed authentication not available in this pipeline.
+- name: cgBuildGrepArgs
+  value: "-v eng/common"
 
 extends:
   template: /eng/docker-tools/templates/1es-official.yml@self
@@ -30,3 +34,7 @@ extends:
       - template: /eng/docker-tools/templates/jobs/cg-build-projects.yml@self
         parameters:
           cgDryRun: ${{ parameters.cgDryRun }}
+          skipDotNetInstall: true
+          initSteps:
+          - powershell: ./eng/init-sdk.ps1
+            displayName: Install .NET SDK

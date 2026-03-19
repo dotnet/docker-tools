@@ -10,7 +10,7 @@ parameters:
 # When true, the job skips the .NET SDK installation.
 - name: skipDotNetInstall
   type: boolean
-  default: true
+  default: false
   displayName: Skip .NET SDK Installation
 # See https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-install-script#options for possible Channel values
 - name: dotnetVersionChannel

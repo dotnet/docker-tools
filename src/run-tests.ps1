@@ -26,7 +26,7 @@ Push-Location $PSScriptRoot
 try {
     $repoRoot = (Resolve-Path "$PSScriptRoot/..").Path
 
-    $output = & "$repoRoot/eng/init-sdk.ps1" -RepoRoot $repoRoot
+    $output = & "$repoRoot/eng/init-sdk.ps1"
     if ($LASTEXITCODE -ne 0) {
         throw "Failed to initialize .NET SDK"
     }

@@ -12,7 +12,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions, WaitForMcrImageIngestionOptionsBuilder>
+    public class WaitForMcrImageIngestionCommand : ManifestCommand<WaitForMcrImageIngestionOptions>
     {
         private readonly ILogger<WaitForMcrImageIngestionCommand> _logger;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;

@@ -14,7 +14,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions, IngestKustoImageInfoOptionsBuilder>
+    public class IngestKustoImageInfoCommand : ManifestCommand<IngestKustoImageInfoOptions>
     {
         private readonly IKustoClient _kustoClient;
         private readonly ILogger<IngestKustoImageInfoCommand> _logger;

@@ -3,9 +3,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -15,25 +13,37 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? OutputVariableName { get; set; }
         public string? ImageInfoPath { get; set; }
-    }
 
-    public class PullImagesOptionsBuilder : ManifestOptionsBuilder
-    {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
+        private static readonly Option<string?> OutputVarOption = new(CliHelper.FormatAlias("output-var"))
+        {
+            Description = "Azure DevOps variable name to use for outputting the list of pulled image tags"
+        };
+
+        private static readonly Option<string?> ImageInfoOption = new(CliHelper.FormatAlias("image-info"))
+        {
+            Description = "Path to the image info file describing which images are to be pulled"
+        };
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions())
-                .Concat(new Option[]
-                {
-                    CreateOption<string>("output-var", nameof(PullImagesOptions.OutputVariableName),
-                        "Azure DevOps variable name to use for outputting the list of pulled image tags"),
-                    CreateOption<string>("image-info", nameof(PullImagesOptions.ImageInfoPath),
-                        "Path to the image info file describing which images are to be pulled")
-                });
+        [
+            ..base.GetCliOptions(),
+            ..FilterOptions.GetCliOptions(),
+            OutputVarOption,
+            ImageInfoOption,
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
+        [
+            ..base.GetCliArguments(),
+            ..FilterOptions.GetCliArguments(),
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            FilterOptions.Bind(result);
+            OutputVariableName = result.GetValue(OutputVarOption);
+            ImageInfoPath = result.GetValue(ImageInfoOption);
+        }
     }
 }

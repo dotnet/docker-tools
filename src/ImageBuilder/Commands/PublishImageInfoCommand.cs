@@ -10,7 +10,7 @@ using LibGit2Sharp.Handlers;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions, PublishImageInfoOptionsBuilder>
+    public class PublishImageInfoCommand : ManifestCommand<PublishImageInfoOptions>
     {
         private readonly IGitService _gitService;
         private readonly IOctokitClientFactory _octokitClientFactory;

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class WaitForMarAnnotationIngestionCommand : Command<WaitForMarAnnotationIngestionOptions, WaitForMarAnnotationIngestionOptionsBuilder>
+    public class WaitForMarAnnotationIngestionCommand : Command<WaitForMarAnnotationIngestionOptions>
     {
         private readonly ILogger<WaitForMarAnnotationIngestionCommand> _logger;
         private readonly IMarImageIngestionReporter _imageIngestionReporter;

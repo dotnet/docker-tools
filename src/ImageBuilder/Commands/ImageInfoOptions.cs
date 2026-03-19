@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -12,19 +12,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public string ImageInfoPath { get; set; } = string.Empty;
 
-        protected ImageInfoOptions()
+        private static readonly Argument<string> ImageInfoPathArgument = new("ImageInfoPath")
         {
-        }
-    }
+            Description = "Image info file path"
+        };
 
-    public abstract class ImageInfoOptionsBuilder : ManifestOptionsBuilder
-    {
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(ImageInfoOptions.ImageInfoPath), "Image info file path")
-                    });
+            [..base.GetCliArguments(), ImageInfoPathArgument];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+        }
     }
 }

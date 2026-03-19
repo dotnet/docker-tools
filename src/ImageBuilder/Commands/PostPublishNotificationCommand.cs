@@ -19,7 +19,7 @@ using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotificationOptions, PostPublishNotificationOptionsBuilder>
+    public class PostPublishNotificationCommand : ManifestCommand<PostPublishNotificationOptions>
     {
         private readonly IVssConnectionFactory _connectionFactory;
         private readonly INotificationService _notificationService;

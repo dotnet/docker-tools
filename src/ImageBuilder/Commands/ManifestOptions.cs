@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -20,6 +20,46 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public IEnumerable<string> Repos { get; set; } = Enumerable.Empty<string>();
         public string? RepoPrefix { get; set; }
         public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
+
+        private static readonly Option<string> ManifestOption = new(CliHelper.FormatAlias("manifest"))
+        {
+            Description = "Path to json file which describes the repo",
+            DefaultValueFactory = _ => "manifest.json"
+        };
+
+        private static readonly Option<string?> RegistryOverrideOption = new(CliHelper.FormatAlias(RegistryOverrideName))
+        {
+            Description = "Alternative registry which overrides the manifest"
+        };
+
+        private static readonly Option<string[]> ReposOption = new(CliHelper.FormatAlias("repo"))
+        {
+            Description = "Repos to operate on (Default is all)",
+            DefaultValueFactory = _ => Array.Empty<string>(),
+            AllowMultipleArgumentsPerToken = false
+        };
+
+        private static readonly Option<string?> RepoPrefixOption = new(CliHelper.FormatAlias("repo-prefix"))
+        {
+            Description = "Prefix to add to the repo names specified in the manifest"
+        };
+
+        private static readonly Option<Dictionary<string, string>> VariablesOption =
+            CliHelper.CreateDictionaryOption("var",
+                "Named variables to substitute into the manifest (<name>=<value>)");
+
+        public override IEnumerable<Option> GetCliOptions() =>
+            [..base.GetCliOptions(), ManifestOption, RegistryOverrideOption, ReposOption, RepoPrefixOption, VariablesOption];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            Manifest = result.GetValue(ManifestOption) ?? string.Empty;
+            RegistryOverride = result.GetValue(RegistryOverrideOption);
+            Repos = result.GetValue(ReposOption) ?? [];
+            RepoPrefix = result.GetValue(RepoPrefixOption);
+            Variables = result.GetValue(VariablesOption) ?? new Dictionary<string, string>();
+        }
 
         public virtual ManifestFilter GetManifestFilter()
         {
@@ -58,24 +98,5 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             filter.IncludeOsVersions = options.OsVersions;
             return filter;
         }
-    }
-
-    public abstract class ManifestOptionsBuilder : CliOptionsBuilder
-    {
-        public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions().Concat(
-                new Option[]
-                {
-                    CreateOption("manifest", nameof(ManifestOptions.Manifest),
-                        "Path to json file which describes the repo", "manifest.json"),
-                    CreateOption<string?>(ManifestOptions.RegistryOverrideName, nameof(ManifestOptions.RegistryOverride),
-                        "Alternative registry which overrides the manifest"),
-                    CreateMultiOption<string>("repo", nameof(ManifestOptions.Repos),
-                        "Repos to operate on (Default is all)"),
-                    CreateOption<string?>("repo-prefix", nameof(ManifestOptions.RepoPrefix),
-                        "Prefix to add to the repo names specified in the manifest"),
-                    CreateDictionaryOption("var", nameof(ManifestOptions.Variables),
-                        "Named variables to substitute into the manifest (<name>=<value>)")
-                });
     }
 }

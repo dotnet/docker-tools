@@ -2,42 +2,50 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class PlatformFilterOptions
 {
+    public const string OsVersionOptionName = "os-version";
+
     public string Architecture { get; set; } = string.Empty;
     public string OsType { get; set; } = string.Empty;
     public IEnumerable<string> OsVersions { get; set; } = [];
 
-}
+    private static readonly Option<string> ArchitectureOption = new(CliHelper.FormatAlias("architecture"))
+    {
+        Description = "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)",
+        DefaultValueFactory = _ => DockerHelper.Architecture.GetDockerName()
+    };
 
-public class PlatformFilterOptionsBuilder
-{
-    public const string OsVersionOptionName = "os-version";
+    private static readonly Option<string> OsTypeOption = new(CliHelper.FormatAlias("os-type"))
+    {
+        Description = "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)",
+        DefaultValueFactory = _ => DockerHelper.OS.GetDockerName()
+    };
+
+    private static readonly Option<string[]> OsVersionsOption = new(CliHelper.FormatAlias(OsVersionOptionName))
+    {
+        Description = "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
+        DefaultValueFactory = _ => Array.Empty<string>(),
+        AllowMultipleArgumentsPerToken = false
+    };
 
     public IEnumerable<Option> GetCliOptions() =>
-        [
-            CreateOption(
-                alias: "architecture",
-                propertyName: nameof(PlatformFilterOptions.Architecture),
-                description: "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)",
-                defaultValue: () => DockerHelper.Architecture.GetDockerName()),
-            CreateOption(
-                alias: "os-type",
-                propertyName: nameof(PlatformFilterOptions.OsType),
-                description: "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)",
-                defaultValue: () => DockerHelper.OS.GetDockerName()),
-            CreateMultiOption<string>(
-                alias: OsVersionOptionName,
-                propertyName: nameof(PlatformFilterOptions.OsVersions),
-                description: "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)"),
-        ];
+        [ArchitectureOption, OsTypeOption, OsVersionsOption];
 
     public IEnumerable<Argument> GetCliArguments() => [];
+
+    public void Bind(ParseResult result)
+    {
+        Architecture = result.GetValue(ArchitectureOption) ?? string.Empty;
+        OsType = result.GetValue(OsTypeOption) ?? string.Empty;
+        OsVersions = result.GetValue(OsVersionsOption) ?? [];
+    }
 }

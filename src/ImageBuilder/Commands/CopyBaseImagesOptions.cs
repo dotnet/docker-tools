@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -15,24 +15,29 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public SubscriptionOptions SubscriptionOptions { get; set; } = new();
 
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-    }
-
-    public class CopyBaseImagesOptionsBuilder : CopyImagesOptionsBuilder
-    {
-        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-        private readonly SubscriptionOptionsBuilder _subscriptionOptionsBuilder = new();
-        private readonly BaseImageOverrideOptionsBuilder _baseImageOverrideOptionsBuilder = new();
 
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_registryCredentialsOptionsBuilder.GetCliOptions())
-                .Concat(_subscriptionOptionsBuilder.GetCliOptions())
-                .Concat(_baseImageOverrideOptionsBuilder.GetCliOptions());
+        [
+            ..base.GetCliOptions(),
+            ..CredentialsOptions.GetCliOptions(),
+            ..SubscriptionOptions.GetCliOptions(),
+            ..BaseImageOverrideOptions.GetCliOptions(),
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_registryCredentialsOptionsBuilder.GetCliArguments())
-                .Concat(_subscriptionOptionsBuilder.GetCliArguments())
-                .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments());
+        [
+            ..base.GetCliArguments(),
+            ..CredentialsOptions.GetCliArguments(),
+            ..SubscriptionOptions.GetCliArguments(),
+            ..BaseImageOverrideOptions.GetCliArguments(),
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            CredentialsOptions.Bind(result);
+            SubscriptionOptions.Bind(result);
+            BaseImageOverrideOptions.Bind(result);
+        }
     }
 }

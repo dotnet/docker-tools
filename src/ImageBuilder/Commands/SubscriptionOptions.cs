@@ -3,25 +3,26 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class SubscriptionOptions
 {
-    public class SubscriptionOptions
-    {
-        public string? SubscriptionsPath { get; set; }
-    }
+    public string? SubscriptionsPath { get; set; }
 
-    public class SubscriptionOptionsBuilder
+    private static readonly Option<string?> SubscriptionsPathOption = new(CliHelper.FormatAlias("subscriptions-path"))
     {
-        public IEnumerable<Option> GetCliOptions() =>
-            new Option[]
-            {
-                CreateOption<string?>("subscriptions-path", nameof(SubscriptionOptions.SubscriptionsPath),
-                    $"Path to the subscriptions file")
-            };
+        Description = "Path to the subscriptions file"
+    };
 
-        public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
+    public IEnumerable<Option> GetCliOptions() =>
+        [SubscriptionsPathOption];
+
+    public IEnumerable<Argument> GetCliArguments() => [];
+
+    public void Bind(ParseResult result)
+    {
+        SubscriptionsPath = result.GetValue(SubscriptionsPathOption);
     }
 }

@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions, GetBaseImageStatusOptionsBuilder>
+    public class GetBaseImageStatusCommand : ManifestCommand<GetBaseImageStatusOptions>
     {
         private readonly IDockerService _dockerService;
         private readonly ILogger<GetBaseImageStatusCommand> _logger;

@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -15,30 +16,32 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string ImageInfoPath { get; set; } = string.Empty;
 
-        public PublishManifestOptions() : base()
+        private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
         {
-        }
-    }
-
-    public class PublishManifestOptionsBuilder : ManifestOptionsBuilder
-    {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder = new();
-        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+            Description = "Image info file path"
+        };
 
         public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
-            .._manifestFilterOptionsBuilder.GetCliOptions(),
-            .._registryCredentialsOptionsBuilder.GetCliOptions(),
+            ..FilterOptions.GetCliOptions(),
+            ..CredentialsOptions.GetCliOptions(),
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
         [
             ..base.GetCliArguments(),
-            .._manifestFilterOptionsBuilder.GetCliArguments(),
-            .._registryCredentialsOptionsBuilder.GetCliArguments(),
-            new Argument<string>(nameof(PublishImageInfoOptions.ImageInfoPath),
-                "Image info file path"),
+            ..FilterOptions.GetCliArguments(),
+            ..CredentialsOptions.GetCliArguments(),
+            ImageInfoPathArgument,
         ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            FilterOptions.Bind(result);
+            CredentialsOptions.Bind(result);
+            ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+        }
     }
 }

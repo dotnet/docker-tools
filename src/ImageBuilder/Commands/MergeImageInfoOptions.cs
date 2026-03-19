@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -19,29 +19,56 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsPublishScenario { get; set; }
 
         public string? CommitOverride { get; set; }
-    }
 
-    public class MergeImageInfoOptionsBuilder : ManifestOptionsBuilder
-    {
+        private static readonly Argument<string> SourceImageInfoFolderPathArgument = new(nameof(SourceImageInfoFolderPath))
+        {
+            Description = "Folder path containing image info files"
+        };
+
+        private static readonly Argument<string> DestinationImageInfoPathArgument = new(nameof(DestinationImageInfoPath))
+        {
+            Description = "Path to store the merged image info content"
+        };
+
+        private static readonly Option<bool> PublishOption = new(CliHelper.FormatAlias("publish"))
+        {
+            Description = "Whether the files are being merged as part of publishing to a repo"
+        };
+
+        private static readonly Option<string?> InitialImageInfoPathOption = new(CliHelper.FormatAlias("initial-image-info-path"))
+        {
+            Description = "Path to the image info file to be used as the initial merge target"
+        };
+
+        private static readonly Option<string?> CommitOverrideOption = new(CliHelper.FormatAlias("commit-override"))
+        {
+            Description = "Override the commit in the commitUrl property for images that were updated compared to the"
+                + " initial image info"
+        };
+
         public override IEnumerable<Argument> GetCliArguments() =>
-            [
-                ..base.GetCliArguments(),
-                new Argument<string>(nameof(MergeImageInfoOptions.SourceImageInfoFolderPath),
-                    "Folder path containing image info files"),
-                new Argument<string>(nameof(MergeImageInfoOptions.DestinationImageInfoPath),
-                    "Path to store the merged image info content")
-            ];
+        [
+            ..base.GetCliArguments(),
+            SourceImageInfoFolderPathArgument,
+            DestinationImageInfoPathArgument,
+        ];
 
         public override IEnumerable<Option> GetCliOptions() =>
-            [
-                ..base.GetCliOptions(),
-                CreateOption<bool>("publish", nameof(MergeImageInfoOptions.IsPublishScenario),
-                    "Whether the files are being merged as part of publishing to a repo"),
-                CreateOption<string?>("initial-image-info-path", nameof(MergeImageInfoOptions.InitialImageInfoPath),
-                    "Path to the image info file to be used as the initial merge target"),
-                CreateOption<string?>("commit-override", nameof(MergeImageInfoOptions.CommitOverride),
-                    "Override the commit in the commitUrl property for images that were updated compared to the"
-                    + " initial image info"),
-            ];
+        [
+            ..base.GetCliOptions(),
+            PublishOption,
+            InitialImageInfoPathOption,
+            CommitOverrideOption,
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            SourceImageInfoFolderPath = result.GetValue(SourceImageInfoFolderPathArgument) ?? string.Empty;
+            DestinationImageInfoPath = result.GetValue(DestinationImageInfoPathArgument) ?? string.Empty;
+            IsPublishScenario = result.GetValue(PublishOption);
+            InitialImageInfoPath = result.GetValue(InitialImageInfoPathOption);
+            CommitOverride = result.GetValue(CommitOverrideOption);
+        }
     }
 }

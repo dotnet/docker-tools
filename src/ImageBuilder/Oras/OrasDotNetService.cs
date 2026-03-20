@@ -33,11 +33,6 @@ public class OrasDotNetService(
         : IOrasService
 {
     /// <summary>
-    /// OCI artifact type for Notary v2 signatures.
-    /// </summary>
-    private const string NotarySignatureArtifactType = "application/vnd.cncf.notary.signature";
-
-    /// <summary>
     /// Media type for COSE signature envelopes per the Notary v2 spec.
     /// </summary>
     private const string CoseMediaType = "application/cose";
@@ -108,7 +103,7 @@ public class OrasDotNetService(
             await Packer.PackManifestAsync(
                 pusher: repository,
                 version: Packer.ManifestVersion.Version1_1,
-                artifactType: NotarySignatureArtifactType,
+                artifactType: OciArtifactType.NotarySignatureV2,
                 options: options,
                 cancellationToken);
 
@@ -119,7 +114,9 @@ public class OrasDotNetService(
     }
 
     /// <inheritdoc/>
-    public async Task<IReadOnlyList<string>> GetReferrersAsync(string reference, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
+        string reference,
+        CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
 
@@ -129,13 +126,13 @@ public class OrasDotNetService(
         Repository repository = CreateRepository(reference);
         Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
 
-        List<string> referrers = [];
+        List<ReferrerInfo> referrers = [];
         Reference parsedRef = Reference.Parse(reference);
 
         await foreach (Descriptor referrer in repository.FetchReferrersAsync(subjectDescriptor, cancellationToken))
         {
             string referrerReference = $"{parsedRef.Registry}/{parsedRef.Repository}@{referrer.Digest}";
-            referrers.Add(referrerReference);
+            referrers.Add(new ReferrerInfo(referrerReference, referrer.ArtifactType));
             _logger.LogDebug("Found referrer: {Referrer} (artifactType={ArtifactType})", referrerReference, referrer.ArtifactType);
         }
 

@@ -216,6 +216,10 @@ public class ImageSigningServiceTests
                 Digest = reference,
                 Size = 5678
             });
+        mockOras
+            .Setup(s => s.GetReferrersAsync(
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReferrerInfo>());
 
         var fileSystem = new InMemoryFileSystem();
         var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
@@ -300,6 +304,10 @@ public class ImageSigningServiceTests
                 It.IsAny<OrasDescriptor>(), It.IsAny<PayloadSigningResult>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((OrasDescriptor _, PayloadSigningResult p, CancellationToken _) =>
                 $"sha256:sig-{p.ImageName}");
+        mock
+            .Setup(s => s.GetReferrersAsync(
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReferrerInfo>());
         return mock;
     }
 
@@ -350,6 +358,173 @@ public class ImageSigningServiceTests
 
         writer.WriteEndArray();
         return writer.Encode();
+    }
+
+    [Fact]
+    public async Task SignImagesAsync_SkipsAlreadySignedDigests()
+    {
+        var mockOras = CreateMockOrasService();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
+
+        // Both digests already have signature referrers
+        mockOras
+            .Setup(s => s.GetReferrersAsync(
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReferrerInfo>
+            {
+                new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
+            });
+
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
+
+        var imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            [
+                new RepoData
+                {
+                    Repo = "myregistry.azurecr.io/dotnet/runtime",
+                    Images =
+                    [
+                        new ImageData
+                        {
+                            Platforms =
+                            [
+                                new PlatformData { Digest = "sha256:abc123" },
+                                new PlatformData { Digest = "sha256:def456" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        IReadOnlyList<ImageSigningResult> results =
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+
+        results.ShouldBeEmpty();
+
+        // Referrers should be checked for each digest
+        mockOras.Verify(
+            s => s.GetReferrersAsync("sha256:abc123", It.IsAny<CancellationToken>()),
+            Times.Once);
+        mockOras.Verify(
+            s => s.GetReferrersAsync("sha256:def456", It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        // ESRP should never be called
+        mockEsrp.Verify(
+            e => e.SignFilesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SignImagesAsync_OnlySignsUnsignedDigests()
+    {
+        var mockOras = CreateMockOrasService();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
+
+        // First digest already has a signature, second does not
+        mockOras
+            .Setup(s => s.GetReferrersAsync(
+                "sha256:already-signed", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReferrerInfo>
+            {
+                new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
+            });
+        mockOras
+            .Setup(s => s.GetReferrersAsync(
+                "sha256:not-yet-signed", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReferrerInfo>());
+
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
+
+        var imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            [
+                new RepoData
+                {
+                    Repo = "myregistry.azurecr.io/dotnet/runtime",
+                    Images =
+                    [
+                        new ImageData
+                        {
+                            Platforms =
+                            [
+                                new PlatformData { Digest = "sha256:already-signed" },
+                                new PlatformData { Digest = "sha256:not-yet-signed" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        IReadOnlyList<ImageSigningResult> results =
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+
+        results.Count.ShouldBe(1);
+        results[0].ImageName.ShouldBe("sha256:not-yet-signed");
+
+        // Only the unsigned digest should have its descriptor fetched for signing
+        mockOras.Verify(
+            s => s.GetDescriptorAsync("sha256:not-yet-signed", It.IsAny<CancellationToken>()),
+            Times.Once);
+        mockOras.Verify(
+            s => s.GetDescriptorAsync("sha256:already-signed", It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
+    [Fact]
+    public async Task SignImagesAsync_IgnoresNonSignatureReferrers()
+    {
+        var mockOras = CreateMockOrasService();
+        var fileSystem = new InMemoryFileSystem();
+        var mockEsrp = CreateEsrpMockWithCoseOverwrite(fileSystem);
+
+        // Referrer exists but is NOT a Notary signature (e.g., an SBOM)
+        mockOras
+            .Setup(s => s.GetReferrersAsync(
+                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<ReferrerInfo>
+            {
+                new("registry/repo@sha256:sbom123", "application/spdx+json")
+            });
+
+        var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
+
+        var imageArtifactDetails = new ImageArtifactDetails
+        {
+            Repos =
+            [
+                new RepoData
+                {
+                    Repo = "myregistry.azurecr.io/dotnet/runtime",
+                    Images =
+                    [
+                        new ImageData
+                        {
+                            Platforms =
+                            [
+                                new PlatformData { Digest = "sha256:abc123" }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        };
+
+        IReadOnlyList<ImageSigningResult> results =
+            await service.SignImagesAsync(imageArtifactDetails, signingKeyCode: 100);
+
+        // Should still sign because the referrer is not a Notary signature
+        results.Count.ShouldBe(1);
+        mockEsrp.Verify(
+            e => e.SignFilesAsync(It.IsAny<IEnumerable<string>>(), It.IsAny<int>(), It.IsAny<CancellationToken>()),
+            Times.Once);
     }
 
     private static ImageSigningService CreateService(

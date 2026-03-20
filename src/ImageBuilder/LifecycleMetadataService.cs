@@ -7,6 +7,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Models.Oras;
+using Microsoft.DotNet.ImageBuilder.Oras;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -14,7 +15,6 @@ public class LifecycleMetadataService : ILifecycleMetadataService
 {
     public const string EndOfLifeAnnotation = "vnd.microsoft.artifact.lifecycle.end-of-life.date";
     public const string EolDateFormat = "yyyy-MM-dd";
-    private const string LifecycleArtifactType = "application/vnd.microsoft.artifact.lifecycle";
 
     private readonly IOrasClient _orasClient;
 
@@ -28,7 +28,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         string stdOut = _orasClient.RunOrasCommand(
             args: [
                 "discover",
-                $"--artifact-type {LifecycleArtifactType}",
+                $"--artifact-type {OciArtifactType.Lifecycle}",
                 $"--format json",
                 digest
             ],
@@ -50,7 +50,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
             string output = _orasClient.RunOrasCommand(
                 args: [
                     "attach",
-                    $"--artifact-type {LifecycleArtifactType}",
+                    $"--artifact-type {OciArtifactType.Lifecycle}",
                     $"--annotation \"{EndOfLifeAnnotation}={date.ToString(EolDateFormat)}\"",
                     $"--format json",
                     digest
@@ -90,7 +90,7 @@ public class LifecycleMetadataService : ILifecycleMetadataService
             OrasDiscoverData? orasDiscoverData = JsonConvert.DeserializeObject<OrasDiscoverData>(json);
             if (orasDiscoverData?.Manifests != null)
             {
-                lifecycleArtifactManifest = orasDiscoverData.Manifests.FirstOrDefault(m => m.ArtifactType == LifecycleArtifactType);
+                lifecycleArtifactManifest = orasDiscoverData.Manifests.FirstOrDefault(m => m.ArtifactType == OciArtifactType.Lifecycle);
                 return lifecycleArtifactManifest is not null;
             }
         }

@@ -4,7 +4,8 @@ parameters:
   default: null
 - name: subscriptionsPath
   type: string
-  default: null
+- name: publishConfig
+  type: object
 - name: customInitSteps
   type: stepList
   default: []
@@ -20,15 +21,8 @@ jobs:
       name: $(default1ESInternalPoolName)
       image: $(default1ESInternalPoolImage)
       os: linux
-    acr:
-      server: $(public-mirror.server)
-      serviceConnection:
-        id: $(public-mirror.serviceConnection.id)
-        tenantId: $(public-mirror.serviceConnection.tenantId)
-        clientId: $(public-mirror.serviceConnection.clientId)
-      subscription: $(public-mirror.subscription)
-      resourceGroup: $(public-mirror.resourceGroup)
-    repoPrefix: $(mirrorRepoPrefix)
+    publishConfig: ${{ parameters.publishConfig }}
+    acr: ${{ parameters.publishConfig.PublicMirrorRegistry }}
     customInitSteps: ${{ parameters.customInitSteps }}
     additionalOptions: '--subscriptions-path ${{ parameters.subscriptionsPath }}'
     forceDryRun: ${{ parameters.dryRun }}

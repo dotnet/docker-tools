@@ -3,7 +3,6 @@
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IRegistryManifestClientFactory
 {
     IRegistryManifestClient Create(

@@ -13,7 +13,6 @@ using Microsoft.VisualStudio.Services.Common;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 /// <summary>
 /// Client used for querying the REST API of container registries.
 /// </summary>
@@ -25,6 +24,10 @@ public class RegistryApiClient : IRegistryManifestClient
     private const string DockerManifestList = "application/vnd.docker.distribution.manifest.list.v2+json";
     private const string OciManifestSchema1 = "application/vnd.oci.image.manifest.v1+json";
     private const string OciManifestList1 = "application/vnd.oci.image.index.v1+json";
+
+    /// <summary>
+    /// Media types accepted when querying for container image manifests.
+    /// </summary>
     private static readonly string[] s_manifestMediaTypes =
     [
         DockerManifestSchema2,
@@ -37,8 +40,18 @@ public class RegistryApiClient : IRegistryManifestClient
     private readonly string _repo;
     private readonly RegistryHttpClient _httpClient;
 
+    /// <summary>
+    /// Gets the base URI of the registry (e.g., <c>https://myregistry.azurecr.io</c>).
+    /// </summary>
     public Uri BaseUri { get; }
 
+    /// <summary>
+    /// Initializes a new instance of <see cref="RegistryApiClient"/>.
+    /// </summary>
+    /// <param name="registry">The hostname of the container registry.</param>
+    /// <param name="repo">The repository name within the registry.</param>
+    /// <param name="httpClient">HTTP client configured for registry OAuth handshaking.</param>
+    /// <param name="credentials">Optional basic-auth credentials for the registry.</param>
     public RegistryApiClient(string registry, string repo, RegistryHttpClient httpClient, RegistryCredentials? credentials)
     {
         BaseUri = new Uri($"https://{registry}");
@@ -47,6 +60,7 @@ public class RegistryApiClient : IRegistryManifestClient
         _credentials = credentials;
     }
 
+    /// <inheritdoc/>
     public async Task<ManifestQueryResult> GetManifestAsync(string tagOrDigest)
     {
         HttpResponseMessage response = await SendRequestAsync(
@@ -59,6 +73,9 @@ public class RegistryApiClient : IRegistryManifestClient
             (JsonObject)(JsonNode.Parse(content) ?? throw new InvalidOperationException($"Invalid JSON result: {content}")));
     }
 
+    /// <summary>
+    /// Creates an HTTP GET request message with the accepted manifest media types.
+    /// </summary>
     private static HttpRequestMessage CreateGetRequestMessage(Uri requestUri, HttpMethod method)
     {
         HttpRequestMessage request = new(method, requestUri);
@@ -67,6 +84,10 @@ public class RegistryApiClient : IRegistryManifestClient
         return request;
     }
 
+    /// <summary>
+    /// Sends an HTTP request to the registry, attaching basic-auth credentials if available.
+    /// Throws <see cref="HttpRequestException"/> with the response status code on failure.
+    /// </summary>
     private async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage request)
     {
         if (_credentials != null)
@@ -85,13 +106,18 @@ public class RegistryApiClient : IRegistryManifestClient
             string errorContent = await response.Content.ReadAsStringAsync();
 
             throw new HttpRequestException(
-                $"Response status code does not indicate success: {response.StatusCode}. Reason: '{response.ReasonPhrase}'. Error content:{Environment.NewLine}{errorContent}");
+                $"Response status code does not indicate success: {response.StatusCode}. Reason: '{response.ReasonPhrase}'. Error content:{Environment.NewLine}{errorContent}",
+                inner: null,
+                response.StatusCode);
         }
         response.EnsureSuccessStatusCode();
 
         return response;
     }
 
+    /// <summary>
+    /// Builds the manifest API URI for the given repository and tag or digest reference.
+    /// </summary>
     private Uri GetManifestUri(string repositoryName, string tagOrDigest) =>
         new(BaseUri.AbsoluteUri + $"v2/{repositoryName}/manifests/{tagOrDigest}");
 }

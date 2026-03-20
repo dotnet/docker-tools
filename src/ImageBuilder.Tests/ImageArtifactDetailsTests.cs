@@ -124,7 +124,6 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
                           "osType": "",
                           "osVersion": "",
                           "architecture": "",
-                          "created": "0001-01-01T00:00:00",
                           "commitUrl": "",
                           "layers": [
                             {

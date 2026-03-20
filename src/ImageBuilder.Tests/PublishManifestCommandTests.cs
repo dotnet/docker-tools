@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -48,9 +50,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new(
+                TestHelper.CreateManifestJsonService(),
                 manifestServiceFactoryMock.Object,
                 Mock.Of<IDockerService>(),
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -307,9 +310,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IDockerService> dockerServiceMock = new();
 
             PublishManifestCommand command = new PublishManifestCommand(
+                TestHelper.CreateManifestJsonService(),
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 Mock.Of<IDateTimeService>(),
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -436,9 +440,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new PublishManifestCommand(
+                TestHelper.CreateManifestJsonService(),
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());
@@ -627,9 +632,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IDateTimeService dateTimeService = Mock.Of<IDateTimeService>(o => o.UtcNow == manifestCreatedDate);
 
             PublishManifestCommand command = new(
+                TestHelper.CreateManifestJsonService(),
                 manifestServiceFactory.Object,
                 dockerServiceMock.Object,
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<PublishManifestCommand>>(),
                 dateTimeService,
                 Mock.Of<IRegistryCredentialsProvider>(),
                 Mock.Of<IAzureTokenCredentialProvider>());

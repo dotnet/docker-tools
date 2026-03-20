@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public record ImageDigestInfo(string Digest, List<string> Tags, bool IsManifestList);

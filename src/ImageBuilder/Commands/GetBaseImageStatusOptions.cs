@@ -8,7 +8,6 @@ using System.CommandLine;
 using System.Linq;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetBaseImageStatusOptions : ManifestOptions, IFilterableOptions
@@ -45,4 +44,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
-#nullable disable

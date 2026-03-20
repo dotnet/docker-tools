@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,18 +9,19 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Services;
+using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.Common;
 using Microsoft.VisualStudio.Services.WebApi;
 using Moq;
-using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Xunit;
-using IVssConnection = Microsoft.DotNet.ImageBuilder.Services.IVssConnection;
+using Newtonsoft.Json;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
+using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -596,7 +598,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private QueueBuildCommand CreateCommand(Mock<IVssConnectionFactory> connectionFactoryMock)
             {
-                Mock<ILoggerService> loggerServiceMock = new();
+                Mock<ILogger<QueueBuildCommand>> loggerServiceMock = new();
 
                 QueueBuildCommand command = new(connectionFactoryMock.Object, loggerServiceMock.Object, _notificationServiceMock.Object);
                 command.Options.AzdoOptions.Organization = BuildOrganization;

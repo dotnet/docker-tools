@@ -4,9 +4,14 @@ parameters:
   matrix: {}
   dockerClientOS: null
   buildJobTimeout: 60
-  commonInitStepsForMatrixAndBuild: []
+  # Custom steps to set up ImageBuilder instead of pulling from MCR (e.g., bootstrap from source).
+  # Runs before ImageBuilder pull. If non-empty, skips the default ImageBuilder pull.
   customInitSteps: []
+  # Custom steps that run after ImageBuilder is set up but before the build starts.
+  # Use for build-specific initialization (e.g., setting variables, additional setup).
+  customBuildInitSteps: []
   publishConfig: null
+  versionsRepoRef: ""
   noCache: false
   internalProjectName: null
   publicProjectName: null
@@ -29,11 +34,25 @@ jobs:
     imageInfoHostDir: $(Build.ArtifactStagingDirectory)/imageInfo
     imageInfoContainerDir: $(artifactsPath)/imageInfo
   steps:
-  - ${{ parameters.commonInitStepsForMatrixAndBuild }}
-  - template: /eng/docker-tools/templates/jobs/${{ format('../steps/init-docker-{0}.yml', parameters.dockerClientOS) }}@self
+  - template: /eng/docker-tools/templates/steps/init-common.yml@self
     parameters:
+      dockerClientOS: ${{ parameters.dockerClientOS }}
+      publishConfig: ${{ parameters.publishConfig }}
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       cleanupDocker: true
-  - ${{ parameters.customInitSteps }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+  - ${{ parameters.customBuildInitSteps }}
+  - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      dockerClientOS: ${{ parameters.dockerClientOS }}
+      usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+      # Check .name instead of the whole object - null parameters can become
+      # empty objects through template layers, making ${{ if }} truthy.
+      ${{ if parameters.storageAccountServiceConnection.name }}:
+        serviceConnections:
+        - name: ${{ parameters.storageAccountServiceConnection.name }}
   - template: /eng/docker-tools/templates/steps/set-image-info-path-var.yml@self
     parameters:
       publicSourceBranch: $(publicSourceBranch)
@@ -51,7 +70,7 @@ jobs:
       # the environment variable for us.
       $imageBuilderBuildArgs = "$env:IMAGEBUILDERBUILDARGS $env:IMAGEBUILDER_QUEUEARGS --image-info-output-path $(imageInfoContainerDir)/$(legName)-image-info.json $(commonMatrixAndBuildOptions)"
       if ($env:SYSTEM_TEAMPROJECT -eq "${{ parameters.internalProjectName }}" -and $env:BUILD_REASON -ne "PullRequest") {
-        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --repo-prefix ${{ parameters.publishConfig.buildAcr.repoPrefix }} --push"
+        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --repo-prefix ${{ parameters.publishConfig.BuildRegistry.repoPrefix }} --push"
       }
 
       # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache
@@ -66,14 +85,8 @@ jobs:
     parameters:
       name: BuildImages
       displayName: Build Images
-      serviceConnections:
-      # "name" here refers to the argument name, not the service connection name.
-      # It should probably be changed to "argName".
-      - name: acr
-        id: ${{ parameters.publishConfig.buildAcr.serviceConnection.id }}
-        tenantId: ${{ parameters.publishConfig.buildAcr.serviceConnection.tenantId }}
-        clientId: ${{ parameters.publishConfig.buildAcr.serviceConnection.clientId }}
-      - ${{ if parameters.storageAccountServiceConnection }}:
+      ${{ if parameters.storageAccountServiceConnection }}:
+        serviceConnections:
         - name: storage
           id: ${{ parameters.storageAccountServiceConnection.id }}
           tenantId: ${{ parameters.storageAccountServiceConnection.tenantId }}
@@ -89,8 +102,6 @@ jobs:
         --architecture $(architecture)
         --retry
         --digests-out-var 'builtImages'
-        --acr-subscription '${{ parameters.publishConfig.buildAcr.subscription }}'
-        --acr-resource-group '${{ parameters.publishConfig.buildAcr.resourceGroup }}'
         $(manifestVariables)
         $(imageBuilderBuildArgs)
   - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
@@ -104,12 +115,12 @@ jobs:
     - powershell: |
         $images = "$(BuildImages.builtImages)"
         if (-not $images) { return 0 }
-        $syftImageName = "${{ parameters.publishConfig.publicMirrorAcr.server }}/$(imageNames.syft)"
+        $syftImageName = "${{ parameters.publishConfig.PublicMirrorRegistry.server }}/$(imageNames.syft)"
         & $(engDockerToolsPath)/Pull-Image.ps1 $syftImageName
         $images -Split ',' | ForEach-Object {
           echo "Generating SBOM for $_";
           $targetImageName = "$_";
-          $formattedImageName = $targetImageName.Replace('${{ parameters.publishConfig.buildAcr.server }}/${{ parameters.publishConfig.buildAcr.repoPrefix }}', "").Replace('/', '_').Replace(':', '_');
+          $formattedImageName = $targetImageName.Replace('${{ parameters.publishConfig.BuildRegistry.server }}/${{ parameters.publishConfig.BuildRegistry.repoPrefix }}', "").Replace('/', '_').Replace(':', '_');
           $sbomChildDir = "$(sbomDirectory)/$formattedImageName";
           New-Item -Type Directory -Path $sbomChildDir > $null;
           docker build --output=$sbomChildDir -f $(engDockerToolsPath)/Dockerfile.syft --build-arg SYFT_IMAGE_NAME=$syftImageName --build-arg TARGET_IMAGE_NAME=$targetImageName -t syft-sbom $(engDockerToolsPath);
@@ -120,6 +131,7 @@ jobs:
     - template: /eng/docker-tools/templates/jobs/${{ format('../steps/test-images-{0}-client.yml', parameters.dockerClientOS) }}@self
       parameters:
         condition: ne(variables.testScriptPath, '')
+        skipCommonInit: true
   - ${{ if and(eq(variables['System.TeamProject'], parameters.internalProjectName), ne(variables['Build.Reason'], 'PullRequest'), eq(parameters.dockerClientOS, 'linux')) }}:
     - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
       parameters:

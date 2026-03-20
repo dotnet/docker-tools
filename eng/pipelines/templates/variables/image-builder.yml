@@ -14,8 +14,8 @@ variables:
 - name: imageInfoVariant
   value: "-imagebuilder"
 - name: testScriptPath
-  value: ./src/run-tests.ps1
+  value: ""
 - name: testResultsDirectory
   value: src/ImageBuilder.Tests/TestResults/
-- name: publicGitRepoUri
-  value: https://github.com/dotnet/docker-tools
+- name: preBuildTestScriptPath
+  value: ./src/run-tests.ps1

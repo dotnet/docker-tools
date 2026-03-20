@@ -1,3 +1,4 @@
+﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -7,9 +8,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Azure.Core;
-using Azure.ResourceManager.ContainerRegistry;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
@@ -17,13 +15,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions, CopyAcrImagesOptionsBuilder>
     {
+        private readonly ILogger _logger;
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;
 
         public CopyAcrImagesCommand(
+            IManifestJsonService manifestJsonService,
             ICopyImageService copyImageService,
-            ILoggerService loggerService)
-            : base(copyImageService, loggerService)
+            ILogger<CopyAcrImagesCommand> logger)
+            : base(manifestJsonService, copyImageService, logger)
         {
+            _logger = logger;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails>(() =>
             {
                 if (!string.IsNullOrEmpty(Options.ImageInfoPath))
@@ -39,17 +40,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            LoggerService.WriteHeading("COPYING IMAGES");
+            _logger.LogInformation("COPYING IMAGES");
 
             if (!File.Exists(Options.ImageInfoPath))
             {
-                LoggerService.WriteMessage(PipelineHelper.FormatWarningCommand(
+                _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image copy."));
                 return;
             }
-
-            ResourceIdentifier resourceId = ContainerRegistryResource.CreateResourceIdentifier(
-                Options.Subscription, Options.ResourceGroup, Acr.Parse(Options.SourceRegistry).Name);
 
             IEnumerable<Task> importTasks = Manifest.FilteredRepos
                 .Select(repo =>
@@ -61,7 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                                 Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                                srcResourceId: resourceId)))
+                                srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
             await Task.WhenAll(importTasks);
@@ -69,8 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private IEnumerable<(string SourceTag, string DestinationTag)> GetTagInfos(RepoInfo repo, PlatformInfo platform)
         {
-            List<(string SourceTag, string DestinationTag)> tags =
-                new List<(string SourceTag, string DestinationTag)>();
+            var tags = new List<(string SourceTag, string DestinationTag)>();
 
             // If an image info file was provided, use the tags defined there rather than the manifest. This is intended
             // to handle scenarios where the tag's value is dynamic, such as a timestamp, and we need to know the value
@@ -110,12 +107,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     }
                     else
                     {
-                        LoggerService.WriteMessage($"Unable to find image info data for path '{platform.DockerfilePath}'.");
+                        _logger.LogInformation($"Unable to find image info data for path '{platform.DockerfilePath}'.");
                     }
                 }
                 else
                 {
-                    LoggerService.WriteMessage($"Unable to find image info data for repo '{repo.Name}'.");
+                    _logger.LogInformation($"Unable to find image info data for repo '{repo.Name}'.");
                 }
             }
             else

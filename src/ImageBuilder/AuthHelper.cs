@@ -1,3 +1,4 @@
+﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -12,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder
 {
     public static class AuthHelper
     {
-        public static Guid GetTenantId(ILoggerService loggerService, TokenCredential credential)
+        public static Guid GetTenantId(ILogger logger, TokenCredential credential)
         {
             ArmClient armClient = new(credential);
             IEnumerable<Guid> tenants = armClient.GetTenants().ToList()
@@ -28,8 +29,8 @@ namespace Microsoft.DotNet.ImageBuilder
             if (tenants.Count() > 1)
             {
                 string allTenantIds = string.Join(' ', tenants.Select(guid => guid.ToString()));
-                loggerService.WriteMessage("Found more than one tenant. Selecting the first one.");
-                loggerService.WriteMessage($"Tenants: {allTenantIds}");
+                logger.LogInformation("Found more than one tenant. Selecting the first one.");
+                logger.LogInformation($"Tenants: {allTenantIds}");
             }
 
             return tenants.First();

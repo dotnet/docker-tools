@@ -5,9 +5,11 @@
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>FilePusher</RootNamespace>
     <LangVersion>latest</LangVersion>
-    <Nullable>enable</Nullable>
     <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Explicit Nullable setting required for Docker builds from eng/src/ context (won't see root Directory.Build.props).
+         Tracking issue for fixing context directory: https://github.com/dotnet/docker-tools/issues/1592 -->
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <ItemGroup>

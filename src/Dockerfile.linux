@@ -2,48 +2,52 @@
 #     docker build -t image-builder .
 #     docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v <local path to build>:/repo -w /repo image-builder <image-build args>
 
-ARG ORAS_VERSION=1.3.0
-
 # build Microsoft.DotNet.ImageBuilder
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
-ARG ORAS_VERSION
 
-# download oras package tarball
+# download root CA certificates for signature verification
 WORKDIR /
-RUN curl -fSL --output oras_linux.tar.gz https://github.com/oras-project/oras/releases/download/v${ORAS_VERSION}/oras_${ORAS_VERSION}_linux_${TARGETARCH}.tar.gz \
-    && mkdir -p oras-install/ \
-    && tar -zxf oras_linux.tar.gz -C oras-install/ \
-    && rm -rf oras_linux.tar.gz
+RUN mkdir -p notation-trust/certs/test notation-trust/certs/supplychain \
+    && curl -fSL --output notation-trust/certs/test/root-ca.crt \
+       "https://www.microsoft.com/pkiops/certs/Microsoft%20RSA%20Testing%20Root%20Certificate%20Authority%202019.crt" \
+    && curl -fSL --output notation-trust/certs/supplychain/root-ca.crt \
+       "https://www.microsoft.com/pkiops/certs/Microsoft%20Supply%20Chain%20RSA%20Root%20CA%202022.crt"
 
 WORKDIR /image-builder
 
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
+COPY ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj ./ImageBuilder.Models/
 RUN dotnet restore -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish
 COPY . ./
-RUN dotnet publish -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --self-contained=true --no-restore -o out
+# MicroBuild signing requires running a DLL directly, so it is more size-efficient for ImageBuilder
+# to use the same runtime and ship as framework-dependent instead of self-contained.
+RUN dotnet publish -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj --no-restore -o out
 
 
 # build runtime image
-FROM mcr.microsoft.com/dotnet/runtime-deps:9.0-azurelinux3.0
+FROM mcr.microsoft.com/dotnet/runtime:9.0-azurelinux3.0
 
 # install tooling
 RUN tdnf install -y \
-      moby-engine \
-      docker-cli \
       docker-buildx \
+      docker-cli \
       git \
+      moby-engine \
+      notation \
+      oras \
     && tdnf clean all
 
-# install oras tool
-COPY --from=build-env ["/oras-install/oras", "/usr/local/bin"]
+# install notation trust materials (root CA certs + trust policies)
+COPY --from=build-env ["/notation-trust/", "/notation-trust/"]
+COPY ["notation-trust/policies/", "/notation-trust/policies/"]
 
 # install image-builder
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 
-ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]
+ENTRYPOINT ["/image-builder/imagebuilder"]

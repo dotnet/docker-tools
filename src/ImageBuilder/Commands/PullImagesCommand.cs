@@ -8,18 +8,17 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PullImagesCommand : ManifestCommand<PullImagesOptions, PullImagesOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<PullImagesCommand> _logger;
 
-        public PullImagesCommand(IDockerService dockerService, ILoggerService loggerService)
+        public PullImagesCommand(IManifestJsonService manifestJsonService, IDockerService dockerService, ILogger<PullImagesCommand> logger) : base(manifestJsonService)
         {
             _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         protected override string Description => "Pulls the images described in the manifest";
@@ -54,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Distinct()
                 .ToList();
 
-            _loggerService.WriteHeading("PULLING IMAGES");
+            _logger.LogInformation("PULLING IMAGES");
             foreach ((string tag, string platform) in platformTags)
             {
                 _dockerService.PullImage(tag, platform, Options.IsDryRun);
@@ -62,7 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (Options.OutputVariableName is not null)
             {
-                _loggerService.WriteMessage(
+                _logger.LogInformation(
                     PipelineHelper.FormatOutputVariable(
                         Options.OutputVariableName,
                         string.Join(',', platformTags.Select(platformTag => platformTag.Tag))));
@@ -72,4 +71,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
     }
 }
-#nullable disable

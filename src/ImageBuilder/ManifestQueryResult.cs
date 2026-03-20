@@ -5,7 +5,6 @@ using System.Text.Json.Nodes;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 /// <summary>
 /// Result of a manifest query from <see cref="IManifestService"/>.
 /// </summary>
@@ -27,4 +26,3 @@ public class ManifestQueryResult
         Manifest = manifest;
     }
 }
-#nullable disable

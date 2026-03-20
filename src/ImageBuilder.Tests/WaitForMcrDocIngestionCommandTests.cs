@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -8,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.MarStatusHelper;
@@ -82,7 +84,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             WaitForMcrDocIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -171,7 +173,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Throws(exitException);
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -271,7 +273,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             WaitForMcrDocIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -362,7 +364,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Throws(exitException);
 
             WaitForMcrDocIngestionCommand command = new WaitForMcrDocIngestionCommand(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 
@@ -403,7 +405,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IEnvironmentService> environmentServiceMock = new();
 
             WaitForMcrDocIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                Mock.Of<ILogger<WaitForMcrDocIngestionCommand>>(),
                 statusClientFactoryMock.Object,
                 environmentServiceMock.Object);
 

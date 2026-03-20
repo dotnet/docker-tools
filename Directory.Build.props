@@ -5,6 +5,7 @@
   <PropertyGroup Label="Build Settings">
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Label="Packaging Settings">

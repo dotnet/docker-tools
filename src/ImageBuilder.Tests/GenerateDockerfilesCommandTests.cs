@@ -1,3 +1,4 @@
+﻿#nullable disable
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
@@ -10,6 +11,7 @@ using Cottle;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -113,7 +115,7 @@ ENV TEST2 Value1";
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            GenerateDockerfilesCommand command = new(Mock.Of<IEnvironmentService>());
+            GenerateDockerfilesCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IEnvironmentService>(), Mock.Of<ILogger<GenerateDockerfilesCommand>>());
             command.Options.Manifest = manifestPath;
             command.LoadManifest();
 
@@ -264,7 +266,7 @@ ENV TEST2 Value1";
                 .Setup(o => o.Exit(1))
                 .Throws(_exitException);
 
-            GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(_environmentServiceMock.Object);
+            GenerateDockerfilesCommand command = new GenerateDockerfilesCommand(TestHelper.CreateManifestJsonService(), _environmentServiceMock.Object, Mock.Of<ILogger<GenerateDockerfilesCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.AllowOptionalTemplates = allowOptionalTemplates;
             command.Options.Validate = validate;

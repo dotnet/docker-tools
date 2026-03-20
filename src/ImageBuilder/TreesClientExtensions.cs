@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using System.Web;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class TreesClientExtensions
@@ -31,4 +30,3 @@ namespace Microsoft.DotNet.ImageBuilder
         }
     }
 }
-#nullable disable

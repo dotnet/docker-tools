@@ -7,7 +7,6 @@ using System.CommandLine;
 using Microsoft.VisualStudio.Services.Common;
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class AzdoOptions
@@ -47,4 +46,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             };
     }
 }
-#nullable disable

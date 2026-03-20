@@ -7,18 +7,33 @@ parameters:
   internalProjectName: null
   noCache: false
   publishConfig: null
+  # Custom steps to set up ImageBuilder instead of pulling from MCR (e.g., bootstrap from source).
+  # Runs before ImageBuilder pull. If non-empty, skips the default ImageBuilder pull.
   customInitSteps: []
-  commonInitStepsForMatrixAndBuild: []
+  # Custom steps that run after ImageBuilder is set up but before matrix generation runs.
+  customGenerateMatrixInitSteps: []
+  versionsRepoRef: ""
   sourceBuildPipelineRunId: ""
 
 jobs:
 - job: ${{ parameters.name }}
   pool: ${{ parameters.pool }}
   steps:
-  - ${{ parameters.commonInitStepsForMatrixAndBuild }}
+  - template: /eng/docker-tools/templates/steps/init-common.yml@self
+    parameters:
+      dockerClientOS: linux
+      publishConfig: ${{ parameters.publishConfig }}
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
+      customInitSteps: ${{ parameters.customInitSteps }}
+  # When --trim-cached-images is active, ImageBuilder checks base image digests
+  # in the ACR mirror registry, which requires OIDC auth via this service connection.
+  - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
+    parameters:
+      publishConfig: ${{ parameters.publishConfig }}
+      usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+  - ${{ parameters.customGenerateMatrixInitSteps }}
   - template: /eng/docker-tools/templates/steps/retain-build.yml@self
-  - template: /eng/docker-tools/templates/steps/init-docker-linux.yml@self
-  - ${{ parameters.customInitSteps }}
   - template: /eng/docker-tools/templates/steps/validate-branch.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
@@ -63,10 +78,5 @@ jobs:
     parameters:
       name: matrix
       displayName: Generate ${{ parameters.matrixType }} Matrix
-      serviceConnections:
-      - name: acr
-        tenantId: $(build.serviceConnection.tenantId)
-        clientId: $(build.serviceConnection.clientId)
-        id: $(build.serviceConnection.id)
       internalProjectName: internal
       args: $(generateBuildMatrixCommand)

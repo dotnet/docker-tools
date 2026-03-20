@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -15,15 +16,16 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
 using Xunit.Abstractions;
+using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
-using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
@@ -163,7 +165,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     processService: processServiceMock.Object,
                     copyImageService: Mock.Of<ICopyImageService>(),
                     manifestServiceFactory: manifestServiceFactoryMock.Object,
-                    imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                    imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.IsPushEnabled = true;
@@ -359,7 +361,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: manifestServiceFactoryMock.Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
@@ -484,7 +486,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerService: dockerServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -557,7 +559,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerService: dockerServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
 
             const string runtimeRelativeDir = "1.0/runtime/os";
@@ -588,6 +590,60 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that arm/v7 is compatible with arm/ (empty variant) since containerd
+        /// treats them as equivalent, similar to arm64/v8 and arm64/.
+        /// </summary>
+        [Theory]
+        [InlineData("v7", null)]
+        [InlineData(null, "v7")]
+        [InlineData(null, null)]
+        [InlineData("v7", "v7")]
+        public async Task BuildCommand_ArmVariantCompatibility(string manifestVariant, string baseImageVariant)
+        {
+            const string repoName = "runtime";
+            const string tag = "tag";
+            const string baseImageRepo = "baserepo";
+            string baseImageTag = $"{baseImageRepo}:basetag";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
+            dockerServiceMock
+                .Setup(o => o.GetImageArch(baseImageTag, false))
+                .Returns((Architecture.ARM, baseImageVariant));
+
+            BuildCommand command = CreateBuildCommand(
+                dockerService: dockerServiceMock.Object,
+                copyImageService: Mock.Of<ICopyImageService>(),
+                manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+
+            const string runtimeRelativeDir = "1.0/runtime/os";
+            Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, runtimeRelativeDir));
+            string dockerfileRelativePath = Path.Combine(runtimeRelativeDir, "Dockerfile");
+            string dockerfileAbsolutePath = PathHelper.NormalizePath(Path.Combine(tempFolderContext.Path, dockerfileRelativePath));
+            File.WriteAllText(dockerfileAbsolutePath, $"FROM {baseImageTag}");
+
+            Platform platform = CreatePlatform(dockerfileRelativePath, new string[] { tag }, architecture: Architecture.ARM, variant: manifestVariant);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo(repoName,
+                    CreateImage(
+                        new Platform[]
+                        {
+                            platform
+                        }))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            dockerServiceMock.Verify(o => o.GetImageArch(baseImageTag, false));
+        }
+
+        /// <summary>
         /// Verifies that manifest-defined and globally-defined build args can be used.
         /// </summary>
         [Fact]
@@ -605,7 +661,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerService: dockerServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.BuildArgs.Add("arg1", "val1");
             command.Options.BuildArgs.Add("arg2", "val2a");
@@ -660,7 +716,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             BuildCommand command = CreateBuildCommand(
                 dockerService: dockerServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsPushEnabled = true;
 
@@ -756,14 +812,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: manifestServiceFactoryMock.Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
 
 
@@ -942,7 +996,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     gitService: gitServiceMock.Object,
                     copyImageService: Mock.Of<ICopyImageService>(),
                     manifestServiceFactory: manifestServiceFactoryMock.Object,
-                    imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                    imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
                 command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
                 command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
                 command.Options.SourceRepoUrl = "https://source";
@@ -988,7 +1042,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 dockerService: dockerServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock().Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), Mock.Of<IGitService>()));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), Mock.Of<IGitService>()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.IsSkipPullingEnabled = isSkipPullingEnabled;
 
@@ -1200,7 +1254,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: manifestServiceFactoryMock.Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -1208,8 +1262,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
             command.Options.NoCache = noCache;
             command.Options.FilterOptions.Dockerfile.Paths = pathArgs;
 
@@ -1412,14 +1464,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: manifestServiceFactoryMock.Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
             const string ProductVersion = "1.0.1";
 
@@ -1725,14 +1775,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: manifestServiceFactoryMock.Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
             const string ProductVersion = "1.0.1";
 
@@ -2014,7 +2062,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2219,7 +2267,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -2463,14 +2511,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
 
 
@@ -2687,14 +2733,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
             command.Options.RegistryOverride = registryOverride;
             command.Options.RepoPrefix = repoPrefixOverride;
 
@@ -2996,7 +3040,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -3005,8 +3049,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.SourceRepoPrefix = SourceRepoPrefix;
             command.Options.RegistryOverride = RegistryOverride;
             command.Options.RepoPrefix = RepoPrefix;
-            command.Options.Subscription = "my-sub";
-            command.Options.ResourceGroup = "resource-group";
 
 
 
@@ -3340,7 +3382,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3435,7 +3477,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILoggerService>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
@@ -3537,28 +3579,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
         #nullable enable
         private static BuildCommand CreateBuildCommand(
+            IManifestJsonService? manifestJsonService = null,
             IDockerService? dockerService = null,
-            ILoggerService? loggerService = null,
+            ILogger<BuildCommand>? loggerService = null,
             IGitService? gitService = null,
             IProcessService? processService = null,
             ICopyImageService? copyImageService = null,
             IManifestServiceFactory? manifestServiceFactory = null,
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
-            IImageCacheService? imageCacheService = null,
-            IOptions<PublishConfiguration>? publishOptions = null)
+            IImageCacheService? imageCacheService = null)
         {
             BuildCommand command = new(
+                manifestJsonService ?? TestHelper.CreateManifestJsonService(),
                 dockerService ?? Mock.Of<IDockerService>(),
-                loggerService ?? Mock.Of<ILoggerService>(),
+                loggerService ?? Mock.Of<ILogger<BuildCommand>>(),
                 gitService ?? Mock.Of<IGitService>(),
                 processService ?? Mock.Of<IProcessService>(),
                 copyImageService ?? Mock.Of<ICopyImageService>(),
                 manifestServiceFactory ?? Mock.Of<IManifestServiceFactory>(),
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
-                imageCacheService ?? Mock.Of<IImageCacheService>(),
-                publishOptions ?? CreateOptionsMock<PublishConfiguration>());
+                imageCacheService ?? Mock.Of<IImageCacheService>());
 
             return command;
         }
@@ -3595,13 +3637,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             copyImageServiceMock.Verify(o =>
                     o.ImportImageAsync(
-                        command.Options.Subscription,
-                        command.Options.ResourceGroup,
                         destTagNames,
                         destRegistryName,
                         srcTagName,
                         srcRegistryName,
-                        null,
                         It.IsAny<ContainerRegistryImportSourceCredentials>(),
                         false));
         }

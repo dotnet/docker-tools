@@ -10,18 +10,15 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Options;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class BuildCommand : ManifestCommand<BuildOptions, BuildOptionsBuilder>
     {
         private readonly IDockerService _dockerService;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<BuildCommand> _logger;
         private readonly IGitService _gitService;
         private readonly IProcessService _processService;
         private readonly ICopyImageService _copyImageService;
@@ -29,7 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
-        private readonly PublishConfiguration _publishConfiguration;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -45,26 +41,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private ImageArtifactDetails? _imageArtifactDetails;
 
         public BuildCommand(
+            IManifestJsonService manifestJsonService,
             IDockerService dockerService,
-            ILoggerService loggerService,
+            ILogger<BuildCommand> logger,
             IGitService gitService,
             IProcessService processService,
             ICopyImageService copyImageService,
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService,
-            IOptions<PublishConfiguration> publishConfigOptions)
+            IImageCacheService imageCacheService) : base(manifestJsonService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
-            _loggerService = loggerService ?? throw new ArgumentNullException(nameof(loggerService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _processService = processService ?? throw new ArgumentNullException(nameof(processService));
             _copyImageService = copyImageService ?? throw new ArgumentNullException(nameof(copyImageService));
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
-            _publishConfiguration = publishConfigOptions?.Value ?? throw new ArgumentNullException(nameof(publishConfigOptions));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -86,12 +81,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     return null;
                 }
 
-                var tokenCredential = _tokenCredentialProvider.GetCredential(
+                var tokenObject = _tokenCredentialProvider.GetToken(
                     Options.StorageServiceConnection,
-                    AzureScopes.StorageAccountScope);
+                    AzureScopes.StorageAccount);
 
-                var token = tokenCredential.GetToken(new TokenRequestContext(), CancellationToken.None).Token;
-                return token;
+                return tokenObject.Token;
             });
         }
 
@@ -148,7 +142,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 IEnumerable<string> builtDigests = _builtPlatforms
                     .Select(platform => DockerHelper.GetDigestString(platform.PlatformInfo!.RepoName, DockerHelper.GetDigestSha(platform.Digest)))
                     .Distinct();
-                _loggerService.WriteMessage(
+                _logger.LogInformation(
                     PipelineHelper.FormatOutputVariable(
                         Options.OutputVariableName,
                         string.Join(',', builtDigests)));
@@ -308,7 +302,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task BuildImagesAsync()
         {
-            _loggerService.WriteHeading("BUILDING IMAGES");
+            _logger.LogInformation("BUILDING IMAGES");
 
             ImageArtifactDetails? srcImageArtifactDetails = null;
             if (Options.ImageInfoSourcePath != null)
@@ -450,14 +444,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             (Models.Manifest.Architecture baseImageArch, string? baseImageVariant) =
                 _dockerService.GetImageArch(baseImageTag, Options.IsDryRun);
 
-            // Containerd normalizes arm64/v8 to arm64 with no variant.
-            // In other words, arm64/v8 and arm64/ are compatible.
-            // We still want to check variants if either variant is not "v8" or empty.
+            // The containerd/platforms library treats default variants as implicit. Its normalizeArch
+            // function maps arm/"" to arm/v7, arm64/v8 to arm64/"", and amd64/v1 to amd64/"". Its
+            // Parse function then strips v7 back off for arm (the canonical form omits the default).
+            // The matcher.Match normalizes both sides before comparing, so arm/"" and arm/v7 always
+            // match, as do arm64/"" and arm64/v8.
+            // See https://github.com/containerd/containerd/blob/d1d9d07f1960f7f3648298e44963a263eac87fa5/vendor/github.com/containerd/platforms/platforms.go
+            //
+            // Image producers (buildkit, umoci/rockcraft) may omit the default variant from the OCI
+            // image config, which is valid per the OCI spec (variant is OPTIONAL). We mirror
+            // containerd's equivalence here so that our validation doesn't reject these images.
             // See https://github.com/moby/buildkit/issues/4039
-            bool skipVariantCheck = platform.Model.Architecture == Models.Manifest.Architecture.ARM64
-                && baseImageArch == Models.Manifest.Architecture.ARM64
-                && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
-                    && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant)));
+            bool skipVariantCheck =
+                (platform.Model.Architecture == Models.Manifest.Architecture.ARM64
+                    && baseImageArch == Models.Manifest.Architecture.ARM64
+                    && ((platform.Model.Variant == "v8" || string.IsNullOrEmpty(platform.Model.Variant))
+                        && (baseImageVariant == "v8" || string.IsNullOrEmpty(baseImageVariant))))
+                || (platform.Model.Architecture == Models.Manifest.Architecture.ARM
+                    && baseImageArch == Models.Manifest.Architecture.ARM
+                    && ((platform.Model.Variant == "v7" || string.IsNullOrEmpty(platform.Model.Variant))
+                        && (baseImageVariant == "v7" || string.IsNullOrEmpty(baseImageVariant))));
 
             if (platform.Model.Architecture != baseImageArch || (!skipVariantCheck && platform.Model.Variant != baseImageVariant))
             {
@@ -495,7 +501,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 if (firstTag is not null)
                 {
                     long size = _dockerService.GetImageSize(firstTag, Options.IsDryRun);
-                    _loggerService.WriteMessage($"Image size (on disk): {size} bytes");
+                    _logger.LogInformation($"Image size (on disk): {size} bytes");
                 }
 
                 if (!Options.IsSkipPullingEnabled && !Options.IsDryRun && buildOutput?.Contains("Pulling from") == true)
@@ -550,9 +556,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
         {
-            _loggerService.WriteMessage();
-            _loggerService.WriteMessage("CACHE HIT");
-            _loggerService.WriteMessage();
+            _logger.LogInformation(string.Empty);
+            _logger.LogInformation("CACHE HIT");
+            _logger.LogInformation(string.Empty);
 
             // When a cache hit occurs on an image, we copy the image from its source location (e.g. mcr.microsoft.com) to its
             // destination location (e.g. staging repo in ACR). Copying only occurs if push is enabled since it will result in
@@ -604,27 +610,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<string> CopyCachedImage(IEnumerable<TagInfo> allTags, string sourceDigest)
         {
-            if (string.IsNullOrEmpty(Options.Subscription))
-            {
-                throw new InvalidDataException("Subscription option must be set.");
-            }
-
-            if (string.IsNullOrEmpty(Options.ResourceGroup))
-            {
-                throw new InvalidDataException("Resource group option must be set.");
-            }
-
             string[] destTags = allTags
                                 .Select(tagInfo => DockerHelper.TrimRegistry(tagInfo.FullyQualifiedName))
                                 .ToArray();
+
             string? srcRegistry = DockerHelper.GetRegistry(sourceDigest);
+
             await _copyImageService.ImportImageAsync(
-                Options.Subscription,
-                Options.ResourceGroup,
-                destTags,
-                Manifest.Registry,
-                DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
-                srcRegistry);
+                destTagNames: destTags,
+                destAcrName: Manifest.Registry,
+                srcTagName: DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
+                srcRegistryName: srcRegistry);
 
             // Redefine the source digest to be from the destination of the copy, not the source. The canonical scenario
             // here is to copy the cached image from MCR to the staging location in an ACR. This allows test jobs to always pull
@@ -636,11 +632,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task PullBaseImagesAsync()
         {
-            Logger.WriteHeading("PULLING LATEST BASE IMAGES");
+            _logger.LogInformation("PULLING LATEST BASE IMAGES");
 
             if (Options.IsSkipPullingEnabled)
             {
-                Logger.WriteMessage("No external base images to pull");
+                _logger.LogInformation("No external base images to pull");
                 return;
             }
 
@@ -666,7 +662,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (pulledTags.Count <= 0)
             {
-                Logger.WriteMessage("No external base images to pull");
+                _logger.LogInformation("No external base images to pull");
                 return;
             }
 
@@ -717,7 +713,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             if (Options.IsPushEnabled)
             {
-                _loggerService.WriteHeading("PUSHING BUILT IMAGES");
+                _logger.LogInformation("PUSHING BUILT IMAGES");
 
                 foreach (TagInfo tag in _processedTags)
                 {
@@ -741,7 +737,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     string fromRepo = DockerHelper.GetRepo(fromImage);
                     RepoInfo repo = Manifest.FilteredRepos.First(r => r.FullModelName == fromRepo);
                     string newFromImage = DockerHelper.ReplaceRepo(fromImage, repo.QualifiedName);
-                    _loggerService.WriteMessage($"Replacing FROM `{fromImage}` with `{newFromImage}`");
+                    _logger.LogInformation($"Replacing FROM `{fromImage}` with `{newFromImage}`");
                     Regex fromRegex = new Regex($@"FROM\s+{Regex.Escape(fromImage)}[^\s\r\n]*");
                     dockerfileContents = fromRegex.Replace(dockerfileContents, $"FROM {newFromImage}");
                     updateDockerfile = true;
@@ -751,8 +747,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 {
                     // Don't overwrite the original dockerfile - write it to a new path.
                     dockerfilePath += ".temp";
-                    _loggerService.WriteMessage($"Writing updated Dockerfile: {dockerfilePath}");
-                    _loggerService.WriteMessage(dockerfileContents);
+                    _logger.LogInformation($"Writing updated Dockerfile: {dockerfilePath}");
+                    _logger.LogInformation(dockerfileContents);
                     File.WriteAllText(dockerfilePath, dockerfileContents);
                 }
             }
@@ -762,21 +758,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private void WriteBuildSummary()
         {
-            _loggerService.WriteHeading("IMAGES BUILT");
+            _logger.LogInformation("IMAGES BUILT");
 
             if (_processedTags.Any())
             {
                 foreach (TagInfo tag in _processedTags)
                 {
-                    _loggerService.WriteMessage(tag.FullyQualifiedName);
+                    _logger.LogInformation(tag.FullyQualifiedName);
                 }
             }
             else
             {
-                _loggerService.WriteMessage("No images built");
+                _logger.LogInformation("No images built");
             }
 
-            _loggerService.WriteMessage();
+            _logger.LogInformation(string.Empty);
         }
     }
 }

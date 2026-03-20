@@ -3,9 +3,8 @@ parameters:
   acr: null
   action: null
   age: null
-  customArgs: "--dry-run"
+  customArgs: ''
   internalProjectName: null
-  publishConfig: null
 steps:
   - template: /eng/docker-tools/templates/steps/run-imagebuilder.yml@self
     parameters:
@@ -16,18 +15,12 @@ steps:
         displayName: "Clean ${{ parameters.repo }} (${{ parameters.action }} > ${{ parameters.age }}d)"
       ${{ else }}:
         displayName: "Clean ${{ parameters.repo }} (${{ parameters.action }})"
-      serviceConnections:
-      - name: acr
-        id: ${{ parameters.publishConfig.cleanServiceConnection.id }}
-        tenantId: ${{ parameters.publishConfig.cleanServiceConnection.tenantId }}
-        clientId: ${{ parameters.publishConfig.cleanServiceConnection.clientId }}
       internalProjectName: ${{ parameters.internalProjectName }}
       args: >-
         cleanAcrImages
         ${{ parameters.repo }}
-        ${{ parameters.acr.subscription }}
-        ${{ parameters.acr.resourceGroup }}
         ${{ parameters.acr.server }}
         --action ${{ parameters.action }}
         --age ${{ parameters.age }}
         ${{ parameters.customArgs }}
+        $(dryRunArg)

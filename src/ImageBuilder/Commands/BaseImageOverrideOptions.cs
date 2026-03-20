@@ -18,7 +18,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// For example, the Build command implements this by pulling an image from the overriden location, retagging it with the
 /// tag used in the Dockerfile, and continue with the rest of the build.<remarks>
 /// </remarks>
-#nullable enable
 public class BaseImageOverrideOptions
 {
     public const string BaseOverrideRegexName = "base-override-regex";
@@ -62,4 +61,3 @@ public class BaseImageOverrideOptionsBuilder
     public IEnumerable<Argument> GetCliArguments() => Enumerable.Empty<Argument>();
 }
 
-#nullable disable

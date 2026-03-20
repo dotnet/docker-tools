@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -9,7 +9,6 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Newtonsoft.Json;
 using Polly;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder
 {
     public class McrStatusClient : IMcrStatusClient
@@ -19,26 +18,26 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly HttpClient _httpClient;
         private readonly AsyncLockedValue<string> _accessToken = new AsyncLockedValue<string>();
         private readonly AsyncPolicy<HttpResponseMessage> _httpPolicy;
-        private readonly ILoggerService _loggerService;
+        private readonly ILogger<McrStatusClient> _logger;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IServiceConnection _serviceConnection;
 
         public McrStatusClient(
             IHttpClientProvider httpClientProvider,
-            ILoggerService loggerService,
+            ILogger<McrStatusClient> logger,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IServiceConnection serviceConnection)
         {
-            ArgumentNullException.ThrowIfNull(loggerService);
+            ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(httpClientProvider);
 
             _httpClient = httpClientProvider.GetClient();
             _httpPolicy = HttpPolicyBuilder.Create()
-                .WithMeteredRetryPolicy(loggerService)
-                .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, loggerService)
-                .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), loggerService)
+                .WithMeteredRetryPolicy(logger)
+                .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, logger)
+                .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), logger)
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");
-            _loggerService = loggerService;
+            _logger = logger;
             _tokenCredentialProvider = tokenCredentialProvider;
             _serviceConnection = serviceConnection;
         }
@@ -70,16 +69,16 @@ namespace Microsoft.DotNet.ImageBuilder
         private async Task<T> SendRequestAsync<T>(Func<HttpRequestMessage> message)
         {
             HttpResponseMessage response = await _httpClient.SendRequestAsync(message, GetAccessTokenAsync, _httpPolicy);
-            return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync()) 
+            return JsonConvert.DeserializeObject<T>(await response.Content.ReadAsStringAsync())
                 ?? throw new InvalidOperationException("Failed to deserialize response from MCR Status API.");
         }
 
         private Task<string> GetAccessTokenAsync() =>
             _accessToken.GetValueAsync(async () =>
-                (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, AzureScopes.McrStatusScope)).Token);
+                (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, AzureScopes.McrStatusApi)).Token);
 
         private Task RefreshAccessTokenAsync() =>
             _accessToken.ResetValueAsync(async () =>
-                (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, AzureScopes.McrStatusScope)).Token);
+                (await _tokenCredentialProvider.GetTokenAsync(_serviceConnection, AzureScopes.McrStatusApi)).Token);
     }
 }

@@ -5,7 +5,6 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Octokit;
 using System.Threading.Tasks;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IOctokitClientFactory

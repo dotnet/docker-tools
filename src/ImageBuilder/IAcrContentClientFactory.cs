@@ -5,8 +5,13 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IAcrContentClientFactory
 {
     IAcrContentClient Create(Acr acr, string repositoryName);
+
+    /// <summary>
+    /// Creates an ACR content client using an explicit service connection instead of
+    /// looking up the service connection from the publish configuration.
+    /// </summary>
+    IAcrContentClient Create(Acr acr, string repositoryName, IServiceConnection serviceConnection);
 }

@@ -5,9 +5,7 @@ using System.Collections.Generic;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IRegistryCredentialsHost
 {
     IDictionary<string, RegistryCredentials> Credentials { get; }
 }
-#nullable disable

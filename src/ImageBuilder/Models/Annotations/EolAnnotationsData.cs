@@ -5,7 +5,6 @@
 using System;
 using System.Collections.Generic;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Models.Annotations
 {
     public class EolAnnotationsData

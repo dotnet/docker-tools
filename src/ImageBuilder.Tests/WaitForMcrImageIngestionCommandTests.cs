@@ -12,6 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -44,7 +45,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                TestHelper.CreateManifestJsonService(),
+                Mock.Of<ILogger<WaitForMcrImageIngestionCommand>>(),
                 imageIngestionReporterMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -177,7 +179,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             Mock<IMarImageIngestionReporter> imageIngestionReporterMock = new();
 
             WaitForMcrImageIngestionCommand command = new(
-                Mock.Of<ILoggerService>(),
+                TestHelper.CreateManifestJsonService(),
+                Mock.Of<ILogger<WaitForMcrImageIngestionCommand>>(),
                 imageIngestionReporterMock.Object);
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

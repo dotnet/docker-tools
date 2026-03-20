@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
 using Octokit;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>
@@ -20,17 +19,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);
         private readonly Lazy<IManifestService> _manifestService;
-        private readonly ILoggerService _loggerService;
+        private readonly IManifestJsonService _manifestJsonService;
+        private readonly ILogger<GetStaleImagesCommand> _logger;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
 
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
-            ILoggerService loggerService,
+            IManifestJsonService manifestJsonService,
+            ILogger<GetStaleImagesCommand> logger,
             IOctokitClientFactory octokitClientFactory,
             IGitService gitService)
         {
-            _loggerService = loggerService;
+            _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
+            _logger = logger;
             _octokitClientFactory = octokitClientFactory;
             _gitService = gitService;
 
@@ -53,7 +55,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
                 SubscriptionHelper.GetSubscriptionManifests(
-                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService)
+                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService)
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {
@@ -72,12 +74,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string outputString = JsonConvert.SerializeObject(results);
 
-            _loggerService.WriteMessage(
+            _logger.LogInformation(
                 PipelineHelper.FormatOutputVariable(Options.VariableName, outputString)
                     .Replace("\"", "\\\"")); // Escape all quotes
 
             string formattedResults = JsonConvert.SerializeObject(results, Formatting.Indented);
-            _loggerService.WriteMessage(
+            _logger.LogInformation(
                 $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
         }
 
@@ -112,7 +114,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string? fromImage = platform.FinalStageFromImage;
             if (fromImage is null)
             {
-                _loggerService.WriteMessage(
+                _logger.LogInformation(
                     $"There is no base image for '{platform.DockerfilePath}'. By default, it is considered up-to-date.");
                 return [];
             }
@@ -121,7 +123,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             if (matchingPlatform is null)
             {
-                _loggerService.WriteMessage(
+                _logger.LogInformation(
                     $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
                 IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
                 return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();
@@ -138,7 +140,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             bool rebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentDigest;
 
-            _loggerService.WriteMessage(
+            _logger.LogInformation(
                 $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
                 + $"\tLast build digest:    {matchingPlatform.Value.Platform.BaseImageDigest}{Environment.NewLine}"
                 + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"

@@ -11,6 +11,19 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
+- name: bootstrapImageBuilder
+  displayName: >
+    Build ImageBuilder from source at the start of every job instead of pulling
+    the pre-built image from MCR. Use this option during development to
+    validate changes to ImageBuilder and pipeline templates at the same time.
+  type: boolean
+  default: false
+
+- name: enableSigning
+  displayName: Enable container image signing
+  type: boolean
+  default: false
+
 variables:
 - template: /eng/pipelines/templates/variables/image-builder.yml@self
   parameters:
@@ -53,8 +66,12 @@ extends:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-nonprod.yml@self
       parameters:
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
+        enableSigning: ${{ parameters.enableSigning }}
         stagesTemplate: /eng/pipelines/templates/stages/build-test-publish.yml@self
         stagesTemplateParameters:
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
           versionsRepoRef: VersionsRepo
           noCache: true
+          ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
+            customInitSteps:
+            - template: /eng/pipelines/templates/steps/bootstrap-imagebuilder.yml@self

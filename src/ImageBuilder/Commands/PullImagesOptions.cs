@@ -7,7 +7,6 @@ using System.Linq;
 
 using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class PullImagesOptions : ManifestOptions, IFilterableOptions
@@ -38,4 +37,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
     }
 }
-#nullable disable

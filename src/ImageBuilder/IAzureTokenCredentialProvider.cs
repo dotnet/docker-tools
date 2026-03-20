@@ -5,10 +5,7 @@ using Azure.Core;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-#nullable enable
 public interface IAzureTokenCredentialProvider
 {
-    TokenCredential GetCredential(
-        IServiceConnection? serviceConnection,
-        string scope = AzureScopes.DefaultAzureManagementScope);
+    TokenCredential GetCredential(IServiceConnection? serviceConnection);
 }

@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;
 
@@ -29,7 +30,7 @@ public class WaitForMarAnnotationIngestionCommandTests
 
         Mock<IMarImageIngestionReporter> ingestionReporter = new();
         WaitForMarAnnotationIngestionCommand cmd = new(
-            Mock.Of<ILoggerService>(),
+            Mock.Of<ILogger<WaitForMarAnnotationIngestionCommand>>(),
             ingestionReporter.Object);
         cmd.Options.AnnotationDigestsPath = annotationsDigestsPath;
 

@@ -6,7 +6,6 @@ using System.Collections.Generic;
 using System.CommandLine;
 using System.Linq;
 
-#nullable enable
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public class CopyBaseImagesOptions : CopyImagesOptions
@@ -37,4 +36,3 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Concat(_baseImageOverrideOptionsBuilder.GetCliArguments());
     }
 }
-#nullable disable

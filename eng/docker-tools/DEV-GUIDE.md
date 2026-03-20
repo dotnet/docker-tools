@@ -160,7 +160,7 @@ Build Stage
                     └── Apply EOL annotations
 ```
 - Full pipeline with all stages
-- Images flow: `buildAcr` → `publishAcr` → MAR (see [`publish-config-prod.yml`](templates/stages/dotnet/publish-config-prod.yml) for ACR definitions)
+- Images flow: `BuildRegistry` → `PublishRegistry` → MAR (see [`publish-config-prod.yml`](templates/stages/dotnet/publish-config-prod.yml) for ACR definitions)
 - Tests run against staged images
 - Only successful builds get published
 
@@ -180,14 +180,16 @@ The `stages` variable is a comma-separated string that controls which pipeline s
 ```yaml
 variables:
 - name: stages
-  value: "build,test,publish"    # Run all stages
+  value: "build,test,sign,publish"    # Run all stages
 ```
 
 Common patterns:
-- `"build"` - Build only, no tests or publishing
-- `"build,test"` - Build and test, but don't publish
+- `"build"` - Build only, no tests, signing, or publishing
+- `"build,test"` - Build and test, but don't sign or publish
+- `"build,test,sign"` - Build, test, and sign, but don't publish
+- `"sign"` - Sign only (when re-running failed signing from a previous build)
 - `"publish"` - Publish only (when re-running a failed publish from a previous build)
-- `"build,test,publish"` - Full pipeline
+- `"build,test,sign,publish"` - Full pipeline
 
 **Note:** The `Post_Build` stage is implicitly included whenever `build` is in the stages list. You don't need to specify it separately—it automatically runs after Build to merge image info files and consolidate SBOMs.
 
@@ -400,11 +402,13 @@ Note: For simple retries of failed jobs, use the Azure Pipelines UI "Re-run fail
 
 | Scenario | stages | sourceBuildPipelineRunId |
 |----------|--------|--------------------------|
-| Normal full build | `"build,test,publish"` | `$(Build.BuildId)` (default) |
+| Normal full build | `"build,test,sign,publish"` | `$(Build.BuildId)` (default) |
 | Re-run publish after infra fix | `"publish"` | ID of the successful build run |
 | Re-test after infra fix | `"test"` | ID of the build run to test |
+| Re-sign after infra fix | `"sign"` | ID of the build run to sign |
 | Build only (no publish) | `"build"` | `$(Build.BuildId)` (default) |
 | Test + publish (skip build) | `"test,publish"` | ID of the build run |
+| Sign + publish (skip build/test) | `"sign,publish"` | ID of the build run |
 
 **In the Azure DevOps UI:**
 

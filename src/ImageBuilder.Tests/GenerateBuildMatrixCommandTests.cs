@@ -1,4 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+﻿#nullable disable
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -6,11 +7,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -254,7 +257,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
             SetCacheResult(imageCacheServiceMock, dockerfileSdk2Path, ImageCacheState.NotCached);
 
-            GenerateBuildMatrixCommand command = new(imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILoggerService>());
+            GenerateBuildMatrixCommand command = new(TestHelper.CreateManifestJsonService(), imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -1544,7 +1547,179 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return platform;
         }
 
+        /// <summary>
+        /// Verifies that when a base image digest query fails with a non-404 error (e.g., authentication
+        /// failure due to missing RegistryAuthentication config), the exception propagates rather than
+        /// being silently swallowed. This is the fix for https://github.com/dotnet/docker-tools/issues/1964.
+        /// </summary>
+        [Fact]
+        public async Task TrimCachedImages_DigestQueryAuthFailure_Throws()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            GenerateBuildMatrixCommand command = SetupTrimCacheTest(
+                tempFolderContext,
+                digestQueryThrows: true);
+
+            command.LoadManifest();
+
+            // The digest query throws a generic exception (simulating auth failure).
+            // This should propagate instead of being silently swallowed.
+            await Assert.ThrowsAsync<Exception>(command.GenerateMatrixInfoAsync);
+        }
+
+        /// <summary>
+        /// Verifies that when a base image is not found in the registry (HTTP 404), it is treated as
+        /// a cache miss and the platform is included in the matrix. This handles the case where a new
+        /// image hasn't been published yet.
+        /// </summary>
+        [Fact]
+        public async Task TrimCachedImages_DigestQueryReturnsNotFound_CacheMiss()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IManifestService> manifestServiceMock = new();
+            manifestServiceMock
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ThrowsAsync(new HttpRequestException("Not Found", null, System.Net.HttpStatusCode.NotFound));
+
+            GenerateBuildMatrixCommand command = SetupTrimCacheTest(
+                tempFolderContext,
+                manifestServiceMock: manifestServiceMock);
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            // Image not found → cache miss → platform should be included in the matrix
+            Assert.Single(matrixInfos);
+            Assert.Single(matrixInfos.First().Legs);
+        }
+
+        /// <summary>
+        /// Verifies that when the base image digest matches (auth is working and digest is unchanged),
+        /// and the Dockerfile commit also matches, the platform is correctly cached and trimmed from
+        /// the matrix.
+        /// </summary>
+        [Fact]
+        public async Task TrimCachedImages_DigestAndCommitMatch_PlatformIsCached()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            const string baseImageDigestSha = "sha256:ea71a031ed91cd46b00d438876550bc765da43b4ae40f331a12daf62f0937758";
+
+            // Create a mock that returns a matching digest for any image query
+            Mock<IManifestService> manifestServiceMock = new();
+            manifestServiceMock
+                .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
+                .ReturnsAsync(baseImageDigestSha);
+
+            GenerateBuildMatrixCommand command = SetupTrimCacheTest(
+                tempFolderContext,
+                manifestServiceMock: manifestServiceMock);
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            // Digest matches and Dockerfile unchanged → platform is cached → trimmed from matrix
+            Assert.Empty(matrixInfos);
+        }
+
+        /// <summary>
+        /// Sets up a <see cref="GenerateBuildMatrixCommand"/> with a single platform that has an
+        /// external base image, suitable for testing cache trimming behavior.
+        /// </summary>
+        private static GenerateBuildMatrixCommand SetupTrimCacheTest(
+            TempFolderContext tempFolderContext,
+            IEnumerable<ManifestServiceHelper.ImageDigestResults> externalImageDigestResults = null,
+            bool digestQueryThrows = false,
+            Mock<IManifestService> manifestServiceMock = null)
+        {
+            const string sourceRepoUrl = "https://github.com/dotnet/test";
+            const string commitSha = "abc123def456";
+            const string baseImageDigestSha = "sha256:ea71a031ed91cd46b00d438876550bc765da43b4ae40f331a12daf62f0937758";
+
+            string runtimeDepsRelativeDir = "1.0/runtime-deps/os/amd64";
+            string dockerfilePath = CreateDockerfile(runtimeDepsRelativeDir, tempFolderContext, "alpine:3.20");
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime-deps",
+                    CreateImage(
+                        CreatePlatform(dockerfilePath, ["tag"]))));
+
+            string commitUrl = $"{sourceRepoUrl}/blob/{commitSha}/{PathHelper.NormalizePath(dockerfilePath)}";
+
+            Mock<IGitService> gitServiceMock = new();
+            gitServiceMock
+                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
+                .Returns(commitSha);
+
+            Mock<IManifestServiceFactory> manifestServiceFactoryMock;
+            if (manifestServiceMock is not null)
+            {
+                manifestServiceFactoryMock = ManifestServiceHelper.CreateManifestServiceFactoryMock(manifestServiceMock);
+            }
+            else if (digestQueryThrows)
+            {
+                // Default mock throws a generic exception on all digest queries
+                manifestServiceFactoryMock = ManifestServiceHelper.CreateManifestServiceFactoryMock();
+            }
+            else
+            {
+                manifestServiceFactoryMock = ManifestServiceHelper.CreateManifestServiceFactoryMock(
+                    externalImageDigestResults: externalImageDigestResults ?? []);
+            }
+
+            ImageCacheService imageCacheService = new(
+                Mock.Of<ILogger<ImageCacheService>>(),
+                gitServiceMock.Object);
+
+            GenerateBuildMatrixCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                imageCacheService,
+                manifestServiceFactoryMock.Object,
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+            command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
+            command.Options.TrimCachedImages = true;
+            command.Options.SourceRepoUrl = sourceRepoUrl;
+            command.Options.SourceRepoPrefix = "mirror/";
+
+            File.WriteAllText(
+                Path.Combine(tempFolderContext.Path, command.Options.Manifest),
+                JsonConvert.SerializeObject(manifest));
+
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime-deps",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfilePath),
+                                        baseImageDigest: $"library/alpine@{baseImageDigestSha}",
+                                        commitUrl: commitUrl,
+                                        simpleTags: ["tag"])
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+            File.WriteAllText(command.Options.ImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            return command;
+        }
+
         private static GenerateBuildMatrixCommand CreateCommand() =>
-            new(Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILoggerService>());
+            new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
     }
 }

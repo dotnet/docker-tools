@@ -24,7 +24,7 @@ public class ManifestListHelperTests
     /// Verifies that a manifest list is returned containing all built platforms.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_BasicMultiPlatform()
+    public void GetManifestListsForImages_BasicMultiPlatform()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -49,7 +49,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         results.Count.ShouldBe(1);
@@ -63,7 +63,7 @@ public class ManifestListHelperTests
     /// Platforms defined in the manifest but not built should be excluded.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_OnlyIncludesBuiltPlatforms()
+    public void GetManifestListsForImages_OnlyIncludesBuiltPlatforms()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -92,7 +92,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         results.Count.ShouldBe(1);
@@ -107,7 +107,7 @@ public class ManifestListHelperTests
     /// but no platforms exist in image-info.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_SkipsImageWithNoBuiltPlatforms()
+    public void GetManifestListsForImages_SkipsImageWithNoBuiltPlatforms()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -135,7 +135,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         // Only the second image's manifest list should be returned
@@ -144,43 +144,11 @@ public class ManifestListHelperTests
     }
 
     /// <summary>
-    /// Verifies that no manifest lists are returned for images where all platforms are unchanged.
-    /// </summary>
-    [Fact]
-    public void GetManifestListsForChangedImages_SkipsUnchangedImages()
-    {
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-
-        string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
-
-        Manifest manifest = CreateManifest(
-            CreateRepo("repo",
-                CreateImage(
-                    ["sharedtag"],
-                    CreatePlatform(dockerfile, ["tag1"]))));
-
-        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
-            CreateRepoData("repo",
-                CreateImageData(
-                    ["sharedtag"],
-                    CreatePlatform(dockerfile, simpleTags: ["tag1"], isUnchanged: true))));
-
-        
-        ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
-        ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
-
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
-            manifestInfo, linkedImageInfo, repoPrefix: null);
-
-        results.ShouldBeEmpty();
-    }
-
-    /// <summary>
     /// Verifies that manifest lists are returned when at least one platform has changed,
     /// including both changed and unchanged platforms.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_IncludesPartiallyChangedImages()
+    public void GetManifestListsForImages_IncludesPartiallyChangedImages()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -206,7 +174,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         results.Count.ShouldBe(1);
@@ -219,7 +187,7 @@ public class ManifestListHelperTests
     /// Verifies that images without shared tags do not produce manifest lists.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_SkipsImagesWithNoSharedTags()
+    public void GetManifestListsForImages_SkipsImagesWithNoSharedTags()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -239,7 +207,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         results.ShouldBeEmpty();
@@ -250,7 +218,7 @@ public class ManifestListHelperTests
     /// from a matching platform in another image within the same repo.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_DuplicatePlatformCrossReference()
+    public void GetManifestListsForImages_DuplicatePlatformCrossReference()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -281,7 +249,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         results.Count.ShouldBe(2);
@@ -295,7 +263,7 @@ public class ManifestListHelperTests
     /// Verifies that manifest lists are returned for syndicated repos with correct tags.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_SyndicatedTags()
+    public void GetManifestListsForImages_SyndicatedTags()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -347,7 +315,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         // Should return manifest for primary repo AND syndicated repo
@@ -370,7 +338,7 @@ public class ManifestListHelperTests
     /// matching syndicated tags (not all platforms).
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_SyndicatedOnlyIncludesMatchingPlatforms()
+    public void GetManifestListsForImages_SyndicatedOnlyIncludesMatchingPlatforms()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -435,7 +403,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         // Primary manifest list should include both platforms
@@ -452,7 +420,7 @@ public class ManifestListHelperTests
     /// Verifies that repo prefix is correctly applied to image names in manifest lists.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_RepoPrefix()
+    public void GetManifestListsForImages_RepoPrefix()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -476,7 +444,7 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: "build/");
 
         results.Count.ShouldBe(1);
@@ -488,7 +456,7 @@ public class ManifestListHelperTests
     /// Verifies that the registry is included in manifest list tag and platform image names.
     /// </summary>
     [Fact]
-    public void GetManifestListsForChangedImages_RegistryInImageNames()
+    public void GetManifestListsForImages_RegistryInImageNames()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -512,12 +480,47 @@ public class ManifestListHelperTests
         ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
         ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
 
-        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForChangedImages(
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
             manifestInfo, linkedImageInfo, repoPrefix: null);
 
         results.Count.ShouldBe(1);
         results[0].Tag.ShouldBe("mcr.microsoft.com/repo:sharedtag");
         results[0].PlatformTags.ShouldBe(["mcr.microsoft.com/repo:tag1"]);
+    }
+
+    /// <summary>
+    /// Verifies that manifest lists are created even when all platforms are cached (unchanged).
+    /// This ensures manifest list tags always exist in staging for digest lookup and signing.
+    /// </summary>
+    [Fact]
+    public void GetManifestListsForImages_IncludesFullyCachedImages()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfile, ["tag1"]))));
+
+        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
+            CreateRepoData("repo",
+                CreateImageData(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfile, simpleTags: ["tag1"], isUnchanged: true))));
+
+        
+        ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
+        ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
+
+        IReadOnlyList<ManifestListInfo> results = ManifestListHelper.GetManifestListsForImages(
+            manifestInfo, linkedImageInfo, repoPrefix: null);
+
+        results.Count.ShouldBe(1);
+        results[0].Tag.ShouldBe("repo:sharedtag");
+        results[0].PlatformTags.ShouldBe(["repo:tag1"]);
     }
 
     private static ManifestInfo LoadManifest(Manifest manifest, TempFolderContext tempFolderContext)

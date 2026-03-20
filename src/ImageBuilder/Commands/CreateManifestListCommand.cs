@@ -65,7 +65,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
             async () =>
             {
                 IReadOnlyList<ManifestListInfo> manifestLists =
-                    ManifestListHelper.GetManifestListsForChangedImages(
+                    ManifestListHelper.GetManifestListsForImages(
                         Manifest, imageArtifactDetails, Options.RepoPrefix);
 
                 foreach (ManifestListInfo manifestListInfo in manifestLists)

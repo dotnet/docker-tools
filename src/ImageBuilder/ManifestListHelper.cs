@@ -26,28 +26,26 @@ public static class ManifestListHelper
 {
     /// <summary>
     /// Returns the manifest lists that should be created for images that have
-    /// shared tags and at least one changed (non-cached) platform in
+    /// shared tags and at least one platform present in
     /// <paramref name="imageArtifactDetails"/>. Only platforms present in
     /// <paramref name="imageArtifactDetails"/> are included in the results.
     /// </summary>
-    public static IReadOnlyList<ManifestListInfo> GetManifestListsForChangedImages(
+    public static IReadOnlyList<ManifestListInfo> GetManifestListsForImages(
         ManifestInfo manifest,
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithChangedPlatforms = manifest.FilteredRepos
+        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms = manifest.FilteredRepos
             .SelectMany(repo =>
                 repo.FilteredImages
                     .Where(image => image.SharedTags.Any())
                     .Where(image => image.AllPlatforms
-                        .Select(platform =>
-                            ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails))
-                        .Where(platformMapping => platformMapping != null)
-                        .Any(platformMapping => !platformMapping?.Platform.IsUnchanged ?? false))
+                        .Any(platform =>
+                            ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails) != null))
                     .Select(image => (repo, image)))
             .ToList();
 
-        return imagesWithChangedPlatforms
+        return imagesWithBuiltPlatforms
             .SelectMany(pair => GetManifestListsForImage(pair.Repo, pair.Image, manifest, imageArtifactDetails, repoPrefix))
             .ToList()
             .AsReadOnly();

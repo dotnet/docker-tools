@@ -82,7 +82,7 @@ build.ps1
             │   └── Mounts Docker socket and repo contents
             │
             └── On Windows: Extracts ImageBuilder locally (due to Docker-in-Docker limitations)
-                └── Runs Microsoft.DotNet.ImageBuilder.exe directly
+                └── Runs imagebuilder.exe directly
 ```
 
 ### Scenario: Running ImageBuilder Directly

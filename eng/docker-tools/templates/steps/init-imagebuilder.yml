@@ -48,7 +48,7 @@ steps:
     - script: >
         docker cp
         setupImageBuilder-$(Build.BuildId)-$(System.JobId):/image-builder
-        $(Build.BinariesDirectory)/.Microsoft.DotNet.ImageBuilder
+        $(Build.BinariesDirectory)/.imagebuilder
       displayName: Copy Image Builder
       condition: and(succeeded(), ${{ parameters.condition }})
     - script: docker rm -f setupImageBuilder-$(Build.BuildId)-$(System.JobId)
@@ -132,7 +132,7 @@ steps:
     inputs:
       targetType: 'inline'
       script: |
-        $runImageBuilderCmd = "$(Build.BinariesDirectory)\.Microsoft.DotNet.ImageBuilder\Microsoft.DotNet.ImageBuilder.exe"
+        $runImageBuilderCmd = "$(Build.BinariesDirectory)\.imagebuilder\imagebuilder.exe"
         Write-Host "##vso[task.setvariable variable=runImageBuilderCmd]$runImageBuilderCmd"
         Write-Host "##vso[task.setvariable variable=runAuthedImageBuilderCmd]$runImageBuilderCmd"
         # On Windows the base commands are the same as the full commands since

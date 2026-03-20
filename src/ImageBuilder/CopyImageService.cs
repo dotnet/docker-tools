@@ -100,14 +100,14 @@ public class CopyImageService : ICopyImageService
 
         // Discover and import all OCI referrers (signatures, SBOMs, etc.) for the source image.
         string sourceImageReference = DockerHelper.GetImageName(srcRegistryName, srcTagName);
-        IReadOnlyList<string> referrers = await _orasService.GetReferrersAsync(sourceImageReference);
+        IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(sourceImageReference);
 
         string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
-        foreach (string referrer in referrers)
+        foreach (ReferrerInfo referrer in referrers)
         {
-            _logger.LogInformation("Importing referrer '{Referrer}' to '{DestAcr}/{DestRepo}'", referrer, destAcrName, destRepo);
+            _logger.LogInformation("Importing referrer '{Referrer}' to '{DestAcr}/{DestRepo}'", referrer.Digest, destAcrName, destRepo);
 
-            string referrerDigestReference = DockerHelper.TrimRegistry(referrer, srcRegistryName);
+            string referrerDigestReference = DockerHelper.TrimRegistry(referrer.Digest, srcRegistryName);
             ContainerRegistryImportSource referrerImportSrc = new(referrerDigestReference)
             {
                 ResourceId = srcResourceId,

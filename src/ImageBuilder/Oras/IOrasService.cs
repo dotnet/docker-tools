@@ -36,13 +36,15 @@ public interface IOrasService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Returns the fully-qualified references of all OCI referrers for the given image.
+    /// Returns the OCI referrers for the given image.
     /// </summary>
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag" or "registry.io/repo@sha256:...").</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>
-    /// A list of digest-based image references (e.g., "registry.io/repo@sha256:abc...")
+    /// A list of <see cref="ReferrerInfo"/> containing the digest reference and artifact type
     /// for every referrer associated with the image.
     /// </returns>
-    Task<IReadOnlyList<string>> GetReferrersAsync(string reference, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
+        string reference,
+        CancellationToken cancellationToken = default);
 }

@@ -29,7 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
-        private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
+        private readonly Lazy<IImageNameResolver> _imageNameResolver;
         private readonly Lazy<string?> _storageAccountToken;
 
         /// <summary>
@@ -67,8 +67,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 manifestServiceFactory.Create(Options.CredentialsOptions));
             _imageDigestCache = new ImageDigestCache(_manifestService);
 
-            _imageNameResolver = new Lazy<ImageNameResolverForBuild>(() =>
-                new ImageNameResolverForBuild(
+            _imageNameResolver = new Lazy<IImageNameResolver>(() =>
+                new ImageNameResolver(
+                    DigestResolutionMode.Staging,
                     Options.BaseImageOverrideOptions,
                     Manifest,
                     Options.RepoPrefix,

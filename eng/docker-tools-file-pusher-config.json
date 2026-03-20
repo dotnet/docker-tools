@@ -24,6 +24,16 @@
       "owner": "microsoft",
       "name": "dotnet-framework-docker",
       "branch": "main"
+    },
+    {
+      "owner": "microsoft",
+      "name": "go-images",
+      "branch": "microsoft/main"
+    },
+    {
+      "owner": "microsoft",
+      "name": "go-infra-images",
+      "branch": "main"
     }
   ]
 }

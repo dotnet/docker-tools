@@ -14,8 +14,8 @@ variables:
 - name: imageInfoVariant
   value: "-imagebuilder"
 - name: testScriptPath
-  value: ./src/run-tests.ps1
+  value: ""
 - name: testResultsDirectory
   value: src/ImageBuilder.Tests/TestResults/
 - name: preBuildTestScriptPath
-  value: ""
+  value: ./src/run-tests.ps1

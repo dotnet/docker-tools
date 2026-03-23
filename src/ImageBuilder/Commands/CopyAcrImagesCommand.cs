@@ -42,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger.LogInformation("COPYING IMAGES");
 
-            if (!File.Exists(Options.ImageInfoPath))
+            if (string.IsNullOrEmpty(Options.ImageInfoPath) || !File.Exists(Options.ImageInfoPath))
             {
                 _logger.LogInformation(PipelineHelper.FormatWarningCommand(
                     "Image info file not found. Skipping image copy."));

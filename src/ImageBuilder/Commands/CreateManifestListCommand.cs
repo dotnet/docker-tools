@@ -23,7 +23,6 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     private readonly ILogger<CreateManifestListCommand> _logger;
     private readonly IDateTimeService _dateTimeService;
     private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
-    private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
 
     public CreateManifestListCommand(
         IManifestJsonService manifestJsonService,
@@ -31,14 +30,12 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
         IDockerService dockerService,
         ILogger<CreateManifestListCommand> logger,
         IDateTimeService dateTimeService,
-        IRegistryCredentialsProvider registryCredentialsProvider,
-        IAzureTokenCredentialProvider tokenCredentialProvider) : base(manifestJsonService)
+        IRegistryCredentialsProvider registryCredentialsProvider) : base(manifestJsonService)
     {
         _dockerService = dockerService ?? throw new ArgumentNullException(nameof(dockerService));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _dateTimeService = dateTimeService ?? throw new ArgumentNullException(nameof(dateTimeService));
         _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
-        _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
 
         ArgumentNullException.ThrowIfNull(manifestServiceFactory);
         _manifestService = new Lazy<IManifestService>(() =>
@@ -142,7 +139,5 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         if (manifestLists.Count == 0)
             _logger.LogInformation("No manifest lists created");
-
-        _logger.LogInformation(string.Empty);
     }
 }

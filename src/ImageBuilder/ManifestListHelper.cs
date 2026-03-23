@@ -128,22 +128,35 @@ public static class ManifestListHelper
             }
             else
             {
-                // Platform has no tags of its own - find a matching platform from another image
-                (ImageInfo Image, PlatformInfo Platform)? matchingPlatform = repo.AllImages
-                    .SelectMany(img =>
-                        img.AllPlatforms
-                            .Select(p => (Image: img, Platform: p))
-                            .Where(imagePlatform => platform != imagePlatform.Platform &&
-                                PlatformInfo.AreMatchingPlatforms(image, platform, imagePlatform.Image, imagePlatform.Platform) &&
-                                imagePlatform.Platform.Tags.Any()))
+                // This platform has no tags of its own (it's a "tagless" platform included
+                // only via shared tags). To reference it in the manifest list, we need a tag.
+                // Search all images in the repo for a different platform that builds the same
+                // Dockerfile/OS/arch and does have tags, then borrow one of its tags.
+                (ImageInfo Image, PlatformInfo Platform)? matchingPlatform =
+                    repo.AllImages
+                    .SelectMany(candidateImage =>
+                        candidateImage.AllPlatforms
+                        .Select(candidatePlatform => (Image: candidateImage, Platform: candidatePlatform))
+                        .Where(candidate =>
+                            // Exclude the current platform itself
+                            platform != candidate.Platform
+                            // Must be the same Dockerfile, OS, and architecture
+                            && PlatformInfo.AreMatchingPlatforms(
+                                image1: candidateImage,
+                                platform1: platform,
+                                image2: candidate.Image,
+                                platform2: candidate.Platform)
+                            // Must actually have tags we can borrow
+                            && candidate.Platform.Tags.Any()
+                        )
+                    )
+                    // Cast to nullable so FirstOrDefault returns null (not a default struct)
+                    // when no match is found, allowing the ?? to throw.
                     .Cast<(ImageInfo Image, PlatformInfo Platform)?>()
-                    .FirstOrDefault();
-
-                if (matchingPlatform is null)
-                {
-                    throw new InvalidOperationException(
-                        $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
-                }
+                    .FirstOrDefault()
+                        ?? throw new InvalidOperationException(
+                            $"Could not find a platform with concrete tags for"
+                            + $" '{platform.DockerfilePathRelativeToManifest}'.");
 
                 imageTag = getTagRepresentative(matchingPlatform.Value.Platform);
             }

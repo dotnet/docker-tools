@@ -129,23 +129,23 @@ public static class ManifestListHelper
             else
             {
                 // Platform has no tags of its own - find a matching platform from another image
-                PlatformInfo platformInfo = repo.AllImages
+                (ImageInfo Image, PlatformInfo Platform)? matchingPlatform = repo.AllImages
                     .SelectMany(img =>
                         img.AllPlatforms
                             .Select(p => (Image: img, Platform: p))
                             .Where(imagePlatform => platform != imagePlatform.Platform &&
                                 PlatformInfo.AreMatchingPlatforms(image, platform, imagePlatform.Image, imagePlatform.Platform) &&
                                 imagePlatform.Platform.Tags.Any()))
-                    .FirstOrDefault()
-                    .Platform;
+                    .Cast<(ImageInfo Image, PlatformInfo Platform)?>()
+                    .FirstOrDefault();
 
-                if (platformInfo is null)
+                if (matchingPlatform is null)
                 {
                     throw new InvalidOperationException(
                         $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
                 }
 
-                imageTag = getTagRepresentative(platformInfo);
+                imageTag = getTagRepresentative(matchingPlatform.Value.Platform);
             }
 
             if (imageTag is not null)

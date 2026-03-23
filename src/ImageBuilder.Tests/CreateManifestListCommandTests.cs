@@ -307,8 +307,7 @@ public class CreateManifestListCommandTests
             dockerServiceMock.Object,
             Mock.Of<ILogger<CreateManifestListCommand>>(),
             dateTimeService,
-            Mock.Of<IRegistryCredentialsProvider>(),
-            Mock.Of<IAzureTokenCredentialProvider>());
+            Mock.Of<IRegistryCredentialsProvider>());
 
     private static void SetupCommand(
         CreateManifestListCommand command,

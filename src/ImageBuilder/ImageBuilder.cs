@@ -80,6 +80,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
             builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();
             builder.Services.AddSingleton<ICommand, CopyBaseImagesCommand>();
+            builder.Services.AddSingleton<ICommand, CreateManifestListCommand>();
             builder.Services.AddSingleton<ICommand, GenerateBuildMatrixCommand>();
             builder.Services.AddSingleton<ICommand, GenerateDockerfilesCommand>();
             builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
@@ -91,7 +92,6 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, MergeImageInfoCommand>();
             builder.Services.AddSingleton<ICommand, PostPublishNotificationCommand>();
             builder.Services.AddSingleton<ICommand, PublishImageInfoCommand>();
-            builder.Services.AddSingleton<ICommand, PublishManifestCommand>();
             builder.Services.AddSingleton<ICommand, PublishMcrDocsCommand>();
             builder.Services.AddSingleton<ICommand, PullImagesCommand>();
             builder.Services.AddSingleton<ICommand, QueueBuildCommand>();

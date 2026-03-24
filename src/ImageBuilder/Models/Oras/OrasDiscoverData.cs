@@ -9,4 +9,6 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Oras;
 public class OrasDiscoverData
 {
     public List<Oci.Manifest>? Manifests { get; set; }
+
+    public List<Oci.Manifest>? Referrers { get; set; }
 }

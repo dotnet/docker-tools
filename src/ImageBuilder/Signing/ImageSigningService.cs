@@ -13,7 +13,6 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Oras;
-using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using static Microsoft.DotNet.ImageBuilder.Signing.CertificateChainCalculator;
 using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
@@ -33,6 +32,11 @@ public class ImageSigningService(
 {
     private const string SigningPayloadsSubdirectory = "signing-payloads";
 
+    /// <summary>
+    /// OCI artifact type for Notary v2 signatures, used to detect already-signed digests.
+    /// </summary>
+    private const string NotarySignatureArtifactType = OciArtifactType.NotarySignatureV2;
+
     private readonly IOrasService _orasService = orasService;
     private readonly IEsrpSigningService _esrpSigningService = esrpSigningService;
     private readonly ILogger<ImageSigningService> _logger = logger;
@@ -45,6 +49,10 @@ public class ImageSigningService(
         int signingKeyCode,
         CancellationToken cancellationToken = default)
     {
+        // Note: GetAllDigests returns platform and manifest list digests only. It does not
+        // include signature digests because ImageArtifactDetails does not store signature
+        // information. If signature digests were ever added to ImageArtifactDetails, we would
+        // need to filter them out here to avoid signing signature artifacts.
         List<string> imageDigests =
             imageArtifactDetails
                 .GetAllDigests()
@@ -53,12 +61,39 @@ public class ImageSigningService(
 
         if (imageDigests.Count == 0) return [];
 
-        _logger.LogInformation("Signing {Count} digests.", imageDigests.Count);
+        _logger.LogInformation("Checking {Count} digest(s) for existing signatures.", imageDigests.Count);
 
-        // Step 1: Generate signing requests by fetching OCI descriptors in parallel
-        _logger.LogInformation("Generating {Count} signing requests.", imageDigests.Count);
-        ConcurrentBag<ImageSigningRequest> requests = [];
+        // Filter out digests that already have Notary v2 signatures
+        ConcurrentBag<string> unsignedDigests = [];
         await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
+        {
+            IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(imageDigest, ct);
+            bool alreadySigned = referrers.Any(r => r.ArtifactType == NotarySignatureArtifactType);
+
+            if (alreadySigned)
+            {
+                _logger.LogInformation("Skipping already-signed digest {Digest}.", imageDigest);
+            }
+            else
+            {
+                unsignedDigests.Add(imageDigest);
+            }
+        });
+
+        if (unsignedDigests.Count == 0)
+        {
+            _logger.LogInformation("All {Count} digest(s) already signed. Nothing to sign.", imageDigests.Count);
+            return [];
+        }
+
+        _logger.LogInformation(
+            "Need to sign {UnsignedCount} of {TotalCount} digests ({SkippedCount} already signed).",
+            unsignedDigests.Count, imageDigests.Count, imageDigests.Count - unsignedDigests.Count);
+
+        // Step 1: Generate signing requests by fetching OCI descriptors
+        _logger.LogInformation("Generating {Count} signing requests.", unsignedDigests.Count);
+        ConcurrentBag<ImageSigningRequest> requests = [];
+        await Parallel.ForEachAsync(unsignedDigests, cancellationToken, async (imageDigest, ct) =>
         {
             OrasDescriptor descriptor = await _orasService.GetDescriptorAsync(imageDigest, ct);
             ImageSigningRequest request = ConstructSigningRequest(imageDigest, descriptor);

@@ -438,5 +438,294 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             copyImageServiceMock.VerifyNoOtherCalls();
         }
+
+        /// <summary>
+        /// Verifies that manifest list shared tags are copied alongside platform tags.
+        /// </summary>
+        [Fact]
+        public async Task CopyAcrImagesCommand_CopiesManifestListTags()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
+            CopyAcrImagesCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                copyImageServiceMock.Object,
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = SourceRegistry;
+            command.Options.ImageInfoPath = "image-info.json";
+
+            string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRelativePath, new string[] { "tag1" })
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            { "shared1", new Tag() },
+                            { "shared2", new Tag() }
+                        }))
+            );
+            manifest.Registry = DestinationRegistry;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest),
+                JsonConvert.SerializeObject(manifest));
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfileRelativePath),
+                                        simpleTags: new List<string> { "tag1" })
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = { "shared1", "shared2" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            // Platform tag should be copied
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime:tag1" },
+                    DestinationRegistry,
+                    "test/runtime:tag1",
+                    SourceRegistry,
+                    null,
+                    false));
+
+            // Manifest list shared tags should also be copied
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime:shared1" },
+                    DestinationRegistry,
+                    "test/runtime:shared1",
+                    SourceRegistry,
+                    null,
+                    false));
+
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime:shared2" },
+                    DestinationRegistry,
+                    "test/runtime:shared2",
+                    SourceRegistry,
+                    null,
+                    false));
+
+            copyImageServiceMock.VerifyNoOtherCalls();
+        }
+
+        /// <summary>
+        /// Verifies that syndicated manifest list shared tags are copied to the syndicated repo.
+        /// </summary>
+        [Fact]
+        public async Task CopyAcrImagesCommand_CopiesSyndicatedManifestListTags()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
+            CopyAcrImagesCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                copyImageServiceMock.Object,
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = SourceRegistry;
+            command.Options.ImageInfoPath = "image-info.json";
+
+            string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        new Platform[]
+                        {
+                            CreatePlatform(dockerfileRelativePath, new string[] { "tag1" })
+                        },
+                        new Dictionary<string, Tag>
+                        {
+                            {
+                                "shared1",
+                                new Tag
+                                {
+                                    Syndication = new TagSyndication
+                                    {
+                                        Repo = "runtime2",
+                                        DestinationTags = new string[] { "syn-shared1" }
+                                    }
+                                }
+                            }
+                        }))
+            );
+            manifest.Registry = DestinationRegistry;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest),
+                JsonConvert.SerializeObject(manifest));
+
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfileRelativePath),
+                                        simpleTags: new List<string> { "tag1" })
+                                },
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = { "shared1" }
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            // Platform tag
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime:tag1" },
+                    DestinationRegistry,
+                    "test/runtime:tag1",
+                    SourceRegistry,
+                    null,
+                    false));
+
+            // Primary manifest list shared tag
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime:shared1" },
+                    DestinationRegistry,
+                    "test/runtime:shared1",
+                    SourceRegistry,
+                    null,
+                    false));
+
+            // Syndicated manifest list shared tag - source should be from syndicated repo
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime2:syn-shared1" },
+                    DestinationRegistry,
+                    "test/runtime2:syn-shared1",
+                    SourceRegistry,
+                    null,
+                    false));
+
+            copyImageServiceMock.VerifyNoOtherCalls();
+        }
+
+        /// <summary>
+        /// Verifies that images without ManifestData do not produce manifest list tag copies.
+        /// </summary>
+        [Fact]
+        public async Task CopyAcrImagesCommand_SkipsManifestListsWithNoManifestData()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<ICopyImageService> copyImageServiceMock = new();
+
+            CopyAcrImagesCommand command = new(
+                TestHelper.CreateManifestJsonService(),
+                copyImageServiceMock.Object,
+                Mock.Of<ILogger<CopyAcrImagesCommand>>());
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.SourceRepoPrefix = command.Options.RepoPrefix = "test/";
+            command.Options.SourceRegistry = SourceRegistry;
+            command.Options.ImageInfoPath = "image-info.json";
+
+            string dockerfileRelativePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        CreatePlatform(dockerfileRelativePath, new string[] { "tag1" })))
+            );
+            manifest.Registry = DestinationRegistry;
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest),
+                JsonConvert.SerializeObject(manifest));
+
+            // No ManifestData on the image - only platform tags
+            ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "runtime",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    CreatePlatform(
+                                        PathHelper.NormalizePath(dockerfileRelativePath),
+                                        simpleTags: new List<string> { "tag1" })
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            File.WriteAllText(command.Options.ImageInfoPath, JsonConvert.SerializeObject(imageArtifactDetails));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            // Only platform tag should be copied - no manifest list tags
+            copyImageServiceMock.Verify(o =>
+                o.ImportImageAsync(
+                    new string[] { $"test/runtime:tag1" },
+                    DestinationRegistry,
+                    It.IsAny<string>(),
+                    SourceRegistry,
+                    null,
+                    false));
+
+            copyImageServiceMock.VerifyNoOtherCalls();
+        }
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
@@ -88,9 +89,10 @@ public class LifecycleMetadataService : ILifecycleMetadataService
         try
         {
             OrasDiscoverData? orasDiscoverData = JsonConvert.DeserializeObject<OrasDiscoverData>(json);
-            if (orasDiscoverData?.Manifests != null)
+            List<Manifest>? manifests = orasDiscoverData?.Manifests ?? orasDiscoverData?.Referrers;
+            if (manifests != null)
             {
-                lifecycleArtifactManifest = orasDiscoverData.Manifests.FirstOrDefault(m => m.ArtifactType == OciArtifactType.Lifecycle);
+                lifecycleArtifactManifest = manifests.FirstOrDefault(m => m.ArtifactType == OciArtifactType.Lifecycle);
                 return lifecycleArtifactManifest is not null;
             }
         }

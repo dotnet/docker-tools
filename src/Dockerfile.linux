@@ -50,4 +50,4 @@ COPY ["notation-trust/policies/", "/notation-trust/policies/"]
 WORKDIR /image-builder
 COPY --from=build-env /image-builder/out ./
 
-ENTRYPOINT ["/image-builder/imagebuilder"]
+ENTRYPOINT ["/image-builder/Microsoft.DotNet.ImageBuilder"]

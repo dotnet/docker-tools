@@ -20,8 +20,11 @@ variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
 # Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
 - template: /eng/docker-tools/templates/variables/dotnet/secrets-unofficial.yml@self
-# Unofficial secrets group has no GitHub token for publishing image info or notifications
+# Unofficial secrets group has no GitHub token for publishing image info, readmes, or notifications
 - name: "publishImageInfo"
+  value: false
+  readonly: true
+- name: "publishReadme"
   value: false
   readonly: true
 - name: "publishNotificationsEnabled"

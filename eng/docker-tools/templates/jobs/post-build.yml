@@ -86,7 +86,7 @@ jobs:
       parameters:
         displayName: Create Manifest Lists
         internalProjectName: ${{ parameters.internalProjectName }}
-        condition: and(succeeded(), ne(variables['MergeImageInfoFiles.noImageInfos'], 'true'))
+        condition: and(succeeded(), ne(variables['MergeImageInfoFiles.noImageInfos'], 'true'), ne(variables['Build.Reason'], 'PullRequest'))
         args: >-
           createManifestList
           '$(imageInfosContainerDir)$(imageInfosOutputSubDir)/image-info.json'

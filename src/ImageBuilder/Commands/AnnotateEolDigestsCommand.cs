@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
@@ -51,9 +52,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
                 Options.IsDryRun,
-                () =>
+                async () =>
                 {
-                    Parallel.ForEach(eolAnnotations.EolDigests, digestData => AnnotateDigest(digestData, globalEolDate));
+                    await Parallel.ForEachAsync(eolAnnotations.EolDigests, CancellationToken.None,
+                        async (digestData, ct) => await AnnotateDigestAsync(digestData, globalEolDate, ct));
                 },
                 Options.CredentialsOptions,
                 registryName: Options.AcrName);
@@ -103,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation(string.Empty);
         }
 
-        private void AnnotateDigest(EolDigestData digestData, DateOnly? globalEolDate)
+        private async Task AnnotateDigestAsync(EolDigestData digestData, DateOnly? globalEolDate, CancellationToken cancellationToken)
         {
             if (Options.IsDryRun)
             {
@@ -119,10 +121,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digestData.Digest, _logger, Options.IsDryRun, out Manifest? existingAnnotationManifest))
+            Manifest? existingAnnotationManifest = await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(digestData.Digest, cancellationToken);
+            if (existingAnnotationManifest is null)
             {
                 _logger.LogInformation($"Annotating EOL for digest '{digestData.Digest}', date '{eolDate}'");
-                if (_lifecycleMetadataService.AnnotateEolDigest(digestData.Digest, eolDate.Value, _logger, Options.IsDryRun, out Manifest? createdAnnotationManifest))
+                Manifest? createdAnnotationManifest = await _lifecycleMetadataService.AnnotateEolDigestAsync(digestData.Digest, eolDate.Value, cancellationToken);
+                if (createdAnnotationManifest is not null)
                 {
                     _createdAnnotationDigests.Add(createdAnnotationManifest.Reference);
                 }
@@ -135,7 +139,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                if (existingAnnotationManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation] == eolDate?.ToString(LifecycleMetadataService.EolDateFormat))
+                if (existingAnnotationManifest.Annotations.TryGetValue(LifecycleMetadataService.EndOfLifeAnnotation, out string? existingEolValue) &&
+                    existingEolValue == eolDate?.ToString(LifecycleMetadataService.EolDateFormat))
                 {
                     _logger.LogInformation($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
                     _skippedAnnotationImageDigests.Add(digestData);

@@ -11,7 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.Extensions.Logging;
+using System.Threading;
 using Moq;
 using Newtonsoft.Json;
 using Xunit.Abstractions;
@@ -50,11 +50,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAnnotationIsSuccessful: true);
             await command.ExecuteAsync();
 
-            Manifest manifest;
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest("digest1", _globalDate, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest));
+                o => o.AnnotateEolDigestAsync("digest1", _globalDate, It.IsAny<CancellationToken>()));
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest("digest2", _specificDigestDate, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest));
+                o => o.AnnotateEolDigestAsync("digest2", _specificDigestDate, It.IsAny<CancellationToken>()));
 
             string[] expectedAnnotationDigests =
                 [
@@ -105,9 +104,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 $"(failed: 0, skipped: 2)",
                 ex.Message);
 
-            Manifest manifest;
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest),
+                o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
                 Times.Never());
         }
 
@@ -127,9 +125,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            Manifest manifest;
             lifecycleMetadataServiceMock.Verify(
-                o => o.AnnotateEolDigest(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest),
+                o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
                 Times.Never());
         }
 
@@ -178,8 +175,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out digest1Annotation))
-                .Returns(digestAnnotationIsSuccessful);
+                .Setup(o => o.AnnotateEolDigestAsync(It.Is<string>(digest => digest.Contains("digest1")), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(digestAnnotationIsSuccessful ? digest1Annotation : null);
 
             Manifest digest2Annotation = new()
             {
@@ -187,8 +184,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.AnnotateEolDigest(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out digest2Annotation))
-                .Returns(digestAnnotationIsSuccessful);
+                .Setup(o => o.AnnotateEolDigestAsync(It.Is<string>(digest => digest.Contains("digest2")), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(digestAnnotationIsSuccessful ? digest2Annotation : null);
 
             return lifecycleMetadataServiceMock;
         }
@@ -214,8 +211,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(digest, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest))
-                .Returns(digestAlreadyAnnotated);
+                .Setup(o => o.IsDigestAnnotatedForEolAsync(digest, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(manifest);
         }
     }
 }

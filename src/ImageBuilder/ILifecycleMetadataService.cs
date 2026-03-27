@@ -3,14 +3,28 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics.CodeAnalysis;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface ILifecycleMetadataService
 {
-    bool IsDigestAnnotatedForEol(string digest, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
+    /// <summary>
+    /// Checks whether the given digest has an existing lifecycle (EOL) annotation.
+    /// </summary>
+    /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The lifecycle artifact manifest if annotated, or null if not.</returns>
+    Task<Manifest?> IsDigestAnnotatedForEolAsync(string digest, CancellationToken cancellationToken = default);
 
-    bool AnnotateEolDigest(string digest, DateOnly date, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest);
+    /// <summary>
+    /// Annotates the given digest with an end-of-life date.
+    /// </summary>
+    /// <param name="digest">Fully-qualified digest reference (e.g., "registry.io/repo@sha256:...").</param>
+    /// <param name="date">The end-of-life date to set.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The created lifecycle artifact manifest, or null on failure.</returns>
+    Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken = default);
 }

@@ -16,7 +16,7 @@ using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions, PublishMcrDocsOptionsBuilder>
+    public class PublishMcrDocsCommand : ManifestCommand<PublishMcrDocsOptions>
     {
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService _gitService;

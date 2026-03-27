@@ -10,7 +10,7 @@ using Newtonsoft.Json.Schema.Generation;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ShowManifestSchemaCommand : Command<Options, CliOptionsBuilder>
+    public class ShowManifestSchemaCommand : Command<Options>
     {
         private readonly ILogger<ShowManifestSchemaCommand> _logger;
 

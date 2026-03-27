@@ -19,7 +19,7 @@ using YamlDotNet.Serialization.NamingConventions;
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class GenerateReadmesCommand(IManifestJsonService manifestJsonService, IEnvironmentService environmentService, ILogger<GenerateReadmesCommand> logger)
-        : GenerateArtifactsCommand<GenerateReadmesOptions, GenerateReadmesOptionsBuilder>(manifestJsonService, environmentService, logger)
+        : GenerateArtifactsCommand<GenerateReadmesOptions>(manifestJsonService, environmentService, logger)
     {
         private readonly ILogger _logger = logger;
         private const string ArtifactName = "Readme";

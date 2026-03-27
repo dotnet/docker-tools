@@ -8,9 +8,8 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class ManifestCommand<TOptions, TOptionsBuilder> : Command<TOptions, TOptionsBuilder>, IManifestCommand
+    public abstract class ManifestCommand<TOptions> : Command<TOptions>, IManifestCommand
         where TOptions : ManifestOptions, new()
-        where TOptionsBuilder : ManifestOptionsBuilder, new()
     {
         private readonly IManifestJsonService _manifestJsonService;
 

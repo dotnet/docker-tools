@@ -15,7 +15,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions, AnnotateEolDigestsOptionsBuilder>
+    public class AnnotateEolDigestsCommand : Command<AnnotateEolDigestsOptions>
     {
         private readonly ILogger<AnnotateEolDigestsCommand> _logger;
         private readonly ILifecycleMetadataService _lifecycleMetadataService;

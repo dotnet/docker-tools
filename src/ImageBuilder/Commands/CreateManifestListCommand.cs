@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// Creates Docker manifest lists and records their digests in the image info file.
 /// Designed to run in the Post_Build stage after image info fragments have been merged.
 /// </summary>
-public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptions, CreateManifestListOptionsBuilder>
+public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptions>
 {
     private readonly Lazy<IManifestService> _manifestService;
     private readonly IDockerService _dockerService;

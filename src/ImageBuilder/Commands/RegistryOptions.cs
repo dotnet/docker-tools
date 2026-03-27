@@ -4,8 +4,8 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using System.Text;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -53,7 +53,7 @@ public class RegistryOptions
 
 public class RegistryOptionsBuilder(bool isOverride)
 {
-    private bool _isOverride = isOverride; 
+    private bool _isOverride = isOverride;
 
     // Choose one of either CliOptions or CliArguments - not both. Use CliArguments in the case that
     // the registry options are required. Otherwise, use CliOptions.
@@ -68,27 +68,54 @@ public class RegistryOptionsBuilder(bool isOverride)
         ? "Registry to use instead of the one specified in the manifest or image info file"
         : "Name of the registry";
 
-    public IEnumerable<Option> GetCliOptions() =>
-        [
-            CreateOption<string?>(
-                alias: RegistryOptionName,
-                propertyName: nameof(RegistryOptions.Registry),
-                description: RegistryDescription),
+    private Option<string?>? _registryOption;
+    private Option<string?>? _repoPrefixOption;
+    private Argument<string>? _registryArgument;
+    private Argument<string>? _repoPrefixArgument;
 
-            CreateOption<string?>(
-                alias: RepoPrefixOptionName,
-                propertyName: nameof(RegistryOptions.RepoPrefix),
-                description: RepoPrefixDescription),
-        ];
+    public IEnumerable<Option> GetCliOptions()
+    {
+        _registryOption = new Option<string?>(CliHelper.FormatAlias(RegistryOptionName))
+        {
+            Description = RegistryDescription
+        };
 
-    public IEnumerable<Argument> GetCliArguments() =>
-        [
-            new Argument<string>(
-                name: nameof(RegistryOptions.Registry),
-                description: RegistryDescription),
+        _repoPrefixOption = new Option<string?>(CliHelper.FormatAlias(RepoPrefixOptionName))
+        {
+            Description = RepoPrefixDescription
+        };
 
-            new Argument<string>(
-                name: nameof(RegistryOptions.RepoPrefix),
-                description: RepoPrefixDescription),
-        ];
+        return [_registryOption, _repoPrefixOption];
+    }
+
+    public IEnumerable<Argument> GetCliArguments()
+    {
+        _registryArgument = new Argument<string>(nameof(RegistryOptions.Registry))
+        {
+            Description = RegistryDescription
+        };
+
+        _repoPrefixArgument = new Argument<string>(nameof(RegistryOptions.RepoPrefix))
+        {
+            Description = RepoPrefixDescription
+        };
+
+        return [_registryArgument, _repoPrefixArgument];
+    }
+
+    /// <summary>
+    /// Binds parsed command line values to the specified <see cref="RegistryOptions"/> instance.
+    /// </summary>
+    public void Bind(ParseResult result, RegistryOptions target)
+    {
+        if (_registryOption is not null)
+            target.Registry = result.GetValue(_registryOption) ?? string.Empty;
+        else if (_registryArgument is not null)
+            target.Registry = result.GetValue(_registryArgument) ?? string.Empty;
+
+        if (_repoPrefixOption is not null)
+            target.RepoPrefix = result.GetValue(_repoPrefixOption) ?? string.Empty;
+        else if (_repoPrefixArgument is not null)
+            target.RepoPrefix = result.GetValue(_repoPrefixArgument) ?? string.Empty;
+    }
 }

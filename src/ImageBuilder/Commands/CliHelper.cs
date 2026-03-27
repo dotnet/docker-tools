@@ -11,63 +11,34 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public static class CliHelper
     {
-        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, T defaultValue = default!) =>
-            CreateOption(alias, propertyName, description, () => defaultValue);
-
-        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, Func<T> defaultValue) =>
-            new Option<T>(FormatAlias(alias), defaultValue!, description)
-            {
-                Name = propertyName
-            };
-
-        public static Option<T> CreateOption<T>(
-            string alias,
-            string propertyName,
-            string description,
-            ParseArgument<T> parseArg,
-            bool isRequired = false) =>
-                new Option<T>(FormatAlias(alias), parseArg, description: description)
-                {
-                    IsRequired = isRequired,
-                    Name = propertyName
-                };
-
-        public static Option<T> CreateOption<T>(string alias, string propertyName, string description, Func<string, T> convert,
-            T defaultValue = default!) =>
-            new Option<T>(FormatAlias(alias), description: description,
-                parseArgument: resultArg => convert(GetTokenValue(resultArg)))
-            {
-                Argument = new Argument<T>(() => defaultValue!),
-                Name = propertyName
-            };
-
-        public static Option<T[]> CreateMultiOption<T>(string alias, string propertyName, string description) =>
-            new Option<T[]>(FormatAlias(alias), () => Array.Empty<T>(), description)
-            {
-                Name = propertyName,
-                AllowMultipleArgumentsPerToken = false
-            };
-
-        public static Option<Dictionary<string, string>> CreateDictionaryOption(string alias, string propertyName, string description) =>
-            CreateDictionaryOption(alias, propertyName, description, val => val);
-
-        public static Option<Dictionary<string, TValue>> CreateDictionaryOption<TValue>(string alias, string propertyName, string description,
-            Func<string, TValue> getValue) =>
-            new Option<Dictionary<string, TValue>>(FormatAlias(alias), description: description,
-                parseArgument: argResult =>
-                {
-                    return argResult.Tokens
-                        .ToList()
-                        .Select(token => token.Value.ParseKeyValuePair('='))
-                        .ToDictionary(kvp => kvp.Key, kvp => getValue(kvp.Value));
-                })
-            {
-                Name = propertyName,
-                AllowMultipleArgumentsPerToken = false
-            };
-
         public static string GetTokenValue(this SymbolResult symbolResult) => symbolResult.Tokens.First().Value;
 
         public static string FormatAlias(string alias) => $"--{alias}";
+
+        /// <summary>
+        /// Creates a dictionary option that parses key=value pairs from the command line.
+        /// </summary>
+        public static Option<Dictionary<string, TValue>> CreateDictionaryOption<TValue>(
+            string alias,
+            string description,
+            Func<string, TValue> getValue) =>
+            new Option<Dictionary<string, TValue>>(FormatAlias(alias))
+            {
+                Description = description,
+                AllowMultipleArgumentsPerToken = false,
+                CustomParser = argResult =>
+                    argResult.Tokens
+                        .ToList()
+                        .Select(token => token.Value.ParseKeyValuePair('='))
+                        .ToDictionary(kvp => kvp.Key, kvp => getValue(kvp.Value))
+            };
+
+        /// <summary>
+        /// Creates a dictionary option that parses key=value pairs as strings.
+        /// </summary>
+        public static Option<Dictionary<string, string>> CreateDictionaryOption(
+            string alias,
+            string description) =>
+            CreateDictionaryOption(alias, description, val => val);
     }
 }

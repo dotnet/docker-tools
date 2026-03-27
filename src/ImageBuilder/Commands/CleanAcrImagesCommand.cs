@@ -19,7 +19,7 @@ using Polly;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions, CleanAcrImagesOptionsBuilder>
+    public class CleanAcrImagesCommand : Command<CleanAcrImagesOptions>
     {
         private readonly IAcrClientFactory _acrClientFactory;
         private readonly IAcrContentClientFactory _acrContentClientFactory;

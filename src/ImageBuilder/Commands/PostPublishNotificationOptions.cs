@@ -1,11 +1,10 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -18,12 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public int BuildId { get; set; }
         public GitOptions GitOptions { get; set; } = new();
         public AzdoOptions AzdoOptions { get; set; } = new();
-    }
 
-    public class PostPublishNotificationOptionsBuilder : ManifestOptionsBuilder
-    {
-        private readonly AzdoOptionsBuilder _azdoOptionsBuilder = new();
-        private readonly GitOptionsBuilder _gitOptionsBuilder =
+        private static readonly GitOptionsBuilder GitBuilder =
             GitOptionsBuilder.Build()
                 .WithGitHubAuth(
                     isRequired: true,
@@ -31,44 +26,68 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .WithOwner(isRequired: true, description: "Owner of the GitHub repo to post notifications to")
                 .WithRepo(isRequired: true, description: "Name of the GitHub repo to post notifications to");
 
+        private static readonly Option<string[]> TaskNamesOption = new(CliHelper.FormatAlias("task"))
+        {
+            Description = "Name of a build task to report the result of",
+            DefaultValueFactory = _ => Array.Empty<string>(),
+            AllowMultipleArgumentsPerToken = false
+        };
+
+        private static readonly Argument<string> SourceRepoArgument = new(nameof(SourceRepo))
+        {
+            Description = "Name of the repo that is the source of the publish"
+        };
+
+        private static readonly Argument<string> SourceBranchArgument = new(nameof(SourceBranch))
+        {
+            Description = "Name of the repo branch that is the source of the publish"
+        };
+
+        private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
+        {
+            Description = "Path to image info file"
+        };
+
+        private static readonly Argument<int> BuildIdArgument = new(nameof(BuildId))
+        {
+            Description = "ID of the build that executed the publish"
+        };
+
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(new Option[]
-                {
-                    CreateMultiOption<string>("task", nameof(PostPublishNotificationOptions.TaskNames),
-                        "Name of a build task to report the result of")
-                })
-                .Concat(_azdoOptionsBuilder.GetCliOptions())
-                .Concat(_gitOptionsBuilder.GetCliOptions());
+        [
+            ..base.GetCliOptions(),
+            TaskNamesOption,
+            ..AzdoOptions.GetCliOptions(),
+            ..GitBuilder.GetCliOptions(),
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(new Argument[]
-                {
-                    new Argument(nameof(PostPublishNotificationOptions.SourceRepo))
-                    {
-                        Description = "Name of the repo that is the source of the publish"
-                    },
-                    new Argument(nameof(PostPublishNotificationOptions.SourceBranch))
-                    {
-                        Description = "Name of the repo branch that is the source of the publish"
-                    },
-                    new Argument(nameof(PostPublishNotificationOptions.ImageInfoPath))
-                    {
-                        Description = "Path to image info file"
-                    },
-                    new Argument(nameof(PostPublishNotificationOptions.BuildId))
-                    {
-                        Description = "ID of the build that executed the publish"
-                    }
-                })
-                .Concat(_azdoOptionsBuilder.GetCliArguments())
-                .Concat(_gitOptionsBuilder.GetCliArguments());
+        [
+            ..base.GetCliArguments(),
+            SourceRepoArgument,
+            SourceBranchArgument,
+            ImageInfoPathArgument,
+            BuildIdArgument,
+            ..AzdoOptions.GetCliArguments(),
+            ..GitBuilder.GetCliArguments(),
+        ];
 
-        public override IEnumerable<ValidateSymbol<CommandResult>> GetValidators() =>
-            [
-                ..base.GetValidators(),
-                .._gitOptionsBuilder.GetValidators()
-            ];
+        public override IEnumerable<Action<CommandResult>> GetValidators() =>
+        [
+            ..base.GetValidators(),
+            ..GitBuilder.GetValidators(),
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            TaskNames = result.GetValue(TaskNamesOption) ?? [];
+            SourceRepo = result.GetValue(SourceRepoArgument) ?? string.Empty;
+            SourceBranch = result.GetValue(SourceBranchArgument) ?? string.Empty;
+            ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+            BuildId = result.GetValue(BuildIdArgument);
+            AzdoOptions.Bind(result);
+            GitBuilder.Bind(result, GitOptions);
+        }
     }
 }

@@ -2,34 +2,42 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class DockerfileFilterOptions
 {
-    public IEnumerable<string> Paths { get; set; } = [];
-    public IEnumerable<string> ProductVersions { get; set; } = [];
-}
-
-public class DockerfileFilterOptionsBuilder
-{
     public const string PathOptionName = "path";
 
+    public IEnumerable<string> Paths { get; set; } = [];
+    public IEnumerable<string> ProductVersions { get; set; } = [];
+
+    private static readonly Option<string[]> PathsOption = new(CliHelper.FormatAlias(PathOptionName))
+    {
+        Description = "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
+        DefaultValueFactory = _ => Array.Empty<string>(),
+        AllowMultipleArgumentsPerToken = false
+    };
+
+    private static readonly Option<string[]> ProductVersionsOption = new(CliHelper.FormatAlias("version"))
+    {
+        Description = "Product versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
+        DefaultValueFactory = _ => Array.Empty<string>(),
+        AllowMultipleArgumentsPerToken = false
+    };
+
     public IEnumerable<Option> GetCliOptions() =>
-        [
-            CreateMultiOption<string>(
-                alias: PathOptionName,
-                propertyName: nameof(DockerfileFilterOptions.Paths),
-                description:
-                    "Directory paths containing the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)"),
-            CreateMultiOption<string>(
-                alias: "version",
-                propertyName: nameof(DockerfileFilterOptions.ProductVersions),
-                description: "Product versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)")
-        ];
+        [PathsOption, ProductVersionsOption];
 
     public IEnumerable<Argument> GetCliArguments() => [];
+
+    public void Bind(ParseResult result)
+    {
+        Paths = result.GetValue(PathsOption) ?? [];
+        ProductVersions = result.GetValue(ProductVersionsOption) ?? [];
+    }
 }

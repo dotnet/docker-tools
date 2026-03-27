@@ -14,7 +14,7 @@ using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GetStaleImagesCommand : Command<GetStaleImagesOptions, GetStaleImagesOptionsBuilder>
+    public class GetStaleImagesCommand : Command<GetStaleImagesOptions>
     {
         private readonly Dictionary<string, string> _imageDigests = new();
         private readonly SemaphoreSlim _imageDigestsLock = new(1);

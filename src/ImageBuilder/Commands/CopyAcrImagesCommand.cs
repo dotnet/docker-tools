@@ -13,7 +13,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions, CopyAcrImagesOptionsBuilder>
+    public class CopyAcrImagesCommand : CopyImagesCommand<CopyAcrImagesOptions>
     {
         private readonly ILogger _logger;
         private readonly Lazy<ImageArtifactDetails> _imageArtifactDetails;

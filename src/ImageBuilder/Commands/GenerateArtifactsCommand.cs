@@ -17,9 +17,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     public delegate (IReadOnlyDictionary<Value, Value> Symbols, string Indent) GetTemplateState<TContext>(
         TContext context, string templatePath, string indent);
 
-    public abstract class GenerateArtifactsCommand<TOptions, TOptionsBuilder> : ManifestCommand<TOptions, TOptionsBuilder>
+    public abstract class GenerateArtifactsCommand<TOptions> : ManifestCommand<TOptions>
         where TOptions : GenerateArtifactsOptions, new()
-        where TOptionsBuilder : GenerateArtifactsOptionsBuilder, new()
     {
         private readonly DocumentConfiguration _config = new DocumentConfiguration
         {

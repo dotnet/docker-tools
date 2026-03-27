@@ -4,25 +4,28 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using System.CommandLine.Parsing;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class TrimUnchangedPlatformsOptions : Options
 {
-    public class TrimUnchangedPlatformsOptions : Options
-    {
-        public string ImageInfoPath { get; set; } = string.Empty;
-    }
+    public string ImageInfoPath { get; set; } = string.Empty;
 
-    public class TrimUnchangedPlatformsOptionsBuilder : CliOptionsBuilder
+    private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
     {
-        public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(
-                    new Argument[]
-                    {
-                        new Argument<string>(nameof(TrimUnchangedPlatformsOptions.ImageInfoPath),
-                            "Path to image info file")
-                    }
-                );
+        Description = "Path to image info file"
+    };
+
+    public override IEnumerable<Argument> GetCliArguments() =>
+        [
+            ..base.GetCliArguments(),
+            ImageInfoPathArgument,
+        ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
     }
 }

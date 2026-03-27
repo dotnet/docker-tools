@@ -9,7 +9,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
 public class GenerateEolAnnotationDataForAllImagesCommand :
-    GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions, GenerateEolAnnotationDataOptionsBuilder>
+    GenerateEolAnnotationDataCommandBase<GenerateEolAnnotationDataOptions>
 {
     public GenerateEolAnnotationDataForAllImagesCommand(
         ILogger<GenerateEolAnnotationDataForAllImagesCommand> logger,

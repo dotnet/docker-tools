@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Azure;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
@@ -1022,6 +1023,104 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 EolDigests =
                 [
                     new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64")) { Tag = "2.0" },
+                ]
+            };
+
+            string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+            string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
+
+            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+        }
+
+        [Fact]
+        public async Task GenerateEolAnnotationData_ManifestDeletedDuringEnumeration_Skipped()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repo1Image1DockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+
+            ImageArtifactDetails imageArtifactDetails = new()
+            {
+                Repos =
+                {
+                    new RepoData
+                    {
+                        Repo = "repo1",
+                        Images =
+                        {
+                            new ImageData
+                            {
+                                Platforms =
+                                {
+                                    Helpers.ImageInfoHelper.CreatePlatform(repo1Image1DockerfilePath,
+                                        simpleTags: ["tag"],
+                                        digest: DockerHelper.GetImageName(McrName, "repo1", digest: "platformdigest101"))
+                                },
+                                ProductVersion = "1.0",
+                                Manifest = new ManifestData
+                                {
+                                    SharedTags = ["1.0"],
+                                    Digest = DockerHelper.GetImageName(McrName, "repo1", digest: "imagedigest101")
+                                }
+                            }
+                        }
+                    }
+                }
+            };
+
+            string oldImageInfoPath = Path.Combine(tempFolderContext.Path, "old-image-info.json");
+            File.WriteAllText(oldImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            // Remove all images so everything in the registry is considered unsupported
+            imageArtifactDetails.Repos.Clear();
+
+            string newImageInfoPath = Path.Combine(tempFolderContext.Path, "new-image-info.json");
+            File.WriteAllText(newImageInfoPath, JsonHelper.SerializeObject(imageArtifactDetails));
+
+            string newEolDigestsListPath = Path.Combine(tempFolderContext.Path, "eolDigests.json");
+
+            // Registry lists three manifests, but one will return 404 when fetched (simulating concurrent deletion)
+            Mock<IAcrClient> registryClientMock = CreateAcrClientMock(
+                [
+                    CreateContainerRepository($"{DefaultRepoPrefix}repo1",
+                        manifestProperties: [
+                            CreateArtifactManifestProperties(digest: "platformdigest101", tags: ["tag"]),
+                            CreateArtifactManifestProperties(digest: "deleteddigest", tags: ["old"]),
+                            CreateArtifactManifestProperties(digest: "imagedigest101", tags: ["1.0"]),
+                        ])
+                ]);
+            IAcrClientFactory registryClientFactory = CreateAcrClientFactory(
+                AcrName, registryClientMock.Object);
+
+            // Set up content client mock where "deleteddigest" throws a 404
+            Mock<IAcrContentClient> contentClientMock = CreateAcrContentClientMock($"{DefaultRepoPrefix}repo1",
+                imageNameToQueryResultsMapping: new Dictionary<string, ManifestQueryResult>
+                {
+                    { "platformdigest101", new ManifestQueryResult(string.Empty, []) },
+                    { "imagedigest101", new ManifestQueryResult(string.Empty, []) },
+                });
+            contentClientMock
+                .Setup(o => o.GetManifestAsync("deleteddigest"))
+                .ThrowsAsync(new RequestFailedException(404, "manifest not found"));
+
+            IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
+                [contentClientMock]);
+
+            GenerateEolAnnotationDataForPublishCommand command =
+                InitializeCommand(
+                    oldImageInfoPath,
+                    newImageInfoPath,
+                    newEolDigestsListPath,
+                    registryClientFactory,
+                    registryContentClientFactory);
+            await command.ExecuteAsync();
+
+            EolAnnotationsData expectedEolAnnotations = new()
+            {
+                EolDate = _globalDate,
+                EolDigests =
+                [
+                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "imagedigest101")) { Tag = "1.0" },
+                    new(DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest101")) { Tag = "tag" },
                 ]
             };
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
@@ -83,7 +84,21 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
             await Parallel.ForEachAsync(manifests, outerCT, async (manifestProps, innerCT) =>
             {
-                ManifestQueryResult manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
+                ManifestQueryResult manifestResult;
+                try
+                {
+                    manifestResult = await contentClient.GetManifestAsync(manifestProps.Digest);
+                }
+                catch (RequestFailedException ex) when (ex.Status == 404)
+                {
+                    // The manifest was listed but deleted before we could fetch it. This can happen
+                    // when images are being cleaned up concurrently. Skip it.
+                    _logger.LogWarning(
+                        "Manifest {Digest} in {Repository} was listed but no longer exists. Skipping.",
+                        manifestProps.Digest,
+                        repositoryName);
+                    return;
+                }
 
                 // We only want to return image or manifest list digests here. But the registry will also contain
                 // digests for annotations. These annotation digests should not be returned as we don't want to

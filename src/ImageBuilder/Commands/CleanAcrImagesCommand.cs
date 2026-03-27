@@ -303,9 +303,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"{manifest.RegistryLoginServer}/{manifest.RepositoryName}@{manifest.Digest}",
                 CancellationToken.None);
 
-            if (lifecycleArtifactManifest?.Annotations != null)
+            if (lifecycleArtifactManifest?.Annotations != null &&
+                lifecycleArtifactManifest.Annotations.TryGetValue(LifecycleMetadataService.EndOfLifeAnnotation, out string? endOfLifeValue) &&
+                DateTimeOffset.TryParse(endOfLifeValue, out DateTimeOffset endOfLifeDateTime))
             {
-                return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation]), expirationDays);
+                return IsExpired(endOfLifeDateTime, expirationDays);
             }
 
             return false;

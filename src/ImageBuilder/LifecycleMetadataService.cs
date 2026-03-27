@@ -29,6 +29,8 @@ public class LifecycleMetadataService : ILifecycleMetadataService
 
     public async Task<Manifest?> IsDigestAnnotatedForEolAsync(string digest, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(digest);
+
         try
         {
             IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(digest, cancellationToken);
@@ -59,6 +61,8 @@ public class LifecycleMetadataService : ILifecycleMetadataService
 
     public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(digest);
+
         try
         {
             Dictionary<string, string> annotations = new()

@@ -139,7 +139,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else
             {
-                if (existingAnnotationManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation] == eolDate?.ToString(LifecycleMetadataService.EolDateFormat))
+                if (existingAnnotationManifest.Annotations.TryGetValue(LifecycleMetadataService.EndOfLifeAnnotation, out string? existingEolValue) &&
+                    existingEolValue == eolDate?.ToString(LifecycleMetadataService.EolDateFormat))
                 {
                     _logger.LogInformation($"Skipping digest '{digestData.Digest}' because it is already annotated with a matching EOL date.");
                     _skippedAnnotationImageDigests.Add(digestData);

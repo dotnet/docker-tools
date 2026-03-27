@@ -16,6 +16,19 @@ $ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot/AzureDevOps.ps1"
 
+$build = Invoke-AzDORestMethod `
+    -Organization $Organization `
+    -Project $Project `
+    -Endpoint "build/builds/$BuildId"
+
+Write-Host "# Build $BuildId - $($build.definition.name)"
+Write-Host ""
+Write-Host "- Status:  $($build.status) $(if ($build.result) { "($($build.result))" })"
+Write-Host "- Branch:  $($build.sourceBranch)"
+Write-Host "- Queued:  $($build.queueTime)"
+Write-Host "- URL:     $($build._links.web.href)"
+Write-Host ""
+
 $timeline = Invoke-AzDORestMethod `
     -Organization $Organization `
     -Project $Project `
@@ -53,9 +66,12 @@ function Write-TimelineNode([string] $nodeId, [int] $depth) {
 
         $logId = $child.log.id
         $logLabel = if ($logId) { " #$logId" } else { "" }
-        Write-Host "$indent$($child.type)$logLabel | $($child.name) | $status"
+        Write-Host "${indent}- $($child.type)$logLabel | $($child.name) | $status"
         Write-TimelineNode $child.id ($depth + 1)
     }
 }
 
+Write-Host "## Build Timeline"
+Write-Host ""
 Write-TimelineNode "" 0
+Write-Host ""

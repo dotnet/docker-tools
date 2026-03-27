@@ -9,18 +9,11 @@
 
 $ErrorActionPreference = "Stop"
 
-$script:CachedToken = $null
-$script:TokenExpiry = [datetime]::MinValue
-
 function Get-AzDOAccessToken {
     <#
     .SYNOPSIS
-        Returns a bearer token for Azure DevOps, caching until expiry.
+        Returns a bearer token for Azure DevOps.
     #>
-
-    if ($script:CachedToken -and [datetime]::UtcNow -lt $script:TokenExpiry) {
-        return $script:CachedToken
-    }
 
     # Well-known Entra ID application ID for Azure DevOps
     $tokenJson = az account get-access-token --resource "499b84ac-1321-427f-aa17-267ca6975798" 2>&1
@@ -29,11 +22,7 @@ function Get-AzDOAccessToken {
     }
 
     $parsed = $tokenJson | ConvertFrom-Json
-    $script:CachedToken = $parsed.accessToken
-    # Expire 5 minutes early to avoid clock skew / mid-request expiry
-    $script:TokenExpiry = ([datetime]::Parse($parsed.expiresOn)).ToUniversalTime().AddMinutes(-5)
-
-    return $script:CachedToken
+    return $parsed.accessToken
 }
 
 function Invoke-AzDORestMethod {

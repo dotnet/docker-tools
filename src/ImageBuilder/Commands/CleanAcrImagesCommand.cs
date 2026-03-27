@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -104,7 +105,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     break;
                 case CleanAcrImagesAction.PruneEol:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
-                        async manifest => !(await IsAnnotationManifestAsync(manifest, acrContentClient)) && HasExpiredEol(manifest, Options.Age));
+                        async manifest => !(await IsAnnotationManifestAsync(manifest, acrContentClient)) && await HasExpiredEolAsync(manifest, Options.Age));
                     break;
                 case CleanAcrImagesAction.PruneAll:
                     await ProcessManifestsAsync(acrClient, acrContentClient, deletedImages, deletedRepos, repository,
@@ -296,10 +297,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return manifestResult.Manifest["subject"] is not null;
         }
 
-        private bool HasExpiredEol(ArtifactManifestProperties manifest, int expirationDays)
+        private async Task<bool> HasExpiredEolAsync(ArtifactManifestProperties manifest, int expirationDays)
         {
-            if(_lifecycleMetadataService.IsDigestAnnotatedForEol(manifest.RegistryLoginServer + "/" + manifest.RepositoryName + "@" + manifest.Digest, _logger, isDryRun: false, out Manifest? lifecycleArtifactManifest) &&
-                lifecycleArtifactManifest?.Annotations != null)
+            Manifest? lifecycleArtifactManifest = await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(
+                $"{manifest.RegistryLoginServer}/{manifest.RepositoryName}@{manifest.Digest}",
+                CancellationToken.None);
+
+            if (lifecycleArtifactManifest?.Annotations != null)
             {
                 return IsExpired(DateTimeOffset.Parse(lifecycleArtifactManifest.Annotations[LifecycleMetadataService.EndOfLifeAnnotation]), expirationDays);
             }

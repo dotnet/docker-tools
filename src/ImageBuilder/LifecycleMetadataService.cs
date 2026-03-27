@@ -4,105 +4,90 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
-using Microsoft.DotNet.ImageBuilder.Models.Oras;
 using Microsoft.DotNet.ImageBuilder.Oras;
-using Newtonsoft.Json;
+using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.ImageBuilder;
+
 public class LifecycleMetadataService : ILifecycleMetadataService
 {
     public const string EndOfLifeAnnotation = "vnd.microsoft.artifact.lifecycle.end-of-life.date";
     public const string EolDateFormat = "yyyy-MM-dd";
 
-    private readonly IOrasClient _orasClient;
+    private readonly IOrasService _orasService;
+    private readonly ILogger<LifecycleMetadataService> _logger;
 
-    public LifecycleMetadataService(IOrasClient orasClient)
+    public LifecycleMetadataService(IOrasService orasService, ILogger<LifecycleMetadataService> logger)
     {
-        _orasClient = orasClient;
+        _orasService = orasService;
+        _logger = logger;
     }
 
-    public bool IsDigestAnnotatedForEol(string digest, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
-    {
-        string stdOut = _orasClient.RunOrasCommand(
-            args: [
-                "discover",
-                $"--artifact-type {OciArtifactType.Lifecycle}",
-                $"--format json",
-                digest
-            ],
-            isDryRun: isDryRun);
-
-        if (LifecycleAnnotationExists(stdOut, logger, out lifecycleArtifactManifest))
-        {
-            return true;
-        }
-
-        lifecycleArtifactManifest = null;
-        return false;
-    }
-
-    public bool AnnotateEolDigest(string digest, DateOnly date, ILogger logger, bool isDryRun, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
+    public async Task<Manifest?> IsDigestAnnotatedForEolAsync(string digest, CancellationToken cancellationToken = default)
     {
         try
         {
-            string output = _orasClient.RunOrasCommand(
-                args: [
-                    "attach",
-                    $"--artifact-type {OciArtifactType.Lifecycle}",
-                    $"--annotation \"{EndOfLifeAnnotation}={date.ToString(EolDateFormat)}\"",
-                    $"--format json",
-                    digest
-                ],
-                isDryRun: isDryRun);
+            IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(digest, cancellationToken);
 
-            if (isDryRun)
+            ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
+                r => r.ArtifactType == OciArtifactType.Lifecycle);
+
+            if (lifecycleReferrer is null)
             {
-                lifecycleArtifactManifest = null;
-                return false;
+                return null;
             }
 
-            lifecycleArtifactManifest = JsonConvert.DeserializeObject<Manifest>(output ?? string.Empty)
-                ?? throw new Exception(
-                    $"""
-                    Unable to deserialize lifecycle metadata manifest from 'oras' output:
-
-                    {output}
-
-                    """
-                );
+            return new Manifest
+            {
+                ArtifactType = lifecycleReferrer.ArtifactType ?? string.Empty,
+                Reference = lifecycleReferrer.Digest,
+                Annotations = lifecycleReferrer.Annotations is not null
+                    ? new Dictionary<string, string>(lifecycleReferrer.Annotations)
+                    : []
+            };
         }
-        catch (InvalidOperationException ex)
+        catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
-            lifecycleArtifactManifest = null;
-            return false;
+            _logger.LogError(ex, "Failed to check EOL annotation for digest '{Digest}'", digest);
+            return null;
         }
-
-        return true;
     }
 
-    private static bool LifecycleAnnotationExists(string json, ILogger logger, [MaybeNullWhen(false)] out Manifest lifecycleArtifactManifest)
+    public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken = default)
     {
         try
         {
-            OrasDiscoverData? orasDiscoverData = JsonConvert.DeserializeObject<OrasDiscoverData>(json);
-            List<Manifest>? manifests = orasDiscoverData?.Manifests ?? orasDiscoverData?.Referrers;
-            if (manifests != null)
+            Dictionary<string, string> annotations = new()
             {
-                lifecycleArtifactManifest = manifests.FirstOrDefault(m => m.ArtifactType == OciArtifactType.Lifecycle);
-                return lifecycleArtifactManifest is not null;
-            }
+                [EndOfLifeAnnotation] = date.ToString(EolDateFormat)
+            };
+
+            string artifactDigest = await _orasService.AttachArtifactAsync(
+                digest,
+                OciArtifactType.Lifecycle,
+                annotations,
+                cancellationToken);
+
+            // Construct the fully-qualified reference from the subject reference and the artifact digest.
+            string registry = digest[..digest.IndexOf('/')];
+            string repository = digest[(digest.IndexOf('/') + 1)..digest.IndexOf('@')];
+            string artifactReference = $"{registry}/{repository}@{artifactDigest}";
+
+            return new Manifest
+            {
+                ArtifactType = OciArtifactType.Lifecycle,
+                Reference = artifactReference,
+                Annotations = annotations
+            };
         }
-        catch (JsonException ex)
+        catch (Exception ex)
         {
-            logger.LogError(ex, "Failed to deserialize 'oras discover' json");
+            _logger.LogError(ex, "Failed to annotate EOL for digest '{Digest}'", digest);
+            return null;
         }
-
-        lifecycleArtifactManifest = null;
-        return false;
     }
-
 }

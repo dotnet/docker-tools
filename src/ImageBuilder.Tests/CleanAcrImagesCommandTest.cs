@@ -414,8 +414,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(reference, It.IsAny<ILogger>(), It.IsAny<bool>(), out manifest))
-                .Returns(digestAlreadyAnnotated);
+                .Setup(o => o.IsDigestAnnotatedForEolAsync(reference, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(manifest);
         }
     }
 }

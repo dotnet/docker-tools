@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json.Nodes;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
@@ -430,11 +431,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string armDigest = DockerHelper.GetImageName(AcrName, $"{DefaultRepoPrefix}repo1", digest: "platformdigest102-arm64");
 
             // Set the Arm64 digest as already annotated. This should exclude it from the list of digests to annotate.
-            Manifest lifecycleArtifactManifest;
+            Manifest lifecycleArtifactManifest = new();
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(armDigest, It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
-                .Returns(true);
+                .Setup(o => o.IsDigestAnnotatedForEolAsync(armDigest, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(lifecycleArtifactManifest);
 
             IAcrContentClientFactory registryContentClientFactory = CreateAcrContentClientFactory(AcrName,
                 [
@@ -1058,16 +1059,18 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private static ILifecycleMetadataService CreateLifecycleMetadataService(Dictionary<string, bool> digestAnnotatedMapping)
         {
             Mock<ILifecycleMetadataService> lifecycleMetadataServiceMock = new();
-            Manifest lifecycleArtifactManifest;
             lifecycleMetadataServiceMock
-                .Setup(o => o.IsDigestAnnotatedForEol(It.IsAny<string>(), It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
-                .Returns(false);
+                .Setup(o => o.IsDigestAnnotatedForEolAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Manifest)null);
 
             foreach (KeyValuePair<string, bool> digestAnnotated in digestAnnotatedMapping)
             {
-                lifecycleMetadataServiceMock
-                    .Setup(o => o.IsDigestAnnotatedForEol(digestAnnotated.Key, It.IsAny<ILogger>(), It.IsAny<bool>(), out lifecycleArtifactManifest))
-                    .Returns(digestAnnotated.Value);
+                if (digestAnnotated.Value)
+                {
+                    lifecycleMetadataServiceMock
+                        .Setup(o => o.IsDigestAnnotatedForEolAsync(digestAnnotated.Key, It.IsAny<CancellationToken>()))
+                        .ReturnsAsync(new Manifest());
+                }
             }
 
             return lifecycleMetadataServiceMock.Object;

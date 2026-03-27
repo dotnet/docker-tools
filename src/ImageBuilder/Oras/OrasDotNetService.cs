@@ -132,7 +132,11 @@ public class OrasDotNetService(
         await foreach (Descriptor referrer in repository.FetchReferrersAsync(subjectDescriptor, cancellationToken))
         {
             string referrerReference = $"{parsedRef.Registry}/{parsedRef.Repository}@{referrer.Digest}";
-            referrers.Add(new ReferrerInfo(referrerReference, referrer.ArtifactType));
+            referrers.Add(new ReferrerInfo(referrerReference, referrer.ArtifactType)
+            {
+                Annotations = referrer.Annotations as IReadOnlyDictionary<string, string>
+                    ?? referrer.Annotations?.AsReadOnly()
+            });
             _logger.LogDebug("Found referrer: {Referrer} (artifactType={ArtifactType})", referrerReference, referrer.ArtifactType);
         }
 
@@ -140,6 +144,43 @@ public class OrasDotNetService(
         _logger.LogDebug("Found {Count} referrer(s) for {Reference} in {Elapsed}", referrers.Count, reference, elapsed);
 
         return referrers;
+    }
+
+    /// <inheritdoc/>
+    public async Task<string> AttachArtifactAsync(
+        string reference,
+        string artifactType,
+        IDictionary<string, string> annotations,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+        ArgumentException.ThrowIfNullOrWhiteSpace(artifactType);
+        ArgumentNullException.ThrowIfNull(annotations);
+
+        _logger.LogDebug("Attaching artifact (type={ArtifactType}) to {Reference}", artifactType, reference);
+
+        long startTime = Stopwatch.GetTimestamp();
+        Repository repository = CreateRepository(reference);
+        Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
+
+        PackManifestOptions options = new()
+        {
+            ManifestAnnotations = annotations,
+            Subject = subjectDescriptor
+        };
+
+        Descriptor artifactDescriptor =
+            await Packer.PackManifestAsync(
+                pusher: repository,
+                version: Packer.ManifestVersion.Version1_1,
+                artifactType: artifactType,
+                options: options,
+                cancellationToken);
+
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
+        _logger.LogDebug("Artifact attached: {Digest} in {Elapsed}", artifactDescriptor.Digest, elapsed);
+
+        return artifactDescriptor.Digest;
     }
 
     /// <summary>

@@ -157,8 +157,6 @@ public class OrasDotNetService(
         ArgumentException.ThrowIfNullOrWhiteSpace(artifactType);
         ArgumentNullException.ThrowIfNull(annotations);
 
-        _logger.LogDebug("Attaching artifact (type={ArtifactType}) to {Reference}", artifactType, reference);
-
         long startTime = Stopwatch.GetTimestamp();
         Repository repository = CreateRepository(reference);
         Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
@@ -178,7 +176,9 @@ public class OrasDotNetService(
                 cancellationToken);
 
         TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
-        _logger.LogDebug("Artifact attached: {Digest} in {Elapsed}", artifactDescriptor.Digest, elapsed);
+        _logger.LogDebug(
+            "Attached artifact to {Reference}: digest={Digest}, artifactType={ArtifactType}, annotations={Annotations}, elapsed={Elapsed}",
+            reference, artifactDescriptor.Digest, artifactType, annotations, elapsed);
 
         return artifactDescriptor.Digest;
     }

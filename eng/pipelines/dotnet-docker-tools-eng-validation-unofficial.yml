@@ -8,22 +8,40 @@ parameters:
   type: string
   default: $(Build.BuildId)
 
+- name: bootstrapImageBuilder
+  displayName: >
+    Build ImageBuilder from source at the start of every job instead of pulling
+    the pre-built image from MCR. Use this option during development to
+    validate changes to ImageBuilder and pipeline templates at the same time.
+  type: boolean
+  default: false
+
 variables:
 - template: /eng/pipelines/templates/variables/eng-validation.yml@self
-
-resources:
-  repositories:
-  - repository: VersionsRepo
-    type: github
-    endpoint: dotnet
-    name: dotnet/versions
-    ref: ${{ variables['gitHubVersionsRepoInfo.branch'] }}
+# Uses DockerHub registry creds to avoid rate limiting during CopyBaseImages job
+- template: /eng/docker-tools/templates/variables/dotnet/secrets-unofficial.yml@self
+# Unofficial secrets group has no GitHub token for publishing image info, readmes, or notifications
+- name: "publishImageInfo"
+  value: false
+  readonly: true
+- name: "publishReadme"
+  value: false
+  readonly: true
+- name: "publishNotificationsEnabled"
+  value: false
+  readonly: true
+# There aren't test/unofficial Kusto tables for build telemetry yet
+- name: "ingestKustoImageInfo"
+  value: false
+  readonly: true
+# Always run unofficial pipelines in debug mode
+- name: "System.Debug"
+  value: true
+  readonly: true
 
 extends:
   template: /eng/docker-tools/templates/1es.yml@self
   parameters:
-    reposToExcludeFromScanning:
-    - VersionsRepo
     stages:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-nonprod.yml@self
       parameters:
@@ -33,4 +51,6 @@ extends:
         stagesTemplateParameters:
           noCache: true
           sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-          versionsRepoRef: VersionsRepo
+          ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
+            customInitSteps:
+            - template: /eng/pipelines/templates/steps/bootstrap-imagebuilder.yml@self

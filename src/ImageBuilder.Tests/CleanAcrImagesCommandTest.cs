@@ -34,14 +34,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ContainerRepository nonPublicRepo1 = CreateContainerRepository(
                 stagingRepo1Name,
-                CreateContainerRepositoryProperties(createdOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(14))),
+                CreateContainerRepositoryProperties(lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(14))),
                 [
                     CreateArtifactManifestProperties(repositoryName: stagingRepo1Name, digest: repo1Digest1)
                 ]);
 
             ContainerRepository nonPublicRepo2 = CreateContainerRepository(
                 stagingRepo2Name,
-                CreateContainerRepositoryProperties(createdOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(16))),
+                CreateContainerRepositoryProperties(lastUpdatedOn: DateTimeOffset.Now.Subtract(TimeSpan.FromDays(16))),
                 [
                     CreateArtifactManifestProperties(repositoryName: stagingRepo2Name, digest: repo2Digest1)
                 ]);

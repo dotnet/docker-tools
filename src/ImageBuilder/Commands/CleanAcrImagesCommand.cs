@@ -111,7 +111,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         manifest => Task.FromResult(IsExpired(manifest.LastUpdatedOn, Options.Age)));
                     break;
                 case CleanAcrImagesAction.Delete:
-                    if (IsExpired(repository.GetProperties().Value.LastUpdatedOn, Options.Age))
+                    if (IsExpired(repository.GetProperties().Value.CreatedOn, Options.Age))
                     {
                         await DeleteRepositoryAsync(acrClient, deletedRepos, repository);
                     }

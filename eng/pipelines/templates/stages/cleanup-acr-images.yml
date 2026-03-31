@@ -27,6 +27,9 @@ stages:
     - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
       parameters:
         publishConfig: ${{ parameters.publishConfig }}
+        usesRegistries:
+        - ${{ parameters.publishConfig.BuildRegistry.server }}
+        - ${{ parameters.publishConfig.PublishRegistry.server }}
         serviceConnections:
         - ${{ parameters.publishConfig.cleanServiceConnection }}
     - template: /eng/docker-tools/templates/steps/clean-acr-images.yml@self

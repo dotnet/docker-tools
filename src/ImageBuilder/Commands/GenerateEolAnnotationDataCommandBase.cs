@@ -6,6 +6,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Azure;
 using Azure.Containers.ContainerRegistry;
@@ -47,7 +48,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         IEnumerable<EolDigestData> digestsToAnnotate = [];
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,
-            async () => digestsToAnnotate = GetDigestsWithoutExistingAnnotation(await GetDigestsToAnnotateAsync()),
+            async () => digestsToAnnotate = await GetDigestsWithoutExistingAnnotationAsync(await GetDigestsToAnnotateAsync()),
             Options.CredentialsOptions,
             registryName: Options.RegistryOptions.Registry);
 
@@ -130,15 +131,19 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions, TOptionsBui
         File.WriteAllText(Options.EolDigestsListPath, annotationsJson);
     }
 
-    private IEnumerable<EolDigestData> GetDigestsWithoutExistingAnnotation(
+    private async Task<IEnumerable<EolDigestData>> GetDigestsWithoutExistingAnnotationAsync(
         IEnumerable<EolDigestData> unsupportedDigests)
     {
-        // Annotate digests that are not already annotated for EOL
+        if (Options.IsDryRun)
+        {
+            return unsupportedDigests.OrderBy(item => item.Digest).ToList();
+        }
+
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];
-        Parallel.ForEach(unsupportedDigests, digest =>
+        await Parallel.ForEachAsync(unsupportedDigests, CancellationToken.None, async (digest, ct) =>
         {
             _logger.LogInformation($"Checking digest for existing annotation: {digest.Digest}");
-            if (!_lifecycleMetadataService.IsDigestAnnotatedForEol(digest.Digest, _logger, Options.IsDryRun, out _))
+            if (await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(digest.Digest, ct) is null)
             {
                 digestsToAnnotate.Add(digest);
             }

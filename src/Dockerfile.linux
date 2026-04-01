@@ -39,7 +39,6 @@ RUN tdnf install -y \
       git \
       moby-engine \
       notation \
-      oras \
     && tdnf clean all
 
 # install notation trust materials (root CA certs + trust policies)

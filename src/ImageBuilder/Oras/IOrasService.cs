@@ -47,4 +47,18 @@ public interface IOrasService
     Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
         string reference,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Creates and pushes a referrer artifact with the given type and annotations.
+    /// </summary>
+    /// <param name="reference">Full registry reference of the subject image (e.g., "registry.io/repo@sha256:...").</param>
+    /// <param name="artifactType">The OCI artifact type for the referrer.</param>
+    /// <param name="annotations">Annotations to set on the referrer manifest.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The digest of the created referrer artifact.</returns>
+    Task<string> AttachArtifactAsync(
+        string reference,
+        string artifactType,
+        IDictionary<string, string> annotations,
+        CancellationToken cancellationToken = default);
 }

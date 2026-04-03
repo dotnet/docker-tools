@@ -12,7 +12,7 @@ using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions, TrimUnchangedPlatformsOptionsBuilder>
+    public class TrimUnchangedPlatformsCommand : Command<TrimUnchangedPlatformsOptions>
     {
         private readonly ILogger<TrimUnchangedPlatformsCommand> _logger;
 

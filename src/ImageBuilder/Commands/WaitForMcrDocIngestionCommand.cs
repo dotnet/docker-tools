@@ -11,7 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions, WaitForMcrDocIngestionOptionsBuilder>
+    public class WaitForMcrDocIngestionCommand : Command<WaitForMcrDocIngestionOptions>
     {
         private readonly ILogger<WaitForMcrDocIngestionCommand> _logger;
         private readonly IEnvironmentService _environmentService;

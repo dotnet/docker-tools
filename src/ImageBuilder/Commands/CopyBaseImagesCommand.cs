@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         ICopyImageService copyImageService,
         ILogger<CopyBaseImagesCommand> logger,
         IGitService gitService)
-        : CopyImagesCommand<CopyBaseImagesOptions, CopyBaseImagesOptionsBuilder>(
+        : CopyImagesCommand<CopyBaseImagesOptions>(
             manifestJsonService,
             copyImageService,
             logger)

@@ -10,7 +10,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class PullImagesCommand : ManifestCommand<PullImagesOptions, PullImagesOptionsBuilder>
+    public class PullImagesCommand : ManifestCommand<PullImagesOptions>
     {
         private readonly IDockerService _dockerService;
         private readonly ILogger<PullImagesCommand> _logger;

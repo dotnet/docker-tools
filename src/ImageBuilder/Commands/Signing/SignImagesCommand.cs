@@ -22,7 +22,7 @@ public class SignImagesCommand(
     IImageSigningService signingService,
     IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions)
-    : Command<SignImagesOptions, SignImagesOptionsBuilder>
+    : Command<SignImagesOptions>
 {
     private readonly PublishConfiguration _publishConfiguration = publishConfigOptions.Value;
 

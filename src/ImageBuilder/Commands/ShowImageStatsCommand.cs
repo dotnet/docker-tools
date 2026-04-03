@@ -11,7 +11,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions, ShowImageStatsOptionsBuilder>
+    public class ShowImageStatsCommand : ManifestCommand<ShowImageStatsOptions>
     {
         private readonly ILogger<ShowImageStatsCommand> _logger;
 

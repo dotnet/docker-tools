@@ -4,7 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -12,22 +12,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
 
-        public ShowImageStatsOptions() : base()
-        {
-        }
-    }
-
-    public class ShowImageStatsOptionsBuilder : ManifestOptionsBuilder
-    {
-        private readonly ManifestFilterOptionsBuilder _manifestFilterOptionsBuilder =
-            new ManifestFilterOptionsBuilder();
-
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(_manifestFilterOptionsBuilder.GetCliOptions());
+        [
+            ..base.GetCliOptions(),
+            ..FilterOptions.GetCliOptions(),
+        ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            base.GetCliArguments()
-                .Concat(_manifestFilterOptionsBuilder.GetCliArguments());
+        [
+            ..base.GetCliArguments(),
+            ..FilterOptions.GetCliArguments(),
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            FilterOptions.Bind(result);
+        }
     }
 }

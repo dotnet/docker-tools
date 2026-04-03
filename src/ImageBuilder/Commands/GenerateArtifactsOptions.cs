@@ -4,8 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using System.Linq;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -15,23 +14,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public bool Validate { get; set; }
 
-        protected GenerateArtifactsOptions() : base()
+        private static readonly Option<bool> OptionalTemplatesOption = new(CliHelper.FormatAlias("optional-templates"))
         {
-        }
-    }
+            Description = "Do not require templates"
+        };
 
-    public abstract class GenerateArtifactsOptionsBuilder : ManifestOptionsBuilder
-    {
+        private static readonly Option<bool> ValidateOption = new(CliHelper.FormatAlias("validate"))
+        {
+            Description = "Validates the generated artifacts and templates are in sync"
+        };
+
         public override IEnumerable<Option> GetCliOptions() =>
-            base.GetCliOptions()
-                .Concat(
-                    new Option[]
-                    {
-                        CreateOption<bool>("optional-templates", nameof(GenerateArtifactsOptions.AllowOptionalTemplates),
-                            "Do not require templates"),
-                        CreateOption<bool>("validate", nameof(GenerateArtifactsOptions.Validate),
-                            "Validates the generated artifacts and templates are in sync")
-                    }
-                );
+            [..base.GetCliOptions(), OptionalTemplatesOption, ValidateOption];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            AllowOptionalTemplates = result.GetValue(OptionalTemplatesOption);
+            Validate = result.GetValue(ValidateOption);
+        }
     }
 }

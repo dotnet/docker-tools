@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -12,24 +13,23 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public PlatformFilterOptions Platform { get; set; } = new();
 
         public DockerfileFilterOptions Dockerfile { get; set; } = new();
-    }
-
-    public class ManifestFilterOptionsBuilder
-    {
-        private readonly PlatformFilterOptionsBuilder _platformFilterOptionsBuilder = new();
-
-        private readonly DockerfileFilterOptionsBuilder _dockerfileFilterOptionsBuilder = new();
 
         public IEnumerable<Option> GetCliOptions() =>
         [
-            .._platformFilterOptionsBuilder.GetCliOptions(),
-            .._dockerfileFilterOptionsBuilder.GetCliOptions(),
+            ..Platform.GetCliOptions(),
+            ..Dockerfile.GetCliOptions(),
         ];
 
         public IEnumerable<Argument> GetCliArguments() =>
         [
-            .._platformFilterOptionsBuilder.GetCliArguments(),
-            .._dockerfileFilterOptionsBuilder.GetCliArguments(),
+            ..Platform.GetCliArguments(),
+            ..Dockerfile.GetCliArguments(),
         ];
+
+        public void Bind(ParseResult result)
+        {
+            Platform.Bind(result);
+            Dockerfile.Bind(result);
+        }
     }
 }

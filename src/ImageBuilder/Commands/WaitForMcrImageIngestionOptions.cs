@@ -5,8 +5,9 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -19,34 +20,49 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public MarIngestionOptions IngestionOptions { get; set; } = new();
 
         public ServiceConnection? MarServiceConnection { get; set; }
-    }
 
-    public class WaitForMcrImageIngestionOptionsBuilder : ManifestOptionsBuilder
-    {
-        private static readonly TimeSpan s_defaultWaitTimeout = TimeSpan.FromMinutes(20);
-        private static readonly TimeSpan s_defaultRequeryDelay = TimeSpan.FromSeconds(10);
+        private static readonly TimeSpan DefaultWaitTimeout = TimeSpan.FromMinutes(20);
+        private static readonly TimeSpan DefaultRequeryDelay = TimeSpan.FromSeconds(10);
 
-        private readonly MarIngestionOptionsBuilder _ingestionOptionsBuilder = new();
-        private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
+        private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
+
+        private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
+            ServiceConnectionBuilder.GetCliOption("mar-service-connection");
+
+        private static readonly Option<DateTime> MinQueueTimeOption = new(CliHelper.FormatAlias("min-queue-time"))
+        {
+            Description = "Minimum queue time an image must have to be awaited",
+            DefaultValueFactory = _ => DateTime.MinValue,
+            CustomParser = argResult => DateTime.Parse(argResult.GetTokenValue()).ToUniversalTime()
+        };
+
+        private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
+        {
+            Description = "Path to image info file"
+        };
 
         public override IEnumerable<Argument> GetCliArguments() =>
-            [
-                ..base.GetCliArguments(),
-                .._ingestionOptionsBuilder.GetCliArguments(),
-                new Argument<string>(nameof(WaitForMcrImageIngestionOptions.ImageInfoPath),
-                    "Path to image info file")
-            ];
+        [
+            ..base.GetCliArguments(),
+            ..IngestionOptions.GetCliArguments(),
+            ImageInfoPathArgument,
+        ];
 
         public override IEnumerable<Option> GetCliOptions() =>
-            [
-                ..base.GetCliOptions(),
-                .._ingestionOptionsBuilder.GetCliOptions(s_defaultWaitTimeout, s_defaultRequeryDelay),
-                .._serviceConnectionOptionsBuilder.GetCliOptions(
-                    "mar-service-connection",
-                    nameof(WaitForMcrImageIngestionOptions.MarServiceConnection)),
-                CreateOption("min-queue-time", nameof(WaitForMcrImageIngestionOptions.MinimumQueueTime),
-                    "Minimum queue time an image must have to be awaited",
-                    val => DateTime.Parse(val).ToUniversalTime(), DateTime.MinValue)
-            ];
+        [
+            ..base.GetCliOptions(),
+            ..IngestionOptions.GetCliOptions(DefaultWaitTimeout, DefaultRequeryDelay),
+            MarServiceConnectionOption,
+            MinQueueTimeOption,
+        ];
+
+        public override void Bind(ParseResult result)
+        {
+            base.Bind(result);
+            IngestionOptions.Bind(result);
+            MarServiceConnection = result.GetValue(MarServiceConnectionOption);
+            MinimumQueueTime = result.GetValue(MinQueueTimeOption);
+            ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+        }
     }
 }

@@ -8,8 +8,9 @@ parameters:
 
 variables:
 - template: templates/variables/image-builder.yml
+# Temporarily disabled due to https://github.com/dotnet/docker-tools/issues/2056.
 - name: publishEolAnnotations
-  value: true
+  value: false
 - name: dryRunArg
   value: ""
 

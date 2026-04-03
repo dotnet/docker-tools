@@ -17,8 +17,9 @@ parameters:
 
 variables:
 - template: /eng/pipelines/templates/variables/common.yml@self
+# Temporarily disabled due to https://github.com/dotnet/docker-tools/issues/2056.
 - name: publishEolAnnotations
-  value: true
+  value: false
   readonly: true
 
 extends:

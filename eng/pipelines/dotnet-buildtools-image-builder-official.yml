@@ -25,8 +25,9 @@ variables:
 # Uses GitHub token to access the versions repo
 # Also uses DockerHub registry creds to avoid rate limiting
 - template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
+# Temporarily disabled due to https://github.com/dotnet/docker-tools/issues/2056.
 - name: publishEolAnnotations
-  value: true
+  value: false
 
 resources:
   repositories:

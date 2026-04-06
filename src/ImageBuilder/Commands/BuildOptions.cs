@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool NoCache { get; set; }
         public string? SourceRepoPrefix { get; set; }
         public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
+        public string[] DockerBuildOptions { get; set; } = [];
         public bool SkipPlatformCheck { get; set; }
         public string? OutputVariableName { get; set; }
         public bool Internal { get; set; }
@@ -67,6 +68,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "Prefix to add to the external base image names when pulling them"),
             CreateDictionaryOption("build-arg", nameof(BuildOptions.BuildArgs),
                 "Build argument to pass to the Dockerfiles (<name>=<value>)"),
+            CreateMultiOption<string>("build-option", nameof(BuildOptions.DockerBuildOptions),
+                "Additional argument to pass directly to docker build. Repeat for multiple arguments and quote values containing spaces."),
             CreateOption<bool>("skip-platform-check", nameof(BuildOptions.SkipPlatformCheck),
                 "Skips validation that ensures the Dockerfile's base image's platform matches the manifest configuration"),
             CreateOption<string>("digests-out-var", nameof(BuildOptions.OutputVariableName),

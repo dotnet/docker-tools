@@ -493,6 +493,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
+                    GetDockerBuildOptions(),
                     Options.IsRetryEnabled,
                     Options.IsDryRun);
 
@@ -553,6 +554,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             return buildArgs;
         }
+
+        private IEnumerable<string> GetDockerBuildOptions() =>
+            Options.DockerBuildOptions.Where(option => !string.IsNullOrWhiteSpace(option));
 
         private async Task OnCacheHitAsync(RepoInfo repo, IEnumerable<TagInfo> allTags, bool pullImage, string sourceDigest)
         {

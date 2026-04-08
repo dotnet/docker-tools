@@ -26,6 +26,7 @@ jobs:
     enableMicrobuild: false
     enablePublishBuildArtifacts: ${{ parameters.enablePublish }}
     enablePublishBuildAssets: ${{ parameters.enablePublish }}
+    # Keep this in sync with PublishingVersion in eng/Publishing.props
     publishingVersion: 4
     enableTelemetry: true
 

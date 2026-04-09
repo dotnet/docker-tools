@@ -31,7 +31,7 @@ public class CopyImageServiceTests
         var emptyConfig = new PublishConfiguration();
         var mockOras = new Mock<IOrasService>();
         mockOras
-            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), true, It.IsAny<CancellationToken>()))
             .ReturnsAsync([]);
 
         var service = new CopyImageService(
@@ -80,7 +80,7 @@ public class CopyImageServiceTests
         var mockImporter = new Mock<IAcrImageImporter>();
         var mockOras = new Mock<IOrasService>();
         mockOras
-            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<ReferrerInfo>());
 
         var service = new CopyImageService(
@@ -119,7 +119,7 @@ public class CopyImageServiceTests
         var mockImporter = new Mock<IAcrImageImporter>();
         var mockOras = new Mock<IOrasService>();
         mockOras
-            .Setup(o => o.GetReferrersAsync("myacr.azurecr.io/repo:tag", It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync("myacr.azurecr.io/repo:tag", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("myacr.azurecr.io/repo@sha256:ref1", "application/vnd.cncf.notary.signature"),
@@ -189,7 +189,7 @@ public class CopyImageServiceTests
         var mockImporter = new Mock<IAcrImageImporter>();
         var mockOras = new Mock<IOrasService>();
         mockOras
-            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(Array.Empty<ReferrerInfo>());
 
         var service = new CopyImageService(
@@ -214,19 +214,17 @@ public class CopyImageServiceTests
     }
 
     /// <summary>
-    /// In dry-run mode, referrer discovery still runs (it is read-only) but the actual
-    /// ACR import of referrers is skipped.
+    /// In dry-run mode, referrer discovery and ACR imports are both skipped.
+    /// The ORAS service receives the dry-run flag and returns an empty list
+    /// to avoid rate limiting on unauthenticated registries.
     /// </summary>
     [Fact]
-    public async Task ImportImageAsync_DryRun_DiscoversReferrersButSkipsImport()
+    public async Task ImportImageAsync_DryRun_SkipsReferrerDiscoveryAndImport()
     {
         var mockOras = new Mock<IOrasService>();
         mockOras
-            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(
-            [
-                new ReferrerInfo("myacr.azurecr.io/repo@sha256:abc123", "application/vnd.oci.image.manifest.v1+json")
-            ]);
+            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), true, It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
 
         var mockImporter = new Mock<IAcrImageImporter>();
 
@@ -244,7 +242,7 @@ public class CopyImageServiceTests
             isDryRun: true);
 
         mockOras.Verify(
-            o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            o => o.GetReferrersAsync(It.IsAny<string>(), true, It.IsAny<CancellationToken>()),
             Times.Once);
 
         mockImporter.Verify(

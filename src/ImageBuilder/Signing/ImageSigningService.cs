@@ -67,9 +67,10 @@ public class ImageSigningService(
         ConcurrentBag<string> unsignedDigests = [];
         await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
         {
-            IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(imageDigest, ct);
-            bool alreadySigned = referrers.Any(r => r.ArtifactType == NotarySignatureArtifactType);
+            IReadOnlyList<ReferrerInfo> referrers =
+                await _orasService.GetReferrersAsync(imageDigest, isDryRun: false, ct);
 
+            bool alreadySigned = referrers.Any(r => r.ArtifactType == NotarySignatureArtifactType);
             if (alreadySigned)
             {
                 _logger.LogInformation("Skipping already-signed digest {Digest}.", imageDigest);

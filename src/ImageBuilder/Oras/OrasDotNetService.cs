@@ -116,11 +116,24 @@ public class OrasDotNetService(
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
         string reference,
+        bool isDryRun = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+        IReadOnlyList<ReferrerInfo> referrers = isDryRun ? []
+            : await GetReferrersImplAsync(reference, cancellationToken);
 
-        long startTime = Stopwatch.GetTimestamp();
+        _logger.LogInformation(
+            "{Reference} has {Count} referrer(s) (DryRun={DryRun})",
+            reference, referrers.Count, isDryRun);
+
+        return referrers;
+    }
+
+    private async Task<IReadOnlyList<ReferrerInfo>> GetReferrersImplAsync(
+        string reference,
+        CancellationToken cancellationToken)
+    {
         Repository repository = CreateRepository(reference);
         Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
 
@@ -137,9 +150,6 @@ public class OrasDotNetService(
             });
             _logger.LogDebug("Found referrer: {Referrer} (artifactType={ArtifactType})", referrerReference, referrer.ArtifactType);
         }
-
-        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
-        _logger.LogInformation("{Reference} has {Count} referrer(s) ({Elapsed})", reference, referrers.Count, elapsed);
 
         return referrers;
     }

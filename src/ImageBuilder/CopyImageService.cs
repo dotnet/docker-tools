@@ -58,14 +58,15 @@ public class CopyImageService : ICopyImageService
         string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
 
         // Discover referrers (signatures, SBOMs, etc.) for the source image.
-        // This is a read-only operation against the source registry, so it runs even in dry-run mode.
-        IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(sourceImageName);
+        IReadOnlyList<ReferrerInfo> referrers =
+            await _orasService.GetReferrersAsync(reference: sourceImageName, isDryRun: isDryRun);
 
-        var destinationImageNames = destTagNames
-            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'")
-            .ToList();
+        var destinationImageNames =
+            destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
-        _logger.LogInformation("Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun})",
+
+        _logger.LogInformation(
+            "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun})",
             formattedDestinationImages, referrers.Count, sourceImageName, isDryRun);
 
         if (isDryRun)

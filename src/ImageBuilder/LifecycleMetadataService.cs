@@ -33,7 +33,8 @@ public class LifecycleMetadataService : ILifecycleMetadataService
 
         try
         {
-            IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(digest, cancellationToken);
+            IReadOnlyList<ReferrerInfo> referrers =
+                await _orasService.GetReferrersAsync(digest, isDryRun: false, cancellationToken);
 
             ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
                 r => r.ArtifactType == OciArtifactType.Lifecycle);

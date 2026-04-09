@@ -209,17 +209,25 @@ public class CopyImageServiceTests
     }
 
     /// <summary>
-    /// In dry-run mode, referrer discovery should be skipped entirely since it
-    /// requires registry connectivity.
+    /// In dry-run mode, referrer discovery still runs (it is read-only) but the actual
+    /// ACR import of referrers is skipped.
     /// </summary>
     [Fact]
-    public async Task ImportImageAsync_DryRun_SkipsReferrerDiscovery()
+    public async Task ImportImageAsync_DryRun_DiscoversReferrersButSkipsImport()
     {
         var mockOras = new Mock<IOrasService>();
+        mockOras
+            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(
+            [
+                new ReferrerInfo("myacr.azurecr.io/repo@sha256:abc123", "application/vnd.oci.image.manifest.v1+json")
+            ]);
+
+        var mockImporter = new Mock<IAcrImageImporter>();
 
         var service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
-            Mock.Of<IAcrImageImporter>(),
+            mockImporter.Object,
             mockOras.Object,
             ConfigurationHelper.CreateOptionsMock(new PublishConfiguration()));
 
@@ -232,6 +240,13 @@ public class CopyImageServiceTests
 
         mockOras.Verify(
             o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+
+        mockImporter.Verify(
+            o => o.ImportImageAsync(
+                It.IsAny<string>(),
+                It.IsAny<ResourceIdentifier>(),
+                It.IsAny<ContainerRegistryImportImageContent>()),
             Times.Never);
     }
 

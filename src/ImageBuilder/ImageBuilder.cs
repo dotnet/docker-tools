@@ -11,6 +11,7 @@ using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -29,6 +30,7 @@ public static class ImageBuilder
             builder.AddBuildConfiguration();
 
             // Logging
+            builder.Logging.SetMinimumLevel(LogLevel.Debug);
             builder.Logging.AddSimpleConsole(options =>
             {
                 options.IncludeScopes = true;

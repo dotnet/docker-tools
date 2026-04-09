@@ -120,8 +120,6 @@ public class OrasDotNetService(
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
 
-        _logger.LogDebug("Fetching referrers for reference: {Reference}", reference);
-
         long startTime = Stopwatch.GetTimestamp();
         Repository repository = CreateRepository(reference);
         Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
@@ -141,7 +139,7 @@ public class OrasDotNetService(
         }
 
         TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
-        _logger.LogDebug("Found {Count} referrer(s) for {Reference} in {Elapsed}", referrers.Count, reference, elapsed);
+        _logger.LogInformation("{Reference} has {Count} referrer(s) ({Elapsed})", reference, referrers.Count, elapsed);
 
         return referrers;
     }

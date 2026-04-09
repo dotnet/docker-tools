@@ -32,11 +32,6 @@ public class ImageSigningService(
 {
     private const string SigningPayloadsSubdirectory = "signing-payloads";
 
-    /// <summary>
-    /// OCI artifact type for Notary v2 signatures, used to detect already-signed digests.
-    /// </summary>
-    private const string NotarySignatureArtifactType = OciArtifactType.NotarySignatureV2;
-
     private readonly IOrasService _orasService = orasService;
     private readonly IEsrpSigningService _esrpSigningService = esrpSigningService;
     private readonly ILogger<ImageSigningService> _logger = logger;
@@ -70,7 +65,7 @@ public class ImageSigningService(
             IReadOnlyList<ReferrerInfo> referrers =
                 await _orasService.GetReferrersAsync(imageDigest, isDryRun: false, ct);
 
-            bool alreadySigned = referrers.Any(r => r.ArtifactType == NotarySignatureArtifactType);
+            bool alreadySigned = referrers.Any(r => r.ArtifactType == OciArtifactType.NotarySignatureV2);
             if (alreadySigned)
             {
                 _logger.LogInformation("Skipping already-signed digest {Digest}.", imageDigest);

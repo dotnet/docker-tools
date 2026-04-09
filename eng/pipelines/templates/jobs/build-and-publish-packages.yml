@@ -26,10 +26,13 @@ jobs:
     enableMicrobuild: false
     enablePublishBuildArtifacts: ${{ parameters.enablePublish }}
     enablePublishBuildAssets: ${{ parameters.enablePublish }}
+    # Keep this in sync with PublishingVersion in eng/Publishing.props
+    publishingVersion: 4
     enableTelemetry: true
 
     jobs:
     - job: Linux
+      enablePublishing: ${{ parameters.enablePublish }}
       container: LinuxContainer
       pool:
         name: $(PoolProvider)
@@ -49,8 +52,6 @@ jobs:
           --prepareMachine
           -p:OfficialBuildId=$(Build.BuildNumber)
           -p:DotNetSignType=$(_SignType)
-          -p:DotNetSymbolServerTokenMsdl=$(microsoft-symbol-server-pat)
-          -p:DotNetSymbolServerTokenSymWeb=$(symweb-symbol-server-pat)
         displayName: Unix Build / Publish
       - task: ComponentGovernanceComponentDetection@0
         displayName: Component Governance scan

@@ -43,7 +43,7 @@ public class OrasDotNetService(
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
-    private readonly IMemoryCache _cache = cache;
+    private readonly Cache _orasCache = new(cache);
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
@@ -194,8 +194,7 @@ public class OrasDotNetService(
             parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
 
         HttpClient httpClient = _httpClientProvider.GetClient();
-        Cache cache = new(_cache);
-        Client authClient = new(httpClient, _credentialProvider, cache);
+        Client authClient = new(httpClient, _credentialProvider, _orasCache);
 
         RepositoryOptions repositoryOptions = new()
         {

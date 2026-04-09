@@ -39,6 +39,7 @@ public interface IOrasService
     /// Returns the OCI referrers for the given image.
     /// </summary>
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag" or "registry.io/repo@sha256:...").</param>
+    /// <param name="isDryRun">When true, skips registry calls and returns an empty list.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>
     /// A list of <see cref="ReferrerInfo"/> containing the digest reference and artifact type
@@ -46,6 +47,7 @@ public interface IOrasService
     /// </returns>
     Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
         string reference,
+        bool isDryRun = false,
         CancellationToken cancellationToken = default);
 
     /// <summary>

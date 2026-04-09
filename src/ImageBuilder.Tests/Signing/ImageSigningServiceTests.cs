@@ -218,7 +218,7 @@ public class ImageSigningServiceTests
             });
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>());
 
         var fileSystem = new InMemoryFileSystem();
@@ -306,7 +306,7 @@ public class ImageSigningServiceTests
                 $"sha256:sig-{p.ImageName}");
         mock
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>());
         return mock;
     }
@@ -370,7 +370,7 @@ public class ImageSigningServiceTests
         // Both digests already have signature referrers
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
@@ -407,10 +407,10 @@ public class ImageSigningServiceTests
 
         // Referrers should be checked for each digest
         mockOras.Verify(
-            s => s.GetReferrersAsync("sha256:abc123", It.IsAny<CancellationToken>()),
+            s => s.GetReferrersAsync("sha256:abc123", It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Once);
         mockOras.Verify(
-            s => s.GetReferrersAsync("sha256:def456", It.IsAny<CancellationToken>()),
+            s => s.GetReferrersAsync("sha256:def456", It.IsAny<bool>(), It.IsAny<CancellationToken>()),
             Times.Once);
 
         // ESRP should never be called
@@ -429,14 +429,14 @@ public class ImageSigningServiceTests
         // First digest already has a signature, second does not
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                "sha256:already-signed", It.IsAny<CancellationToken>()))
+                "sha256:already-signed", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("registry/repo@sha256:existingsig", "application/vnd.cncf.notary.signature")
             });
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                "sha256:not-yet-signed", It.IsAny<CancellationToken>()))
+                "sha256:not-yet-signed", It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>());
 
         var service = CreateService(mockOras, mockEsrp: mockEsrp, fileSystem: fileSystem);
@@ -488,7 +488,7 @@ public class ImageSigningServiceTests
         // Referrer exists but is NOT a Notary signature (e.g., an SBOM)
         mockOras
             .Setup(s => s.GetReferrersAsync(
-                It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync(new List<ReferrerInfo>
             {
                 new("registry/repo@sha256:sbom123", "application/spdx+json")

@@ -3,8 +3,10 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -30,7 +32,12 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public RegistryHttpClient GetRegistryClient() => _registryHttpClient.Value;
 
-        private class LoggingHandler : MessageProcessingHandler
+        /// <summary>
+        /// Logs HTTP request/response activity. Successful responses are logged at Debug level.
+        /// Failures (timeouts, cancellations, transport errors) are logged at Warning level
+        /// with elapsed time to aid diagnosis of hanging requests.
+        /// </summary>
+        private class LoggingHandler : DelegatingHandler
         {
             private readonly ILogger<LoggingHandler> _logger;
 
@@ -41,15 +48,31 @@ namespace Microsoft.DotNet.ImageBuilder
                 InnerHandler = new HttpClientHandler();
             }
 
-            protected override HttpRequestMessage ProcessRequest(HttpRequestMessage request, CancellationToken cancellationToken)
+            protected override async Task<HttpResponseMessage> SendAsync(
+                HttpRequestMessage request,
+                CancellationToken cancellationToken)
             {
-                _logger.LogInformation($"Sending HTTP request: {request.RequestUri}");
-                return request;
-            }
+                long startTime = Stopwatch.GetTimestamp();
 
-            protected override HttpResponseMessage ProcessResponse(HttpResponseMessage response, CancellationToken cancellationToken)
-            {
-                return response;
+                try
+                {
+                    HttpResponseMessage response = await base.SendAsync(request, cancellationToken);
+                    _logger.LogDebug("HTTP {StatusCode} {Method} {RequestUri} in {Elapsed}",
+                        (int)response.StatusCode, request.Method, request.RequestUri, Stopwatch.GetElapsedTime(startTime));
+                    return response;
+                }
+                catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+                {
+                    _logger.LogWarning(ex, "HTTP timeout {Method} {RequestUri} after {Elapsed}",
+                        request.Method, request.RequestUri, Stopwatch.GetElapsedTime(startTime));
+                    throw;
+                }
+                catch (HttpRequestException ex)
+                {
+                    _logger.LogWarning(ex, "HTTP failure {Method} {RequestUri} after {Elapsed}",
+                        request.Method, request.RequestUri, Stopwatch.GetElapsedTime(startTime));
+                    throw;
+                }
             }
         }
     }

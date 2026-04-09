@@ -43,7 +43,7 @@ public class OrasDotNetService(
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
     private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
-    private readonly IMemoryCache _cache = cache;
+    private readonly Cache _orasCache = new(cache);
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
@@ -116,13 +116,24 @@ public class OrasDotNetService(
     /// <inheritdoc/>
     public async Task<IReadOnlyList<ReferrerInfo>> GetReferrersAsync(
         string reference,
+        bool isDryRun = false,
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+        IReadOnlyList<ReferrerInfo> referrers = isDryRun ? []
+            : await GetReferrersImplAsync(reference, cancellationToken);
 
-        _logger.LogDebug("Fetching referrers for reference: {Reference}", reference);
+        _logger.LogInformation(
+            "{Reference} has {Count} referrer(s) (DryRun={DryRun})",
+            reference, referrers.Count, isDryRun);
 
-        long startTime = Stopwatch.GetTimestamp();
+        return referrers;
+    }
+
+    private async Task<IReadOnlyList<ReferrerInfo>> GetReferrersImplAsync(
+        string reference,
+        CancellationToken cancellationToken)
+    {
         Repository repository = CreateRepository(reference);
         Descriptor subjectDescriptor = await repository.ResolveAsync(reference, cancellationToken);
 
@@ -139,9 +150,6 @@ public class OrasDotNetService(
             });
             _logger.LogDebug("Found referrer: {Referrer} (artifactType={ArtifactType})", referrerReference, referrer.ArtifactType);
         }
-
-        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
-        _logger.LogDebug("Found {Count} referrer(s) for {Reference} in {Elapsed}", referrers.Count, reference, elapsed);
 
         return referrers;
     }
@@ -196,8 +204,7 @@ public class OrasDotNetService(
             parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
 
         HttpClient httpClient = _httpClientProvider.GetClient();
-        Cache cache = new(_cache);
-        Client authClient = new(httpClient, _credentialProvider, cache);
+        Client authClient = new(httpClient, _credentialProvider, _orasCache);
 
         RepositoryOptions repositoryOptions = new()
         {

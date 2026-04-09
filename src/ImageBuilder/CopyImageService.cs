@@ -54,22 +54,27 @@ public class CopyImageService : ICopyImageService
     {
         Acr destAcr = Acr.Parse(destAcrName);
 
-        string action = isDryRun ? "(Dry run) Would have imported" : "Importing";
         string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
-        var destinationImageNames = destTagNames
-            .Select(tag => $"'{DockerHelper.GetImageName(destAcr.Name, tag)}'")
-            .ToList();
+        string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
+
+        // Discover referrers (signatures, SBOMs, etc.) for the source image.
+        IReadOnlyList<ReferrerInfo> referrers =
+            await _orasService.GetReferrersAsync(reference: sourceImageName, isDryRun: isDryRun);
+
+        var destinationImageNames =
+            destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
-        _logger.LogInformation("{Action} {DestinationImages} from '{SourceImage}'",
-            action, formattedDestinationImages, sourceImageName);
+
+        _logger.LogInformation(
+            "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun})",
+            formattedDestinationImages, referrers.Count, sourceImageName, isDryRun);
 
         if (isDryRun)
         {
-            _logger.LogInformation("Importing skipped due to dry run.");
             return;
         }
 
-        var destResourceId = _publishConfig.GetAcrResource(destAcrName);
+        ResourceIdentifier destResourceId = _publishConfig.GetAcrResource(destAcrName);
 
         // Only look up the source resource ID for registries in the publish config (i.e. ACRs).
         // External registries like docker.io use RegistryAddress + Credentials instead.
@@ -80,8 +85,6 @@ public class CopyImageService : ICopyImageService
                 ? _publishConfig.GetAcrResource(srcRegistryName)
                 : null;
 
-        // Azure ACR import only supports one source identifier. Use ResourceId for ACR-to-ACR
-        // imports (same tenant), or RegistryAddress for external registries.
         ContainerRegistryImportSource importSrc = new(srcTagName)
         {
             ResourceId = srcResourceId,
@@ -98,15 +101,8 @@ public class CopyImageService : ICopyImageService
 
         await _acrRegistryImporter.ImportImageAsync(destAcrName, destResourceId, importImageContent);
 
-        // Discover and import all OCI referrers (signatures, SBOMs, etc.) for the source image.
-        string sourceImageReference = DockerHelper.GetImageName(srcRegistryName, srcTagName);
-        IReadOnlyList<ReferrerInfo> referrers = await _orasService.GetReferrersAsync(sourceImageReference);
-
-        string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
         foreach (ReferrerInfo referrer in referrers)
         {
-            _logger.LogInformation("Importing referrer '{Referrer}' to '{DestAcr}/{DestRepo}'", referrer.Digest, destAcrName, destRepo);
-
             string referrerDigestReference = DockerHelper.TrimRegistry(referrer.Digest, srcRegistryName);
             ContainerRegistryImportSource referrerImportSrc = new(referrerDigestReference)
             {

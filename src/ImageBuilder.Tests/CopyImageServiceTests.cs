@@ -29,10 +29,15 @@ public class CopyImageServiceTests
     public async Task ImportImageAsync_DryRun_DoesNotRequirePublishConfiguration()
     {
         var emptyConfig = new PublishConfiguration();
+        var mockOras = new Mock<IOrasService>();
+        mockOras
+            .Setup(o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync([]);
+
         var service = new CopyImageService(
             Mock.Of<ILogger<CopyImageService>>(),
             Mock.Of<IAcrImageImporter>(),
-            Mock.Of<IOrasService>(),
+            mockOras.Object,
             ConfigurationHelper.CreateOptionsMock(emptyConfig));
 
         await Should.NotThrowAsync(() =>

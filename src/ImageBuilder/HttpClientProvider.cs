@@ -53,6 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder
                 CancellationToken cancellationToken)
             {
                 long startTime = Stopwatch.GetTimestamp();
+                _logger.LogDebug("HTTP {Method} {RequestUri} sending", request.Method, request.RequestUri);
 
                 try
                 {
@@ -61,9 +62,15 @@ namespace Microsoft.DotNet.ImageBuilder
                         (int)response.StatusCode, request.Method, request.RequestUri, Stopwatch.GetElapsedTime(startTime));
                     return response;
                 }
-                catch (TaskCanceledException ex) when (!cancellationToken.IsCancellationRequested)
+                catch (OperationCanceledException ex) when (ex.InnerException is TimeoutException)
                 {
                     _logger.LogWarning(ex, "HTTP timeout {Method} {RequestUri} after {Elapsed}",
+                        request.Method, request.RequestUri, Stopwatch.GetElapsedTime(startTime));
+                    throw;
+                }
+                catch (OperationCanceledException ex)
+                {
+                    _logger.LogWarning(ex, "HTTP canceled {Method} {RequestUri} after {Elapsed}",
                         request.Method, request.RequestUri, Stopwatch.GetElapsedTime(startTime));
                     throw;
                 }

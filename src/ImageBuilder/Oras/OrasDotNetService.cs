@@ -120,8 +120,17 @@ public class OrasDotNetService(
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
-        IReadOnlyList<ReferrerInfo> referrers = isDryRun ? []
-            : await GetReferrersImplAsync(reference, cancellationToken);
+
+        IReadOnlyList<ReferrerInfo> referrers;
+        if (isDryRun)
+        {
+            referrers = [];
+        }
+        else
+        {
+            _logger.LogDebug("Fetching referrers for {Reference}", reference);
+            referrers = await GetReferrersImplAsync(reference, cancellationToken);
+        }
 
         _logger.LogInformation(
             "{Reference} has {Count} referrer(s) (DryRun={DryRun})",

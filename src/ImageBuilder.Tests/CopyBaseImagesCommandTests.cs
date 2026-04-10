@@ -93,6 +93,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
+                            false,
                             expectedTagInfo.Registry,
                             It.Is<ContainerRegistryImportSourceCredentials>(creds => creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password),
                             false));
@@ -167,6 +168,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTagInfo.TargetTag },
                             manifest.Registry,
                             expectedTagInfo.SourceImage,
+                            false,
                             expectedTagInfo.Registry,
                             It.Is<ContainerRegistryImportSourceCredentials>(creds => (creds == null && expectedTagInfo.Username == null) || (creds.Username == expectedTagInfo.Username && creds.Password == expectedTagInfo.Password)),
                             false));

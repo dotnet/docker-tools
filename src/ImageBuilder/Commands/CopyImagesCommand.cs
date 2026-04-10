@@ -22,6 +22,7 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
         string destTagName,
         string destRegistryName,
         string srcTagName,
+        bool copyReferrers,
         string? srcRegistryName = null,
         ContainerRegistryImportSourceCredentials? sourceCredentials = null) =>
             _copyImageService.ImportImageAsync(
@@ -30,5 +31,6 @@ public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
                 srcTagName: srcTagName,
                 srcRegistryName: srcRegistryName,
                 sourceCredentials: sourceCredentials,
-                isDryRun: Options.IsDryRun);
+                isDryRun: Options.IsDryRun,
+                copyReferrers: copyReferrers);
 }

@@ -104,6 +104,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
+                            true,
                             SourceRegistry,
                             null,
                             false));
@@ -205,6 +206,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
+                            true,
                             SourceRegistry,
                             null,
                             false));
@@ -318,6 +320,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             expectedTag,
+                            true,
                             SourceRegistry,
                             null,
                             false));
@@ -431,6 +434,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             new string[] { expectedTag },
                             manifest.Registry,
                             It.IsAny<string>(),
+                            true,
                             SourceRegistry,
                             null,
                             false));
@@ -516,6 +520,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime:tag1" },
                     DestinationRegistry,
                     "test/runtime:tag1",
+                    true,
                     SourceRegistry,
                     null,
                     false));
@@ -526,6 +531,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime:shared1" },
                     DestinationRegistry,
                     "test/runtime:shared1",
+                    true,
                     SourceRegistry,
                     null,
                     false));
@@ -535,6 +541,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime:shared2" },
                     DestinationRegistry,
                     "test/runtime:shared2",
+                    true,
                     SourceRegistry,
                     null,
                     false));
@@ -628,6 +635,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime:tag1" },
                     DestinationRegistry,
                     "test/runtime:tag1",
+                    true,
                     SourceRegistry,
                     null,
                     false));
@@ -638,6 +646,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime:shared1" },
                     DestinationRegistry,
                     "test/runtime:shared1",
+                    true,
                     SourceRegistry,
                     null,
                     false));
@@ -648,6 +657,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime2:syn-shared1" },
                     DestinationRegistry,
                     "test/runtime2:syn-shared1",
+                    true,
                     SourceRegistry,
                     null,
                     false));
@@ -721,6 +731,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new string[] { $"test/runtime:tag1" },
                     DestinationRegistry,
                     It.IsAny<string>(),
+                    true,
                     SourceRegistry,
                     null,
                     false));

@@ -46,7 +46,9 @@ public class CopyImageServiceTests
                 destAcrName: "myacr.azurecr.io",
                 srcTagName: "repo:tag",
                 srcRegistryName: "docker.io",
-                isDryRun: true));
+                sourceCredentials: null,
+                isDryRun: true,
+                copyReferrers: true));
     }
 
     /// <summary>
@@ -94,7 +96,9 @@ public class CopyImageServiceTests
             destAcrName: "myacr.azurecr.io",
             srcTagName: "repo:tag",
             srcRegistryName: "docker.io",
-            isDryRun: false);
+            sourceCredentials: null,
+            isDryRun: false,
+            copyReferrers: true);
 
         // Verify the importer was called, proving execution reached the import step
         // (past the external registry lookup that previously threw)
@@ -137,7 +141,9 @@ public class CopyImageServiceTests
             destAcrName: "myacr.azurecr.io",
             srcTagName: "repo:tag",
             srcRegistryName: "myacr.azurecr.io",
-            isDryRun: false);
+            sourceCredentials: null,
+            isDryRun: false,
+            copyReferrers: true);
 
         // Main image import with TargetTags
         mockImporter.Verify(
@@ -203,8 +209,51 @@ public class CopyImageServiceTests
             destAcrName: "myacr.azurecr.io",
             srcTagName: "repo:tag",
             srcRegistryName: "myacr.azurecr.io",
-            isDryRun: false);
+            sourceCredentials: null,
+            isDryRun: false,
+            copyReferrers: true);
 
+        mockImporter.Verify(
+            x => x.ImportImageAsync(
+                It.IsAny<string>(),
+                It.IsAny<ResourceIdentifier>(),
+                It.IsAny<ContainerRegistryImportImageContent>()),
+            Times.Once);
+    }
+
+    /// <summary>
+    /// When copyReferrers is false, referrer discovery and referrer imports are
+    /// both skipped. Only the main image is imported.
+    /// </summary>
+    [Fact]
+    public async Task ImportImageAsync_CopyReferrersFalse_SkipsReferrerDiscoveryAndImport()
+    {
+        PublishConfiguration publishConfig = CreateAcrPublishConfig("myacr.azurecr.io");
+
+        var mockImporter = new Mock<IAcrImageImporter>();
+        var mockOras = new Mock<IOrasService>();
+
+        var service = new CopyImageService(
+            Mock.Of<ILogger<CopyImageService>>(),
+            mockImporter.Object,
+            mockOras.Object,
+            ConfigurationHelper.CreateOptionsMock(publishConfig));
+
+        await service.ImportImageAsync(
+            destTagNames: ["mirror/repo:tag"],
+            destAcrName: "myacr.azurecr.io",
+            srcTagName: "repo:tag",
+            srcRegistryName: "myacr.azurecr.io",
+            sourceCredentials: null,
+            isDryRun: false,
+            copyReferrers: false);
+
+        // GetReferrersAsync should never be called when copyReferrers is false
+        mockOras.Verify(
+            o => o.GetReferrersAsync(It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+
+        // Only the main image should be imported (no referrers)
         mockImporter.Verify(
             x => x.ImportImageAsync(
                 It.IsAny<string>(),
@@ -239,7 +288,9 @@ public class CopyImageServiceTests
             destAcrName: "myacr.azurecr.io",
             srcTagName: "repo:tag",
             srcRegistryName: "myacr.azurecr.io",
-            isDryRun: true);
+            sourceCredentials: null,
+            isDryRun: true,
+            copyReferrers: true);
 
         mockOras.Verify(
             o => o.GetReferrersAsync(It.IsAny<string>(), true, It.IsAny<CancellationToken>()),

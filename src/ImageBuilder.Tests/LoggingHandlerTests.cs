@@ -63,6 +63,10 @@ public class LoggingHandlerTests
         mockLogger.VerifyLog(LogLevel.Warning, "HTTP timeout", Times.Never());
     }
 
+    /// <summary>
+    /// Creates a mock ILogger with all log levels enabled so that LogDebug/LogWarning
+    /// extension methods don't short-circuit before calling <see cref="ILogger.Log"/>.
+    /// </summary>
     private static Mock<ILogger> CreateMockLogger()
     {
         Mock<ILogger> mock = new();
@@ -70,6 +74,11 @@ public class LoggingHandlerTests
         return mock;
     }
 
+    /// <summary>
+    /// Creates a mock HttpMessageHandler whose SendAsync (protected) throws the given exception.
+    /// This replaces the real HTTP stack so LoggingHandler's catch clauses can be exercised
+    /// without making any network calls.
+    /// </summary>
     private static HttpMessageHandler CreateThrowingHandler(Exception exception)
     {
         Mock<HttpMessageHandler> mock = new();

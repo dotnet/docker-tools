@@ -59,25 +59,17 @@ public class CopyImageService : ICopyImageService
         string sourceImageName = DockerHelper.GetImageName(srcRegistryName, srcTagName);
         string destRepo = destTagNames.First().Split(':')[0].Split('@')[0];
 
-        IReadOnlyList<ReferrerInfo> referrers;
-        if (copyReferrers)
-        {
-            // Discover referrers (signatures, SBOMs, etc.) for the source image.
-            referrers = await _orasService.GetReferrersAsync(reference: sourceImageName, isDryRun: isDryRun);
-        }
-        else
-        {
-            referrers = [];
-            _logger.LogInformation("Skipping referrer discovery for '{SourceImage}' (copyReferrers=false)", sourceImageName);
-        }
+        IReadOnlyList<ReferrerInfo> referrers = copyReferrers
+            ? await _orasService.GetReferrersAsync(reference: sourceImageName, isDryRun: isDryRun)
+            : [];
 
         var destinationImageNames =
             destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
 
         _logger.LogInformation(
-            "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun})",
-            formattedDestinationImages, referrers.Count, sourceImageName, isDryRun);
+            "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun}, CopyReferrers={CopyReferrers})",
+            formattedDestinationImages, referrers.Count, sourceImageName, isDryRun, copyReferrers);
 
         if (isDryRun)
         {

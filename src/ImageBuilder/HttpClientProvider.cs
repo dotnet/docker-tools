@@ -39,7 +39,7 @@ namespace Microsoft.DotNet.ImageBuilder
     /// Failures (timeouts, cancellations, transport errors) are logged at Warning level
     /// with elapsed time to aid diagnosis of hanging requests.
     /// </summary>
-    public class LoggingHandler : DelegatingHandler
+    public sealed class LoggingHandler : DelegatingHandler
     {
         private readonly ILogger _logger;
 

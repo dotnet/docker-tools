@@ -95,8 +95,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 };
             }
 
-            return ImportImageAsync($"{Options.RepoPrefix}{fromImage}", destinationRegistryName, srcImage,
-                srcRegistryName: registry, sourceCredentials: importSourceCreds);
+            return ImportImageAsync(
+                destTagName: $"{Options.RepoPrefix}{fromImage}",
+                destRegistryName: destinationRegistryName,
+                srcTagName: srcImage,
+                srcRegistryName: registry,
+                sourceCredentials: importSourceCreds,
+                copyReferrers: false);
         }
     }
 }

@@ -3704,6 +3704,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                         destTagNames,
                         destRegistryName,
                         srcTagName,
+                        true,
                         srcRegistryName,
                         It.IsAny<ContainerRegistryImportSourceCredentials>(),
                         false));

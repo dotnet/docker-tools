@@ -624,6 +624,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 destTagNames: destTags,
                 destAcrName: Manifest.Registry,
                 srcTagName: DockerHelper.TrimRegistry(sourceDigest, srcRegistry),
+                copyReferrers: true,
                 srcRegistryName: srcRegistry);
 
             // Redefine the source digest to be from the destination of the copy, not the source. The canonical scenario

@@ -59,6 +59,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                 DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                                 Manifest.Registry,
                                 DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
+                                copyReferrers: true,
                                 srcRegistryName: Options.SourceRegistry)))
                 .SelectMany(tasks => tasks);
 
@@ -68,6 +69,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                         Manifest.Registry,
                         DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
+                        copyReferrers: true,
                         srcRegistryName: Options.SourceRegistry));
 
             await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));

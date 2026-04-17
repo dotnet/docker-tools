@@ -32,13 +32,21 @@ public class ServiceConnectionOptionsBuilder
             CustomParser = result =>
             {
                 string token = result.Tokens.Single().Value;
-                string[] serviceConnectionInfo = token.Split(':');
+                string[] parts = token.Split(':');
+
+                if (parts.Length != 3)
+                {
+                    result.AddError(
+                        $"Invalid service connection format '{token}'. " +
+                        $"Expected format: \"{{tenantId}}:{{clientId}}:{{serviceConnectionId}}\".");
+                    return null;
+                }
 
                 return new ServiceConnection()
                 {
-                    TenantId = serviceConnectionInfo[0],
-                    ClientId = serviceConnectionInfo[1],
-                    Id = serviceConnectionInfo[2],
+                    TenantId = parts[0],
+                    ClientId = parts[1],
+                    Id = parts[2],
                 };
             }
         };

@@ -130,7 +130,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             const string TokenAlias = "gh-token";
             _tokenOption = new Option<string>(CliHelper.FormatAlias(TokenAlias))
             {
-                Description = "GitHub Personal Access Token (PAT)"
+                Description = description ?? "GitHub Personal Access Token (PAT)"
             };
 
             const string PrivateKeyAlias = "gh-private-key";
@@ -174,6 +174,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         command.AddError($"GitHub App authentication requires both {CliHelper.FormatAlias(ClientIdAlias)} "
                             + $"and {CliHelper.FormatAlias(PrivateKeyAlias)} but only one was provided.");
+                        return;
+                    }
+
+                    // When auth is required, at least one auth method must be provided
+                    if (isRequired && !hasToken && !hasPrivateKey)
+                    {
+                        command.AddError($"GitHub authentication is required. Provide either a personal access token "
+                            + $"({CliHelper.FormatAlias(TokenAlias)}) or GitHub App credentials "
+                            + $"({CliHelper.FormatAlias(PrivateKeyAlias)} and {CliHelper.FormatAlias(ClientIdAlias)}).");
                     }
                 });
 

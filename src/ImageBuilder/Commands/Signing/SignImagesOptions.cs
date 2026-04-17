@@ -36,5 +36,6 @@ public class SignImagesOptions : Options
     {
         base.Bind(result);
         ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
+        _registryOptionsBuilder.Bind(result, RegistryOverride);
     }
 }

@@ -28,10 +28,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             TOptions options = new();
 
-            Command cmd = BuildCliCommand(
-                name: this.GetCommandName(),
-                description: Description,
-                options: options);
+            Command cmd = new Command(this.GetCommandName(), Description);
+            cmd.AddOptions(options);
 
             cmd.SetAction(async (parseResult, cancellationToken) =>
             {
@@ -47,25 +45,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
 
             return cmd;
-        }
-
-        /// <summary>
-        /// Builds a CLI command with the arguments, options, and validators defined by the given options instance.
-        /// </summary>
-        public static Command BuildCliCommand(string name, string description, TOptions options)
-        {
-            Command command = new(name, description);
-
-            foreach (Argument argument in options.GetCliArguments())
-                command.Add(argument);
-
-            foreach (Option option in options.GetCliOptions())
-                command.Add(option);
-
-            foreach (Action<CommandResult> validator in options.GetValidators())
-                command.Validators.Add(validator);
-
-            return command;
         }
 
         protected virtual void Initialize(TOptions options)

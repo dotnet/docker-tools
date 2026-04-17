@@ -26,28 +26,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public Command GetCliCommand()
         {
-            Command cmd = new Command(this.GetCommandName(), Description);
+            TOptions options = new();
 
-            TOptions template = new();
+            Command cmd = BuildCliCommand(
+                name: this.GetCommandName(),
+                description: Description,
+                options: options);
 
-            foreach (Argument argument in template.GetCliArguments())
+            cmd.SetAction(async (parseResult, cancellationToken) =>
             {
-                cmd.Add(argument);
-            }
-
-            foreach (Option option in template.GetCliOptions())
-            {
-                cmd.Add(option);
-            }
-
-            foreach (Action<CommandResult> validator in template.GetValidators())
-            {
-                cmd.Validators.Add(validator);
-            }
-
-            cmd.SetAction(async (ParseResult parseResult, CancellationToken cancellationToken) =>
-            {
-                TOptions options = new();
                 options.Bind(parseResult);
 
                 if (!options.NoVersionLogging)
@@ -60,6 +47,25 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             });
 
             return cmd;
+        }
+
+        /// <summary>
+        /// Builds a CLI command with the arguments, options, and validators defined by the given options instance.
+        /// </summary>
+        public static Command BuildCliCommand(string name, string description, TOptions options)
+        {
+            Command command = new(name, description);
+
+            foreach (Argument argument in options.GetCliArguments())
+                command.Add(argument);
+
+            foreach (Option option in options.GetCliOptions())
+                command.Add(option);
+
+            foreach (Action<CommandResult> validator in options.GetValidators())
+                command.Validators.Add(validator);
+
+            return command;
         }
 
         protected virtual void Initialize(TOptions options)

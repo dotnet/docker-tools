@@ -53,7 +53,7 @@
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
 
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
-    <PackageReference Include="System.Drawing.Common" Version="5.0.3" />
+    <PackageReference Include="System.Drawing.Common" Version="9.0.15" />
 
     <!-- CVE-2024-38095: Upgrade version of System.Formats.Asn1 implicitly referenced by Microsoft.DotNet.VersionTools -->
     <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />

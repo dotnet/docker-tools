@@ -50,7 +50,7 @@
     <PackageReference Include="YamlDotNet" Version="17.0.1" />
 
     <!-- Resolve diamond dependency: Microsoft.TeamFoundationServer.Client transitively requires >= 8.0.0 -->
-    <PackageReference Include="System.Configuration.ConfigurationManager" Version="8.0.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.6" />
 
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
     <PackageReference Include="System.Drawing.Common" Version="5.0.3" />

@@ -4,41 +4,62 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class AnnotateEolDigestsOptions : Options
 {
-    public class AnnotateEolDigestsOptions : Options
+    public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
+
+    public string EolDigestsListPath { get; set; } = string.Empty;
+    public string AcrName { get; set; } = string.Empty;
+    public string RepoPrefix { get; set; } = string.Empty;
+    public string AnnotationDigestsOutputPath { get; set; } = string.Empty;
+
+    private static readonly Argument<string> EolDigestsListPathArgument = new(nameof(EolDigestsListPath))
     {
-        public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
+        Description = "EOL annotations digests list path"
+    };
 
-        public string EolDigestsListPath { get; set; } = string.Empty;
-        public string AcrName { get; set; } = string.Empty;
-        public string RepoPrefix { get; set; } = string.Empty;
-        public string AnnotationDigestsOutputPath { get; set; } = string.Empty;
-    }
-
-    public class AnnotateEolDigestsOptionsBuilder : CliOptionsBuilder
+    private static readonly Argument<string> AcrNameArgument = new(nameof(AcrName))
     {
-        private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
+        Description = "Azure registry name"
+    };
 
-        public override IEnumerable<Option> GetCliOptions() =>
-            [
-                ..base.GetCliOptions(),
-                .._registryCredentialsOptionsBuilder.GetCliOptions(),
-            ];
+    private static readonly Argument<string> RepoPrefixArgument = new(nameof(RepoPrefix))
+    {
+        Description = "Publish prefix of the repo names"
+    };
 
-        public override IEnumerable<Argument> GetCliArguments() =>
-            [
-                ..base.GetCliArguments(),
-                .._registryCredentialsOptionsBuilder.GetCliArguments(),
-                new Argument<string>(nameof(AnnotateEolDigestsOptions.EolDigestsListPath),
-                    "EOL annotations digests list path"),
-                new Argument<string>(nameof(AnnotateEolDigestsOptions.AcrName),
-                    "Azure registry name"),
-                new Argument<string>(nameof(AnnotateEolDigestsOptions.RepoPrefix),
-                    "Publish prefix of the repo names"),
-                new Argument<string>(nameof(AnnotateEolDigestsOptions.AnnotationDigestsOutputPath),
-                    "Output path of file containing the list of annotation digests that were created"),
-            ];
+    private static readonly Argument<string> AnnotationDigestsOutputPathArgument = new(nameof(AnnotationDigestsOutputPath))
+    {
+        Description = "Output path of file containing the list of annotation digests that were created"
+    };
+
+    public override IEnumerable<Option> GetCliOptions() =>
+        [
+            ..base.GetCliOptions(),
+            ..CredentialsOptions.GetCliOptions(),
+        ];
+
+    public override IEnumerable<Argument> GetCliArguments() =>
+        [
+            ..base.GetCliArguments(),
+            ..CredentialsOptions.GetCliArguments(),
+            EolDigestsListPathArgument,
+            AcrNameArgument,
+            RepoPrefixArgument,
+            AnnotationDigestsOutputPathArgument,
+        ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        CredentialsOptions.Bind(result);
+        EolDigestsListPath = result.GetValue(EolDigestsListPathArgument) ?? string.Empty;
+        AcrName = result.GetValue(AcrNameArgument) ?? string.Empty;
+        RepoPrefix = result.GetValue(RepoPrefixArgument) ?? string.Empty;
+        AnnotationDigestsOutputPath = result.GetValue(AnnotationDigestsOutputPathArgument) ?? string.Empty;
     }
 }

@@ -4,45 +4,72 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 using Microsoft.VisualStudio.Services.Common;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Commands
+namespace Microsoft.DotNet.ImageBuilder.Commands;
+
+public class AzdoOptions
 {
-    public class AzdoOptions
+    public string AccessToken { get; set; } = string.Empty;
+
+    public string Organization { get; set; } = string.Empty;
+
+    public string Project { get; set; } = string.Empty;
+
+    public string? AzdoRepo { get; set; }
+
+    public string? AzdoBranch { get; set; }
+
+    public string? AzdoPath { get; set; }
+
+    private static readonly Argument<string> AccessTokenArgument = new(nameof(AccessToken))
     {
-        public string AccessToken { get; set; } = string.Empty;
+        Description = "Azure DevOps PAT"
+    };
 
-        public string Organization { get; set; } = string.Empty;
+    private static readonly Argument<string> OrganizationArgument = new(nameof(Organization))
+    {
+        Description = "Azure DevOps organization"
+    };
 
-        public string Project { get; set; } = string.Empty;
+    private static readonly Argument<string> ProjectArgument = new(nameof(Project))
+    {
+        Description = "Azure DevOps project"
+    };
 
-        public string? AzdoRepo { get; set; }
+    private static readonly Option<string?> AzdoRepoOption = new(CliHelper.FormatAlias("azdo-repo"))
+    {
+        Description = "Azure DevOps repo"
+    };
 
-        public string? AzdoBranch { get; set; }
+    private static readonly Option<string?> AzdoBranchOption = new(CliHelper.FormatAlias("azdo-branch"))
+    {
+        Description = "Azure DevOps branch (default: main)",
+        DefaultValueFactory = _ => "main"
+    };
 
-        public string? AzdoPath { get; set; }
+    private static readonly Option<string?> AzdoPathOption = new(CliHelper.FormatAlias("azdo-path"))
+    {
+        Description = "Azure DevOps path"
+    };
 
-        public (Uri BaseUrl, VssCredentials Credentials) GetConnectionDetails() =>
-            (new Uri($"https://dev.azure.com/{Organization}"), new VssBasicCredential(string.Empty, AccessToken));
+    public IEnumerable<Argument> GetCliArguments() =>
+        [AccessTokenArgument, OrganizationArgument, ProjectArgument];
+
+    public IEnumerable<Option> GetCliOptions() =>
+        [AzdoRepoOption, AzdoBranchOption, AzdoPathOption];
+
+    public void Bind(ParseResult result)
+    {
+        AccessToken = result.GetValue(AccessTokenArgument) ?? string.Empty;
+        Organization = result.GetValue(OrganizationArgument) ?? string.Empty;
+        Project = result.GetValue(ProjectArgument) ?? string.Empty;
+        AzdoRepo = result.GetValue(AzdoRepoOption);
+        AzdoBranch = result.GetValue(AzdoBranchOption);
+        AzdoPath = result.GetValue(AzdoPathOption);
     }
 
-    public class AzdoOptionsBuilder
-    {
-        public IEnumerable<Argument> GetCliArguments() =>
-            new Argument[]
-            {
-                new Argument<string>(nameof(AzdoOptions.AccessToken), "Azure DevOps PAT"),
-                new Argument<string>(nameof(AzdoOptions.Organization), "Azure DevOps organization"),
-                new Argument<string>(nameof(AzdoOptions.Project), "Azure DevOps project")
-            };
-
-        public IEnumerable<Option> GetCliOptions() =>
-            new Option[]
-            {
-                CreateOption<string?>("azdo-repo", nameof(AzdoOptions.AzdoRepo), "Azure DevOps repo"),
-                CreateOption<string?>("azdo-branch", nameof(AzdoOptions.AzdoBranch), "Azure DevOps branch (default: main)", "main"),
-                CreateOption<string?>("azdo-path", nameof(AzdoOptions.AzdoPath), "Azure DevOps path"),
-            };
-    }
+    public (Uri BaseUrl, VssCredentials Credentials) GetConnectionDetails() =>
+        (new Uri($"https://dev.azure.com/{Organization}"), new VssBasicCredential(string.Empty, AccessToken));
 }

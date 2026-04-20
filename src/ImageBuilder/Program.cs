@@ -4,9 +4,6 @@
 
 using System;
 using System.CommandLine;
-using System.CommandLine.Binding;
-using System.CommandLine.Builder;
-using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
@@ -18,22 +15,10 @@ try
 
     foreach (ICommand command in ImageBuilder.Commands)
     {
-        rootCliCommand.AddCommand(command.GetCliCommand());
+        rootCliCommand.Add(command.GetCliCommand());
     }
 
-    Parser parser = new CommandLineBuilder(rootCliCommand)
-        .UseDefaults()
-        .UseMiddleware(context =>
-        {
-            context.BindingContext.AddModelBinder(new ModelBinder<AzdoOptions>());
-            context.BindingContext.AddModelBinder(new ModelBinder<GitOptions>());
-            context.BindingContext.AddModelBinder(new ModelBinder<ManifestFilterOptions>());
-            context.BindingContext.AddModelBinder(new ModelBinder<RegistryCredentialsOptions>());
-            context.BindingContext.AddModelBinder(new ModelBinder<SubscriptionOptions>());
-        })
-        .Build();
-
-    return parser.Invoke(args);
+    return await rootCliCommand.Parse(args).InvokeAsync();
 }
 catch (Exception e)
 {

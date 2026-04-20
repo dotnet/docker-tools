@@ -26,7 +26,7 @@ public class VerifySignaturesCommand(
     IEnvironmentService environmentService,
     IFileSystem fileSystem,
     IOptions<PublishConfiguration> publishConfigOptions)
-    : Command<VerifySignaturesOptions, VerifySignaturesOptionsBuilder>
+    : Command<VerifySignaturesOptions>
 {
     private readonly ILogger<VerifySignaturesCommand> _logger = logger;
     private readonly INotationClient _notationClient = notationClient;

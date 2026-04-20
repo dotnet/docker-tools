@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -11,16 +12,28 @@ public class GenerateEolAnnotationDataForPublishOptions : GenerateEolAnnotationD
 {
     public string OldImageInfoPath { get; set; } = string.Empty;
     public string NewImageInfoPath { get; set; } = string.Empty;
-}
 
-public class GenerateEolAnnotationDataOptionsForPublishBuilder : GenerateEolAnnotationDataOptionsBuilder
-{
+    private static readonly Argument<string> OldImageInfoPathArgument = new(nameof(OldImageInfoPath))
+    {
+        Description = "Old image-info file"
+    };
+
+    private static readonly Argument<string> NewImageInfoPathArgument = new(nameof(NewImageInfoPath))
+    {
+        Description = "New image-info file"
+    };
+
     public override IEnumerable<Argument> GetCliArguments() =>
-        [
-            ..base.GetCliArguments(),
-            new Argument<string>(nameof(GenerateEolAnnotationDataForPublishOptions.OldImageInfoPath),
-                "Old image-info file"),
-            new Argument<string>(nameof(GenerateEolAnnotationDataForPublishOptions.NewImageInfoPath),
-                "New image-info file"),
-        ];
+    [
+        ..base.GetCliArguments(),
+        OldImageInfoPathArgument,
+        NewImageInfoPathArgument,
+    ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        OldImageInfoPath = result.GetValue(OldImageInfoPathArgument) ?? string.Empty;
+        NewImageInfoPath = result.GetValue(NewImageInfoPathArgument) ?? string.Empty;
+    }
 }

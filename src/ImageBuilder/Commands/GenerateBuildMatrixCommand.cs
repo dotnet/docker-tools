@@ -14,7 +14,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions, GenerateBuildMatrixOptionsBuilder>
+    public class GenerateBuildMatrixCommand : ManifestCommand<GenerateBuildMatrixOptions>
     {
         private const string VersionRegGroupName = "Version";
 
@@ -209,7 +209,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string pathArgs = dockerfilePaths
                 .Distinct()
-                .Select(path => $"{CliHelper.FormatAlias(DockerfileFilterOptionsBuilder.PathOptionName)} {path}")
+                .Select(path => $"{CliHelper.FormatAlias(DockerfileFilterOptions.PathOptionName)} {path}")
                 .Aggregate((working, next) => $"{working} {next}");
             leg.Variables.Add(("imageBuilderPaths", pathArgs));
         }
@@ -227,7 +227,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             leg.Variables.Add(("architecture", platformGrouping.Key.Architecture.GetDockerName()));
 
             string[] osVersions = subgraph
-                .Select(platform => $"{CliHelper.FormatAlias(PlatformFilterOptionsBuilder.OsVersionOptionName)} {platform.Model.OsVersion}")
+                .Select(platform => $"{CliHelper.FormatAlias(PlatformFilterOptions.OsVersionOptionName)} {platform.Model.OsVersion}")
                 .Distinct()
                 .ToArray();
             leg.Variables.Add(("osVersions", string.Join(" ", osVersions)));

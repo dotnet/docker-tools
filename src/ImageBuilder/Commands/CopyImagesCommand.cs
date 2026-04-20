@@ -7,13 +7,12 @@ using Azure.ResourceManager.ContainerRegistry.Models;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
-public abstract class CopyImagesCommand<TOptions, TOptionsBuilder>(
+public abstract class CopyImagesCommand<TOptions>(
     IManifestJsonService manifestJsonService,
     ICopyImageService copyImageService,
     ILogger logger)
-    : ManifestCommand<TOptions, TOptionsBuilder>(manifestJsonService)
+    : ManifestCommand<TOptions>(manifestJsonService)
         where TOptions : CopyImagesOptions, new()
-        where TOptionsBuilder : CopyImagesOptionsBuilder, new()
 {
     private readonly ICopyImageService _copyImageService = copyImageService;
     private readonly ILogger _logger = logger;

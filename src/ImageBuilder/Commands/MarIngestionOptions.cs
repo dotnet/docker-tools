@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.CommandLine;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
 
@@ -13,19 +13,36 @@ public class MarIngestionOptions
     public TimeSpan WaitTimeout { get; set; }
 
     public TimeSpan RequeryDelay { get; set; }
-}
 
-internal class MarIngestionOptionsBuilder
-{
-    public IEnumerable<Option> GetCliOptions(TimeSpan defaultTimeout, TimeSpan defaultRequeryDelay) =>
-        [
-            CreateOption("timeout", nameof(MarIngestionOptions.WaitTimeout),
-                $"Maximum time to wait for ingestion",
-                val => TimeSpan.Parse(val), defaultTimeout),
-            CreateOption("requery-delay", nameof(MarIngestionOptions.RequeryDelay),
-                $"Amount of time to wait before requerying the status",
-                val => TimeSpan.Parse(val), defaultRequeryDelay)
-        ];
+    private Option<TimeSpan>? _timeoutOption;
+    private Option<TimeSpan>? _requeryDelayOption;
+
+    public IEnumerable<Option> GetCliOptions(TimeSpan defaultTimeout, TimeSpan defaultRequeryDelay)
+    {
+        _timeoutOption = new Option<TimeSpan>(CliHelper.FormatAlias("timeout"))
+        {
+            Description = "Maximum time to wait for ingestion",
+            DefaultValueFactory = _ => defaultTimeout,
+            CustomParser = argResult => TimeSpan.Parse(argResult.GetTokenValue())
+        };
+
+        _requeryDelayOption = new Option<TimeSpan>(CliHelper.FormatAlias("requery-delay"))
+        {
+            Description = "Amount of time to wait before requerying the status",
+            DefaultValueFactory = _ => defaultRequeryDelay,
+            CustomParser = argResult => TimeSpan.Parse(argResult.GetTokenValue())
+        };
+
+        return [_timeoutOption, _requeryDelayOption];
+    }
 
     public IEnumerable<Argument> GetCliArguments() => [];
+
+    public void Bind(ParseResult result)
+    {
+        ArgumentNullException.ThrowIfNull(_timeoutOption);
+        ArgumentNullException.ThrowIfNull(_requeryDelayOption);
+        WaitTimeout = result.GetValue(_timeoutOption);
+        RequeryDelay = result.GetValue(_requeryDelayOption);
+    }
 }

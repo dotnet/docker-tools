@@ -2,15 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.CommandLine;
-using System.CommandLine.Invocation;
+using System.CommandLine.Parsing;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
-    public abstract class Command<TOptions, TOptionsBuilder> : ICommand
+    public abstract class Command<TOptions> : ICommand
         where TOptions : Options, new()
-        where TOptionsBuilder : CliOptionsBuilder, new()
     {
         public TOptions Options { get; private set; }
 
@@ -27,32 +28,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             Command cmd = new Command(this.GetCommandName(), Description);
 
-            TOptionsBuilder OptionsBuilder = new TOptionsBuilder();
+            TOptions template = new();
 
-            foreach (Argument argument in OptionsBuilder.GetCliArguments())
+            foreach (Argument argument in template.GetCliArguments())
             {
-                cmd.AddArgument(argument);
+                cmd.Add(argument);
             }
 
-            foreach (Option option in OptionsBuilder.GetCliOptions())
+            foreach (Option option in template.GetCliOptions())
             {
-                cmd.AddOption(option);
+                cmd.Add(option);
             }
 
-            foreach (var validator in OptionsBuilder.GetValidators())
+            foreach (Action<CommandResult> validator in template.GetValidators())
             {
-                cmd.AddValidator(validator);
+                cmd.Validators.Add(validator);
             }
 
-            cmd.Handler = CommandHandler.Create<TOptions>(options =>
+            cmd.SetAction(async (ParseResult parseResult, CancellationToken cancellationToken) =>
             {
+                TOptions options = new();
+                options.Bind(parseResult);
+
                 if (!options.NoVersionLogging)
                 {
                     LogDockerVersions();
                 }
 
                 Initialize(options);
-                return ExecuteAsync();
+                await ExecuteAsync();
             });
 
             return cmd;

@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
+using System.CommandLine.Parsing;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -14,29 +16,39 @@ public class GenerateEolAnnotationDataOptions : Options
     public RegistryOptions RegistryOptions { get; set; } = new();
     public ServiceConnection? AcrServiceConnection { get; set; }
     public string EolDigestsListPath { get; set; } = string.Empty;
-}
 
-public class GenerateEolAnnotationDataOptionsBuilder : CliOptionsBuilder
-{
-    private readonly RegistryCredentialsOptionsBuilder _registryCredentialsOptionsBuilder = new();
-    private readonly RegistryOptionsBuilder _registryOptionsBuilder = new(isOverride: false);
-    private readonly ServiceConnectionOptionsBuilder _serviceConnectionOptionsBuilder = new();
+    private static readonly RegistryOptionsBuilder RegistryBuilder = new(isOverride: false);
+    private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
+
+    private static readonly Option<ServiceConnection?> AcrServiceConnectionOption =
+        ServiceConnectionBuilder.GetCliOption("acr-service-connection");
+
+    private static readonly Argument<string> EolDigestsListPathArgument = new(nameof(EolDigestsListPath))
+    {
+        Description = "EOL annotations digests list output path"
+    };
 
     public override IEnumerable<Option> GetCliOptions() =>
-        [
-            ..base.GetCliOptions(),
-            .._registryCredentialsOptionsBuilder.GetCliOptions(),
-            .._serviceConnectionOptionsBuilder.GetCliOptions(
-                alias: "acr-service-connection",
-                propertyName: nameof(GenerateEolAnnotationDataOptions.AcrServiceConnection)),
-        ];
+    [
+        ..base.GetCliOptions(),
+        ..CredentialsOptions.GetCliOptions(),
+        AcrServiceConnectionOption,
+    ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
-        [
-            ..base.GetCliArguments(),
-            .._registryCredentialsOptionsBuilder.GetCliArguments(),
-            .._registryOptionsBuilder.GetCliArguments(),
-            new Argument<string>(nameof(GenerateEolAnnotationDataOptions.EolDigestsListPath),
-                "EOL annotations digests list output path"),
-        ];
+    [
+        ..base.GetCliArguments(),
+        ..CredentialsOptions.GetCliArguments(),
+        ..RegistryBuilder.GetCliArguments(),
+        EolDigestsListPathArgument,
+    ];
+
+    public override void Bind(ParseResult result)
+    {
+        base.Bind(result);
+        CredentialsOptions.Bind(result);
+        RegistryBuilder.Bind(result, RegistryOptions);
+        AcrServiceConnection = result.GetValue(AcrServiceConnectionOption);
+        EolDigestsListPath = result.GetValue(EolDigestsListPathArgument) ?? string.Empty;
+    }
 }

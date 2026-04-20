@@ -3,7 +3,7 @@
 
 using System.Collections.Generic;
 using System.CommandLine;
-using static Microsoft.DotNet.ImageBuilder.Commands.CliHelper;
+using System.CommandLine.Parsing;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -11,21 +11,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public IDictionary<string, RegistryCredentials> Credentials { get; set; } =
             new Dictionary<string, RegistryCredentials>();
-    }
 
-    public class RegistryCredentialsOptionsBuilder
-    {
-        public IEnumerable<Option> GetCliOptions() =>
-            [
-                CreateDictionaryOption("registry-creds", nameof(RegistryCredentialsOptions.Credentials),
-                    "Named credentials that map to a registry (<registry>=<username>;<password>)",
-                    val =>
-                        {
-                            (string username, string password) = val.ParseKeyValuePair(';');
-                            return new RegistryCredentials(username, password);
-                        })
-            ];
+        private static readonly Option<Dictionary<string, RegistryCredentials>> CredentialsOption =
+            CliHelper.CreateDictionaryOption<RegistryCredentials>(
+                "registry-creds",
+                "Named credentials that map to a registry (<registry>=<username>;<password>)",
+                val =>
+                {
+                    (string username, string password) = val.ParseKeyValuePair(';');
+                    return new RegistryCredentials(username, password);
+                });
+
+        public IEnumerable<Option> GetCliOptions() => [CredentialsOption];
 
         public IEnumerable<Argument> GetCliArguments() => [];
+
+        public void Bind(ParseResult result)
+        {
+            Credentials = result.GetValue(CredentialsOption) ?? new Dictionary<string, RegistryCredentials>();
+        }
     }
 }

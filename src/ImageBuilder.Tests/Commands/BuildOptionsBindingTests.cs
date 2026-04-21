@@ -1,0 +1,129 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+using System.CommandLine;
+using System.CommandLine.Parsing;
+using Microsoft.DotNet.ImageBuilder.Commands;
+using Shouldly;
+using Xunit;
+
+namespace Microsoft.DotNet.ImageBuilder.Tests.Commands;
+
+public class BuildOptionsBindingTests
+{
+    [Fact]
+    public void RegistryCredentials_SingleCredential()
+    {
+        string[] args = ["--registry-creds", "mcr.microsoft.com=myuser;mypass"];
+
+        BuildOptions options = ParseAndBind<BuildOptions>(args);
+
+        options.CredentialsOptions.Credentials.ShouldContainKey("mcr.microsoft.com");
+        options.CredentialsOptions.Credentials["mcr.microsoft.com"].Username.ShouldBe("myuser");
+        options.CredentialsOptions.Credentials["mcr.microsoft.com"].Password.ShouldBe("mypass");
+    }
+
+    [Fact]
+    public void RegistryCredentials_MultipleCredentials()
+    {
+        string[] args =
+        [
+            "--registry-creds", "reg1.io=user1;pass1",
+            "--registry-creds", "reg2.io=user2;pass2",
+        ];
+
+        BuildOptions options = ParseAndBind<BuildOptions>(args);
+
+        options.CredentialsOptions.Credentials.Count.ShouldBe(2);
+        options.CredentialsOptions.Credentials["reg1.io"].Username.ShouldBe("user1");
+        options.CredentialsOptions.Credentials["reg2.io"].Password.ShouldBe("pass2");
+    }
+
+    [Fact]
+    public void BuildArgs_ParsesDictionaryValues()
+    {
+        string[] args =
+        [
+            "--build-arg", "SDK_VERSION=8.0",
+            "--build-arg", "RUNTIME=aspnet",
+        ];
+
+        BuildOptions options = ParseAndBind<BuildOptions>(args);
+
+        options.BuildArgs.ShouldContainKeyAndValue("SDK_VERSION", "8.0");
+        options.BuildArgs.ShouldContainKeyAndValue("RUNTIME", "aspnet");
+    }
+
+    [Fact]
+    public void Variables_ParsesDictionaryValues()
+    {
+        string[] args =
+        [
+            "--var", "branch=main",
+            "--var", "version=8.0",
+        ];
+
+        BuildOptions options = ParseAndBind<BuildOptions>(args);
+
+        options.Variables.ShouldContainKeyAndValue("branch", "main");
+        options.Variables.ShouldContainKeyAndValue("version", "8.0");
+    }
+
+    [Fact]
+    public void BooleanFlags_DefaultToFalse()
+    {
+        BuildOptions options = ParseAndBind<BuildOptions>([]);
+
+        options.IsPushEnabled.ShouldBeFalse();
+        options.NoCache.ShouldBeFalse();
+        options.IsRetryEnabled.ShouldBeFalse();
+        options.IsSkipPullingEnabled.ShouldBeFalse();
+        options.IsDryRun.ShouldBeFalse();
+    }
+
+    [Fact]
+    public void BooleanFlags_SetWhenPresent()
+    {
+        string[] args = ["--push", "--no-cache", "--retry"];
+
+        BuildOptions options = ParseAndBind<BuildOptions>(args);
+
+        options.IsPushEnabled.ShouldBeTrue();
+        options.NoCache.ShouldBeTrue();
+        options.IsRetryEnabled.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void ManifestOption_DefaultsToManifestJson()
+    {
+        BuildOptions options = ParseAndBind<BuildOptions>([]);
+
+        options.Manifest.ShouldBe("manifest.json");
+    }
+
+    [Fact]
+    public void ManifestOption_OverriddenWhenSpecified()
+    {
+        string[] args = ["--manifest", "custom-manifest.json"];
+
+        BuildOptions options = ParseAndBind<BuildOptions>(args);
+
+        options.Manifest.ShouldBe("custom-manifest.json");
+    }
+
+    /// <summary>
+    /// Parses the given args using the real CLI command shape for <typeparamref name="TOptions"/>
+    /// and binds the result — the same code path used by the production CLI.
+    /// </summary>
+    private static TOptions ParseAndBind<TOptions>(string[] args)
+        where TOptions : Options, new()
+    {
+        TOptions options = new();
+        Command command = new("test", "test");
+        command.AddOptions(options);
+
+        ParseResult parseResult = command.Parse(args);
+        options.Bind(parseResult);
+        return options;
+    }
+}

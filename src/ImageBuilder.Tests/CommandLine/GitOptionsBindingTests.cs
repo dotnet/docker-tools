@@ -18,11 +18,7 @@ public class GitOptionsBindingTests
     [Fact]
     public void GitHubToken_BoundFromCliArgs()
     {
-        string[] args =
-        [
-            "--gh-token", "my-pat",
-        ];
-
+        string[] args = ["--gh-token", "my-pat"];
         TestGitOptions options = ParseAndBind<TestGitOptions>(args);
 
         options.GitOptions.GitHubAuthOptions.AuthToken.ShouldBe("my-pat");
@@ -75,12 +71,7 @@ public class GitOptionsBindingTests
     [Fact]
     public void GitUserValues_BoundFromCliArgs()
     {
-        string[] args =
-        [
-            "--git-username", "bot",
-            "--git-email", "bot@example.com",
-        ];
-
+        string[] args = ["--git-username", "bot", "--git-email", "bot@example.com"];
         TestGitOptions options = ParseAndBind<TestGitOptions>(args);
 
         options.GitOptions.Username.ShouldBe("bot");
@@ -113,11 +104,7 @@ public class GitOptionsBindingTests
     [Fact]
     public void RequiredGitHubToken_BoundFromCliArgs()
     {
-        string[] args =
-        [
-            "--gh-token", "my-pat",
-        ];
-
+        string[] args = ["--gh-token", "my-pat"];
         TestGitOptionsWithRequiredAuth options = ParseAndBind<TestGitOptionsWithRequiredAuth>(args);
 
         options.GitOptions.GitHubAuthOptions.AuthToken.ShouldBe("my-pat");
@@ -127,12 +114,7 @@ public class GitOptionsBindingTests
     [Fact]
     public void RequiredGitHubAppAuth_BoundFromCliArgs()
     {
-        string[] args =
-        [
-            "--gh-private-key", "base64key",
-            "--gh-app-client-id", "my-client-id",
-        ];
-
+        string[] args = ["--gh-private-key", "base64key", "--gh-app-client-id", "my-client-id"];
         TestGitOptionsWithRequiredAuth options = ParseAndBind<TestGitOptionsWithRequiredAuth>(args);
 
         options.GitOptions.GitHubAuthOptions.PrivateKey.ShouldBe("base64key");

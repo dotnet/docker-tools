@@ -14,10 +14,7 @@ public class BuildOptionsBindingTests
     [Fact]
     public void RegistryCredentials_SingleCredential()
     {
-        string[] args = ["--registry-creds", "mcr.microsoft.com=myuser;mypass"];
-
-        BuildOptions options = ParseAndBind<BuildOptions>(args);
-
+        BuildOptions options = ParseAndBind<BuildOptions>(["--registry-creds", "mcr.microsoft.com=myuser;mypass"]);
         options.CredentialsOptions.Credentials.ShouldContainKey("mcr.microsoft.com");
         options.CredentialsOptions.Credentials["mcr.microsoft.com"].Username.ShouldBe("myuser");
         options.CredentialsOptions.Credentials["mcr.microsoft.com"].Password.ShouldBe("mypass");
@@ -57,14 +54,7 @@ public class BuildOptionsBindingTests
     [Fact]
     public void Variables_ParsesDictionaryValues()
     {
-        string[] args =
-        [
-            "--var", "branch=main",
-            "--var", "version=8.0",
-        ];
-
-        BuildOptions options = ParseAndBind<BuildOptions>(args);
-
+        BuildOptions options = ParseAndBind<BuildOptions>(["--var", "branch=main", "--var", "version=8.0"]);
         options.Variables.ShouldContainKeyAndValue("branch", "main");
         options.Variables.ShouldContainKeyAndValue("version", "8.0");
     }
@@ -73,7 +63,6 @@ public class BuildOptionsBindingTests
     public void BooleanFlags_DefaultToFalse()
     {
         BuildOptions options = ParseAndBind<BuildOptions>([]);
-
         options.IsPushEnabled.ShouldBeFalse();
         options.NoCache.ShouldBeFalse();
         options.IsRetryEnabled.ShouldBeFalse();
@@ -84,10 +73,7 @@ public class BuildOptionsBindingTests
     [Fact]
     public void BooleanFlags_SetWhenPresent()
     {
-        string[] args = ["--push", "--no-cache", "--retry"];
-
-        BuildOptions options = ParseAndBind<BuildOptions>(args);
-
+        BuildOptions options = ParseAndBind<BuildOptions>(["--push", "--no-cache", "--retry"]);
         options.IsPushEnabled.ShouldBeTrue();
         options.NoCache.ShouldBeTrue();
         options.IsRetryEnabled.ShouldBeTrue();
@@ -97,18 +83,13 @@ public class BuildOptionsBindingTests
     public void ManifestOption_DefaultsToManifestJson()
     {
         BuildOptions options = ParseAndBind<BuildOptions>([]);
-
         options.Manifest.ShouldBe("manifest.json");
     }
 
     [Fact]
     public void ManifestOption_OverriddenWhenSpecified()
     {
-        string[] args = ["--manifest", "custom-manifest.json"];
-
-        BuildOptions options = ParseAndBind<BuildOptions>(args);
-
+        BuildOptions options = ParseAndBind<BuildOptions>(["--manifest", "custom-manifest.json"]);
         options.Manifest.ShouldBe("custom-manifest.json");
     }
-
 }

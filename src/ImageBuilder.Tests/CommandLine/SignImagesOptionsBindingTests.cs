@@ -14,29 +14,16 @@ public class SignImagesOptionsBindingTests
     [Fact]
     public void RegistryOverride_BoundFromCliArgs()
     {
-        string[] args =
-        [
-            "image-info.json",
-            "--registry-override", "myregistry.azurecr.io",
-        ];
-
+        string[] args = ["image-info.json", "--registry-override", "myregistry.azurecr.io"];
         SignImagesOptions options = ParseAndBind<SignImagesOptions>(args);
-
         options.RegistryOverride.Registry.ShouldBe("myregistry.azurecr.io");
     }
 
     [Fact]
     public void RepoPrefix_BoundFromCliArgs()
     {
-        string[] args =
-        [
-            "image-info.json",
-            "--repo-prefix", "public/",
-        ];
-
+        string[] args = ["image-info.json", "--repo-prefix", "public/"];
         SignImagesOptions options = ParseAndBind<SignImagesOptions>(args);
-
         options.RegistryOverride.RepoPrefix.ShouldBe("public/");
     }
-
 }

@@ -15,11 +15,7 @@ public class ServiceConnectionOptionsBindingTests
     [Fact]
     public void ValidFormat_ParsesCorrectly()
     {
-        string[] args =
-        [
-            "--storage-service-connection", "my-tenant:my-client:my-connection-id",
-        ];
-
+        string[] args = ["--storage-service-connection", "my-tenant:my-client:my-connection-id"];
         BuildOptions options = ParseAndBind<BuildOptions>(args);
 
         options.StorageServiceConnection.ShouldNotBeNull();
@@ -35,7 +31,6 @@ public class ServiceConnectionOptionsBindingTests
     public void InvalidFormat_ProducesParseError(string invalidValue)
     {
         string[] args = ["--storage-service-connection", invalidValue];
-
         BuildOptions options = new();
         ParseResult parseResult = Parse(options, args);
 

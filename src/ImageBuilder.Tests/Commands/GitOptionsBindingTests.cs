@@ -1,10 +1,11 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
+using System.Collections.Generic;
 using System.CommandLine;
 using System.CommandLine.Parsing;
-using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
 using Xunit;
@@ -14,115 +15,246 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Commands;
 public class GitOptionsBindingTests
 {
     [Fact]
-    public void WithGitHubAuth_IsRequired_ProducesErrorWhenNoAuthProvided()
+    public void GitHubToken_BoundFromCliArgs()
     {
-        GitOptionsBuilder builder = GitOptionsBuilder.Build()
-            .WithGitHubAuth(isRequired: true);
+        string[] args =
+        [
+            "--gh-token", "my-pat",
+        ];
 
-        ParseResult parseResult = ParseGitOptions(builder, []);
+        TestGitOptions options = ParseAndBind<TestGitOptions>(args);
 
-        parseResult.Errors.ShouldNotBeEmpty(
-            "Expected a validation error when no GitHub auth is provided but isRequired is true");
+        options.GitOptions.GitHubAuthOptions.AuthToken.ShouldBe("my-pat");
+        options.GitOptions.GitHubAuthOptions.PrivateKey.ShouldBeEmpty();
+        options.GitOptions.GitHubAuthOptions.ClientId.ShouldBeEmpty();
+        options.GitOptions.GitHubAuthOptions.InstallationId.ShouldBeNull();
+        options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeTrue();
+        options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeFalse();
     }
 
     [Fact]
-    public void WithGitHubAuth_IsRequired_NoErrorWhenTokenProvided()
+    public void GitHubAppAuth_BoundFromCliArgs()
     {
-        GitOptionsBuilder builder = GitOptionsBuilder.Build()
-            .WithGitHubAuth(isRequired: true);
-
-        ParseResult parseResult = ParseGitOptions(builder, ["--gh-token", "my-pat"]);
-
-        parseResult.Errors.ShouldBeEmpty();
-    }
-
-    [Fact]
-    public void WithGitHubAuth_IsRequired_NoErrorWhenAppAuthProvided()
-    {
-        GitOptionsBuilder builder = GitOptionsBuilder.Build()
-            .WithGitHubAuth(isRequired: true);
-
-        ParseResult parseResult = ParseGitOptions(builder,
+        string[] args =
         [
             "--gh-private-key", "base64key",
             "--gh-app-client-id", "my-client-id",
-        ]);
+            "--gh-app-installation-id", "42",
+        ];
 
-        parseResult.Errors.ShouldBeEmpty();
+        TestGitOptions options = ParseAndBind<TestGitOptions>(args);
+
+        options.GitOptions.GitHubAuthOptions.AuthToken.ShouldBeEmpty();
+        options.GitOptions.GitHubAuthOptions.PrivateKey.ShouldBe("base64key");
+        options.GitOptions.GitHubAuthOptions.ClientId.ShouldBe("my-client-id");
+        options.GitOptions.GitHubAuthOptions.InstallationId.ShouldBe("42");
+        options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeTrue();
+        options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeTrue();
     }
 
     [Fact]
-    public void WithGitHubAuth_NotRequired_NoErrorWhenNoAuthProvided()
+    public void GitRepositoryValues_BoundFromCliArgs()
     {
-        GitOptionsBuilder builder = GitOptionsBuilder.Build()
-            .WithGitHubAuth(isRequired: false);
+        string[] args =
+        [
+            "--git-owner", "dotnet",
+            "--git-repo", "docker-tools",
+            "--git-branch", "main",
+            "--git-path", "eng/docker-tools",
+        ];
 
-        ParseResult parseResult = ParseGitOptions(builder, []);
+        TestGitOptions options = ParseAndBind<TestGitOptions>(args);
 
-        parseResult.Errors.ShouldBeEmpty();
+        options.GitOptions.Owner.ShouldBe("dotnet");
+        options.GitOptions.Repo.ShouldBe("docker-tools");
+        options.GitOptions.Branch.ShouldBe("main");
+        options.GitOptions.Path.ShouldBe("eng/docker-tools");
     }
 
     [Fact]
-    public void WithGitHubAuth_CustomDescription_AppliedToTokenOption()
+    public void GitUserValues_BoundFromCliArgs()
     {
-        string customDescription = "Custom auth description";
+        string[] args =
+        [
+            "--git-username", "bot",
+            "--git-email", "bot@example.com",
+        ];
 
-        GitOptionsBuilder builder = GitOptionsBuilder.Build()
-            .WithGitHubAuth(description: customDescription);
+        TestGitOptions options = ParseAndBind<TestGitOptions>(args);
 
-        Command command = BuildCommand(builder);
-
-        Option? tokenOption = command.Options
-            .FirstOrDefault(o => o.Name == "--gh-token");
-
-        tokenOption.ShouldNotBeNull();
-        tokenOption.Description.ShouldBe(customDescription);
+        options.GitOptions.Username.ShouldBe("bot");
+        options.GitOptions.Email.ShouldBe("bot@example.com");
     }
 
     [Fact]
-    public void WithGitHubAuth_DefaultDescription_UsedWhenNoneProvided()
+    public void GitHubAuth_DefaultsWhenNotSpecified()
     {
-        GitOptionsBuilder builder = GitOptionsBuilder.Build()
-            .WithGitHubAuth();
+        TestGitOptions options = ParseAndBind<TestGitOptions>([]);
 
-        Command command = BuildCommand(builder);
+        options.GitOptions.GitHubAuthOptions.AuthToken.ShouldBeEmpty();
+        options.GitOptions.GitHubAuthOptions.PrivateKey.ShouldBeEmpty();
+        options.GitOptions.GitHubAuthOptions.ClientId.ShouldBeEmpty();
+        options.GitOptions.GitHubAuthOptions.InstallationId.ShouldBeNull();
+        options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeFalse();
+        options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeFalse();
+    }
 
-        Option? tokenOption = command.Options
-            .FirstOrDefault(o => o.Name == "--gh-token");
+    [Fact]
+    public void RequiredGitHubAuth_ProducesParseErrorWhenNoAuthProvided()
+    {
+        TestGitOptionsWithRequiredAuth options = new();
+        ParseResult parseResult = Parse(options, args: []);
 
-        tokenOption.ShouldNotBeNull();
-        tokenOption.Description.ShouldBe("GitHub Personal Access Token (PAT)");
+        parseResult.Errors.ShouldNotBeEmpty(
+            "Expected a parse error when no GitHub auth is provided but auth is required");
+    }
+
+    [Fact]
+    public void RequiredGitHubToken_BoundFromCliArgs()
+    {
+        string[] args =
+        [
+            "--gh-token", "my-pat",
+        ];
+
+        TestGitOptionsWithRequiredAuth options = ParseAndBind<TestGitOptionsWithRequiredAuth>(args);
+
+        options.GitOptions.GitHubAuthOptions.AuthToken.ShouldBe("my-pat");
+        options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeTrue();
+    }
+
+    [Fact]
+    public void RequiredGitHubAppAuth_BoundFromCliArgs()
+    {
+        string[] args =
+        [
+            "--gh-private-key", "base64key",
+            "--gh-app-client-id", "my-client-id",
+        ];
+
+        TestGitOptionsWithRequiredAuth options = ParseAndBind<TestGitOptionsWithRequiredAuth>(args);
+
+        options.GitOptions.GitHubAuthOptions.PrivateKey.ShouldBe("base64key");
+        options.GitOptions.GitHubAuthOptions.ClientId.ShouldBe("my-client-id");
+        options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeTrue();
+        options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeTrue();
     }
 
     /// <summary>
-    /// Builds a command with the options and validators from the given <see cref="GitOptionsBuilder"/>
-    /// and parses the provided args.
+    /// Parses the supplied command line args using the real command registration path for the given
+    /// test <see cref="Options"/> instance.
     /// </summary>
-    private static ParseResult ParseGitOptions(GitOptionsBuilder builder, string[] args)
+    private static ParseResult Parse(Options options, string[] args)
     {
-        Command command = BuildCommand(builder);
+        Command command = new("test", "test");
+        command.AddOptions(options);
         return command.Parse(args);
     }
 
-    private static Command BuildCommand(GitOptionsBuilder builder)
+    /// <summary>
+    /// Creates a test options instance, parses the supplied args through the normal command flow,
+    /// and binds the parsed values back onto that same instance.
+    /// </summary>
+    private static TOptions ParseAndBind<TOptions>(string[] args)
+        where TOptions : Options, new()
     {
-        Command command = new("test", "test");
+        TOptions options = new();
+        ParseResult parseResult = Parse(options, args);
+        options.Bind(parseResult);
+        return options;
+    }
 
-        foreach (Option option in builder.GetCliOptions())
+    /// <summary>
+    /// Creates the all-optional Git CLI shape used by the general binding tests.
+    /// </summary>
+    private static GitOptionsBuilder CreateOptionalGitBuilder() =>
+        GitOptionsBuilder.Build()
+            .WithUsername()
+            .WithEmail()
+            .WithGitHubAuth()
+            .WithBranch()
+            .WithOwner()
+            .WithPath()
+            .WithRepo();
+
+    /// <summary>
+    /// Creates the Git CLI shape used by the required-auth tests, where GitHub authentication must
+    /// be supplied but the remaining Git symbols stay optional.
+    /// </summary>
+    private static GitOptionsBuilder CreateRequiredGitBuilder() =>
+        GitOptionsBuilder.Build()
+            .WithUsername()
+            .WithEmail()
+            .WithGitHubAuth(isRequired: true)
+            .WithBranch()
+            .WithOwner()
+            .WithPath()
+            .WithRepo();
+
+    /// <summary>
+    /// Test-only wrapper that exposes the standard, fully optional Git CLI shape so binding tests
+    /// can parse args and assert against the resulting <see cref="GitOptions"/> object.
+    /// </summary>
+    private sealed class TestGitOptions() : TestGitOptionsBase(CreateOptionalGitBuilder());
+
+    /// <summary>
+    /// Test-only wrapper that uses the Git CLI shape where GitHub authentication is required so
+    /// the same end-to-end parsing path can verify required-auth validation behavior.
+    /// </summary>
+    private sealed class TestGitOptionsWithRequiredAuth() : TestGitOptionsBase(CreateRequiredGitBuilder());
+
+    /// <summary>
+    /// Shared test <see cref="Options"/> implementation that wires a
+    /// <see cref="GitOptionsBuilder"/> into the normal command registration and binding flow, then
+    /// exposes the bound <see cref="GitOptions"/> instance for assertions.
+    /// </summary>
+    /// <param name="gitBuilder">
+    /// The Git options builder that defines which Git-specific CLI symbols and validators this test
+    /// wrapper should expose.
+    /// </param>
+    private abstract class TestGitOptionsBase(GitOptionsBuilder gitBuilder) : Options
+    {
+        /// <summary>
+        /// Gets the bound Git options instance populated from the parsed command line values.
+        /// </summary>
+        public GitOptions GitOptions { get; } = new();
+
+        /// <summary>
+        /// Adds the Git-specific options from the supplied builder alongside the base test options.
+        /// </summary>
+        public override IEnumerable<Option> GetCliOptions() =>
+        [
+            ..base.GetCliOptions(),
+            ..gitBuilder.GetCliOptions(),
+        ];
+
+        /// <summary>
+        /// Adds any Git-specific positional arguments exposed by the supplied builder.
+        /// </summary>
+        public override IEnumerable<Argument> GetCliArguments() =>
+        [
+            ..base.GetCliArguments(),
+            ..gitBuilder.GetCliArguments(),
+        ];
+
+        /// <summary>
+        /// Exposes any Git-specific validators so parse-time validation matches the production
+        /// command behavior.
+        /// </summary>
+        public override IEnumerable<Action<CommandResult>> GetValidators() =>
+        [
+            ..base.GetValidators(),
+            ..gitBuilder.GetValidators(),
+        ];
+
+        /// <summary>
+        /// Binds both the shared base options and the test's Git-specific options from the parsed
+        /// command line values.
+        /// </summary>
+        public override void Bind(ParseResult result)
         {
-            command.Add(option);
+            base.Bind(result);
+            gitBuilder.Bind(result, GitOptions);
         }
-
-        foreach (Argument argument in builder.GetCliArguments())
-        {
-            command.Add(argument);
-        }
-
-        foreach (Action<CommandResult> validator in builder.GetValidators())
-        {
-            command.Validators.Add(validator);
-        }
-
-        return command;
     }
 }

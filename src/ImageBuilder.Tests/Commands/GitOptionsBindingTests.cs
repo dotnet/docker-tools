@@ -9,6 +9,7 @@ using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Commands.OptionsBindingTestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Commands;
 
@@ -138,30 +139,6 @@ public class GitOptionsBindingTests
         options.GitOptions.GitHubAuthOptions.ClientId.ShouldBe("my-client-id");
         options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeTrue();
         options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeTrue();
-    }
-
-    /// <summary>
-    /// Parses the supplied command line args using the real command registration path for the given
-    /// test <see cref="Options"/> instance.
-    /// </summary>
-    private static ParseResult Parse(Options options, string[] args)
-    {
-        Command command = new("test", "test");
-        command.AddOptions(options);
-        return command.Parse(args);
-    }
-
-    /// <summary>
-    /// Creates a test options instance, parses the supplied args through the normal command flow,
-    /// and binds the parsed values back onto that same instance.
-    /// </summary>
-    private static TOptions ParseAndBind<TOptions>(string[] args)
-        where TOptions : Options, new()
-    {
-        TOptions options = new();
-        ParseResult parseResult = Parse(options, args);
-        options.Bind(parseResult);
-        return options;
     }
 
     /// <summary>

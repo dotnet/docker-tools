@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
 using Xunit;
+using static Microsoft.DotNet.ImageBuilder.Tests.Commands.OptionsBindingTestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Commands;
 
@@ -111,19 +111,4 @@ public class BuildOptionsBindingTests
         options.Manifest.ShouldBe("custom-manifest.json");
     }
 
-    /// <summary>
-    /// Parses the given args using the real CLI command shape for <typeparamref name="TOptions"/>
-    /// and binds the result — the same code path used by the production CLI.
-    /// </summary>
-    private static TOptions ParseAndBind<TOptions>(string[] args)
-        where TOptions : Options, new()
-    {
-        TOptions options = new();
-        Command command = new("test", "test");
-        command.AddOptions(options);
-
-        ParseResult parseResult = command.Parse(args);
-        options.Bind(parseResult);
-        return options;
-    }
 }

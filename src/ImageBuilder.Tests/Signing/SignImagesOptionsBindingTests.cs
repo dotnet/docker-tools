@@ -1,10 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-using System.CommandLine;
-using System.CommandLine.Parsing;
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
+using static Microsoft.DotNet.ImageBuilder.Tests.Commands.OptionsBindingTestHelper;
 using Shouldly;
 using Xunit;
 
@@ -40,15 +39,4 @@ public class SignImagesOptionsBindingTests
         options.RegistryOverride.RepoPrefix.ShouldBe("public/");
     }
 
-    private static TOptions ParseAndBind<TOptions>(string[] args)
-        where TOptions : Options, new()
-    {
-        TOptions options = new();
-        Command command = new("test", "test");
-        command.AddOptions(options);
-
-        ParseResult parseResult = command.Parse(args);
-        options.Bind(parseResult);
-        return options;
-    }
 }

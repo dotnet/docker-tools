@@ -6,9 +6,9 @@ using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
 using Xunit;
-using static Microsoft.DotNet.ImageBuilder.Tests.Commands.OptionsBindingTestHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Commands;
+namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
 public class ServiceConnectionOptionsBindingTests
 {

@@ -3,13 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
-using static Microsoft.DotNet.ImageBuilder.Tests.Commands.OptionsBindingTestHelper;
+using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 using Shouldly;
 using Xunit;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
+namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
-public class VerifySignaturesOptionsBindingTests
+public class SignImagesOptionsBindingTests
 {
     [Fact]
     public void RegistryOverride_BoundFromCliArgs()
@@ -20,7 +20,7 @@ public class VerifySignaturesOptionsBindingTests
             "--registry-override", "myregistry.azurecr.io",
         ];
 
-        VerifySignaturesOptions options = ParseAndBind<VerifySignaturesOptions>(args);
+        SignImagesOptions options = ParseAndBind<SignImagesOptions>(args);
 
         options.RegistryOverride.Registry.ShouldBe("myregistry.azurecr.io");
     }
@@ -34,8 +34,9 @@ public class VerifySignaturesOptionsBindingTests
             "--repo-prefix", "public/",
         ];
 
-        VerifySignaturesOptions options = ParseAndBind<VerifySignaturesOptions>(args);
+        SignImagesOptions options = ParseAndBind<SignImagesOptions>(args);
 
         options.RegistryOverride.RepoPrefix.ShouldBe("public/");
     }
+
 }

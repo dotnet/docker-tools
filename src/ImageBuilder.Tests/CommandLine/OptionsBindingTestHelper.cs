@@ -6,7 +6,7 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder.Commands;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Commands;
+namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
 /// <summary>
 /// Provides shared helpers for exercising options types through the real command registration and

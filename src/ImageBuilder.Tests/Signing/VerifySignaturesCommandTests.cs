@@ -14,7 +14,7 @@ using Moq;
 using Shouldly;
 using Xunit;
 
-namespace Microsoft.DotNet.ImageBuilder.Tests.Commands.Signing;
+namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
 public class VerifySignaturesCommandTests
 {

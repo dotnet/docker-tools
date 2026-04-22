@@ -25,4 +25,10 @@ public static class SystemCommandLineExtensions
         foreach (Action<CommandResult> validator in options.GetValidators())
             command.Validators.Add(validator);
     }
+
+    /// <summary>
+    /// Gets a value indicating whether the specified option was provided on the command line.
+    /// </summary>
+    public static bool Has(this CommandResult commandResult, Option option) =>
+        commandResult.GetResult(option)?.Tokens?.Count > 0;
 }

@@ -13,7 +13,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         public GitOptions GitOptions { get; set; } = new GitOptions();
 
-        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildWithDefaults();
+        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
 
         public override IEnumerable<Option> GetCliOptions() =>
         [

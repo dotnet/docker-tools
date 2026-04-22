@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? RootPath { get; set; }
 
-        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildWithDefaults();
+        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
 
         private static readonly Option<bool> ExcludeProductFamilyOption = new(CliHelper.FormatAlias("exclude-product-family"))
         {

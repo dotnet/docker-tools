@@ -43,23 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly List<Option> _options = [];
         private readonly List<Argument> _arguments = [];
         private readonly List<Action<CommandResult>> _validators = [];
-
-        private Option<string>? _usernameOption;
-        private Argument<string>? _usernameArgument;
-        private Option<string>? _emailOption;
-        private Argument<string>? _emailArgument;
-        private Option<string>? _branchOption;
-        private Argument<string>? _branchArgument;
-        private Option<string>? _ownerOption;
-        private Argument<string>? _ownerArgument;
-        private Option<string>? _pathOption;
-        private Argument<string>? _pathArgument;
-        private Option<string>? _repoOption;
-        private Argument<string>? _repoArgument;
-        private Option<string>? _tokenOption;
-        private Option<string>? _privateKeyOption;
-        private Option<string>? _clientIdOption;
-        private Option<string?>? _installationIdOption;
+        private readonly List<Action<ParseResult, GitOptions>> _binders = [];
 
         private GitOptionsBuilder()
         {
@@ -73,7 +57,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public static GitOptionsBuilder Build() => new();
 
-        public static GitOptionsBuilder BuildWithDefaults() =>
+        public static GitOptionsBuilder BuildForRepositoryOperations() =>
             Build()
                 .WithUsername(isRequired: true)
                 .WithEmail(isRequired: true)
@@ -83,108 +67,136 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .WithPath()
                 .WithRepo();
 
+        public static GitOptionsBuilder BuildWithDefaults() =>
+            BuildForRepositoryOperations();
+
         public GitOptionsBuilder WithUsername(
             bool isRequired = false,
-            string? defaultValue = null,
             string description = "Username to use for GitHub connection") =>
-            AddSymbol("git-username", nameof(GitOptions.Username), isRequired, defaultValue, description,
-                opt => _usernameOption = opt, arg => _usernameArgument = arg);
+                AddStringSymbol(
+                    alias: "git-username",
+                    argumentName: nameof(GitOptions.Username),
+                    isRequired: isRequired,
+                    description: description,
+                    bindValue: static (target, value) => target.Username = value);
 
         public GitOptionsBuilder WithEmail(
             bool isRequired = false,
-            string? defaultValue = null,
             string description = "Email to use for GitHub connection") =>
-            AddSymbol("git-email", nameof(GitOptions.Email), isRequired, defaultValue, description,
-                opt => _emailOption = opt, arg => _emailArgument = arg);
+                AddStringSymbol(
+                    alias: "git-email",
+                    argumentName: nameof(GitOptions.Email),
+                    isRequired: isRequired,
+                    description: description,
+                    bindValue: static (target, value) => target.Email = value);
 
         public GitOptionsBuilder WithBranch(
             bool isRequired = false,
-            string? defaultValue = null,
             string description = "Name of GitHub branch to access") =>
-            AddSymbol("git-branch", nameof(GitOptions.Branch), isRequired, defaultValue, description,
-                opt => _branchOption = opt, arg => _branchArgument = arg);
+                AddStringSymbol(
+                    alias: "git-branch",
+                    argumentName: nameof(GitOptions.Branch),
+                    isRequired: isRequired,
+                    description: description,
+                    bindValue: static (target, value) => target.Branch = value);
 
         public GitOptionsBuilder WithOwner(
             bool isRequired = false,
-            string? defaultValue = null,
             string description = "Owner of the GitHub repo to access") =>
-            AddSymbol("git-owner", nameof(GitOptions.Owner), isRequired, defaultValue, description,
-                opt => _ownerOption = opt, arg => _ownerArgument = arg);
+                AddStringSymbol(
+                    alias: "git-owner",
+                    argumentName: nameof(GitOptions.Owner),
+                    isRequired: isRequired,
+                    description: description,
+                    bindValue: static (target, value) => target.Owner = value);
 
         public GitOptionsBuilder WithPath(
             bool isRequired = false,
-            string? defaultValue = null,
             string description = "Path of the GitHub repo to access") =>
-            AddSymbol("git-path", nameof(GitOptions.Path), isRequired, defaultValue, description,
-                opt => _pathOption = opt, arg => _pathArgument = arg);
+                AddStringSymbol(
+                    alias: "git-path",
+                    argumentName: nameof(GitOptions.Path),
+                    isRequired: isRequired,
+                    description: description,
+                    bindValue: static (target, value) => target.Path = value);
 
         public GitOptionsBuilder WithRepo(
             bool isRequired = false,
-            string? defaultValue = null,
             string description = "Name of the GitHub repo to access") =>
-            AddSymbol("git-repo", nameof(GitOptions.Repo), isRequired, defaultValue, description,
-                opt => _repoOption = opt, arg => _repoArgument = arg);
+                AddStringSymbol(
+                    alias: "git-repo",
+                    argumentName: nameof(GitOptions.Repo),
+                    isRequired: isRequired,
+                    description: description,
+                    bindValue: static (target, value) => target.Repo = value);
 
         public GitOptionsBuilder WithGitHubAuth(string? description = null, bool isRequired = false)
         {
-            const string TokenAlias = "gh-token";
-            _tokenOption = new Option<string>(CliHelper.FormatAlias(TokenAlias))
+            Option<string> tokenOption = new(CliHelper.FormatAlias("gh-token"))
             {
                 Description = description ?? "GitHub Personal Access Token (PAT)"
             };
 
-            const string PrivateKeyAlias = "gh-private-key";
-            _privateKeyOption = new Option<string>(CliHelper.FormatAlias(PrivateKeyAlias))
+            Option<string> privateKeyOption = new(CliHelper.FormatAlias("gh-private-key"))
             {
                 Description = "Base64-encoded private key (pem format) for GitHub App authentication"
             };
 
-            const string ClientIdAlias = "gh-app-client-id";
-            _clientIdOption = new Option<string>(CliHelper.FormatAlias(ClientIdAlias))
+            Option<string> clientIdOption = new(CliHelper.FormatAlias("gh-app-client-id"))
             {
                 Description = "GitHub Client ID for GitHub App authentication"
             };
 
-            const string InstallationIdAlias = "gh-app-installation-id";
-            _installationIdOption = new Option<string?>(CliHelper.FormatAlias(InstallationIdAlias))
+            Option<string?> installationIdOption = new(CliHelper.FormatAlias("gh-app-installation-id"))
             {
                 Description = "GitHub App installation ID to use (only required if app has more than one installation)"
             };
 
-            _options.AddRange([_tokenOption, _privateKeyOption, _clientIdOption, _installationIdOption]);
+            _options.AddRange([tokenOption, privateKeyOption, clientIdOption, installationIdOption]);
 
-            _validators.Add(command =>
+            _validators.Add((CommandResult commandResult) =>
                 {
-                    bool hasToken = command.Has(_tokenOption);
-                    bool hasPrivateKey = command.Has(_privateKeyOption);
-                    bool hasClientId = command.Has(_clientIdOption);
+                    bool hasToken = commandResult.Has(tokenOption);
+                    bool hasPrivateKey = commandResult.Has(privateKeyOption);
+                    bool hasClientId = commandResult.Has(clientIdOption);
 
                     // If token is provided, ensure that private key and client ID were not provided
                     if (hasToken && (hasPrivateKey || hasClientId))
                     {
-                        command.AddError("Authentication conflict: Cannot use both GitHub personal access token "
-                            + $"({CliHelper.FormatAlias(TokenAlias)}) and GitHub App credentials ({CliHelper.FormatAlias(PrivateKeyAlias)} "
-                            + $"and {CliHelper.FormatAlias(ClientIdAlias)}) simultaneously. Please provide only one authentication "
-                            + "method.");
+                        commandResult.AddError(
+                            "Authentication conflict: Cannot use both GitHub personal access token"
+                            + $" ({tokenOption.Name}) and GitHub App credentials ({privateKeyOption.Name} and"
+                            + $" {clientIdOption.Name}) simultaneously."
+                            + $" Please provide only one authentication method.");
                         return;
                     }
 
                     // Both client ID and private key file are required for GitHub App authentication
                     if (hasPrivateKey != hasClientId)
                     {
-                        command.AddError($"GitHub App authentication requires both {CliHelper.FormatAlias(ClientIdAlias)} "
-                            + $"and {CliHelper.FormatAlias(PrivateKeyAlias)} but only one was provided.");
+                        commandResult.AddError(
+                            $"GitHub App authentication requires both {clientIdOption.Name} and"
+                            + $" {privateKeyOption.Name} but only one was provided.");
                         return;
                     }
 
                     // When auth is required, at least one auth method must be provided
                     if (isRequired && !hasToken && !hasPrivateKey)
                     {
-                        command.AddError($"GitHub authentication is required. Provide either a personal access token "
-                            + $"({CliHelper.FormatAlias(TokenAlias)}) or GitHub App credentials "
-                            + $"({CliHelper.FormatAlias(PrivateKeyAlias)} and {CliHelper.FormatAlias(ClientIdAlias)}).");
+                        commandResult.AddError(
+                            $"GitHub authentication is required. Provide either a personal access token"
+                            + $" ({tokenOption.Name}) or GitHub App credentials ({privateKeyOption.Name} and"
+                            + $" {clientIdOption.Name}).");
                     }
                 });
+
+            _binders.Add((parseResult, target) =>
+                target.GitHubAuthOptions =
+                    new GitHubAuthOptions(
+                        AuthToken: parseResult.GetValue(tokenOption) ?? string.Empty,
+                        PrivateKey: parseResult.GetValue(privateKeyOption) ?? string.Empty,
+                        ClientId: parseResult.GetValue(clientIdOption) ?? string.Empty,
+                        InstallationId: parseResult.GetValue(installationIdOption)));
 
             return this;
         }
@@ -194,72 +206,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         /// </summary>
         public void Bind(ParseResult result, GitOptions target)
         {
-            if (_usernameOption is not null)
-                target.Username = result.GetValue(_usernameOption) ?? string.Empty;
-            else if (_usernameArgument is not null)
-                target.Username = result.GetValue(_usernameArgument) ?? string.Empty;
-
-            if (_emailOption is not null)
-                target.Email = result.GetValue(_emailOption) ?? string.Empty;
-            else if (_emailArgument is not null)
-                target.Email = result.GetValue(_emailArgument) ?? string.Empty;
-
-            if (_branchOption is not null)
-                target.Branch = result.GetValue(_branchOption) ?? string.Empty;
-            else if (_branchArgument is not null)
-                target.Branch = result.GetValue(_branchArgument) ?? string.Empty;
-
-            if (_ownerOption is not null)
-                target.Owner = result.GetValue(_ownerOption) ?? string.Empty;
-            else if (_ownerArgument is not null)
-                target.Owner = result.GetValue(_ownerArgument) ?? string.Empty;
-
-            if (_pathOption is not null)
-                target.Path = result.GetValue(_pathOption) ?? string.Empty;
-            else if (_pathArgument is not null)
-                target.Path = result.GetValue(_pathArgument) ?? string.Empty;
-
-            if (_repoOption is not null)
-                target.Repo = result.GetValue(_repoOption) ?? string.Empty;
-            else if (_repoArgument is not null)
-                target.Repo = result.GetValue(_repoArgument) ?? string.Empty;
-
-            if (_tokenOption is not null)
+            foreach (Action<ParseResult, GitOptions> bind in _binders)
             {
-                target.GitHubAuthOptions = new GitHubAuthOptions(
-                    AuthToken: result.GetValue(_tokenOption) ?? string.Empty,
-                    PrivateKey: result.GetValue(_privateKeyOption!) ?? string.Empty,
-                    ClientId: result.GetValue(_clientIdOption!) ?? string.Empty,
-                    InstallationId: _installationIdOption is not null ? result.GetValue(_installationIdOption) : null);
+                bind(result, target);
             }
         }
 
-        private GitOptionsBuilder AddSymbol<T>(
+        private GitOptionsBuilder AddStringSymbol(
             string alias,
             string argumentName,
             bool isRequired,
-            T? defaultValue,
             string description,
-            Action<Option<T>> storeOption,
-            Action<Argument<T>> storeArgument)
+            Action<GitOptions, string> bindValue)
         {
             if (isRequired)
             {
-                Argument<T> argument = new(argumentName) { Description = description };
+                Argument<string> argument = new(argumentName) { Description = description };
                 _arguments.Add(argument);
-                storeArgument(argument);
-            }
-            else
-            {
-                Option<T> option = new(CliHelper.FormatAlias(alias))
-                {
-                    Description = description,
-                    DefaultValueFactory = _ => defaultValue is null ? default! : defaultValue
-                };
-                _options.Add(option);
-                storeOption(option);
+                _binders.Add((result, target) => bindValue(target, result.GetValue(argument) ?? string.Empty));
+                return this;
             }
 
+            Option<string> option = new(CliHelper.FormatAlias(alias)) { Description = description };
+            _options.Add(option);
+            _binders.Add((result, target) => bindValue(target, result.GetValue(option) ?? string.Empty));
             return this;
         }
     }

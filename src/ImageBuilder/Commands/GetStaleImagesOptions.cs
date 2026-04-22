@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
 
-        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildWithDefaults();
+        private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
 
         private static readonly Argument<string> VariableNameArgument = new(nameof(VariableName))
         {

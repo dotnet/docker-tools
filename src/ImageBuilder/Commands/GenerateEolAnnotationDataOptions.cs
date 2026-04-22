@@ -21,7 +21,7 @@ public class GenerateEolAnnotationDataOptions : Options
     private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
 
     private static readonly Option<ServiceConnection?> AcrServiceConnectionOption =
-        ServiceConnectionBuilder.GetCliOption("acr-service-connection");
+        ServiceConnectionBuilder.GetCliOption("--acr-service-connection");
 
     private static readonly Argument<string> EolDigestsListPathArgument = new(nameof(EolDigestsListPath))
     {

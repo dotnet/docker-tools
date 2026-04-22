@@ -22,7 +22,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
 
         private static readonly Option<ServiceConnection?> KustoServiceConnectionOption =
-            ServiceConnectionBuilder.GetCliOption("kusto-service-connection");
+            ServiceConnectionBuilder.GetCliOption("--kusto-service-connection");
 
         private static readonly Argument<string> ClusterArgument = new(nameof(Cluster))
         {

@@ -27,9 +27,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly ServiceConnectionOptionsBuilder ServiceConnectionBuilder = new();
 
         private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
-            ServiceConnectionBuilder.GetCliOption("mar-service-connection");
+            ServiceConnectionBuilder.GetCliOption("--mar-service-connection");
 
-        private static readonly Option<DateTime> MinQueueTimeOption = new(CliHelper.FormatAlias("min-queue-time"))
+        private static readonly Option<DateTime> MinQueueTimeOption = new("--min-queue-time")
         {
             Description = "Minimum queue time an image must have to be awaited",
             DefaultValueFactory = _ => DateTime.MinValue,

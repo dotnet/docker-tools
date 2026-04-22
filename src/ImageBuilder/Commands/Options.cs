@@ -14,17 +14,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public bool IsVerbose { get; set; }
         public bool NoVersionLogging { get; set; }
 
-        private static readonly Option<bool> DryRunOption = new(CliHelper.FormatAlias("dry-run"))
+        private static readonly Option<bool> DryRunOption = new("--dry-run")
         {
             Description = "Dry run of what images get built and order they would get built in"
         };
 
-        private static readonly Option<bool> VerboseOption = new(CliHelper.FormatAlias("verbose"))
+        private static readonly Option<bool> VerboseOption = new("--verbose")
         {
             Description = "Show details about the tasks run"
         };
 
-        private static readonly Option<bool> NoVersionLoggingOption = new(CliHelper.FormatAlias("no-version-logging"))
+        private static readonly Option<bool> NoVersionLoggingOption = new("--no-version-logging")
         {
             Description = "Disable automatic logging of Docker version information"
         };

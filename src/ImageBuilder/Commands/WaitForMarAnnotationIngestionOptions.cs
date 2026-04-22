@@ -24,7 +24,7 @@ public class WaitForMarAnnotationIngestionOptions : Options
     private static readonly ServiceConnectionOptionsBuilder s_serviceConnectionOptionsBuilder = new();
 
     private static readonly Option<ServiceConnection?> MarServiceConnectionOption =
-        s_serviceConnectionOptionsBuilder.GetCliOption("mar-service-connection");
+        s_serviceConnectionOptionsBuilder.GetCliOption("--mar-service-connection");
 
     private static readonly Argument<string> AnnotationDigestsPathArgument = new(nameof(AnnotationDigestsPath))
     {

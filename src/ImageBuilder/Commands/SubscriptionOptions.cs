@@ -11,7 +11,7 @@ public class SubscriptionOptions
 {
     public string? SubscriptionsPath { get; set; }
 
-    private static readonly Option<string?> SubscriptionsPathOption = new(CliHelper.FormatAlias("subscriptions-path"))
+    private static readonly Option<string?> SubscriptionsPathOption = new("--subscriptions-path")
     {
         Description = "Path to the subscriptions file"
     };

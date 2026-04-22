@@ -33,19 +33,19 @@ public class CleanAcrImagesOptions : Options
         Description = "Name of the registry"
     };
 
-    private static readonly Option<CleanAcrImagesAction> ActionOption = new(CliHelper.FormatAlias("action"))
+    private static readonly Option<CleanAcrImagesAction> ActionOption = new("--action")
     {
         Description = EnumHelper.GetHelpTextOptions(DefaultCleanAcrImagesAction),
         DefaultValueFactory = _ => DefaultCleanAcrImagesAction
     };
 
-    private static readonly Option<int> AgeOption = new(CliHelper.FormatAlias("age"))
+    private static readonly Option<int> AgeOption = new("--age")
     {
         Description = $"Minimum age (days) of repo or images to be deleted (default: {DefaultAge})",
         DefaultValueFactory = _ => DefaultAge
     };
 
-    private static readonly Option<string[]> ImagesToExcludeOption = new(CliHelper.FormatAlias("exclude"))
+    private static readonly Option<string[]> ImagesToExcludeOption = new("--exclude")
     {
         Description = $"Name of image to exclude from cleaning (does not apply when using the '{nameof(CleanAcrImagesAction.Delete)}' action)",
         DefaultValueFactory = _ => Array.Empty<string>(),

@@ -74,7 +74,7 @@ public class GitOptionsBuilder
         bool isRequired = false,
         string description = "Username to use for GitHub connection") =>
             AddStringSymbol(
-                alias: "git-username",
+                optionName: "--git-username",
                 argumentName: nameof(GitOptions.Username),
                 isRequired: isRequired,
                 description: description,
@@ -84,7 +84,7 @@ public class GitOptionsBuilder
         bool isRequired = false,
         string description = "Email to use for GitHub connection") =>
             AddStringSymbol(
-                alias: "git-email",
+                optionName: "--git-email",
                 argumentName: nameof(GitOptions.Email),
                 isRequired: isRequired,
                 description: description,
@@ -94,7 +94,7 @@ public class GitOptionsBuilder
         bool isRequired = false,
         string description = "Name of GitHub branch to access") =>
             AddStringSymbol(
-                alias: "git-branch",
+                optionName: "--git-branch",
                 argumentName: nameof(GitOptions.Branch),
                 isRequired: isRequired,
                 description: description,
@@ -104,7 +104,7 @@ public class GitOptionsBuilder
         bool isRequired = false,
         string description = "Owner of the GitHub repo to access") =>
             AddStringSymbol(
-                alias: "git-owner",
+                optionName: "--git-owner",
                 argumentName: nameof(GitOptions.Owner),
                 isRequired: isRequired,
                 description: description,
@@ -114,7 +114,7 @@ public class GitOptionsBuilder
         bool isRequired = false,
         string description = "Path of the GitHub repo to access") =>
             AddStringSymbol(
-                alias: "git-path",
+                optionName: "--git-path",
                 argumentName: nameof(GitOptions.Path),
                 isRequired: isRequired,
                 description: description,
@@ -124,7 +124,7 @@ public class GitOptionsBuilder
         bool isRequired = false,
         string description = "Name of the GitHub repo to access") =>
             AddStringSymbol(
-                alias: "git-repo",
+                optionName: "--git-repo",
                 argumentName: nameof(GitOptions.Repo),
                 isRequired: isRequired,
                 description: description,
@@ -132,22 +132,22 @@ public class GitOptionsBuilder
 
     public GitOptionsBuilder WithGitHubAuth(string? description = null, bool isRequired = false)
     {
-        Option<string> tokenOption = new(CliHelper.FormatAlias("gh-token"))
+        Option<string> tokenOption = new("--gh-token")
         {
             Description = description ?? "GitHub Personal Access Token (PAT)"
         };
 
-        Option<string> privateKeyOption = new(CliHelper.FormatAlias("gh-private-key"))
+        Option<string> privateKeyOption = new("--gh-private-key")
         {
             Description = "Base64-encoded private key (pem format) for GitHub App authentication"
         };
 
-        Option<string> clientIdOption = new(CliHelper.FormatAlias("gh-app-client-id"))
+        Option<string> clientIdOption = new("--gh-app-client-id")
         {
             Description = "GitHub Client ID for GitHub App authentication"
         };
 
-        Option<string?> installationIdOption = new(CliHelper.FormatAlias("gh-app-installation-id"))
+        Option<string?> installationIdOption = new("--gh-app-installation-id")
         {
             Description = "GitHub App installation ID to use (only required if app has more than one installation)"
         };
@@ -212,7 +212,7 @@ public class GitOptionsBuilder
     }
 
     private GitOptionsBuilder AddStringSymbol(
-        string alias,
+        string optionName,
         string argumentName,
         bool isRequired,
         string description,
@@ -226,7 +226,7 @@ public class GitOptionsBuilder
             return this;
         }
 
-        Option<string> option = new(CliHelper.FormatAlias(alias)) { Description = description };
+        Option<string> option = new(optionName) { Description = description };
         _options.Add(option);
         _binders.Add((result, target) => bindValue(target, result.GetValue(option) ?? string.Empty));
         return this;

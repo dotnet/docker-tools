@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .WithOwner(isRequired: true, description: "Owner of the GitHub repo to post notifications to")
                 .WithRepo(isRequired: true, description: "Name of the GitHub repo to post notifications to");
 
-        private static readonly Option<string[]> TaskNamesOption = new(CliHelper.FormatAlias("task"))
+        private static readonly Option<string[]> TaskNamesOption = new("--task")
         {
             Description = "Name of a build task to report the result of",
             DefaultValueFactory = _ => Array.Empty<string>(),

@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly Option<Dictionary<string, RegistryCredentials>> CredentialsOption =
             CliHelper.CreateDictionaryOption<RegistryCredentials>(
-                "registry-creds",
+                "--registry-creds",
                 "Named credentials that map to a registry (<registry>=<username>;<password>)",
                 val =>
                 {

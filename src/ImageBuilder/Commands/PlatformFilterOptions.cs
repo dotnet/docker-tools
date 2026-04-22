@@ -18,19 +18,19 @@ public class PlatformFilterOptions
     public string OsType { get; set; } = string.Empty;
     public IEnumerable<string> OsVersions { get; set; } = [];
 
-    private static readonly Option<string> ArchitectureOption = new(CliHelper.FormatAlias("architecture"))
+    private static readonly Option<string> ArchitectureOption = new("--architecture")
     {
         Description = "Architecture of Dockerfiles to operate on - wildcard chars * and ? supported (default is current OS architecture)",
         DefaultValueFactory = _ => DockerHelper.Architecture.GetDockerName()
     };
 
-    private static readonly Option<string> OsTypeOption = new(CliHelper.FormatAlias("os-type"))
+    private static readonly Option<string> OsTypeOption = new("--os-type")
     {
         Description = "OS type (linux/windows) of the Dockerfiles to build - wildcard chars * and ? supported (default is the Docker OS)",
         DefaultValueFactory = _ => DockerHelper.OS.GetDockerName()
     };
 
-    private static readonly Option<string[]> OsVersionsOption = new(CliHelper.FormatAlias(OsVersionOptionName))
+    private static readonly Option<string[]> OsVersionsOption = new($"--{OsVersionOptionName}")
     {
         Description = "OS versions of the Dockerfiles to build - wildcard chars * and ? supported (default is to build all)",
         DefaultValueFactory = _ => Array.Empty<string>(),

@@ -30,17 +30,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Description = "Path to store the merged image info content"
         };
 
-        private static readonly Option<bool> PublishOption = new(CliHelper.FormatAlias("publish"))
+        private static readonly Option<bool> PublishOption = new("--publish")
         {
             Description = "Whether the files are being merged as part of publishing to a repo"
         };
 
-        private static readonly Option<string?> InitialImageInfoPathOption = new(CliHelper.FormatAlias("initial-image-info-path"))
+        private static readonly Option<string?> InitialImageInfoPathOption = new("--initial-image-info-path")
         {
             Description = "Path to the image info file to be used as the initial merge target"
         };
 
-        private static readonly Option<string?> CommitOverrideOption = new(CliHelper.FormatAlias("commit-override"))
+        private static readonly Option<string?> CommitOverrideOption = new("--commit-override")
         {
             Description = "Override the commit in the commitUrl property for images that were updated compared to the"
                 + " initial image info"

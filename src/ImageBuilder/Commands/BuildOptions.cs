@@ -36,70 +36,70 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly Option<ServiceConnection?> StorageServiceConnectionOption =
             ServiceConnectionBuilder.GetCliOption(
-                "storage-service-connection",
+                "--storage-service-connection",
                 "Storage account to use for internal builds.");
 
-        private static readonly Option<bool> PushOption = new(CliHelper.FormatAlias("push"))
+        private static readonly Option<bool> PushOption = new("--push")
         {
             Description = "Push built images to Docker registry"
         };
 
-        private static readonly Option<bool> RetryOption = new(CliHelper.FormatAlias("retry"))
+        private static readonly Option<bool> RetryOption = new("--retry")
         {
             Description = "Retry building images upon failure"
         };
 
-        private static readonly Option<bool> SkipPullingOption = new(CliHelper.FormatAlias("skip-pulling"))
+        private static readonly Option<bool> SkipPullingOption = new("--skip-pulling")
         {
             Description = "Skip explicitly pulling the base images of the Dockerfiles"
         };
 
-        private static readonly Option<string?> ImageInfoOutputPathOption = new(CliHelper.FormatAlias("image-info-output-path"))
+        private static readonly Option<string?> ImageInfoOutputPathOption = new("--image-info-output-path")
         {
             Description = "Path to output image info"
         };
 
-        private static readonly Option<string?> ImageInfoSourcePathOption = new(CliHelper.FormatAlias("image-info-source-path"))
+        private static readonly Option<string?> ImageInfoSourcePathOption = new("--image-info-source-path")
         {
             Description = "Path to source image info"
         };
 
-        private static readonly Option<string?> SourceRepoOption = new(CliHelper.FormatAlias("source-repo"))
+        private static readonly Option<string?> SourceRepoOption = new("--source-repo")
         {
             Description = "Repo URL of the Dockerfile sources"
         };
 
-        private static readonly Option<bool> NoCacheOption = new(CliHelper.FormatAlias("no-cache"))
+        private static readonly Option<bool> NoCacheOption = new("--no-cache")
         {
             Description = "Disables build cache feature"
         };
 
-        private static readonly Option<string?> SourceRepoPrefixOption = new(CliHelper.FormatAlias("source-repo-prefix"))
+        private static readonly Option<string?> SourceRepoPrefixOption = new("--source-repo-prefix")
         {
             Description = "Prefix to add to the external base image names when pulling them"
         };
 
         private static readonly Option<Dictionary<string, string>> BuildArgsOption =
-            CliHelper.CreateDictionaryOption("build-arg",
+            CliHelper.CreateDictionaryOption("--build-arg",
                 "Build argument to pass to the Dockerfiles (<name>=<value>)");
 
-        private static readonly Option<string[]> DockerBuildOption = new(CliHelper.FormatAlias("build-option"))
+        private static readonly Option<string[]> DockerBuildOption = new("--build-option")
         {
             Description = "Additional argument to pass directly to docker build. Repeat for multiple arguments and quote values containing spaces.",
             AllowMultipleArgumentsPerToken = true,
         };
 
-        private static readonly Option<bool> SkipPlatformCheckOption = new(CliHelper.FormatAlias("skip-platform-check"))
+        private static readonly Option<bool> SkipPlatformCheckOption = new("--skip-platform-check")
         {
             Description = "Skips validation that ensures the Dockerfile's base image's platform matches the manifest configuration"
         };
 
-        private static readonly Option<string?> DigestsOutVarOption = new(CliHelper.FormatAlias("digests-out-var"))
+        private static readonly Option<string?> DigestsOutVarOption = new("--digests-out-var")
         {
             Description = "Azure DevOps variable name to use for outputting the list of built image digests"
         };
 
-        private static readonly Option<bool> InternalOption = new(CliHelper.FormatAlias("internal"))
+        private static readonly Option<bool> InternalOption = new("--internal")
         {
             Description = "When true, all Dockerfiles will be passed the build arg ACCESSTOKEN containing the access token "
                 + "for the storage account specified by the storage-service-connection option. If used without the "

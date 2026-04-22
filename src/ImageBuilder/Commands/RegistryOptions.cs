@@ -75,12 +75,12 @@ public class RegistryOptionsBuilder(bool isOverride)
 
     public IEnumerable<Option> GetCliOptions()
     {
-        _registryOption = new Option<string?>(CliHelper.FormatAlias(RegistryOptionName))
+        _registryOption = new Option<string?>($"--{RegistryOptionName}")
         {
             Description = RegistryDescription
         };
 
-        _repoPrefixOption = new Option<string?>(CliHelper.FormatAlias(RepoPrefixOptionName))
+        _repoPrefixOption = new Option<string?>($"--{RepoPrefixOptionName}")
         {
             Description = RepoPrefixDescription
         };

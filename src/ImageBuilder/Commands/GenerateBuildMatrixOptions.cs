@@ -27,48 +27,48 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private const MatrixType DefaultMatrixType = MatrixType.PlatformDependencyGraph;
 
-        private static readonly Option<MatrixType> MatrixTypeOption = new(CliHelper.FormatAlias("type"))
+        private static readonly Option<MatrixType> MatrixTypeOption = new("--type")
         {
             Description = $"Type of matrix to generate. {EnumHelper.GetHelpTextOptions(DefaultMatrixType)}",
             DefaultValueFactory = _ => DefaultMatrixType
         };
 
-        private static readonly Option<string[]> CustomBuildLegGroupsOption = new(CliHelper.FormatAlias("custom-build-leg-group"))
+        private static readonly Option<string[]> CustomBuildLegGroupsOption = new("--custom-build-leg-group")
         {
             Description = "Name of custom build leg group to use.",
             DefaultValueFactory = _ => Array.Empty<string>(),
             AllowMultipleArgumentsPerToken = false
         };
 
-        private static readonly Option<int> ProductVersionComponentsOption = new(CliHelper.FormatAlias("product-version-components"))
+        private static readonly Option<int> ProductVersionComponentsOption = new("--product-version-components")
         {
             Description = "Number of components of the product version considered to be significant",
             DefaultValueFactory = _ => 2
         };
 
-        private static readonly Option<string?> ImageInfoOption = new(CliHelper.FormatAlias("image-info"))
+        private static readonly Option<string?> ImageInfoOption = new("--image-info")
         {
             Description = "Path to image info file"
         };
 
-        private static readonly Option<string[]> DistinctMatrixOsVersionsOption = new(CliHelper.FormatAlias("distinct-matrix-os-version"))
+        private static readonly Option<string[]> DistinctMatrixOsVersionsOption = new("--distinct-matrix-os-version")
         {
             Description = "OS version to be contained in its own distinct matrix",
             DefaultValueFactory = _ => Array.Empty<string>(),
             AllowMultipleArgumentsPerToken = false
         };
 
-        private static readonly Option<string?> SourceRepoPrefixOption = new(CliHelper.FormatAlias("source-repo-prefix"))
+        private static readonly Option<string?> SourceRepoPrefixOption = new("--source-repo-prefix")
         {
             Description = "Prefix to add to the external base image names when pulling them"
         };
 
-        private static readonly Option<string?> SourceRepoOption = new(CliHelper.FormatAlias("source-repo"))
+        private static readonly Option<string?> SourceRepoOption = new("--source-repo")
         {
             Description = "Repo URL of the Dockerfile sources"
         };
 
-        private static readonly Option<bool> TrimCachedImagesOption = new(CliHelper.FormatAlias("trim-cached-images"))
+        private static readonly Option<bool> TrimCachedImagesOption = new("--trim-cached-images")
         {
             Description = "Whether to trim cached images from the set of paths"
         };

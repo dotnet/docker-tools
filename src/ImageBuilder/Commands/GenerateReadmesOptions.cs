@@ -14,7 +14,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? SourceRepoBranch { get; set; }
 
-        private static readonly Option<string?> SourceBranchOption = new(CliHelper.FormatAlias("source-branch"))
+        private static readonly Option<string?> SourceBranchOption = new("--source-branch")
         {
             Description = "Repo branch of the Dockerfile sources (default is commit SHA)"
         };

@@ -16,7 +16,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? ImageInfoPath { get; set; }
 
-        private static readonly Option<string?> ImageInfoOption = new(CliHelper.FormatAlias("image-info"))
+        private static readonly Option<string?> ImageInfoOption = new("--image-info")
         {
             Description = "Path to image info file"
         };

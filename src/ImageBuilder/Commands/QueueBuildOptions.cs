@@ -25,13 +25,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private const string DefaultSubscriptionsPath = "subscriptions.json";
 
-        private static readonly Option<string> SubscriptionsPathOption = new(CliHelper.FormatAlias("subscriptions-path"))
+        private static readonly Option<string> SubscriptionsPathOption = new("--subscriptions-path")
         {
             Description = $"Path to the subscriptions file (defaults to '{DefaultSubscriptionsPath}').",
             DefaultValueFactory = _ => DefaultSubscriptionsPath
         };
 
-        private static readonly Option<string[]> ImagePathsOption = new(CliHelper.FormatAlias("image-paths"))
+        private static readonly Option<string[]> ImagePathsOption = new("--image-paths")
         {
             Description = "JSON string mapping a subscription ID to the image paths to be built (from the output variable of getStaleImages)",
             DefaultValueFactory = _ => Array.Empty<string>(),

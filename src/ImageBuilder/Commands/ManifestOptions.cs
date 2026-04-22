@@ -21,31 +21,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? RepoPrefix { get; set; }
         public IDictionary<string, string> Variables { get; set; } = new Dictionary<string, string>();
 
-        private static readonly Option<string> ManifestOption = new(CliHelper.FormatAlias("manifest"))
+        private static readonly Option<string> ManifestOption = new("--manifest")
         {
             Description = "Path to json file which describes the repo",
             DefaultValueFactory = _ => "manifest.json"
         };
 
-        private static readonly Option<string?> RegistryOverrideOption = new(CliHelper.FormatAlias(RegistryOverrideName))
+        private static readonly Option<string?> RegistryOverrideOption = new($"--{RegistryOverrideName}")
         {
             Description = "Alternative registry which overrides the manifest"
         };
 
-        private static readonly Option<string[]> ReposOption = new(CliHelper.FormatAlias("repo"))
+        private static readonly Option<string[]> ReposOption = new("--repo")
         {
             Description = "Repos to operate on (Default is all)",
             DefaultValueFactory = _ => Array.Empty<string>(),
             AllowMultipleArgumentsPerToken = false
         };
 
-        private static readonly Option<string?> RepoPrefixOption = new(CliHelper.FormatAlias("repo-prefix"))
+        private static readonly Option<string?> RepoPrefixOption = new("--repo-prefix")
         {
             Description = "Prefix to add to the repo names specified in the manifest"
         };
 
         private static readonly Option<Dictionary<string, string>> VariablesOption =
-            CliHelper.CreateDictionaryOption("var",
+            CliHelper.CreateDictionaryOption("--var",
                 "Named variables to substitute into the manifest (<name>=<value>)");
 
         public override IEnumerable<Option> GetCliOptions() =>

@@ -27,12 +27,12 @@ public class BaseImageOverrideOptions
 
     public string? Substitution { get; set; }
 
-    private static readonly Option<string?> RegexPatternOption = new(CliHelper.FormatAlias(BaseOverrideRegexName))
+    private static readonly Option<string?> RegexPatternOption = new($"--{BaseOverrideRegexName}")
     {
         Description = $"Regular expression identifying base image tags to apply string substitution to (requires {BaseOverrideSubName} to be set)"
     };
 
-    private static readonly Option<string?> SubstitutionOption = new(CliHelper.FormatAlias(BaseOverrideSubName))
+    private static readonly Option<string?> SubstitutionOption = new($"--{BaseOverrideSubName}")
     {
         Description = $"Regular expression substitution that overrides a matching base image tag (requires {BaseOverrideRegexName} to be set)"
     };

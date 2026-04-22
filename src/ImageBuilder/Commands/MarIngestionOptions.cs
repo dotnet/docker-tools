@@ -19,14 +19,14 @@ public class MarIngestionOptions
 
     public IEnumerable<Option> GetCliOptions(TimeSpan defaultTimeout, TimeSpan defaultRequeryDelay)
     {
-        _timeoutOption = new Option<TimeSpan>(CliHelper.FormatAlias("timeout"))
+        _timeoutOption = new Option<TimeSpan>("--timeout")
         {
             Description = "Maximum time to wait for ingestion",
             DefaultValueFactory = _ => defaultTimeout,
             CustomParser = argResult => TimeSpan.Parse(argResult.GetTokenValue())
         };
 
-        _requeryDelayOption = new Option<TimeSpan>(CliHelper.FormatAlias("requery-delay"))
+        _requeryDelayOption = new Option<TimeSpan>("--requery-delay")
         {
             Description = "Amount of time to wait before requerying the status",
             DefaultValueFactory = _ => defaultRequeryDelay,

@@ -38,18 +38,18 @@ public class AzdoOptions
         Description = "Azure DevOps project"
     };
 
-    private static readonly Option<string?> AzdoRepoOption = new(CliHelper.FormatAlias("azdo-repo"))
+    private static readonly Option<string?> AzdoRepoOption = new("--azdo-repo")
     {
         Description = "Azure DevOps repo"
     };
 
-    private static readonly Option<string?> AzdoBranchOption = new(CliHelper.FormatAlias("azdo-branch"))
+    private static readonly Option<string?> AzdoBranchOption = new("--azdo-branch")
     {
         Description = "Azure DevOps branch (default: main)",
         DefaultValueFactory = _ => "main"
     };
 
-    private static readonly Option<string?> AzdoPathOption = new(CliHelper.FormatAlias("azdo-path"))
+    private static readonly Option<string?> AzdoPathOption = new("--azdo-path")
     {
         Description = "Azure DevOps path"
     };

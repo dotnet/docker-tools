@@ -14,12 +14,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public bool Validate { get; set; }
 
-        private static readonly Option<bool> OptionalTemplatesOption = new(CliHelper.FormatAlias("optional-templates"))
+        private static readonly Option<bool> OptionalTemplatesOption = new("--optional-templates")
         {
             Description = "Do not require templates"
         };
 
-        private static readonly Option<bool> ValidateOption = new(CliHelper.FormatAlias("validate"))
+        private static readonly Option<bool> ValidateOption = new("--validate")
         {
             Description = "Validates the generated artifacts and templates are in sync"
         };

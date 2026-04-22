@@ -21,12 +21,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
 
-        private static readonly Option<bool> ExcludeProductFamilyOption = new(CliHelper.FormatAlias("exclude-product-family"))
+        private static readonly Option<bool> ExcludeProductFamilyOption = new("--exclude-product-family")
         {
             Description = "Excludes the product family readme from being published"
         };
 
-        private static readonly Option<string?> RootPathOption = new(CliHelper.FormatAlias("root"))
+        private static readonly Option<string?> RootPathOption = new("--root")
         {
             Description = "Root path from which to copy readmes"
         };

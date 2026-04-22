@@ -19,12 +19,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly TimeSpan ContinuousModeDelayDefault = TimeSpan.FromSeconds(10);
 
-        private static readonly Option<bool> ContinuousModeOption = new(CliHelper.FormatAlias("continuous"))
+        private static readonly Option<bool> ContinuousModeOption = new("--continuous")
         {
             Description = "Runs the status check continuously"
         };
 
-        private static readonly Option<TimeSpan> ContinuousModeDelayOption = new(CliHelper.FormatAlias("continuous-delay"))
+        private static readonly Option<TimeSpan> ContinuousModeDelayOption = new("--continuous-delay")
         {
             Description = $"Delay before running next status check (default {ContinuousModeDelayDefault.TotalSeconds} secs)",
             DefaultValueFactory = _ => ContinuousModeDelayDefault,

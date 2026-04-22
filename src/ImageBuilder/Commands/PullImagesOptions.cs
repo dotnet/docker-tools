@@ -14,12 +14,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? OutputVariableName { get; set; }
         public string? ImageInfoPath { get; set; }
 
-        private static readonly Option<string?> OutputVarOption = new(CliHelper.FormatAlias("output-var"))
+        private static readonly Option<string?> OutputVarOption = new("--output-var")
         {
             Description = "Azure DevOps variable name to use for outputting the list of pulled image tags"
         };
 
-        private static readonly Option<string?> ImageInfoOption = new(CliHelper.FormatAlias("image-info"))
+        private static readonly Option<string?> ImageInfoOption = new("--image-info")
         {
             Description = "Path to the image info file describing which images are to be pulled"
         };

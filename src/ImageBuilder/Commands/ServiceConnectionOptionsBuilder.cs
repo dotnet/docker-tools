@@ -13,7 +13,7 @@ public class ServiceConnectionOptionsBuilder
     /// <summary>
     /// Creates a single CLI option that parses a service connection string.
     /// </summary>
-    public Option<ServiceConnection?> GetCliOption(string alias, string description = "")
+    public Option<ServiceConnection?> GetCliOption(string optionName, string description = "")
     {
         const string FormatDescription = "Format: \"{tenantId}:{clientId}:{serviceConnectionId}\".";
 
@@ -26,7 +26,7 @@ public class ServiceConnectionOptionsBuilder
             description = FormatDescription;
         }
 
-        return new Option<ServiceConnection?>(CliHelper.FormatAlias(alias))
+        return new Option<ServiceConnection?>(optionName)
         {
             Description = description,
             CustomParser = result =>

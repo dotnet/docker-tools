@@ -38,8 +38,23 @@ try {
     $globalJson = Get-Content (Join-Path $repoRoot 'global.json') | ConvertFrom-Json
     $arcadeSdkVersion = $globalJson.'msbuild-sdks'.'Microsoft.DotNet.Arcade.Sdk'
     # Need to use nested Join-Path calls to support Windows PowerShell, which doesn't support multiple paths in a single Join-Path call
-    $toolsetLocationFile = Join-Path (Join-Path (Join-Path $repoRoot 'artifacts') 'toolset') "$arcadeSdkVersion.txt"
-    $buildProj = Get-Content $toolsetLocationFile -TotalCount 1
+    $toolsetDir = Join-Path (Join-Path (Join-Path $repoRoot 'artifacts') 'toolset') $arcadeSdkVersion
+    $toolsetBuildProj = Join-Path $toolsetDir 'Build.proj'
+    $buildProj = $toolsetBuildProj
+
+    if (-not (Test-Path $buildProj)) {
+        $toolsetLocationFile = Join-Path (Join-Path (Join-Path $repoRoot 'artifacts') 'toolset') "$arcadeSdkVersion.txt"
+        if (Test-Path $toolsetLocationFile) {
+            $legacyBuildProj = Get-Content $toolsetLocationFile -TotalCount 1
+            if (-not [string]::IsNullOrWhiteSpace($legacyBuildProj)) {
+                $buildProj = $legacyBuildProj
+            }
+        }
+    }
+
+    if ([string]::IsNullOrWhiteSpace($buildProj) -or -not (Test-Path $buildProj)) {
+        throw "Failed to locate Arcade toolset Build.proj. Expected '$toolsetBuildProj'."
+    }
 
     $dotnet = Join-Path $dotnetInstallDir 'dotnet'
     & $dotnet msbuild $buildProj /p:Restore=true /p:Build=false /p:RepoRoot="$repoRoot/" /clp:NoSummary

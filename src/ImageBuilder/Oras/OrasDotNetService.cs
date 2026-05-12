@@ -120,6 +120,7 @@ public class OrasDotNetService(
         CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+
         IReadOnlyList<ReferrerInfo> referrers = isDryRun ? []
             : await GetReferrersImplAsync(reference, cancellationToken);
 

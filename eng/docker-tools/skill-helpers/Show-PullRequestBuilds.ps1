@@ -70,7 +70,7 @@ foreach ($check in $normalized) {
 $builds = $builds | Sort-Object BuildId -Unique
 
 $title = if ($Repo) { "$Repo#$PullRequest" } else { "PR #$PullRequest" }
-Write-Host "# Checks for $title"
+Write-Host "## Checks for $title"
 Write-Host ""
 Write-Host "$($normalized.Count) check(s); $($builds.Count) Azure Pipelines build(s)."
 Write-Host ""

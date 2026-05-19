@@ -26,7 +26,7 @@ $definitions = Invoke-AzDORestMethod `
     -QueryParams @{ path = $normalizedFolder }
 
 if (-not $definitions.value -or $definitions.value.Count -eq 0) {
-    Write-Host "# No pipelines found in $normalizedFolder"
+    Write-Host "## No pipelines found in $normalizedFolder"
     return
 }
 
@@ -42,7 +42,7 @@ $builds = Invoke-AzDORestMethod `
         queryOrder  = "finishTimeDescending"
     }
 
-Write-Host "# Builds in $normalizedFolder (last $Hours hours)"
+Write-Host "## Builds in $normalizedFolder (last $Hours hours)"
 Write-Host ""
 Write-Host "Found $($builds.value.Count) build(s) across $($definitions.value.Count) pipeline(s)."
 Write-Host ""

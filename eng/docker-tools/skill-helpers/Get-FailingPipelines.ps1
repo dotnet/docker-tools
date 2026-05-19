@@ -49,7 +49,7 @@ foreach ($def in $definitions.value) {
     }
 }
 
-Write-Host "# Failing pipelines in $normalizedFolder"
+Write-Host "## Failing pipelines in $normalizedFolder"
 Write-Host ""
 Write-Host "Found $($failing.Count) of $($definitions.value.Count) pipeline(s) with a failing latest run."
 Write-Host ""

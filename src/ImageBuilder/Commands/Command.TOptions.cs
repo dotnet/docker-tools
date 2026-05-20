@@ -33,15 +33,31 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             cmd.SetAction(async (parseResult, cancellationToken) =>
             {
-                options.Bind(parseResult);
-
-                if (!options.NoVersionLogging)
+                try
                 {
-                    LogDockerVersions();
-                }
+                    options.Bind(parseResult);
 
-                Initialize(options);
-                await ExecuteAsync();
+                    if (!options.NoVersionLogging)
+                    {
+                        LogDockerVersions();
+                    }
+
+                    Initialize(options);
+                    await ExecuteAsync();
+                }
+                catch (Exception ex)
+                {
+                    // System.CommandLine's DefaultExceptionHandler silently swallows
+                    // OperationCanceledException (and AggregateException wrapping one),
+                    // producing exit code 1 with no diagnostic output. Write the
+                    // exception details to stderr ourselves before rethrowing so
+                    // failures are always observable in pipeline logs.
+                    // See: https://github.com/dotnet/command-line-api/issues/430
+                    Console.Error.WriteLine($"Unhandled exception in command '{this.GetCommandName()}':");
+                    Console.Error.WriteLine(ex.ToString());
+                    Console.Error.Flush();
+                    throw;
+                }
             });
 
             return cmd;

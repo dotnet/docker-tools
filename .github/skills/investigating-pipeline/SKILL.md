@@ -6,22 +6,26 @@ description: >-
   or Azure DevOps build URL and wants to understand what failed and why.
 ---
 
-## Workflow
+# Investigating Azure Pipelines builds
 
-### Step 1: View the build timeline
+This document contains useful patterns for inspecting Azure Pipelines builds.
 
-```shell
-eng/docker-tools/skill-helpers/Show-BuildTimeline.ps1 <org> <project> <buildId>
-```
+## How to view the build timeline
 
-This prints a tree of stages, jobs, and tasks. By default only failing tasks are shown. Use `-ShowAllTasks` to see everything.
-
-Each node includes a log ID (e.g., `Task #42`). Note the log IDs of failing tasks for the next step.
-
-### Step 2: Read a failing task's log
+Use `Show-BuildTimeline.ps1` to view a build's timeline.
+This includes all stages, jobs, and tasks along with their results.
 
 ```shell
-eng/docker-tools/skill-helpers/Get-BuildLog.ps1 <org> <project> <buildId> <logId>
+pwsh ./eng/docker-tools/skill-helpers/Show-BuildTimeline.ps1 <org> <project> <buildId>
 ```
 
-This prints the full log for a specific task. Use this to understand the root cause of a failure.
+Each node includes a log ID (`Task #42` means log ID 42).
+
+## How to read pipeline logs
+
+First, get the log ID from the build timeline.
+Then, use `Get-BuildLog.ps1` to print the full log:
+
+```shell
+pwsh ./eng/docker-tools/skill-helpers/Get-BuildLog.ps1 -Organization dnceng -Project internal -BuildId $buildId -LogId $logId
+```

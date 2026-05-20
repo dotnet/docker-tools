@@ -1,8 +1,6 @@
 ---
 name: triaging-pull-requests
 description: Triage open pull requests into actionable categories.
-user-invocable: true
-disable-model-invocation: true
 ---
 
 ## Workflow

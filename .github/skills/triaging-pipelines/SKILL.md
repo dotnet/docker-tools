@@ -1,8 +1,6 @@
 ---
 name: triaging-pipelines
 description: Triage recent Azure Pipelines runs and failures.
-user-invocable: true
-disable-model-invocation: true
 ---
 
 ## Workflow

@@ -59,34 +59,44 @@ if ($pr.labels) {
 Write-Host "- URL: $($pr.url)"
 Write-Host ""
 
-# Reviews (the Approve / Request changes / Comment submissions themselves).
-Write-Host "### Reviews ($($pr.reviews.Count))"
-Write-Host ""
-if ($pr.reviews.Count -eq 0) {
-    Write-Host "_None_"
-} else {
-    foreach ($review in $pr.reviews) {
-        Write-Host "**$($review.author.login)** $($review.state) at $($review.submittedAt)"
-        Write-BlockComment $review.body
+# Conversation: top-level issue comments and review submissions, merged in
+# chronological order.
+$conversation = @()
+foreach ($comment in $pr.comments) {
+    $conversation += [pscustomobject]@{
+        Timestamp = [datetime]$comment.createdAt
+        Header    = "**$($comment.author.login)** commented at $($comment.createdAt):"
+        Body      = $comment.body
     }
 }
-Write-Host ""
+foreach ($review in $pr.reviews) {
+    $header = if ($review.state -eq "COMMENTED") {
+        "**$($review.author.login)** left a comment at $($review.submittedAt):"
+    } else {
+        "**$($review.author.login)** reviewed ($($review.state)) at $($review.submittedAt):"
+    }
+    $conversation += [pscustomobject]@{
+        Timestamp = [datetime]$review.submittedAt
+        Header    = $header
+        Body      = $review.body
+    }
+}
+$conversation = $conversation | Sort-Object Timestamp
 
-# Top-level (issue) comments on the PR conversation.
-Write-Host "### Conversation comments ($($pr.comments.Count))"
+Write-Host "### Conversation ($($conversation.Count))"
 Write-Host ""
-if ($pr.comments.Count -eq 0) {
+if ($conversation.Count -eq 0) {
     Write-Host "_None_"
 } else {
-    foreach ($comment in $pr.comments) {
-        Write-Host "**$($comment.author.login)** commented at $($comment.createdAt):"
-        Write-BlockComment $comment.body
+    foreach ($entry in $conversation) {
+        Write-Host $entry.Header
+        Write-BlockComment $entry.Body
     }
 }
 Write-Host ""
 
 # Inline review comments grouped by file and line.
-Write-Host "### Inline review comments ($($inline.Count))"
+Write-Host "### Code review comments ($($inline.Count))"
 Write-Host ""
 if ($inline.Count -eq 0) {
     Write-Host "_None_"

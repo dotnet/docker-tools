@@ -4,8 +4,6 @@
 
 using System;
 using System.CommandLine;
-using System.CommandLine.Parsing;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -47,12 +45,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 }
                 catch (Exception ex)
                 {
-                    // System.CommandLine's DefaultExceptionHandler silently swallows
-                    // OperationCanceledException (and AggregateException wrapping one),
-                    // producing exit code 1 with no diagnostic output. Write the
-                    // exception details to stderr ourselves before rethrowing so
-                    // failures are always observable in pipeline logs.
-                    // See: https://github.com/dotnet/command-line-api/issues/430
+                    // System.CommandLine silently swallows OperationCanceledException and TaskCanceledException, so
+                    // log all unhandled exceptions to stderr here and re-throw. This makes sure failures are always
+                    // observable in pipeline logs.
+                    // For more details, see https://github.com/dotnet/command-line-api/issues/2808.
                     Console.Error.WriteLine($"Unhandled exception in command '{this.GetCommandName()}':");
                     Console.Error.WriteLine(ex.ToString());
                     Console.Error.Flush();

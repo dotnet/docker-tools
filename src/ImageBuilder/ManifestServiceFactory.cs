@@ -2,15 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using Microsoft.DotNet.ImageBuilder.Oras;
+
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class ManifestServiceFactory(IRegistryManifestClientFactory registryClientFactory) : IManifestServiceFactory
+    public class ManifestServiceFactory(
+        IOrasServiceFactory orasServiceFactory,
+        IRegistryResolver registryResolver) : IManifestServiceFactory
     {
-        private readonly IRegistryManifestClientFactory _registryClientFactory = registryClientFactory;
+        private readonly IOrasServiceFactory _orasServiceFactory = orasServiceFactory;
+        private readonly IRegistryResolver _registryResolver = registryResolver;
 
         public IManifestService Create(IRegistryCredentialsHost? credsHost = null)
         {
-            return new ManifestService(_registryClientFactory, credsHost);
+            return new ManifestService(_orasServiceFactory.Create(credsHost), _registryResolver);
         }
     }
 }

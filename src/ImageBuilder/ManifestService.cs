@@ -4,16 +4,17 @@
 
 using System.Text.Json.Nodes;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 internal class ManifestService(
-    IRegistryManifestClientFactory registryClientFactory,
-    IRegistryCredentialsHost? credsHost = null
+    IOrasService orasService,
+    IRegistryResolver registryResolver
 ) : IManifestService
 {
-    private readonly IRegistryManifestClientFactory _registryClientFactory = registryClientFactory;
-    private readonly IRegistryCredentialsHost? _credsHost = credsHost;
+    private readonly IOrasService _orasService = orasService;
+    private readonly IRegistryResolver _registryResolver = registryResolver;
 
     public Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun)
     {
@@ -22,9 +23,15 @@ internal class ManifestService(
             return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
         }
 
-        IRegistryManifestClient registryClient = _registryClientFactory.Create(image.Registry, image.Repo, _credsHost);
+        // Resolve the effective registry endpoint. This maps Docker Hub's
+        // user-facing name (docker.io) to its API hostname (registry-1.docker.io)
+        // and leaves other registries unchanged.
+        RegistryInfo registryInfo = _registryResolver.Resolve(image.Registry, credsHost: null);
 
-        string tagOrDigest = !string.IsNullOrEmpty(image.Tag) ? image.Tag : image.Digest;
-        return registryClient.GetManifestAsync(tagOrDigest);
+        string reference = !string.IsNullOrEmpty(image.Tag)
+            ? $"{registryInfo.EffectiveRegistry}/{image.Repo}:{image.Tag}"
+            : $"{registryInfo.EffectiveRegistry}/{image.Repo}@{image.Digest}";
+
+        return _orasService.GetManifestAsync(reference);
     }
 }

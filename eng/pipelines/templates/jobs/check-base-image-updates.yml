@@ -46,7 +46,7 @@ jobs:
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
 
   - script: >
-      $(runImageBuilderCmd)
+      $(runAuthedImageBuilderCmd)
       getStaleImages
       $(dotnetDockerBot.userName)
       $(dotnetDockerBot.email)
@@ -60,6 +60,9 @@ jobs:
       $(dockerHubRegistryCreds)
     displayName: Get Stale Images
     name: GetStaleImages
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
 
   - script: >
       $(runImageBuilderCmd)

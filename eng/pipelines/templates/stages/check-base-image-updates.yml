@@ -12,6 +12,12 @@ parameters:
 # The name of the public Azure DevOps project (e.g., "public").
 - name: publicProjectName
   type: string
+# When true, build ImageBuilder from source instead of pulling from MCR. Used
+# during development to validate ImageBuilder and pipeline template changes
+# together before a new ImageBuilder image is published.
+- name: bootstrapImageBuilder
+  type: boolean
+  default: false
 
 stages:
 - stage: CheckBaseImages
@@ -26,6 +32,7 @@ stages:
       publicProjectName: ${{ parameters.publicProjectName }}
       internalProjectName: ${{ parameters.internalProjectName }}
       publishConfig: ${{ parameters.publishConfig }}
+      bootstrapImageBuilder: ${{ parameters.bootstrapImageBuilder }}
 
   - template: /eng/pipelines/templates/jobs/check-base-image-updates.yml@self
     parameters:
@@ -34,3 +41,4 @@ stages:
       publicProjectName: ${{ parameters.publicProjectName }}
       internalProjectName: ${{ parameters.internalProjectName }}
       publishConfig: ${{ parameters.publishConfig }}
+      bootstrapImageBuilder: ${{ parameters.bootstrapImageBuilder }}

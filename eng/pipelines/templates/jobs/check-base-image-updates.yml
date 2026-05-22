@@ -20,6 +20,12 @@ parameters:
 # Schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
 - name: publishConfig
   type: object
+# When true, build ImageBuilder from source instead of pulling from MCR. Used
+# during development to validate ImageBuilder and pipeline template changes
+# together before a new ImageBuilder image is published.
+- name: bootstrapImageBuilder
+  type: boolean
+  default: false
 
 jobs:
 - job: ${{ parameters.jobName }}
@@ -33,6 +39,9 @@ jobs:
     parameters:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
+      ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
+        customInitSteps:
+        - template: /eng/pipelines/templates/steps/bootstrap-imagebuilder.yml@self
 
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:

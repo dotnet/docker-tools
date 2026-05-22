@@ -20,10 +20,6 @@ parameters:
 # Schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
 - name: publishConfig
   type: object
-# Additional arguments to pass to the getStaleImages command (optional).
-- name: customGetStaleImagesArgs
-  type: string
-  default: ""
 
 jobs:
 - job: ${{ parameters.jobName }}
@@ -56,7 +52,8 @@ jobs:
       $(dotnetDockerBot.email)
       --gh-token $(BotAccount-dotnet-docker-bot-PAT)
       staleImagePaths
-      ${{ parameters.customGetStaleImagesArgs }}
+      --base-override-regex '^(?!mcr\.microsoft\.com/|[^/]+\.azurecr\.io/)'
+      --base-override-sub '${{ parameters.publishConfig.InternalMirrorRegistry.server }}/${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}'
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'

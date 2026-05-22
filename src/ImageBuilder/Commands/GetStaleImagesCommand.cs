@@ -55,7 +55,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
                 SubscriptionHelper.GetSubscriptionManifests(
-                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService)
+                    Options.SubscriptionOptions.SubscriptionsPath,
+                    Options.FilterOptions,
+                    _gitService,
+                    _manifestJsonService,
+                    manifestOptions => manifestOptions.RegistryOverride = Options.RegistryOverride)
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {
@@ -87,6 +91,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
+            ImageNameResolverForMatrix imageNameResolver = new(
+                Options.BaseImageOverrideOptions,
+                manifest,
+                repoPrefix: null,
+                sourceRepoPrefix: Options.SourceRepoPrefix);
+
             List<string> pathsToRebuild = new();
 
             foreach (RepoInfo repo in manifest.FilteredRepos)
@@ -97,7 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (PlatformInfo platform in platforms)
                 {
-                    pathsToRebuild.AddRange(await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails));
+                    pathsToRebuild.AddRange(
+                        await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails, imageNameResolver));
                 }
             }
 
@@ -109,7 +120,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Prepend(platform);
 
         private async Task<List<string>> GetPathsToRebuildAsync(
-            ManifestInfo manifest, PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
+            ManifestInfo manifest,
+            PlatformInfo platform,
+            RepoInfo repo,
+            ImageArtifactDetails imageArtifactDetails,
+            ImageNameResolverForMatrix imageNameResolver)
         {
             string? fromImage = platform.FinalStageFromImage;
             if (fromImage is null)
@@ -129,19 +144,26 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();
             }
 
-            fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
+            // Resolve where to actually fetch the digest from. For external base images this
+            // points to the mirror location in the staging registry; for internal images it is
+            // the original FROM tag. The "public" form is the canonical reference matching what
+            // gets recorded in image-info.json and so is the right repo to use in the digest
+            // comparison string below.
+            string pullTag = imageNameResolver.GetFromImagePullTag(fromImage);
+            string publicTag = imageNameResolver.GetFromImagePublicTag(fromImage);
 
-            string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
+            string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, pullTag,
                 async () =>
                 {
-                    string digest = await _manifestService.Value.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
-                    return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
+                    string digest = await _manifestService.Value.GetManifestDigestShaAsync(pullTag, Options.IsDryRun);
+                    return DockerHelper.GetDigestString(DockerHelper.GetRepo(publicTag), digest);
                 });
 
             bool rebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentDigest;
 
             _logger.LogInformation(
-                $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
+                $"Checking base image '{publicTag}' from '{platform.DockerfilePath}'{Environment.NewLine}"
+                + $"\tPulled from:          {pullTag}{Environment.NewLine}"
                 + $"\tLast build digest:    {matchingPlatform.Value.Platform.BaseImageDigest}{Environment.NewLine}"
                 + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
                 + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");

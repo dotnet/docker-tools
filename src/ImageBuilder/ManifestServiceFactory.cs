@@ -6,16 +6,13 @@ using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
-    public class ManifestServiceFactory(
-        IOrasServiceFactory orasServiceFactory,
-        IRegistryResolver registryResolver) : IManifestServiceFactory
+    public class ManifestServiceFactory(IOrasServiceFactory orasServiceFactory) : IManifestServiceFactory
     {
         private readonly IOrasServiceFactory _orasServiceFactory = orasServiceFactory;
-        private readonly IRegistryResolver _registryResolver = registryResolver;
 
         public IManifestService Create(IRegistryCredentialsHost? credsHost = null)
         {
-            return new ManifestService(_orasServiceFactory.Create(credsHost), _registryResolver);
+            return new ManifestService(_orasServiceFactory.Create(credsHost));
         }
     }
 }

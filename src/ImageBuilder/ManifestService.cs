@@ -8,13 +8,9 @@ using Microsoft.DotNet.ImageBuilder.Oras;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
-internal class ManifestService(
-    IOrasService orasService,
-    IRegistryResolver registryResolver
-) : IManifestService
+internal class ManifestService(IOrasService orasService) : IManifestService
 {
     private readonly IOrasService _orasService = orasService;
-    private readonly IRegistryResolver _registryResolver = registryResolver;
 
     public Task<ManifestQueryResult> GetManifestAsync(ImageName image, bool isDryRun)
     {
@@ -23,14 +19,13 @@ internal class ManifestService(
             return Task.FromResult(new ManifestQueryResult("", new JsonObject()));
         }
 
-        // Resolve the effective registry endpoint. This maps Docker Hub's
-        // user-facing name (docker.io) to its API hostname (registry-1.docker.io)
-        // and leaves other registries unchanged.
-        RegistryInfo registryInfo = _registryResolver.Resolve(image.Registry, credsHost: null);
-
+        // Use the image's logical registry (e.g., "docker.io") in the ORAS
+        // reference. ORAS internally maps "docker.io" to its API host
+        // "registry-1.docker.io" for transport, and our credential adapter
+        // normalizes credential lookups back to "docker.io".
         string reference = !string.IsNullOrEmpty(image.Tag)
-            ? $"{registryInfo.EffectiveRegistry}/{image.Repo}:{image.Tag}"
-            : $"{registryInfo.EffectiveRegistry}/{image.Repo}@{image.Digest}";
+            ? $"{image.Registry}/{image.Repo}:{image.Tag}"
+            : $"{image.Registry}/{image.Repo}@{image.Digest}";
 
         return _orasService.GetManifestAsync(reference);
     }

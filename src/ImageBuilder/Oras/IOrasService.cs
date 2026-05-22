@@ -24,6 +24,14 @@ public interface IOrasService
     Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Fetches the manifest for a registry reference, returning both its digest and parsed JSON body.
+    /// </summary>
+    /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag" or "registry.io/repo@sha256:...").</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The manifest digest and parsed JSON content.</returns>
+    Task<ManifestQueryResult> GetManifestAsync(string reference, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Pushes a signed payload to the registry as a referrer artifact.
     /// </summary>
     /// <param name="subjectDescriptor">The descriptor of the image being signed.</param>

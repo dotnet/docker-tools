@@ -66,9 +66,9 @@ public static class ImageBuilder
             builder.Services.AddSingleton<Notation.INotationClient, Notation.NotationClient>();
             builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
             builder.Services.AddSingleton<Oras.IOrasService, Oras.OrasDotNetService>();
+            builder.Services.AddSingleton<Oras.IOrasServiceFactory, Oras.OrasServiceFactory>();
             builder.Services.AddSingleton<IProcessService, ProcessService>();
             builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
-            builder.Services.AddSingleton<IRegistryManifestClientFactory, RegistryManifestClientFactory>();
             builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
             builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
 

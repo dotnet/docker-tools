@@ -152,12 +152,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string pullTag = imageNameResolver.GetFromImagePullTag(fromImage);
             string publicTag = imageNameResolver.GetFromImagePublicTag(fromImage);
 
-            string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, pullTag,
-                async () =>
-                {
-                    string digest = await _manifestService.Value.GetManifestDigestShaAsync(pullTag, Options.IsDryRun);
-                    return DockerHelper.GetDigestString(DockerHelper.GetRepo(publicTag), digest);
-                });
+            // Cache only the raw SHA by pull location. Two different FROM spellings
+            // can normalize to the same pull tag (e.g. 'almalinux:8' and 'library/almalinux:8')
+            // but produce different public tags; the digest comparison string must always
+            // be built from the current platform's own public tag.
+            string sha = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, pullTag,
+                () => _manifestService.Value.GetManifestDigestShaAsync(pullTag, Options.IsDryRun));
+
+            string currentDigest = DockerHelper.GetDigestString(DockerHelper.GetRepo(publicTag), sha);
 
             bool rebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentDigest;
 

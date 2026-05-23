@@ -3100,13 +3100,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object),
+                publishConfiguration: new PublishConfiguration
+                {
+                    MirrorRegistry = new RegistryEndpoint
+                    {
+                        Server = RegistryOverride,
+                        RepoPrefix = SourceRepoPrefix,
+                    },
+                });
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.SourceRepoPrefix = SourceRepoPrefix;
             command.Options.RegistryOverride = RegistryOverride;
             command.Options.RepoPrefix = RepoPrefix;
 
@@ -3443,13 +3450,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object),
+                publishConfiguration: new PublishConfiguration
+                {
+                    MirrorRegistry = new RegistryEndpoint
+                    {
+                        Server = RegistryOverride,
+                        RepoPrefix = SourceRepoPrefix,
+                    },
+                });
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = RegistryOverride;
-            command.Options.SourceRepoPrefix = SourceRepoPrefix;
 
             const string ProductVersion = "1.0.1";
 
@@ -3512,7 +3526,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IManifestServiceFactory? manifestServiceFactory = null,
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
-            IImageCacheService? imageCacheService = null)
+            IImageCacheService? imageCacheService = null,
+            PublishConfiguration? publishConfiguration = null)
         {
             BuildCommand command = new(
                 manifestJsonService ?? TestHelper.CreateManifestJsonService(),
@@ -3524,7 +3539,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceFactory ?? Mock.Of<IManifestServiceFactory>(),
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
-                imageCacheService ?? Mock.Of<IImageCacheService>());
+                imageCacheService ?? Mock.Of<IImageCacheService>(),
+                Microsoft.Extensions.Options.Options.Create(publishConfiguration ?? new PublishConfiguration()));
 
             return command;
         }

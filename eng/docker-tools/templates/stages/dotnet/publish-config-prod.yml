@@ -63,6 +63,18 @@ stages:
         server: $(public-mirror.server)
         repoPrefix: $(publicMirrorRepoPrefix)
 
+      # Source mirror selected at template-compile time based on the AzDO team
+      # project so the C# app sees a single registry to redirect external
+      # base-image lookups to without any runtime conditionals.
+      ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+        MirrorRegistry:
+          server: $(acr-staging.server)
+          repoPrefix: $(internalMirrorRepoPrefix)
+      ${{ else }}:
+        MirrorRegistry:
+          server: $(public-mirror.server)
+          repoPrefix: $(publicMirrorRepoPrefix)
+
       BuildRegistry:
         server: $(acr-staging.server)
         repoPrefix: "${{ parameters.stagingRepoPrefix }}${{ parameters.sourceBuildPipelineRunId }}/"

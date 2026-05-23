@@ -32,11 +32,9 @@ public class PublishConfigurationBindingTests
             "PublishRegistry": {
               "Server": "publish.azurecr.io"
             },
-            "InternalMirrorRegistry": {
-              "Server": "internal-mirror.azurecr.io"
-            },
-            "PublicMirrorRegistry": {
-              "Server": "public-mirror.azurecr.io"
+            "MirrorRegistry": {
+              "Server": "mirror.azurecr.io",
+              "RepoPrefix": "mirror/"
             },
             "RegistryAuthentication": [
               {
@@ -77,11 +75,9 @@ public class PublishConfigurationBindingTests
         config.PublishRegistry.ShouldNotBeNull();
         config.PublishRegistry.Server.ShouldBe("publish.azurecr.io");
 
-        config.InternalMirrorRegistry.ShouldNotBeNull();
-        config.InternalMirrorRegistry.Server.ShouldBe("internal-mirror.azurecr.io");
-
-        config.PublicMirrorRegistry.ShouldNotBeNull();
-        config.PublicMirrorRegistry.Server.ShouldBe("public-mirror.azurecr.io");
+        config.MirrorRegistry.ShouldNotBeNull();
+        config.MirrorRegistry.Server.ShouldBe("mirror.azurecr.io");
+        config.MirrorRegistry.RepoPrefix.ShouldBe("mirror/");
     }
 
     [Fact]
@@ -117,11 +113,10 @@ public class PublishConfigurationBindingTests
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
         var knownRegistries = config.GetKnownRegistries().ToList();
 
-        knownRegistries.Count.ShouldBe(4);
+        knownRegistries.Count.ShouldBe(3);
         knownRegistries.ShouldContain(r => r.Server == "build.azurecr.io");
         knownRegistries.ShouldContain(r => r.Server == "publish.azurecr.io");
-        knownRegistries.ShouldContain(r => r.Server == "internal-mirror.azurecr.io");
-        knownRegistries.ShouldContain(r => r.Server == "public-mirror.azurecr.io");
+        knownRegistries.ShouldContain(r => r.Server == "mirror.azurecr.io");
     }
 
     [Fact]
@@ -174,8 +169,7 @@ public class PublishConfigurationBindingTests
         config.BuildRegistry.ShouldNotBeNull();
         config.BuildRegistry.Server.ShouldBe("build.azurecr.io");
         config.PublishRegistry.ShouldBeNull();
-        config.InternalMirrorRegistry.ShouldBeNull();
-        config.PublicMirrorRegistry.ShouldBeNull();
+        config.MirrorRegistry.ShouldBeNull();
         config.RegistryAuthentication.ShouldBeEmpty();
     }
 
@@ -192,8 +186,7 @@ public class PublishConfigurationBindingTests
 
         config.BuildRegistry.ShouldBeNull();
         config.PublishRegistry.ShouldBeNull();
-        config.InternalMirrorRegistry.ShouldBeNull();
-        config.PublicMirrorRegistry.ShouldBeNull();
+        config.MirrorRegistry.ShouldBeNull();
         config.RegistryAuthentication.ShouldBeEmpty();
     }
 
@@ -206,7 +199,7 @@ public class PublishConfigurationBindingTests
                 "BuildRegistry": {
                   "Server": "shared.azurecr.io"
                 },
-                "InternalMirrorRegistry": {
+                "MirrorRegistry": {
                   "Server": "shared.azurecr.io"
                 },
                 "RegistryAuthentication": [
@@ -225,7 +218,7 @@ public class PublishConfigurationBindingTests
         PublishConfiguration config = BuildConfiguration(sharedAuthJson);
 
         var buildAuth = config.FindRegistryAuthentication(config.BuildRegistry!.Server!);
-        var mirrorAuth = config.FindRegistryAuthentication(config.InternalMirrorRegistry!.Server!);
+        var mirrorAuth = config.FindRegistryAuthentication(config.MirrorRegistry!.Server!);
 
         buildAuth.ShouldNotBeNull();
         mirrorAuth.ShouldNotBeNull();

@@ -61,8 +61,6 @@ jobs:
       $(dotnetDockerBot.email)
       --gh-token $(BotAccount-dotnet-docker-bot-PAT)
       staleImagePaths
-      --registry-override '${{ parameters.publishConfig.InternalMirrorRegistry.server }}'
-      --source-repo-prefix '${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}'
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'

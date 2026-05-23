@@ -24,7 +24,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? ImageInfoSourcePath { get; set; }
         public string? SourceRepoUrl { get; set; }
         public bool NoCache { get; set; }
-        public string? SourceRepoPrefix { get; set; }
         public IDictionary<string, string> BuildArgs { get; set; } = new Dictionary<string, string>();
         public string[] DockerBuildOptions { get; set; } = [];
         public bool SkipPlatformCheck { get; set; }
@@ -73,11 +72,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Description = "Disables build cache feature"
         };
 
-        private static readonly Option<string?> SourceRepoPrefixOption = new("--source-repo-prefix")
-        {
-            Description = "Prefix to add to the external base image names when pulling them"
-        };
-
         private static readonly Option<Dictionary<string, string>> BuildArgsOption =
             CliHelper.CreateDictionaryOption("--build-arg",
                 "Build argument to pass to the Dockerfiles (<name>=<value>)");
@@ -118,7 +112,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageInfoSourcePathOption,
             SourceRepoOption,
             NoCacheOption,
-            SourceRepoPrefixOption,
             BuildArgsOption,
             DockerBuildOption,
             SkipPlatformCheckOption,
@@ -146,7 +139,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageInfoSourcePath = result.GetValue(ImageInfoSourcePathOption);
             SourceRepoUrl = result.GetValue(SourceRepoOption);
             NoCache = result.GetValue(NoCacheOption);
-            SourceRepoPrefix = result.GetValue(SourceRepoPrefixOption);
             BuildArgs = result.GetValue(BuildArgsOption) ?? new Dictionary<string, string>();
             DockerBuildOptions = result.GetValue(DockerBuildOption) ?? [];
             SkipPlatformCheck = result.GetValue(SkipPlatformCheckOption);

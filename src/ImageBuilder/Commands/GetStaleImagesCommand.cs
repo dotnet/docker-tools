@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 using Octokit;
 
@@ -23,18 +25,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<GetStaleImagesCommand> _logger;
         private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
+        private readonly RegistryEndpoint? _sourceMirror;
 
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
             IManifestJsonService manifestJsonService,
             ILogger<GetStaleImagesCommand> logger,
             IOctokitClientFactory octokitClientFactory,
-            IGitService gitService)
+            IGitService gitService,
+            IOptions<PublishConfiguration> publishConfigOptions)
         {
             _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
             _logger = logger;
             _octokitClientFactory = octokitClientFactory;
             _gitService = gitService;
+            ArgumentNullException.ThrowIfNull(publishConfigOptions);
+            _sourceMirror = publishConfigOptions.Value.MirrorRegistry;
 
             // Don't worry about authenticating to our own ACR, since we are checking base image digests from public
             // registries instead of our staging location. Registry credentials are needed however to prevent rate
@@ -58,8 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     Options.SubscriptionOptions.SubscriptionsPath,
                     Options.FilterOptions,
                     _gitService,
-                    _manifestJsonService,
-                    manifestOptions => manifestOptions.RegistryOverride = Options.RegistryOverride)
+                    _manifestJsonService)
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {
@@ -94,7 +99,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageNameResolverForMatrix imageNameResolver = new(
                 manifest,
                 repoPrefix: null,
-                sourceRepoPrefix: Options.SourceRepoPrefix);
+                sourceMirror: _sourceMirror);
 
             List<string> pathsToRebuild = new();
 

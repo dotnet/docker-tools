@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
@@ -1676,7 +1677,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
+                    this.ManifestServiceFactoryMock.Object,
+                    TestHelper.CreateManifestJsonService(),
+                    this.loggerServiceMock.Object,
+                    this.octokitClientFactory,
+                    this.gitService,
+                    Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;

@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -8,13 +9,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 public abstract class ImageNameResolver
 {
     private readonly string? _repoPrefix;
-    private readonly string? _sourceRepoPrefix;
+    private readonly RegistryEndpoint? _sourceMirror;
 
-    public ImageNameResolver(ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
+    public ImageNameResolver(ManifestInfo manifest, string? repoPrefix, RegistryEndpoint? sourceMirror)
     {
         Manifest = manifest;
         _repoPrefix = repoPrefix;
-        _sourceRepoPrefix = sourceRepoPrefix;
+        _sourceMirror = sourceMirror;
     }
 
     protected ManifestInfo Manifest { get; }
@@ -64,19 +65,22 @@ public abstract class ImageNameResolver
     /// <param name="fromImage">Tag of the FROM image.</param>
     /// <param name="registry">Registry to use for comparing against the tag to determine if it's owned internally or external.</param>
     /// <remarks>
-    /// This is meant to provide support for external images that need to be pulled from the mirror location.
+    /// External FROM images are redirected to the configured source mirror so they can be pulled from
+    /// an internal/public mirror registry rather than their original source (e.g. docker.io). The source
+    /// mirror is independent of the manifest's destination registry, so this redirection affects pulls only
+    /// and does not alter the destination tag of built images.
     /// </remarks>
     private string GetFromImageTag(string fromImage, string? registry)
     {
         if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
             DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
-            || _sourceRepoPrefix is null)
+            || _sourceMirror?.Server is null)
         {
             return fromImage;
         }
 
         string srcImage = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(fromImage));
-        return $"{Manifest.Registry}/{_sourceRepoPrefix}{srcImage}";
+        return $"{_sourceMirror.Server}/{_sourceMirror.RepoPrefix}{srcImage}";
     }
 
     protected string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
@@ -94,8 +98,8 @@ public class ImageNameResolverForBuild : ImageNameResolver
     public ImageNameResolverForBuild(
         ManifestInfo manifest,
         string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(manifest, repoPrefix, sourceRepoPrefix)
+        RegistryEndpoint? sourceMirror)
+        : base(manifest, repoPrefix, sourceMirror)
     {
     }
 
@@ -124,8 +128,8 @@ public class ImageNameResolverForMatrix : ImageNameResolver
     public ImageNameResolverForMatrix(
         ManifestInfo manifest,
         string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(manifest, repoPrefix, sourceRepoPrefix)
+        RegistryEndpoint? sourceMirror)
+        : base(manifest, repoPrefix, sourceMirror)
     {
     }
 

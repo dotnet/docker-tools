@@ -10,10 +10,12 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
 using Xunit;
@@ -257,7 +259,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             SetCacheResult(imageCacheServiceMock, dockerfileRuntime2Path, ImageCacheState.NotCached);
             SetCacheResult(imageCacheServiceMock, dockerfileSdk2Path, ImageCacheState.NotCached);
 
-            GenerateBuildMatrixCommand command = new(TestHelper.CreateManifestJsonService(), imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+            GenerateBuildMatrixCommand command = new(TestHelper.CreateManifestJsonService(), imageCacheServiceMock.Object, Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -1677,14 +1679,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 TestHelper.CreateManifestJsonService(),
                 imageCacheService,
                 manifestServiceFactoryMock.Object,
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
+                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
             command.Options.TrimCachedImages = true;
             command.Options.SourceRepoUrl = sourceRepoUrl;
-            command.Options.SourceRepoPrefix = "mirror/";
 
             File.WriteAllText(
                 Path.Combine(tempFolderContext.Path, command.Options.Manifest),
@@ -1720,6 +1722,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         private static GenerateBuildMatrixCommand CreateCommand() =>
-            new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+            new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageCacheService>(), Mock.Of<IManifestServiceFactory>(), Mock.Of<ILogger<GenerateBuildMatrixCommand>>(), Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
     }
 }

@@ -23,15 +23,12 @@ public sealed record PublishConfiguration
     public RegistryEndpoint? PublishRegistry { get; set; }
 
     /// <summary>
-    /// External image dependencies are mirrored to this registry.
+    /// Registry that holds mirrored copies of external base images. The pipeline templates
+    /// select the correct mirror (internal staging vs. public mirror) at template-compile
+    /// time based on the AzDO team project, so the app sees a single registry to redirect
+    /// external base-image lookups to without any runtime conditionals.
     /// </summary>
-    public RegistryEndpoint? InternalMirrorRegistry { get; set; }
-
-    /// <summary>
-    /// External images are mirrored to this registry. This registry has anonymous pull access
-    /// enabled so that it can be used in public PR validation.
-    /// </summary>
-    public RegistryEndpoint? PublicMirrorRegistry { get; set; }
+    public RegistryEndpoint? MirrorRegistry { get; set; }
 
     /// <summary>
     /// Configuration for container image signing via ESRP.
@@ -64,8 +61,7 @@ public sealed record PublishConfiguration
         [
             BuildRegistry,
             PublishRegistry,
-            InternalMirrorRegistry,
-            PublicMirrorRegistry
+            MirrorRegistry
         ];
 
         // Use OfType to filter out null values, since Where(x => x is not null)

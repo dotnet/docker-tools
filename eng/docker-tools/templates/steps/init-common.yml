@@ -99,7 +99,7 @@ steps:
       }
 
       if ("$(System.TeamProject)" -eq "public" -and "$(public-mirror.server)" -ne "") {
-        $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
+        $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --source-repo-prefix '' --registry-override '$(public-mirror.server)'"
       }
 
       Write-Host "Setting commonMatrixAndBuildOptions to '$commonMatrixAndBuildOptions'"

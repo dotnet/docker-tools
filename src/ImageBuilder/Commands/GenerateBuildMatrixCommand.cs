@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 new Lazy<IManifestService>(
                     () => manifestServiceFactory.Create(Options.CredentialsOptions)));
             _imageNameResolver = new Lazy<ImageNameResolverForMatrix>(() =>
-                new ImageNameResolverForMatrix(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
+                new ImageNameResolverForMatrix(Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
         }
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";

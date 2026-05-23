@@ -92,7 +92,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
             ImageNameResolverForMatrix imageNameResolver = new(
-                Options.BaseImageOverrideOptions,
                 manifest,
                 repoPrefix: null,
                 sourceRepoPrefix: Options.SourceRepoPrefix);

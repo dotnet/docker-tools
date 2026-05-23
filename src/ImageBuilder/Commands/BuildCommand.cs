@@ -69,7 +69,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             _imageNameResolver = new Lazy<ImageNameResolverForBuild>(() =>
                 new ImageNameResolverForBuild(
-                    Options.BaseImageOverrideOptions,
                     Manifest,
                     Options.RepoPrefix,
                     Options.SourceRepoPrefix));
@@ -93,8 +92,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public override async Task ExecuteAsync()
         {
-            Options.BaseImageOverrideOptions.Validate();
-
             if (Options.ImageInfoOutputPath != null)
             {
                 _imageArtifactDetails = new ImageArtifactDetails();

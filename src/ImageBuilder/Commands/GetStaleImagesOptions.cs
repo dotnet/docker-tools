@@ -21,8 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
 
-        public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-
         public string? RegistryOverride { get; set; }
 
         public string? SourceRepoPrefix { get; set; }
@@ -54,7 +52,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ..FilterOptions.GetCliOptions(),
             ..GitBuilder.GetCliOptions(),
             ..CredentialsOptions.GetCliOptions(),
-            ..BaseImageOverrideOptions.GetCliOptions(),
             RegistryOverrideOption,
             SourceRepoPrefixOption,
         ];
@@ -82,7 +79,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             FilterOptions.Bind(result);
             GitBuilder.Bind(result, GitOptions);
             CredentialsOptions.Bind(result);
-            BaseImageOverrideOptions.Bind(result);
             RegistryOverride = result.GetValue(RegistryOverrideOption);
             SourceRepoPrefix = result.GetValue(SourceRepoPrefixOption);
             VariableName = result.GetValue(VariableNameArgument) ?? string.Empty;

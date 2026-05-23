@@ -1,20 +1,17 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 public abstract class ImageNameResolver
 {
-    private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
     private readonly string? _repoPrefix;
     private readonly string? _sourceRepoPrefix;
 
-    public ImageNameResolver(BaseImageOverrideOptions baseImageOverrideOptions, ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
+    public ImageNameResolver(ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
     {
-        _baseImageOverrideOptions = baseImageOverrideOptions;
         Manifest = manifest;
         _repoPrefix = repoPrefix;
         _sourceRepoPrefix = sourceRepoPrefix;
@@ -48,20 +45,15 @@ public abstract class ImageNameResolver
     /// <param name="fromImage">Tag of the FROM image.</param>
     /// <remarks>
     /// This compares the registry of the image tag to determine if it's internally owned. If so, it returns
-    /// the tag using the raw (non-overriden) registry from the manifest (e.g. mcr.microsoft.com). Otherwise,
-    /// it returns the image tag unchanged.
+    /// the tag using the raw registry from the manifest (e.g. mcr.microsoft.com). Otherwise, it returns the
+    /// image tag unchanged.
     /// </remarks>
     public string GetFromImagePublicTag(string fromImage)
     {
         string trimmed = TrimInternallyOwnedRegistryAndRepoPrefix(fromImage);
-        if (trimmed == fromImage)
-        {
-            return _baseImageOverrideOptions.ApplyBaseImageOverride(trimmed);
-        }
-        else
-        {
-            return $"{Manifest.Model.Registry}/{trimmed}";
-        }
+        return trimmed == fromImage
+            ? trimmed
+            : $"{Manifest.Model.Registry}/{trimmed}";
     }
 
     public abstract string GetFinalStageImageNameForDigestQuery(PlatformInfo platform);
@@ -76,8 +68,6 @@ public abstract class ImageNameResolver
     /// </remarks>
     private string GetFromImageTag(string fromImage, string? registry)
     {
-        fromImage = _baseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
-
         if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
             DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
             || _sourceRepoPrefix is null)
@@ -102,11 +92,10 @@ public abstract class ImageNameResolver
 public class ImageNameResolverForBuild : ImageNameResolver
 {
     public ImageNameResolverForBuild(
-        BaseImageOverrideOptions baseImageOverrideOptions,
         ManifestInfo manifest,
         string? repoPrefix,
         string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
+        : base(manifest, repoPrefix, sourceRepoPrefix)
     {
     }
 
@@ -133,11 +122,10 @@ public class ImageNameResolverForBuild : ImageNameResolver
 public class ImageNameResolverForMatrix : ImageNameResolver
 {
     public ImageNameResolverForMatrix(
-        BaseImageOverrideOptions baseImageOverrideOptions,
         ManifestInfo manifest,
         string? repoPrefix,
         string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
+        : base(manifest, repoPrefix, sourceRepoPrefix)
     {
     }
 

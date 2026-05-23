@@ -55,17 +55,6 @@ stages:
     # publishConfig schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
     # This will get converted to JSON and placed in appsettings.json to be loaded by ImageBuilder at runtime.
     publishConfig:
-      InternalMirrorRegistry:
-        server: $(acr-staging.server)
-        repoPrefix: $(internalMirrorRepoPrefix)
-
-      PublicMirrorRegistry:
-        server: $(public-mirror.server)
-        repoPrefix: $(publicMirrorRepoPrefix)
-
-      # Source mirror selected at template-compile time based on the AzDO team
-      # project so the C# app sees a single registry to redirect external
-      # base-image lookups to without any runtime conditionals.
       ${{ if eq(variables['System.TeamProject'], 'internal') }}:
         MirrorRegistry:
           server: $(acr-staging.server)

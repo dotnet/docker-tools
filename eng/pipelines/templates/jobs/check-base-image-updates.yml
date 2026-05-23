@@ -47,11 +47,11 @@ jobs:
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
       usesRegistries:
-        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+        - ${{ parameters.publishConfig.MirrorRegistry.server }}
 
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
-      acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}
+      acr: ${{ parameters.publishConfig.MirrorRegistry }}
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
 
   - script: >

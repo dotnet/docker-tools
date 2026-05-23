@@ -115,7 +115,7 @@ jobs:
     - powershell: |
         $images = "$(BuildImages.builtImages)"
         if (-not $images) { return 0 }
-        $syftImageName = "${{ parameters.publishConfig.PublicMirrorRegistry.server }}/$(imageNames.syft)"
+        $syftImageName = "$(public-mirror.server)/$(imageNames.syft)"
         & $(engDockerToolsPath)/Pull-Image.ps1 $syftImageName
         $images -Split ',' | ForEach-Object {
           echo "Generating SBOM for $_";

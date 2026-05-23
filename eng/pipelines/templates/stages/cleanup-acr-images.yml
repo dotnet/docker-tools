@@ -86,7 +86,7 @@ stages:
         publishConfig: ${{ parameters.publishConfig }}
         usesRegistries:
         - ${{ parameters.publishConfig.BuildRegistry.server }}
-        - ${{ parameters.publishConfig.PublicMirrorRegistry.server }}
+        - $(public-mirror.server)
         serviceConnections:
         - name: $(marStatus.serviceConnectionName)
     - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
@@ -96,7 +96,9 @@ stages:
         acr: ${{ parameters.publishConfig.BuildRegistry }}
     - template: /eng/pipelines/templates/steps/set-eol-annotations.yml@self
       parameters:
-        acr: ${{ parameters.publishConfig.PublicMirrorRegistry }}
+        acr:
+          server: $(public-mirror.server)
+          repoPrefix: $(publicMirrorRepoPrefix)
     - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
       parameters:
         path: $(Build.ArtifactStagingDirectory)/eol-annotation-data

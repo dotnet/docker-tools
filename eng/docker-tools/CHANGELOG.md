@@ -4,21 +4,15 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
-## 2026-05-22 Breaking changes
+## 2026-05-22: Mirror registry config refactor
 
 ### PublishConfiguration: `InternalMirrorRegistry` and `PublicMirrorRegistry` replaced with `MirrorRegistry`
 
 `PublishConfiguration` no longer exposes separate `InternalMirrorRegistry` and
-`PublicMirrorRegistry` fields to the C# app. Instead, the publish-config YAML
-templates emit a single `MirrorRegistry` field, chosen at template-compile
-time based on `${{ variables['System.TeamProject'] }}`. ImageBuilder reads
-this single field for all source-mirror lookups (`build`, `buildMatrix`,
-`getStaleImages`) so it never has to switch on environment at runtime.
+`PublicMirrorRegistry` properties. Instead, there is a single `MirrorRegistry`
+property.
 
-The `--source-repo-prefix` CLI option has been removed accordingly — the
-mirror prefix is now sourced from `PublishConfiguration.MirrorRegistry.RepoPrefix`.
-`--registry-override` retains its original meaning (destination registry for
-built images) and is no longer used for source-mirror redirection.
+The `--source-repo-prefix` CLI option has also been removed in favor of `PublishConfiguration.MirrorRegistry.RepoPrefix`.
 
 #### How to migrate:
 
@@ -30,10 +24,10 @@ Before:
 ```yaml
 publishConfig:
   ...
-  InternalMirrorRegistry:        # keep — still used by other YAML steps
+  InternalMirrorRegistry:
     server: $(acr-staging.server)
     repoPrefix: $(internalMirrorRepoPrefix)
-  PublicMirrorRegistry:          # keep — still used by other YAML steps
+  PublicMirrorRegistry:
     server: $(public-mirror.server)
     repoPrefix: $(publicMirrorRepoPrefix)
   ...
@@ -55,9 +49,6 @@ publishConfig:
   ...
 ```
 
-Drop any explicit `--source-repo-prefix` arguments from your ImageBuilder
-invocations.
-
 ### Base image override options removed from CLI
 
 The `--base-override-regex` and `--base-override-sub` options have also been
@@ -67,16 +58,12 @@ commands. They are superseded by the properties set in the
 
 #### How to migrate:
 
-If you invoke ImageBuilder directly with `--base-override-regex` or
-`--base-override-sub`, remove those flags and populate
-`PublishConfiguration.MirrorRegistry` instead (see entry above).
+Use `PublishConfiguration.MirrorRegistry` instead.
 
-The `dotnet-buildtools-prereqs-docker` repo has a custom
-`eng/pipelines/steps/set-base-image-override-options.yml` that uses these
-options. Its current configuration matches no current Dockerfile FROM line
-(Dockerfiles use `library/<distro>:<tag>` rather than `<distro>:<tag>`), so
-removing the file and its two call sites in
-`eng/pipelines/stages/dotnet-buildtools-prereqs.yml` is a no-op behaviorally.
+An evaluation of downstream usage of these parameters found only one usage, in
+[dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/f2842d71c33c10fc5a736988e66911c13d59fb32/eng/pipelines/steps/set-base-image-override-options.yml),
+and the usage does not match any current Dockerfiles in that repo, so its
+removal will not cause any changes in behavior.
 
 ---
 

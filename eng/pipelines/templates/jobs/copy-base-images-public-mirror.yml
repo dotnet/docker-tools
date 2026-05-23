@@ -22,7 +22,9 @@ jobs:
       image: $(default1ESInternalPoolImage)
       os: linux
     publishConfig: ${{ parameters.publishConfig }}
-    acr: ${{ parameters.publishConfig.PublicMirrorRegistry }}
+    acr:
+      server: $(public-mirror.server)
+      repoPrefix: $(publicMirrorRepoPrefix)
     customInitSteps: ${{ parameters.customInitSteps }}
     additionalOptions: '--subscriptions-path ${{ parameters.subscriptionsPath }}'
     forceDryRun: ${{ parameters.dryRun }}

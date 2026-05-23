@@ -4,22 +4,35 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
-## 2026-05-22: Remove `--base-override-regex` / `--base-override-sub`
+## 2026-05-22: Remove `--base-override-regex` / `--base-override-sub` options
 
-ImageBuilder's `--base-override-regex` and `--base-override-sub` options have been removed from the `build`, `buildMatrix`, `copyBaseImages`, and `getStaleImages` commands. The same redirection to a mirror registry is expressed by the existing `--registry-override` + `--source-repo-prefix` pair, which is type-checked rather than an opaque regex/replacement and handles the digest-comparison path correctly.
+ImageBuilder's `--base-override-regex` and `--base-override-sub` options have
+been removed from the `build`, `buildMatrix`, `copyBaseImages`, and
+`getStaleImages` commands. The same redirection to a mirror registry is
+expressed by the existing `--registry-override` + `--source-repo-prefix` pair,
+which is type-checked rather than an opaque regex/replacement and handles the
+digest-comparison path correctly.
 
-`init-common.yml` has been updated to use the new options for the public-build mirror redirect.
+`init-common.yml` has been updated to use the new options for the public-build
+mirror redirect.
 
 **Migration for downstream repos:**
 
-If you invoke ImageBuilder directly with `--base-override-regex/--base-override-sub`, replace them with `--registry-override <server>` and `--source-repo-prefix <prefix>`. Example:
+If you invoke ImageBuilder directly with `--base-override-regex` or
+`--base-override-sub`, replace them with `--registry-override <server>` and
+`--source-repo-prefix <prefix>`. Example:
 
 ```diff
 - --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'
 + --source-repo-prefix '' --registry-override '$(public-mirror.server)'
 ```
 
-The `dotnet-buildtools-prereqs-docker` repo has a custom `eng/pipelines/steps/set-base-image-override-options.yml` that uses these options. Its current configuration matches no current Dockerfile FROM line (Dockerfiles use `library/<distro>:<tag>` rather than `<distro>:<tag>`), so removing the file and its two call sites in `eng/pipelines/stages/dotnet-buildtools-prereqs.yml` is a no-op behaviorally.
+The `dotnet-buildtools-prereqs-docker` repo has a custom
+`eng/pipelines/steps/set-base-image-override-options.yml` that uses these
+options. Its current configuration matches no current Dockerfile FROM line
+(Dockerfiles use `library/<distro>:<tag>` rather than `<distro>:<tag>`), so
+removing the file and its two call sites in
+`eng/pipelines/stages/dotnet-buildtools-prereqs.yml` is a no-op behaviorally.
 
 ---
 

@@ -130,16 +130,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             if (fromImage is null)
             {
                 _logger.LogInformation(
-                    $"There is no base image for '{platform.DockerfilePath}'. By default, it is considered up-to-date.");
+                    "Dockerfile {DockerfilePath} has no base image. It is automatically considered up-to-date.",
+                    platform.DockerfilePath);
+
                 return [];
             }
 
-            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
+            (PlatformData Platform, ImageData Image)? matchingPlatform =
+                ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
 
             if (matchingPlatform is null)
             {
-                _logger.LogInformation(
-                    $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
+                _logger.LogWarning(
+                    "Image info not found for '{DockerfilePath}'. It will be queued for rebuild.",
+                    platform.DockerfilePath);
+
                 IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
                 return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();
             }
@@ -179,11 +184,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             bool shouldRebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentBaseImageDigestReference;
 
             _logger.LogInformation(
-                $"Checking base image '{baseImagePublicReference}' from '{platform.DockerfilePath}'{Environment.NewLine}"
-                + $"\tPulled from:          {baseImagePullReference}{Environment.NewLine}"
-                + $"\tLast build digest:    {matchingPlatform.Value.Platform.BaseImageDigest}{Environment.NewLine}"
-                + $"\tCurrent digest:       {currentBaseImageDigestReference}{Environment.NewLine}"
-                + $"\tImage is up-to-date:  {!shouldRebuildImage}{Environment.NewLine}");
+                "Dockerfile {DockerfilePath} was last built with base image {BaseImagePublicReference} at digest"
+                    + " {LastBuildBaseImageDigestReference}. Image {BaseImagePullReference} has current digest"
+                    + " {CurrentBaseImageDigestReference}. Up to date: {IsUpToDate}.",
+                platform.DockerfilePath,
+                baseImagePublicReference,
+                matchingPlatform.Value.Platform.BaseImageDigest,
+                baseImagePullReference,
+                currentBaseImageDigestReference,
+                !shouldRebuildImage);
 
             if (shouldRebuildImage)
             {

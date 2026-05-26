@@ -52,8 +52,8 @@ jobs:
       $(dotnetDockerBot.email)
       --gh-token $(BotAccount-dotnet-docker-bot-PAT)
       staleImagePaths
-      --base-override-regex '^(?!mcr\.microsoft\.com/|[^/]+\.azurecr\.io/)'
-      --base-override-sub '${{ parameters.publishConfig.InternalMirrorRegistry.server }}/${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}'
+      --registry-override '${{ parameters.publishConfig.InternalMirrorRegistry.server }}'
+      --source-repo-prefix '${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}'
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'

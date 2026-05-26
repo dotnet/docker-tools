@@ -369,8 +369,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         return $" \"{leg.Name}\": {{{variables} }}";
                     })
                     .Aggregate((working, next) => $"{working},{next}");
-                _logger.LogInformation(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
+                Console.Out.WriteLine(PipelineHelper.FormatOutputVariable(matrix.Name, $"{{{legs}}}"));
             }
+
+            // Workaround for https://github.com/dotnet/docker-tools/issues/2124. Prevents dropping variables if
+            // logger output is not finished flushing when ImageBuilder exits.
+            Console.Out.Flush();
         }
 
         /// <summary>

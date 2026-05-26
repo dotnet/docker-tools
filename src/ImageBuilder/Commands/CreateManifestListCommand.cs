@@ -57,14 +57,20 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
         ImageArtifactDetails imageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest);
 
+        IReadOnlyList<ManifestListInfo> manifestLists =
+            ManifestListHelper.GetManifestListsForImages(
+                Manifest, imageArtifactDetails, Options.RepoPrefix);
+
+        if (Options.ValidateManifestListPlatforms)
+        {
+            ManifestListHelper.ValidateManifestListPlatforms(
+                Manifest, imageArtifactDetails, Options.RepoPrefix);
+        }
+
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,
             async () =>
             {
-                IReadOnlyList<ManifestListInfo> manifestLists =
-                    ManifestListHelper.GetManifestListsForImages(
-                        Manifest, imageArtifactDetails, Options.RepoPrefix);
-
                 foreach (ManifestListInfo manifestListInfo in manifestLists)
                 {
                     _dockerService.CreateManifestList(manifestListInfo.Tag, manifestListInfo.PlatformTags, Options.IsDryRun);

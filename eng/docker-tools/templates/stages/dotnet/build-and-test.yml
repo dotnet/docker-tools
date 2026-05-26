@@ -20,6 +20,7 @@ parameters:
 
   # Build parameters
   noCache: false
+  validateManifestListPlatforms: false
   publishConfig: null
   buildMatrixType: platformDependencyGraph
   buildMatrixCustomBuildLegGroupArgs: ""
@@ -46,6 +47,7 @@ stages:
 - template: /eng/docker-tools/templates/stages/build-and-test.yml@self
   parameters:
     noCache: ${{ parameters.noCache }}
+    validateManifestListPlatforms: ${{ parameters.validateManifestListPlatforms }}
     publishConfig: ${{ parameters.publishConfig }}
     internalProjectName: ${{ parameters.internalProjectName }}
     publicProjectName: ${{ parameters.publicProjectName }}

@@ -297,6 +297,50 @@ public class CreateManifestListCommandTests
             false));
     }
 
+    /// <summary>
+    /// Verifies that platform validation fails before creating partial manifest lists when enabled.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_ValidateManifestListPlatforms_MissingPlatformThrows()
+    {
+        Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
+        Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
+        Mock<IDockerService> dockerServiceMock = new();
+
+        CreateManifestListCommand command = CreateCommand(
+            manifestServiceFactory, dockerServiceMock, Mock.Of<IDateTimeService>());
+        command.Options.ValidateManifestListPlatforms = true;
+
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        string dockerfileAmd64 = CreateDockerfile("1.0/repo/linux-amd64", tempFolderContext);
+        string dockerfileArm64 = CreateDockerfile("1.0/repo/linux-arm64", tempFolderContext);
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, ["tag-amd64"]),
+                    CreatePlatform(dockerfileArm64, ["tag-arm64"], architecture: Architecture.ARM64))));
+
+        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
+            CreateRepoData("repo",
+                CreateImageData(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]))));
+
+        SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
+
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync);
+
+        exception.Message.ShouldContain("repo:sharedtag");
+        exception.Message.ShouldContain("linux/arm64");
+        exception.Message.ShouldContain(dockerfileArm64);
+        dockerServiceMock.Verify(
+            o => o.CreateManifestList(It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
+            Times.Never);
+    }
+
     private static CreateManifestListCommand CreateCommand(
         Mock<IManifestServiceFactory> manifestServiceFactory,
         Mock<IDockerService> dockerServiceMock,

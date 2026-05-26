@@ -103,6 +103,79 @@ public class ManifestListHelperTests
     }
 
     /// <summary>
+    /// Verifies that validation reports generated manifest lists that are missing expected platforms.
+    /// </summary>
+    [Fact]
+    public void GetManifestListPlatformValidationIssues_MissingPlatform()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        string dockerfileAmd64 = CreateDockerfile("1.0/repo/linux-amd64", tempFolderContext);
+        string dockerfileArm64 = CreateDockerfile("1.0/repo/linux-arm64", tempFolderContext);
+        string dockerfileWindows = CreateDockerfile("1.0/repo/windows", tempFolderContext);
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, ["tag-amd64"]),
+                    CreatePlatform(dockerfileArm64, ["tag-arm64"], architecture: Architecture.ARM64),
+                    CreatePlatform(dockerfileWindows, ["tag-windows"], os: OS.Windows, osVersion: "ltsc2022"))));
+
+        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
+            CreateRepoData("repo",
+                CreateImageData(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]),
+                    CreatePlatform(dockerfileArm64, simpleTags: ["tag-arm64"], architecture: "arm64"))));
+
+        ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
+        ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
+
+        IReadOnlyList<ManifestListPlatformValidationIssue> issues =
+            ManifestListHelper.GetManifestListPlatformValidationIssues(
+                manifestInfo, linkedImageInfo, repoPrefix: null);
+
+        issues.Count.ShouldBe(1);
+        issues[0].ManifestListTag.ShouldBe("repo:sharedtag");
+        issues[0].MissingPlatforms.Count.ShouldBe(1);
+        issues[0].MissingPlatforms[0].ShouldContain("windows/amd64");
+        issues[0].MissingPlatforms[0].ShouldContain(dockerfileWindows);
+    }
+
+    /// <summary>
+    /// Verifies that validation succeeds when every generated manifest list has all expected platforms.
+    /// </summary>
+    [Fact]
+    public void ValidateManifestListPlatforms_AllPlatformsPresent()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        string dockerfileAmd64 = CreateDockerfile("1.0/repo/linux-amd64", tempFolderContext);
+        string dockerfileArm64 = CreateDockerfile("1.0/repo/linux-arm64", tempFolderContext);
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, ["tag-amd64"]),
+                    CreatePlatform(dockerfileArm64, ["tag-arm64"], architecture: Architecture.ARM64))));
+
+        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
+            CreateRepoData("repo",
+                CreateImageData(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]),
+                    CreatePlatform(dockerfileArm64, simpleTags: ["tag-arm64"], architecture: "arm64"))));
+
+        ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
+        ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
+
+        Should.NotThrow(() => ManifestListHelper.ValidateManifestListPlatforms(
+            manifestInfo, linkedImageInfo, repoPrefix: null));
+    }
+
+    /// <summary>
     /// Verifies that no manifest list is returned when an image has shared tags
     /// but no platforms exist in image-info.
     /// </summary>

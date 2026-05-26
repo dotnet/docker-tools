@@ -24,6 +24,7 @@ parameters:
   linuxArmTestJobTimeout: 60
   windowsAmdTestJobTimeout: 60
   noCache: false
+  validateManifestListPlatforms: false
   publishConfig: null
 
   internalProjectName: null
@@ -221,6 +222,7 @@ stages:
       publicProjectName: ${{ parameters.publicProjectName }}
       customInitSteps: ${{ parameters.customInitSteps }}
       publishConfig: ${{ parameters.publishConfig }}
+      validateManifestListPlatforms: ${{ parameters.validateManifestListPlatforms }}
 
 ################################################################################
 # Sign Images

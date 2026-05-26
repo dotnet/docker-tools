@@ -4,6 +4,7 @@ parameters:
   publicProjectName: null
   customInitSteps: []
   publishConfig: null
+  validateManifestListPlatforms: false
 
 jobs:
 - job: Build
@@ -14,6 +15,10 @@ jobs:
     imageInfosContainerDir: "$(artifactsPath)$(imageInfosSubDir)"
     imageInfosOutputSubDir: "/output"
     sbomOutputDir: "$(Build.ArtifactStagingDirectory)/sbom"
+    ${{ if eq(parameters.validateManifestListPlatforms, true) }}:
+      validateManifestListPlatformsArg: "--validate-manifest-list-platforms"
+    ${{ else }}:
+      validateManifestListPlatformsArg: ""
   steps:
   - template: /eng/docker-tools/templates/steps/init-common.yml@self
     parameters:
@@ -95,6 +100,7 @@ jobs:
           --architecture '*'
           --manifest '$(manifest)'
           --registry-override '${{ parameters.publishConfig.BuildRegistry.server }}'
+          $(validateManifestListPlatformsArg)
           $(manifestVariables)
   - template: /eng/docker-tools/templates/steps/publish-artifact.yml@self
     parameters:

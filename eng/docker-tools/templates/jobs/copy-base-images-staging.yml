@@ -36,5 +36,5 @@ jobs:
     customInitSteps: ${{ parameters.customInitSteps }}
     customCopyBaseImagesInitSteps: ${{ parameters.customCopyBaseImagesInitSteps }}
     additionalOptions: ${{ parameters.additionalOptions }}
-    acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}
+    acr: ${{ parameters.publishConfig.MirrorRegistry }}
     versionsRepoRef: ${{ parameters.versionsRepoRef }}

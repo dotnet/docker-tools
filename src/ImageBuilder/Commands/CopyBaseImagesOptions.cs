@@ -14,14 +14,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public SubscriptionOptions SubscriptionOptions { get; set; } = new();
 
-        public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-
         public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
             ..CredentialsOptions.GetCliOptions(),
             ..SubscriptionOptions.GetCliOptions(),
-            ..BaseImageOverrideOptions.GetCliOptions(),
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
@@ -29,7 +26,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ..base.GetCliArguments(),
             ..CredentialsOptions.GetCliArguments(),
             ..SubscriptionOptions.GetCliArguments(),
-            ..BaseImageOverrideOptions.GetCliArguments(),
         ];
 
         public override void Bind(ParseResult result)
@@ -37,7 +33,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             base.Bind(result);
             CredentialsOptions.Bind(result);
             SubscriptionOptions.Bind(result);
-            BaseImageOverrideOptions.Bind(result);
         }
     }
 }

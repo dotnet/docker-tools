@@ -21,8 +21,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
 
-        public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-
         private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
 
         private static readonly Argument<string> VariableNameArgument = new(nameof(VariableName))
@@ -37,7 +35,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ..FilterOptions.GetCliOptions(),
             ..GitBuilder.GetCliOptions(),
             ..CredentialsOptions.GetCliOptions(),
-            ..BaseImageOverrideOptions.GetCliOptions(),
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
@@ -63,7 +60,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             FilterOptions.Bind(result);
             GitBuilder.Bind(result, GitOptions);
             CredentialsOptions.Bind(result);
-            BaseImageOverrideOptions.Bind(result);
             VariableName = result.GetValue(VariableNameArgument) ?? string.Empty;
         }
     }

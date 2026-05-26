@@ -1,23 +1,21 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
 public abstract class ImageNameResolver
 {
-    private readonly BaseImageOverrideOptions _baseImageOverrideOptions;
     private readonly string? _repoPrefix;
-    private readonly string? _sourceRepoPrefix;
+    private readonly RegistryEndpoint? _sourceMirror;
 
-    public ImageNameResolver(BaseImageOverrideOptions baseImageOverrideOptions, ManifestInfo manifest, string? repoPrefix, string? sourceRepoPrefix)
+    public ImageNameResolver(ManifestInfo manifest, string? repoPrefix, RegistryEndpoint? sourceMirror)
     {
-        _baseImageOverrideOptions = baseImageOverrideOptions;
         Manifest = manifest;
         _repoPrefix = repoPrefix;
-        _sourceRepoPrefix = sourceRepoPrefix;
+        _sourceMirror = sourceMirror;
     }
 
     protected ManifestInfo Manifest { get; }
@@ -48,20 +46,15 @@ public abstract class ImageNameResolver
     /// <param name="fromImage">Tag of the FROM image.</param>
     /// <remarks>
     /// This compares the registry of the image tag to determine if it's internally owned. If so, it returns
-    /// the tag using the raw (non-overriden) registry from the manifest (e.g. mcr.microsoft.com). Otherwise,
-    /// it returns the image tag unchanged.
+    /// the tag using the raw registry from the manifest (e.g. mcr.microsoft.com). Otherwise, it returns the
+    /// image tag unchanged.
     /// </remarks>
     public string GetFromImagePublicTag(string fromImage)
     {
         string trimmed = TrimInternallyOwnedRegistryAndRepoPrefix(fromImage);
-        if (trimmed == fromImage)
-        {
-            return _baseImageOverrideOptions.ApplyBaseImageOverride(trimmed);
-        }
-        else
-        {
-            return $"{Manifest.Model.Registry}/{trimmed}";
-        }
+        return trimmed == fromImage
+            ? trimmed
+            : $"{Manifest.Model.Registry}/{trimmed}";
     }
 
     public abstract string GetFinalStageImageNameForDigestQuery(PlatformInfo platform);
@@ -72,21 +65,22 @@ public abstract class ImageNameResolver
     /// <param name="fromImage">Tag of the FROM image.</param>
     /// <param name="registry">Registry to use for comparing against the tag to determine if it's owned internally or external.</param>
     /// <remarks>
-    /// This is meant to provide support for external images that need to be pulled from the mirror location.
+    /// External FROM images are redirected to the configured source mirror so they can be pulled from
+    /// an internal/public mirror registry rather than their original source (e.g. docker.io). The source
+    /// mirror is independent of the manifest's destination registry, so this redirection affects pulls only
+    /// and does not alter the destination tag of built images.
     /// </remarks>
     private string GetFromImageTag(string fromImage, string? registry)
     {
-        fromImage = _baseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
-
         if ((registry is not null && DockerHelper.IsInRegistry(fromImage, registry)) ||
             DockerHelper.IsInRegistry(fromImage, Manifest.Model.Registry)
-            || _sourceRepoPrefix is null)
+            || _sourceMirror?.Server is null)
         {
             return fromImage;
         }
 
         string srcImage = TrimInternallyOwnedRegistryAndRepoPrefix(DockerHelper.NormalizeRepo(fromImage));
-        return $"{Manifest.Registry}/{_sourceRepoPrefix}{srcImage}";
+        return $"{_sourceMirror.Server}/{_sourceMirror.RepoPrefix}{srcImage}";
     }
 
     protected string TrimInternallyOwnedRegistryAndRepoPrefix(string imageTag) =>
@@ -102,11 +96,10 @@ public abstract class ImageNameResolver
 public class ImageNameResolverForBuild : ImageNameResolver
 {
     public ImageNameResolverForBuild(
-        BaseImageOverrideOptions baseImageOverrideOptions,
         ManifestInfo manifest,
         string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
+        RegistryEndpoint? sourceMirror)
+        : base(manifest, repoPrefix, sourceMirror)
     {
     }
 
@@ -133,11 +126,10 @@ public class ImageNameResolverForBuild : ImageNameResolver
 public class ImageNameResolverForMatrix : ImageNameResolver
 {
     public ImageNameResolverForMatrix(
-        BaseImageOverrideOptions baseImageOverrideOptions,
         ManifestInfo manifest,
         string? repoPrefix,
-        string? sourceRepoPrefix)
-        : base(baseImageOverrideOptions, manifest, repoPrefix, sourceRepoPrefix)
+        RegistryEndpoint? sourceMirror)
+        : base(manifest, repoPrefix, sourceMirror)
     {
     }
 

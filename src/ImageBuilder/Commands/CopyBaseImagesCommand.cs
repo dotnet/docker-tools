@@ -42,8 +42,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             _logger.LogInformation("COPYING IMAGES");
 
-            Options.BaseImageOverrideOptions.Validate();
-
             IEnumerable<ManifestInfo> manifests;
             string fullRegistryName;
             if (Options.SubscriptionOptions.SubscriptionsPath is null)
@@ -74,9 +72,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             await Task.WhenAll(copyImageTasks);
         }
 
-        private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
+        private static IEnumerable<string> GetFromImages(ManifestInfo manifest) =>
             manifest.GetExternalFromImages()
-                .Select(fromImage => Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage))
                 .Where(fromImage => !fromImage.StartsWith(manifest.Model.Registry));
 
         private Task CopyImageAsync(string fromImage, string destinationRegistryName)

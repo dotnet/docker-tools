@@ -86,20 +86,17 @@ steps:
   condition: and(succeeded(), ${{ parameters.condition }})
 
 # Build Registry Configuration
-# Extends commonMatrixAndBuildOptions with registry-specific settings:
-# - Internal builds: Use internal mirror registry prefix and build registry
-#   server to pull/push from private ACR instead of public MCR
-# - Public builds: Override non-MCR base images to use public mirror, reducing
-#   external dependencies and improving build reliability
+# Extends commonMatrixAndBuildOptions with registry-specific settings for
+# internal builds:
+# - Internal builds push outputs to the build registry instead of MCR.
+# - Source mirror selection (for pulling external base images) happens
+#   automatically inside ImageBuilder based on PublishConfiguration loaded
+#   from appsettings.json.
 - ${{ if parameters.publishConfig }}:
   - powershell: |
       $commonMatrixAndBuildOptions = "$(commonMatrixAndBuildOptions)"
       if ("$(System.TeamProject)" -eq "internal" -and "$(Build.Reason)" -ne "PullRequest") {
-        $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --source-repo-prefix ${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }} --registry-override ${{ parameters.publishConfig.BuildRegistry.server }}"
-      }
-
-      if ("$(System.TeamProject)" -eq "public" -and "$(public-mirror.server)" -ne "") {
-        $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --base-override-regex '^(?!mcr\.microsoft\.com)' --base-override-sub '$(public-mirror.server)/'"
+        $commonMatrixAndBuildOptions = "$commonMatrixAndBuildOptions --registry-override ${{ parameters.publishConfig.BuildRegistry.server }}"
       }
 
       Write-Host "Setting commonMatrixAndBuildOptions to '$commonMatrixAndBuildOptions'"

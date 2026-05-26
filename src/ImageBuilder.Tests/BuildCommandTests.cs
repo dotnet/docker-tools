@@ -3100,13 +3100,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object),
+                publishConfiguration: new PublishConfiguration
+                {
+                    MirrorRegistry = new RegistryEndpoint
+                    {
+                        Server = RegistryOverride,
+                        RepoPrefix = SourceRepoPrefix,
+                    },
+                });
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.SourceRepoPrefix = SourceRepoPrefix;
             command.Options.RegistryOverride = RegistryOverride;
             command.Options.RepoPrefix = RepoPrefix;
 
@@ -3443,13 +3450,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 gitService: gitServiceMock.Object,
                 copyImageService: Mock.Of<ICopyImageService>(),
                 manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object),
+                publishConfiguration: new PublishConfiguration
+                {
+                    MirrorRegistry = new RegistryEndpoint
+                    {
+                        Server = RegistryOverride,
+                        RepoPrefix = SourceRepoPrefix,
+                    },
+                });
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
             command.Options.IsPushEnabled = true;
             command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
             command.Options.RegistryOverride = RegistryOverride;
-            command.Options.SourceRepoPrefix = SourceRepoPrefix;
 
             const string ProductVersion = "1.0.1";
 
@@ -3501,145 +3515,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             dockerServiceMock.VerifyNoOtherCalls();
         }
 
-        /// <summary>
-        /// Tests the logic of image mirroring when the base image tag is configured to be overriden.
-        /// </summary>
-        [Fact]
-        public async Task BuildCommand_MirroredImages_BaseImageTagOverride()
-        {
-            const string RegistryOverride = "dotnetdocker.azurecr.io";
-            const string SamplesRepo = "samples";
-            const string RuntimeDigest = "sha256:adc914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed99227";
-            const string SampleDigest = "sha256:781914a9f125ca612f9a67e4a0551937b7a37c82fabb46172c4867b73ed0045a";
-            const string ImageTag = "tag";
-            const string SourceRepoPrefix = "mirror/";
-            const string CustomRegistry = "contoso.azurecr.io";
-            const string SourceRepo = "amd64/os";
-            const string SrcBaseTag = $"{SourceRepo}:tag";
-            const string MirroredBaseTag = "os:tag";
-
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
-
-            string baseImageRepoPrefix = $"{RegistryOverride}/{SourceRepoPrefix}{CustomRegistry}";
-
-            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock([
-                new($"{baseImageRepoPrefix}/{MirroredBaseTag}", $"{baseImageRepoPrefix}/{MirroredBaseTag}@{RuntimeDigest}"),
-                new($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", $"{RegistryOverride}/{SamplesRepo}@{SampleDigest}"),
-            ], []);
-
-            const string dockerfileCommitSha = "mycommit";
-            Mock<IGitService> gitServiceMock = new();
-            gitServiceMock
-                .Setup(o => o.GetCommitSha(It.IsAny<string>(), It.IsAny<bool>()))
-                .Returns(dockerfileCommitSha);
-
-            BuildCommand command = CreateBuildCommand(
-                dockerService: dockerServiceMock.Object,
-                gitService: gitServiceMock.Object,
-                copyImageService: Mock.Of<ICopyImageService>(),
-                manifestServiceFactory: CreateManifestServiceFactoryMock(manifestServiceMock).Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "image-info.json");
-            command.Options.IsPushEnabled = true;
-            command.Options.SourceRepoUrl = "https://github.com/dotnet/test";
-            command.Options.RegistryOverride = RegistryOverride;
-            command.Options.SourceRepoPrefix = SourceRepoPrefix;
-            command.Options.BaseImageOverrideOptions.RegexPattern = @".*\/(.*)";
-            command.Options.BaseImageOverrideOptions.Substitution = $"{CustomRegistry}/$1";
-
-            Manifest manifest = CreateManifest(
-                CreateRepo(SamplesRepo,
-                    CreateImage(
-                        new Platform[]
-                        {
-                            CreatePlatform(
-                                DockerfileHelper.CreateDockerfile(
-                                    "1.0/samples/os", tempFolderContext, SrcBaseTag),
-                                new string[] { ImageTag })
-                        },
-                        productVersion: "1.0.1"))
-            );
-            manifest.Registry = "mcr.microsoft.com";
-
-            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
-
-            command.LoadManifest();
-            await command.ExecuteAsync();
-
-            ImageArtifactDetails imageArtifactDetails = new()
-            {
-                Repos =
-                    {
-                        new RepoData
-                        {
-                            Repo = "samples",
-                            Images =
-                            {
-                                new ImageData
-                                {
-                                    ProductVersion = "1.0.1",
-                                    Platforms =
-                                    {
-                                        new PlatformData
-                                        {
-                                            Dockerfile = "1.0/samples/os/Dockerfile",
-                                            Architecture = "amd64",
-                                            OsType = "Linux",
-                                            OsVersion = "noble",
-                                            Digest = $"{manifest.Registry}/{SamplesRepo}@{SampleDigest}",
-
-                                            // This is the key change. The digest should be referring to the image from the
-                                            // override, not what's defined in the Dockerfile.
-                                            BaseImageDigest = $"{CustomRegistry}/os@{RuntimeDigest}",
-
-                                            Created = DateTime.MinValue.ToUniversalTime(),
-                                            CommitUrl = $"{command.Options.SourceRepoUrl}/blob/{dockerfileCommitSha}/1.0/samples/os/Dockerfile",
-                                            SimpleTags =
-                                            {
-                                                ImageTag
-                                            },
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-            };
-
-            string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
-            string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
-
-            Assert.Equal(expectedOutput, actualOutput);
-
-            dockerServiceMock.Verify(
-                o => o.BuildImage(
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
-                    It.IsAny<IEnumerable<string>>(),
-                    It.IsAny<IDictionary<string, string>>(),
-                    It.IsAny<IEnumerable<string>>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<bool>()));
-            dockerServiceMock.Verify(
-                o => o.GetImageSize($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-
-            dockerServiceMock.Verify(o => o.PullImage($"{baseImageRepoPrefix}/{MirroredBaseTag}", "linux/amd64", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
-            manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            dockerServiceMock.Verify(o => o.PushImage($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            dockerServiceMock.Verify(o => o.GetCreatedDate($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-            manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{RegistryOverride}/{SamplesRepo}:{ImageTag}", false));
-
-            dockerServiceMock.Verify(o =>
-                o.CreateTag($"{baseImageRepoPrefix}/{MirroredBaseTag}", SrcBaseTag, false));
-            dockerServiceMock.Verify(o => o.GetImageArch($"{baseImageRepoPrefix}/{MirroredBaseTag}", false));
-
-            dockerServiceMock.VerifyNoOtherCalls();
-        }
-
         #nullable enable
         private static BuildCommand CreateBuildCommand(
             IManifestJsonService? manifestJsonService = null,
@@ -3651,7 +3526,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IManifestServiceFactory? manifestServiceFactory = null,
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
-            IImageCacheService? imageCacheService = null)
+            IImageCacheService? imageCacheService = null,
+            PublishConfiguration? publishConfiguration = null)
         {
             BuildCommand command = new(
                 manifestJsonService ?? TestHelper.CreateManifestJsonService(),
@@ -3663,7 +3539,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceFactory ?? Mock.Of<IManifestServiceFactory>(),
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
-                imageCacheService ?? Mock.Of<IImageCacheService>());
+                imageCacheService ?? Mock.Of<IImageCacheService>(),
+                Microsoft.Extensions.Options.Options.Create(publishConfiguration ?? new PublishConfiguration()));
 
             return command;
         }

@@ -20,4 +20,11 @@ public sealed record RegistryEndpoint
     /// "mcr.microsoft.com", "ghcr.io", "localhost:5000".
     /// </summary>
     public string? Server { get; set; }
+
+    /// <summary>
+    /// Optional repo prefix used to scope images within the registry.
+    /// Examples: "mirror/", "dotnet-staging/12345/". Should include a trailing
+    /// slash when set so it can be concatenated directly with a repo name.
+    /// </summary>
+    public string? RepoPrefix { get; set; }
 }

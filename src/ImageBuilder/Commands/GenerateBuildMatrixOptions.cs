@@ -19,8 +19,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public int ProductVersionComponents { get; set; }
         public string? ImageInfoPath { get; set; }
         public IEnumerable<string> DistinctMatrixOsVersions { get; set; } = Enumerable.Empty<string>();
-        public BaseImageOverrideOptions BaseImageOverrideOptions { get; set; } = new();
-        public string? SourceRepoPrefix { get; set; }
         public string? SourceRepoUrl { get; set; }
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
         public bool TrimCachedImages { get; set; }
@@ -58,11 +56,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             AllowMultipleArgumentsPerToken = false
         };
 
-        private static readonly Option<string?> SourceRepoPrefixOption = new("--source-repo-prefix")
-        {
-            Description = "Prefix to add to the external base image names when pulling them"
-        };
-
         private static readonly Option<string?> SourceRepoOption = new("--source-repo")
         {
             Description = "Repo URL of the Dockerfile sources"
@@ -77,14 +70,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [
             ..base.GetCliOptions(),
             ..FilterOptions.GetCliOptions(),
-            ..BaseImageOverrideOptions.GetCliOptions(),
             ..CredentialsOptions.GetCliOptions(),
             MatrixTypeOption,
             CustomBuildLegGroupsOption,
             ProductVersionComponentsOption,
             ImageInfoOption,
             DistinctMatrixOsVersionsOption,
-            SourceRepoPrefixOption,
             SourceRepoOption,
             TrimCachedImagesOption,
         ];
@@ -93,7 +84,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         [
             ..base.GetCliArguments(),
             ..FilterOptions.GetCliArguments(),
-            ..BaseImageOverrideOptions.GetCliArguments(),
             ..CredentialsOptions.GetCliArguments(),
         ];
 
@@ -101,14 +91,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             base.Bind(result);
             FilterOptions.Bind(result);
-            BaseImageOverrideOptions.Bind(result);
             CredentialsOptions.Bind(result);
             MatrixType = result.GetValue(MatrixTypeOption);
             CustomBuildLegGroups = result.GetValue(CustomBuildLegGroupsOption) ?? [];
             ProductVersionComponents = result.GetValue(ProductVersionComponentsOption);
             ImageInfoPath = result.GetValue(ImageInfoOption);
             DistinctMatrixOsVersions = result.GetValue(DistinctMatrixOsVersionsOption) ?? [];
-            SourceRepoPrefix = result.GetValue(SourceRepoPrefixOption);
             SourceRepoUrl = result.GetValue(SourceRepoOption);
             TrimCachedImages = result.GetValue(TrimCachedImagesOption);
         }

@@ -8,9 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -26,10 +28,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
+        public GenerateBuildMatrixCommand(
+            IManifestJsonService manifestJsonService,
+            IImageCacheService imageCacheService,
+            IManifestServiceFactory manifestServiceFactory,
+            ILogger<GenerateBuildMatrixCommand> logger,
+            IOptions<PublishConfiguration> publishConfigOptions
+        ) : base(manifestJsonService)
         {
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            ArgumentNullException.ThrowIfNull(publishConfigOptions);
+            PublishConfiguration publishConfig = publishConfigOptions.Value;
             _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
             {
                 if (Options.ImageInfoPath != null)
@@ -43,7 +53,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 new Lazy<IManifestService>(
                     () => manifestServiceFactory.Create(Options.CredentialsOptions)));
             _imageNameResolver = new Lazy<ImageNameResolverForMatrix>(() =>
-                new ImageNameResolverForMatrix(Options.BaseImageOverrideOptions, Manifest, Options.RepoPrefix, Options.SourceRepoPrefix));
+                new ImageNameResolverForMatrix(Manifest, Options.RepoPrefix, publishConfig.MirrorRegistry));
         }
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";

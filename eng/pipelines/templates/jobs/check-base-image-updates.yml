@@ -20,10 +20,12 @@ parameters:
 # Schema is defined in src/ImageBuilder/Configuration/PublishConfiguration.cs.
 - name: publishConfig
   type: object
-# Additional arguments to pass to the getStaleImages command (optional).
-- name: customGetStaleImagesArgs
-  type: string
-  default: ""
+# When true, build ImageBuilder from source instead of pulling from MCR. Used
+# during development to validate ImageBuilder and pipeline template changes
+# together before a new ImageBuilder image is published.
+- name: bootstrapImageBuilder
+  type: boolean
+  default: false
 
 jobs:
 - job: ${{ parameters.jobName }}
@@ -37,32 +39,37 @@ jobs:
     parameters:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
+      ${{ if eq(parameters.bootstrapImageBuilder, true) }}:
+        customInitSteps:
+        - template: /eng/pipelines/templates/steps/bootstrap-imagebuilder.yml@self
 
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
       usesRegistries:
-        - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+        - ${{ parameters.publishConfig.MirrorRegistry.server }}
 
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
-      acr: ${{ parameters.publishConfig.InternalMirrorRegistry }}
+      acr: ${{ parameters.publishConfig.MirrorRegistry }}
       additionalOptions: "--subscriptions-path '${{ parameters.subscriptionsPath }}'"
 
   - script: >
-      $(runImageBuilderCmd)
+      $(runAuthedImageBuilderCmd)
       getStaleImages
       $(dotnetDockerBot.userName)
       $(dotnetDockerBot.email)
       --gh-token $(BotAccount-dotnet-docker-bot-PAT)
       staleImagePaths
-      ${{ parameters.customGetStaleImagesArgs }}
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'
       $(dockerHubRegistryCreds)
     displayName: Get Stale Images
     name: GetStaleImages
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
 
   - script: >
       $(runImageBuilderCmd)

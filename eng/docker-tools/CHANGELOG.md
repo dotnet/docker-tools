@@ -4,6 +4,69 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
+## 2026-05-22: Mirror registry config refactor
+
+### PublishConfiguration: `InternalMirrorRegistry` and `PublicMirrorRegistry` replaced with `MirrorRegistry`
+
+`PublishConfiguration` no longer exposes separate `InternalMirrorRegistry` and
+`PublicMirrorRegistry` properties. Instead, there is a single `MirrorRegistry`
+property.
+
+The `--source-repo-prefix` CLI option has also been removed in favor of `PublishConfiguration.MirrorRegistry.RepoPrefix`.
+
+#### How to migrate:
+
+Replace `InternalMirrorRegistry` and `PublicMirrorRegistry` with a pipeline
+template conditional:
+
+Before:
+
+```yaml
+publishConfig:
+  ...
+  InternalMirrorRegistry:
+    server: $(acr-staging.server)
+    repoPrefix: $(internalMirrorRepoPrefix)
+  PublicMirrorRegistry:
+    server: $(public-mirror.server)
+    repoPrefix: $(publicMirrorRepoPrefix)
+  ...
+```
+
+After:
+
+```yaml
+publishConfig:
+  ...
+  ${{ if eq(variables['System.TeamProject'], 'internal') }}:
+    MirrorRegistry:
+      server: $(acr-staging.server)
+      repoPrefix: $(internalMirrorRepoPrefix)
+  ${{ else }}:
+    MirrorRegistry:
+      server: $(public-mirror.server)
+      repoPrefix: $(publicMirrorRepoPrefix)
+  ...
+```
+
+### Base image override options removed from CLI
+
+The `--base-override-regex` and `--base-override-sub` options have also been
+removed from the `build`, `buildMatrix`, `copyBaseImages`, and `getStaleImages`
+commands. They are superseded by the properties set in the
+`PublishConfiguration`.
+
+#### How to migrate:
+
+Use `PublishConfiguration.MirrorRegistry` instead.
+
+An evaluation of downstream usage of these parameters found only one usage, in
+[dotnet-buildtools-prereqs-docker](https://github.com/dotnet/dotnet-buildtools-prereqs-docker/blob/f2842d71c33c10fc5a736988e66911c13d59fb32/eng/pipelines/steps/set-base-image-override-options.yml),
+and the usage does not match any current Dockerfiles in that repo, so its
+removal will not cause any changes in behavior.
+
+---
+
 ## 2026-04-02: Extra Docker build options can be passed through ImageBuilder
 
 - Pull request: [#2063](https://github.com/dotnet/docker-tools/pull/2063)

@@ -145,32 +145,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             // Resolve where to actually fetch the digest from. For external base images this
-            // points to the mirror location in the staging registry; for internal images it is
-            // the original FROM tag. The "public" form is the canonical reference matching what
-            // gets recorded in image-info.json and so is the right repo to use in the digest
-            // comparison string below.
-            string pullTag = imageNameResolver.GetFromImagePullTag(fromImage);
-            string publicTag = imageNameResolver.GetFromImagePublicTag(fromImage);
+            // points to the mirror location in the staging registry; for internal images it is the
+            // original FROM tag. The "public" form is the canonical reference matching what gets
+            // recorded in image-info.json and so is the right repo to use in the digest comparison
+            // string below.
+            string baseImagePullReference = imageNameResolver.GetFromImagePullTag(fromImage);
+            string baseImagePublicReference = imageNameResolver.GetFromImagePublicTag(fromImage);
 
-            // Cache only the raw SHA by pull location. Two different FROM spellings
-            // can normalize to the same pull tag (e.g. 'almalinux:8' and 'library/almalinux:8')
-            // but produce different public tags; the digest comparison string must always
-            // be built from the current platform's own public tag.
-            string sha = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, pullTag,
-                () => _manifestService.Value.GetManifestDigestShaAsync(pullTag, Options.IsDryRun));
+            // Cache the manifest digest by pull reference. The digest is a function of where we
+            // actually pull bytes from, so the pull reference is the correct cache key.
+            string baseImageManifestDigest =
+                await LockHelper.DoubleCheckedLockLookupAsync(
+                    semaphore: _imageDigestsLock,
+                    dictionary: _imageDigests,
+                    key: baseImagePullReference,
+                    getValue: () =>
+                        // This reaches out to the registry to fetch the digest from the pull
+                        // reference. For external images, this fetches from the mirror.
+                        _manifestService.Value.GetManifestDigestShaAsync(baseImagePullReference, Options.IsDryRun));
 
-            string currentDigest = DockerHelper.GetDigestString(DockerHelper.GetRepo(publicTag), sha);
+            // Build a digest-pinned reference of the form '<public-repo>@sha256:<hex>' (e.g.
+            // 'mcr.microsoft.com/dotnet/runtime@sha256:abc123...'). This must be built per-call
+            // from this platform's own public reference — two FROM spellings (e.g. 'almalinux:8'
+            // vs 'library/almalinux:8') can share a pull reference but resolve to different
+            // public references, so the formed string cannot be cached or shared across platforms.
+            // The shape matches what's stored in Platform.BaseImageDigest so the equality check
+            // below is meaningful.
+            string currentBaseImageDigestReference =
+                DockerHelper.GetDigestString(
+                    repo: DockerHelper.GetRepo(baseImagePublicReference),
+                    sha: baseImageManifestDigest);
 
-            bool rebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentDigest;
+            bool shouldRebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentBaseImageDigestReference;
 
             _logger.LogInformation(
-                $"Checking base image '{publicTag}' from '{platform.DockerfilePath}'{Environment.NewLine}"
-                + $"\tPulled from:          {pullTag}{Environment.NewLine}"
+                $"Checking base image '{baseImagePublicReference}' from '{platform.DockerfilePath}'{Environment.NewLine}"
+                + $"\tPulled from:          {baseImagePullReference}{Environment.NewLine}"
                 + $"\tLast build digest:    {matchingPlatform.Value.Platform.BaseImageDigest}{Environment.NewLine}"
-                + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
-                + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");
+                + $"\tCurrent digest:       {currentBaseImageDigestReference}{Environment.NewLine}"
+                + $"\tImage is up-to-date:  {!shouldRebuildImage}{Environment.NewLine}");
 
-            if (rebuildImage)
+            if (shouldRebuildImage)
             {
                 IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
                 return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();

@@ -81,7 +81,7 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                     _logger.LogDebug(
                         "Importing platform {Platform} for multi-platform image {SharedTags}.",
                         platformToImport.Platform.PlatformLabel,
-                        $"[{string.Join(',', platformToImport.Image.SharedTags)}]");
+                        platformToImport.Image.SharedTags.GetDisplayString());
 
                     await ImportPlatformToStagingAsync(platformToImport);
 
@@ -129,11 +129,6 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
     /// </summary>
     private async Task<IReadOnlyList<PlatformImportData>> GetMissingPlatformsAsync(ImageArtifactDetails imageArtifactDetails)
     {
-        if (Options.IsDryRun)
-        {
-            return [];
-        }
-
         // Find every (imageData, platform) pair that the manifest declares for a shared-tag image
         // but that wasn't built this run. These are the platforms we need to port.
         IEnumerable<(ImageData ImageData, PlatformInfo Platform)> candidatePlatforms =
@@ -163,18 +158,19 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                     List<PlatformInfo> missingPlatforms =
                         [.. declaredPlatforms.Where(platform => !builtPlatforms.Contains(platform))];
 
-                    // Log all multi-platform tags, to avoid any ambiguity.
-                    string sharedTagsString = $"[{string.Join(',', imageData.ManifestImage.SharedTags)}]";
-
-                    _logger.LogInformation(
-                        "Multi-platform image {SharedTags} built {BuiltPlatforms}/{TotalPlatforms} platforms (missing: {MissingPlatforms})",
-                        sharedTagsString, builtPlatforms.Count, declaredPlatforms.Count, missingPlatforms.Count);
-
-                    foreach (PlatformInfo platform in declaredPlatforms)
+                    // Log all shared tags, to avoid any ambiguity.
+                    using (_logger.BeginScope(
+                            "Image {sharedTagsString}",
+                            imageData.ManifestImage.SharedTags.GetDisplayString()))
                     {
-                        _logger.LogDebug(
-                            "Multi-platform image {SharedTags} has platform {Platform}. WasBuilt={WasBuilt}",
-                            sharedTagsString, platform.PlatformLabel, builtPlatforms.Contains(platform));
+                        _logger.LogInformation(
+                            "Built {BuiltPlatforms}/{TotalPlatforms} platforms (missing {MissingPlatforms} platforms)",
+                            builtPlatforms.Count, declaredPlatforms.Count, missingPlatforms.Count);
+
+                        foreach (PlatformInfo platform in declaredPlatforms)
+                            _logger.LogDebug(
+                                "Has platform {Platform}, WasBuilt={WasBuilt}",
+                                platform.PlatformLabel, builtPlatforms.Contains(platform));
                     }
 
                     // Finally, project to a tuple.
@@ -190,6 +186,10 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
 
             // Look up the platform's currently-published digest.
             ImageName sourceName = new(Manifest.Model.Registry, sourceRepo, sourceTag, digest: null);
+            _logger.LogInformation(
+                "Resolving digest for image {SharedTags} platform {Platform} from {SourceName}",
+                imageData.ManifestImage.SharedTags.GetDisplayString(), platform.PlatformLabel, sourceName);
+
             ManifestQueryResult result = await _manifestService.Value.GetManifestAsync(sourceName, isDryRun: false);
 
             var platformImportData = new PlatformImportData(

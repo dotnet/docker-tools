@@ -69,10 +69,20 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                 // Path-filtered builds may include only one platform of a shared-tag image. Import
                 // any missing sibling platforms into staging first, then add them to image-info so
                 // manifest-list creation sees the complete set.
-                var platformsToImport = await GetMissingPlatformsAsync(imageArtifactDetails);
+                _logger.LogInformation("Looking for platforms missing from the current build.");
+                IReadOnlyList<PlatformImportData> platformsToImport =
+                    await GetMissingPlatformsAsync(imageArtifactDetails);
+                _logger.LogInformation(
+                    "Found {NumberOfPlatformsToImport} platforms to import.",
+                    platformsToImport.Count);
 
                 foreach (PlatformImportData platformToImport in platformsToImport)
                 {
+                    _logger.LogDebug(
+                        "Importing platform {Platform} for multi-platform image {SharedTags}.",
+                        platformToImport.Platform.PlatformLabel,
+                        $"[{string.Join(',', platformToImport.Image.SharedTags)}]");
+
                     await ImportPlatformToStagingAsync(platformToImport);
 
                     // Add the imported platform to the image-info so that it's present for
@@ -141,16 +151,34 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
                 {
                     // Cross from image-info world to manifest world via back-pointers, so that the
                     // set difference below operates on like-typed PlatformInfo values.
-                    IEnumerable<PlatformInfo> declaredPlatforms = imageData.ManifestImage.AllPlatforms;
-                    IEnumerable<PlatformInfo> builtPlatforms = imageData.Platforms
+                    List<PlatformInfo> declaredPlatforms = [.. imageData.ManifestImage.AllPlatforms];
+                    HashSet<PlatformInfo> builtPlatforms = imageData.Platforms
                         .Select(platformData => platformData.PlatformInfo)
                         // PlatformInfo back-pointer is nullable; an image-info row with no mapping
                         // doesn't correspond to a declared platform, so exclude it.
-                        .OfType<PlatformInfo>();
+                        .OfType<PlatformInfo>()
+                        .ToHashSet();
 
                     // A declared platform needs porting if no built platform corresponds to it.
-                    return declaredPlatforms
-                        .Except(builtPlatforms)
+                    List<PlatformInfo> missingPlatforms =
+                        [.. declaredPlatforms.Where(platform => !builtPlatforms.Contains(platform))];
+
+                    // Log all multi-platform tags, to avoid any ambiguity.
+                    string sharedTagsString = $"[{string.Join(',', imageData.ManifestImage.SharedTags)}]";
+
+                    _logger.LogInformation(
+                        "Multi-platform image {SharedTags} built {BuiltPlatforms}/{TotalPlatforms} platforms (missing: {MissingPlatforms})",
+                        sharedTagsString, builtPlatforms.Count, declaredPlatforms.Count, missingPlatforms.Count);
+
+                    foreach (PlatformInfo platform in declaredPlatforms)
+                    {
+                        _logger.LogDebug(
+                            "Multi-platform image {SharedTags} has platform {Platform}. WasBuilt={WasBuilt}",
+                            sharedTagsString, platform.PlatformLabel, builtPlatforms.Contains(platform));
+                    }
+
+                    // Finally, project to a tuple.
+                    return missingPlatforms
                         .Select(declaredPlatform => (ImageData: imageData, Platform: declaredPlatform));
                 });
 

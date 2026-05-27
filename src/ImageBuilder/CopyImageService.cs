@@ -67,7 +67,7 @@ public class CopyImageService : ICopyImageService
             destTagNames.Select(tag => $"'{DockerHelper.GetImageName(destAcr.Server, tag)}'").ToList();
         string formattedDestinationImages = string.Join(", ", destinationImageNames);
 
-        _logger.LogInformation(
+        _logger.LogDebug(
             "Importing {DestinationImages} and {ReferrerCount} referrer(s) from '{SourceImage}' (DryRun={DryRun}, CopyReferrers={CopyReferrers})",
             formattedDestinationImages, referrers.Count, sourceImageName, isDryRun, copyReferrers);
 

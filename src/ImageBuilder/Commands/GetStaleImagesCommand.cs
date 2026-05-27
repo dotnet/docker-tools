@@ -55,7 +55,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             IEnumerable<Task<SubscriptionImagePaths>> getPathResults =
                 SubscriptionHelper.GetSubscriptionManifests(
-                    Options.SubscriptionOptions.SubscriptionsPath, Options.FilterOptions, _gitService, _manifestJsonService)
+                    Options.SubscriptionOptions.SubscriptionsPath,
+                    Options.FilterOptions,
+                    _gitService,
+                    _manifestJsonService,
+                    manifestOptions => manifestOptions.RegistryOverride = Options.RegistryOverride)
                 .Select(async subscriptionManifest =>
                     new SubscriptionImagePaths
                     {
@@ -87,6 +91,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
 
+            ImageNameResolverForMatrix imageNameResolver = new(
+                Options.BaseImageOverrideOptions,
+                manifest,
+                repoPrefix: null,
+                sourceRepoPrefix: Options.SourceRepoPrefix);
+
             List<string> pathsToRebuild = new();
 
             foreach (RepoInfo repo in manifest.FilteredRepos)
@@ -97,7 +107,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
                 foreach (PlatformInfo platform in platforms)
                 {
-                    pathsToRebuild.AddRange(await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails));
+                    pathsToRebuild.AddRange(
+                        await GetPathsToRebuildAsync(manifest, platform, repo, imageArtifactDetails, imageNameResolver));
                 }
             }
 
@@ -109,44 +120,81 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 .Prepend(platform);
 
         private async Task<List<string>> GetPathsToRebuildAsync(
-            ManifestInfo manifest, PlatformInfo platform, RepoInfo repo, ImageArtifactDetails imageArtifactDetails)
+            ManifestInfo manifest,
+            PlatformInfo platform,
+            RepoInfo repo,
+            ImageArtifactDetails imageArtifactDetails,
+            ImageNameResolverForMatrix imageNameResolver)
         {
             string? fromImage = platform.FinalStageFromImage;
             if (fromImage is null)
             {
                 _logger.LogInformation(
-                    $"There is no base image for '{platform.DockerfilePath}'. By default, it is considered up-to-date.");
+                    "Dockerfile {DockerfilePath} has no base image. It is automatically considered up-to-date.",
+                    platform.DockerfilePath);
+
                 return [];
             }
 
-            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
+            (PlatformData Platform, ImageData Image)? matchingPlatform =
+                ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
 
             if (matchingPlatform is null)
             {
-                _logger.LogInformation(
-                    $"WARNING: Image info not found for '{platform.DockerfilePath}'. Adding path to build to be queued anyway.");
+                _logger.LogWarning(
+                    "Image info not found for '{DockerfilePath}'. It will be queued for rebuild.",
+                    platform.DockerfilePath);
+
                 IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
                 return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();
             }
 
-            fromImage = Options.BaseImageOverrideOptions.ApplyBaseImageOverride(fromImage);
+            // Resolve where to actually fetch the digest from. For external base images this
+            // points to the mirror location in the staging registry; for internal images it is the
+            // original FROM tag. The "public" form is the canonical reference matching what gets
+            // recorded in image-info.json and so is the right repo to use in the digest comparison
+            // string below.
+            string baseImagePullReference = imageNameResolver.GetFromImagePullTag(fromImage);
+            string baseImagePublicReference = imageNameResolver.GetFromImagePublicTag(fromImage);
 
-            string currentDigest = await LockHelper.DoubleCheckedLockLookupAsync(_imageDigestsLock, _imageDigests, fromImage,
-                async () =>
-                {
-                    string digest = await _manifestService.Value.GetManifestDigestShaAsync(fromImage, Options.IsDryRun);
-                    return DockerHelper.GetDigestString(DockerHelper.GetRepo(fromImage), digest);
-                });
+            // Cache the manifest digest by pull reference. The digest is a function of where we
+            // actually pull bytes from, so the pull reference is the correct cache key.
+            string baseImageManifestDigest =
+                await LockHelper.DoubleCheckedLockLookupAsync(
+                    semaphore: _imageDigestsLock,
+                    dictionary: _imageDigests,
+                    key: baseImagePullReference,
+                    getValue: () =>
+                        // This reaches out to the registry to fetch the digest from the pull
+                        // reference. For external images, this fetches from the mirror.
+                        _manifestService.Value.GetManifestDigestShaAsync(baseImagePullReference, Options.IsDryRun));
 
-            bool rebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentDigest;
+            // Build a digest-pinned reference of the form '<public-repo>@sha256:<hex>' (e.g.
+            // 'mcr.microsoft.com/dotnet/runtime@sha256:abc123...'). This must be built per-call
+            // from this platform's own public reference — two FROM spellings (e.g. 'almalinux:8'
+            // vs 'library/almalinux:8') can share a pull reference but resolve to different
+            // public references, so the formed string cannot be cached or shared across platforms.
+            // The shape matches what's stored in Platform.BaseImageDigest so the equality check
+            // below is meaningful.
+            string currentBaseImageDigestReference =
+                DockerHelper.GetDigestString(
+                    repo: DockerHelper.GetRepo(baseImagePublicReference),
+                    sha: baseImageManifestDigest);
+
+            bool shouldRebuildImage = matchingPlatform.Value.Platform.BaseImageDigest != currentBaseImageDigestReference;
 
             _logger.LogInformation(
-                $"Checking base image '{fromImage}' from '{platform.DockerfilePath}'{Environment.NewLine}"
-                + $"\tLast build digest:    {matchingPlatform.Value.Platform.BaseImageDigest}{Environment.NewLine}"
-                + $"\tCurrent digest:       {currentDigest}{Environment.NewLine}"
-                + $"\tImage is up-to-date:  {!rebuildImage}{Environment.NewLine}");
+                "Dockerfile {DockerfilePath} was last built with base image {BaseImagePublicReference} at digest"
+                    + " {LastBuildBaseImageDigestReference}. Image {BaseImagePullReference} has current digest"
+                    + " {CurrentBaseImageDigestReference}. Up to date: {IsUpToDate}.",
+                platform.DockerfilePath,
+                baseImagePublicReference,
+                matchingPlatform.Value.Platform.BaseImageDigest,
+                baseImagePullReference,
+                currentBaseImageDigestReference,
+                !shouldRebuildImage);
 
-            if (rebuildImage)
+            if (shouldRebuildImage)
             {
                 IEnumerable<PlatformInfo> dependentPlatforms = GetDescendants(platform, manifest);
                 return dependentPlatforms.Select(p => p.Model.Dockerfile).ToList();

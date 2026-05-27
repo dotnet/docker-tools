@@ -63,4 +63,23 @@ public class OrasCredentialProviderAdapterTests
 
         mockProvider.Verify(p => p.GetCredentialsAsync("registry.io", mockHost.Object), Times.Once);
     }
+
+    [Theory]
+    [InlineData("registry-1.docker.io")]
+    [InlineData("REGISTRY-1.DOCKER.IO")]
+    public async Task ResolveCredentialAsync_NormalizesDockerHubApiHostToDockerIo(string apiHost)
+    {
+        var mockProvider = new Mock<IRegistryCredentialsProvider>();
+        mockProvider
+            .Setup(p => p.GetCredentialsAsync("docker.io", null))
+            .ReturnsAsync(new RegistryCredentials("hubuser", "hubpass"));
+
+        var adapter = new OrasCredentialProviderAdapter(mockProvider.Object);
+
+        Credential result = await adapter.ResolveCredentialAsync(apiHost, CancellationToken.None);
+
+        result.Username.ShouldBe("hubuser");
+        result.Password.ShouldBe("hubpass");
+        mockProvider.Verify(p => p.GetCredentialsAsync("docker.io", null), Times.Once);
+    }
 }

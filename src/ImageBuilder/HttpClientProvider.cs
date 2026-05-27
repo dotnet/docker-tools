@@ -14,7 +14,6 @@ namespace Microsoft.DotNet.ImageBuilder
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly Lazy<HttpClient> _httpClient;
-        private readonly Lazy<RegistryHttpClient> _registryHttpClient;
 
         public HttpClientProvider(ILoggerFactory loggerFactory)
         {
@@ -25,12 +24,9 @@ namespace Microsoft.DotNet.ImageBuilder
 
             _loggerFactory = loggerFactory;
             _httpClient = new Lazy<HttpClient>(() => new HttpClient(new LoggingHandler(_loggerFactory)));
-            _registryHttpClient = new Lazy<RegistryHttpClient>(() => new RegistryHttpClient(new LoggingHandler(_loggerFactory)));
         }
 
         public HttpClient GetClient() => _httpClient.Value;
-
-        public RegistryHttpClient GetRegistryClient() => _registryHttpClient.Value;
 
         /// <summary>
         /// Logs HTTP request/response activity. Successful responses are logged at Debug level.

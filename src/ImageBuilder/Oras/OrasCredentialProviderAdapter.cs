@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using OrasProject.Oras.Registry.Remote.Auth;
@@ -26,8 +27,16 @@ public class OrasCredentialProviderAdapter(
     /// <inheritdoc/>
     public async Task<Credential> ResolveCredentialAsync(string hostname, CancellationToken cancellationToken)
     {
+        // ORAS resolves Docker Hub references (docker.io) to the API host
+        // (registry-1.docker.io) before requesting credentials. ImageBuilder
+        // credentials (e.g., from --registry-creds or publishConfig) are keyed
+        // by the user-facing "docker.io" name, so normalize back here.
+        string lookupHost = string.Equals(hostname, DockerHelper.DockerHubApiRegistry, StringComparison.OrdinalIgnoreCase)
+            ? DockerHelper.DockerHubRegistry
+            : hostname;
+
         RegistryCredentials? registryCredentials =
-            await _credentialsProvider.GetCredentialsAsync(hostname, _credentialsHost);
+            await _credentialsProvider.GetCredentialsAsync(lookupHost, _credentialsHost);
 
         if (registryCredentials is null) return default;
 

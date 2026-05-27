@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -65,6 +66,35 @@ public class OrasDotNetService(
             descriptor.MediaType, descriptor.Digest, descriptor.Size, elapsed);
 
         return descriptor;
+    }
+
+    /// <inheritdoc/>
+    public async Task<ManifestQueryResult> GetManifestAsync(string reference, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(reference);
+
+        _logger.LogDebug("Fetching manifest for reference: {Reference}", reference);
+
+        long startTime = Stopwatch.GetTimestamp();
+        Repository repository = CreateRepository(reference);
+        (Descriptor descriptor, Stream content) = await repository.FetchAsync(reference, cancellationToken);
+
+        string json;
+        await using (content)
+        using (StreamReader reader = new(content))
+        {
+            json = await reader.ReadToEndAsync(cancellationToken);
+        }
+
+        JsonObject manifest = (JsonObject)(JsonNode.Parse(json)
+            ?? throw new InvalidOperationException($"Invalid JSON manifest for '{reference}': {json}"));
+
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
+        _logger.LogDebug(
+            "Fetched manifest: mediaType={MediaType}, digest={Digest}, size={Size} in {Elapsed}",
+            descriptor.MediaType, descriptor.Digest, descriptor.Size, elapsed);
+
+        return new ManifestQueryResult(descriptor.Digest, manifest);
     }
 
     /// <inheritdoc/>

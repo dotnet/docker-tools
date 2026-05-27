@@ -192,9 +192,7 @@ Common patterns:
 - `"publish"` - Publish only (when re-running a failed publish from a previous build)
 - `"build,test,sign,publish"` - Full pipeline
 
-**Note:** The `Post_Build` stage is implicitly included whenever `build` is in the stages list. You don't need to specify it separately—it automatically runs after Build to merge image info files, create multi-arch manifests, and consolidate SBOMs.
-
-Set `validateManifestListPlatforms: true` on the build/test template to make Post_Build fail if any generated multi-arch manifest tag would omit platforms that are expected by `manifest.json`. This is recommended for normal official production builds, where `manifest.json` is the source of truth for the image platform surface. Leave it disabled for intentionally partial runs, such as PR validation, filtered builds, platform bring-up, or temporary infrastructure recovery where producing a partial manifest tag is expected.
+**Note:** The `Post_Build` stage is implicitly included whenever `build` is in the stages list. You don't need to specify it separately—it automatically runs after Build to merge image info files, create and validate multi-arch manifests, and consolidate SBOMs.
 
 The stages variable is useful for:
 - Re-running just the publish stage after fixing a transient failure

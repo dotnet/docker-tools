@@ -13,16 +13,10 @@ public class CreateManifestListOptions : ManifestOptions, IFilterableOptions
     public ManifestFilterOptions FilterOptions { get; set; } = new ManifestFilterOptions();
     public RegistryCredentialsOptions CredentialsOptions { get; set; } = new RegistryCredentialsOptions();
     public string ImageInfoPath { get; set; } = string.Empty;
-    public bool ValidateManifestListPlatforms { get; set; }
 
     private static readonly Argument<string> ImageInfoPathArgument = new(nameof(ImageInfoPath))
     {
         Description = "Path to the image info file to read and update with manifest list digests"
-    };
-
-    private static readonly Option<bool> ValidateManifestListPlatformsOption = new("--validate-manifest-list-platforms")
-    {
-        Description = "Validate that generated manifest list tags include every expected platform defined in the manifest"
     };
 
     public override IEnumerable<Option> GetCliOptions() =>
@@ -30,7 +24,6 @@ public class CreateManifestListOptions : ManifestOptions, IFilterableOptions
         ..base.GetCliOptions(),
         ..FilterOptions.GetCliOptions(),
         ..CredentialsOptions.GetCliOptions(),
-        ValidateManifestListPlatformsOption,
     ];
 
     public override IEnumerable<Argument> GetCliArguments() =>
@@ -47,6 +40,5 @@ public class CreateManifestListOptions : ManifestOptions, IFilterableOptions
         FilterOptions.Bind(result);
         CredentialsOptions.Bind(result);
         ImageInfoPath = result.GetValue(ImageInfoPathArgument) ?? string.Empty;
-        ValidateManifestListPlatforms = result.GetValue(ValidateManifestListPlatformsOption);
     }
 }

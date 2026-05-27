@@ -61,11 +61,8 @@ public class CreateManifestListCommand : ManifestCommand<CreateManifestListOptio
             ManifestListHelper.GetManifestListsForImages(
                 Manifest, imageArtifactDetails, Options.RepoPrefix);
 
-        if (Options.ValidateManifestListPlatforms)
-        {
-            ManifestListHelper.ValidateManifestListPlatforms(
-                Manifest, imageArtifactDetails, Options.RepoPrefix);
-        }
+        ManifestListHelper.ValidateManifestListPlatforms(
+            Manifest, imageArtifactDetails, Options.RepoPrefix);
 
         await _registryCredentialsProvider.ExecuteWithCredentialsAsync(
             Options.IsDryRun,

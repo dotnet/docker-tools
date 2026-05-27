@@ -243,65 +243,10 @@ public class CreateManifestListCommandTests
     }
 
     /// <summary>
-    /// Verifies that only platforms present in image-info are included in manifest lists,
-    /// testing the full command end-to-end.
+    /// Verifies that platform validation fails before creating partial manifest lists.
     /// </summary>
     [Fact]
-    public async Task ExecuteAsync_OnlyCreatesForBuiltPlatforms()
-    {
-        Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
-        Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
-        manifestServiceMock
-            .Setup(o => o.GetManifestDigestShaAsync(It.IsAny<string>(), It.IsAny<bool>()))
-            .ReturnsAsync("digest1");
-
-        Mock<IDockerService> dockerServiceMock = new();
-
-        CreateManifestListCommand command = CreateCommand(
-            manifestServiceFactory, dockerServiceMock, Mock.Of<IDateTimeService>());
-
-        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-
-        string dockerfileAmd64 = CreateDockerfile("1.0/repo/linux-amd64", tempFolderContext);
-        string dockerfileArm64 = CreateDockerfile("1.0/repo/linux-arm64", tempFolderContext);
-        string dockerfileWindows = CreateDockerfile("1.0/repo/windows", tempFolderContext);
-
-        // Manifest defines 3 platforms
-        Manifest manifest = CreateManifest(
-            CreateRepo("repo",
-                CreateImage(
-                    ["sharedtag"],
-                    CreatePlatform(dockerfileAmd64, ["tag-amd64"]),
-                    CreatePlatform(dockerfileArm64, ["tag-arm64"], architecture: Architecture.ARM64),
-                    CreatePlatform(dockerfileWindows, ["tag-windows"], os: OS.Windows, osVersion: "ltsc2022"))));
-
-        // Only 2 platforms were built
-        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
-            CreateRepoData("repo",
-                CreateImageData(
-                    ["sharedtag"],
-                    CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]),
-                    CreatePlatform(dockerfileArm64, simpleTags: ["tag-arm64"], architecture: "arm64"))));
-
-        SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
-
-        await command.ExecuteAsync();
-
-        // Manifest list should only reference the 2 built platforms
-        dockerServiceMock.Verify(o => o.CreateManifestList(
-            "repo:sharedtag",
-            It.Is<IEnumerable<string>>(images =>
-                images.Contains("repo:tag-amd64") &&
-                images.Contains("repo:tag-arm64") &&
-                !images.Contains("repo:tag-windows")),
-            false));
-    }
-
-    /// <summary>
-    /// Verifies that platform validation fails before creating partial manifest lists when enabled.
-    /// </summary>
-    [Fact]
-    public async Task ExecuteAsync_ValidateManifestListPlatforms_MissingPlatformThrows()
+    public async Task ExecuteAsync_MissingPlatformThrows()
     {
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
         Mock<IManifestServiceFactory> manifestServiceFactory = CreateManifestServiceFactoryMock(manifestServiceMock);
@@ -309,7 +254,6 @@ public class CreateManifestListCommandTests
 
         CreateManifestListCommand command = CreateCommand(
             manifestServiceFactory, dockerServiceMock, Mock.Of<IDateTimeService>());
-        command.Options.ValidateManifestListPlatforms = true;
 
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 

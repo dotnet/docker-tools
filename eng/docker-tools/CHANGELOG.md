@@ -4,11 +4,11 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
-## 2026-05-26: Post_Build can validate manifest list platform completeness
+## 2026-05-26: Post_Build validates manifest list platform completeness
 
-The build/test templates now accept `validateManifestListPlatforms` (boolean, default `false`). When enabled, Post_Build passes `--validate-manifest-list-platforms` to ImageBuilder's `createManifestList` command and fails if a generated multi-arch manifest tag would omit platforms expected by `manifest.json`.
+- Pull request: [#2126](https://github.com/dotnet/docker-tools/pull/2126)
 
-Enable this for normal official production builds where manifest tags should represent the full manifest-defined platform set. Leave it disabled for intentionally partial runs such as PR validation, filtered builds, platform bring-up, or temporary infrastructure recovery.
+The `Create Manifest Lists` step in the `Post_Build` stage now fails if a generated multi-arch manifest tag would omit platforms expected by `manifest.json`.
 
 ---
 

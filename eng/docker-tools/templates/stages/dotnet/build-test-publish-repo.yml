@@ -12,7 +12,6 @@ parameters:
 
   # Build parameters
   noCache: false
-  validateManifestListPlatforms: false
   publishConfig: null
   buildMatrixType: platformDependencyGraph
   buildMatrixCustomBuildLegGroupArgs: ""
@@ -51,7 +50,6 @@ stages:
     customCopyBaseImagesInitSteps: ${{ parameters.customCopyBaseImagesInitSteps }}
     # Build
     noCache: ${{ parameters.noCache }}
-    validateManifestListPlatforms: ${{ parameters.validateManifestListPlatforms }}
     publishConfig: ${{ parameters.publishConfig }}
     buildMatrixType: ${{ parameters.buildMatrixType }}
     buildMatrixCustomBuildLegGroupArgs: ${{ parameters.buildMatrixCustomBuildLegGroupArgs }}

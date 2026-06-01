@@ -18,10 +18,11 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public static class ImageBuilder
 {
-    public static IEnumerable<ICommand> Commands => ServiceProvider.Value.GetServices<ICommand>();
-    internal static IServiceProvider Services => ServiceProvider.Value;
+    public static IEnumerable<ICommand> Commands => Services.GetServices<ICommand>();
+    internal static IServiceProvider Services => AppHost.Services;
+    internal static IHost AppHost => LazyAppHost.Value;
 
-    private static Lazy<IServiceProvider> ServiceProvider { get; } = new(() =>
+    private static Lazy<IHost> LazyAppHost { get; } = new(() =>
         {
             var builder = Host.CreateApplicationBuilder();
 
@@ -105,8 +106,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
             builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();
 
-            var host = builder.Build();
-            return host.Services;
+            return builder.Build();
         }
     );
 }

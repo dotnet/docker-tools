@@ -7,10 +7,14 @@ using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
+IHost host = ImageBuilder.AppHost;
 try
 {
+    await host.StartAsync();
+
     RootCommand rootCliCommand = new();
 
     foreach (ICommand command in ImageBuilder.Commands)
@@ -18,11 +22,14 @@ try
         rootCliCommand.Add(command.GetCliCommand());
     }
 
-    return await rootCliCommand.Parse(args).InvokeAsync();
+    int exitCode = await rootCliCommand.Parse(args).InvokeAsync();
+
+    await host.StopAsync();
+    return exitCode;
 }
 catch (Exception e)
 {
-    ILoggerFactory? loggerFactory = ImageBuilder.Services.GetService<ILoggerFactory>();
+    ILoggerFactory? loggerFactory = host.Services.GetService<ILoggerFactory>();
     if (loggerFactory is not null)
     {
         ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");
@@ -31,6 +38,17 @@ catch (Exception e)
     else
     {
         Console.Error.WriteLine(e);
+    }
+}
+finally
+{
+    if (host is IAsyncDisposable asyncDisposableHost)
+    {
+        await asyncDisposableHost.DisposeAsync();
+    }
+    else
+    {
+        host.Dispose();
     }
 }
 

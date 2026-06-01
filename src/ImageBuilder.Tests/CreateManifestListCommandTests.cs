@@ -497,6 +497,64 @@ public class CreateManifestListCommandTests
     }
 
     /// <summary>
+    /// Verifies that a missing manifest platform is reported when the old-build
+    /// import path has no platform to port forward.
+    /// </summary>
+    [Fact]
+    public async Task ExecuteAsync_ThrowsMissingPlatform_WhenNoOldBuildImportExists()
+    {
+        Mock<IManifestService> manifestServiceMock = new(MockBehavior.Strict);
+        Mock<IDockerService> dockerServiceMock = new();
+        Mock<ICopyImageService> copyImageServiceMock = new();
+
+        CreateManifestListCommand command = CreateCommand(
+            CreateManifestServiceFactoryMock(manifestServiceMock),
+            dockerServiceMock,
+            copyImageServiceMock,
+            Mock.Of<IDateTimeService>());
+
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        string dockerfileAmd64 = CreateDockerfile("1.0/repo/linux-amd64", tempFolderContext);
+        string dockerfileArm64 = CreateDockerfile("1.0/repo/linux-arm64", tempFolderContext);
+
+        Manifest manifest = CreateManifest(
+            CreateRepo("repo",
+                CreateImage(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfileAmd64, ["tag-amd64"]),
+                    CreatePlatform(dockerfileArm64, ["tag-arm64"], architecture: Architecture.ARM64))));
+
+        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
+            CreateRepoData("repo",
+                CreateImageData(
+                    CreatePlatform(dockerfileAmd64, simpleTags: ["tag-amd64"]))));
+
+        SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
+
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(
+            () => command.ExecuteAsync());
+
+        exception.Message.ShouldContain("Generated manifest list tags are missing expected platforms defined in the manifest");
+        exception.Message.ShouldContain("repo:sharedtag");
+        exception.Message.ShouldContain("linux/arm64");
+        exception.Message.ShouldContain(dockerfileArm64);
+
+        manifestServiceMock.Verify(
+            o => o.GetManifestAsync(It.IsAny<ImageName>(), It.IsAny<bool>()),
+            Times.Never);
+        copyImageServiceMock.Verify(o => o.ImportImageAsync(
+                It.IsAny<string[]>(), It.IsAny<string>(), It.IsAny<string>(),
+                It.IsAny<bool>(), It.IsAny<string>(),
+                It.IsAny<ContainerRegistryImportSourceCredentials>(),
+                It.IsAny<bool>()),
+            Times.Never);
+        dockerServiceMock.Verify(o => o.CreateManifestList(
+                It.IsAny<string>(), It.IsAny<IEnumerable<string>>(), It.IsAny<bool>()),
+            Times.Never);
+    }
+
+    /// <summary>
     /// Verifies that when a manifest-declared platform is missing from image-info AND
     /// the source registry returns 404 for its tag (e.g. a misconfigured <c>--path</c>
     /// filter excluded a new platform, a manifest tag rename has not been published,

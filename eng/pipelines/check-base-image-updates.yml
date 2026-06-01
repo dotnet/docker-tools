@@ -1,6 +1,15 @@
 trigger: none
 pr: none
 
+parameters:
+- name: bootstrapImageBuilder
+  displayName: >
+    Build ImageBuilder from source at the start of every job instead of pulling
+    the pre-built image from MCR. Use this option during development to
+    validate changes to ImageBuilder and pipeline templates at the same time.
+  type: boolean
+  default: false
+
 schedules:
 - cron: "0 0,4,8,12,16,20 * * *"
   displayName: Daily build
@@ -21,3 +30,5 @@ extends:
     - template: /eng/docker-tools/templates/stages/dotnet/publish-config-prod.yml@self
       parameters:
         stagesTemplate: /eng/pipelines/templates/stages/check-base-image-updates.yml@self
+        stagesTemplateParameters:
+          bootstrapImageBuilder: ${{ parameters.bootstrapImageBuilder }}

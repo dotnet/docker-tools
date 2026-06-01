@@ -4,11 +4,12 @@ All breaking changes and new features in `eng/docker-tools` will be documented i
 
 ---
 
-## 2026-05-26: Post_Build validates manifest list platform completeness
+## 2026-06-01: Post_Build validates manifest list platform completeness
 
 - Pull request: [#2126](https://github.com/dotnet/docker-tools/pull/2126)
 
 The `Create Manifest Lists` step in the `Post_Build` stage now fails if a generated multi-arch manifest tag would omit platforms expected by `manifest.json`.
+This is evaluated only after attempting to import missing platform images into staging in the case of a path-filtered build.
 
 ---
 

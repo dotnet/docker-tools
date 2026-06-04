@@ -21,9 +21,8 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     [TestClass]
-    public class IngestKustoImageInfoCommandTests
+    public class IngestKustoImageInfoCommandTests(TestContext testContext)
     {
-        public TestContext? TestContext { get; set; }
 
         /// <summary>
         /// Verifies the command will ingest multiple repos.
@@ -287,11 +286,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            TestContext?.WriteLine($"Expected Image Data: {Environment.NewLine}{expectedImageData}");
-            TestContext?.WriteLine($"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
+            testContext.WriteLine($"Expected Image Data: {Environment.NewLine}{expectedImageData}");
+            testContext.WriteLine($"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
 
-            TestContext?.WriteLine($"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
-            TestContext?.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
+            testContext.WriteLine($"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
+            testContext.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
 
             kustoClientMock.Verify(o => o.IngestFromCsvAsync(
                 It.IsAny<string>(),

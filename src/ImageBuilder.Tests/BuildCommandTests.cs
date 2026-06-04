@@ -29,9 +29,8 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
     [TestClass]
-    public class BuildCommandTests
+    public class BuildCommandTests(TestContext testContext)
     {
-        public TestContext TestContext { get; set; }
 
         /// <summary>
         /// Verifies the command outputs an image info correctly for a basic scenario.
@@ -1232,7 +1231,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             bool isRuntimeDepsCached,
             bool isRuntimeCached)
         {
-            TestContext.WriteLine($"Running scenario '{scenario}'");
+            testContext.WriteLine($"Running scenario '{scenario}'");
 
             const string registry = "mcr.microsoft.com";
             const string registryOverride = "new-registry.azurecr.io";

@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
@@ -18,95 +16,90 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 public static class ImageBuilder
 {
-    public static IEnumerable<ICommand> Commands => Services.GetServices<ICommand>();
-    internal static IServiceProvider Services => AppHost.Services;
-    internal static IHost AppHost => LazyAppHost.Value;
+    public static IHost CreateAppHost()
+    {
+        var builder = Host.CreateApplicationBuilder();
 
-    private static Lazy<IHost> LazyAppHost { get; } = new(() =>
+        // Configuration
+        builder.AddPublishConfiguration();
+        builder.AddBuildConfiguration();
+
+        // Logging
+        builder.Logging.SetMinimumLevel(LogLevel.Debug);
+        builder.Logging.AddSimpleConsole(options =>
         {
-            var builder = Host.CreateApplicationBuilder();
+            options.IncludeScopes = true;
+            options.SingleLine = true;
+            options.TimestampFormat = "HH:mm:ss ";
+        });
 
-            // Configuration
-            builder.AddPublishConfiguration();
-            builder.AddBuildConfiguration();
+        // Register abstractions
+        builder.Services.AddSingleton<IFileSystem, FileSystem>();
 
-            // Logging
-            builder.Logging.SetMinimumLevel(LogLevel.Debug);
-            builder.Logging.AddSimpleConsole(options =>
-            {
-                options.IncludeScopes = true;
-                options.SingleLine = true;
-                options.TimestampFormat = "HH:mm:ss ";
-            });
+        // Register services
+        builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
+        builder.Services.AddSingleton<IAzureTokenCredentialProvider, AzureTokenCredentialProvider>();
+        builder.Services.AddSingleton<IAcrClientFactory, AcrClientFactory>();
+        builder.Services.AddSingleton<IAcrContentClientFactory, AcrContentClientFactory>();
+        builder.Services.AddSingleton<IAcrImageImporter, AcrImageImporter>();
+        builder.Services.AddSingleton<ICopyImageService, CopyImageService>();
+        builder.Services.AddSingleton<IDateTimeService, DateTimeService>();
+        builder.Services.AddSingleton<IDockerService, DockerService>();
+        builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
+        builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
+        builder.Services.AddSingleton<IGitService, GitService>();
+        builder.Services.AddSingleton<IHttpClientProvider, HttpClientProvider>();
+        builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
+        builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
+        builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
+        builder.Services.AddMemoryCache();
+        builder.Services.AddSingleton<IManifestJsonService, ManifestJsonService>();
+        builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
+        builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
+        builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();
+        builder.Services.AddSingleton<INotificationService, NotificationService>();
+        builder.Services.AddSingleton<Notation.INotationClient, Notation.NotationClient>();
+        builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
+        builder.Services.AddSingleton<Oras.IOrasService, Oras.OrasDotNetService>();
+        builder.Services.AddSingleton<Oras.IOrasServiceFactory, Oras.OrasServiceFactory>();
+        builder.Services.AddSingleton<IProcessService, ProcessService>();
+        builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
+        builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
+        builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
 
-            // Register abstractions
-            builder.Services.AddSingleton<IFileSystem, FileSystem>();
+        builder.Services.AddSingleton<IEsrpSigningService, EsrpSigningService>();
+        builder.Services.AddSingleton<IImageSigningService, ImageSigningService>();
 
-            // Register services
-            builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
-            builder.Services.AddSingleton<IAzureTokenCredentialProvider, AzureTokenCredentialProvider>();
-            builder.Services.AddSingleton<IAcrClientFactory, AcrClientFactory>();
-            builder.Services.AddSingleton<IAcrContentClientFactory, AcrContentClientFactory>();
-            builder.Services.AddSingleton<IAcrImageImporter, AcrImageImporter>();
-            builder.Services.AddSingleton<ICopyImageService, CopyImageService>();
-            builder.Services.AddSingleton<IDateTimeService, DateTimeService>();
-            builder.Services.AddSingleton<IDockerService, DockerService>();
-            builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
-            builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
-            builder.Services.AddSingleton<IGitService, GitService>();
-            builder.Services.AddSingleton<IHttpClientProvider, HttpClientProvider>();
-            builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
-            builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
-            builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
-            builder.Services.AddMemoryCache();
-            builder.Services.AddSingleton<IManifestJsonService, ManifestJsonService>();
-            builder.Services.AddSingleton<IManifestServiceFactory, ManifestServiceFactory>();
-            builder.Services.AddSingleton<IMarImageIngestionReporter, MarImageIngestionReporter>();
-            builder.Services.AddSingleton<IMcrStatusClientFactory, McrStatusClientFactory>();
-            builder.Services.AddSingleton<INotificationService, NotificationService>();
-            builder.Services.AddSingleton<Notation.INotationClient, Notation.NotationClient>();
-            builder.Services.AddSingleton<IOctokitClientFactory, OctokitClientFactory>();
-            builder.Services.AddSingleton<Oras.IOrasService, Oras.OrasDotNetService>();
-            builder.Services.AddSingleton<Oras.IOrasServiceFactory, Oras.OrasServiceFactory>();
-            builder.Services.AddSingleton<IProcessService, ProcessService>();
-            builder.Services.AddSingleton<IRegistryResolver, RegistryResolver>();
-            builder.Services.AddSingleton<IRegistryCredentialsProvider, RegistryCredentialsProvider>();
-            builder.Services.AddSingleton<IVssConnectionFactory, VssConnectionFactory>();
+        // Commands
+        builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
+        builder.Services.AddSingleton<ICommand, BuildCommand>();
+        builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
+        builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();
+        builder.Services.AddSingleton<ICommand, CopyBaseImagesCommand>();
+        builder.Services.AddSingleton<ICommand, CreateManifestListCommand>();
+        builder.Services.AddSingleton<ICommand, GenerateBuildMatrixCommand>();
+        builder.Services.AddSingleton<ICommand, GenerateDockerfilesCommand>();
+        builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
+        builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForPublishCommand>();
+        builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
+        builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
+        builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();
+        builder.Services.AddSingleton<ICommand, IngestKustoImageInfoCommand>();
+        builder.Services.AddSingleton<ICommand, MergeImageInfoCommand>();
+        builder.Services.AddSingleton<ICommand, PostPublishNotificationCommand>();
+        builder.Services.AddSingleton<ICommand, PublishImageInfoCommand>();
+        builder.Services.AddSingleton<ICommand, PublishMcrDocsCommand>();
+        builder.Services.AddSingleton<ICommand, PullImagesCommand>();
+        builder.Services.AddSingleton<ICommand, QueueBuildCommand>();
+        builder.Services.AddSingleton<ICommand, ShowImageStatsCommand>();
+        builder.Services.AddSingleton<ICommand, ShowManifestSchemaCommand>();
+        builder.Services.AddSingleton<ICommand, SignImagesCommand>();
+        builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
+        builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
+        builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
+        builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
+        builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();
 
-            builder.Services.AddSingleton<IEsrpSigningService, EsrpSigningService>();
-            builder.Services.AddSingleton<IImageSigningService, ImageSigningService>();
-
-            // Commands
-            builder.Services.AddSingleton<ICommand, AnnotateEolDigestsCommand>();
-            builder.Services.AddSingleton<ICommand, BuildCommand>();
-            builder.Services.AddSingleton<ICommand, CleanAcrImagesCommand>();
-            builder.Services.AddSingleton<ICommand, CopyAcrImagesCommand>();
-            builder.Services.AddSingleton<ICommand, CopyBaseImagesCommand>();
-            builder.Services.AddSingleton<ICommand, CreateManifestListCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateBuildMatrixCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateDockerfilesCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForAllImagesCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateEolAnnotationDataForPublishCommand>();
-            builder.Services.AddSingleton<ICommand, GenerateReadmesCommand>();
-            builder.Services.AddSingleton<ICommand, GetBaseImageStatusCommand>();
-            builder.Services.AddSingleton<ICommand, GetStaleImagesCommand>();
-            builder.Services.AddSingleton<ICommand, IngestKustoImageInfoCommand>();
-            builder.Services.AddSingleton<ICommand, MergeImageInfoCommand>();
-            builder.Services.AddSingleton<ICommand, PostPublishNotificationCommand>();
-            builder.Services.AddSingleton<ICommand, PublishImageInfoCommand>();
-            builder.Services.AddSingleton<ICommand, PublishMcrDocsCommand>();
-            builder.Services.AddSingleton<ICommand, PullImagesCommand>();
-            builder.Services.AddSingleton<ICommand, QueueBuildCommand>();
-            builder.Services.AddSingleton<ICommand, ShowImageStatsCommand>();
-            builder.Services.AddSingleton<ICommand, ShowManifestSchemaCommand>();
-            builder.Services.AddSingleton<ICommand, SignImagesCommand>();
-            builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
-            builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
-            builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
-            builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();
-            builder.Services.AddSingleton<ICommand, WaitForMcrImageIngestionCommand>();
-
-            return builder.Build();
-        }
-    );
+        return builder.Build();
+    }
 }

@@ -8,16 +8,22 @@ using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
-IHost host = ImageBuilder.AppHost;
+using IHost host = ImageBuilder.CreateAppHost();
+
+// Some parts of ImageBuilder aren't fully onboarded to DI yet (see StandaloneLoggerFactory).
+// Hand them the host's logger factory so those static code paths can log through the
+// application host's configured logging.
+StandaloneLoggerFactory.LoggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
 try
 {
     await host.StartAsync();
 
     RootCommand rootCliCommand = new();
 
-    foreach (ICommand command in ImageBuilder.Commands)
+    foreach (ICommand command in host.Services.GetServices<ICommand>())
     {
         rootCliCommand.Add(command.GetCliCommand());
     }
@@ -42,14 +48,9 @@ catch (Exception e)
 }
 finally
 {
-    if (host is IAsyncDisposable asyncDisposableHost)
-    {
-        await asyncDisposableHost.DisposeAsync();
-    }
-    else
-    {
-        host.Dispose();
-    }
+    // Drop the reference to the host-owned factory so static logging falls back to a no-op
+    // once the host is disposed.
+    StandaloneLoggerFactory.LoggerFactory = NullLoggerFactory.Instance;
 }
 
 return 1;

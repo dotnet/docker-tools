@@ -18,7 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.Mcr
 {
     public class McrTagsMetadataGenerator
     {
-        private static readonly ILogger<McrTagsMetadataGenerator> _logger = StandaloneLoggerFactory.CreateLogger<McrTagsMetadataGenerator>();
+        private static ILogger<McrTagsMetadataGenerator> Logger =>
+            StandaloneLoggerFactory.CreateLogger<McrTagsMetadataGenerator>();
 
         private IGitService _gitService;
         private ManifestInfo _manifest;
@@ -63,7 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Mcr
 
         private string Execute()
         {
-            _logger.LogInformation("GENERATING MCR TAGS METADATA");
+            Logger.LogInformation("GENERATING MCR TAGS METADATA");
 
             _imageDocInfos = _repo.FilteredImages
                 .SelectMany(image => image.AllPlatforms
@@ -100,8 +101,8 @@ namespace Microsoft.DotNet.ImageBuilder.Mcr
 
             string metadata = yaml.ToString();
 
-            _logger.LogInformation("Generated Metadata:");
-            _logger.LogInformation(metadata);
+            Logger.LogInformation("Generated Metadata:");
+            Logger.LogInformation(metadata);
 
             // Validate that the YAML is in a valid format
             new DeserializerBuilder()

@@ -53,7 +53,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
             builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
             builder.Services.AddSingleton<IGitService, GitService>();
-            builder.Services.AddSingleton<IHttpClientProvider, HttpClientProvider>();
+            builder.Services.AddHttpClient();
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();

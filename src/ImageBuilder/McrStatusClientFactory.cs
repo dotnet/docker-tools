@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
+using System.Net.Http;
+
 namespace Microsoft.DotNet.ImageBuilder;
 
 public interface IMcrStatusClientFactory
@@ -10,17 +12,17 @@ public interface IMcrStatusClientFactory
 }
 
 public class McrStatusClientFactory(
-    IHttpClientProvider httpClientProvider,
+    IHttpClientFactory httpClientFactory,
     IAzureTokenCredentialProvider tokenCredentialProvider,
     ILogger<McrStatusClient> logger)
     : IMcrStatusClientFactory
 {
-    private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly ILogger<McrStatusClient> _logger = logger;
 
     public IMcrStatusClient Create(IServiceConnection serviceConnection)
     {
-        return new McrStatusClient(_httpClientProvider, _logger, _tokenCredentialProvider, serviceConnection);
+        return new McrStatusClient(_httpClientFactory, _logger, _tokenCredentialProvider, serviceConnection);
     }
 }

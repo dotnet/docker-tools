@@ -23,15 +23,15 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IServiceConnection _serviceConnection;
 
         public McrStatusClient(
-            IHttpClientProvider httpClientProvider,
+            IHttpClientFactory httpClientFactory,
             ILogger<McrStatusClient> logger,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IServiceConnection serviceConnection)
         {
             ArgumentNullException.ThrowIfNull(logger);
-            ArgumentNullException.ThrowIfNull(httpClientProvider);
+            ArgumentNullException.ThrowIfNull(httpClientFactory);
 
-            _httpClient = httpClientProvider.GetClient();
+            _httpClient = httpClientFactory.CreateClient();
             _httpPolicy = HttpPolicyBuilder.Create()
                 .WithMeteredRetryPolicy(logger)
                 .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, logger)

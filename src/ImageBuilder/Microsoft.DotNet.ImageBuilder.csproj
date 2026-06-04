@@ -35,6 +35,7 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.16" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.16" />
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.16" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.16" />
     <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />

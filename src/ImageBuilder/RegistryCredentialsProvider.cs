@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
@@ -10,12 +11,12 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 namespace Microsoft.DotNet.ImageBuilder;
 
 public class RegistryCredentialsProvider(
-    IHttpClientProvider httpClientProvider,
+    IHttpClientFactory httpClientFactory,
     IAzureTokenCredentialProvider tokenCredentialProvider,
     IRegistryResolver registryResolver)
     : IRegistryCredentialsProvider
 {
-    private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly IRegistryResolver _registryResolver = registryResolver;
 
@@ -55,7 +56,7 @@ public class RegistryCredentialsProvider(
         TokenCredential tokenCredential = _tokenCredentialProvider.GetCredential(auth.ServiceConnection);
         var tenantGuid = Guid.Parse(auth.ServiceConnection.TenantId);
         string token = (await tokenCredential.GetTokenAsync(new TokenRequestContext([AzureScopes.Default]), CancellationToken.None)).Token;
-        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientProvider.GetClient(), acr, tenantGuid, token);
+        string refreshToken = await OAuthHelper.GetRefreshTokenAsync(_httpClientFactory.CreateClient(), acr, tenantGuid, token);
         return new RegistryCredentials(Guid.Empty.ToString(), refreshToken);
     }
 }

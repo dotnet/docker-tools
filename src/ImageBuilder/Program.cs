@@ -7,35 +7,34 @@ using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
-using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
-using IHost host = ImageBuilder.CreateAppHost();
+using var host = ImageBuilder.CreateAppHost();
 
-// Some parts of ImageBuilder aren't fully onboarded to DI yet (see StandaloneLoggerFactory).
-// Hand them the host's logger factory so those static code paths can log through the
-// application host's configured logging.
-StandaloneLoggerFactory.LoggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
 try
 {
     await host.StartAsync();
 
-    RootCommand rootCliCommand = new();
+    // Some parts of ImageBuilder aren't fully onboarded to DI yet (see StandaloneLoggerFactory).
+    // Hand them the host's logger factory so those static code paths can log through the
+    // application host's configured logging.
+    var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+    StandaloneLoggerFactory.LoggerFactory = loggerFactory;
 
-    foreach (ICommand command in host.Services.GetServices<ICommand>())
-    {
+    var rootCliCommand = new RootCommand();
+    var commands = host.Services.GetServices<ICommand>();
+
+    foreach (var command in commands)
         rootCliCommand.Add(command.GetCliCommand());
-    }
 
-    int exitCode = await rootCliCommand.Parse(args).InvokeAsync();
+    var parseResult = rootCliCommand.Parse(args);
+    int exitCode = await parseResult.InvokeAsync();
 
     await host.StopAsync();
     return exitCode;
 }
 catch (Exception e)
 {
-    ILoggerFactory? loggerFactory = host.Services.GetService<ILoggerFactory>();
+    var loggerFactory = host.Services.GetService<ILoggerFactory>();
     if (loggerFactory is not null)
     {
         ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");
@@ -45,12 +44,6 @@ catch (Exception e)
     {
         Console.Error.WriteLine(e);
     }
-}
-finally
-{
-    // Drop the reference to the host-owned factory so static logging falls back to a no-op
-    // once the host is disposed.
-    StandaloneLoggerFactory.LoggerFactory = NullLoggerFactory.Instance;
 }
 
 return 1;

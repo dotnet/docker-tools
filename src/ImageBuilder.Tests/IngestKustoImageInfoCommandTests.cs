@@ -287,11 +287,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            TestContext?.WriteLine("{0}", $"Expected Image Data: {Environment.NewLine}{expectedImageData}");
-            TestContext?.WriteLine("{0}", $"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
+            TestContext?.WriteLine($"Expected Image Data: {Environment.NewLine}{expectedImageData}");
+            TestContext?.WriteLine($"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
 
-            TestContext?.WriteLine("{0}", $"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
-            TestContext?.WriteLine("{0}", $"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
+            TestContext?.WriteLine($"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
+            TestContext?.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
 
             kustoClientMock.Verify(o => o.IngestFromCsvAsync(
                 It.IsAny<string>(),

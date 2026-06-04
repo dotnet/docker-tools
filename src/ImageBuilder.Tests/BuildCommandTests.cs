@@ -1232,7 +1232,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             bool isRuntimeDepsCached,
             bool isRuntimeCached)
         {
-            TestContext.WriteLine("{0}", $"Running scenario '{scenario}'");
+            TestContext.WriteLine($"Running scenario '{scenario}'");
 
             const string registry = "mcr.microsoft.com";
             const string registryOverride = "new-registry.azurecr.io";

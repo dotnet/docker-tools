@@ -147,9 +147,9 @@ public class ImageArtifactDetailsTests
         string actualJson = JsonHelper.SerializeObject(imageInfo);
 
         TestContext?.WriteLine("Expected JSON:");
-        TestContext?.WriteLine("{0}", expectedJson);
+        TestContext?.WriteLine(expectedJson);
         TestContext?.WriteLine("\nActual JSON:");
-        TestContext?.WriteLine("{0}", actualJson);
+        TestContext?.WriteLine(actualJson);
 
         // Normalize line endings and compare
         actualJson.Replace("\r\n", "\n").ShouldBe(expectedJson.Replace("\r\n", "\n"));

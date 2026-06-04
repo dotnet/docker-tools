@@ -102,9 +102,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -119,7 +119,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -193,10 +193,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // The base image of the final stage has changed for only one of the images.
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -211,7 +211,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -259,10 +259,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             // This should cause the subscription to be processed.
             const string commandOsType = "windows";
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos, commandOsType))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -277,7 +277,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -325,17 +325,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             // This should cause the subscription to be ignored.
             const string commandOsType = "linux";
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos, commandOsType))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos, commandOsType))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
                 {
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -377,10 +377,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Since neither of the images existed in the image info data, both should be queued.
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -396,7 +396,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -554,10 +554,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -578,7 +578,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -648,10 +648,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Both of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -667,9 +667,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
 
-                context.ManifestServiceMock
+                fixture.ManifestServiceMock
                     .Verify(o => o.GetManifestAsync(baseImage, false), Times.Once);
             }
         }
@@ -732,16 +732,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>();
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -800,14 +800,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture = new(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new();
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -931,10 +931,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -951,7 +951,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1079,10 +1079,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
+            using (TestFixture fixture =
                 new(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new()
@@ -1103,7 +1103,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1177,10 +1177,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -1198,7 +1198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1266,10 +1266,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -1284,7 +1284,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1343,10 +1343,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -1360,7 +1360,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1425,16 +1425,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context =
-                new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture =
+                new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // No paths are expected
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>();
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1501,9 +1501,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture = new TestFixture(subscriptionInfos, dockerfileInfos))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
@@ -1518,7 +1518,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1586,16 +1586,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new(subscriptionInfos, dockerfileInfos))
+            using (TestFixture fixture = new(subscriptionInfos, dockerfileInfos))
             {
-                context.ImageDigests.Add($"{CustomRegistry}/base1", "alternate-base1digest");
-                context.ImageDigests.Add($"{CustomRegistry}/base2", "alternate-base2digest");
+                fixture.ImageDigests.Add($"{CustomRegistry}/base1", "alternate-base1digest");
+                fixture.ImageDigests.Add($"{CustomRegistry}/base2", "alternate-base2digest");
 
                 // Override the image tags to target a custom registry
-                context.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
-                context.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry.io/$1";
+                fixture.Command.Options.BaseImageOverrideOptions.RegexPattern = "(base.*)";
+                fixture.Command.Options.BaseImageOverrideOptions.Substitution = "my-registry.io/$1";
 
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Only one of the images has a changed digest
                 // It should be comparing against the digest of the image from the override.
@@ -1610,7 +1610,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(expectedPathsBySubscription);
+                fixture.Verify(expectedPathsBySubscription);
             }
         }
 
@@ -1660,7 +1660,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
         /// </summary>
-        private class TestContext : IDisposable
+        private class TestFixture : IDisposable
         {
             private readonly List<string> filesToCleanup = new List<string>();
             private readonly List<string> foldersToCleanup = new List<string>();
@@ -1683,12 +1683,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             public IDictionary<string, string> ImageDigests { get => imageDigests; }
 
             /// <summary>
-            /// Initializes a new instance of <see cref="TestContext"/>.
+            /// Initializes a new instance of <see cref="TestFixture"/>.
             /// </summary>
             /// <param name="subscriptionInfos">Mapping of data to subscriptions.</param>
             /// <param name="dockerfileInfos">A mapping of Git repos to their associated set of Dockerfiles.</param>
             /// <param name="osType">The OS type to filter the command with.</param>
-            public TestContext(
+            public TestFixture(
                 SubscriptionInfo[] subscriptionInfos,
                 Dictionary<GitFile, List<DockerfileInfo>> dockerfileInfos,
                 string osType = "*")

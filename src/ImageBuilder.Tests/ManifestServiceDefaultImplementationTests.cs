@@ -8,18 +8,19 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class ManifestServiceDefaultImplementationTests
     {
         private const string ManifestDigest = "manifest-digest";
         private const string ManifestListDigest = "manifest-list-digest";
 
-        [Theory]
-        [InlineData("tag1", ManifestDigest)]
-        [InlineData("tag2", ManifestListDigest)]
+        [TestMethod]
+        [DataRow("tag1", ManifestDigest)]
+        [DataRow("tag2", ManifestListDigest)]
         public async Task GetManifestDigestSha(string tag, string expectedDigestSha)
         {
             RegistryCredentialsOptions credsOptions = new()
@@ -43,7 +44,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(new ManifestQueryResult(ManifestListDigest, new JsonObject()));
 
             string digestSha = await manifestService.Object.GetManifestDigestShaAsync(tag, false);
-            Assert.Equal(expectedDigestSha, digestSha);
+            digestSha.ShouldBe(expectedDigestSha);
         }
     }
 }

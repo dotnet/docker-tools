@@ -25,12 +25,13 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class GetStaleImagesCommandTests
     {
         private const string GitHubBranch = "my-branch";
@@ -41,7 +42,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build for a basic
         /// scenario involving one image that has changed.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_SingleDigestChanged()
         {
             const string repo1 = "test-repo";
@@ -126,7 +127,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build for a multi-stage
         /// Dockerfile scenario involving one image that has changed.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_MultiStage_SingleDigestChanged()
         {
             const string repo1 = "test-repo";
@@ -217,7 +218,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that a subscription will be skipped if it's associated with a different OS type than the command is assigned with.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_OsTypeFiltering_MatchingCommandFilter()
         {
             const string repo1 = "test-repo";
@@ -283,7 +284,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that a subscription will be skipped if it's associated with a different OS type than the command is assigned with.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_OsTypeFiltering_NonMatchingCommandFilter()
         {
             const string repo1 = "test-repo";
@@ -342,7 +343,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build when
         /// the images have no data reflected in the image info data.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_MissingImageInfo()
         {
             const string repo1 = "test-repo";
@@ -403,7 +404,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued builds for two
         /// subscriptions that have changed images.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_MultiSubscription()
         {
             const string repo1 = "test-repo";
@@ -584,7 +585,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that a base image's digest will be cached and not pulled for a subsequent image.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_BaseImageCaching()
         {
             const string repo1 = "test-repo";
@@ -676,7 +677,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that no build will be queued if the base image has not changed.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_NoBaseImageChange()
         {
             const string repo1 = "test-repo";
@@ -747,7 +748,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that no build will be queued for a Dockerfile with no base image.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_NoBaseImage()
         {
             const string repo1 = "test-repo";
@@ -815,7 +816,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// a base image changes where the image referencing that base image has other
         /// images dependent upon it.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_DependencyGraph()
         {
             const string runtimeDepsRepo = "runtimedeps-repo";
@@ -963,7 +964,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// has a dependency on both sdk:jammy and aspnet:jammy-chiseled which come from
         /// different roots.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_DependencyGraph_TwoRoots()
         {
             const string RuntimeDepsRepo = "runtime-deps";
@@ -1111,7 +1112,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// a base image changes where the image referencing that base image has other
         /// images dependent upon it and no image info data exists.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_DependencyGraph_MissingImageInfo()
         {
             const string runtimeDepsRepo = "runtimedeps-repo";
@@ -1205,7 +1206,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build when an image
         /// built from a custom named Dockerfile.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_CustomDockerfilePath()
         {
             const string repo1 = "test-repo";
@@ -1290,7 +1291,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies an image will be marked to be rebuilt if its base image is not included in the list of image data.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_NoExistingImageData()
         {
             const string repo1 = "test-repo";
@@ -1366,7 +1367,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that a Dockerfile with only an internal FROM should not be considered stale.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_InternalFromOnly()
         {
             const string repo1 = "test-repo";
@@ -1441,7 +1442,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build for a
         /// scenario involving two platforms sharing the same Dockerfile.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_SharedDockerfile()
         {
             const string repo1 = "test-repo";
@@ -1525,7 +1526,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies that the check for a stale base image is done by targeting the tag override rather than the tag
         /// defined in the Dockerfile.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GetStaleImagesCommand_BaseImageTagOverride()
         {
             const string repo1 = "test-repo";
@@ -1738,7 +1739,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string message = invocation.Arguments[2].ToString();
                 int variableNameStartIndex = message.IndexOf("=") + 1;
                 string actualVariableName = message.Substring(variableNameStartIndex, message.IndexOf(";") - variableNameStartIndex);
-                Assert.Equal(VariableName, actualVariableName);
+                actualVariableName.ShouldBe(VariableName);
 
                 string variableValue = message
                     .Substring(message.IndexOf("]") + 1);
@@ -1746,14 +1747,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 SubscriptionImagePaths[] pathsBySubscription =
                     JsonConvert.DeserializeObject<SubscriptionImagePaths[]>(variableValue.Replace("\\\"", "\""));
 
-                Assert.Equal(expectedPathsBySubscription.Count, pathsBySubscription.Length);
+                pathsBySubscription.Length.ShouldBe(expectedPathsBySubscription.Count);
 
                 foreach (KeyValuePair<Subscription, IList<string>> kvp in expectedPathsBySubscription)
                 {
                     string[] actualPaths = pathsBySubscription
                         .First(imagePaths => imagePaths.SubscriptionId == kvp.Key.Id).ImagePaths;
 
-                    Assert.Equal(kvp.Value, actualPaths);
+                    actualPaths.ShouldBe(kvp.Value);
                 }
             }
 

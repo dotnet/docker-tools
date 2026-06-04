@@ -15,25 +15,20 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit.Abstractions;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class IngestKustoImageInfoCommandTests
     {
-        private readonly ITestOutputHelper _outputHelper;
-
-        public IngestKustoImageInfoCommandTests(ITestOutputHelper outputHelper)
-        {
-            _outputHelper = outputHelper;
-        }
+        public TestContext? TestContext { get; set; }
 
         /// <summary>
         /// Verifies the command will ingest multiple repos.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task IngestKustoImageInfoCommand_MultipleRepos()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -172,7 +167,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies the command will ingest syndicated tags to another repo.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task SyndicatedTag()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -292,11 +287,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             await command.ExecuteAsync();
 
-            _outputHelper.WriteLine($"Expected Image Data: {Environment.NewLine}{expectedImageData}");
-            _outputHelper.WriteLine($"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
+            TestContext?.WriteLine("{0}", $"Expected Image Data: {Environment.NewLine}{expectedImageData}");
+            TestContext?.WriteLine("{0}", $"Actual Image Data: {Environment.NewLine}{ingestedData[command.Options.ImageTable]}");
 
-            _outputHelper.WriteLine($"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
-            _outputHelper.WriteLine($"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
+            TestContext?.WriteLine("{0}", $"Expected Layer Data: {Environment.NewLine}{expectedLayerData}");
+            TestContext?.WriteLine("{0}", $"Actual Layer Data: {Environment.NewLine}{ingestedData[command.Options.LayerTable]}");
 
             kustoClientMock.Verify(o => o.IngestFromCsvAsync(
                 It.IsAny<string>(),
@@ -304,8 +299,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 It.IsAny<string>(),
                 It.IsAny<string>(),
                 It.IsAny<IServiceConnection>()));
-            Assert.Equal(expectedImageData, ingestedData[command.Options.ImageTable]);
-            Assert.Equal(expectedLayerData, ingestedData[command.Options.LayerTable]);
+            ingestedData[command.Options.ImageTable].ShouldBe(expectedImageData);
+            ingestedData[command.Options.LayerTable].ShouldBe(expectedLayerData);
         }
     }
 }

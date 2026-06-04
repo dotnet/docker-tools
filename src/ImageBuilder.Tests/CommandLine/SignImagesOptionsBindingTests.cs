@@ -5,13 +5,13 @@
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
+[TestClass]
 public class SignImagesOptionsBindingTests
 {
-    [Fact]
+    [TestMethod]
     public void RegistryOverride_BoundFromCliArgs()
     {
         string[] args = ["image-info.json", "--registry-override", "myregistry.azurecr.io"];
@@ -19,7 +19,7 @@ public class SignImagesOptionsBindingTests
         options.RegistryOverride.Registry.ShouldBe("myregistry.azurecr.io");
     }
 
-    [Fact]
+    [TestMethod]
     public void RepoPrefix_BoundFromCliArgs()
     {
         string[] args = ["image-info.json", "--repo-prefix", "public/"];

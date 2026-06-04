@@ -12,10 +12,10 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
+[TestClass]
 public class VerifySignaturesCommandTests
 {
     private const string ImageInfoPath = "/data/image-info.json";
@@ -110,7 +110,7 @@ public class VerifySignaturesCommandTests
         }
         """;
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_VerifiesAllImages()
     {
         TestContext testContext = CreateSeededCommand();
@@ -135,7 +135,7 @@ public class VerifySignaturesCommandTests
         testContext.NotationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_DoesNotSetExitCodeOnSuccess()
     {
         TestContext testContext = CreateSeededCommand();
@@ -143,7 +143,7 @@ public class VerifySignaturesCommandTests
         testContext.EnvironmentServiceMock.VerifySet(x => x.ExitCode = It.IsAny<int>(), Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_FailsWhenVerificationFails()
     {
         TestContext testContext = CreateSeededCommand();
@@ -160,7 +160,7 @@ public class VerifySignaturesCommandTests
         testContext.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SetsExitCodeOnceForMultipleFailures()
     {
         TestContext testContext = CreateSeededCommand();
@@ -175,7 +175,7 @@ public class VerifySignaturesCommandTests
         testContext.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenSigningDisabled()
     {
         var notationClientMock = new Mock<INotationClient>();
@@ -190,7 +190,7 @@ public class VerifySignaturesCommandTests
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenSigningConfigNull()
     {
         var notationClientMock = new Mock<INotationClient>();
@@ -201,7 +201,7 @@ public class VerifySignaturesCommandTests
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenImageInfoMissing()
     {
         var notationClientMock = new Mock<INotationClient>();
@@ -213,7 +213,7 @@ public class VerifySignaturesCommandTests
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenDryRun()
     {
         TestContext testContext = CreateSeededCommand();
@@ -224,7 +224,7 @@ public class VerifySignaturesCommandTests
         testContext.NotationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenNoDigests()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -242,7 +242,7 @@ public class VerifySignaturesCommandTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_ThrowsWhenCertMissing()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -258,7 +258,7 @@ public class VerifySignaturesCommandTests
         exception.Message.ShouldContain("Root CA certificate not found");
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_ThrowsWhenTrustPolicyMissing()
     {
         var fileSystem = new InMemoryFileSystem();

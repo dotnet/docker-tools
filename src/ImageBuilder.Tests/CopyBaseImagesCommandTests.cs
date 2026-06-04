@@ -13,20 +13,20 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class CopyBaseImagesCommandTests
     {
         private const string SubscriptionId = "my subscription";
         private const string ResourceGroup = "my resource group";
         private const string DestinationRegistry = "mcr.microsoft.com";
 
-        [Fact]
+        [TestMethod]
         public async Task MultipleBaseTags()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -113,7 +113,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// So it's configured to be overriden to use contoso.azurecr.io/os:tag as the source tag. This ends up getting copied
         /// to mcr.microsoft.com/custom-repo/contoso.azurecr.io/os:tag.
         /// </remarks>
-        [Fact]
+        [TestMethod]
         public async Task OverridenBaseTag()
         {
             const string CustomRegistry = "contoso.azurecr.io";

@@ -14,10 +14,10 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class CopyImageServiceTests
 {
     /// <summary>
@@ -25,7 +25,7 @@ public class CopyImageServiceTests
     /// ImportImageAsync should succeed without throwing. This scenario occurs in PR validation
     /// pipelines where appsettings.json is not generated.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ImportImageAsync_DryRun_DoesNotRequirePublishConfiguration()
     {
         var emptyConfig = new PublishConfiguration();
@@ -56,7 +56,7 @@ public class CopyImageServiceTests
     /// ImportImageAsync should proceed past the registry lookup without throwing. External registries
     /// use RegistryAddress + Credentials for ACR import, not ResourceId.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ImportImageAsync_ExternalSourceRegistry_DoesNotRequireSourceRegistryInPublishConfig()
     {
         var publishConfig = new PublishConfiguration
@@ -115,7 +115,7 @@ public class CopyImageServiceTests
     /// When referrers exist for the source image, ImportImageAsync should import each referrer
     /// as an untagged artifact in addition to the main image.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ImportImageAsync_CopiesReferrersAlongWithSourceImage()
     {
         PublishConfiguration publishConfig = CreateAcrPublishConfig("myacr.azurecr.io");
@@ -187,7 +187,7 @@ public class CopyImageServiceTests
     /// <summary>
     /// When no referrers exist, ImportImageAsync should import only the main image.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ImportImageAsync_NoReferrers_ImportsOnlySourceImage()
     {
         PublishConfiguration publishConfig = CreateAcrPublishConfig("myacr.azurecr.io");
@@ -225,7 +225,7 @@ public class CopyImageServiceTests
     /// When copyReferrers is false, referrer discovery and referrer imports are
     /// both skipped. Only the main image is imported.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ImportImageAsync_CopyReferrersFalse_SkipsReferrerDiscoveryAndImport()
     {
         PublishConfiguration publishConfig = CreateAcrPublishConfig("myacr.azurecr.io");
@@ -267,7 +267,7 @@ public class CopyImageServiceTests
     /// The ORAS service receives the dry-run flag and returns an empty list
     /// to avoid rate limiting on unauthenticated registries.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ImportImageAsync_DryRun_SkipsReferrerDiscoveryAndImport()
     {
         var mockOras = new Mock<IOrasService>();

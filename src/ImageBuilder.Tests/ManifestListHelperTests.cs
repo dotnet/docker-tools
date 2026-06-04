@@ -11,19 +11,19 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class ManifestListHelperTests
 {
     /// <summary>
     /// Verifies that a manifest list is returned containing all built platforms.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_BasicMultiPlatform()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -62,7 +62,7 @@ public class ManifestListHelperTests
     /// Verifies that only platforms present in image-info are included in the manifest list.
     /// Platforms defined in the manifest but not built should be excluded.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_OnlyIncludesBuiltPlatforms()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -106,7 +106,7 @@ public class ManifestListHelperTests
     /// Verifies that no manifest list is returned when an image has shared tags
     /// but no platforms exist in image-info.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_SkipsImageWithNoBuiltPlatforms()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -147,7 +147,7 @@ public class ManifestListHelperTests
     /// Verifies that manifest lists are returned when at least one platform has changed,
     /// including both changed and unchanged platforms.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_IncludesPartiallyChangedImages()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -186,7 +186,7 @@ public class ManifestListHelperTests
     /// <summary>
     /// Verifies that images without shared tags do not produce manifest lists.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_SkipsImagesWithNoSharedTags()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -217,7 +217,7 @@ public class ManifestListHelperTests
     /// Verifies that when a platform has no tags of its own, it borrows a tag
     /// from a matching platform in another image within the same repo.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_DuplicatePlatformCrossReference()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -262,7 +262,7 @@ public class ManifestListHelperTests
     /// <summary>
     /// Verifies that manifest lists are returned for syndicated repos with correct tags.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_SyndicatedTags()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -337,7 +337,7 @@ public class ManifestListHelperTests
     /// Verifies that syndicated manifest lists only include platforms that have
     /// matching syndicated tags (not all platforms).
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_SyndicatedOnlyIncludesMatchingPlatforms()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -419,7 +419,7 @@ public class ManifestListHelperTests
     /// <summary>
     /// Verifies that repo prefix is correctly applied to image names in manifest lists.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_RepoPrefix()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -455,7 +455,7 @@ public class ManifestListHelperTests
     /// <summary>
     /// Verifies that the registry is included in manifest list tag and platform image names.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_RegistryInImageNames()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -492,7 +492,7 @@ public class ManifestListHelperTests
     /// Verifies that manifest lists are created even when all platforms are cached (unchanged).
     /// This ensures manifest list tags always exist in staging for digest lookup and signing.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_IncludesFullyCachedImages()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

@@ -21,16 +21,16 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class QueueBuildCommandTests
     {
         /// <summary>
         /// Verifies that no build is queued if a build is currently in progress.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_BuildInProgress()
         {
             const string path1 = "path1";
@@ -74,7 +74,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that no build is queued if there are too many recent failed builds.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_RecentFailedBuilds_MaxFailed()
         {
             const string path1 = "path1";
@@ -119,7 +119,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that a build is queued even if there are recent failed builds but not enough to meet the threshold.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_RecentFailedBuilds_PartialFailed()
         {
             const string path1 = "path1";
@@ -176,7 +176,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that a build is queued when the set of recent builds consist of some recently succeeded builds.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_RecentFailedBuilds_SucceededAndFailed()
         {
             const string path1 = "path1";
@@ -239,7 +239,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued builds for two
         /// subscriptions that have image paths.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_MultiSubscription()
         {
             const string path1 = "path1";
@@ -317,7 +317,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that no build will be queued if no paths are specified.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_NoBaseImageChange()
         {
             Subscription[] subscriptions = new Subscription[]
@@ -357,7 +357,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build a subscription is spread
         /// across multiple path sets.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_Subscription_MultiSet()
         {
             const string path1 = "path1";

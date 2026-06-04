@@ -5,7 +5,7 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -14,9 +14,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="Manifest"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class ManifestSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultManifest_Bidirectional()
     {
         Manifest manifest = new();
@@ -32,13 +33,13 @@ public class ManifestSerializationTests
         AssertBidirectional(manifest, json, AssertManifestsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void DefaultManifest_RoundTrip()
     {
         AssertRoundTrip(new Manifest(), AssertManifestsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedManifest_Bidirectional()
     {
         Manifest manifest = new()
@@ -76,7 +77,7 @@ public class ManifestSerializationTests
         AssertBidirectional(manifest, json, AssertManifestsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedManifest_RoundTrip()
     {
         Manifest manifest = new()
@@ -93,20 +94,20 @@ public class ManifestSerializationTests
 
     private static void AssertManifestsEqual(Manifest expected, Manifest actual)
     {
-        Assert.Equal(expected.Includes, actual.Includes);
-        Assert.Equal(expected.Registry, actual.Registry);
-        Assert.Equal(expected.Repos?.Length ?? 0, actual.Repos?.Length ?? 0);
-        Assert.Equal(expected.Variables, actual.Variables);
+        actual.Includes.ShouldBe(expected.Includes);
+        actual.Registry.ShouldBe(expected.Registry);
+        (actual.Repos?.Length ?? 0).ShouldBe(expected.Repos?.Length ?? 0);
+        actual.Variables.ShouldBe(expected.Variables);
 
         if (expected.Readme is null)
         {
-            Assert.Null(actual.Readme);
+            actual.Readme.ShouldBeNull();
         }
         else
         {
-            Assert.NotNull(actual.Readme);
-            Assert.Equal(expected.Readme.Path, actual.Readme.Path);
-            Assert.Equal(expected.Readme.TemplatePath, actual.Readme.TemplatePath);
+            actual.Readme.ShouldNotBeNull();
+            actual.Readme.Path.ShouldBe(expected.Readme.Path);
+            actual.Readme.TemplatePath.ShouldBe(expected.Readme.TemplatePath);
         }
     }
 }

@@ -5,7 +5,7 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -14,9 +14,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="Platform"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class PlatformSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultPlatform_Bidirectional()
     {
         // A default Platform can be serialized - it has default values for required properties
@@ -39,7 +40,7 @@ public class PlatformSerializationTests
         AssertBidirectional(platform, json, AssertPlatformsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedPlatform_Bidirectional()
     {
         Platform platform = new()
@@ -88,7 +89,7 @@ public class PlatformSerializationTests
         AssertBidirectional(platform, json, AssertPlatformsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedPlatform_RoundTrip()
     {
         Platform platform = new()
@@ -107,7 +108,7 @@ public class PlatformSerializationTests
         AssertRoundTrip(platform, AssertPlatformsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void MinimalPlatform_Bidirectional()
     {
         // Platform with only required properties, using default Architecture
@@ -137,7 +138,7 @@ public class PlatformSerializationTests
         AssertBidirectional(platform, json, AssertPlatformsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void WindowsPlatform_Bidirectional()
     {
         Platform platform = new()
@@ -167,7 +168,7 @@ public class PlatformSerializationTests
         AssertBidirectional(platform, json, AssertPlatformsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_DockerfileIsRequired_Missing()
     {
         string json = """
@@ -181,7 +182,7 @@ public class PlatformSerializationTests
         AssertDeserializationFails<Platform>(json, nameof(Platform.Dockerfile));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_OsIsRequired_Missing()
     {
         string json = """
@@ -195,7 +196,7 @@ public class PlatformSerializationTests
         AssertDeserializationFails<Platform>(json, nameof(Platform.OS));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_OsVersionIsRequired_Missing()
     {
         string json = """
@@ -209,7 +210,7 @@ public class PlatformSerializationTests
         AssertDeserializationFails<Platform>(json, nameof(Platform.OsVersion));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_TagsIsRequired_Missing()
     {
         string json = """
@@ -223,7 +224,7 @@ public class PlatformSerializationTests
         AssertDeserializationFails<Platform>(json, nameof(Platform.Tags));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_TagsIsRequired_Null()
     {
         string json = """
@@ -238,7 +239,7 @@ public class PlatformSerializationTests
         AssertDeserializationFails<Platform>(json, nameof(Platform.Tags));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_ArchitectureDefaultsToAMD64()
     {
         string json = """
@@ -264,14 +265,14 @@ public class PlatformSerializationTests
 
     private static void AssertPlatformsEqual(Platform expected, Platform actual)
     {
-        Assert.Equal(expected.Architecture, actual.Architecture);
-        Assert.Equal(expected.BuildArgs, actual.BuildArgs);
-        Assert.Equal(expected.Dockerfile, actual.Dockerfile);
-        Assert.Equal(expected.DockerfileTemplate, actual.DockerfileTemplate);
-        Assert.Equal(expected.OS, actual.OS);
-        Assert.Equal(expected.OsVersion, actual.OsVersion);
-        Assert.Equal(expected.Tags?.Count ?? 0, actual.Tags?.Count ?? 0);
-        Assert.Equal(expected.CustomBuildLegGroups?.Length ?? 0, actual.CustomBuildLegGroups?.Length ?? 0);
-        Assert.Equal(expected.Variant, actual.Variant);
+        actual.Architecture.ShouldBe(expected.Architecture);
+        actual.BuildArgs.ShouldBe(expected.BuildArgs);
+        actual.Dockerfile.ShouldBe(expected.Dockerfile);
+        actual.DockerfileTemplate.ShouldBe(expected.DockerfileTemplate);
+        actual.OS.ShouldBe(expected.OS);
+        actual.OsVersion.ShouldBe(expected.OsVersion);
+        (actual.Tags?.Count ?? 0).ShouldBe(expected.Tags?.Count ?? 0);
+        (actual.CustomBuildLegGroups?.Length ?? 0).ShouldBe(expected.CustomBuildLegGroups?.Length ?? 0);
+        actual.Variant.ShouldBe(expected.Variant);
     }
 }

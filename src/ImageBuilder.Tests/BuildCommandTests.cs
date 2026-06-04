@@ -20,8 +20,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Newtonsoft.Json;
-using Xunit.Abstractions;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ConfigurationHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
@@ -29,19 +28,15 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class BuildCommandTests
     {
-        private readonly ITestOutputHelper _outputHelper;
-
-        public BuildCommandTests(ITestOutputHelper outputHelper)
-        {
-            _outputHelper = outputHelper;
-        }
+        public TestContext TestContext { get; set; }
 
         /// <summary>
         /// Verifies the command outputs an image info correctly for a basic scenario.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_ImageInfoOutput_Basic()
         {
             const string getInstalledPackagesScriptPath = "get-pkgs.sh";
@@ -315,7 +310,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
                 string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-                Assert.Equal(expectedOutput, actualOutput);
+                actualOutput.ShouldBe(expectedOutput);
             }
         }
 
@@ -323,7 +318,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the command outputs an image info correctly for a scenario where a platform has been duplicated in order
         /// for it to be contained in two different images.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_ImageInfoOutput_DuplicatedPlatform()
         {
             const string runtimeRepo = "runtime";
@@ -459,13 +454,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
         }
 
         /// <summary>
         /// Verifies the tags that get built and published.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_Publish()
         {
             const string repoName = "runtime";
@@ -545,7 +540,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that the manifest's platform architecture settings match the architecture of the base image.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_VerifyOnBaseImageArchMismatch()
         {
             const string repoName = "runtime";
@@ -584,21 +579,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
 
-            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
-            Assert.StartsWith(
-                $"Platform '{PathHelper.NormalizePath(dockerfileRelativePath)}' is configured with an architecture that is not compatible with the base image '{baseImageTag}'",
-                ex.Message);
+            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            ex.Message.ShouldStartWith($"Platform '{PathHelper.NormalizePath(dockerfileRelativePath)}' is configured with an architecture that is not compatible with the base image '{baseImageTag}'");
         }
 
         /// <summary>
         /// Verifies that arm/v7 is compatible with arm/ (empty variant) since containerd
         /// treats them as equivalent, similar to arm64/v8 and arm64/.
         /// </summary>
-        [Theory]
-        [InlineData("v7", null)]
-        [InlineData(null, "v7")]
-        [InlineData(null, null)]
-        [InlineData("v7", "v7")]
+        [TestMethod]
+        [DataRow("v7", null)]
+        [DataRow(null, "v7")]
+        [DataRow(null, null)]
+        [DataRow("v7", "v7")]
         public async Task BuildCommand_ArmVariantCompatibility(string manifestVariant, string baseImageVariant)
         {
             const string repoName = "runtime";
@@ -647,7 +640,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that manifest-defined and globally-defined build args can be used.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_BuildArgs()
         {
             const string repoName = "runtime";
@@ -705,7 +698,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that Docker build options can be passed through to the Docker build command.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_DockerBuildOptions()
         {
             const string repoName = "runtime";
@@ -759,7 +752,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that an image with no base image will get built.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_NoBaseImage_Build()
         {
             const string repoName = "runtime";
@@ -828,7 +821,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that an image with no base image will be considered up-to-date.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_NoBaseImage_Cached()
         {
             const string runtimeDepsRepo = "runtime-deps";
@@ -993,7 +986,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{newTag}", false), Times.Once);
@@ -1024,7 +1017,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies the command outputs an image info correctly when the manifest references a custom named Dockerfile.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_ImageInfoOutput_CustomDockerfile()
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -1071,18 +1064,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 ImageArtifactDetails imageArtifactDetails = JsonConvert.DeserializeObject<ImageArtifactDetails>(
                     File.ReadAllText(command.Options.ImageInfoOutputPath));
-                Assert.Equal(
-                    PathHelper.NormalizePath(dockerfileRelativePath),
-                    imageArtifactDetails.Repos[0].Images.First().Platforms.First().Dockerfile);
+                imageArtifactDetails.Repos[0].Images.First().Platforms.First().Dockerfile.ShouldBe(PathHelper.NormalizePath(dockerfileRelativePath));
             }
         }
 
         /// <summary>
         /// Verifies an exception is thrown if the build output contains pull information.
         /// </summary>
-        [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
+        [TestMethod]
+        [DataRow(false)]
+        [DataRow(true)]
         public async Task BuildCommand_ThrowsIfImageIsPulled(bool isSkipPullingEnabled)
         {
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock("Pulling from");
@@ -1127,15 +1118,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
             else
             {
-                await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
+                await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync);
             }
         }
 
         /// <summary>
         /// Verifies the image caching logic.
         /// </summary>
-        [Theory]
-        [InlineData(
+        [TestMethod]
+        [DataRow(
             "All images cached",
             "sha256:baseImageSha-1", "sha256:baseImageSha-1",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
@@ -1144,7 +1135,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             true, true)]
-        [InlineData(
+        [DataRow(
             "All previously published, diffs for all image digests and commit SHAs",
             "sha256:baseImageSha-1", "sha256:baseImageSha-2",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
@@ -1153,7 +1144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             false, false)]
-        [InlineData(
+        [DataRow(
             "All previously published, diff for runtimeDeps image digest",
             "sha256:baseImageSha-1", "sha256:baseImageSha-1",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
@@ -1162,7 +1153,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             true, false)]
-        [InlineData(
+        [DataRow(
             "All previously published, diff for runtime commit SHA",
             "sha256:baseImageSha-1", "sha256:baseImageSha-1",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
@@ -1171,7 +1162,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             true, false)]
-        [InlineData(
+        [DataRow(
             "All previously published, diff for base image digest",
             "sha256:baseImageSha-1", "sha256:baseImageSha-2",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-2",
@@ -1180,7 +1171,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             false, false)]
-        [InlineData(
+        [DataRow(
             "Runtime not previously published",
             "sha256:baseImageSha-1", "sha256:baseImageSha-1",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
@@ -1189,7 +1180,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             true, false)]
-        [InlineData(
+        [DataRow(
             "No images previously published",
             "sha256:baseImageSha-1", "sha256:baseImageSha-1",
             null, "sha256:runtimeDepsImageSha-1",
@@ -1198,7 +1189,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             false, false)]
-        [InlineData(
+        [DataRow(
             "All previously published, commit diff for runtime-deps",
             "sha256:baseImageSha", "sha256:baseImageSha",
             "sha256:runtimeDepsImageSha-1", "sha256:runtimeDepsImageSha-1",
@@ -1207,7 +1198,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new string[] {},
             false,
             false, false)]
-        [InlineData(
+        [DataRow(
             "All unchanged, noCache set to true",
             "sha256:baseImageSha", "sha256:baseImageSha",
             "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
@@ -1217,7 +1208,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             true,
             false, false)]
         // Test failing due to https://github.com/dotnet/docker-tools/issues/1185
-        // [InlineData(
+        // [DataRow(
         //     "All unchanged, noCache set to true, path filter set to runtime",
         //     "sha256:baseImageSha", "sha256:baseImageSha",
         //     "sha256:runtimeDepsImageSha", "sha256:runtimeDepsImageSha",
@@ -1241,7 +1232,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             bool isRuntimeDepsCached,
             bool isRuntimeCached)
         {
-            _outputHelper.WriteLine($"Running scenario '{scenario}'");
+            TestContext.WriteLine("{0}", $"Running scenario '{scenario}'");
 
             const string registry = "mcr.microsoft.com";
             const string registryOverride = "new-registry.azurecr.io";
@@ -1450,7 +1441,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// has an entry defined in the source image info file. It's configured so the first platform should be a cache hit and
         /// and the second platform should also be a cache hit even though it doesn't have an entry in the source image info file.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_Caching_SharedDockerfile_MissingSourceImageInfoEntry()
         {
             string runtimeDepsRepo = $"runtime-deps";
@@ -1716,7 +1707,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(linuxBaseImageTag, false), Times.Once);
             manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(windowsBaseImageTag, false), Times.Once);
@@ -1769,7 +1760,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// it too should be a cache hit. The last platform again has no entry in the image info file and shares the same Dockerfile
         /// but it uses different build args so it should be a cache miss.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_Caching_SharedDockerfile_MissingSourceImageInfoEntry_DiffBuildArgs()
         {
             const string runtimeDepsRepo = "runtime-deps";
@@ -2026,7 +2017,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDeps2Repo}:{tag}", false), Times.Once);
@@ -2072,7 +2063,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Tests a caching scenario where two platforms are defined that share the same Dockerfile and neither of them
         /// have a entry in the source image info file.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_Caching_SharedDockerfile_NoExistingImageInfoEntries()
         {
             const string runtimeDepsRepo = "runtime-deps";
@@ -2229,7 +2220,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
@@ -2280,7 +2271,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// This scenario has caching allowed with a source image info but a build should occur for both platforms
         /// due to a base image digest diff.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_SharedDockerfile()
         {
             const string runtimeDepsRepo = "runtime-deps";
@@ -2473,7 +2464,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDepsRepo}:{tag}", false));
             dockerServiceMock.Verify(o => o.PushImage($"{runtimeDeps2Repo}:{tag}", false));
@@ -2522,7 +2513,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// tag has been introduced that isn't set in the source image info. The platform should not be marked as cached
         /// in that case.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_Caching_TagUpdate()
         {
             const string runtimeDepsRepo = "runtime-deps";
@@ -2697,7 +2688,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             manifestServiceMock.Verify(o => o.GetLocalImageDigestAsync(baseImageTag, false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{runtimeDepsRepo}:{tag}", false), Times.Once);
@@ -2733,7 +2724,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Tests a caching scenario where two platforms are defined that share the same Dockerfile. One of the platforms introduces
         /// a new tag that didn't exist in the source image info file. It should not be marked as cached.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_Caching_SharedDockerfile_TagUpdate()
         {
             const string runtimeDepsRepo = "runtime-deps";
@@ -2956,7 +2947,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDepsRepo}:{tag}", false), Times.Once);
             manifestServiceMock.Verify(o => o.GetImageLayersAsync($"{overridePrefix}{runtimeDeps2Repo}:{tag}", false), Times.Once);
@@ -2994,11 +2985,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies the command pulls base images from a mirror location.
         /// </summary>
-        [Theory]
-        [InlineData(false, "library/baserepo", "baserepo")]
-        [InlineData(false, "library/baserepo", "library/baserepo")]
-        [InlineData(true, "library/baserepo", "baserepo")]
-        [InlineData(true, "library/baserepo", "library/baserepo")]
+        [TestMethod]
+        [DataRow(false, "library/baserepo", "baserepo")]
+        [DataRow(false, "library/baserepo", "library/baserepo")]
+        [DataRow(true, "library/baserepo", "baserepo")]
+        [DataRow(true, "library/baserepo", "library/baserepo")]
         public async Task BuildCommand_MirroredImages(bool hasCachedImage, string srcBaseImageRepo, string referencedBaseImageRepo)
         {
             const string Registry = "mcr.microsoft.com";
@@ -3320,7 +3311,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(expectedOutputImageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             dockerServiceMock.Verify(o => o.PullImage(mirrorBaseTag, "linux/amd64", false));
             dockerServiceMock.Verify(o => o.CreateTag(mirrorBaseTag, referencedBaseImageTag, false));
@@ -3400,9 +3391,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests the logic of image mirroring when the base image is considered to be external from a graph perspective.
         /// </summary>
-        [Theory]
-        [InlineData("mcr.microsoft.com", "mcr.microsoft.com")]
-        [InlineData("other-registry.com", "mcr.microsoft.com")]
+        [TestMethod]
+        [DataRow("mcr.microsoft.com", "mcr.microsoft.com")]
+        [DataRow("other-registry.com", "mcr.microsoft.com")]
         public async Task BuildCommand_MirroredImages_External(string baseImageRegistry, string manifestRegistry)
         {
             const string RegistryOverride = "dotnetdocker.azurecr.io";
@@ -3504,7 +3495,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests the logic of image mirroring when the base image tag is configured to be overriden.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task BuildCommand_MirroredImages_BaseImageTagOverride()
         {
             const string RegistryOverride = "dotnetdocker.azurecr.io";
@@ -3611,7 +3602,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedOutput = JsonHelper.SerializeObject(imageArtifactDetails);
             string actualOutput = File.ReadAllText(command.Options.ImageInfoOutputPath);
 
-            Assert.Equal(expectedOutput, actualOutput);
+            actualOutput.ShouldBe(expectedOutput);
 
             dockerServiceMock.Verify(
                 o => o.BuildImage(

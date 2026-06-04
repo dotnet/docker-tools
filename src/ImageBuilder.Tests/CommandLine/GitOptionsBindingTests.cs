@@ -8,14 +8,14 @@ using System.CommandLine;
 using System.CommandLine.Parsing;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
+[TestClass]
 public class GitOptionsBindingTests
 {
-    [Fact]
+    [TestMethod]
     public void GitHubToken_BoundFromCliArgs()
     {
         string[] args = ["--gh-token", "my-pat"];
@@ -29,7 +29,7 @@ public class GitOptionsBindingTests
         options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void GitHubAppAuth_BoundFromCliArgs()
     {
         string[] args =
@@ -49,7 +49,7 @@ public class GitOptionsBindingTests
         options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void GitRepositoryValues_BoundFromCliArgs()
     {
         string[] args =
@@ -68,7 +68,7 @@ public class GitOptionsBindingTests
         options.GitOptions.Path.ShouldBe("eng/docker-tools");
     }
 
-    [Fact]
+    [TestMethod]
     public void GitUserValues_BoundFromCliArgs()
     {
         string[] args = ["--git-username", "bot", "--git-email", "bot@example.com"];
@@ -78,7 +78,7 @@ public class GitOptionsBindingTests
         options.GitOptions.Email.ShouldBe("bot@example.com");
     }
 
-    [Fact]
+    [TestMethod]
     public void GitHubAuth_DefaultsWhenNotSpecified()
     {
         TestGitOptions options = ParseAndBind<TestGitOptions>([]);
@@ -91,7 +91,7 @@ public class GitOptionsBindingTests
         options.GitOptions.GitHubAuthOptions.IsGitHubAppAuth.ShouldBeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void RequiredGitHubAuth_ProducesParseErrorWhenNoAuthProvided()
     {
         TestGitOptionsWithRequiredAuth options = new();
@@ -101,7 +101,7 @@ public class GitOptionsBindingTests
             "Expected a parse error when no GitHub auth is provided but auth is required");
     }
 
-    [Fact]
+    [TestMethod]
     public void RequiredGitHubToken_BoundFromCliArgs()
     {
         string[] args = ["--gh-token", "my-pat"];
@@ -111,7 +111,7 @@ public class GitOptionsBindingTests
         options.GitOptions.GitHubAuthOptions.HasCredentials.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void RequiredGitHubAppAuth_BoundFromCliArgs()
     {
         string[] args = ["--gh-private-key", "base64key", "--gh-app-client-id", "my-client-id"];

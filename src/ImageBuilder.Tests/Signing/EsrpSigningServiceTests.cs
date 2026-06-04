@@ -12,16 +12,16 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
+[TestClass]
 public class EsrpSigningServiceTests
 {
     private const string MBSignAppFolderEnv = "MBSIGN_APPFOLDER";
     private const string VsEngEsrpSslEnv = "VSENGESRPSSL";
 
-    [Fact]
+    [TestMethod]
     public async Task SignFilesAsync_EmptyFileList_ReturnsWithoutSigning()
     {
         var mockProcess = new Mock<IProcessService>();
@@ -34,7 +34,7 @@ public class EsrpSigningServiceTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignFilesAsync_MissingMbSignAppFolder_ThrowsInvalidOperation()
     {
         var mockEnv = new Mock<IEnvironmentService>();
@@ -48,7 +48,7 @@ public class EsrpSigningServiceTests
         ex.Message.ShouldContain(MBSignAppFolderEnv);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignFilesAsync_InvokesProcessWithCorrectArgs()
     {
         var mockProcess = new Mock<IProcessService>();
@@ -71,7 +71,7 @@ public class EsrpSigningServiceTests
             Times.Once);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignFilesAsync_CleansUpTempFileAfterSigning()
     {
         var mockEnv = CreateEnvironmentWithRequiredVars();
@@ -87,7 +87,7 @@ public class EsrpSigningServiceTests
         fileSystem.FilesDeleted.First().ShouldBe(fileSystem.FilesWritten.First());
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignFilesAsync_CleansUpTempFileOnFailure()
     {
         var mockEnv = CreateEnvironmentWithRequiredVars();
@@ -106,7 +106,7 @@ public class EsrpSigningServiceTests
         fileSystem.FilesDeleted.Count.ShouldBe(1);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignFilesAsync_WritesSignListJson()
     {
         var mockEnv = CreateEnvironmentWithRequiredVars();

@@ -14,14 +14,13 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using System.Threading;
 using Moq;
 using Newtonsoft.Json;
-using Xunit.Abstractions;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class AnnotateEolDigestsCommandTests
     {
-        private readonly ITestOutputHelper _outputHelper;
         private readonly DateOnly _globalDate = new DateOnly(2024, 6, 10);
         private readonly DateOnly _specificDigestDate = new DateOnly(2022, 1, 1);
         private const string RepoPrefix = "public/";
@@ -30,12 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         private const string AnnotationDigest1 = "annotationdigest1";
         private const string AnnotationDigest2 = "annotationdigest2";
 
-        public AnnotateEolDigestsCommandTests(ITestOutputHelper outputHelper)
-        {
-            _outputHelper = outputHelper;
-        }
-
-        [Fact]
+        [TestMethod]
         public async Task AnnotateEolDigestsCommand_AnnotationSuccess()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -61,10 +55,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     $"{AcrName}/{RepoPrefix}@{AnnotationDigest2}"
                 ];
             string[] annotationDigests = File.ReadAllLines(Path.Combine(tempFolderContext.Path, AnnotationsOutputPath));
-            Assert.Equal(expectedAnnotationDigests, annotationDigests);
+            annotationDigests.ShouldBe(expectedAnnotationDigests);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task AnnotateEolDigestsCommand_AnnotationFailures()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -78,13 +72,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAlreadyAnnotated: false,
                     digestAnnotationIsSuccessful: false);
 
-            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
-            Assert.Contains(
-                $"(failed: 2, skipped: 0)",
-                ex.Message);
+            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            ex.Message.ShouldContain($"(failed: 2, skipped: 0)");
         }
 
-        [Fact]
+        [TestMethod]
         public async Task AnnotateEolDigestsCommand_CheckAnnotations_AlreadyAnnotated_NonMatchingEolDate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -99,17 +91,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     digestAnnotationIsSuccessful: true,
                     useNonMatchingDate: true);
 
-            InvalidOperationException ex = await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
-            Assert.Contains(
-                $"(failed: 0, skipped: 2)",
-                ex.Message);
+            InvalidOperationException ex = await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+            ex.Message.ShouldContain($"(failed: 0, skipped: 2)");
 
             lifecycleMetadataServiceMock.Verify(
                 o => o.AnnotateEolDigestAsync(It.IsAny<string>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
                 Times.Never());
         }
 
-        [Fact]
+        [TestMethod]
         public async Task AnnotateEolDigestsCommand_CheckAnnotations_AlreadyAnnotated_MatchingEolDate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

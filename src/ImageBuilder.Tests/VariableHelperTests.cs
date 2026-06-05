@@ -7,14 +7,15 @@ using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class VariableHelperTests
     {
-        [Fact]
+        [TestMethod]
         public void NestedVariables()
         {
             Manifest manifest = CreateManifest();
@@ -36,14 +37,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             VariableHelper helper = new(manifest, manifestOptionsInfoMock.Object, id => null);
 
-            Assert.Equal(4, helper.ResolvedVariables.Count);
-            Assert.Equal("abc", helper.ResolvedVariables["test"]);
-            Assert.Equal("abc", helper.ResolvedVariables["test2"]);
-            Assert.Equal("abc", helper.ResolvedVariables["test3"]);
-            Assert.Equal("abc-123", helper.ResolvedVariables["test4"]);
+            helper.ResolvedVariables.Count.ShouldBe(4);
+            helper.ResolvedVariables["test"].ShouldBe("abc");
+            helper.ResolvedVariables["test2"].ShouldBe("abc");
+            helper.ResolvedVariables["test3"].ShouldBe("abc");
+            helper.ResolvedVariables["test4"].ShouldBe("abc-123");
         }
 
-        [Fact]
+        [TestMethod]
         public void ReferenceToUnresolvedVariable()
         {
             Manifest manifest = CreateManifest();
@@ -53,10 +54,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 { "test2", "abc" }
             };
 
-            Assert.Throws<NotSupportedException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
+            Should.Throw<NotSupportedException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
         }
 
-        [Fact]
+        [TestMethod]
         public void ReferenceToUndefinedVariable()
         {
             Manifest manifest = CreateManifest();
@@ -66,12 +67,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
 
-            Assert.Throws<InvalidOperationException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
+            Should.Throw<InvalidOperationException>(() => new VariableHelper(manifest, Mock.Of<IManifestOptionsInfo>(), id => null));
         }
 
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
         public void ProvideNewVariableThroughOptions(bool hasManifestVariables)
         {
             Manifest manifest = CreateManifest();
@@ -103,15 +104,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (hasManifestVariables)
             {
-                Assert.Equal(3, helper.ResolvedVariables.Count);
-                Assert.Equal("123", helper.ResolvedVariables["predefinedVar"]);
-                Assert.Equal("abc", helper.ResolvedVariables["newVar"]);
-                Assert.Equal("123456", helper.ResolvedVariables["newDerivativeVar"]);
+                helper.ResolvedVariables.Count.ShouldBe(3);
+                helper.ResolvedVariables["predefinedVar"].ShouldBe("123");
+                helper.ResolvedVariables["newVar"].ShouldBe("abc");
+                helper.ResolvedVariables["newDerivativeVar"].ShouldBe("123456");
             }
             else
             {
-                Assert.Single(helper.ResolvedVariables);
-                Assert.Equal("abc", helper.ResolvedVariables["newVar"]);
+                helper.ResolvedVariables.ShouldHaveSingleItem();
+                helper.ResolvedVariables["newVar"].ShouldBe("abc");
             }
         }
     }

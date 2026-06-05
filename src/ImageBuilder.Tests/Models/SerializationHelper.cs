@@ -7,7 +7,6 @@ using System;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 
@@ -92,7 +91,7 @@ public static class SerializationHelper
     /// <param name="propertyName">The name of the required property (use nameof()).</param>
     public static void AssertDeserializationFails<T>(string json, string propertyName)
     {
-        JsonSerializationException exception = Assert.Throws<JsonSerializationException>(
+        JsonSerializationException exception = Should.Throw<JsonSerializationException>(
             () => JsonConvert.DeserializeObject<T>(json));
 
         // Newtonsoft.Json error messages use the format: "Required property 'PropertyName' ..."
@@ -108,7 +107,7 @@ public static class SerializationHelper
     /// <param name="propertyName">The name of the required property (use nameof()).</param>
     public static void AssertSerializationFails<T>(T obj, string propertyName)
     {
-        JsonSerializationException exception = Assert.Throws<JsonSerializationException>(
+        JsonSerializationException exception = Should.Throw<JsonSerializationException>(
             () => JsonConvert.SerializeObject(obj, s_serializerSettings));
 
         // Newtonsoft.Json error messages use the format: "Cannot write a null value for property 'name'..."

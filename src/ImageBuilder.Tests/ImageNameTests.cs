@@ -2,211 +2,212 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class ImageNameTests
 {
-    [Fact]
+    [TestMethod]
     public void Parse_SimpleImageName()
     {
         ImageName result = ImageName.Parse("ubuntu");
 
-        Assert.Equal("", result.Registry);
-        Assert.Equal("ubuntu", result.Repo);
-        Assert.Equal("", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("");
+        result.Repo.ShouldBe("ubuntu");
+        result.Tag.ShouldBe("");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ImageWithTag()
     {
         ImageName result = ImageName.Parse("ubuntu:22.04");
 
-        Assert.Equal("", result.Registry);
-        Assert.Equal("ubuntu", result.Repo);
-        Assert.Equal("22.04", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("");
+        result.Repo.ShouldBe("ubuntu");
+        result.Tag.ShouldBe("22.04");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ImageWithDigest()
     {
         ImageName result = ImageName.Parse("ubuntu@sha256:abc123");
 
-        Assert.Equal("", result.Registry);
-        Assert.Equal("ubuntu", result.Repo);
-        Assert.Equal("", result.Tag);
-        Assert.Equal("sha256:abc123", result.Digest);
+        result.Registry.ShouldBe("");
+        result.Repo.ShouldBe("ubuntu");
+        result.Tag.ShouldBe("");
+        result.Digest.ShouldBe("sha256:abc123");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ImageWithRegistry()
     {
         ImageName result = ImageName.Parse("mcr.microsoft.com/dotnet/runtime:8.0");
 
-        Assert.Equal("mcr.microsoft.com", result.Registry);
-        Assert.Equal("dotnet/runtime", result.Repo);
-        Assert.Equal("8.0", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("mcr.microsoft.com");
+        result.Repo.ShouldBe("dotnet/runtime");
+        result.Tag.ShouldBe("8.0");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ImageWithRegistryPort()
     {
         ImageName result = ImageName.Parse("localhost:5000/myimage:latest");
 
-        Assert.Equal("localhost:5000", result.Registry);
-        Assert.Equal("myimage", result.Repo);
-        Assert.Equal("latest", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("localhost:5000");
+        result.Repo.ShouldBe("myimage");
+        result.Tag.ShouldBe("latest");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ImageWithRegistryAndDigest()
     {
         ImageName result = ImageName.Parse("mcr.microsoft.com/dotnet/runtime@sha256:abc123");
 
-        Assert.Equal("mcr.microsoft.com", result.Registry);
-        Assert.Equal("dotnet/runtime", result.Repo);
-        Assert.Equal("", result.Tag);
-        Assert.Equal("sha256:abc123", result.Digest);
+        result.Registry.ShouldBe("mcr.microsoft.com");
+        result.Repo.ShouldBe("dotnet/runtime");
+        result.Tag.ShouldBe("");
+        result.Digest.ShouldBe("sha256:abc123");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ImageWithNestedRepo()
     {
         ImageName result = ImageName.Parse("myregistry.azurecr.io/team/project/image:v1");
 
-        Assert.Equal("myregistry.azurecr.io", result.Registry);
-        Assert.Equal("team/project/image", result.Repo);
-        Assert.Equal("v1", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("myregistry.azurecr.io");
+        result.Repo.ShouldBe("team/project/image");
+        result.Tag.ShouldBe("v1");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_DockerHubOfficialImage_WithAutoResolve()
     {
         ImageName result = ImageName.Parse("ubuntu", autoResolveImpliedNames: true);
 
-        Assert.Equal(DockerHelper.DockerHubRegistry, result.Registry);
-        Assert.Equal("library/ubuntu", result.Repo);
-        Assert.Equal("", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe(DockerHelper.DockerHubRegistry);
+        result.Repo.ShouldBe("library/ubuntu");
+        result.Tag.ShouldBe("");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_DockerHubUserImage_WithAutoResolve()
     {
         ImageName result = ImageName.Parse("myuser/myimage:latest", autoResolveImpliedNames: true);
 
-        Assert.Equal(DockerHelper.DockerHubRegistry, result.Registry);
-        Assert.Equal("myuser/myimage", result.Repo);
-        Assert.Equal("latest", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe(DockerHelper.DockerHubRegistry);
+        result.Repo.ShouldBe("myuser/myimage");
+        result.Tag.ShouldBe("latest");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_ExplicitRegistry_WithAutoResolve()
     {
         ImageName result = ImageName.Parse("mcr.microsoft.com/dotnet/sdk:8.0", autoResolveImpliedNames: true);
 
-        Assert.Equal("mcr.microsoft.com", result.Registry);
-        Assert.Equal("dotnet/sdk", result.Repo);
-        Assert.Equal("8.0", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("mcr.microsoft.com");
+        result.Repo.ShouldBe("dotnet/sdk");
+        result.Tag.ShouldBe("8.0");
+        result.Digest.ShouldBe("");
     }
 
-    [Fact]
+    [TestMethod]
     public void Parse_SimpleRepoWithSlash_NoRegistry()
     {
         // When there's no dot or colon in the first segment, it's treated as part of the repo
         ImageName result = ImageName.Parse("myuser/myimage:tag");
 
-        Assert.Equal("", result.Registry);
-        Assert.Equal("myuser/myimage", result.Repo);
-        Assert.Equal("tag", result.Tag);
-        Assert.Equal("", result.Digest);
+        result.Registry.ShouldBe("");
+        result.Repo.ShouldBe("myuser/myimage");
+        result.Tag.ShouldBe("tag");
+        result.Digest.ShouldBe("");
     }
 
     #region ToString Tests
 
-    [Fact]
+    [TestMethod]
     public void ToString_WithRegistryAndTag()
     {
         var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", null);
 
-        Assert.Equal("mcr.microsoft.com/dotnet/runtime:8.0", imageName.ToString());
+        imageName.ToString().ShouldBe("mcr.microsoft.com/dotnet/runtime:8.0");
     }
 
-    [Fact]
+    [TestMethod]
     public void ToString_WithRegistryAndDigest()
     {
         var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", null, "sha256:abc123");
 
-        Assert.Equal("mcr.microsoft.com/dotnet/runtime@sha256:abc123", imageName.ToString());
+        imageName.ToString().ShouldBe("mcr.microsoft.com/dotnet/runtime@sha256:abc123");
     }
 
-    [Fact]
+    [TestMethod]
     public void ToString_WithRegistryTagAndDigest()
     {
         var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", "sha256:abc123");
 
-        Assert.Equal("mcr.microsoft.com/dotnet/runtime:8.0@sha256:abc123", imageName.ToString());
+        imageName.ToString().ShouldBe("mcr.microsoft.com/dotnet/runtime:8.0@sha256:abc123");
     }
 
-    [Fact]
+    [TestMethod]
     public void ToString_RepoOnly()
     {
         var imageName = new ImageName(null, "myimage", null, null);
 
-        Assert.Equal("myimage", imageName.ToString());
+        imageName.ToString().ShouldBe("myimage");
     }
 
-    [Fact]
+    [TestMethod]
     public void ToString_WithEmptyRegistry()
     {
         var imageName = new ImageName("", "myuser/myimage", "latest", null);
 
-        Assert.Equal("myuser/myimage:latest", imageName.ToString());
+        imageName.ToString().ShouldBe("myuser/myimage:latest");
     }
 
     #endregion
 
     #region Implicit Conversion Tests
 
-    [Fact]
+    [TestMethod]
     public void ImplicitConversion_StringToImageName()
     {
         ImageName imageName = "mcr.microsoft.com/dotnet/sdk:8.0";
 
-        Assert.Equal("mcr.microsoft.com", imageName.Registry);
-        Assert.Equal("dotnet/sdk", imageName.Repo);
-        Assert.Equal("8.0", imageName.Tag);
+        imageName.Registry.ShouldBe("mcr.microsoft.com");
+        imageName.Repo.ShouldBe("dotnet/sdk");
+        imageName.Tag.ShouldBe("8.0");
     }
 
-    [Fact]
+    [TestMethod]
     public void ImplicitConversion_StringToImageName_ResolvesDockerHub()
     {
         // Implicit conversion uses autoResolveImpliedNames: true
         ImageName imageName = "ubuntu";
 
-        Assert.Equal(DockerHelper.DockerHubRegistry, imageName.Registry);
-        Assert.Equal("library/ubuntu", imageName.Repo);
+        imageName.Registry.ShouldBe(DockerHelper.DockerHubRegistry);
+        imageName.Repo.ShouldBe("library/ubuntu");
     }
 
-    [Fact]
+    [TestMethod]
     public void ImplicitConversion_ImageNameToString()
     {
         var imageName = new ImageName("mcr.microsoft.com", "dotnet/runtime", "8.0", null);
 
         string result = imageName;
 
-        Assert.Equal("mcr.microsoft.com/dotnet/runtime:8.0", result);
+        result.ShouldBe("mcr.microsoft.com/dotnet/runtime:8.0");
     }
 
-    [Fact]
+    [TestMethod]
     public void ImplicitConversion_CanPassImageNameToStringMethod()
     {
         ImageName imageName = "mcr.microsoft.com/dotnet/sdk:8.0";
@@ -214,7 +215,7 @@ public class ImageNameTests
         // Verifies implicit conversion works when passing to methods expecting string
         string result = AcceptString(imageName);
 
-        Assert.Equal("mcr.microsoft.com/dotnet/sdk:8.0", result);
+        result.ShouldBe("mcr.microsoft.com/dotnet/sdk:8.0");
     }
 
     private static string AcceptString(string value) => value;
@@ -223,20 +224,20 @@ public class ImageNameTests
 
     #region Round-Trip Tests
 
-    [Theory]
-    [InlineData("mcr.microsoft.com/dotnet/runtime:8.0")]
-    [InlineData("mcr.microsoft.com/dotnet/runtime@sha256:abc123")]
-    [InlineData("localhost:5000/myimage:latest")]
-    [InlineData("myregistry.azurecr.io/team/project/image:v1")]
+    [TestMethod]
+    [DataRow("mcr.microsoft.com/dotnet/runtime:8.0")]
+    [DataRow("mcr.microsoft.com/dotnet/runtime@sha256:abc123")]
+    [DataRow("localhost:5000/myimage:latest")]
+    [DataRow("myregistry.azurecr.io/team/project/image:v1")]
     public void RoundTrip_ParseAndToString_WithRegistry(string original)
     {
         ImageName parsed = ImageName.Parse(original);
         string result = parsed.ToString();
 
-        Assert.Equal(original, result);
+        result.ShouldBe(original);
     }
 
-    [Fact]
+    [TestMethod]
     public void RoundTrip_ImplicitConversions()
     {
         string original = "mcr.microsoft.com/dotnet/sdk:8.0";
@@ -244,7 +245,7 @@ public class ImageNameTests
         ImageName imageName = original;
         string roundTripped = imageName;
 
-        Assert.Equal(original, roundTripped);
+        roundTripped.ShouldBe(original);
     }
 
     #endregion

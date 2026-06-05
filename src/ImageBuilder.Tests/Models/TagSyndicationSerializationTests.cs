@@ -4,7 +4,7 @@
 
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -13,9 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="TagSyndication"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class TagSyndicationSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultTagSyndication_Bidirectional()
     {
         TagSyndication syndication = new();
@@ -26,13 +27,13 @@ public class TagSyndicationSerializationTests
         AssertBidirectional(syndication, json, AssertTagSyndicationsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void DefaultTagSyndication_RoundTrip()
     {
         AssertRoundTrip(new TagSyndication(), AssertTagSyndicationsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedTagSyndication_Bidirectional()
     {
         TagSyndication syndication = new()
@@ -55,7 +56,7 @@ public class TagSyndicationSerializationTests
         AssertBidirectional(syndication, json, AssertTagSyndicationsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedTagSyndication_RoundTrip()
     {
         TagSyndication syndication = new()
@@ -67,7 +68,7 @@ public class TagSyndicationSerializationTests
         AssertRoundTrip(syndication, AssertTagSyndicationsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void TagSyndicationWithRepoOnly_Bidirectional()
     {
         TagSyndication syndication = new()
@@ -85,7 +86,7 @@ public class TagSyndicationSerializationTests
         AssertBidirectional(syndication, json, AssertTagSyndicationsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void TagSyndicationWithDestinationTagsOnly_Bidirectional()
     {
         TagSyndication syndication = new()
@@ -108,7 +109,7 @@ public class TagSyndicationSerializationTests
 
     private static void AssertTagSyndicationsEqual(TagSyndication expected, TagSyndication actual)
     {
-        Assert.Equal(expected.Repo, actual.Repo);
-        Assert.Equal(expected.DestinationTags, actual.DestinationTags);
+        actual.Repo.ShouldBe(expected.Repo);
+        actual.DestinationTags.ShouldBe(expected.DestinationTags);
     }
 }

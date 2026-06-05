@@ -15,16 +15,16 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class MergeImageInfoFilesCommandTests
     {
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_HappyPath()
         {
             using (TempFolderContext context = TestHelper.UseTempFolder())
@@ -321,7 +321,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_DuplicateDockerfilePaths()
         {
             const string OsType = "Linux";
@@ -617,17 +617,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
         }
 
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_SourceFolderPathNotFound()
         {
             MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
             command.Options.SourceImageInfoFolderPath = "foo";
             command.Options.DestinationImageInfoPath = "output.json";
 
-            await Assert.ThrowsAsync<DirectoryNotFoundException>(() => command.ExecuteAsync());
+            await Should.ThrowAsync<DirectoryNotFoundException>(() => command.ExecuteAsync());
         }
 
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_SourceFolderEmpty()
         {
             using (TempFolderContext context = TestHelper.UseTempFolder())
@@ -647,7 +647,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.Options.SourceImageInfoFolderPath = context.Path;
                 command.Options.DestinationImageInfoPath = "output.json";
 
-                await Assert.ThrowsAsync<InvalidOperationException>(() => command.ExecuteAsync());
+                await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
             }
         }
 
@@ -657,7 +657,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <remarks>
         /// See https://github.com/dotnet/docker-tools/pull/269
         /// </remarks>
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_Publish_ReplaceContent()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -838,7 +838,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the command will remove any out-of-date content that exists within the target image info file,
         /// meaning that it has content which isn't reflected in the manifest.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_Publish_RemoveOutOfDateContent()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -989,7 +989,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareImageArtifactDetails(expectedImageArtifactDetails, actual);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task MergeImageInfoFilesCommand_CommitUrlOverride()
         {
             using TempFolderContext context = TestHelper.UseTempFolder();

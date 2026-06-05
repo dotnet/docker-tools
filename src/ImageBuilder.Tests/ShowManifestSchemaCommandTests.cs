@@ -10,16 +10,16 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class ShowManifestSchemaCommandTests
     {
         /// <summary>
         /// Simple verification that the output of the command can be deserialized as JSON.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task ShowManifestSchemaCommand_Execute()
         {
             Mock<ILogger<ShowManifestSchemaCommand>> loggerServiceMock = new Mock<ILogger<ShowManifestSchemaCommand>>();

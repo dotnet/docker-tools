@@ -16,7 +16,7 @@ using Microsoft.DotNet.ImageBuilder.ViewModel;
 using FluentAssertions;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
+using Shouldly;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -24,6 +24,7 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class McrTagsMetadataGeneratorTests
     {
         /// <summary>
@@ -33,12 +34,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// If the source branch isn't set, the commit SHA of the Dockerfile will be used in the URL
         /// See https://github.com/dotnet/dotnet-docker/issues/1436
         /// </remarks>
-        [Theory]
-        [InlineData(true, "branch")]
-        [InlineData(true, null)]
-        [InlineData(false, "branch")]
-        [InlineData(false, null)]
-        public static void DockerfileLink(bool generateGitHubLinks, string sourceRepoBranch)
+        [TestMethod]
+        [DataRow(true, "branch")]
+        [DataRow(true, null)]
+        [DataRow(false, "branch")]
+        [DataRow(false, null)]
+        public void DockerfileLink(bool generateGitHubLinks, string sourceRepoBranch)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
@@ -114,16 +115,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ? $"{SourceRepoUrl}/blob/{branchOrSha}/{DockerfileDir}/Dockerfile"
                 : dockerfileRelativePath;
 
-            Assert.Equal(expectedUrl, tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
+            tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe(expectedUrl);
         }
 
         /// <summary>
         /// Verifies that <see cref="McrTagsMetadataGenerator"/> can be run against a platform that has no
         /// documented tags.
         /// </summary>
-        [Theory]
-        [InlineData(true)]
-        [InlineData(false)]
+        [TestMethod]
+        [DataRow(true)]
+        [DataRow(false)]
         public void HandlesUndocumentedPlatform(bool hasSharedTag)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -212,10 +213,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Deserialize<TagsMetadata>(result);
 
             // Verify the output only contains the platform with the documented tag
-            Assert.Single(tagsMetadata.Repos[0].TagGroups);
-            Assert.Equal(
-                $"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile",
-                tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
+            tagsMetadata.Repos[0].TagGroups.ShouldHaveSingleItem();
+            tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os2/Dockerfile");
 
             List<string> expectedTags = new List<string>
             {
@@ -227,14 +226,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 expectedTags.Add("shared");
             }
 
-            Assert.Equal(expectedTags, tagsMetadata.Repos[0].TagGroups[0].Tags);
+            tagsMetadata.Repos[0].TagGroups[0].Tags.ShouldBe(expectedTags);
         }
 
         /// <summary>
         /// Verifies that <see cref="McrTagsMetadataGenerator"/> can be run against a platform that is defined
         /// multiple times in different images within the manifest and have the tags combined into one entry.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public void DuplicatedPlatform()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -314,10 +313,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Deserialize<TagsMetadata>(result);
 
             // Verify the output only contains the platform with the documented tag
-            Assert.Single(tagsMetadata.Repos[0].TagGroups);
-            Assert.Equal(
-                $"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os/Dockerfile",
-                tagsMetadata.Repos[0].TagGroups[0].Dockerfile);
+            tagsMetadata.Repos[0].TagGroups.ShouldHaveSingleItem();
+            tagsMetadata.Repos[0].TagGroups[0].Dockerfile.ShouldBe($"{SourceRepoUrl}/blob/{SourceBranch}/1.0/{RepoName}/os/Dockerfile");
 
             List<string> expectedTags = new List<string>
             {
@@ -328,10 +325,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 "latest"
             };
 
-            Assert.Equal(expectedTags, tagsMetadata.Repos[0].TagGroups[0].Tags);
+            tagsMetadata.Repos[0].TagGroups[0].Tags.ShouldBe(expectedTags);
         }
+    }
 
-        public class MultiPlatformTags : IDisposable
+    [TestClass]
+    public class MultiPlatformTags : IDisposable
         {
             private const string EmptyFileName = "emptyFile.md";
             private const string TagsMetadataTemplateName = "tags.yml";
@@ -377,7 +376,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private static string[] GetTags(IEnumerable<string> tags, string osVersion, Architecture arch) =>
                 tags.Select(tag => $"{tag}-{osVersion}-{arch.ToString().ToLowerInvariant()}").ToArray();
 
-            [Fact]
+            [TestMethod]
             public void DocumentedPlatformTags()
             {
                 const string tagsMetadataTemplate = $"""
@@ -394,7 +393,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ValidateMetadataGeneratorOutput(platforms);
             }
 
-            [Fact]
+            [TestMethod]
             public void UndocumentedPlatformTags()
             {
                 const string tagsMetadataTemplate = $"""
@@ -411,7 +410,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ValidateMetadataGeneratorOutput(platforms);
             }
 
-            [Fact]
+            [TestMethod]
             public void NoPlatformTags()
             {
                 const string tagsMetadataTemplate = $"""
@@ -428,7 +427,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 ValidateMetadataGeneratorOutput(platforms);
             }
 
-            [Fact]
+            [TestMethod]
             public void SharedLinuxAndWindowsTags()
             {
                 // Windows images should be excluded from computation of multi-arch tags
@@ -511,5 +510,4 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 GC.SuppressFinalize(this);
             }
         }
-    }
 }

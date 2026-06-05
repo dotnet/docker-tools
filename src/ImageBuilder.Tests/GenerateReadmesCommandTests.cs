@@ -15,11 +15,11 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class GenerateReadmesCommandTests
     {
         private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
@@ -46,7 +46,7 @@ Referenced Template Content";
         {
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_Canonical()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -55,13 +55,13 @@ Referenced Template Content";
             await command.ExecuteAsync();
 
             string generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath));
-            Assert.Equal(ExpectedProductFamilyReadme.NormalizeLineEndings(generatedReadme), generatedReadme);
+            generatedReadme.ShouldBe(ExpectedProductFamilyReadme.NormalizeLineEndings(generatedReadme));
 
             generatedReadme = File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath));
-            Assert.Equal(ExpectedRepoReadme.NormalizeLineEndings(generatedReadme), generatedReadme);
+            generatedReadme.ShouldBe(ExpectedRepoReadme.NormalizeLineEndings(generatedReadme));
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_StringReplace()
         {
             const string Template = """
@@ -78,7 +78,7 @@ Referenced Template Content";
             generatedReadme.ShouldBe(Expected);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_TemplateArgs()
         {
             const string readmeTemplate =
@@ -98,32 +98,32 @@ Referenced Template Content";
             string expectedReadme =
 @"Hello World
 ABC-123";
-            Assert.Equal(expectedReadme, generatedReadme);
+            generatedReadme.ShouldBe(expectedReadme);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_InvalidTemplate()
         {
             string template = "about{{if:}}";
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, template);
 
-            Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
 
-            Assert.Same(_exitException, actualException);
+            actualException.ShouldBeSameAs(_exitException);
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_MissingTemplate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, null, allowOptionalTemplates: false);
 
-            await Assert.ThrowsAsync<InvalidOperationException>(command.ExecuteAsync);
+            await Should.ThrowAsync<InvalidOperationException>(command.ExecuteAsync);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_Validate_UpToDate()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -135,28 +135,28 @@ ABC-123";
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateReadmesCommand_Validate_OutOfSync()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             GenerateReadmesCommand command = InitializeCommand(tempFolderContext, validate: true);
 
-            Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
 
-            Assert.Same(_exitException, actualException);
+            actualException.ShouldBeSameAs(_exitException);
             _environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
             // Validate readmes remain unmodified
-            Assert.Equal(DefaultReadme, File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath)));
-            Assert.Equal(DefaultReadme, File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath)));
+            File.ReadAllText(Path.Combine(tempFolderContext.Path, ProductFamilyReadmePath)).ShouldBe(DefaultReadme);
+            File.ReadAllText(Path.Combine(tempFolderContext.Path, RepoReadmePath)).ShouldBe(DefaultReadme);
         }
 
-        [Theory]
-        [InlineData("IS_PRODUCT_FAMILY", "true", true)]
-        [InlineData("IS_PRODUCT_FAMILY", "false")]
-        [InlineData("FULL_REPO", "mcr.microsoft.com/dotnet/repo")]
-        [InlineData("REPO", "dotnet/repo")]
-        [InlineData("PARENT_REPO", "dotnet")]
-        [InlineData("SHORT_REPO", "repo")]
+        [TestMethod]
+        [DataRow("IS_PRODUCT_FAMILY", "true", true)]
+        [DataRow("IS_PRODUCT_FAMILY", "false")]
+        [DataRow("FULL_REPO", "mcr.microsoft.com/dotnet/repo")]
+        [DataRow("REPO", "dotnet/repo")]
+        [DataRow("PARENT_REPO", "dotnet")]
+        [DataRow("SHORT_REPO", "repo")]
         public void GenerateReadmesCommand_SupportedSymbols(string symbol, string expectedValue, bool isManifest = false)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -183,7 +183,7 @@ ABC-123";
                 expectedSymbolValue = Value.FromString(expectedValue);
             }
 
-            Assert.Equal(expectedSymbolValue, actualSymbolValue);
+            actualSymbolValue.ShouldBe(expectedSymbolValue);
         }
 
         private GenerateReadmesCommand InitializeCommand(

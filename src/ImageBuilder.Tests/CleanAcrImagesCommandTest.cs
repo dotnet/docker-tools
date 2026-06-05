@@ -15,16 +15,16 @@ using Microsoft.DotNet.ImageBuilder.Models.Oci;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class CleanAcrImagesCommandTest
     {
         private const string AcrName = "myacr.azurecr.io";
 
-        [Fact]
+        [TestMethod]
         public async Task StagingRepos()
         {
             const string stagingRepo1Name = "build-staging/repo1";
@@ -66,7 +66,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock.Verify(o => o.DeleteRepositoryAsync(stagingRepo2Name));
         }
 
-        [Fact]
+        [TestMethod]
         public async Task PublicNightlyRepos()
         {
             const string publicRepo1Name = "public/dotnet/core-nightly/repo1";
@@ -141,7 +141,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Validates that an empty test repo will be deleted.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task DeleteEmptyTestRepo()
         {
             const string repo1Name = "test/repo1";
@@ -181,7 +181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Validates that a test repo consisting of only expired images will result in the entire repo being deleted.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task DeleteAllExpiredImagesTestRepo()
         {
             const string repo1Name = "test/repo1";
@@ -216,7 +216,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             acrClientMock.Verify(o => o.DeleteRepositoryAsync(repo1Name));
         }
 
-        [Fact]
+        [TestMethod]
         public async Task TestRepos()
         {
             const string repo1Name = "test/repo1";
@@ -271,7 +271,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Validates that images with EOL date older than specified age are deleted.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task DeleteEolImages()
         {
             const string repo1Name = "test/repo1";
@@ -325,7 +325,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             repo1ContentClientMock.Verify(o => o.DeleteManifestAsync(annotationdigest), Times.Never);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task ExcludedImages()
         {
             const string publicRepo1Name = "public/dotnet/nightly/repo1";

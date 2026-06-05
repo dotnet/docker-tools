@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Shouldly;
 using System.Linq;
-using Xunit;
-using Xunit.Abstractions;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
-public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
+[TestClass]
+public class ImageArtifactDetailsTests(TestContext testContext)
 {
-    private readonly ITestOutputHelper _outputHelper = outputHelper;
 
-    [Fact]
+    [TestMethod]
     public void CanReadJsonSchemaVersion1()
     {
         ImageArtifactDetails details = ImageArtifactDetails.FromJson(JsonSchemaVersion1);
@@ -45,7 +44,7 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void CanReadJsonSchemaVersion2()
     {
         ImageArtifactDetails details = ImageArtifactDetails.FromJson(JsonSchemaVersion2);
@@ -77,7 +76,7 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
         }
     }
 
-    [Fact]
+    [TestMethod]
     public void CanWriteJsonSchemaVersion2()
     {
         ImageArtifactDetails imageInfo = new()
@@ -146,10 +145,10 @@ public class ImageArtifactDetailsTests(ITestOutputHelper outputHelper)
 
         string actualJson = JsonHelper.SerializeObject(imageInfo);
 
-        _outputHelper.WriteLine("Expected JSON:");
-        _outputHelper.WriteLine(expectedJson);
-        _outputHelper.WriteLine("\nActual JSON:");
-        _outputHelper.WriteLine(actualJson);
+        testContext.WriteLine("Expected JSON:");
+        testContext.WriteLine(expectedJson);
+        testContext.WriteLine("\nActual JSON:");
+        testContext.WriteLine(actualJson);
 
         // Normalize line endings and compare
         actualJson.Replace("\r\n", "\n").ShouldBe(expectedJson.Replace("\r\n", "\n"));

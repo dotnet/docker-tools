@@ -11,14 +11,15 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.MarStatusHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class WaitForMcrDocIngestionCommandTests
     {
-        [Fact]
+        [TestMethod]
         public async Task SuccessfulPublish()
         {
             const string commitDigest = "commit digest";
@@ -97,7 +98,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(4));
         }
 
-        [Fact]
+        [TestMethod]
         public async Task PublishFailure()
         {
             const string commitDigest = "commit digest";
@@ -180,9 +181,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
 
-            Assert.Same(exitException, actualException);
+            actualException.ShouldBeSameAs(exitException);
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(4));
             statusClientMock.Verify(o => o.GetCommitResultDetailedAsync(commitDigest, onboardingRequestId), Times.Once);
         }
@@ -190,7 +191,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests the scenario where a given digest has been queued for onboarding multiple times.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task OnboardingRequestsWithDuplicateDigest_Success()
         {
             const string commitDigest = "commit digest";
@@ -289,7 +290,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests the scenario where a given digest has been queued for onboarding multiple times.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task OnboardingRequestsWithDuplicateDigest_Failed()
         {
             const string commitDigest = "commit digest";
@@ -371,9 +372,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.CommitDigest = commitDigest;
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromMinutes(1);
 
-            Exception actualException = await Assert.ThrowsAsync<Exception>(command.ExecuteAsync);
+            Exception actualException = await Should.ThrowAsync<Exception>(command.ExecuteAsync);
 
-            Assert.Same(exitException, actualException);
+            actualException.ShouldBeSameAs(exitException);
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Once);
             statusClientMock.Verify(o => o.GetCommitResultAsync(commitDigest), Times.Exactly(2));
         }
@@ -381,7 +382,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests that the command times out if the publishing takes too long.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task WaitTimeout()
         {
             const string commitDigest = "commit digest";
@@ -413,7 +414,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.IngestionOptions.WaitTimeout = TimeSpan.FromSeconds(3);
 
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
-            await Assert.ThrowsAsync<TimeoutException>(command.ExecuteAsync);
+            await Should.ThrowAsync<TimeoutException>(command.ExecuteAsync);
         }
     }
 }

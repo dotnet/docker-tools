@@ -46,6 +46,7 @@
     <PackageReference Include="Polly.RateLimiting" Version="8.6.6" />
     <PackageReference Include="System.CommandLine" Version="2.0.7" />
     <PackageReference Include="System.Formats.Cbor" Version="9.0.16" />
+    <PackageReference Include="System.Threading.RateLimiting" Version="9.0.16" />
     <PackageReference Include="System.Linq.Async" Version="7.0.1" />
     <PackageReference Include="YamlDotNet" Version="18.0.0" />
 

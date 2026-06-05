@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
@@ -53,7 +54,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
             builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
             builder.Services.AddSingleton<IGitService, GitService>();
-            builder.Services.AddHttpClient();
+            builder.Services.AddAcrRateLimiting();
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();

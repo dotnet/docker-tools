@@ -90,7 +90,7 @@ public class LifecycleMetadataServiceTests
 
     private static ResponseException CreateRateLimitException()
     {
-        HttpResponseMessage response = new(HttpStatusCode.TooManyRequests);
+        using HttpResponseMessage response = new(HttpStatusCode.TooManyRequests);
         return new ResponseException(
             response,
             responseBody: "TOOMANYREQUESTS: exceeded the per-identity rate limit of 250 requests in a 60 second window.");

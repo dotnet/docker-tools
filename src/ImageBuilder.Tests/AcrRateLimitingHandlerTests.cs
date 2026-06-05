@@ -26,11 +26,12 @@ public class AcrRateLimitingHandlerTests
         // The limiter only has a single permit, but non-ACR requests must never consume it.
         for (int i = 0; i < 5; i++)
         {
-            HttpResponseMessage response = await invoker.SendAsync(
-                new HttpRequestMessage(
-                    HttpMethod.Get,
-                    "https://status.mscr.io/api/onboardingstatus"
-                ),
+            using HttpRequestMessage request = new(
+                HttpMethod.Get,
+                "https://status.mscr.io/api/onboardingstatus"
+            );
+            using HttpResponseMessage response = await invoker.SendAsync(
+                request,
                 CancellationToken.None
             );
             response.StatusCode.ShouldBe(HttpStatusCode.OK);
@@ -46,8 +47,12 @@ public class AcrRateLimitingHandlerTests
         RecordingHandler inner = new();
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
-        HttpResponseMessage response = await invoker.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, "https://myregistry.azurecr.io/v2/"),
+        using HttpRequestMessage request = new(
+            HttpMethod.Get,
+            "https://myregistry.azurecr.io/v2/"
+        );
+        using HttpResponseMessage response = await invoker.SendAsync(
+            request,
             CancellationToken.None
         );
 
@@ -62,18 +67,24 @@ public class AcrRateLimitingHandlerTests
         RecordingHandler inner = new();
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
-        await invoker.SendAsync(
-            new HttpRequestMessage(HttpMethod.Get, "https://myregistry.azurecr.io/v2/"),
+        using HttpRequestMessage firstRequest = new(
+            HttpMethod.Get,
+            "https://myregistry.azurecr.io/v2/"
+        );
+        using HttpResponseMessage firstResponse = await invoker.SendAsync(
+            firstRequest,
             CancellationToken.None
         );
 
         // The window's single permit is now consumed; the next ACR request cannot be served.
         await Should.ThrowAsync<InvalidOperationException>(async () =>
-            await invoker.SendAsync(
-                new HttpRequestMessage(HttpMethod.Get, "https://myregistry.azurecr.io/v2/"),
-                CancellationToken.None
-            )
-        );
+        {
+            using HttpRequestMessage throttledRequest = new(
+                HttpMethod.Get,
+                "https://myregistry.azurecr.io/v2/"
+            );
+            await invoker.SendAsync(throttledRequest, CancellationToken.None);
+        });
 
         inner.RequestCount.ShouldBe(1);
     }

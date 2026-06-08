@@ -14,15 +14,15 @@ using Microsoft.Extensions.Options;
 using Moq;
 using Microsoft.Extensions.Logging;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
+[TestClass]
 public class SignImagesCommandTests
 {
     private const string ImageInfoPath = "/data/image-info.json";
 
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_SigningDisabled_SkipsSigning()
     {
         var mockSigning = new Mock<IImageSigningService>();
@@ -36,7 +36,7 @@ public class SignImagesCommandTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_SigningConfigNull_SkipsSigning()
     {
         var mockSigning = new Mock<IImageSigningService>();
@@ -49,7 +49,7 @@ public class SignImagesCommandTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_ImageInfoNotFound_SkipsSigning()
     {
         var mockSigning = new Mock<IImageSigningService>();
@@ -64,7 +64,7 @@ public class SignImagesCommandTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_DryRun_SkipsSigning()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -87,7 +87,7 @@ public class SignImagesCommandTests
         contents.ShouldNotBeNullOrEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_SignsWithCorrectKeyCode()
     {
         var fileSystem = new InMemoryFileSystem();

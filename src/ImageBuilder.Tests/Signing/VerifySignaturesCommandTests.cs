@@ -12,10 +12,10 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Options;
 using Moq;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
+[TestClass]
 public class VerifySignaturesCommandTests
 {
     private const string ImageInfoPath = "/data/image-info.json";
@@ -110,72 +110,72 @@ public class VerifySignaturesCommandTests
         }
         """;
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_VerifiesAllImages()
     {
-        TestContext testContext = CreateSeededCommand();
+        TestFixture testFixture = CreateSeededCommand();
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
-        testContext.NotationClientMock.Verify(
+        testFixture.NotationClientMock.Verify(
             x => x.AddCertificate("ca", TrustStoreName, It.IsAny<string>()),
             Times.Once);
-        testContext.NotationClientMock.Verify(
+        testFixture.NotationClientMock.Verify(
             x => x.ImportTrustPolicy(It.IsAny<string>()),
             Times.Once);
-        testContext.NotationClientMock.Verify(
+        testFixture.NotationClientMock.Verify(
             x => x.Verify(PlatformDigestA, false),
             Times.Once);
-        testContext.NotationClientMock.Verify(
+        testFixture.NotationClientMock.Verify(
             x => x.Verify(PlatformDigestB, false),
             Times.Once);
-        testContext.NotationClientMock.Verify(
+        testFixture.NotationClientMock.Verify(
             x => x.Verify(ManifestDigest, false),
             Times.Once);
-        testContext.NotationClientMock.VerifyNoOtherCalls();
+        testFixture.NotationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_DoesNotSetExitCodeOnSuccess()
     {
-        TestContext testContext = CreateSeededCommand();
-        await testContext.Command.ExecuteAsync();
-        testContext.EnvironmentServiceMock.VerifySet(x => x.ExitCode = It.IsAny<int>(), Times.Never);
+        TestFixture testFixture = CreateSeededCommand();
+        await testFixture.Command.ExecuteAsync();
+        testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = It.IsAny<int>(), Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_FailsWhenVerificationFails()
     {
-        TestContext testContext = CreateSeededCommand();
+        TestFixture testFixture = CreateSeededCommand();
 
-        testContext.NotationClientMock
+        testFixture.NotationClientMock
             .Setup(x => x.Verify(PlatformDigestB, false))
             .Throws(new InvalidOperationException("Verification failed"));
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
-        testContext.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
-        testContext.NotationClientMock.Verify(x => x.Verify(PlatformDigestA, false), Times.Once);
-        testContext.NotationClientMock.Verify(x => x.Verify(PlatformDigestB, false), Times.Once);
-        testContext.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
+        testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestA, false), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(PlatformDigestB, false), Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SetsExitCodeOnceForMultipleFailures()
     {
-        TestContext testContext = CreateSeededCommand();
-        testContext.NotationClientMock.Setup(x => x.Verify(PlatformDigestA, false))
+        TestFixture testFixture = CreateSeededCommand();
+        testFixture.NotationClientMock.Setup(x => x.Verify(PlatformDigestA, false))
             .Throws(new InvalidOperationException("fail 1"));
-        testContext.NotationClientMock.Setup(x => x.Verify(PlatformDigestB, false))
+        testFixture.NotationClientMock.Setup(x => x.Verify(PlatformDigestB, false))
             .Throws(new InvalidOperationException("fail 2"));
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
-        testContext.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
-        testContext.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
+        testFixture.EnvironmentServiceMock.VerifySet(x => x.ExitCode = 1, Times.Once);
+        testFixture.NotationClientMock.Verify(x => x.Verify(ManifestDigest, false), Times.Once);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenSigningDisabled()
     {
         var notationClientMock = new Mock<INotationClient>();
@@ -185,46 +185,46 @@ public class VerifySignaturesCommandTests
             TrustStoreName = TrustStoreName
         };
 
-        TestContext testContext = CreateCommand(notationClientMock.Object, signingConfig);
-        await testContext.Command.ExecuteAsync();
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, signingConfig);
+        await testFixture.Command.ExecuteAsync();
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenSigningConfigNull()
     {
         var notationClientMock = new Mock<INotationClient>();
-        TestContext testContext = CreateCommand(notationClientMock.Object, signingConfig: null);
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, signingConfig: null);
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenImageInfoMissing()
     {
         var notationClientMock = new Mock<INotationClient>();
-        TestContext testContext = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig());
-        testContext.Command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig());
+        testFixture.Command.Options.ImageInfoPath = "/nonexistent/path/image-info.json";
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
         notationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenDryRun()
     {
-        TestContext testContext = CreateSeededCommand();
-        testContext.Command.Options.IsDryRun = true;
+        TestFixture testFixture = CreateSeededCommand();
+        testFixture.Command.Options.IsDryRun = true;
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
-        testContext.NotationClientMock.VerifyNoOtherCalls();
+        testFixture.NotationClientMock.VerifyNoOtherCalls();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_SkipsWhenNoDigests()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -232,17 +232,17 @@ public class VerifySignaturesCommandTests
         SeedTrustMaterials(fileSystem);
 
         var notationClientMock = new Mock<INotationClient>();
-        TestContext testContext = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
-        testContext.Command.Options.ImageInfoPath = ImageInfoPath;
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
+        testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
-        await testContext.Command.ExecuteAsync();
+        await testFixture.Command.ExecuteAsync();
 
         notationClientMock.Verify(
             x => x.Verify(It.IsAny<string>(), It.IsAny<bool>()),
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_ThrowsWhenCertMissing()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -251,14 +251,14 @@ public class VerifySignaturesCommandTests
         SeedPolicy(fileSystem);
 
         var notationClientMock = new Mock<INotationClient>();
-        TestContext testContext = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
-        testContext.Command.Options.ImageInfoPath = ImageInfoPath;
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
+        testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
-        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testContext.Command.ExecuteAsync());
+        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testFixture.Command.ExecuteAsync());
         exception.Message.ShouldContain("Root CA certificate not found");
     }
 
-    [Fact]
+    [TestMethod]
     public async Task VerifySignatures_ThrowsWhenTrustPolicyMissing()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -267,33 +267,33 @@ public class VerifySignaturesCommandTests
         SeedCert(fileSystem);
 
         var notationClientMock = new Mock<INotationClient>();
-        TestContext testContext = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
-        testContext.Command.Options.ImageInfoPath = ImageInfoPath;
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
+        testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
 
-        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testContext.Command.ExecuteAsync());
+        FileNotFoundException exception = await Should.ThrowAsync<FileNotFoundException>(testFixture.Command.ExecuteAsync());
         exception.Message.ShouldContain("Trust policy not found");
     }
 
     /// <summary>
     /// Creates a fully seeded command with image-info and trust materials ready for verification tests.
     /// </summary>
-    private static TestContext CreateSeededCommand()
+    private static TestFixture CreateSeededCommand()
     {
         var fileSystem = new InMemoryFileSystem();
         SeedImageInfoFile(fileSystem);
         SeedTrustMaterials(fileSystem);
 
         var notationClientMock = new Mock<INotationClient>();
-        TestContext testContext = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
-        testContext.Command.Options.ImageInfoPath = ImageInfoPath;
-        return testContext;
+        TestFixture testFixture = CreateCommand(notationClientMock.Object, CreateDefaultSigningConfig(), fileSystem);
+        testFixture.Command.Options.ImageInfoPath = ImageInfoPath;
+        return testFixture;
     }
 
     /// <summary>
     /// Creates a <see cref="VerifySignaturesCommand"/> with the specified signing configuration and file system.
     /// Pass null for <paramref name="signingConfig"/> to simulate a missing signing configuration.
     /// </summary>
-    private static TestContext CreateCommand(
+    private static TestFixture CreateCommand(
         INotationClient notationClient,
         SigningConfiguration? signingConfig,
         IFileSystem? fileSystem = null)
@@ -316,7 +316,7 @@ public class VerifySignaturesCommandTests
         );
 
         command.Options.TrustMaterialsPath = TrustBasePath;
-        return new TestContext(command, notationClientMock, environmentServiceMock, inMemoryFileSystem);
+        return new TestFixture(command, notationClientMock, environmentServiceMock, inMemoryFileSystem);
     }
 
     /// <summary>
@@ -345,7 +345,7 @@ public class VerifySignaturesCommandTests
     /// <summary>
     /// Holds the command under test and its mocked dependencies for assertion.
     /// </summary>
-    private record TestContext(
+    private record TestFixture(
         VerifySignaturesCommand Command,
         Mock<INotationClient> NotationClientMock,
         Mock<IEnvironmentService> EnvironmentServiceMock,

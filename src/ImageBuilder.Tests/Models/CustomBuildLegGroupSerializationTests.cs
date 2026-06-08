@@ -4,7 +4,7 @@
 
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -13,9 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="CustomBuildLegGroup"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class CustomBuildLegGroupSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultCustomBuildLegGroup_CannotSerialize()
     {
         // A default CustomBuildLegGroup has null Name, which violates
@@ -25,7 +26,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertSerializationFails(group, nameof(CustomBuildLegGroup.Name));
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedCustomBuildLegGroup_Integral_Bidirectional()
     {
         CustomBuildLegGroup group = new()
@@ -50,7 +51,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertBidirectional(group, json, AssertCustomBuildLegGroupsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedCustomBuildLegGroup_Supplemental_Bidirectional()
     {
         CustomBuildLegGroup group = new()
@@ -73,7 +74,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertBidirectional(group, json, AssertCustomBuildLegGroupsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedCustomBuildLegGroup_RoundTrip()
     {
         CustomBuildLegGroup group = new()
@@ -86,7 +87,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertRoundTrip(group, AssertCustomBuildLegGroupsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_NameIsRequired_Missing()
     {
         string json = """
@@ -99,7 +100,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertDeserializationFails<CustomBuildLegGroup>(json, nameof(CustomBuildLegGroup.Name));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_NameIsRequired_Null()
     {
         string json = """
@@ -113,7 +114,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertDeserializationFails<CustomBuildLegGroup>(json, nameof(CustomBuildLegGroup.Name));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_TypeIsRequired_Missing()
     {
         string json = """
@@ -126,7 +127,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertDeserializationFails<CustomBuildLegGroup>(json, nameof(CustomBuildLegGroup.Type));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_DependenciesIsRequired_Missing()
     {
         string json = """
@@ -139,7 +140,7 @@ public class CustomBuildLegGroupSerializationTests
         AssertDeserializationFails<CustomBuildLegGroup>(json, nameof(CustomBuildLegGroup.Dependencies));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_DependenciesIsRequired_Null()
     {
         string json = """
@@ -155,8 +156,8 @@ public class CustomBuildLegGroupSerializationTests
 
     private static void AssertCustomBuildLegGroupsEqual(CustomBuildLegGroup expected, CustomBuildLegGroup actual)
     {
-        Assert.Equal(expected.Name, actual.Name);
-        Assert.Equal(expected.Type, actual.Type);
-        Assert.Equal(expected.Dependencies, actual.Dependencies);
+        actual.Name.ShouldBe(expected.Name);
+        actual.Type.ShouldBe(expected.Type);
+        actual.Dependencies.ShouldBe(expected.Dependencies);
     }
 }

@@ -18,15 +18,15 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
+[TestClass]
 public class ImageSigningServiceTests
 {
     private const string ArtifactStagingDir = "/artifacts/staging";
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_EmptyInput_ReturnsEmpty()
     {
         var service = CreateService();
@@ -38,7 +38,7 @@ public class ImageSigningServiceTests
         results.ShouldBeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_SkipsImagesWithoutManifestOrDigest()
     {
         var mockOras = new Mock<IOrasService>();
@@ -71,7 +71,7 @@ public class ImageSigningServiceTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_SkipsPlatformsWithoutDigest()
     {
         var mockOras = CreateMockOrasService();
@@ -108,7 +108,7 @@ public class ImageSigningServiceTests
         results.Count.ShouldBe(1);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_OrchestratesFullPipeline()
     {
         var mockOras = CreateMockOrasService();
@@ -160,7 +160,7 @@ public class ImageSigningServiceTests
         results[0].SignatureDigest.ShouldBe("sha256:sigdigest");
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_ResolvesPlatformAndManifestListDigests()
     {
         var mockOras = CreateMockOrasService();
@@ -204,7 +204,7 @@ public class ImageSigningServiceTests
             ignoreOrder: true);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_WritesCorrectPayloadToDisk()
     {
         var mockOras = new Mock<IOrasService>();
@@ -254,7 +254,7 @@ public class ImageSigningServiceTests
             path => path.Contains("sha256-manifest123") && path.EndsWith(".payload"));
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_MissingArtifactStagingDir_ThrowsInvalidOperation()
     {
         var mockOras = CreateMockOrasService();
@@ -360,7 +360,7 @@ public class ImageSigningServiceTests
         return writer.Encode();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_SkipsAlreadySignedDigests()
     {
         var mockOras = CreateMockOrasService();
@@ -419,7 +419,7 @@ public class ImageSigningServiceTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_OnlySignsUnsignedDigests()
     {
         var mockOras = CreateMockOrasService();
@@ -478,7 +478,7 @@ public class ImageSigningServiceTests
             Times.Never);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task SignImagesAsync_IgnoresNonSignatureReferrers()
     {
         var mockOras = CreateMockOrasService();

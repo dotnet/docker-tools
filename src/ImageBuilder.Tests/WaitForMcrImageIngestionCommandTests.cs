@@ -15,19 +15,19 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class WaitForMcrImageIngestionCommandTests
     {
-        [Theory]
-        [InlineData("")]
-        [InlineData("public/")]
-        [InlineData("internal/private/")]
+        [TestMethod]
+        [DataRow("")]
+        [DataRow("public/")]
+        [DataRow("internal/private/")]
         public async Task SuccessfulPublish(string repoPrefix)
         {
             DateTime baselineTime = DateTime.Now;
@@ -160,9 +160,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     It.IsAny<DateTime>()));
         }
 
-        [Theory]
-        [InlineData("manifestDigest1")] // Same as the primary digest
-        [InlineData("manifestDigest2")] // Different from the primary digest
+        [TestMethod]
+        [DataRow("manifestDigest1")] // Same as the primary digest
+        [DataRow("manifestDigest2")] // Different from the primary digest
         public async Task SyndicatedTags(string syndicatedManifestDigest)
         {
             DateTime baselineTime = DateTime.Now;

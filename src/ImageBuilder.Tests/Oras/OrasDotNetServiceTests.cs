@@ -14,16 +14,16 @@ using Moq;
 using Microsoft.Extensions.Logging;
 using OrasProject.Oras.Oci;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Oras;
 
+[TestClass]
 public class OrasDotNetServiceTests
 {
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
     public async Task GetReferrersAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
     {
         var service = CreateService();
@@ -34,7 +34,7 @@ public class OrasDotNetServiceTests
         exception.ShouldNotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task PushSignatureAsync_ReadsPayloadFile()
     {
         var fileSystem = new InMemoryFileSystem();
@@ -53,7 +53,7 @@ public class OrasDotNetServiceTests
         exception.ShouldNotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task PushSignatureAsync_ThrowsForNullResult()
     {
         var service = CreateService();
@@ -66,10 +66,10 @@ public class OrasDotNetServiceTests
         exception.ParamName.ShouldBe("result");
     }
 
-    [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
+    [TestMethod]
+    [DataRow(null)]
+    [DataRow("")]
+    [DataRow("   ")]
     public async Task GetDescriptorAsync_NullOrWhitespaceReference_ThrowsArgumentException(string? reference)
     {
         var service = CreateService();
@@ -80,7 +80,7 @@ public class OrasDotNetServiceTests
         exception.ShouldNotBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task PushSignatureAsync_NullSubjectDescriptor_ThrowsArgumentNullException()
     {
         var service = CreateService();

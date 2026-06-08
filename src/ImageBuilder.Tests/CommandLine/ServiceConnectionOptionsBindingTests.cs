@@ -5,14 +5,14 @@
 using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
+[TestClass]
 public class ServiceConnectionOptionsBindingTests
 {
-    [Fact]
+    [TestMethod]
     public void ValidFormat_ParsesCorrectly()
     {
         string[] args = ["--storage-service-connection", "my-tenant:my-client:my-connection-id"];
@@ -24,10 +24,10 @@ public class ServiceConnectionOptionsBindingTests
         options.StorageServiceConnection.Id.ShouldBe("my-connection-id");
     }
 
-    [Theory]
-    [InlineData("invalid")]
-    [InlineData("only:two")]
-    [InlineData("a:b:c:d")]
+    [TestMethod]
+    [DataRow("invalid")]
+    [DataRow("only:two")]
+    [DataRow("a:b:c:d")]
     public void InvalidFormat_ProducesParseError(string invalidValue)
     {
         string[] args = ["--storage-service-connection", invalidValue];

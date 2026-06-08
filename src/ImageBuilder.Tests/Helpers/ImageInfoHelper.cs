@@ -11,7 +11,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Newtonsoft.Json;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 {
@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
 
         public static void CompareImageArtifactDetails(ImageArtifactDetails expected, ImageArtifactDetails actual)
         {
-            Assert.Equal(JsonHelper.SerializeObject(expected), JsonHelper.SerializeObject(actual));
+            JsonHelper.SerializeObject(actual).ShouldBe(JsonHelper.SerializeObject(expected));
         }
 
         public static ImageArtifactDetails CreateImageInfo(

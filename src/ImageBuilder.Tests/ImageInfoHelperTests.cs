@@ -12,7 +12,7 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
-using Xunit;
+using Shouldly;
 
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
@@ -20,9 +20,10 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class ImageInfoHelperTests
     {
-        [Fact]
+        [TestMethod]
         public void LoadFromContent()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -100,20 +101,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
 
-            Assert.Equal(expected, JsonHelper.SerializeObject(result));
+            JsonHelper.SerializeObject(result).ShouldBe(expected);
             RepoData repo = result.Repos.First();
             ImageData image = repo.Images.First();
             RepoInfo expectedRepo = manifestInfo.AllRepos.First();
             ImageInfo expectedImage = expectedRepo.AllImages.First();
-            Assert.Same(expectedImage, image.ManifestImage);
-            Assert.Same(expectedRepo, image.ManifestRepo);
+            image.ManifestImage.ShouldBeSameAs(expectedImage);
+            image.ManifestRepo.ShouldBeSameAs(expectedRepo);
 
-            Assert.Same(expectedImage, image.Platforms.First().ImageInfo);
-            Assert.Same(expectedImage.AllPlatforms.First(), image.Platforms.First().PlatformInfo);
-            Assert.Same(expectedImage.AllPlatforms.Last(), image.Platforms.Last().PlatformInfo);
+            image.Platforms.First().ImageInfo.ShouldBeSameAs(expectedImage);
+            image.Platforms.First().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.First());
+            image.Platforms.Last().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.Last());
         }
 
-        [Fact]
+        [TestMethod]
         public void LoadFromContent_ImagesDifferByPatchVersion()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -169,20 +170,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
 
-            Assert.Equal(expected, JsonHelper.SerializeObject(result));
+            JsonHelper.SerializeObject(result).ShouldBe(expected);
             RepoData repo = result.Repos.First();
             ImageData image = repo.Images.First();
             RepoInfo expectedRepo = manifestInfo.AllRepos.First();
             ImageInfo expectedImage = expectedRepo.AllImages.First();
-            Assert.Same(expectedImage, image.ManifestImage);
-            Assert.Same(expectedRepo, image.ManifestRepo);
+            image.ManifestImage.ShouldBeSameAs(expectedImage);
+            image.ManifestRepo.ShouldBeSameAs(expectedRepo);
 
-            Assert.Same(expectedImage, image.Platforms.First().ImageInfo);
-            Assert.Same(expectedImage.AllPlatforms.First(), image.Platforms.First().PlatformInfo);
-            Assert.Same(expectedImage.AllPlatforms.Last(), image.Platforms.Last().PlatformInfo);
+            image.Platforms.First().ImageInfo.ShouldBeSameAs(expectedImage);
+            image.Platforms.First().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.First());
+            image.Platforms.Last().PlatformInfo.ShouldBeSameAs(expectedImage.AllPlatforms.Last());
         }
 
-        [Fact]
+        [TestMethod]
         public void LoadFromContent_DuplicatedPlatforms()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -260,11 +261,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             ImageArtifactDetails result = ImageInfoHelper.LoadFromContent(expected, manifestInfo);
 
-            Assert.Same(manifestInfo.AllRepos.First().AllImages.First(), result.Repos[0].Images[0].ManifestImage);
-            Assert.Same(manifestInfo.AllRepos.First().AllImages.ElementAt(1), result.Repos[0].Images[1].ManifestImage);
+            result.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(manifestInfo.AllRepos.First().AllImages.First());
+            result.Repos[0].Images[1].ManifestImage.ShouldBeSameAs(manifestInfo.AllRepos.First().AllImages.ElementAt(1));
         }
 
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_ImageDigest()
         {
             ImageInfo imageInfo1 = CreateImageInfo();
@@ -328,7 +329,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
         }
 
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_EmptyTarget()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -365,7 +366,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
         }
 
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_ExistingTarget()
         {
             PlatformData repo2Image1;
@@ -543,7 +544,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that tags are merged between the source and destination.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_MergeTags()
         {
             PlatformData srcImage1;
@@ -697,7 +698,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// if the same tag doesn't exist in the source. This handles cases where
         /// a shared tag has been moved from one image to another.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_RemoveTag()
         {
             PlatformData srcPlatform1;
@@ -849,7 +850,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             CompareImageArtifactDetails(expected, targetImageArtifactDetails);
         }
 
-        [Fact]
+        [TestMethod]
         public void Merge_DuplicatedPlatforms()
         {
             ImageInfo imageInfo1 = CreateImageInfo();
@@ -950,11 +951,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             ImageInfoHelper.MergeImageArtifactDetails(imageArtifactDetails, targetImageArtifactDetails);
             CompareImageArtifactDetails(expectedImageArtifactDetails, targetImageArtifactDetails);
 
-            Assert.Same(imageInfo1, targetImageArtifactDetails.Repos[0].Images[0].ManifestImage);
-            Assert.Same(imageInfo2, targetImageArtifactDetails.Repos[0].Images[1].ManifestImage);
+            targetImageArtifactDetails.Repos[0].Images[0].ManifestImage.ShouldBeSameAs(imageInfo1);
+            targetImageArtifactDetails.Repos[0].Images[1].ManifestImage.ShouldBeSameAs(imageInfo2);
         }
 
-        [Fact]
+        [TestMethod]
         public void Merge_SharedDockerfile_DistinctPlatform()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -1105,7 +1106,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests the scenario where a source image defines a manifest that the target doesn't have.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_NewManifest()
         {
             ImageInfo imageInfo1 = CreateImageInfo();
@@ -1179,7 +1180,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests the scenario where a target image defines a manifest that the source doesn't have.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public void ImageInfoHelper_MergeRepos_RemovedManifest()
         {
             ImageInfo imageInfo1 = CreateImageInfo();

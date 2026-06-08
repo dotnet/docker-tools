@@ -6,20 +6,21 @@ using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class DependencyInjectionTests
 {
-    [Fact]
+    [TestMethod]
     public void DependencyResolution()
     {
         using IHost host = ImageBuilder.CreateAppHost();
 
         ICommand[] commands = host.Services.GetServices<ICommand>().ToArray();
 
-        Assert.NotNull(commands);
-        Assert.NotEmpty(commands);
+        commands.ShouldNotBeNull();
+        commands.ShouldNotBeEmpty();
     }
 }

@@ -8,13 +8,13 @@ using System.Text.Json;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Signing;
 
+[TestClass]
 public class CertificateChainCalculatorTests
 {
-    [Fact]
+    [TestMethod]
     public void CalculateCertificateChainThumbprints_IntegerKeysOnly_ReturnsThumbprints()
     {
         byte[] cert1 = [0x30, 0x82, 0x01, 0x00];
@@ -31,7 +31,7 @@ public class CertificateChainCalculatorTests
         thumbprints[1].ShouldBe(ComputeSha256Hex(cert2));
     }
 
-    [Fact]
+    [TestMethod]
     public void CalculateCertificateChainThumbprints_MixedIntegerAndTextKeys_ReturnsThumbprints()
     {
         byte[] cert = [0x30, 0x82, 0x03, 0x00];
@@ -46,7 +46,7 @@ public class CertificateChainCalculatorTests
         thumbprints[0].ShouldBe(ComputeSha256Hex(cert));
     }
 
-    [Fact]
+    [TestMethod]
     public void CalculateCertificateChainThumbprints_SingleCert_ReturnsThumbprint()
     {
         byte[] cert = [0x30, 0x82, 0x04, 0x00];
@@ -61,7 +61,7 @@ public class CertificateChainCalculatorTests
         thumbprints[0].ShouldBe(ComputeSha256Hex(cert));
     }
 
-    [Fact]
+    [TestMethod]
     public void CalculateCertificateChainThumbprints_MissingX5Chain_ThrowsException()
     {
         var (fileSystem, filePath) = WriteCoseSign1WithoutX5Chain();

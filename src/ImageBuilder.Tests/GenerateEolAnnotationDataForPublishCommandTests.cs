@@ -18,11 +18,12 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ContainerRegistryHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class GenerateEolAnnotationDataForPublishTests
     {
         private const string DefaultRepoPrefix = "public/";
@@ -34,7 +35,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         // *  exclusion of digests which are already annotated
         // *
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_RepoRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -197,10 +198,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_ImageRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -331,10 +332,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_ExcludeDigestsThatAreAlreadyAnnotated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -474,10 +475,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_DockerfileInSeveralImages_OnlyOneUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -602,10 +603,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_ImageAndPlatformUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -705,10 +706,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_JustOnePlatformUpdated()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -813,10 +814,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_DoNotReturnAnnotationDigest()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -924,10 +925,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_PlatformRemoved()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1030,10 +1031,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task GenerateEolAnnotationData_ManifestDeletedDuringEnumeration_Skipped()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1128,7 +1129,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedEolAnnotationsJson = JsonConvert.SerializeObject(expectedEolAnnotations, Formatting.Indented, new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
             string actualEolDigestsJson = File.ReadAllText(newEolDigestsListPath);
 
-            Assert.Equal(expectedEolAnnotationsJson, actualEolDigestsJson);
+            actualEolDigestsJson.ShouldBe(expectedEolAnnotationsJson);
         }
 
         private static GenerateEolAnnotationDataForPublishCommand InitializeCommand(

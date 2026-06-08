@@ -19,7 +19,6 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
@@ -27,13 +26,14 @@ using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestServiceHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class CreateManifestListCommandTests
 {
     /// <summary>
     /// Verifies that manifest lists are created, pushed, and digests are
     /// recorded in image-info.json.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_CreatesAndPushesManifestLists()
     {
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
@@ -84,7 +84,7 @@ public class CreateManifestListCommandTests
     /// <summary>
     /// Verifies that ManifestData.Digest is populated from the registry after pushing.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_RecordsDigestsInImageInfo()
     {
         Mock<IManifestService> manifestServiceMock = new() { CallBase = true };
@@ -131,7 +131,7 @@ public class CreateManifestListCommandTests
     /// <summary>
     /// Verifies that syndicated digests are recorded in ManifestData.SyndicatedDigests.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_RecordsSyndicatedDigests()
     {
         Mock<IManifestService> manifestServiceMock = new() { CallBase = true };
@@ -215,7 +215,7 @@ public class CreateManifestListCommandTests
     /// <summary>
     /// Verifies that when image-info file doesn't exist, command logs a warning and returns.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_MissingImageInfoFile_LogsWarningAndReturns()
     {
         CreateManifestListCommand command = CreateCommand(
@@ -249,7 +249,7 @@ public class CreateManifestListCommandTests
     /// the missing sibling platforms are ported in from the source registry so the
     /// shared-tag manifest list still references all declared platforms.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_PortsMissingPlatforms_IntoManifestList()
     {
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();
@@ -314,7 +314,7 @@ public class CreateManifestListCommandTests
     /// publishing the partial list back to prod would silently regress the previously
     /// complete multi-platform shared tags (see issue #2107).
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_PortsMissingPlatformsAndPublishesCompleteSharedTagManifestList()
     {
         const string PreviousLinuxDigestSha = "sha256:previous-linux";
@@ -432,7 +432,7 @@ public class CreateManifestListCommandTests
         portedPlatform.IsUnchanged.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_DoesNotPortImagesThatAreAbsentFromImageInfo()
     {
         const string SourceRegistry = "source.example.com";
@@ -503,7 +503,7 @@ public class CreateManifestListCommandTests
     /// or an MCR mirror lag window), the command fails loudly rather than silently
     /// producing a degraded shared-tag manifest list.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_Throws_WhenSourceTagDoesNotExist()
     {
         const string SourceRegistry = "source.example.com";
@@ -562,8 +562,8 @@ public class CreateManifestListCommandTests
         SetupCommand(command, manifest, imageArtifactDetails, tempFolderContext);
 
         HttpRequestException thrown =
-            await Assert.ThrowsAsync<HttpRequestException>(() => command.ExecuteAsync());
-        Assert.Equal(System.Net.HttpStatusCode.NotFound, thrown.StatusCode);
+            await Should.ThrowAsync<HttpRequestException>(() => command.ExecuteAsync());
+        thrown.StatusCode.ShouldBe(System.Net.HttpStatusCode.NotFound);
 
         // The 404 fails the command before any imports or manifest-list creation occur.
         copyImageServiceMock.Verify(o => o.ImportImageAsync(
@@ -582,7 +582,7 @@ public class CreateManifestListCommandTests
     /// build, not a path-filtered one), the porting service is a no-op and no
     /// imports are performed.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_DoesNotPort_WhenAllPlatformsArePresent()
     {
         Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock();

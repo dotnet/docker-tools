@@ -14,10 +14,10 @@ using Microsoft.Extensions.Logging;
 using Moq;
 using OrasProject.Oras.Registry.Remote.Exceptions;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class LifecycleMetadataServiceTests
 {
     private const string Digest = "myregistry.azurecr.io/public/dotnet/runtime@sha256:0123456789abcdef";
@@ -27,7 +27,7 @@ public class LifecycleMetadataServiceTests
     /// "no annotation exists". Swallowing it produces a false negative that lets already-annotated
     /// digests be re-annotated with a conflicting EOL date.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task IsDigestAnnotatedForEolAsync_DoesNotSwallowRegistryErrors()
     {
         ResponseException rateLimitException = CreateRateLimitException();
@@ -44,7 +44,7 @@ public class LifecycleMetadataServiceTests
         thrown.StatusCode.ShouldBe(HttpStatusCode.TooManyRequests);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task IsDigestAnnotatedForEolAsync_NoReferrers_ReturnsNull()
     {
         Mock<IOrasService> orasServiceMock = new();
@@ -59,7 +59,7 @@ public class LifecycleMetadataServiceTests
         result.ShouldBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public async Task IsDigestAnnotatedForEolAsync_ExistingLifecycleReferrer_ReturnsManifest()
     {
         ReferrerInfo lifecycleReferrer = new(

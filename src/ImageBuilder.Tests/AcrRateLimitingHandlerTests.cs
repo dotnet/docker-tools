@@ -10,13 +10,13 @@ using System.Threading.RateLimiting;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class AcrRateLimitingHandlerTests
 {
-    [Fact]
+    [TestMethod]
     public async Task NonAcrRequests_DoNotConsumePermits()
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
@@ -40,7 +40,7 @@ public class AcrRateLimitingHandlerTests
         inner.RequestCount.ShouldBe(5);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task AcrRequest_ConsumesPermit()
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
@@ -60,7 +60,7 @@ public class AcrRateLimitingHandlerTests
         inner.RequestCount.ShouldBe(1);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task AcrRequest_IsThrottledWhenPermitsExhausted()
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();

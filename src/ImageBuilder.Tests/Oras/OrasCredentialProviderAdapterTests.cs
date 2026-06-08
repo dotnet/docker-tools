@@ -8,13 +8,13 @@ using Microsoft.DotNet.ImageBuilder.Oras;
 using Moq;
 using OrasProject.Oras.Registry.Remote.Auth;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Oras;
 
+[TestClass]
 public class OrasCredentialProviderAdapterTests
 {
-    [Fact]
+    [TestMethod]
     public async Task ResolveCredentialAsync_ReturnsCredentials_WhenProviderReturnsCredentials()
     {
         var mockProvider = new Mock<IRegistryCredentialsProvider>();
@@ -32,7 +32,7 @@ public class OrasCredentialProviderAdapterTests
         result.AccessToken.ShouldBe(string.Empty);
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ResolveCredentialAsync_ReturnsDefault_WhenProviderReturnsNull()
     {
         var mockProvider = new Mock<IRegistryCredentialsProvider>();
@@ -47,7 +47,7 @@ public class OrasCredentialProviderAdapterTests
         result.ShouldBe(default(Credential));
     }
 
-    [Fact]
+    [TestMethod]
     public async Task ResolveCredentialAsync_PassesCredentialsHost_WhenProvided()
     {
         var mockProvider = new Mock<IRegistryCredentialsProvider>();
@@ -64,9 +64,9 @@ public class OrasCredentialProviderAdapterTests
         mockProvider.Verify(p => p.GetCredentialsAsync("registry.io", mockHost.Object), Times.Once);
     }
 
-    [Theory]
-    [InlineData("registry-1.docker.io")]
-    [InlineData("REGISTRY-1.DOCKER.IO")]
+    [TestMethod]
+    [DataRow("registry-1.docker.io")]
+    [DataRow("REGISTRY-1.DOCKER.IO")]
     public async Task ResolveCredentialAsync_NormalizesDockerHubApiHostToDockerIo(string apiHost)
     {
         var mockProvider = new Mock<IRegistryCredentialsProvider>();

@@ -16,12 +16,13 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class GenerateBuildMatrixCommandTests
     {
         /// <summary>
@@ -30,10 +31,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <remarks>
         /// https://github.com/dotnet/docker-tools/issues/243
         /// </remarks>
-        [Theory]
-        [InlineData(null, "--path 2.1.1/runtime-deps/os --path 2.2/runtime/os", "2.1.1")]
-        [InlineData("--path 2.2/runtime/os", "--path 2.2/runtime/os", "2.2")]
-        [InlineData("--path 2.1.1/runtime-deps/os", "--path 2.1.1/runtime-deps/os", "2.1.1")]
+        [TestMethod]
+        [DataRow(null, "--path 2.1.1/runtime-deps/os --path 2.2/runtime/os", "2.1.1")]
+        [DataRow("--path 2.2/runtime/os", "--path 2.2/runtime/os", "2.2")]
+        [DataRow("--path 2.1.1/runtime-deps/os", "--path 2.1.1/runtime-deps/os", "2.1.1")]
         public async Task GenerateBuildMatrixCommand_PlatformVersionedOs(string filterPaths, string expectedPaths, string verificationLegName)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -80,13 +81,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 command.LoadManifest();
                 IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-                Assert.Single(matrixInfos);
+                matrixInfos.ShouldHaveSingleItem();
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
                 BuildLegInfo leg = matrixInfo.Legs.First(leg => leg.Name.StartsWith(verificationLegName));
                 string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
-                Assert.Equal(expectedPaths, imageBuilderPaths);
+                imageBuilderPaths.ShouldBe(expectedPaths);
             }
         }
 
@@ -96,12 +97,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <remarks>
         /// Test uses a dependency graph of runtimedeps <- sdk <- sample
         /// </remarks>
-        [Theory]
-        [InlineData(null, "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
-        [InlineData("--path 1.0/runtimedeps/os/amd64", "--path 1.0/runtimedeps/os/amd64")]
-        [InlineData("--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64", "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64")]
-        [InlineData("--path 1.0/sdk/os/amd64", "--path 1.0/sdk/os/amd64")]
-        [InlineData("--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64", "--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
+        [TestMethod]
+        [DataRow(null, "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
+        [DataRow("--path 1.0/runtimedeps/os/amd64", "--path 1.0/runtimedeps/os/amd64")]
+        [DataRow("--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64", "--path 1.0/runtimedeps/os/amd64 --path 1.0/sdk/os/amd64")]
+        [DataRow("--path 1.0/sdk/os/amd64", "--path 1.0/sdk/os/amd64")]
+        [DataRow("--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64", "--path 1.0/sdk/os/amd64 --path 1.0/sample/os/amd64")]
         public async Task GenerateBuildMatrixCommand_PlatformDependencyGraph(string filterPaths, string expectedPaths)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -148,13 +149,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 command.LoadManifest();
                 IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-                Assert.Single(matrixInfos);
+                matrixInfos.ShouldHaveSingleItem();
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
                 BuildLegInfo leg = matrixInfo.Legs.First();
                 string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
-                Assert.Equal(expectedPaths, imageBuilderPaths);
+                imageBuilderPaths.ShouldBe(expectedPaths);
             }
         }
 
@@ -172,33 +173,33 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .ReturnsAsync(new ImageCacheResult(cacheState, false, null));
         }
 
-        [Theory]
-        [InlineData(
+        [TestMethod]
+        [DataRow(
             ImageCacheState.NotCached,
             ImageCacheState.NotCached,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
-        [InlineData(
+        [DataRow(
             ImageCacheState.Cached,
             ImageCacheState.Cached,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
-        [InlineData(
+        [DataRow(
             ImageCacheState.Cached,
             ImageCacheState.Cached,
             "--path 1.0/standalone/os/amd64/Dockerfile",
             "--path 2.0/standalone/os/amd64/Dockerfile",
             null,
             "*standalone*")]
-        [InlineData(
+        [DataRow(
             ImageCacheState.CachedWithMissingTags,
             ImageCacheState.Cached,
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
-        [InlineData(
+        [DataRow(
             ImageCacheState.Cached,
             ImageCacheState.NotCached,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
             "--path 2.0/runtime/os/amd64/Dockerfile --path 2.0/sdk/os/amd64/Dockerfile")]
-        [InlineData(
+        [DataRow(
             ImageCacheState.NotCached,
             ImageCacheState.NotCached,
             "--path 1.0/runtime/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
@@ -340,32 +341,32 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
             BuildLegInfo leg = matrixInfo.Legs.First();
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(leg1ExpectedPaths, imageBuilderPaths);
+            imageBuilderPaths.ShouldBe(leg1ExpectedPaths);
 
             if (leg2ExpectedPaths is not null)
             {
                 leg = matrixInfo.Legs.Skip(1).First();
                 imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal(leg2ExpectedPaths, imageBuilderPaths);
+                imageBuilderPaths.ShouldBe(leg2ExpectedPaths);
             }
 
             if (leg3ExpectedPaths is not null)
             {
                 leg = matrixInfo.Legs.Skip(2).First();
                 imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal(leg3ExpectedPaths, imageBuilderPaths);
+                imageBuilderPaths.ShouldBe(leg3ExpectedPaths);
             }
         }
 
         /// <summary>
         /// Verifies that the correct matrix is generated when the DistinctMatrixOsVersion option is set.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GenerateBuildMatrixCommand_CustomMatrixOsVersion()
         {
             const string CustomMatrixOsVersion = "custom";
@@ -405,21 +406,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Equal(2, matrixInfos.Count());
+            matrixInfos.Count().ShouldBe(2);
 
             BuildMatrixInfo matrixInfo = matrixInfos.ElementAt(0);
-            Assert.Equal($"{CustomMatrixOsVersion}Amd64", matrixInfo.Name);
-            Assert.Single(matrixInfo.Legs);
-            Assert.Equal(
-                "--path 1.0/aspnet/os2/amd64/Dockerfile --path 1.0/sdk/os2/amd64/Dockerfile",
-                matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value);
+            matrixInfo.Name.ShouldBe($"{CustomMatrixOsVersion}Amd64");
+            matrixInfo.Legs.ShouldHaveSingleItem();
+            (matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value).ShouldBe("--path 1.0/aspnet/os2/amd64/Dockerfile --path 1.0/sdk/os2/amd64/Dockerfile");
 
             matrixInfo = matrixInfos.ElementAt(1);
-            Assert.Equal($"linuxAmd64", matrixInfo.Name);
-            Assert.Single(matrixInfo.Legs);
-            Assert.Equal(
-                "--path 1.0/aspnet/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile",
-                matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value);
+            matrixInfo.Name.ShouldBe($"linuxAmd64");
+            matrixInfo.Legs.ShouldHaveSingleItem();
+            (matrixInfo.Legs.First().Variables.First(variable => variable.Name == "imageBuilderPaths").Value).ShouldBe("--path 1.0/aspnet/os/amd64/Dockerfile --path 1.0/sdk/os/amd64/Dockerfile");
         }
 
         /// <summary>
@@ -429,9 +426,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <remarks>
         /// https://github.com/dotnet/docker-tools/issues/243
         /// </remarks>
-        [Theory]
-        [InlineData(CustomBuildLegDependencyType.Integral)]
-        [InlineData(CustomBuildLegDependencyType.Supplemental)]
+        [TestMethod]
+        [DataRow(CustomBuildLegDependencyType.Integral)]
+        [DataRow(CustomBuildLegDependencyType.Supplemental)]
         public async Task GenerateBuildMatrixCommand_CustomBuildLegGroupingParentGraph(CustomBuildLegDependencyType dependencyType)
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -496,15 +493,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
                 command.LoadManifest();
                 IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-                Assert.Single(matrixInfos);
+                matrixInfos.ShouldHaveSingleItem();
 
                 BuildMatrixInfo matrixInfo = matrixInfos.First();
-                Assert.Single(matrixInfo.Legs);
+                matrixInfo.Legs.ShouldHaveSingleItem();
                 BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
                 string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile", imageBuilderPaths);
+                imageBuilderPaths.ShouldBe("--path 1.0/runtime-deps/os/Dockerfile --path 1.0/runtime/os/Dockerfile --path 2.0/sdk/os2/Dockerfile --path 2.0/runtime/os2/Dockerfile");
                 string osVersions = leg_1_0.Variables.First(variable => variable.Name == "osVersions").Value;
-                Assert.Equal("--os-version noble --os-version trixie --os-version trixie-slim", osVersions);
+                osVersions.ShouldBe("--os-version noble --os-version trixie --os-version trixie-slim");
             }
         }
 
@@ -514,7 +511,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// dependency. The scenario for this is that, for a given matching version between Server Core and Nano Server,
         /// those Dockerfiles should be built in the same job.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GenerateBuildMatrixCommand_ServerCoreAndNanoServerDependency()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -586,25 +583,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
             BuildLegInfo leg = matrixInfo.Legs.First();
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(
-                "--path 1.0/runtime/nanoserver-1909/Dockerfile --path 1.0/aspnet/nanoserver-1909/Dockerfile --path 1.0/runtime/windowsservercore-1909/Dockerfile --path 1.0/aspnet/windowsservercore-1909/Dockerfile",
-                imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/runtime/nanoserver-1909/Dockerfile --path 1.0/aspnet/nanoserver-1909/Dockerfile --path 1.0/runtime/windowsservercore-1909/Dockerfile --path 1.0/aspnet/windowsservercore-1909/Dockerfile");
             string osVersions = leg.Variables.First(variable => variable.Name == "osVersions").Value;
-            Assert.Equal(
-                "--os-version nanoserver-1909 --os-version windowsservercore-1909",
-                osVersions);
+            osVersions.ShouldBe("--os-version nanoserver-1909 --os-version windowsservercore-1909");
         }
 
         /// <summary>
         /// Verifies the platformVersionedOs matrix type is generated correctly when there's a dependency on a
         /// tag that's outside the platform group.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GenerateBuildMatrixCommand_ParentGraphOutsidePlatformGroup()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -656,24 +649,24 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
-            Assert.Equal(2, matrixInfo.Legs.Count);
+            matrixInfo.Legs.Count.ShouldBe(2);
             BuildLegInfo leg_1_0 = matrixInfo.Legs.First();
             string imageBuilderPaths = leg_1_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal("--path 1.0/runtime/os/Dockerfile", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/runtime/os/Dockerfile");
 
             BuildLegInfo leg_2_0 = matrixInfo.Legs.ElementAt(1);
             imageBuilderPaths = leg_2_0.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal("--path 1.0/runtime2/os/Dockerfile --path 1.0/sdk3/os2/Dockerfile --path 1.0/runtime3/os2/Dockerfile", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/runtime2/os/Dockerfile --path 1.0/sdk3/os2/Dockerfile --path 1.0/runtime3/os2/Dockerfile");
         }
 
         /// <summary>
         /// Verifies that a <see cref="MatrixType.PlatformVersionedOs"/> build matrix can be generated correctly
         /// when there are multiple custom build leg groups defined.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task GenerateBuildMatrixCommand_MultiBuildLegGroups()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -756,32 +749,28 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
-            Assert.Equal(2, matrixInfo.Legs.Count());
+            matrixInfo.Legs.Count().ShouldBe(2);
             BuildLegInfo leg = matrixInfo.Legs.ElementAt(0);
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(
-                "--path 1.0/repo1/os/Dockerfile --path 1.0/repo2/os/Dockerfile",
-                imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/repo1/os/Dockerfile --path 1.0/repo2/os/Dockerfile");
 
             leg = matrixInfo.Legs.ElementAt(1);
             imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(
-                "--path 1.0/repo3/os/Dockerfile --path 1.0/repo4/os/Dockerfile",
-                imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/repo3/os/Dockerfile --path 1.0/repo4/os/Dockerfile");
         }
 
         /// <summary>
         /// Verifies the matrix produced by the platformVersionedOs matrix type for a scenario
         /// where the platforms in the image info are a result of cached images.
         /// </summary>
-        [Theory]
-        [InlineData(false, false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
-        [InlineData(true, false, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
-        [InlineData(true, true, false, "--path 1.0/sdk/os/Dockerfile")]
-        [InlineData(true, true, true, null)]
+        [TestMethod]
+        [DataRow(false, false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [DataRow(true, false, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [DataRow(true, true, false, "--path 1.0/sdk/os/Dockerfile")]
+        [DataRow(true, true, true, null)]
         public async Task PlatformVersionedOs_Cached(bool isRuntimeCached, bool isAspnetCached, bool isSdkCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -884,17 +873,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             if (isRuntimeCached && isAspnetCached && isSdkCached)
             {
-                Assert.Empty(matrixInfos);
+                matrixInfos.ShouldBeEmpty();
             }
             else
             {
-                Assert.Single(matrixInfos);
-                Assert.Single(matrixInfos.First().Legs);
+                matrixInfos.ShouldHaveSingleItem();
+                matrixInfos.First().Legs.ShouldHaveSingleItem();
 
                 BuildLegInfo buildLeg = matrixInfos.First().Legs.First();
                 string imageBuilderPaths = buildLeg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
-                Assert.Equal(expectedPaths, imageBuilderPaths);
+                imageBuilderPaths.ShouldBe(expectedPaths);
             }
         }
 
@@ -905,10 +894,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <remarks>
         /// https://github.com/dotnet/docker-tools/issues/1141
         /// </remarks>
-        [Theory]
-        [InlineData(false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
-        [InlineData(true, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
-        [InlineData(true, true, "--path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [TestMethod]
+        [DataRow(false, false, "--path 1.0/runtime/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/aspnet/os/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [DataRow(true, false, "--path 1.0/aspnet/os/Dockerfile --path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
+        [DataRow(true, true, "--path 1.0/aspnet/os-composite/Dockerfile --path 1.0/sdk/os/Dockerfile")]
         public async Task PlatformVersionedOs_CachedParent(bool isRuntimeCached, bool isAspnetCached, string expectedPaths)
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1062,15 +1051,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
 
-            Assert.Single(matrixInfos);
-            Assert.Single(matrixInfos.First().Legs);
+            matrixInfos.ShouldHaveSingleItem();
+            matrixInfos.First().Legs.ShouldHaveSingleItem();
 
             BuildLegInfo buildLeg = matrixInfos.First().Legs.First();
             string imageBuilderPaths = buildLeg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(expectedPaths, imageBuilderPaths);
+            imageBuilderPaths.ShouldBe(expectedPaths);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task PlatformDependencyGraph_CrossReferencedDockerfileFromMultipleRepos_SingleDockerfile()
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1113,19 +1102,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
-            Assert.Single(matrixInfo.Legs);
+            matrixInfo.Legs.ShouldHaveSingleItem();
 
-            Assert.Equal("3.1-runtime-deps-os", matrixInfo.Legs[0].Name);
+            matrixInfo.Legs[0].Name.ShouldBe("3.1-runtime-deps-os");
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal($"--path {runtimeDepsRelativeDir}", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe($"--path {runtimeDepsRelativeDir}");
         }
 
-        [Theory]
-        [InlineData(MatrixType.PlatformVersionedOs)]
-        [InlineData(MatrixType.PlatformDependencyGraph)]
+        [TestMethod]
+        [DataRow(MatrixType.PlatformVersionedOs)]
+        [DataRow(MatrixType.PlatformDependencyGraph)]
         public async Task CrossReferencedDockerfileFromMultipleRepos_ImageGraph(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1177,34 +1166,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
             if (matrixType == MatrixType.PlatformDependencyGraph)
             {
-                Assert.Single(matrixInfo.Legs);
+                matrixInfo.Legs.ShouldHaveSingleItem();
 
-                Assert.Equal("3.1-runtime-deps-os-Dockerfile-graph", matrixInfo.Legs[0].Name);
+                matrixInfo.Legs[0].Name.ShouldBe("3.1-runtime-deps-os-Dockerfile-graph");
                 string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
+                imageBuilderPaths.ShouldBe($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 5.0/runtime/os/Dockerfile");
             }
             else
             {
-                Assert.Equal(2, matrixInfo.Legs.Count);
+                matrixInfo.Legs.Count.ShouldBe(2);
 
-                Assert.Equal("3.1-noble-core-runtime-deps", matrixInfo.Legs[0].Name);
+                matrixInfo.Legs[0].Name.ShouldBe("3.1-noble-core-runtime-deps");
                 string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
+                imageBuilderPaths.ShouldBe($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile");
 
-                Assert.Equal("5.0-noble-runtime-deps", matrixInfo.Legs[1].Name);
+                matrixInfo.Legs[1].Name.ShouldBe("5.0-noble-runtime-deps");
                 imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-                Assert.Equal($"--path 3.1/runtime-deps/os/Dockerfile --path 5.0/runtime/os/Dockerfile", imageBuilderPaths);
+                imageBuilderPaths.ShouldBe($"--path 3.1/runtime-deps/os/Dockerfile --path 5.0/runtime/os/Dockerfile");
             }
         }
 
-        [Theory]
-        [InlineData(MatrixType.PlatformVersionedOs)]
-        [InlineData(MatrixType.PlatformDependencyGraph)]
+        [TestMethod]
+        [DataRow(MatrixType.PlatformVersionedOs)]
+        [DataRow(MatrixType.PlatformDependencyGraph)]
         public async Task NonDependentReposWithSameProductVersion(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1238,22 +1227,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
-            Assert.Equal(2, matrixInfo.Legs.Count);
-            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo1-os-Dockerfile" : "1.0-noble-repo1", matrixInfo.Legs[0].Name);
+            matrixInfo.Legs.Count.ShouldBe(2);
+            matrixInfo.Legs[0].Name.ShouldBe(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo1-os-Dockerfile" : "1.0-noble-repo1");
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal($"--path 1.0/repo1/os/Dockerfile", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe($"--path 1.0/repo1/os/Dockerfile");
 
-            Assert.Equal(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo2-os-Dockerfile" : "1.0-noble-repo2", matrixInfo.Legs[1].Name);
+            matrixInfo.Legs[1].Name.ShouldBe(matrixType == MatrixType.PlatformDependencyGraph ? "1.0-repo2-os-Dockerfile" : "1.0-noble-repo2");
             imageBuilderPaths = matrixInfo.Legs[1].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal($"--path 1.0/repo2/os/Dockerfile", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe($"--path 1.0/repo2/os/Dockerfile");
         }
 
-        [Theory]
-        [InlineData(MatrixType.PlatformVersionedOs)]
-        [InlineData(MatrixType.PlatformDependencyGraph)]
+        [TestMethod]
+        [DataRow(MatrixType.PlatformVersionedOs)]
+        [DataRow(MatrixType.PlatformDependencyGraph)]
         public async Task DuplicatedPlatforms(MatrixType matrixType)
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1285,11 +1274,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
-            Assert.Single(matrixInfo.Legs);
+            matrixInfo.Legs.ShouldHaveSingleItem();
 
             string expectedLegName;
             if (matrixType == MatrixType.PlatformDependencyGraph)
@@ -1301,17 +1290,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 expectedLegName = "3.1-noble-runtime";
             }
 
-            Assert.Equal(expectedLegName, matrixInfo.Legs[0].Name);
+            matrixInfo.Legs[0].Name.ShouldBe(expectedLegName);
 
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal($"--path 3.1/runtime/os/Dockerfile", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe($"--path 3.1/runtime/os/Dockerfile");
         }
 
         /// <summary>
         /// Scenario where a non-root Dockerfile has a duplicated platform that gets consolidated with another graph due
         /// to a shared root Dockerfile.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task DuplicatedPlatforms_SubgraphConsolidation()
         {
             TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1351,22 +1340,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
 
-            Assert.Single(matrixInfo.Legs);
+            matrixInfo.Legs.ShouldHaveSingleItem();
 
             string imageBuilderPaths = matrixInfo.Legs[0].Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal(
-                $"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 6.0/runtime/os/Dockerfile",
-                imageBuilderPaths);
+            imageBuilderPaths.ShouldBe($"--path 3.1/runtime-deps/os/Dockerfile --path 3.1/runtime/os/Dockerfile --path 6.0/runtime/os/Dockerfile");
         }
 
         /// <summary>
         /// Verifies that legs that have common Dockerfiles are consolidated together.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task PlatformVersionedOs_ConsolidateCommonDockerfiles()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1401,15 +1388,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrixInfo = matrixInfos.First();
-            Assert.Single(matrixInfo.Legs);
+            matrixInfo.Legs.ShouldHaveSingleItem();
             BuildLegInfo leg = matrixInfo.Legs.First();
-            Assert.Equal("os-repo", leg.Name);
+            leg.Name.ShouldBe("os-repo");
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
 
-            Assert.Equal("--path 1.0/repo/os/amd64/Dockerfile --path 1.0/repo/os-variant/amd64/Dockerfile", imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/repo/os/amd64/Dockerfile --path 1.0/repo/os-variant/amd64/Dockerfile");
         }
 
         /// <summary>
@@ -1421,7 +1408,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// It was incorrectly separating out the 2.0 version from 1.0 but including the 1.0/runtime-deps/mariner-distroless/amd64
         /// in the 2.0 job. So both 1.0 and 2.0 had the same Dockerfile which leads to a conflict when publishing.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task PlatformDependencyGraph_MultiVersionSharedDockerfileGraphWithDockerfileThatHasMultiOsVersionDependencies()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1524,15 +1511,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             command.LoadManifest();
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-            Assert.Single(matrixInfos);
+            matrixInfos.ShouldHaveSingleItem();
 
             BuildMatrixInfo matrix = matrixInfos.First();
-            Assert.Single(matrix.Legs);
+            matrix.Legs.ShouldHaveSingleItem();
 
             BuildLegInfo leg = matrix.Legs.First();
             string imageBuilderPaths = leg.Variables.First(variable => variable.Name == "imageBuilderPaths").Value;
-            Assert.Equal("--path 1.0/runtime-deps/mariner/amd64/Dockerfile --path 1.0/runtime/mariner/amd64/Dockerfile --path 1.0/aspnet/mariner/amd64/Dockerfile --path 1.0/sdk/mariner/amd64/Dockerfile --path 1.0/monitor/mariner-distroless/amd64/Dockerfile --path 1.0/aspnet/mariner-distroless/amd64/Dockerfile --path 1.0/runtime/mariner-distroless/amd64/Dockerfile --path 1.0/runtime-deps/mariner-distroless/amd64/Dockerfile --path 2.0/runtime-deps/mariner/amd64/Dockerfile --path 2.0/runtime/mariner/amd64/Dockerfile --path 2.0/aspnet/mariner/amd64/Dockerfile --path 2.0/sdk/mariner/amd64/Dockerfile --path 2.0/monitor/mariner-distroless/amd64/Dockerfile --path 2.0/aspnet/mariner-distroless/amd64/Dockerfile --path 2.0/runtime/mariner-distroless/amd64/Dockerfile",
-                imageBuilderPaths);
+            imageBuilderPaths.ShouldBe("--path 1.0/runtime-deps/mariner/amd64/Dockerfile --path 1.0/runtime/mariner/amd64/Dockerfile --path 1.0/aspnet/mariner/amd64/Dockerfile --path 1.0/sdk/mariner/amd64/Dockerfile --path 1.0/monitor/mariner-distroless/amd64/Dockerfile --path 1.0/aspnet/mariner-distroless/amd64/Dockerfile --path 1.0/runtime/mariner-distroless/amd64/Dockerfile --path 1.0/runtime-deps/mariner-distroless/amd64/Dockerfile --path 2.0/runtime-deps/mariner/amd64/Dockerfile --path 2.0/runtime/mariner/amd64/Dockerfile --path 2.0/aspnet/mariner/amd64/Dockerfile --path 2.0/sdk/mariner/amd64/Dockerfile --path 2.0/monitor/mariner-distroless/amd64/Dockerfile --path 2.0/aspnet/mariner-distroless/amd64/Dockerfile --path 2.0/runtime/mariner-distroless/amd64/Dockerfile");
         }
 
         private static PlatformData CreateSimplePlatformData(string dockerfilePath, bool isCached = false)
@@ -1552,7 +1538,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// failure due to missing RegistryAuthentication config), the exception propagates rather than
         /// being silently swallowed. This is the fix for https://github.com/dotnet/docker-tools/issues/1964.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task TrimCachedImages_DigestQueryAuthFailure_Throws()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1565,7 +1551,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             // The digest query throws a generic exception (simulating auth failure).
             // This should propagate instead of being silently swallowed.
-            await Assert.ThrowsAsync<Exception>(command.GenerateMatrixInfoAsync);
+            await Should.ThrowAsync<Exception>(command.GenerateMatrixInfoAsync);
         }
 
         /// <summary>
@@ -1573,7 +1559,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// a cache miss and the platform is included in the matrix. This handles the case where a new
         /// image hasn't been published yet.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task TrimCachedImages_DigestQueryReturnsNotFound_CacheMiss()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1591,8 +1577,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
 
             // Image not found → cache miss → platform should be included in the matrix
-            Assert.Single(matrixInfos);
-            Assert.Single(matrixInfos.First().Legs);
+            matrixInfos.ShouldHaveSingleItem();
+            matrixInfos.First().Legs.ShouldHaveSingleItem();
         }
 
         /// <summary>
@@ -1600,7 +1586,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// and the Dockerfile commit also matches, the platform is correctly cached and trimmed from
         /// the matrix.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task TrimCachedImages_DigestAndCommitMatch_PlatformIsCached()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -1621,7 +1607,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
 
             // Digest matches and Dockerfile unchanged → platform is cached → trimmed from matrix
-            Assert.Empty(matrixInfos);
+            matrixInfos.ShouldBeEmpty();
         }
 
         /// <summary>

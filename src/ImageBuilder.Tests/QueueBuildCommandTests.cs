@@ -21,16 +21,16 @@ using Moq;
 using Newtonsoft.Json.Linq;
 using Newtonsoft.Json;
 using WebApi = Microsoft.TeamFoundation.Build.WebApi;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class QueueBuildCommandTests
     {
         /// <summary>
         /// Verifies that no build is queued if a build is currently in progress.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_BuildInProgress()
         {
             const string path1 = "path1";
@@ -60,21 +60,21 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateBuild("http://contoso")
             };
 
-            using (TestContext context = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
+            using (TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, inProgressBuilds, new PagedList<WebApi.Build>()))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 // Normally this state would cause a build to be queued but since
                 // a build is marked as in progress, it doesn't.
 
-                context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
+                fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
             }
         }
 
         /// <summary>
         /// Verifies that no build is queued if there are too many recent failed builds.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_RecentFailedBuilds_MaxFailed()
         {
             const string path1 = "path1";
@@ -110,16 +110,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 allBuilds.Add(failedBuild);
             }
 
-            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await context.ExecuteCommandAsync();
+            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await fixture.ExecuteCommandAsync();
 
-            context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
+            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: false);
         }
 
         /// <summary>
         /// Verifies that a build is queued even if there are recent failed builds but not enough to meet the threshold.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_RecentFailedBuilds_PartialFailed()
         {
             const string path1 = "path1";
@@ -155,8 +155,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 allBuilds.Add(failedBuild);
             }
 
-            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await context.ExecuteCommandAsync();
+            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await fixture.ExecuteCommandAsync();
 
 
             Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
@@ -170,13 +170,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
         }
 
         /// <summary>
         /// Verifies that a build is queued when the set of recent builds consist of some recently succeeded builds.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_RecentFailedBuilds_SucceededAndFailed()
         {
             const string path1 = "path1";
@@ -218,8 +218,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 allBuilds.Add(failedBuild);
             }
 
-            using TestContext context = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
-            await context.ExecuteCommandAsync();
+            using TestFixture fixture = new(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), allBuilds);
+            await fixture.ExecuteCommandAsync();
 
             Dictionary<Subscription, IList<string>> expectedPathsBySubscription = new()
             {
@@ -232,14 +232,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+            fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
         }
 
         /// <summary>
         /// Verifies the correct path arguments are passed to the queued builds for two
         /// subscriptions that have image paths.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_MultiSubscription()
         {
             const string path1 = "path1";
@@ -286,9 +286,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths))
+            using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -310,14 +310,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
+                fixture.Verify(notificationPostCallCount: 2, isQueuedBuildExpected: true, expectedPathsBySubscription);
             }
         }
 
         /// <summary>
         /// Verifies that no build will be queued if no paths are specified.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_NoBaseImageChange()
         {
             Subscription[] subscriptions = new Subscription[]
@@ -345,11 +345,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths))
+            using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
-                context.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
+                fixture.Verify(notificationPostCallCount: 0, isQueuedBuildExpected: false);
             }
         }
 
@@ -357,7 +357,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Verifies the correct path arguments are passed to the queued build a subscription is spread
         /// across multiple path sets.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task QueueBuildCommand_Subscription_MultiSet()
         {
             const string path1 = "path1";
@@ -396,9 +396,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            using (TestContext context = new TestContext(subscriptions, allSubscriptionImagePaths))
+            using (TestFixture fixture = new TestFixture(subscriptions, allSubscriptionImagePaths))
             {
-                await context.ExecuteCommandAsync();
+                await fixture.ExecuteCommandAsync();
 
                 Dictionary<Subscription, IList<string>> expectedPathsBySubscription =
                     new Dictionary<Subscription, IList<string>>
@@ -414,7 +414,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                context.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
+                fixture.Verify(notificationPostCallCount: 1, isQueuedBuildExpected: true, expectedPathsBySubscription);
             }
         }
 
@@ -468,7 +468,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Sets up the test state from the provided metadata, executes the test, and verifies the results.
         /// </summary>
-        private class TestContext : IDisposable
+        private class TestFixture : IDisposable
         {
             private readonly PagedList<WebApi.Build> inProgressBuilds;
             private readonly PagedList<WebApi.Build> allBuilds;
@@ -488,11 +488,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private static readonly GitHubAuthOptions s_gitHubAuthOptions = new(AuthToken: GitAccessToken);
 
             /// <summary>
-            /// Initializes a new instance of <see cref="TestContext"/>.
+            /// Initializes a new instance of <see cref="TestFixture"/>.
             /// </summary>
             /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
             /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
-            public TestContext(
+            public TestFixture(
                 Subscription[] subscriptions,
                 IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths)
                 : this(subscriptions, allSubscriptionImagePaths, new PagedList<WebApi.Build>(), new PagedList<WebApi.Build>())
@@ -500,13 +500,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             }
 
             /// <summary>
-            /// Initializes a new instance of <see cref="TestContext"/>.
+            /// Initializes a new instance of <see cref="TestFixture"/>.
             /// </summary>
             /// <param name="subscriptions">The set of subscription metadata describing the Git repos that are listening for changes to base images.</param>
             /// <param name="allSubscriptionImagePaths">Multiple sets of mappings between subscriptions and their associated image paths.</param>
             /// <param name="inProgressBuilds">The set of in-progress builds that should be configured.</param>
             /// <param name="allBuilds">The set of failed builds that should be configured.</param>
-            public TestContext(
+            public TestFixture(
                 Subscription[] subscriptions,
                 IEnumerable<IEnumerable<SubscriptionImagePaths>> allSubscriptionImagePaths,
                 PagedList<WebApi.Build> inProgressBuilds,

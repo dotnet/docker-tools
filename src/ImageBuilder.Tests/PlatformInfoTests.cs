@@ -9,48 +9,49 @@ using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class PlatformInfoTests
     {
-        [Theory]
-        [InlineData("debian", "Debian")]
-        [InlineData("trixie", "Debian 13")]
-        [InlineData("trixie-slim", "Debian 13")]
-        [InlineData("noble", "Ubuntu 24.04")]
-        [InlineData("noble-chiseled", "Ubuntu 24.04")]
-        [InlineData("resolute", "Ubuntu 26.04")]
-        [InlineData("resolute-chiseled", "Ubuntu 26.04")]
-        [InlineData("alpine3.12", "Alpine 3.12")]
-        [InlineData("centos8", "Centos 8")]
-        [InlineData("fedora32", "Fedora 32")]
-        [InlineData("cbl-mariner2.0", "CBL-Mariner 2.0")]
-        [InlineData("azurelinux3.0", "Azure Linux 3.0")]
-        [InlineData("azurelinux3.0-distroless", "Azure Linux 3.0")]
+        [TestMethod]
+        [DataRow("debian", "Debian")]
+        [DataRow("trixie", "Debian 13")]
+        [DataRow("trixie-slim", "Debian 13")]
+        [DataRow("noble", "Ubuntu 24.04")]
+        [DataRow("noble-chiseled", "Ubuntu 24.04")]
+        [DataRow("resolute", "Ubuntu 26.04")]
+        [DataRow("resolute-chiseled", "Ubuntu 26.04")]
+        [DataRow("alpine3.12", "Alpine 3.12")]
+        [DataRow("centos8", "Centos 8")]
+        [DataRow("fedora32", "Fedora 32")]
+        [DataRow("cbl-mariner2.0", "CBL-Mariner 2.0")]
+        [DataRow("azurelinux3.0", "Azure Linux 3.0")]
+        [DataRow("azurelinux3.0-distroless", "Azure Linux 3.0")]
         public void GetOSDisplayName_Linux(string osVersion, string expectedDisplayName)
         {
             ValidateGetOSDisplayName(OS.Linux, osVersion, expectedDisplayName);
         }
 
-        [Theory]
-        [InlineData("windowsservercore-ltsc2016", "Windows Server Core 2016")]
-        [InlineData("windowsservercore-ltsc2019", "Windows Server Core 2019")]
-        [InlineData("nanoserver-1809", "Nano Server, version 1809")]
-        [InlineData("windowsservercore-1903", "Windows Server Core, version 1903")]
-        [InlineData("nanoserver-1903", "Nano Server, version 1903")]
-        [InlineData("nanoserver-ltsc2022", "Nano Server 2022")]
+        [TestMethod]
+        [DataRow("windowsservercore-ltsc2016", "Windows Server Core 2016")]
+        [DataRow("windowsservercore-ltsc2019", "Windows Server Core 2019")]
+        [DataRow("nanoserver-1809", "Nano Server, version 1809")]
+        [DataRow("windowsservercore-1903", "Windows Server Core, version 1903")]
+        [DataRow("nanoserver-1903", "Nano Server, version 1903")]
+        [DataRow("nanoserver-ltsc2022", "Nano Server 2022")]
         public void GetOSDisplayName_Windows(string osVersion, string expectedDisplayName)
         {
             ValidateGetOSDisplayName(OS.Windows, osVersion, expectedDisplayName);
         }
 
-        [Theory]
-        [InlineData("VALID", "ubuntu:latest", "$VALID", "ubuntu:latest")]
-        [InlineData("VALID_123", "alpine:latest", "$VALID_123", "alpine:latest")]
-        [InlineData("VALID_123", "alpine:latest", "$VALID_123-other", "alpine:latest-other")]
+        [TestMethod]
+        [DataRow("VALID", "ubuntu:latest", "$VALID", "ubuntu:latest")]
+        [DataRow("VALID_123", "alpine:latest", "$VALID_123", "alpine:latest")]
+        [DataRow("VALID_123", "alpine:latest", "$VALID_123-other", "alpine:latest-other")]
         public void Initialize_ArgPattern(
             string buildArgKey, string buildArgValue, string fromTag, string expectedFromImage)
         {
@@ -72,7 +73,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 platform, "", "test", variableHelper, tempFolderContext.Path);
             platformInfo.Initialize([], "test.azurecr.io");
             
-            Assert.Contains(expectedFromImage, platformInfo.ExternalFromImages);
+            platformInfo.ExternalFromImages.ShouldContain(expectedFromImage);
         }
 
         private void ValidateGetOSDisplayName(OS os, string osVersion, string expectedDisplayName)
@@ -81,7 +82,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             VariableHelper variableHelper = new VariableHelper(new Manifest(), Mock.Of<IManifestOptionsInfo>(), null);
             PlatformInfo platformInfo = PlatformInfo.Create(platform, "", "runtime", variableHelper, "./");
 
-            Assert.Equal(expectedDisplayName, platformInfo.GetOSDisplayName());
+            platformInfo.GetOSDisplayName().ShouldBe(expectedDisplayName);
         }
     }
 }

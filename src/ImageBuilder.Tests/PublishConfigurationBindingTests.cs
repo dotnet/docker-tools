@@ -13,7 +13,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 using Shouldly;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
@@ -21,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 /// Tests that <see cref="PublishConfiguration"/> binds correctly from JSON
 /// via <see cref="Microsoft.Extensions.Configuration"/>.
 /// </summary>
+[TestClass]
 public class PublishConfigurationBindingTests
 {
     private const string FullConfigJson = """
@@ -66,7 +66,7 @@ public class PublishConfigurationBindingTests
         }
         """;
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_BindsAllRegistryEndpoints()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -84,7 +84,7 @@ public class PublishConfigurationBindingTests
         config.PublicMirrorRegistry.Server.ShouldBe("public-mirror.azurecr.io");
     }
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_BindsRegistryAuthenticationList()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -94,7 +94,7 @@ public class PublishConfigurationBindingTests
         config.RegistryAuthentication.ShouldContain(a => a.Server == "publish.azurecr.io");
     }
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_BindsNestedServiceConnection()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -111,7 +111,7 @@ public class PublishConfigurationBindingTests
         buildAuth.Subscription.ShouldBe("sub-build");
     }
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_GetKnownRegistries_ReturnsAllEndpoints()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -124,7 +124,7 @@ public class PublishConfigurationBindingTests
         knownRegistries.ShouldContain(r => r.Server == "public-mirror.azurecr.io");
     }
 
-    [Fact]
+    [TestMethod]
     public void FindRegistryAuthentication_ExactMatch_ReturnsAuth()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -135,7 +135,7 @@ public class PublishConfigurationBindingTests
         auth.ServiceConnection?.TenantId.ShouldBe("tenant-build");
     }
 
-    [Fact]
+    [TestMethod]
     public void FindRegistryAuthentication_NormalizedAcrName_ReturnsAuth()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -146,7 +146,7 @@ public class PublishConfigurationBindingTests
         auth.ServiceConnection?.TenantId.ShouldBe("tenant-build");
     }
 
-    [Fact]
+    [TestMethod]
     public void FindRegistryAuthentication_NotFound_ReturnsNull()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);
@@ -156,7 +156,7 @@ public class PublishConfigurationBindingTests
         auth.ShouldBeNull();
     }
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_PartialConfig_HandlesNulls()
     {
         const string partialJson = """
@@ -179,7 +179,7 @@ public class PublishConfigurationBindingTests
         config.RegistryAuthentication.ShouldBeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_EmptyConfig_DefaultsToEmpty()
     {
         const string emptyJson = """
@@ -197,7 +197,7 @@ public class PublishConfigurationBindingTests
         config.RegistryAuthentication.ShouldBeEmpty();
     }
 
-    [Fact]
+    [TestMethod]
     public void AddPublishConfiguration_SharedAuthentication_MultipleRegistriesCanUseSameAuth()
     {
         const string sharedAuthJson = """

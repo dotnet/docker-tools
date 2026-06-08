@@ -10,19 +10,20 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class TrimUnchangedPlatformsCommandTests
     {
-        [Fact]
+        [TestMethod]
         public async Task NoPlatforms()
         {
             await RunTestAsync(new ImageArtifactDetails(), new ImageArtifactDetails());
         }
 
-        [Fact]
+        [TestMethod]
         public async Task MixOfCachedPlatforms()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -143,7 +144,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await RunTestAsync(imageArtifactDetails, expectedImageArtifactDetails);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task NoCachedPlatforms()
         {
             ImageArtifactDetails imageArtifactDetails = new ImageArtifactDetails
@@ -249,7 +250,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string expectedContents = JsonHelper.SerializeObject(expectedOutput);
             string actualContents = File.ReadAllText(command.Options.ImageInfoPath);
 
-            Assert.Equal(expectedContents, actualContents);
+            actualContents.ShouldBe(expectedContents);
         }
     }
 }

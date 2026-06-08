@@ -9,6 +9,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
 
 using var host = ImageBuilder.CreateAppHost();
+int exitCode = 1;
 
 try
 {
@@ -27,10 +28,7 @@ try
         rootCliCommand.Add(command.GetCliCommand());
 
     var parseResult = rootCliCommand.Parse(args);
-    int exitCode = await parseResult.InvokeAsync();
-
-    await host.StopAsync();
-    return exitCode;
+    exitCode = await parseResult.InvokeAsync();
 }
 catch (Exception e)
 {
@@ -45,5 +43,9 @@ catch (Exception e)
         Console.Error.WriteLine(e);
     }
 }
+finally
+{
+    await host.StopAsync();
+}
 
-return 1;
+return exitCode;

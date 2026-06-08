@@ -12,7 +12,9 @@ using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
+using Polly;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -54,7 +56,31 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
             builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
             builder.Services.AddSingleton<IGitService, GitService>();
-            builder.Services.ConfigureHttpClientDefaults(http => http.AddStandardResilienceHandler());
+
+            builder.Services.ConfigureHttpClientDefaults(http =>
+                http.AddResilienceHandler("image-builder", pipeline =>
+                    {
+                        var retryOptions = new HttpRetryStrategyOptions()
+                        {
+                            MaxRetryAttempts = 3,
+                            BackoffType = DelayBackoffType.Exponential,
+                            Delay = TimeSpan.FromSeconds(2),
+                            UseJitter = true,
+                        };
+
+                        // Don't retry for requests that might not be idempotent
+                        retryOptions.DisableForUnsafeHttpMethods();
+
+                        pipeline
+                            // Timeout for the whole pipeline
+                            .AddTimeout(TimeSpan.FromSeconds(30))
+                            .AddRetry(retryOptions)
+                            // Timeout for each individual request
+                            .AddTimeout(TimeSpan.FromSeconds(10));
+                    }
+                )
+            );
+
             builder.Services.AddAcrRateLimiting();
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();

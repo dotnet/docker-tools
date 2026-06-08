@@ -54,6 +54,7 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
             builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
             builder.Services.AddSingleton<IGitService, GitService>();
+            builder.Services.ConfigureHttpClientDefaults(http => http.AddStandardResilienceHandler());
             builder.Services.AddAcrRateLimiting();
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();

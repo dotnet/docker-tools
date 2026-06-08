@@ -57,8 +57,16 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
             builder.Services.AddSingleton<IGitService, GitService>();
 
-            builder.Services.ConfigureHttpClientDefaults(http =>
-                http.AddResilienceHandler("image-builder", pipeline =>
+            // Add ACR rate limiting:
+            // Singleton limiter holds the rate limiting state.
+            builder.Services.AddSingleton(_ => new AcrRateLimiter());
+            // Transient handler gets instantiated for each client and uses the singleton rate limiter.
+            builder.Services.AddTransient<AcrRateLimitingHandler>();
+
+            builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
+            {
+                // Add standard HTTP client retry policy
+                httpClientBuilder.AddResilienceHandler("image-builder", pipeline =>
                     {
                         var retryOptions = new HttpRetryStrategyOptions()
                         {
@@ -67,7 +75,6 @@ public static class ImageBuilder
                             Delay = TimeSpan.FromSeconds(2),
                             UseJitter = true,
                         };
-
                         // Don't retry for requests that might not be idempotent
                         retryOptions.DisableForUnsafeHttpMethods();
 
@@ -78,10 +85,12 @@ public static class ImageBuilder
                             // Timeout for each individual request
                             .AddTimeout(TimeSpan.FromSeconds(10));
                     }
-                )
-            );
+                );
 
-            builder.Services.AddAcrRateLimiting();
+                // Add ACR rate limiting
+                httpClientBuilder.AddHttpMessageHandler<AcrRateLimitingHandler>();
+            });
+
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();

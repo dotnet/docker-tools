@@ -31,33 +31,25 @@ public class LifecycleMetadataService : ILifecycleMetadataService
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(digest);
 
-        try
+        IReadOnlyList<ReferrerInfo> referrers =
+            await _orasService.GetReferrersAsync(digest, isDryRun: false, cancellationToken);
+
+        ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
+            r => r.ArtifactType == OciArtifactType.Lifecycle);
+
+        if (lifecycleReferrer is null)
         {
-            IReadOnlyList<ReferrerInfo> referrers =
-                await _orasService.GetReferrersAsync(digest, isDryRun: false, cancellationToken);
-
-            ReferrerInfo? lifecycleReferrer = referrers.FirstOrDefault(
-                r => r.ArtifactType == OciArtifactType.Lifecycle);
-
-            if (lifecycleReferrer is null)
-            {
-                return null;
-            }
-
-            return new Manifest
-            {
-                ArtifactType = lifecycleReferrer.ArtifactType ?? string.Empty,
-                Reference = lifecycleReferrer.Digest,
-                Annotations = lifecycleReferrer.Annotations is not null
-                    ? new Dictionary<string, string>(lifecycleReferrer.Annotations)
-                    : []
-            };
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to check EOL annotation for digest '{Digest}'", digest);
             return null;
         }
+
+        return new Manifest
+        {
+            ArtifactType = lifecycleReferrer.ArtifactType ?? string.Empty,
+            Reference = lifecycleReferrer.Digest,
+            Annotations = lifecycleReferrer.Annotations is not null
+                ? new Dictionary<string, string>(lifecycleReferrer.Annotations)
+                : []
+        };
     }
 
     public async Task<Manifest?> AnnotateEolDigestAsync(string digest, DateOnly date, CancellationToken cancellationToken = default)

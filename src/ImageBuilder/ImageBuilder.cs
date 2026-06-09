@@ -7,11 +7,14 @@ using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Http.Resilience;
 using Microsoft.Extensions.Logging;
+using Polly;
 using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -53,7 +56,41 @@ public static class ImageBuilder
             builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
             builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
             builder.Services.AddSingleton<IGitService, GitService>();
-            builder.Services.AddSingleton<IHttpClientProvider, HttpClientProvider>();
+
+            // Add ACR rate limiting:
+            // Singleton limiter holds the rate limiting state.
+            builder.Services.AddSingleton(_ => new AcrRateLimiter());
+            // Transient handler gets instantiated for each client and uses the singleton rate limiter.
+            builder.Services.AddTransient<AcrRateLimitingHandler>();
+
+            builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
+            {
+                // Add standard HTTP client retry policy
+                httpClientBuilder.AddResilienceHandler("image-builder", pipeline =>
+                    {
+                        var retryOptions = new HttpRetryStrategyOptions()
+                        {
+                            MaxRetryAttempts = 3,
+                            BackoffType = DelayBackoffType.Exponential,
+                            Delay = TimeSpan.FromSeconds(2),
+                            UseJitter = true,
+                        };
+                        // Don't retry for requests that might not be idempotent
+                        retryOptions.DisableForUnsafeHttpMethods();
+
+                        pipeline
+                            // Timeout for the whole pipeline
+                            .AddTimeout(TimeSpan.FromSeconds(30))
+                            .AddRetry(retryOptions)
+                            // Timeout for each individual request
+                            .AddTimeout(TimeSpan.FromSeconds(10));
+                    }
+                );
+
+                // Add ACR rate limiting
+                httpClientBuilder.AddHttpMessageHandler<AcrRateLimitingHandler>();
+            });
+
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
             builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
             builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();

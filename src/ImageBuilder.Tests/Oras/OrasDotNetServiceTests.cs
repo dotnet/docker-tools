@@ -101,16 +101,16 @@ public class OrasDotNetServiceTests
     private static OrasDotNetService CreateService(IFileSystem? fileSystem = null)
     {
         var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
-        var httpClientProvider = new Mock<IHttpClientProvider>();
-        httpClientProvider
-            .Setup(p => p.GetClient())
+        var httpClientFactory = new Mock<IHttpClientFactory>();
+        httpClientFactory
+            .Setup(f => f.CreateClient(It.IsAny<string>()))
             .Returns(new HttpClient());
         var cache = Mock.Of<IMemoryCache>();
         var logger = Mock.Of<ILogger<OrasDotNetService>>();
 
         return new OrasDotNetService(
             credentialsProvider,
-            httpClientProvider.Object,
+            httpClientFactory.Object,
             cache,
             fileSystem ?? new InMemoryFileSystem(),
             logger);

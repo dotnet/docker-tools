@@ -26,7 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Oras;
 /// </summary>
 public class OrasDotNetService(
     IRegistryCredentialsProvider credentialsProvider,
-    IHttpClientProvider httpClientProvider,
+    IHttpClientFactory httpClientFactory,
     IMemoryCache cache,
     IFileSystem fileSystem,
     ILogger<OrasDotNetService> logger,
@@ -43,7 +43,7 @@ public class OrasDotNetService(
     /// </summary>
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
-    private readonly IHttpClientProvider _httpClientProvider = httpClientProvider;
+    private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly Cache _orasCache = new(cache);
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
@@ -233,7 +233,7 @@ public class OrasDotNetService(
             "Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}",
             parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
 
-        HttpClient httpClient = _httpClientProvider.GetClient();
+        HttpClient httpClient = _httpClientFactory.CreateClient();
         Client authClient = new(httpClient, _credentialProvider, _orasCache);
 
         RepositoryOptions repositoryOptions = new()

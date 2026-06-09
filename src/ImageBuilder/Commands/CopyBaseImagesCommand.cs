@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Azure.ResourceManager.ContainerRegistry.Models;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -66,12 +67,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 fullRegistryName = Options.RegistryOverride;
             }
 
-            IEnumerable<Task> copyImageTasks = manifests
+            IEnumerable<string> fromImages = manifests
                 .SelectMany(manifest => GetFromImages(manifest))
-                .Distinct()
-                .Select(fromImage => CopyImageAsync(fromImage, fullRegistryName));
+                .Distinct();
 
-            await Task.WhenAll(copyImageTasks);
+            // Bound concurrency for consistency with the other ACR copy paths. See AcrParallelism.
+            await Parallel.ForEachAsync(
+                fromImages,
+                AcrParallelism.CreateOptions(),
+                async (fromImage, cancellationToken) => await CopyImageAsync(fromImage, fullRegistryName));
         }
 
         private IEnumerable<string> GetFromImages(ManifestInfo manifest) =>

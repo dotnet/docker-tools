@@ -97,7 +97,8 @@ public class AcrRateLimitingTests
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
         RecordingHandler inner = new();
-        HttpPipeline pipeline = CreatePipeline(limiter, inner);
+        using HttpClientTransport transport = CreateTransport(inner);
+        HttpPipeline pipeline = CreatePipeline(limiter, transport);
 
         // The limiter only has a single permit, but non-ACR requests must never consume it.
         for (int i = 0; i < 5; i++)
@@ -116,7 +117,8 @@ public class AcrRateLimitingTests
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
         RecordingHandler inner = new();
-        HttpPipeline pipeline = CreatePipeline(limiter, inner);
+        using HttpClientTransport transport = CreateTransport(inner);
+        HttpPipeline pipeline = CreatePipeline(limiter, transport);
 
         using Response response = await SendAsync(pipeline);
 
@@ -129,7 +131,8 @@ public class AcrRateLimitingTests
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
         RecordingHandler inner = new();
-        HttpPipeline pipeline = CreatePipeline(limiter, inner);
+        using HttpClientTransport transport = CreateTransport(inner);
+        HttpPipeline pipeline = CreatePipeline(limiter, transport);
 
         using Response firstResponse = await SendAsync(pipeline);
 
@@ -144,11 +147,11 @@ public class AcrRateLimitingTests
         HttpMessageHandler inner
     ) => new(new AcrRateLimitingHandler(limiter) { InnerHandler = inner });
 
-    private static HttpPipeline CreatePipeline(AcrRateLimiter limiter, HttpMessageHandler inner) =>
-        new(
-            new HttpClientTransport(new HttpClient(inner)),
-            [new AcrRateLimitingPolicy(limiter)]
-        );
+    private static HttpClientTransport CreateTransport(HttpMessageHandler inner) =>
+        new(new HttpClient(inner));
+
+    private static HttpPipeline CreatePipeline(AcrRateLimiter limiter, HttpClientTransport transport) =>
+        new(transport, [new AcrRateLimitingPolicy(limiter)]);
 
     private static async Task<Response> SendAsync(
         HttpPipeline pipeline,

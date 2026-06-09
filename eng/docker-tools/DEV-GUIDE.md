@@ -198,6 +198,28 @@ The stages variable is useful for:
 - Skipping tests during initial development
 - Running isolated stages for debugging
 
+### Decoupling build OS from the base image OS
+
+By default, a platform's `osVersion` represents the base image OS version, but also determines what
+build leg an image is built in. This can cause problems when build image and base image don't match
+up. For example, building a .NET app on Windows Server 2025 and copying the artifacts into a
+Windows Server 2019 base image won't work, because the build matrix generation will attempt to
+build the image on the Server 2019 build leg (which can't run Server 2025 images).
+
+To fix this, set the optional `buildOsVersion` field in order to override only the OS used in the
+build matrix generation. Here is an example of building a Windows Server 2019 image using Windows
+Server 2025:
+
+```jsonc
+{
+  // ...
+  "os": "windows",
+  "osVersion": "windowsservercore-ltsc2019",
+  "buildOsVersion": "windowsservercore-ltsc2025"
+  // ...
+}
+```
+
 ### Image Info Files: The Build's Memory
 
 Image info files (defined by [`ImageArtifactDetails`](https://github.com/dotnet/docker-tools/blob/main/src/ImageBuilder/Models/Image/ImageArtifactDetails.cs)) are the mechanism that tracks what was built:

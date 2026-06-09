@@ -9,6 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -49,30 +50,27 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return;
             }
 
-            IEnumerable<Task> platformImportTasks = Manifest.FilteredRepos
-                .Select(repo =>
+            IEnumerable<(string SourceTag, string DestinationTag)> platformTagInfos = Manifest.FilteredRepos
+                .SelectMany(repo =>
                     repo.FilteredImages
                         .SelectMany(image => image.FilteredPlatforms)
-                        .SelectMany(platform => GetPlatformTagInfos(repo, platform))
-                        .Select(tagInfo =>
-                            ImportImageAsync(
-                                DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
-                                Manifest.Registry,
-                                DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
-                                copyReferrers: true,
-                                srcRegistryName: Options.SourceRegistry)))
-                .SelectMany(tasks => tasks);
+                        .SelectMany(platform => GetPlatformTagInfos(repo, platform)));
 
-            IEnumerable<Task> manifestListImportTasks = GetManifestListTagInfos()
-                .Select(tagInfo =>
-                    ImportImageAsync(
+            IEnumerable<(string SourceTag, string DestinationTag)> allTagInfos =
+                platformTagInfos.Concat(GetManifestListTagInfos());
+
+            // Bound concurrency so ImportImageAsync's ORAS referrer lookups don't stampede ACR's
+            // rate limiter. See AcrParallelism for details.
+            await Parallel.ForEachAsync(
+                allTagInfos,
+                AcrParallelism.CreateOptions(),
+                async (tagInfo, cancellationToken) =>
+                    await ImportImageAsync(
                         DockerHelper.TrimRegistry(tagInfo.DestinationTag, Manifest.Registry),
                         Manifest.Registry,
                         DockerHelper.TrimRegistry(tagInfo.SourceTag, Options.SourceRegistry),
                         copyReferrers: true,
                         srcRegistryName: Options.SourceRegistry));
-
-            await Task.WhenAll(platformImportTasks.Concat(manifestListImportTasks));
         }
 
         private IEnumerable<(string SourceTag, string DestinationTag)> GetPlatformTagInfos(RepoInfo repo, PlatformInfo platform)

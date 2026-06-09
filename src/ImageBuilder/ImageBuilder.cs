@@ -65,30 +65,30 @@ public static class ImageBuilder
 
             builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
             {
-                // Add standard HTTP client retry policy
-                httpClientBuilder.AddResilienceHandler("image-builder", pipeline =>
-                    {
-                        var retryOptions = new HttpRetryStrategyOptions()
-                        {
-                            MaxRetryAttempts = 3,
-                            BackoffType = DelayBackoffType.Exponential,
-                            Delay = TimeSpan.FromSeconds(2),
-                            UseJitter = true,
-                        };
-                        // Don't retry for requests that might not be idempotent
-                        retryOptions.DisableForUnsafeHttpMethods();
+                var retryOptions = new HttpRetryStrategyOptions()
+                {
+                    MaxRetryAttempts = 5,
+                    BackoffType = DelayBackoffType.Exponential,
+                    Delay = TimeSpan.FromSeconds(3),
+                    UseJitter = true,
+                };
+                // Don't retry for requests that might not be idempotent
+                retryOptions.DisableForUnsafeHttpMethods();
 
-                        pipeline
-                            // Timeout for the whole pipeline
-                            .AddTimeout(TimeSpan.FromSeconds(30))
-                            .AddRetry(retryOptions)
-                            // Timeout for each individual request
-                            .AddTimeout(TimeSpan.FromSeconds(10));
-                    }
-                );
+                // Retry should be the outer-most policy
+                httpClientBuilder.AddResilienceHandler(
+                    "image-builder-retry",
+                    pipeline => pipeline.AddRetry(retryOptions));
 
-                // Add ACR rate limiting
+                // ACR rate limiting must be per-retry-attempt, otherwise retries would eat up rate
+                // limited requests without acquiring additional rate limiting leases/tokens.
                 httpClientBuilder.AddHttpMessageHandler<AcrRateLimitingHandler>();
+
+                // Per-request timeout covers individual requests, and doesn't apply to the outer
+                // retry policy.
+                httpClientBuilder.AddResilienceHandler(
+                    "image-builder-timeout",
+                    pipeline => pipeline.AddTimeout(TimeSpan.FromSeconds(10)));
             });
 
             builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();

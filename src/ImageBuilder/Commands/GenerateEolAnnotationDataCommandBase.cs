@@ -12,6 +12,7 @@ using Azure;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands;
@@ -73,7 +74,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
                      .Where(repo => repoNameFilter is null || repoNameFilter(repo));
 
         ConcurrentBag<(string Digest, string? Tag)> digests = [];
-        await Parallel.ForEachAsync(repositoryNames, async (repositoryName, outerCT) =>
+        await Parallel.ForEachAsync(repositoryNames, AcrParallelism.CreateOptions(), async (repositoryName, outerCT) =>
         {
             IAcrContentClient contentClient =
                 _acrContentClientFactory.Create(
@@ -82,7 +83,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
 
             ContainerRepository repo = acrClient.GetRepository(repositoryName);
             IAsyncEnumerable<ArtifactManifestProperties> manifests = repo.GetAllManifestPropertiesAsync();
-            await Parallel.ForEachAsync(manifests, outerCT, async (manifestProps, innerCT) =>
+            await Parallel.ForEachAsync(manifests, AcrParallelism.CreateOptions(outerCT), async (manifestProps, innerCT) =>
             {
                 ManifestQueryResult manifestResult;
                 try
@@ -139,7 +140,7 @@ public abstract class GenerateEolAnnotationDataCommandBase<TOptions>
         }
 
         ConcurrentBag<EolDigestData> digestsToAnnotate = [];
-        await Parallel.ForEachAsync(unsupportedDigests, CancellationToken.None, async (digest, ct) =>
+        await Parallel.ForEachAsync(unsupportedDigests, AcrParallelism.CreateOptions(), async (digest, ct) =>
         {
             _logger.LogInformation($"Checking digest for existing annotation: {digest.Digest}");
             if (await _lifecycleMetadataService.IsDigestAnnotatedForEolAsync(digest.Digest, ct) is null)

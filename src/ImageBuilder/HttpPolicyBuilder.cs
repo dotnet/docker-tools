@@ -4,14 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Net.Sockets;
 using System.Threading.Tasks;
 using Polly;
-using Polly.Contrib.WaitAndRetry;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
@@ -22,19 +19,6 @@ namespace Microsoft.DotNet.ImageBuilder
         public static HttpPolicyBuilder Create()
         {
             return new HttpPolicyBuilder();
-        }
-
-        public HttpPolicyBuilder WithMeteredRetryPolicy(ILogger logger)
-        {
-            _policies.Add(Policy
-                .HandleResult<HttpResponseMessage>(response => response.StatusCode == HttpStatusCode.TooManyRequests)
-                .Or<TaskCanceledException>(exception =>
-                    exception.InnerException is IOException ioException &&
-                    ioException.InnerException is SocketException)
-                .WaitAndRetryAsync(
-                    Backoff.DecorrelatedJitterBackoffV2(TimeSpan.FromSeconds(10), RetryHelper.MaxRetries),
-                    RetryHelper.GetOnRetryDelegate<HttpResponseMessage>(RetryHelper.MaxRetries, logger)));
-            return this;
         }
 
         public HttpPolicyBuilder WithRefreshAccessTokenPolicy(Func<Task> refreshAccessToken, ILogger logger)

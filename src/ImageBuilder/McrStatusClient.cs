@@ -31,9 +31,12 @@ namespace Microsoft.DotNet.ImageBuilder
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(httpClientFactory);
 
+            // The HttpClient created here inherits the default resilience handler configured in
+            // ImageBuilder.cs, which already retries transient failures (5xx, 408, 429) with backoff.
+            // Only the policies that the default pipeline can't express are added here: refreshing the
+            // access token on 401 and long-polling on 404 while MCR onboarding completes.
             _httpClient = httpClientFactory.CreateClient();
             _httpPolicy = HttpPolicyBuilder.Create()
-                .WithMeteredRetryPolicy(logger)
                 .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, logger)
                 .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), logger)
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");

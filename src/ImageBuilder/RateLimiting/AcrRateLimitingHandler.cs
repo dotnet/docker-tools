@@ -12,15 +12,9 @@ namespace Microsoft.DotNet.ImageBuilder.RateLimiting;
 
 /// <summary>
 /// Throttles outbound HTTP requests to Azure Container Registry (ACR) hosts so that the shared ACR
-/// request-rate limit is not exceeded. Requests to non-ACR hosts pass through without consuming a
-/// permit.
+/// request-rate limit is not exceeded. Requests to non-ACR hosts do not have rate limiting applied.
 /// </summary>
-/// <remarks>
-/// The rate-limiting state lives in the shared <see cref="AcrRateLimiter"/> singleton rather than
-/// in this (transient) handler. <see cref="IHttpClientFactory"/> rebuilds handler chains
-/// periodically; keeping the window in the singleton ensures the global cap holds across those
-/// rebuilds.
-/// </remarks>
+/// <seealso cref="AcrRateLimitingPolicy"/>
 public sealed class AcrRateLimitingHandler(AcrRateLimiter rateLimiter) : DelegatingHandler
 {
     protected override async Task<HttpResponseMessage> SendAsync(

@@ -8,16 +8,19 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
+using Azure;
+using Azure.Core;
+using Azure.Core.Pipeline;
 using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
 [TestClass]
-public class AcrRateLimitingHandlerTests
+public class AcrRateLimitingTests
 {
     [TestMethod]
-    public async Task NonAcrRequests_DoNotConsumePermits()
+    public async Task Handler_NonAcrRequests_DoNotConsumePermits()
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
         RecordingHandler inner = new();
@@ -41,7 +44,7 @@ public class AcrRateLimitingHandlerTests
     }
 
     [TestMethod]
-    public async Task AcrRequest_ConsumesPermit()
+    public async Task Handler_AcrRequest_ConsumesPermit()
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
         RecordingHandler inner = new();
@@ -61,7 +64,7 @@ public class AcrRateLimitingHandlerTests
     }
 
     [TestMethod]
-    public async Task AcrRequest_IsThrottledWhenPermitsExhausted()
+    public async Task Handler_AcrRequest_IsThrottledWhenPermitsExhausted()
     {
         using AcrRateLimiter limiter = CreateSinglePermitLimiter();
         RecordingHandler inner = new();
@@ -89,10 +92,73 @@ public class AcrRateLimitingHandlerTests
         inner.RequestCount.ShouldBe(1);
     }
 
+    [TestMethod]
+    public async Task Policy_NonAcrRequests_DoNotConsumePermits()
+    {
+        using AcrRateLimiter limiter = CreateSinglePermitLimiter();
+        RecordingHandler inner = new();
+        HttpPipeline pipeline = CreatePipeline(limiter, inner);
+
+        // The limiter only has a single permit, but non-ACR requests must never consume it.
+        for (int i = 0; i < 5; i++)
+        {
+            using Response response = await SendAsync(
+                pipeline,
+                "https://status.mscr.io/api/onboardingstatus");
+            response.Status.ShouldBe((int)HttpStatusCode.OK);
+        }
+
+        inner.RequestCount.ShouldBe(5);
+    }
+
+    [TestMethod]
+    public async Task Policy_AcrRequest_ConsumesPermit()
+    {
+        using AcrRateLimiter limiter = CreateSinglePermitLimiter();
+        RecordingHandler inner = new();
+        HttpPipeline pipeline = CreatePipeline(limiter, inner);
+
+        using Response response = await SendAsync(pipeline);
+
+        response.Status.ShouldBe((int)HttpStatusCode.OK);
+        inner.RequestCount.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public async Task Policy_AcrRequest_IsThrottledWhenPermitsExhausted()
+    {
+        using AcrRateLimiter limiter = CreateSinglePermitLimiter();
+        RecordingHandler inner = new();
+        HttpPipeline pipeline = CreatePipeline(limiter, inner);
+
+        using Response firstResponse = await SendAsync(pipeline);
+
+        // The window's single permit is now consumed; the next ACR request cannot be served.
+        await Should.ThrowAsync<InvalidOperationException>(() => SendAsync(pipeline));
+
+        inner.RequestCount.ShouldBe(1);
+    }
+
     private static HttpMessageInvoker CreateInvoker(
         AcrRateLimiter limiter,
         HttpMessageHandler inner
     ) => new(new AcrRateLimitingHandler(limiter) { InnerHandler = inner });
+
+    private static HttpPipeline CreatePipeline(AcrRateLimiter limiter, HttpMessageHandler inner) =>
+        new(
+            new HttpClientTransport(new HttpClient(inner)),
+            [new AcrRateLimitingPolicy(limiter)]
+        );
+
+    private static async Task<Response> SendAsync(
+        HttpPipeline pipeline,
+        string uri = "https://myregistry.azurecr.io/v2/")
+    {
+        Request request = pipeline.CreateRequest();
+        request.Method = RequestMethod.Get;
+        request.Uri.Reset(new Uri(uri));
+        return await pipeline.SendRequestAsync(request, CancellationToken.None);
+    }
 
     private static AcrRateLimiter CreateSinglePermitLimiter() =>
         new(

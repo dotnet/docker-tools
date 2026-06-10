@@ -3,17 +3,18 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class DependencyInjectionTests
 {
-    [Fact]
+    [TestMethod]
     public void DependencyResolution()
     {
         var commands = ImageBuilder.Commands.ToArray();
-        Assert.NotNull(commands);
-        Assert.NotEmpty(commands);
+        commands.ShouldNotBeNull();
+        commands.ShouldNotBeEmpty();
     }
 }

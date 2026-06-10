@@ -7,10 +7,11 @@ using System;
 using System.IO;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class ManifestInfoTests
     {
         private static string s_dockerfilePath = "testDockerfile";
@@ -21,7 +22,7 @@ $@"
   ]
 ";
 
-        [Fact]
+        [TestMethod]
         public void Load_Import_Variables()
         {
             string includeManifestPath = "manifest.variables.json";
@@ -49,12 +50,12 @@ $@"
 }}";
 
             ManifestInfo manifestInfo = LoadManifestInfo(manifest, includeManifestPath, includeManifest);
-            Assert.Equal(2, manifestInfo.Model.Variables.Count);
-            Assert.Equal(variableOneValue, manifestInfo.Model.Variables[variableOneName]);
-            Assert.Equal(variableTwoValue, manifestInfo.Model.Variables[variableTwoName]);
+            manifestInfo.Model.Variables.Count.ShouldBe(2);
+            manifestInfo.Model.Variables[variableOneName].ShouldBe(variableOneValue);
+            manifestInfo.Model.Variables[variableTwoName].ShouldBe(variableTwoValue);
         }
 
-        [Fact]
+        [TestMethod]
         public void Load_Import_InvalidPath()
         {
             string manifest =
@@ -66,10 +67,10 @@ $@"
 {s_repoJson}
 }}";
 
-            Assert.Throws<FileNotFoundException>(() => LoadManifestInfo(manifest));
+            Should.Throw<FileNotFoundException>(() => LoadManifestInfo(manifest));
         }
 
-        [Fact]
+        [TestMethod]
         public void Load_Import_DuplicateVariables()
         {
             string includeManifestPath = "manifest.variables.json";
@@ -93,10 +94,10 @@ $@"
   }}
 }}";
 
-            Assert.Throws<InvalidOperationException>(() => LoadManifestInfo(manifest, includeManifestPath, includeManifest));
+            Should.Throw<InvalidOperationException>(() => LoadManifestInfo(manifest, includeManifestPath, includeManifest));
         }
 
-        [Fact]
+        [TestMethod]
         public void Load_Include_Repos()
         {
             const string includeManifestPath1 = "manifest.custom1.json";
@@ -141,14 +142,14 @@ $@"
             IManifestOptionsInfo manifestOptions = ManifestHelper.GetManifestOptions(manifestPath);
             ManifestInfo manifestInfo = TestHelper.CreateManifestJsonService().Load(manifestOptions);
 
-            Assert.Equal(3, manifestInfo.Model.Repos.Length);
-            Assert.Equal("testRepo1", manifestInfo.Model.Repos[0].Name);
-            Assert.Equal("testRepo2", manifestInfo.Model.Repos[1].Name);
-            Assert.Equal("testRepo3", manifestInfo.Model.Repos[2].Name);
+            manifestInfo.Model.Repos.Length.ShouldBe(3);
+            manifestInfo.Model.Repos[0].Name.ShouldBe("testRepo1");
+            manifestInfo.Model.Repos[1].Name.ShouldBe("testRepo2");
+            manifestInfo.Model.Repos[2].Name.ShouldBe("testRepo3");
 
-            Assert.Equal(2, manifestInfo.Model.Repos[0].Images.Length);
-            Assert.Single(manifestInfo.Model.Repos[1].Images);
-            Assert.Single(manifestInfo.Model.Repos[2].Images);
+            manifestInfo.Model.Repos[0].Images.Length.ShouldBe(2);
+            manifestInfo.Model.Repos[1].Images.ShouldHaveSingleItem();
+            manifestInfo.Model.Repos[2].Images.ShouldHaveSingleItem();
         }
 
         private static ManifestInfo LoadManifestInfo(string manifest, string includeManifestPath = null, string includeManifest = null)

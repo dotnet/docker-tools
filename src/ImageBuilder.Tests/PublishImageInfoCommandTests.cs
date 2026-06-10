@@ -17,11 +17,12 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.Services.Common;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class PublishImageInfoCommandTests : IDisposable
     {
         private readonly List<string> foldersToDelete = new List<string>();
@@ -36,7 +37,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies the command will publish the specified image info to the repo.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task PublishImageInfoCommand_HappyPath()
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -161,7 +162,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 command.LoadManifest();
                 await command.ExecuteAsync();
 
-                Assert.Equal(JsonHelper.SerializeObject(srcImageArtifactDetails), actualImageArtifactDetailsContents.Trim());
+                actualImageArtifactDetailsContents.Trim().ShouldBe(JsonHelper.SerializeObject(srcImageArtifactDetails));
 
                 VerifyMocks(repositoryMock);
             }

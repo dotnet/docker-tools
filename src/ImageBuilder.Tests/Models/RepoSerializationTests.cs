@@ -4,7 +4,7 @@
 
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -13,9 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="Repo"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class RepoSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultRepo_CannotSerialize()
     {
         // A default Repo has null Images and Name, which violate
@@ -25,7 +26,7 @@ public class RepoSerializationTests
         AssertSerializationFails(repo, nameof(Repo.Images));
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedRepo_Bidirectional()
     {
         Repo repo = new()
@@ -49,7 +50,7 @@ public class RepoSerializationTests
         AssertBidirectional(repo, json, AssertReposEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedRepo_RoundTrip()
     {
         Repo repo = new()
@@ -64,7 +65,7 @@ public class RepoSerializationTests
         AssertRoundTrip(repo, AssertReposEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void MinimalRepo_Bidirectional()
     {
         Repo repo = new()
@@ -84,7 +85,7 @@ public class RepoSerializationTests
         AssertBidirectional(repo, json, AssertReposEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_ImagesIsRequired_Missing()
     {
         string json = """
@@ -96,7 +97,7 @@ public class RepoSerializationTests
         AssertDeserializationFails<Repo>(json, nameof(Repo.Images));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_ImagesIsRequired_Null()
     {
         string json = """
@@ -109,7 +110,7 @@ public class RepoSerializationTests
         AssertDeserializationFails<Repo>(json, nameof(Repo.Images));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_NameIsRequired_Missing()
     {
         string json = """
@@ -121,7 +122,7 @@ public class RepoSerializationTests
         AssertDeserializationFails<Repo>(json, nameof(Repo.Name));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_NameIsRequired_Null()
     {
         string json = """
@@ -136,10 +137,10 @@ public class RepoSerializationTests
 
     private static void AssertReposEqual(Repo expected, Repo actual)
     {
-        Assert.Equal(expected.Id, actual.Id);
-        Assert.Equal(expected.Images?.Length ?? 0, actual.Images?.Length ?? 0);
-        Assert.Equal(expected.McrTagsMetadataTemplate, actual.McrTagsMetadataTemplate);
-        Assert.Equal(expected.Name, actual.Name);
-        Assert.Equal(expected.Readmes?.Length ?? 0, actual.Readmes?.Length ?? 0);
+        actual.Id.ShouldBe(expected.Id);
+        (actual.Images?.Length ?? 0).ShouldBe(expected.Images?.Length ?? 0);
+        actual.McrTagsMetadataTemplate.ShouldBe(expected.McrTagsMetadataTemplate);
+        actual.Name.ShouldBe(expected.Name);
+        (actual.Readmes?.Length ?? 0).ShouldBe(expected.Readmes?.Length ?? 0);
     }
 }

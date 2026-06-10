@@ -4,7 +4,7 @@
 
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -13,9 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="Readme"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class ReadmeSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultReadme_Bidirectional()
     {
         Readme readme = new();
@@ -30,13 +31,13 @@ public class ReadmeSerializationTests
         AssertBidirectional(readme, json, AssertReadmesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void DefaultReadme_RoundTrip()
     {
         AssertRoundTrip(new Readme(), AssertReadmesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedReadme_Bidirectional()
     {
         Readme readme = new()
@@ -55,7 +56,7 @@ public class ReadmeSerializationTests
         AssertBidirectional(readme, json, AssertReadmesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedReadme_RoundTrip()
     {
         Readme readme = new()
@@ -67,7 +68,7 @@ public class ReadmeSerializationTests
         AssertRoundTrip(readme, AssertReadmesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void ConstructorWithParameters_Bidirectional()
     {
         Readme readme = new("docs/README.md", "docs/README.template.md");
@@ -82,7 +83,7 @@ public class ReadmeSerializationTests
         AssertBidirectional(readme, json, AssertReadmesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void ConstructorWithNullTemplatePath_Bidirectional()
     {
         Readme readme = new("README.md", null);
@@ -97,7 +98,7 @@ public class ReadmeSerializationTests
         AssertBidirectional(readme, json, AssertReadmesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_PathIsRequired_Missing()
     {
         // Path has [JsonProperty(Required = Required.Always)]
@@ -111,7 +112,7 @@ public class ReadmeSerializationTests
         AssertDeserializationFails<Readme>(json, nameof(Readme.Path));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_PathIsRequired_Null()
     {
         // Path has [JsonProperty(Required = Required.Always)]
@@ -126,7 +127,7 @@ public class ReadmeSerializationTests
         AssertDeserializationFails<Readme>(json, nameof(Readme.Path));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_TemplatePathIsOptional()
     {
         // TemplatePath is optional (nullable, no Required attribute)
@@ -147,7 +148,7 @@ public class ReadmeSerializationTests
 
     private static void AssertReadmesEqual(Readme expected, Readme actual)
     {
-        Assert.Equal(expected.Path, actual.Path);
-        Assert.Equal(expected.TemplatePath, actual.TemplatePath);
+        actual.Path.ShouldBe(expected.Path);
+        actual.TemplatePath.ShouldBe(expected.TemplatePath);
     }
 }

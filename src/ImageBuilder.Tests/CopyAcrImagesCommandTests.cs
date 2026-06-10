@@ -13,12 +13,12 @@ using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ImageInfoHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class CopyAcrImagesCommandTests
     {
         private const string SourceRegistry = "my.custom.registry";
@@ -27,7 +27,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that image tags associated with a custom Dockerfile will by copied to ACR correctly.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task CopyAcrImagesCommand_CustomDockerfileName()
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -117,7 +117,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that image tags associated with a Dockerfile that is shared by more than one platform are copied.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task CopyAcrImagesCommand_SharedDockerfile()
         {
             using (TempFolderContext tempFolderContext = TestHelper.UseTempFolder())
@@ -219,7 +219,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that image tags associated with a runtime-deps Dockerfiles that is shared by multiple versions.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task CopyAcrImagesCommand_RuntimeDepsSharing()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -332,7 +332,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that image tags can be syndicated to another repo.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task SyndicatedTags()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -446,7 +446,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that manifest list shared tags are copied alongside platform tags.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task CopyAcrImagesCommand_CopiesManifestListTags()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -552,7 +552,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that syndicated manifest list shared tags are copied to the syndicated repo.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task CopyAcrImagesCommand_CopiesSyndicatedManifestListTags()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -668,7 +668,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Verifies that images without ManifestData do not produce manifest list tag copies.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task CopyAcrImagesCommand_SkipsManifestListsWithNoManifestData()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

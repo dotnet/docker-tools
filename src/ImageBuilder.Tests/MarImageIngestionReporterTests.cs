@@ -10,17 +10,18 @@ using Microsoft.DotNet.ImageBuilder.Models.McrStatus;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.MarStatusHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class MarImageIngestionReporterTests
     {
-        [Theory]
-        [InlineData("")]
-        [InlineData("public/")]
-        [InlineData("internal/private/")]
+        [TestMethod]
+        [DataRow("")]
+        [DataRow("public/")]
+        [DataRow("internal/private/")]
         public async Task SuccessfulPublish(string repoPrefix)
         {
             DateTime baselineTime = DateTime.Now;
@@ -221,7 +222,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task SuccessfulPublish_TaglessDigest()
         {
             DateTime baselineTime = DateTime.Now;
@@ -308,7 +309,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             environmentServiceMock.Verify(o => o.Exit(It.IsAny<int>()), Times.Never);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task PublishFailure_TaglessDigest()
         {
             DateTime baselineTime = DateTime.Now;
@@ -402,7 +403,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             environmentServiceMock.Verify(o => o.Exit(1), Times.Once);
         }
 
-        [Fact]
+        [TestMethod]
         public async Task PublishFailure()
         {
             DateTime baselineTime = DateTime.Now;
@@ -571,7 +572,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Tests the scenario where a given digest has been queued for onboarding multiple times and the minimum queue time isn't set
         /// properly to filter them to just one onboarding request.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task OnboardingRequestsWithDuplicateDigest_Success()
         {
             DateTime baselineTime = DateTime.Now;
@@ -666,7 +667,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// Tests the scenario where a given digest has been queued for onboarding multiple times and the minimum queue time isn't set
         /// properly to filter them to just one onboarding request.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task OnboardingRequestsWithDuplicateDigest_Failed()
         {
             DateTime baselineTime = DateTime.Now;
@@ -799,7 +800,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         /// <summary>
         /// Tests that the command times out if the publishing takes too long.
         /// </summary>
-        [Fact]
+        [TestMethod]
         public async Task WaitTimeout()
         {
             DateTime baselineTime = DateTime.Now;
@@ -839,7 +840,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     new DigestInfo(DockerHelper.GetDigestSha(platformDigest1), repo1, [platformTag1]),
                 ];
 
-            await Assert.ThrowsAsync<TimeoutException>(() => reporter.ReportImageStatusesAsync(
+            await Should.ThrowAsync<TimeoutException>(() => reporter.ReportImageStatusesAsync(
                 Mock.Of<IServiceConnection>(),
                 digestInfos,
                 TimeSpan.FromSeconds(3),

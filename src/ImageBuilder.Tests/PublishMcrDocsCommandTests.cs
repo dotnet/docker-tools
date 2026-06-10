@@ -12,12 +12,13 @@ using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.ManifestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class PublishMcrDocsCommandTests
     {
         private const string ProductFamilyReadmePath = "ProductFamilyReadme.md";
@@ -32,7 +33,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 @"About {{if IS_PRODUCT_FAMILY:Product Family^else:{{SHORT_REPO}}}}
 {{if !IS_PRODUCT_FAMILY:{{InsertTemplate(join(filter([""About"", SHORT_REPO, ""Template"", ""md""], len), "".""))}}}}";
 
-        [Fact]
+        [TestMethod]
         public async Task ExcludeProductFamilyReadme()
         {
             Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
@@ -79,7 +80,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                             Path.GetFileName(objs[1].Path) == TagsYamlPath)));
         }
 
-        [Fact]
+        [TestMethod]
         public async Task RootPathOption()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -149,7 +150,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             gitHubClientMock.VerifyNoOtherCalls();
         }
 
-        [Fact]
+        [TestMethod]
         public async Task DuplicateFilename()
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -194,7 +195,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();
 
-            await Assert.ThrowsAsync<ValidationException>(() => command.ExecuteAsync());
+            await Should.ThrowAsync<ValidationException>(() => command.ExecuteAsync());
         }
 
         private static string CreateMcrTagsMetadataTemplateFile(TempFolderContext tempFolderContext)

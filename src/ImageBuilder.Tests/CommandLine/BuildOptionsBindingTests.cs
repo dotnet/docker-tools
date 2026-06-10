@@ -4,14 +4,14 @@
 
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Shouldly;
-using Xunit;
 using static Microsoft.DotNet.ImageBuilder.Tests.CommandLine.OptionsBindingTestHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
 
+[TestClass]
 public class BuildOptionsBindingTests
 {
-    [Fact]
+    [TestMethod]
     public void RegistryCredentials_SingleCredential()
     {
         BuildOptions options = ParseAndBind<BuildOptions>(["--registry-creds", "mcr.microsoft.com=myuser;mypass"]);
@@ -20,7 +20,7 @@ public class BuildOptionsBindingTests
         options.CredentialsOptions.Credentials["mcr.microsoft.com"].Password.ShouldBe("mypass");
     }
 
-    [Fact]
+    [TestMethod]
     public void RegistryCredentials_MultipleCredentials()
     {
         string[] args =
@@ -36,7 +36,7 @@ public class BuildOptionsBindingTests
         options.CredentialsOptions.Credentials["reg2.io"].Password.ShouldBe("pass2");
     }
 
-    [Fact]
+    [TestMethod]
     public void BuildArgs_ParsesDictionaryValues()
     {
         string[] args =
@@ -51,7 +51,7 @@ public class BuildOptionsBindingTests
         options.BuildArgs.ShouldContainKeyAndValue("RUNTIME", "aspnet");
     }
 
-    [Fact]
+    [TestMethod]
     public void Variables_ParsesDictionaryValues()
     {
         BuildOptions options = ParseAndBind<BuildOptions>(["--var", "branch=main", "--var", "version=8.0"]);
@@ -59,7 +59,7 @@ public class BuildOptionsBindingTests
         options.Variables.ShouldContainKeyAndValue("version", "8.0");
     }
 
-    [Fact]
+    [TestMethod]
     public void BooleanFlags_DefaultToFalse()
     {
         BuildOptions options = ParseAndBind<BuildOptions>([]);
@@ -70,7 +70,7 @@ public class BuildOptionsBindingTests
         options.IsDryRun.ShouldBeFalse();
     }
 
-    [Fact]
+    [TestMethod]
     public void BooleanFlags_SetWhenPresent()
     {
         BuildOptions options = ParseAndBind<BuildOptions>(["--push", "--no-cache", "--retry"]);
@@ -79,14 +79,14 @@ public class BuildOptionsBindingTests
         options.IsRetryEnabled.ShouldBeTrue();
     }
 
-    [Fact]
+    [TestMethod]
     public void ManifestOption_DefaultsToManifestJson()
     {
         BuildOptions options = ParseAndBind<BuildOptions>([]);
         options.Manifest.ShouldBe("manifest.json");
     }
 
-    [Fact]
+    [TestMethod]
     public void ManifestOption_OverriddenWhenSpecified()
     {
         BuildOptions options = ParseAndBind<BuildOptions>(["--manifest", "custom-manifest.json"]);

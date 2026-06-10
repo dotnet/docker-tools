@@ -10,13 +10,13 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.Extensions.Logging;
 using Moq;
-using Xunit;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests;
 
+[TestClass]
 public class WaitForMarAnnotationIngestionCommandTests
 {
-    [Fact]
+    [TestMethod]
     public async Task WaitForMarAnnotationIngestionCommand()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

@@ -23,17 +23,20 @@ namespace Microsoft.DotNet.ImageBuilder
         private readonly IServiceConnection _serviceConnection;
 
         public McrStatusClient(
-            IHttpClientProvider httpClientProvider,
+            IHttpClientFactory httpClientFactory,
             ILogger<McrStatusClient> logger,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IServiceConnection serviceConnection)
         {
             ArgumentNullException.ThrowIfNull(logger);
-            ArgumentNullException.ThrowIfNull(httpClientProvider);
+            ArgumentNullException.ThrowIfNull(httpClientFactory);
 
-            _httpClient = httpClientProvider.GetClient();
+            // The HttpClient created here inherits the default resilience handler configured in
+            // ImageBuilder.cs, which already retries transient failures (5xx, 408, 429) with backoff.
+            // Only the policies that the default pipeline can't express are added here: refreshing the
+            // access token on 401 and long-polling on 404 while MCR onboarding completes.
+            _httpClient = httpClientFactory.CreateClient();
             _httpPolicy = HttpPolicyBuilder.Create()
-                .WithMeteredRetryPolicy(logger)
                 .WithRefreshAccessTokenPolicy(RefreshAccessTokenAsync, logger)
                 .WithNotFoundRetryPolicy(TimeSpan.FromHours(1), TimeSpan.FromSeconds(10), logger)
                 .Build() ?? throw new InvalidOperationException("Policy should not be null");

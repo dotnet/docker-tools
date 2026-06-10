@@ -8,16 +8,17 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
-using Xunit;
+using Shouldly;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests
 {
+    [TestClass]
     public class PlatformDataTests
     {
-        [Theory]
-        [InlineData("5.0.0-preview.3", "5.0")]
-        [InlineData("5.0", "5.0")]
-        [InlineData("5.0.1", "5.0")]
+        [TestMethod]
+        [DataRow("5.0.0-preview.3", "5.0")]
+        [DataRow("5.0", "5.0")]
+        [DataRow("5.0.1", "5.0")]
         public void GetIdentifier(string productVersion, string expectedVersion)
         {
             PlatformData platform = new PlatformData
@@ -30,7 +31,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             };
 
             string identifier = platform.GetIdentifier();
-            Assert.Equal($"path-amd64-linux-noble-{expectedVersion}", identifier);
+            identifier.ShouldBe($"path-amd64-linux-noble-{expectedVersion}");
         }
 
         private static ImageInfo CreateImage(string productVersion) =>

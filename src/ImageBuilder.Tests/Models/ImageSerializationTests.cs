@@ -5,7 +5,7 @@
 
 using System.Collections.Generic;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -14,9 +14,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="Image"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class ImageSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultImage_CannotSerialize()
     {
         // A default Image has null Platforms, which violates
@@ -26,7 +27,7 @@ public class ImageSerializationTests
         AssertSerializationFails(image, nameof(Image.Platforms));
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedImage_Bidirectional()
     {
         Image image = new()
@@ -57,7 +58,7 @@ public class ImageSerializationTests
         AssertBidirectional(image, json, AssertImagesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedImage_RoundTrip()
     {
         Image image = new()
@@ -70,7 +71,7 @@ public class ImageSerializationTests
         AssertRoundTrip(image, AssertImagesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void MinimalImage_Bidirectional()
     {
         Image image = new()
@@ -87,7 +88,7 @@ public class ImageSerializationTests
         AssertBidirectional(image, json, AssertImagesEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_PlatformsIsRequired_Missing()
     {
         string json = """
@@ -99,7 +100,7 @@ public class ImageSerializationTests
         AssertDeserializationFails<Image>(json, nameof(Image.Platforms));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_PlatformsIsRequired_Null()
     {
         string json = """
@@ -112,7 +113,7 @@ public class ImageSerializationTests
         AssertDeserializationFails<Image>(json, nameof(Image.Platforms));
     }
 
-    [Fact]
+    [TestMethod]
     public void Deserialization_SharedTagsIsOptional()
     {
         string json = """
@@ -132,20 +133,20 @@ public class ImageSerializationTests
 
     private static void AssertImagesEqual(Image expected, Image actual)
     {
-        Assert.Equal(expected.Platforms?.Length ?? 0, actual.Platforms?.Length ?? 0);
-        Assert.Equal(expected.ProductVersion, actual.ProductVersion);
+        (actual.Platforms?.Length ?? 0).ShouldBe(expected.Platforms?.Length ?? 0);
+        actual.ProductVersion.ShouldBe(expected.ProductVersion);
 
         if (expected.SharedTags is null)
         {
-            Assert.Null(actual.SharedTags);
+            actual.SharedTags.ShouldBeNull();
         }
         else
         {
-            Assert.NotNull(actual.SharedTags);
-            Assert.Equal(expected.SharedTags.Count, actual.SharedTags.Count);
+            actual.SharedTags.ShouldNotBeNull();
+            actual.SharedTags.Count.ShouldBe(expected.SharedTags.Count);
             foreach (string key in expected.SharedTags.Keys)
             {
-                Assert.True(actual.SharedTags.ContainsKey(key));
+                actual.SharedTags.ContainsKey(key).ShouldBeTrue();
             }
         }
     }

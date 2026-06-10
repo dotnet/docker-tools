@@ -4,7 +4,7 @@
 
 
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
-using Xunit;
+using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Models.SerializationHelper;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
@@ -13,9 +13,10 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Models;
 /// Serialization and deserialization tests for <see cref="Tag"/> model.
 /// These tests ensure that serialization behavior does not change unexpectedly.
 /// </summary>
+[TestClass]
 public class TagSerializationTests
 {
-    [Fact]
+    [TestMethod]
     public void DefaultTag_Bidirectional()
     {
         Tag tag = new();
@@ -26,13 +27,13 @@ public class TagSerializationTests
         AssertBidirectional(tag, json, AssertTagsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void DefaultTag_RoundTrip()
     {
         AssertRoundTrip(new Tag(), AssertTagsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedTag_Bidirectional()
     {
         Tag tag = new()
@@ -64,7 +65,7 @@ public class TagSerializationTests
         AssertBidirectional(tag, json, AssertTagsEqual);
     }
 
-    [Fact]
+    [TestMethod]
     public void FullyPopulatedTag_RoundTrip()
     {
         Tag tag = new()
@@ -83,18 +84,18 @@ public class TagSerializationTests
 
     private static void AssertTagsEqual(Tag expected, Tag actual)
     {
-        Assert.Equal(expected.DocumentationGroup, actual.DocumentationGroup);
-        Assert.Equal(expected.DocType, actual.DocType);
+        actual.DocumentationGroup.ShouldBe(expected.DocumentationGroup);
+        actual.DocType.ShouldBe(expected.DocType);
 
         if (expected.Syndication is null)
         {
-            Assert.Null(actual.Syndication);
+            actual.Syndication.ShouldBeNull();
         }
         else
         {
-            Assert.NotNull(actual.Syndication);
-            Assert.Equal(expected.Syndication.Repo, actual.Syndication.Repo);
-            Assert.Equal(expected.Syndication.DestinationTags, actual.Syndication.DestinationTags);
+            actual.Syndication.ShouldNotBeNull();
+            actual.Syndication.Repo.ShouldBe(expected.Syndication.Repo);
+            actual.Syndication.DestinationTags.ShouldBe(expected.Syndication.DestinationTags);
         }
     }
 }

@@ -13,6 +13,7 @@ using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Notary;
 using Microsoft.DotNet.ImageBuilder.Oras;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.Extensions.Options;
 using static Microsoft.DotNet.ImageBuilder.Signing.CertificateChainCalculator;
 using OrasDescriptor = OrasProject.Oras.Oci.Descriptor;
@@ -60,7 +61,8 @@ public class ImageSigningService(
 
         // Filter out digests that already have Notary v2 signatures
         ConcurrentBag<string> unsignedDigests = [];
-        await Parallel.ForEachAsync(imageDigests, cancellationToken, async (imageDigest, ct) =>
+        await Parallel.ForEachAsync(imageDigests, AcrParallelism.CreateOptions(cancellationToken),
+            async (imageDigest, ct) =>
         {
             IReadOnlyList<ReferrerInfo> referrers =
                 await _orasService.GetReferrersAsync(imageDigest, isDryRun: false, ct);
@@ -89,7 +91,8 @@ public class ImageSigningService(
         // Step 1: Generate signing requests by fetching OCI descriptors
         _logger.LogInformation("Generating {Count} signing requests.", unsignedDigests.Count);
         ConcurrentBag<ImageSigningRequest> requests = [];
-        await Parallel.ForEachAsync(unsignedDigests, cancellationToken, async (imageDigest, ct) =>
+        await Parallel.ForEachAsync(unsignedDigests, AcrParallelism.CreateOptions(cancellationToken),
+            async (imageDigest, ct) =>
         {
             OrasDescriptor descriptor = await _orasService.GetDescriptorAsync(imageDigest, ct);
             ImageSigningRequest request = ConstructSigningRequest(imageDigest, descriptor);
@@ -104,7 +107,8 @@ public class ImageSigningService(
         // Step 3: Push signatures to registry in parallel
         _logger.LogInformation("Pushing {Count} signatures to registry.", signedPayloads.Count);
         ConcurrentBag<ImageSigningResult> results = [];
-        await Parallel.ForEachAsync(signedPayloads, cancellationToken, async (signedPayload, ct) =>
+        await Parallel.ForEachAsync(signedPayloads, AcrParallelism.CreateOptions(cancellationToken),
+            async (signedPayload, ct) =>
         {
             string signatureDigest =
                 await _orasService.PushSignatureAsync(signedPayload.Descriptor, signedPayload, ct);

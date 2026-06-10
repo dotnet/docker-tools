@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -227,12 +228,18 @@ public static class ManifestListHelper
                 continue;
             }
 
-            TagInfo? imageTag;
-            imageTag = GetPlatformTagRepresentative(repo, image, platform, getTagRepresentative, throwIfMissing: true);
-
-            if (imageTag is not null)
+            // A platform with its own tags whose representative resolves to null does not participate in this manifest
+            // list (for example, it isn't syndicated to the repo for the current pass), so it is skipped. However, a
+            // tagless platform must be referenceable via a sibling. Failing to find one indicates a manifest problem.
+            // TODO: support platforms without tags (https://github.com/dotnet/docker-tools/issues/1499).
+            if (TryGetPlatformTagRepresentative(repo, image, platform, getTagRepresentative, out TagInfo? imageTag))
             {
                 platformTags.Add(getImageName(imageTag.Name));
+            }
+            else if (!platform.Tags.Any())
+            {
+                throw new InvalidOperationException(
+                    $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
             }
         }
 
@@ -260,15 +267,7 @@ public static class ManifestListHelper
         // that platform. If not, there's a problem.
         foreach (PlatformInfo platform in manifestImage.AllPlatforms)
         {
-            TagInfo? imageTag =
-                GetPlatformTagRepresentative(
-                    repo,
-                    manifestImage,
-                    platform,
-                    getTagRepresentative,
-                    throwIfMissing: false);
-
-            if (imageTag is null)
+            if (!TryGetPlatformTagRepresentative(repo, manifestImage, platform, getTagRepresentative, out _))
                 continue;
 
             hasExpectedPlatform = true;
@@ -278,23 +277,30 @@ public static class ManifestListHelper
         }
 
         if (!hasExpectedPlatform || missingPlatforms.Count == 0)
-        {
             return null;
-        }
 
         return new ManifestListPlatformValidationIssue(manifestListTag, missingPlatforms.AsReadOnly());
     }
 
-    private static TagInfo? GetPlatformTagRepresentative(
+    /// <summary>
+    /// Resolves the concrete tag used to reference <paramref name="platform"/> in a manifest list,
+    /// borrowing from a matching sibling platform when the platform is tagless.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> and a non-null <paramref name="representativeTag"/> when a usable tag
+    /// is found; otherwise <see langword="false"/>.
+    /// </returns>
+    private static bool TryGetPlatformTagRepresentative(
         RepoInfo repo,
         ImageInfo image,
         PlatformInfo platform,
         Func<PlatformInfo, TagInfo?> getTagRepresentative,
-        bool throwIfMissing)
+        [NotNullWhen(true)] out TagInfo? representativeTag)
     {
         if (platform.Tags.Any())
         {
-            return getTagRepresentative(platform);
+            representativeTag = getTagRepresentative(platform);
+            return representativeTag is not null;
         }
 
         // Tagless platforms included by shared tags need a matching concrete tag to reference in
@@ -303,7 +309,7 @@ public static class ManifestListHelper
         // syndicated pass where the sibling has tags but none syndicated to the target repo - so we
         // must keep searching for a sibling that yields a usable representative instead of
         // committing to the first sibling that merely has tags.
-        TagInfo? representativeTag = repo.AllImages
+        representativeTag = repo.AllImages
             .SelectMany(candidateImage =>
                 candidateImage.AllPlatforms
                     .Select(candidatePlatform => (Image: candidateImage, Platform: candidatePlatform)))
@@ -318,18 +324,7 @@ public static class ManifestListHelper
             .Select(candidate => getTagRepresentative(candidate.Platform))
             .FirstOrDefault(tag => tag is not null);
 
-        if (representativeTag is not null)
-        {
-            return representativeTag;
-        }
-
-        if (throwIfMissing)
-        {
-            throw new InvalidOperationException(
-                $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
-        }
-
-        return null;
+        return representativeTag is not null;
     }
 
     private static string GetPlatformDescription(PlatformInfo platform) =>

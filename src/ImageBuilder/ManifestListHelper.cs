@@ -246,7 +246,7 @@ public static class ManifestListHelper
 
     private static ManifestListPlatformValidationIssue? BuildManifestListPlatformValidationIssue(
         RepoInfo repo,
-        ImageInfo image,
+        ImageInfo manifestImage,
         ImageArtifactDetails imageArtifactDetails,
         string tag,
         Func<string, string> getImageName,
@@ -256,20 +256,25 @@ public static class ManifestListHelper
         List<string> missingPlatforms = [];
         bool hasExpectedPlatform = false;
 
-        foreach (PlatformInfo platform in image.AllPlatforms)
+        // For each platform declared in the manifest, make sure the image-info (imageArtifactDetails) also contains
+        // that platform. If not, there's a problem.
+        foreach (PlatformInfo platform in manifestImage.AllPlatforms)
         {
-            TagInfo? imageTag = GetPlatformTagRepresentative(repo, image, platform, getTagRepresentative, throwIfMissing: false);
+            TagInfo? imageTag =
+                GetPlatformTagRepresentative(
+                    repo,
+                    manifestImage,
+                    platform,
+                    getTagRepresentative,
+                    throwIfMissing: false);
+
             if (imageTag is null)
-            {
                 continue;
-            }
 
             hasExpectedPlatform = true;
 
             if (ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails) is null)
-            {
                 missingPlatforms.Add(GetPlatformDescription(platform));
-            }
         }
 
         if (!hasExpectedPlatform || missingPlatforms.Count == 0)

@@ -102,6 +102,120 @@ public class ManifestListHelperTests
         results[0].PlatformTags.ShouldNotContain("repo:tag-windows");
     }
 
+    // Regression test for search ordering bug.
+    // A tagless platform whose shared tag is syndicated must borrow a representative tag from a
+    // sibling that actually has a tag syndicated to the target repo, even when an earlier-declared
+    // sibling has tags but none are syndicated.
+    //
+    // This is a super-niche edge case that is unlikely to ever be hit. However, in the original
+    // implementation of GetManifestListsForImages, the ordering of images in the manifest impacted
+    // the outcome. The ordering in the manifest should not matter, so therefore it's worth fixing
+    // and creating this regression test.
+    //
+    // Test scenario: 3 images, all with the same dockerfile.
+    //
+    // no platform specific tags.
+    // one shared tag, syndicated.
+    // image A:
+    //   - dockerfile: 1.0/repo/os
+    //     tags: []
+    //     sharedTags:
+    //       sharedtag:
+    //         syndication:
+    //           repo: syndicated-repo
+    //           destinationTags: [syn-sharedtag]
+    //
+    // one platform specific tag, not syndicated.
+    // no shared tags.
+    // image B:
+    //   - dockerfile: 1.0/repo/os
+    //     tags: tagB
+    //
+    // one platform specific tag, syndicated.
+    // no shared tags.
+    // image C:
+    //   - dockerfile: 1.0/repo/os
+    //     tags:
+    //       tagC:
+    //         syndication:
+    //           repo: syndicated-repo
+    //           destinationTags: [syn-tagC]
+    //
+    // build: only image A's single platform.
+    //
+    // expected manifest lists:
+    //   mcr.microsoft.com/repo:sharedtag                   -> [ mcr.microsoft.com/repo:tagB ]
+    //   mcr.microsoft.com/syndicated-repo:syn-sharedtag    -> [ mcr.microsoft.com/syndicated-repo:tagC ]
+    [Fact]
+    public void GetManifestListsForImages_SyndicatedTaglessPlatform_SkipsSiblingWithoutSyndicatedTag()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+        string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
+
+        // Image A: a tagless platform whose shared tag is syndicated.
+        Image imageA = CreateImage(
+            [CreatePlatform(dockerfile, Array.Empty<string>())],
+            new Dictionary<string, Tag>
+            {
+                {
+                    "sharedtag",
+                    new Tag
+                    {
+                        Syndication = new TagSyndication
+                        {
+                            Repo = "syndicated-repo",
+                            DestinationTags = ["syn-sharedtag"]
+                        }
+                    }
+                }
+            });
+
+        // Image B: matching sibling (same Dockerfile) with tags but NO syndicated tag.
+        // Declared first, so it is the first donor encountered.
+        Image imageB = CreateImage(CreatePlatform(dockerfile, ["tagB"]));
+
+        // Image C: matching sibling with a tag syndicated to "syndicated-repo".
+        // Declared second; this is the only donor that can supply the syndicated representative.
+        Platform siblingWithSyndication = CreatePlatform(dockerfile, ["tagC"]);
+        siblingWithSyndication.Tags["tagC"].Syndication = new TagSyndication
+        {
+            Repo = "syndicated-repo",
+            DestinationTags = ["syn-tagC"]
+        };
+        Image imageC = CreateImage(siblingWithSyndication);
+
+        Manifest manifest = CreateManifest(CreateRepo("repo", imageA, imageB, imageC));
+        manifest.Registry = "mcr.microsoft.com";
+
+        // Only the tagless platform was built.
+        ImageArtifactDetails imageArtifactDetails = CreateImageArtifactDetails(
+            CreateRepoData("repo",
+                CreateImageData(
+                    ["sharedtag"],
+                    CreatePlatform(dockerfile, simpleTags: []))));
+
+        ManifestInfo manifestInfo = LoadManifest(manifest, tempFolderContext);
+        ImageArtifactDetails linkedImageInfo = LoadImageInfo(imageArtifactDetails, manifestInfo, tempFolderContext);
+
+        IReadOnlyList<ManifestListInfo> lists = ManifestListHelper.GetManifestListsForImages(
+            manifestInfo, linkedImageInfo, repoPrefix: null);
+
+        // The primary manifest list borrows donor B's tag (first matching sibling with tags).
+        ManifestListInfo primaryList = lists.Single(l => l.Tag == "mcr.microsoft.com/repo:sharedtag");
+        primaryList.PlatformTags.ShouldBe(["mcr.microsoft.com/repo:tagB"]);
+
+        // The syndicated manifest list must be created and must borrow donor C's tag, since C is
+        // the only sibling with a tag syndicated to "syndicated-repo".
+        ManifestListInfo syndicatedList =
+            lists.Single(l => l.Tag == "mcr.microsoft.com/syndicated-repo:syn-sharedtag");
+        syndicatedList.PlatformTags.ShouldBe(["mcr.microsoft.com/syndicated-repo:tagC"]);
+
+        // Validation should report no missing platforms now that the syndicated list is complete.
+        ManifestListHelper.GetManifestListPlatformValidationIssues(
+            manifestInfo, linkedImageInfo, repoPrefix: null).ShouldBeEmpty();
+    }
+
     /// <summary>
     /// Verifies that validation reports generated manifest lists that are missing expected platforms.
     /// </summary>

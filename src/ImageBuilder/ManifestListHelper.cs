@@ -292,26 +292,30 @@ public static class ManifestListHelper
             return getTagRepresentative(platform);
         }
 
-        // Tagless platforms included by shared tags need a matching concrete tag to reference in the manifest list.
-        (ImageInfo Image, PlatformInfo Platform)? matchingPlatform =
-            repo.AllImages
-                .SelectMany(candidateImage =>
-                    candidateImage.AllPlatforms
-                        .Select(candidatePlatform => (Image: candidateImage, Platform: candidatePlatform))
-                        .Where(candidate =>
-                            platform != candidate.Platform
-                            && PlatformInfo.AreMatchingPlatforms(
-                                image1: image,
-                                platform1: platform,
-                                image2: candidate.Image,
-                                platform2: candidate.Platform)
-                            && candidate.Platform.Tags.Any()))
-                .Cast<(ImageInfo Image, PlatformInfo Platform)?>()
-                .FirstOrDefault();
+        // Tagless platforms included by shared tags need a matching concrete tag to reference in
+        // the manifest list, borrowed from a sibling platform (same Dockerfile/OS/arch). The
+        // representative selector can return null even when a sibling has tags - for example, in a
+        // syndicated pass where the sibling has tags but none syndicated to the target repo - so we
+        // must keep searching for a sibling that yields a usable representative instead of
+        // committing to the first sibling that merely has tags.
+        TagInfo? representativeTag = repo.AllImages
+            .SelectMany(candidateImage =>
+                candidateImage.AllPlatforms
+                    .Select(candidatePlatform => (Image: candidateImage, Platform: candidatePlatform)))
+            .Where(candidate =>
+                platform != candidate.Platform
+                && PlatformInfo.AreMatchingPlatforms(
+                    image1: image,
+                    platform1: platform,
+                    image2: candidate.Image,
+                    platform2: candidate.Platform)
+                && candidate.Platform.Tags.Any())
+            .Select(candidate => getTagRepresentative(candidate.Platform))
+            .FirstOrDefault(tag => tag is not null);
 
-        if (matchingPlatform is not null)
+        if (representativeTag is not null)
         {
-            return getTagRepresentative(matchingPlatform.Value.Platform);
+            return representativeTag;
         }
 
         if (throwIfMissing)

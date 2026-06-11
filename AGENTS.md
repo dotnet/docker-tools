@@ -12,9 +12,11 @@ The primary tool is **ImageBuilder**, a .NET CLI application that orchestrates D
 This repo contains several projects:
 
 - **`src/ImageBuilder/`** - The main ImageBuilder CLI tool (executable)
+- **`src/ImageBuilder.Automation/`** - Library for automating git commits and pull requests against GitHub and Azure DevOps (see its README)
+- **`src/ImageBuilder.Automation.Tests/`** - Unit tests for ImageBuilder.Automation (MSTest; runs real git against local repos)
 - **`src/ImageBuilder.Models/`** - Shared model definitions for manifest files and image metadata
-- **`src/ImageBuilder.Tests/`** - Unit tests using xUnit, Moq, and Shouldly
-- **`eng/src/file-pusher/`** - Utility for pushing files to storage
+- **`src/ImageBuilder.Tests/`** - Unit tests using MSTest, Moq, and Shouldly
+- **`eng/src/file-pusher/`** - Utility that opens pull requests to push files to other repos
 - **`eng/src/yaml-updater/`** - Utility for updating YAML files
 
 ## Building and Testing

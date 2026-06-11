@@ -17,7 +17,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
 using Microsoft.VisualStudio.Services.WebApi;
@@ -1835,13 +1834,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     .ReturnsAsync(blobsClientMock.Object);
 
                 return octokitClientFactoryMock.Object;
-            }
-
-            private static bool IsMatchingBranch(GitHubBranch branch)
-            {
-                return branch.Name == GitHubBranch &&
-                    branch.Project.Name == GitHubRepo &&
-                    branch.Project.Owner == GitHubOwner;
             }
 
             /// <summary>

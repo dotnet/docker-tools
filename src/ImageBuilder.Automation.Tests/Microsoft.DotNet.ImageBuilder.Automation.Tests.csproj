@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Explicit Nullable setting required for Docker builds from src/ context (won't see root Directory.Build.props).
+         Tracking issue for fixing context directory: https://github.com/dotnet/docker-tools/issues/1592 -->
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <SignAssembly>false</SignAssembly>
+    <TestRunnerName>MSTest</TestRunnerName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Shouldly" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../ImageBuilder.Automation/Microsoft.DotNet.ImageBuilder.Automation.csproj" />
+  </ItemGroup>
+
+</Project>

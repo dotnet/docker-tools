@@ -1,18 +1,15 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Automation;
 using Microsoft.DotNet.ImageBuilder.Mcr;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.DotNet.VersionTools.Automation;
-using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -20,14 +17,14 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const string McrTagsPlaceholder = "Tags go here.";
         private readonly IGitService _gitService;
-        private readonly IGitHubClientFactory _gitHubClientFactory;
+        private readonly IRepoHostFactory _repoHostFactory;
         private readonly ILogger<PublishMcrDocsCommand> _logger;
 
-        public PublishMcrDocsCommand(IManifestJsonService manifestJsonService, IGitService gitService, IGitHubClientFactory gitHubClientFactory,
+        public PublishMcrDocsCommand(IManifestJsonService manifestJsonService, IGitService gitService, IRepoHostFactory repoHostFactory,
             ILogger<PublishMcrDocsCommand> logger) : base(manifestJsonService)
         {
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
-            _gitHubClientFactory = gitHubClientFactory ?? throw new ArgumentNullException(nameof(gitHubClientFactory));
+            _repoHostFactory = repoHostFactory ?? throw new ArgumentNullException(nameof(repoHostFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
@@ -39,37 +36,47 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             ValidateReadmeFilenames(Manifest);
 
-            // Hookup a TraceListener in order to capture details from Microsoft.DotNet.VersionTools
-            Trace.Listeners.Add(new TextWriterTraceListener(Console.Out));
-
             string productRepo = GetProductRepo();
 
-            IEnumerable<GitObject> gitObjects =
+            IEnumerable<McrDoc> docs =
                 GetUpdatedReadmes(productRepo)
                 .Concat(GetUpdatedTagsMetadata(productRepo));
 
-            foreach (GitObject gitObject in gitObjects)
+            foreach (McrDoc doc in docs)
             {
                 _logger.LogInformation(
-                    $"Updated file '{gitObject.Path}' with contents:{Environment.NewLine}{gitObject.Content}{Environment.NewLine}");
+                    $"Updated file '{doc.Path}' with contents:{Environment.NewLine}{doc.Content}{Environment.NewLine}");
             }
 
             if (!Options.IsDryRun)
             {
-                using IGitHubClient gitHubClient = await _gitHubClientFactory.GetClientAsync(Options.GitOptions, Options.IsDryRun);
+                IRepoHost repoHost =
+                    await _repoHostFactory.CreateRepoHostAsync(Options.GitOptions, Options.IsDryRun);
 
-                await RetryHelper.GetWaitAndRetryPolicy<HttpRequestException>(_logger).ExecuteAsync(async () =>
+                await RetryHelper.GetWaitAndRetryPolicy<GitException>(_logger).ExecuteAsync(async () =>
                 {
-                    GitReference gitRef = await GitHelper.PushChangesAsync(gitHubClient, Options, $"Mirroring {productRepo} readmes", branch =>
+                    EnsureResult result = await repoHost.EnsureBranchAsync(new BranchSpec
                     {
-                        return FilterUpdatedGitObjectsAsync(gitObjects, gitHubClient, branch);
+                        Branch = Options.GitOptions.Branch,
+                        CommitMessage = $"Mirroring {productRepo} readmes",
+                        Apply = repoRoot => WriteDocsAsync(repoRoot, docs),
                     });
 
-                    if (gitRef != null)
+                    if (result.CommitSha != null)
                     {
-                        _logger.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", gitRef.Object.Sha));
+                        _logger.LogInformation(PipelineHelper.FormatOutputVariable("readmeCommitDigest", result.CommitSha));
                     }
                 });
+            }
+        }
+
+        private static async Task WriteDocsAsync(string repoRoot, IEnumerable<McrDoc> docs)
+        {
+            foreach (McrDoc doc in docs)
+            {
+                string path = Path.Combine(repoRoot, doc.Path);
+                Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+                await File.WriteAllTextAsync(path, doc.Content);
             }
         }
 
@@ -100,43 +107,18 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private async Task<IEnumerable<GitObject>> FilterUpdatedGitObjectsAsync(
-            IEnumerable<GitObject> gitObjects, IGitHubClient gitHubClient, GitHubBranch branch)
-        {
-            List<GitObject> updatedGitObjects = new();
-            foreach (GitObject gitObject in gitObjects)
-            {
-                string currentContent = await gitHubClient.GetGitHubFileContentsAsync(gitObject.Path, branch);
-                if (currentContent == gitObject.Content)
-                {
-                    _logger.LogInformation($"File '{gitObject.Path}' has not changed.");
-                }
-                else
-                {
-                    _logger.LogInformation($"File '{gitObject.Path}' has changed.");
-                    updatedGitObjects.Add(gitObject);
-                }
-            }
-
-            return updatedGitObjects;
-        }
-
-        private GitObject GetGitObject(
+        private McrDoc GetMcrDoc(
             string repo,
             string filePath,
             string updatedContent)
         {
             // We only use the filename from the provided file path because all files in the target mcrdocs repo
             // are located at the root of the repo directory.
-            string gitPath = string.Join('/', Options.GitOptions.Path, repo, Path.GetFileName(filePath));
+            IEnumerable<string> pathSegments =
+                new[] { Options.GitOptions.Path, repo, Path.GetFileName(filePath) }
+                    .Where(segment => !string.IsNullOrEmpty(segment));
 
-            return new GitObject
-            {
-                Path = gitPath,
-                Type = GitObject.TypeBlob,
-                Mode = GitObject.ModeFile,
-                Content = updatedContent
-            };
+            return new McrDoc(string.Join('/', pathSegments), updatedContent);
         }
 
         private string GetProductRepo()
@@ -146,7 +128,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return firstRepoName.Substring(0, firstRepoName.LastIndexOf('/'));
         }
 
-        private GitObject[] GetUpdatedReadmes(string productRepo)
+        private McrDoc[] GetUpdatedReadmes(string productRepo)
         {
             List<string> readmePaths = Manifest.FilteredRepos
                 .SelectMany(repo => repo.Readmes)
@@ -159,30 +141,35 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 readmePaths.Add(Manifest.ReadmePath);
             }
 
-            List<GitObject> readmes = new();
+            List<McrDoc> readmes = new();
 
             foreach (string readmePath in readmePaths)
             {
                 string updatedReadMe = File.ReadAllText(readmePath);
                 updatedReadMe = ReadmeHelper.UpdateTagsListing(updatedReadMe, McrTagsPlaceholder);
-                readmes.Add(GetGitObject(productRepo, readmePath, updatedReadMe));
+                readmes.Add(GetMcrDoc(productRepo, readmePath, updatedReadMe));
             }
 
             return readmes.ToArray();
         }
 
-        private GitObject[] GetUpdatedTagsMetadata(string productRepo)
+        private McrDoc[] GetUpdatedTagsMetadata(string productRepo)
         {
-            List<GitObject> metadata = new();
+            List<McrDoc> metadata = new();
 
             foreach (RepoInfo repo in Manifest.FilteredRepos)
             {
                 string updatedMetadata = McrTagsMetadataGenerator.Execute(Manifest, repo, generateGitHubLinks: true, _gitService, Options.SourceRepoUrl);
                 string metadataFileName = Path.GetFileName(repo.Model.McrTagsMetadataTemplate);
-                metadata.Add(GetGitObject(productRepo, metadataFileName, updatedMetadata));
+                metadata.Add(GetMcrDoc(productRepo, metadataFileName, updatedMetadata));
             }
 
             return metadata.ToArray();
         }
+
+        /// <summary>
+        /// A doc file to publish, with its path relative to the root of the mcrdocs repo.
+        /// </summary>
+        private sealed record McrDoc(string Path, string Content);
     }
 }

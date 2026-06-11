@@ -3,24 +3,29 @@
 # build image
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build-env
 
-WORKDIR /file-pusher
+WORKDIR /repo-src
 
 # copy csproj and restore as distinct layers
-COPY eng/src/file-pusher/*.csproj ./
 COPY NuGet.config ./
-RUN dotnet restore
+COPY eng/src/file-pusher/*.csproj ./eng/src/file-pusher/
+COPY src/ImageBuilder.Automation/*.csproj ./src/ImageBuilder.Automation/
+RUN dotnet restore ./eng/src/file-pusher/file-pusher.csproj
 
 # copy everything else and build
-COPY eng/src/file-pusher/. ./
-RUN dotnet publish -c Release -o out --no-restore
+COPY eng/src/file-pusher/. ./eng/src/file-pusher/
+COPY src/ImageBuilder.Automation/. ./src/ImageBuilder.Automation/
+RUN dotnet publish ./eng/src/file-pusher/file-pusher.csproj -c Release -o out --no-restore
 
 
 # runtime image
 FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
 
+# file-pusher pushes changes using the git CLI
+RUN apk add --no-cache git
+
 # copy file-pusher
 WORKDIR /file-pusher
-COPY --from=build-env /file-pusher/out ./
+COPY --from=build-env /repo-src/out ./
 
 # copy repo
 WORKDIR /repo

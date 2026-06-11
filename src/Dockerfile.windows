@@ -14,6 +14,7 @@ ENV NUGET_PACKAGES=/nuget
 # restore packages before copying entire source - provides optimizations when rebuilding
 COPY NuGet.config ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
+COPY ImageBuilder.Automation/Microsoft.DotNet.ImageBuilder.Automation.csproj ./ImageBuilder.Automation/
 COPY ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj ./ImageBuilder.Models/
 RUN dotnet restore -r win-x64 ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
 

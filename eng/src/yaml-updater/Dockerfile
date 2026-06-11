@@ -3,27 +3,31 @@
 # build image
 FROM mcr.microsoft.com/dotnet/sdk:9.0-alpine AS build-env
 
-WORKDIR /src
+WORKDIR /repo-src
 
 # copy csproj and restore as distinct layers
-COPY eng/src/file-pusher/*.csproj ./file-pusher/
-COPY eng/src/yaml-updater/*.csproj ./yaml-updater/
 COPY NuGet.config ./
-
-RUN dotnet restore ./yaml-updater/*.csproj
+COPY eng/src/file-pusher/*.csproj ./eng/src/file-pusher/
+COPY eng/src/yaml-updater/*.csproj ./eng/src/yaml-updater/
+COPY src/ImageBuilder.Automation/*.csproj ./src/ImageBuilder.Automation/
+RUN dotnet restore ./eng/src/yaml-updater/yaml-updater.csproj
 
 # copy everything else and build
-COPY eng/src/file-pusher/. ./file-pusher/
-COPY eng/src/yaml-updater/. ./yaml-updater/
-RUN dotnet publish ./yaml-updater/*.csproj -c Release -o out --no-restore
+COPY eng/src/file-pusher/. ./eng/src/file-pusher/
+COPY eng/src/yaml-updater/. ./eng/src/yaml-updater/
+COPY src/ImageBuilder.Automation/. ./src/ImageBuilder.Automation/
+RUN dotnet publish ./eng/src/yaml-updater/yaml-updater.csproj -c Release -o out --no-restore
 
 
 # runtime image
 FROM mcr.microsoft.com/dotnet/runtime:9.0-alpine
 
+# yaml-updater pushes changes using the git CLI
+RUN apk add --no-cache git
+
 # copy yaml-updater
 WORKDIR /yaml-updater
-COPY --from=build-env /src/out ./
+COPY --from=build-env /repo-src/out ./
 
 # copy repo
 WORKDIR /repo

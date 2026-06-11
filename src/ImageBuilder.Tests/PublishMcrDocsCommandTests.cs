@@ -1,14 +1,15 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Automation;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.VersionTools.Automation.GitHubApi;
-using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json;
@@ -36,12 +37,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [TestMethod]
         public async Task ExcludeProductFamilyReadme()
         {
-            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
-            IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
-
-            PublishMcrDocsCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
-
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            string repoRoot = Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, "repo-root")).FullName;
+            (Mock<IRepoHost> repoHostMock, IRepoHostFactory repoHostFactory) =
+                CreateRepoHostMock(repoRoot);
+
+            PublishMcrDocsCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IGitService>(), repoHostFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
 
             DockerfileHelper.CreateFile(ProductFamilyReadmePath, tempFolderContext, DefaultReadme);
             DockerfileHelper.CreateFile(RepoReadmePath, tempFolderContext, DefaultReadme);
@@ -71,13 +72,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             await command.ExecuteAsync();
 
             // Verify published file list does not contain ProductFamilyReadmePath
-            gitHubClientMock
-                .Verify(o =>
-                    o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(),
-                        It.Is<GitObject[]>(objs =>
-                            objs.Length == 2 &&
-                            Path.GetFileName(objs[0].Path) == RepoReadmePath &&
-                            Path.GetFileName(objs[1].Path) == TagsYamlPath)));
+            string[] publishedFiles = GetPublishedFileNames(repoRoot);
+            publishedFiles.ShouldBe(new[] { RepoReadmePath, TagsYamlPath }, ignoreOrder: true);
         }
 
         [TestMethod]
@@ -117,10 +113,11 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
-            IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
+            string repoRoot = Directory.CreateDirectory(Path.Combine(tempFolderContext.Path, "repo-root")).FullName;
+            (Mock<IRepoHost> repoHostMock, IRepoHostFactory repoHostFactory) =
+                CreateRepoHostMock(repoRoot);
 
-            PublishMcrDocsCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
+            PublishMcrDocsCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IGitService>(), repoHostFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.ExcludeProductFamilyReadme = true;
             command.Options.RootPath = Path.Combine(tempFolderContext.Path, "dir");
@@ -128,26 +125,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             await command.ExecuteAsync();
 
-            gitHubClientMock
-                .Verify(o =>
-                    o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(),
-                        It.Is<GitObject[]>(objs =>
-                            objs.Length == 2 &&
-                            Path.GetFileName(objs[0].Path) == RepoReadmePath &&
-                            Path.GetFileName(objs[1].Path) == TagsYamlPath &&
-                            objs[0].Content == readme2Content)));
+            // Only the readme under RootPath is published, with its content intact.
+            string[] publishedFiles = GetPublishedFileNames(repoRoot);
+            publishedFiles.ShouldBe(new[] { RepoReadmePath, TagsYamlPath }, ignoreOrder: true);
 
-            gitHubClientMock.Verify(o =>
-                o.GetGitHubFileContentsAsync(It.IsAny<string>(), It.IsAny<GitHubBranch>()));
-            gitHubClientMock.Verify(o =>
-                o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()));
-            gitHubClientMock.Verify(o =>
-                o.PostCommitAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]>()));
-            gitHubClientMock.Verify(o =>
-                o.PatchReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()));
-            gitHubClientMock.Verify(o => o.Dispose());
+            string publishedReadme = Directory.GetFiles(repoRoot, RepoReadmePath, SearchOption.AllDirectories)[0];
+            File.ReadAllText(publishedReadme).ShouldBe(readme2Content);
 
-            gitHubClientMock.VerifyNoOtherCalls();
+            repoHostMock.Verify(o =>
+                o.EnsureBranchAsync(It.IsAny<BranchSpec>(), It.IsAny<CancellationToken>()),
+                Times.Once);
         }
 
         [TestMethod]
@@ -187,10 +174,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             string manifestPath = Path.Combine(tempFolderContext.Path, "manifest.json");
             File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
 
-            Mock<IGitHubClient> gitHubClientMock = CreateGitHubClientMock();
-            IGitHubClientFactory gitHubClientFactory = CreateGitHubClientFactory(gitHubClientMock);
+            (_, IRepoHostFactory repoHostFactory) = CreateRepoHostMock(tempFolderContext.Path);
 
-            PublishMcrDocsCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IGitService>(), gitHubClientFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
+            PublishMcrDocsCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IGitService>(), repoHostFactory, Mock.Of<ILogger<PublishMcrDocsCommand>>());
             command.Options.Manifest = manifestPath;
             command.Options.ExcludeProductFamilyReadme = true;
             command.LoadManifest();
@@ -208,34 +194,34 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return tagsMetadataTemplatePath;
         }
 
-        private static Mock<IGitHubClient> CreateGitHubClientMock()
+        /// <summary>
+        /// Creates an <see cref="IRepoHost"/> mock whose EnsureBranchAsync invokes the
+        /// changes against <paramref name="repoRoot"/>, simulating a local clone.
+        /// </summary>
+        private static (Mock<IRepoHost> Host, IRepoHostFactory Factory) CreateRepoHostMock(string repoRoot)
         {
-            Mock<IGitHubClient> gitHubClientMock = new();
-            gitHubClientMock
-                .Setup(o => o.GetReferenceAsync(It.IsAny<GitHubProject>(), It.IsAny<string>()))
-                .ReturnsAsync(new GitReference
+            Mock<IRepoHost> repoHostMock = new();
+            repoHostMock
+                .Setup(o => o.EnsureBranchAsync(It.IsAny<BranchSpec>(), It.IsAny<CancellationToken>()))
+                .Returns(async (BranchSpec spec, CancellationToken _) =>
                 {
-                    Object = new GitReferenceObject()
+                    await spec.Apply(repoRoot);
+                    return new EnsureResult
+                    {
+                        Outcome = EnsureOutcome.Updated,
+                        CommitSha = "commitSha",
+                    };
                 });
 
-            gitHubClientMock
-                .Setup(o => o.PostTreeAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<GitObject[]>()))
-                .ReturnsAsync(new GitTree());
+            Mock<IRepoHostFactory> repoHostFactoryMock = new();
+            repoHostFactoryMock
+                .Setup(o => o.CreateRepoHostAsync(It.IsAny<GitOptions>(), false))
+                .ReturnsAsync(repoHostMock.Object);
 
-            gitHubClientMock
-                .Setup(o => o.PostCommitAsync(It.IsAny<GitHubProject>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string[]>()))
-                .ReturnsAsync(new GitCommit());
-
-            return gitHubClientMock;
+            return (repoHostMock, repoHostFactoryMock.Object);
         }
 
-        private static IGitHubClientFactory CreateGitHubClientFactory(Mock<IGitHubClient> gitHubClientMock)
-        {
-            Mock<IGitHubClientFactory> gitHubClientFactoryMock = new();
-            gitHubClientFactoryMock
-                            .Setup(o => o.GetClientAsync(It.IsAny<GitOptions>(), false))
-                            .ReturnsAsync(gitHubClientMock.Object);
-            return gitHubClientFactoryMock.Object;
-        }
+        private static string[] GetPublishedFileNames(string repoRoot) =>
+            [.. Directory.GetFiles(repoRoot, "*", SearchOption.AllDirectories).Select(file => Path.GetFileName(file))];
     }
 }

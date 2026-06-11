@@ -18,7 +18,8 @@ namespace Microsoft.DotNet.ImageBuilder.RateLimiting;
 /// </summary>
 public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLimiter) : DelegatingHandler
 {
-    private const string ReferrersPathSegment = "/referrers/";
+    private const string RegistryApiVersionPathSegment = "v2";
+    private const string ReferrersPathSegment = "referrers";
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request,
@@ -38,8 +39,17 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
         return await base.SendAsync(request, cancellationToken);
     }
 
-    private static bool IsAcrReferrerLookup(HttpRequestMessage request) =>
-        request.RequestUri is { Host: string host } uri
-        && host.EndsWith(".azurecr.io", StringComparison.OrdinalIgnoreCase)
-        && uri.AbsolutePath.Contains(ReferrersPathSegment, StringComparison.OrdinalIgnoreCase);
+    private static bool IsAcrReferrerLookup(HttpRequestMessage request)
+    {
+        if (request.RequestUri is not { Host: string host } uri
+            || !host.EndsWith(".azurecr.io", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        string[] pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return pathSegments.Length >= 4
+            && string.Equals(pathSegments[0], RegistryApiVersionPathSegment, StringComparison.Ordinal)
+            && string.Equals(pathSegments[^2], ReferrersPathSegment, StringComparison.OrdinalIgnoreCase);
+    }
 }

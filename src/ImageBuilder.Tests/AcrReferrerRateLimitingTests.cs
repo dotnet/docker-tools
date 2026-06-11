@@ -57,6 +57,23 @@ public class AcrReferrerRateLimitingTests
     }
 
     [TestMethod]
+    public async Task AcrRequestsToRepositoryWithReferrersSegment_AreNotRateLimited()
+    {
+        using AcrReferrerRateLimiter limiter = CreateSinglePermitLimiter();
+        RecordingHandler inner = new();
+        using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
+
+        using HttpResponseMessage firstResponse =
+            await SendAsync(invoker, "https://myregistry.azurecr.io/v2/repo/referrers/app/manifests/latest");
+        using HttpResponseMessage secondResponse =
+            await SendAsync(invoker, "https://myregistry.azurecr.io/v2/repo/referrers/app/manifests/latest");
+
+        firstResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        secondResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        inner.RequestCount.ShouldBe(2);
+    }
+
+    [TestMethod]
     public async Task ReferrerRequest_ConsumesPermit()
     {
         using AcrReferrerRateLimiter limiter = CreateSinglePermitLimiter();

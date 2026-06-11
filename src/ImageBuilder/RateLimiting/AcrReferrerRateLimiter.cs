@@ -33,7 +33,7 @@ public sealed class AcrReferrerRateLimiter : IDisposable
     private static readonly TimeSpan s_window = TimeSpan.FromSeconds(60);
 
     private readonly Func<string, RateLimiter> _limiterFactory;
-    private readonly ConcurrentDictionary<string, RateLimiter> _limiters =
+    private readonly ConcurrentDictionary<string, Lazy<RateLimiter>> _limiters =
         new(StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
@@ -70,9 +70,12 @@ public sealed class AcrReferrerRateLimiter : IDisposable
     public ValueTask<RateLimitLease> AcquireAsync(string host, CancellationToken cancellationToken)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(host);
-        RateLimiter limiter = _limiters.GetOrAdd(host, _limiterFactory);
-        return limiter.AcquireAsync(permitCount: 1, cancellationToken);
+        Lazy<RateLimiter> limiter = _limiters.GetOrAdd(host, CreateLazyLimiter);
+        return limiter.Value.AcquireAsync(permitCount: 1, cancellationToken);
     }
+
+    private Lazy<RateLimiter> CreateLazyLimiter(string host) =>
+        new(() => _limiterFactory(host), LazyThreadSafetyMode.ExecutionAndPublication);
 
     private static RateLimiter CreateSlidingWindowLimiter(int permitLimit) =>
         new SlidingWindowRateLimiter(new SlidingWindowRateLimiterOptions
@@ -86,9 +89,12 @@ public sealed class AcrReferrerRateLimiter : IDisposable
 
     public void Dispose()
     {
-        foreach (RateLimiter limiter in _limiters.Values)
+        foreach (Lazy<RateLimiter> limiter in _limiters.Values)
         {
-            limiter.Dispose();
+            if (limiter.IsValueCreated)
+            {
+                limiter.Value.Dispose();
+            }
         }
     }
 }

@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
@@ -121,6 +122,36 @@ public class AcrReferrerRateLimitingTests
     }
 
     [TestMethod]
+    public async Task ConcurrentReferrerRequestsForNewHost_CreateSingleLimiter()
+    {
+        int createdLimiterCount = 0;
+        using AcrReferrerRateLimiter limiter = new(_ =>
+        {
+            Interlocked.Increment(ref createdLimiterCount);
+            Thread.Sleep(TimeSpan.FromMilliseconds(50));
+            return CreateSlidingWindowLimiter(permitLimit: 100);
+        });
+        RecordingHandler inner = new();
+        using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
+        TaskCompletionSource start = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        Task[] requests = Enumerable.Range(0, 25)
+            .Select(_ => Task.Run(async () =>
+            {
+                await start.Task;
+                using HttpResponseMessage response = await SendAsync(invoker, ReferrerUrl);
+                response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            }))
+            .ToArray();
+
+        start.SetResult();
+        await Task.WhenAll(requests);
+
+        createdLimiterCount.ShouldBe(1);
+        inner.RequestCount.ShouldBe(25);
+    }
+
+    [TestMethod]
     public void ResolvePermitLimit_UsesConfiguredValue()
     {
         PublishConfiguration config = new()
@@ -211,15 +242,17 @@ public class AcrReferrerRateLimitingTests
     // Each host gets its own limiter with a single permit and no queue, so an exhausted window
     // yields a non-acquired lease (the handler then throws).
     private static AcrReferrerRateLimiter CreateSinglePermitLimiter() =>
-        new(_ => new SlidingWindowRateLimiter(
-            new SlidingWindowRateLimiterOptions
-            {
-                PermitLimit = 1,
-                Window = TimeSpan.FromMinutes(10),
-                SegmentsPerWindow = 1,
-                QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
-                QueueLimit = 0,
-            }));
+        new(_ => CreateSlidingWindowLimiter(permitLimit: 1));
+
+    private static SlidingWindowRateLimiter CreateSlidingWindowLimiter(int permitLimit) =>
+        new(new SlidingWindowRateLimiterOptions
+        {
+            PermitLimit = permitLimit,
+            Window = TimeSpan.FromMinutes(10),
+            SegmentsPerWindow = 1,
+            QueueProcessingOrder = QueueProcessingOrder.OldestFirst,
+            QueueLimit = 0,
+        });
 
     private sealed class RecordingHandler : HttpMessageHandler
     {

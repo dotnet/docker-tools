@@ -1,7 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
-#nullable enable
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 
 namespace Microsoft.DotNet.ImageBuilder.Configuration;
 
@@ -44,4 +45,12 @@ public sealed record RegistryAuthentication
     /// The Azure subscription ID containing this ACR. Null for non-ACR registries.
     /// </summary>
     public string? Subscription { get; set; }
+
+    /// <summary>
+    /// The maximum number of OCI referrer-lookup requests (the ACR
+    /// <c>/v2/&lt;repo&gt;/referrers/&lt;digest&gt;</c> endpoint) allowed per 60-second window for
+    /// this registry. When unset,
+    /// <see cref="AcrReferrerRateLimiter.DefaultReferrerRequestsPerMinute"/> is used.
+    /// </summary>
+    public int? ReferrerRequestsPerMinute { get; set; }
 }

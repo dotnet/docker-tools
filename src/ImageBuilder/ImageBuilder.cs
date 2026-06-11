@@ -3,9 +3,11 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
+using System.Threading;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Commands.Signing;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.DotNet.ImageBuilder.Services;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -53,11 +55,11 @@ public static class ImageBuilder
         builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
         builder.Services.AddSingleton<IGitService, GitService>();
 
-        // Add ACR rate limiting:
-        // Singleton limiter holds the rate limiting state.
-        builder.Services.AddSingleton(_ => new AcrRateLimiter());
+        // Add ACR referrer-lookup rate limiting:
+        // Singleton limiter holds the per-registry rate limiting state.
+        builder.Services.AddSingleton<AcrReferrerRateLimiter>();
         // Transient handler gets instantiated for each client and uses the singleton rate limiter.
-        builder.Services.AddTransient<AcrRateLimitingHandler>();
+        builder.Services.AddTransient<AcrReferrerRateLimitingHandler>();
 
         builder.Services.ConfigureHttpClientDefaults(httpClientBuilder =>
         {
@@ -71,21 +73,27 @@ public static class ImageBuilder
             // Don't retry for requests that might not be idempotent
             retryOptions.DisableForUnsafeHttpMethods();
 
-            // Retry should be the outer-most policy
+            // Retry should be the outer-most policy. It retries on transient failures
+            // (including HTTP 429) and respects Retry-After headers.
             httpClientBuilder.AddResilienceHandler(
                 "image-builder-retry",
                 pipeline => pipeline.AddRetry(retryOptions));
+        });
 
-            // ACR rate limiting must be per-retry-attempt, otherwise retries would eat up rate
-            // limited requests without acquiring additional rate limiting leases/tokens.
-            httpClientBuilder.AddHttpMessageHandler<AcrRateLimitingHandler>();
-
+        builder.Services.AddHttpClient(nameof(OrasDotNetService), httpClient =>
+        {
+            // ORAS referrer lookups can intentionally wait in the rate-limiter queue longer
+            // than HttpClient's 100s default timeout.
+            httpClient.Timeout = Timeout.InfiniteTimeSpan;
+        })
+            // Referrer-lookup rate limiting must be per-retry-attempt, otherwise retries would
+            // eat up rate limited requests without acquiring additional rate limiting leases.
+            .AddHttpMessageHandler<AcrReferrerRateLimitingHandler>()
             // Per-request timeout covers individual requests, and doesn't apply to the outer
             // retry policy.
-            httpClientBuilder.AddResilienceHandler(
-                "image-builder-timeout",
+            .AddResilienceHandler(
+                "image-builder-oras-timeout",
                 pipeline => pipeline.AddTimeout(TimeSpan.FromSeconds(10)));
-        });
 
         builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
         builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();

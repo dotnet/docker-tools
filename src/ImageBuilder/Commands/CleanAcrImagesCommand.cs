@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Azure.Containers.ContainerRegistry;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
-using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.Extensions.Options;
 using Polly;
@@ -187,7 +186,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
 
             ConcurrentBag<ArtifactManifestProperties> expiredImages = [];
-            await Parallel.ForEachAsync(allManifests, AcrParallelism.CreateOptions(), async (manifest, token) =>
+            await Parallel.ForEachAsync(allManifests, async (manifest, token) =>
             {
                 if (!IsExcludedManifest(manifest) && await canDeleteManifest(manifest))
                 {

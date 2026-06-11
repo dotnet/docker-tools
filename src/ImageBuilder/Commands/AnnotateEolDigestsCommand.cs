@@ -13,7 +13,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Annotations;
 using Microsoft.DotNet.ImageBuilder.Models.MarBulkDeletion;
 using Microsoft.DotNet.ImageBuilder.Models.Oci;
-using Microsoft.DotNet.ImageBuilder.RateLimiting;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -55,7 +54,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 Options.IsDryRun,
                 async () =>
                 {
-                    await Parallel.ForEachAsync(eolAnnotations.EolDigests, AcrParallelism.CreateOptions(),
+                    await Parallel.ForEachAsync(eolAnnotations.EolDigests, CancellationToken.None,
                         async (digestData, ct) => await AnnotateDigestAsync(digestData, globalEolDate, ct));
                 },
                 Options.CredentialsOptions,

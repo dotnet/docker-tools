@@ -98,21 +98,47 @@ public class OrasDotNetServiceTests
         exception.ParamName.ShouldBe("subjectDescriptor");
     }
 
-    private static OrasDotNetService CreateService(IFileSystem? fileSystem = null)
+    [TestMethod]
+    public async Task GetDescriptorAsync_UsesOrasNamedHttpClient()
+    {
+        Mock<IHttpClientFactory> httpClientFactory = new(MockBehavior.Strict);
+        InvalidOperationException expectedException = new("Expected named client.");
+        httpClientFactory
+            .Setup(factory => factory.CreateClient(nameof(OrasDotNetService)))
+            .Throws(expectedException);
+
+        OrasDotNetService service = CreateService(httpClientFactory: httpClientFactory.Object);
+
+        InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(async () =>
+            await service.GetDescriptorAsync("registry.io/repo:tag"));
+
+        exception.ShouldBeSameAs(expectedException);
+        httpClientFactory.Verify(factory => factory.CreateClient(nameof(OrasDotNetService)), Times.Once);
+    }
+
+    private static OrasDotNetService CreateService(
+        IFileSystem? fileSystem = null,
+        IHttpClientFactory? httpClientFactory = null)
     {
         var credentialsProvider = Mock.Of<IRegistryCredentialsProvider>();
-        var httpClientFactory = new Mock<IHttpClientFactory>();
-        httpClientFactory
-            .Setup(f => f.CreateClient(It.IsAny<string>()))
-            .Returns(new HttpClient());
+        httpClientFactory ??= CreateHttpClientFactory();
         var cache = Mock.Of<IMemoryCache>();
         var logger = Mock.Of<ILogger<OrasDotNetService>>();
 
         return new OrasDotNetService(
             credentialsProvider,
-            httpClientFactory.Object,
+            httpClientFactory,
             cache,
             fileSystem ?? new InMemoryFileSystem(),
             logger);
+    }
+
+    private static IHttpClientFactory CreateHttpClientFactory()
+    {
+        Mock<IHttpClientFactory> httpClientFactory = new();
+        httpClientFactory
+            .Setup(factory => factory.CreateClient(nameof(OrasDotNetService)))
+            .Returns(new HttpClient());
+        return httpClientFactory.Object;
     }
 }

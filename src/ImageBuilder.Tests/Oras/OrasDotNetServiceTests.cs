@@ -138,7 +138,7 @@ public class OrasDotNetServiceTests
         Mock<IHttpClientFactory> httpClientFactory = new();
         httpClientFactory
             .Setup(factory => factory.CreateClient(nameof(OrasDotNetService)))
-            .Returns(new HttpClient());
+            .Returns(Mock.Of<HttpClient>());
         return httpClientFactory.Object;
     }
 }

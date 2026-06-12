@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Threading;
 using System.Threading.RateLimiting;
 using System.Threading.Tasks;
@@ -89,12 +90,9 @@ public sealed class AcrReferrerRateLimiter : IDisposable
 
     public void Dispose()
     {
-        foreach (Lazy<RateLimiter> limiter in _limiters.Values)
+        foreach (Lazy<RateLimiter> limiter in _limiters.Values.Where(limiter => limiter.IsValueCreated))
         {
-            if (limiter.IsValueCreated)
-            {
-                limiter.Value.Dispose();
-            }
+            limiter.Value.Dispose();
         }
     }
 }

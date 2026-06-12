@@ -33,8 +33,8 @@ public class AcrReferrerRateLimitingTests
         // The limiter only has a single permit per host, but non-ACR requests must never consume it.
         for (int i = 0; i < 5; i++)
         {
-            using HttpResponseMessage response = await SendAsync(invoker, NonAcrUrl);
-            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            HttpStatusCode statusCode = await SendAsync(invoker, NonAcrUrl);
+            statusCode.ShouldBe(HttpStatusCode.OK);
         }
 
         inner.RequestCount.ShouldBe(5);
@@ -50,8 +50,8 @@ public class AcrReferrerRateLimitingTests
         // ACR requests that aren't referrer lookups rely on the resilience pipeline, not this limiter.
         for (int i = 0; i < 5; i++)
         {
-            using HttpResponseMessage response = await SendAsync(invoker, NonReferrerAcrUrl);
-            response.StatusCode.ShouldBe(HttpStatusCode.OK);
+            HttpStatusCode statusCode = await SendAsync(invoker, NonReferrerAcrUrl);
+            statusCode.ShouldBe(HttpStatusCode.OK);
         }
 
         inner.RequestCount.ShouldBe(5);
@@ -64,13 +64,13 @@ public class AcrReferrerRateLimitingTests
         RecordingHandler inner = new();
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
-        using HttpResponseMessage firstResponse =
+        HttpStatusCode firstStatusCode =
             await SendAsync(invoker, "https://myregistry.azurecr.io/v2/repo/referrers/app/manifests/latest");
-        using HttpResponseMessage secondResponse =
+        HttpStatusCode secondStatusCode =
             await SendAsync(invoker, "https://myregistry.azurecr.io/v2/repo/referrers/app/manifests/latest");
 
-        firstResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
-        secondResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        firstStatusCode.ShouldBe(HttpStatusCode.OK);
+        secondStatusCode.ShouldBe(HttpStatusCode.OK);
         inner.RequestCount.ShouldBe(2);
     }
 
@@ -81,9 +81,9 @@ public class AcrReferrerRateLimitingTests
         RecordingHandler inner = new();
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
-        using HttpResponseMessage response = await SendAsync(invoker, ReferrerUrl);
+        HttpStatusCode statusCode = await SendAsync(invoker, ReferrerUrl);
 
-        response.StatusCode.ShouldBe(HttpStatusCode.OK);
+        statusCode.ShouldBe(HttpStatusCode.OK);
         inner.RequestCount.ShouldBe(1);
     }
 
@@ -94,7 +94,7 @@ public class AcrReferrerRateLimitingTests
         RecordingHandler inner = new();
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
-        using HttpResponseMessage firstResponse = await SendAsync(invoker, ReferrerUrl);
+        await SendAsync(invoker, ReferrerUrl);
 
         // The window's single permit is now consumed; the next referrer request cannot be served.
         await Should.ThrowAsync<InvalidOperationException>(() => SendAsync(invoker, ReferrerUrl));
@@ -110,13 +110,13 @@ public class AcrReferrerRateLimitingTests
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
         // Exhaust the first registry's single permit.
-        using HttpResponseMessage firstResponse = await SendAsync(invoker, ReferrerUrl);
+        await SendAsync(invoker, ReferrerUrl);
         await Should.ThrowAsync<InvalidOperationException>(() => SendAsync(invoker, ReferrerUrl));
 
         // A different registry has its own independent limiter and must still be served.
-        using HttpResponseMessage otherResponse =
+        HttpStatusCode otherStatusCode =
             await SendAsync(invoker, "https://otherregistry.azurecr.io/v2/repo/referrers/sha256:def");
-        otherResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        otherStatusCode.ShouldBe(HttpStatusCode.OK);
 
         inner.RequestCount.ShouldBe(2);
     }
@@ -139,8 +139,8 @@ public class AcrReferrerRateLimitingTests
             .Select(_ => Task.Run(async () =>
             {
                 await start.Task;
-                using HttpResponseMessage response = await SendAsync(invoker, ReferrerUrl);
-                response.StatusCode.ShouldBe(HttpStatusCode.OK);
+                HttpStatusCode statusCode = await SendAsync(invoker, ReferrerUrl);
+                statusCode.ShouldBe(HttpStatusCode.OK);
             }))
             .ToArray();
 
@@ -214,8 +214,8 @@ public class AcrReferrerRateLimitingTests
         RecordingHandler inner = new();
         using HttpMessageInvoker invoker = CreateInvoker(limiter, inner);
 
-        using HttpResponseMessage firstResponse = await SendAsync(invoker, ReferrerUrl);
-        firstResponse.StatusCode.ShouldBe(HttpStatusCode.OK);
+        HttpStatusCode firstStatusCode = await SendAsync(invoker, ReferrerUrl);
+        firstStatusCode.ShouldBe(HttpStatusCode.OK);
 
         // The only permit for the window is consumed; the next request waits and is cancelled.
         using CancellationTokenSource cts = new();
@@ -230,13 +230,14 @@ public class AcrReferrerRateLimitingTests
         HttpMessageHandler inner) =>
         new(new AcrReferrerRateLimitingHandler(limiter) { InnerHandler = inner });
 
-    private static Task<HttpResponseMessage> SendAsync(
+    private static async Task<HttpStatusCode> SendAsync(
         HttpMessageInvoker invoker,
         string url,
         CancellationToken cancellationToken = default)
     {
-        HttpRequestMessage request = new(HttpMethod.Get, url);
-        return invoker.SendAsync(request, cancellationToken);
+        using HttpRequestMessage request = new(HttpMethod.Get, url);
+        using HttpResponseMessage response = await invoker.SendAsync(request, cancellationToken);
+        return response.StatusCode;
     }
 
     // Each host gets its own limiter with a single permit and no queue, so an exhausted window

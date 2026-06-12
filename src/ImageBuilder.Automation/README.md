@@ -4,9 +4,8 @@ A small library for automating git commits and pull requests against GitHub
 and Azure DevOps repositories. It replaces this repo's previous dependency on
 `Microsoft.DotNet.VersionTools.Automation`.
 
-> **Status:** the interface is settled; the host implementations
-> (`GitHubRepoHost`, `AzdoRepoHost`) are stubs that throw
-> `NotImplementedException`.
+> **Status:** the interface is settled and `GitHubRepoHost` is implemented;
+> `AzdoRepoHost` is a stub that throws `NotImplementedException`.
 
 ## Design: reconciliation, not actions
 

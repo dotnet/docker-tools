@@ -169,6 +169,36 @@ public class PlatformSerializationTests
     }
 
     [TestMethod]
+    public void PlatformWithBuildOsVersion_Bidirectional()
+    {
+        // BuildOsVersion overrides the build host while the base image stays on ltsc2019
+        Platform platform = new()
+        {
+            Dockerfile = "src/runtime/8.0/windowsservercore-ltsc2019/amd64/Dockerfile",
+            OS = OS.Windows,
+            OsVersion = "windowsservercore-ltsc2019",
+            BuildOsVersion = "windowsservercore-ltsc2025",
+            Tags = new Dictionary<string, Tag> { ["8.0-windowsservercore-ltsc2019"] = new Tag() }
+        };
+
+        // buildOsVersion is serialized when set; null is omitted (consistent with other optional fields)
+        string json = """
+            {
+              "buildArgs": {},
+              "dockerfile": "src/runtime/8.0/windowsservercore-ltsc2019/amd64/Dockerfile",
+              "os": "Windows",
+              "osVersion": "windowsservercore-ltsc2019",
+              "buildOsVersion": "windowsservercore-ltsc2025",
+              "tags": {
+                "8.0-windowsservercore-ltsc2019": {}
+              }
+            }
+            """;
+
+        AssertBidirectional(platform, json, AssertPlatformsEqual);
+    }
+
+    [TestMethod]
     public void Deserialization_DockerfileIsRequired_Missing()
     {
         string json = """
@@ -271,6 +301,7 @@ public class PlatformSerializationTests
         actual.DockerfileTemplate.ShouldBe(expected.DockerfileTemplate);
         actual.OS.ShouldBe(expected.OS);
         actual.OsVersion.ShouldBe(expected.OsVersion);
+        actual.BuildOsVersion.ShouldBe(expected.BuildOsVersion);
         (actual.Tags?.Count ?? 0).ShouldBe(expected.Tags?.Count ?? 0);
         (actual.CustomBuildLegGroups?.Length ?? 0).ShouldBe(expected.CustomBuildLegGroups?.Length ?? 0);
         actual.Variant.ShouldBe(expected.Variant);

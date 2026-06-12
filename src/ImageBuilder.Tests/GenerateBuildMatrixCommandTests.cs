@@ -420,6 +420,58 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         /// <summary>
+        /// Verifies that <see cref="Platform.BuildOsVersion"/> overrides the build host/agent
+        /// (matrix bucket) selection without changing the image's base OS version. Two Windows
+        /// images with different base OS versions (Server 2019 and Server 2025) should be grouped
+        /// into a single Server 2025 build matrix when the 2019 image sets its build OS to 2025,
+        /// while each leg still builds against its own base OS version.
+        /// </summary>
+        [TestMethod]
+        public async Task GenerateBuildMatrixCommand_BuildOsVersionOverride()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            GenerateBuildMatrixCommand command = CreateCommand();
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
+
+            Manifest manifest = CreateManifest(
+                CreateRepo("runtime",
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/windowsservercore-ltsc2019", tempFolderContext),
+                            new string[] { "ltsc2019" },
+                            os: OS.Windows,
+                            osVersion: "windowsservercore-ltsc2019",
+                            buildOsVersion: "windowsservercore-ltsc2025")),
+                    CreateImage(
+                        CreatePlatform(
+                            CreateDockerfile("1.0/runtime/windowsservercore-ltsc2025", tempFolderContext),
+                            new string[] { "ltsc2025" },
+                            os: OS.Windows,
+                            osVersion: "windowsservercore-ltsc2025")))
+            );
+
+            File.WriteAllText(Path.Combine(tempFolderContext.Path, command.Options.Manifest), JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            BuildMatrixInfo matrixInfo = matrixInfos.ShouldHaveSingleItem();
+            matrixInfo.Name.ShouldBe("windowsLtsc2025Amd64");
+            matrixInfo.Legs.Count.ShouldBe(2);
+
+            foreach (BuildLegInfo leg in matrixInfo.Legs)
+            {
+                leg.Variables.First(variable => variable.Name == "osType").Value.ShouldBe("windows");
+            }
+
+            IEnumerable<string> osVersions = matrixInfo.Legs
+                .Select(leg => leg.Variables.First(variable => variable.Name == "osVersions").Value);
+            osVersions.ShouldContain("--os-version windowsservercore-ltsc2019");
+            osVersions.ShouldContain("--os-version windowsservercore-ltsc2025");
+        }
+
+        /// <summary>
         /// Verifies the platformVersionedOs matrix type is generated correctly when a
         /// custom build leg group is defined that has a parent graph.
         /// </summary>

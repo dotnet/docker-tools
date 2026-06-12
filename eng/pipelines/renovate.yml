@@ -1,3 +1,6 @@
+# Renovate Dependency Update Pipeline
+# This pipeline runs Renovate to automatically create PRs for dependency updates.
+
 trigger: none
 pr: none
 
@@ -21,16 +24,13 @@ parameters:
   default: false
 
 variables:
-- template: /eng/docker-tools/templates/variables/sdl-pool.yml@self
+- name: gitHubRepo
+  value: 'dotnet/docker-tools'
 
 extends:
-  template: /eng/docker-tools/templates/1es.yml@self
+  template: /eng/common/core-templates/stages/renovate.yml@self
   parameters:
-    stages:
-    - stage: Renovate
-      jobs:
-      - template: /eng/pipelines/templates/jobs/renovate.yml
-        parameters:
-          gitHubRepo: dotnet/docker-tools
-          dryRun: ${{ parameters.dryRun }}
-          forceRecreatePR: ${{ parameters.forceRecreatePR }}
+    dryRun: ${{ parameters.dryRun }}
+    forceRecreatePR: ${{ parameters.forceRecreatePR }}
+    gitHubRepo: ${{ variables.gitHubRepo }}
+    renovateConfigPath: eng/renovate.json

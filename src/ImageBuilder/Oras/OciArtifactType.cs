@@ -7,7 +7,7 @@ namespace Microsoft.DotNet.ImageBuilder.Oras;
 /// <summary>
 /// Well-known OCI artifact type identifiers.
 /// </summary>
-internal static class OciArtifactType
+public static class OciArtifactType
 {
     /// <summary>
     /// Notary v2 signature envelope.

@@ -1,9 +1,12 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
 
 using System;
 using Azure.Containers.ContainerRegistry;
+using Azure.Core;
 using Microsoft.DotNet.ImageBuilder.Configuration;
+using Microsoft.DotNet.ImageBuilder.RateLimiting;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -11,11 +14,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 
 internal class AcrContentClientFactory(
     IAzureTokenCredentialProvider tokenCredentialProvider,
-    IOptions<PublishConfiguration> publishConfigOptions)
+    IOptions<PublishConfiguration> publishConfigOptions,
+    AcrRateLimiter rateLimiter)
     : IAcrContentClientFactory
 {
     private readonly IAzureTokenCredentialProvider _tokenCredentialProvider = tokenCredentialProvider;
     private readonly PublishConfiguration _publishConfig = publishConfigOptions.Value;
+    private readonly AcrRateLimiter _rateLimiter = rateLimiter;
 
     public IAcrContentClient Create(Acr acr, string repositoryName)
     {
@@ -33,7 +38,11 @@ internal class AcrContentClientFactory(
     public IAcrContentClient Create(Acr acr, string repositoryName, IServiceConnection serviceConnection)
     {
         var tokenCredential = _tokenCredentialProvider.GetCredential(serviceConnection);
-        var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential);
+
+        ContainerRegistryClientOptions options = new();
+        options.AddPolicy(new AcrRateLimitingPolicy(_rateLimiter), HttpPipelinePosition.PerRetry);
+
+        var client = new ContainerRegistryContentClient(acr.RegistryUri, repositoryName, tokenCredential, options);
         return new AcrContentClientWrapper(client);
     }
 }

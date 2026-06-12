@@ -82,13 +82,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests.Helpers
             string variant = null,
             CustomBuildLegGroup[] customBuildLegGroups = null,
             string dockerfileTemplatePath = null,
-            TagDocumentationType tagDocumentationType = TagDocumentationType.Documented)
+            TagDocumentationType tagDocumentationType = TagDocumentationType.Documented,
+            string buildOsVersion = null)
         {
             return new Platform
             {
                 Dockerfile = dockerfilePath,
                 DockerfileTemplate = dockerfileTemplatePath,
                 OsVersion = osVersion,
+                BuildOsVersion = buildOsVersion,
                 OS = os,
                 Tags = tags.ToDictionary(tag => tag, tag => new Tag() { DocType = tagDocumentationType }),
                 Architecture = architecture,

@@ -23,6 +23,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         private IEnumerable<string> _internalRepos = Enumerable.Empty<string>();
 
         public string BaseOsVersion { get; private set; }
+        public string BuildOsVersion { get; private set; }
         public IDictionary<string, string?> BuildArgs { get; private set; } = ImmutableDictionary<string, string?>.Empty;
         public string BuildContextPath { get; private set; }
         public string DockerfilePath { get; private set; }
@@ -53,6 +54,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         {
             Model = model;
             BaseOsVersion = baseOsVersion;
+            BuildOsVersion = model.BuildOsVersion is null
+                ? baseOsVersion
+                : model.BuildOsVersion.TrimEndString("-slim");
             FullRepoModelName = fullRepoModelName;
             RepoName = repoName;
             VariableHelper = variableHelper;

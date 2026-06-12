@@ -41,18 +41,31 @@ public class Platform
     public string? DockerfileTemplate { get; set; }
 
     [Description(
-        "The generic name of the operating system associated with the image."
+        "The generic name of the operating system associated with the image. " +
+        "Examples: linux, windows."
         )]
     [JsonConverter(typeof(StringEnumConverter))]
     [JsonProperty(Required = Required.Always)]
     public OS OS { get; set; }
 
     [Description(
-        "The specific version of the operating system associated with the image. " +
-        "Examples: alpine3.9, bionic, nanoserver-1903."
+        "The specific version of the operating system that this platform targets. This is " +
+        "metadata used to filter which platforms are built (--os-version), recorded in the " +
+        "image-info output, used to derive the OS display name in generated readmes, and " +
+        "(unless overridden by BuildOsVersion) to select the build host." +
+        "Examples: alpine3.2X, jammy, noble, trixie, nanoserver-1809, nanoserver-ltsc2025, " +
+        "windowsservercore-ltsc2025."
         )]
     [JsonProperty(Required = Required.Always)]
     public string OsVersion { get; set; } = string.Empty;
+
+    [Description(
+        "Overrides the operating system version used to select the build host/agent without " +
+        "affecting the --os-version filter or image-info. This allows platforms that target " +
+        "different OS versions to be built together on a single build host. Uses the same value " +
+        "format as OsVersion. When omitted, the build host is selected based on OsVersion."
+        )]
+    public string? BuildOsVersion { get; set; }
 
     [Description(
         "The set of platform-specific tags associated with the image."

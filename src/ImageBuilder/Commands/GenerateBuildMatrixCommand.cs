@@ -555,13 +555,15 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             string? osVersion;
 
-            if (Options.DistinctMatrixOsVersions.Contains(platform.BaseOsVersion))
+            // The build OS version determines which build host/agent the platform is grouped onto,
+            // which may differ from the base image's OS version (BaseOsVersion).
+            if (Options.DistinctMatrixOsVersions.Contains(platform.BuildOsVersion))
             {
-                osVersion = platform.BaseOsVersion;
+                osVersion = platform.BuildOsVersion;
             }
             else if (platform.Model.OS != OS.Linux)
             {
-                osVersion = GetNormalizedOsVersion(platform.BaseOsVersion);
+                osVersion = GetNormalizedOsVersion(platform.BuildOsVersion);
             }
             else
             {

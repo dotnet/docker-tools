@@ -17,10 +17,16 @@ public sealed record PullRequestSpec
     /// </summary>
     public required string Key { get; init; }
 
-    /// <summary>The pull request title. Re-synced on every run.</summary>
+    /// <summary>
+    /// The pull request title. Re-synced when the pull request is created or
+    /// updated; left unchanged when the operation stops.
+    /// </summary>
     public required string Title { get; init; }
 
-    /// <summary>The pull request description. Re-synced on every run.</summary>
+    /// <summary>
+    /// The pull request description. Re-synced when the pull request is created
+    /// or updated; left unchanged when the operation stops.
+    /// </summary>
     public required string Body { get; init; }
 
     /// <summary>The message used for commits pushed to the head branch.</summary>

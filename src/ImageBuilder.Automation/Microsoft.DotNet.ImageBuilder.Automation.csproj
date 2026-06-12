@@ -12,6 +12,7 @@
 
   <PropertyGroup Label="Packaging Settings">
     <IsPackable>true</IsPackable>
+    <SignAssembly>false</SignAssembly>
     <Description>Git automation library for pushing commits and submitting pull requests to GitHub and Azure DevOps.</Description>
   </PropertyGroup>
 

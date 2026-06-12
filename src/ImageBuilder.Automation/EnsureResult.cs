@@ -37,9 +37,10 @@ public enum EnsureOutcome
     Updated,
 
     /// <summary>
-    /// The operation stopped without modifying anything, per policy (e.g.
-    /// foreign commits with <see cref="ForeignCommitPolicy.CommentAndStop"/>).
-    /// See <see cref="EnsureResult.Detail"/> for why.
+    /// The operation stopped without updating the branch or pull request
+    /// metadata, per policy (e.g. foreign commits with
+    /// <see cref="ForeignCommitPolicy.CommentAndStop"/>). See
+    /// <see cref="EnsureResult.Detail"/> for why.
     /// </summary>
     Stopped,
 

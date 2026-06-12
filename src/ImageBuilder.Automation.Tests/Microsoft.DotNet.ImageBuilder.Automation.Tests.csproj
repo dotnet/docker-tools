@@ -1,5 +1,4 @@
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -18,11 +17,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CsCheck" Version="4.7.0" />
     <PackageReference Include="Shouldly" Version="4.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../ImageBuilder.Automation/Microsoft.DotNet.ImageBuilder.Automation.csproj" />
   </ItemGroup>
-
 </Project>

@@ -21,35 +21,48 @@ public sealed class AcrReferrerRateLimitingHandler(AcrReferrerRateLimiter rateLi
     private const string RegistryApiVersionPathSegment = "v2";
     private const string ReferrersPathSegment = "referrers";
 
-    protected override async Task<HttpResponseMessage> SendAsync(
-        HttpRequestMessage request,
-        CancellationToken cancellationToken)
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
         if (!IsAcrReferrerLookup(request))
-        {
-            return await base.SendAsync(request, cancellationToken);
-        }
+            return await base.SendAsync(request, ct);
 
-        using RateLimitLease lease =
-            await rateLimiter.AcquireAsync(request.RequestUri!.Host, cancellationToken);
+        using RateLimitLease lease = await rateLimiter.AcquireAsync(request.RequestUri!.Host, ct);
 
         if (!lease.IsAcquired)
             throw new InvalidOperationException("Unable to acquire a permit from the ACR referrer rate limiter.");
 
-        return await base.SendAsync(request, cancellationToken);
+        return await base.SendAsync(request, ct);
     }
 
     private static bool IsAcrReferrerLookup(HttpRequestMessage request)
     {
-        if (request.RequestUri is not { Host: string host } uri
-            || !host.EndsWith(".azurecr.io", StringComparison.OrdinalIgnoreCase))
-        {
-            return false;
-        }
+        bool isAcrRequest =
+            request.RequestUri is { Host: string host }
+            && host.EndsWith(".azurecr.io", StringComparison.OrdinalIgnoreCase);
 
-        string[] pathSegments = uri.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
-        return pathSegments.Length >= 4
-            && string.Equals(pathSegments[0], RegistryApiVersionPathSegment, StringComparison.Ordinal)
+        if (!isAcrRequest)
+            return false;
+
+        string[] pathSegments =
+            request.RequestUri?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries) ?? [];
+
+        // Match only the OCI referrers API:
+        // /v2/repo/referrers/sha256:abc
+        // /v2/nested/repo/referrers/sha256:abc
+
+        // Do not match repositories that contain a "referrers" segment in the repo name:
+        // /v2/repo/referrers/app/manifests/latest
+
+        bool hasMinimumReferrersPathSegments = pathSegments.Length >= 4;
+
+        bool usesV2RegistryApi =
+            hasMinimumReferrersPathSegments
+            && string.Equals(pathSegments[0], RegistryApiVersionPathSegment, StringComparison.Ordinal);
+
+        bool hasReferrersEndpointSegment =
+            hasMinimumReferrersPathSegments
             && string.Equals(pathSegments[^2], ReferrersPathSegment, StringComparison.OrdinalIgnoreCase);
+
+        return hasMinimumReferrersPathSegments && usesV2RegistryApi && hasReferrersEndpointSegment;
     }
 }

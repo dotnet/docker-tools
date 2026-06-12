@@ -2,8 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.CommandLine;
 using System.CommandLine.Parsing;
+using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Commands;
 
 namespace Microsoft.DotNet.ImageBuilder.Tests.CommandLine;
@@ -22,7 +24,7 @@ internal static class OptionsBindingTestHelper
     {
         Command command = new("test", "test");
         command.AddOptions(options);
-        return command.Parse(args);
+        return command.Parse(GetParseArgs(options, args));
     }
 
     /// <summary>
@@ -37,4 +39,25 @@ internal static class OptionsBindingTestHelper
         options.Bind(parseResult);
         return options;
     }
+
+    private static string[] GetParseArgs(Options options, string[] args)
+    {
+        if (options is not IFilterableOptions and not IPlatformFilterableOptions)
+        {
+            return args;
+        }
+
+        return
+        [
+            ..args,
+            ..GetOptionArgs(args, "--architecture", "amd64"),
+            ..GetOptionArgs(args, "--os-type", "linux"),
+        ];
+    }
+
+    private static string[] GetOptionArgs(string[] args, string optionName, string optionValue) =>
+        HasOption(args, optionName) ? [] : [optionName, optionValue];
+
+    private static bool HasOption(string[] args, string optionName) =>
+        args.Any(arg => arg == optionName || arg.StartsWith($"{optionName}=", StringComparison.Ordinal));
 }

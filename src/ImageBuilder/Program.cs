@@ -7,22 +7,32 @@ using System.CommandLine;
 using Microsoft.DotNet.ImageBuilder;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.Extensions.DependencyInjection;
-using ICommand = Microsoft.DotNet.ImageBuilder.Commands.ICommand;
+
+using var host = ImageBuilder.CreateAppHost();
+int exitCode = 1;
 
 try
 {
-    RootCommand rootCliCommand = new();
+    await host.StartAsync();
 
-    foreach (ICommand command in ImageBuilder.Commands)
-    {
+    // Some parts of ImageBuilder aren't fully onboarded to DI yet (see StandaloneLoggerFactory).
+    // Hand them the host's logger factory so those static code paths can log through the
+    // application host's configured logging.
+    var loggerFactory = host.Services.GetRequiredService<ILoggerFactory>();
+    StandaloneLoggerFactory.LoggerFactory = loggerFactory;
+
+    var rootCliCommand = new RootCommand();
+    var commands = host.Services.GetServices<ICommand>();
+
+    foreach (var command in commands)
         rootCliCommand.Add(command.GetCliCommand());
-    }
 
-    return await rootCliCommand.Parse(args).InvokeAsync();
+    var parseResult = rootCliCommand.Parse(args);
+    exitCode = await parseResult.InvokeAsync();
 }
 catch (Exception e)
 {
-    ILoggerFactory? loggerFactory = ImageBuilder.Services.GetService<ILoggerFactory>();
+    var loggerFactory = host.Services.GetService<ILoggerFactory>();
     if (loggerFactory is not null)
     {
         ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Program");
@@ -33,5 +43,9 @@ catch (Exception e)
         Console.Error.WriteLine(e);
     }
 }
+finally
+{
+    await host.StopAsync();
+}
 
-return 1;
+return exitCode;

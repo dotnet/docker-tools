@@ -500,7 +500,7 @@ public class CreateManifestListCommandTests
     /// Verifies that a missing manifest platform is reported when the old-build
     /// import path has no platform to port forward.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task ExecuteAsync_ThrowsMissingPlatform_WhenNoOldBuildImportExists()
     {
         Mock<IManifestService> manifestServiceMock = new(MockBehavior.Strict);

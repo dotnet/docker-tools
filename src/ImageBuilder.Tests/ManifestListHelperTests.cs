@@ -146,7 +146,7 @@ public class ManifestListHelperTests
     // expected manifest lists:
     //   mcr.microsoft.com/repo:sharedtag                   -> [ mcr.microsoft.com/repo:tagB ]
     //   mcr.microsoft.com/syndicated-repo:syn-sharedtag    -> [ mcr.microsoft.com/syndicated-repo:tagC ]
-    [Fact]
+    [TestMethod]
     public void GetManifestListsForImages_SyndicatedTaglessPlatform_SkipsSiblingWithoutSyndicatedTag()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -219,7 +219,7 @@ public class ManifestListHelperTests
     /// <summary>
     /// Verifies that validation reports generated manifest lists that are missing expected platforms.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void GetManifestListPlatformValidationIssues_MissingPlatform()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
@@ -260,7 +260,7 @@ public class ManifestListHelperTests
     /// <summary>
     /// Verifies that validation succeeds when every generated manifest list has all expected platforms.
     /// </summary>
-    [Fact]
+    [TestMethod]
     public void ValidateManifestListPlatforms_AllPlatformsPresent()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();

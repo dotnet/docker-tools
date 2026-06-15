@@ -25,6 +25,16 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
 
+  <!-- Bake this build's container image tag into assembly metadata so the 'update' command can emit a
+       self-reference into docker-images.yml without being told its own tag. The container build passes the
+       tag via the IMAGEBUILDER_TAG Docker build arg, which the Dockerfiles set as an environment variable;
+       MSBuild surfaces that environment variable as a same-named property during 'dotnet publish'. It's
+       empty for local or dotnet-tool builds that don't set it, in which case 'update' falls back to the
+       'latest' tag. -->
+  <ItemGroup>
+    <AssemblyMetadata Include="ImageBuilderTag" Value="$(IMAGEBUILDER_TAG)" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="Azure.Containers.ContainerRegistry" Version="1.3.0" />
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
@@ -63,5 +73,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ImageBuilder.Models\Microsoft.DotNet.ImageBuilder.Models.csproj" />
+    <ProjectReference Include="..\Infrastructure\Microsoft.DotNet.DockerTools.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

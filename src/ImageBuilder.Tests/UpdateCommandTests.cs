@@ -1,0 +1,214 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using Microsoft.DotNet.DockerTools.Infrastructure;
+using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
+using Microsoft.Extensions.Logging;
+using Moq;
+using Shouldly;
+
+namespace Microsoft.DotNet.ImageBuilder.Tests;
+
+[TestClass]
+public class UpdateCommandTests
+{
+    // Use the platform's directory separator for the fake root so that paths derived via
+    // Path.Combine and Path.GetDirectoryName stay consistent (Path.GetDirectoryName normalizes
+    // a leading '/' to '\' on Windows, which would otherwise not match the in-memory entries).
+    private static readonly string RepoRoot = $"{Path.DirectorySeparatorChar}repo";
+
+    private static readonly string OutputPath = Path.Combine(RepoRoot, "eng", "docker-tools");
+
+    [TestMethod]
+    public async Task UpdateCommand_WritesAllEmbeddedFiles()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(OutputPath);
+        UpdateCommand command = CreateCommand(fileSystem);
+
+        await command.ExecuteAsync();
+
+        IReadOnlyList<string> expectedPaths = InfrastructureContent.GetRelativePaths();
+        expectedPaths.ShouldNotBeEmpty();
+        List<string> renderedDestinations = [];
+
+        foreach (string relativePath in expectedPaths)
+        {
+            string expectedDestination = Path.Combine(OutputPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            fileSystem.FileExists(expectedDestination).ShouldBeTrue();
+
+            using Stream expectedStream = InfrastructureContent.OpenRead(relativePath);
+            using MemoryStream expectedBytes = new();
+            expectedStream.CopyTo(expectedBytes);
+            if (fileSystem.GetFileBytes(expectedDestination).SequenceEqual(expectedBytes.ToArray()))
+            {
+                continue;
+            }
+
+            renderedDestinations.Add(expectedDestination);
+        }
+
+        renderedDestinations.Count.ShouldBe(1);
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_ImageBuilderTagAssemblyMetadataSet_RendersDockerImagesTemplate()
+    {
+        const string tag = "1234567";
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(OutputPath);
+        UpdateCommand command = CreateCommand(fileSystem, tag);
+
+        await command.ExecuteAsync();
+
+        string content = GetRenderedImageBuilderVariables(fileSystem, $"image-builder:{tag}");
+        content.ShouldContain($"image-builder:{tag}");
+        content.ShouldNotContain("{{");
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_ImageBuilderTagAssemblyMetadataMissing_FallsBackToLatestWithWarning()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(OutputPath);
+        Mock<ILogger<UpdateCommand>> logger = new();
+        UpdateCommand command = CreateCommand(fileSystem, tag: null, logger: logger);
+
+        await command.ExecuteAsync();
+
+        string content = GetRenderedImageBuilderVariables(fileSystem, "image-builder:latest");
+        content.ShouldContain("image-builder:latest");
+        content.ShouldNotContain("{{");
+
+        logger.Verify(
+            log => log.Log(
+                LogLevel.Warning,
+                It.IsAny<EventId>(),
+                It.IsAny<It.IsAnyType>(),
+                It.IsAny<Exception?>(),
+                It.IsAny<Func<It.IsAnyType, Exception?, string>>()),
+            Times.Once);
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_DeletesStaleFiles()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(OutputPath);
+        string staleFile = Path.Combine(OutputPath, "templates", "removed-template.yml");
+        fileSystem.AddFile(staleFile, "stale");
+        UpdateCommand command = CreateCommand(fileSystem);
+
+        await command.ExecuteAsync();
+
+        fileSystem.FileExists(staleFile).ShouldBeFalse();
+        fileSystem.FilesDeleted.ShouldContain(staleFile);
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_DeletesStaleDirectories()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(OutputPath);
+        string staleDirectory = Path.Combine(OutputPath, "obsolete");
+        string staleFile = Path.Combine(staleDirectory, "old.yml");
+        fileSystem.AddFile(staleFile, "stale");
+        UpdateCommand command = CreateCommand(fileSystem);
+
+        await command.ExecuteAsync();
+
+        fileSystem.DirectoryExists(staleDirectory).ShouldBeFalse();
+        fileSystem.DirectoriesDeleted.ShouldContain(staleDirectory);
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_NotGitRoot_Throws()
+    {
+        InMemoryFileSystem fileSystem = new() { CurrentDirectory = RepoRoot };
+        fileSystem.AddDirectory(OutputPath);
+        UpdateCommand command = CreateCommand(fileSystem);
+
+        InvalidOperationException exception =
+            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+        exception.Message.ShouldContain("root of a git repository");
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_OutputMissingWithoutInit_Throws()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        UpdateCommand command = CreateCommand(fileSystem);
+
+        InvalidOperationException exception =
+            await Should.ThrowAsync<InvalidOperationException>(() => command.ExecuteAsync());
+        exception.Message.ShouldContain("--init");
+        fileSystem.FilesWritten.ShouldBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_OutputMissingWithInit_CreatesAndWrites()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        UpdateCommand command = CreateCommand(fileSystem);
+        command.Options.Init = true;
+
+        await command.ExecuteAsync();
+
+        fileSystem.DirectoriesCreated.ShouldContain(OutputPath);
+        fileSystem.FilesWritten.ShouldNotBeEmpty();
+    }
+
+    [TestMethod]
+    public async Task UpdateCommand_DryRun_MakesNoChanges()
+    {
+        InMemoryFileSystem fileSystem = CreateRepoFileSystem();
+        fileSystem.AddDirectory(OutputPath);
+        string staleFile = Path.Combine(OutputPath, "templates", "removed-template.yml");
+        fileSystem.AddFile(staleFile, "stale");
+        UpdateCommand command = CreateCommand(fileSystem);
+        command.Options.IsDryRun = true;
+
+        await command.ExecuteAsync();
+
+        fileSystem.FilesWritten.ShouldBeEmpty();
+        fileSystem.FilesDeleted.ShouldBeEmpty();
+        fileSystem.DirectoriesDeleted.ShouldBeEmpty();
+        fileSystem.FileExists(staleFile).ShouldBeTrue();
+    }
+
+    private static InMemoryFileSystem CreateRepoFileSystem()
+    {
+        InMemoryFileSystem fileSystem = new() { CurrentDirectory = RepoRoot };
+        fileSystem.AddDirectory(Path.Combine(RepoRoot, ".git"));
+        return fileSystem;
+    }
+
+    private static UpdateCommand CreateCommand(
+        IFileSystem fileSystem,
+        string? tag = null,
+        Mock<ILogger<UpdateCommand>>? logger = null)
+    {
+        return new TestUpdateCommand(fileSystem, (logger ?? new Mock<ILogger<UpdateCommand>>()).Object, tag);
+    }
+
+    private static string GetRenderedImageBuilderVariables(InMemoryFileSystem fileSystem, string expectedImageBuilderReference) =>
+        fileSystem.FilesWritten
+            .Select(path => Encoding.UTF8.GetString(fileSystem.GetFileBytes(path)))
+            .Single(content => content.Contains(expectedImageBuilderReference));
+
+    private sealed class TestUpdateCommand(
+        IFileSystem fileSystem,
+        ILogger<UpdateCommand> logger,
+        string? imageBuilderTag) : UpdateCommand(fileSystem, logger)
+    {
+        protected override string? GetImageBuilderTag() => imageBuilderTag;
+    }
+}

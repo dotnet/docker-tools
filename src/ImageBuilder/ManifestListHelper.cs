@@ -4,6 +4,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
@@ -17,6 +18,13 @@ namespace Microsoft.DotNet.ImageBuilder;
 /// <param name="Tag">The fully-qualified manifest list tag (e.g., "mcr.microsoft.com/dotnet/aspnet:8.0").</param>
 /// <param name="PlatformTags">The fully-qualified platform image tags included in this manifest list.</param>
 public record ManifestListInfo(string Tag, IReadOnlyList<string> PlatformTags);
+
+/// <summary>
+/// Describes platforms that are expected by the manifest but missing from a generated manifest list.
+/// </summary>
+/// <param name="ManifestListTag">The fully-qualified manifest list tag.</param>
+/// <param name="MissingPlatforms">Descriptions of the expected platforms missing from the tag.</param>
+public record ManifestListPlatformValidationIssue(string ManifestListTag, IReadOnlyList<string> MissingPlatforms);
 
 /// <summary>
 /// Determines which Docker manifest lists should be created based on
@@ -35,7 +43,65 @@ public static class ManifestListHelper
         ImageArtifactDetails imageArtifactDetails,
         string? repoPrefix)
     {
-        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms = manifest.FilteredRepos
+        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
+            GetImagesWithBuiltPlatforms(manifest, imageArtifactDetails);
+
+        return imagesWithBuiltPlatforms
+            .SelectMany(pair => GetManifestListsForImage(pair.Repo, pair.Image, manifest, imageArtifactDetails, repoPrefix))
+            .ToList()
+            .AsReadOnly();
+    }
+
+    /// <summary>
+    /// Validates that each generated manifest list contains every platform expected by the manifest.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when one or more generated manifest list tags would omit expected platforms.
+    /// </exception>
+    public static void ValidateManifestListPlatforms(
+        ManifestInfo manifest,
+        ImageArtifactDetails imageArtifactDetails,
+        string? repoPrefix)
+    {
+        IReadOnlyList<ManifestListPlatformValidationIssue> issues = GetManifestListPlatformValidationIssues(
+            manifest, imageArtifactDetails, repoPrefix);
+
+        if (issues.Count == 0)
+        {
+            return;
+        }
+
+        string details = string.Join(
+            Environment.NewLine,
+            issues.Select(issue =>
+                $"- {issue.ManifestListTag}: {string.Join(", ", issue.MissingPlatforms)}"));
+
+        throw new InvalidOperationException(
+            $"Generated manifest list tags are missing expected platforms defined in the manifest:{Environment.NewLine}{details}");
+    }
+
+    /// <summary>
+    /// Gets validation issues for generated manifest lists that would omit expected platforms.
+    /// </summary>
+    public static IReadOnlyList<ManifestListPlatformValidationIssue> GetManifestListPlatformValidationIssues(
+        ManifestInfo manifest,
+        ImageArtifactDetails imageArtifactDetails,
+        string? repoPrefix)
+    {
+        IEnumerable<(RepoInfo Repo, ImageInfo Image)> imagesWithBuiltPlatforms =
+            GetImagesWithBuiltPlatforms(manifest, imageArtifactDetails);
+
+        return imagesWithBuiltPlatforms
+            .SelectMany(pair => GetManifestListPlatformValidationIssuesForImage(
+                pair.Repo, pair.Image, manifest, imageArtifactDetails, repoPrefix))
+            .ToList()
+            .AsReadOnly();
+    }
+
+    private static IEnumerable<(RepoInfo Repo, ImageInfo Image)> GetImagesWithBuiltPlatforms(
+        ManifestInfo manifest,
+        ImageArtifactDetails imageArtifactDetails) =>
+        manifest.FilteredRepos
             .SelectMany(repo =>
                 repo.FilteredImages
                     .Where(image => image.SharedTags.Any())
@@ -44,12 +110,6 @@ public static class ManifestListHelper
                             ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails) != null))
                     .Select(image => (repo, image)))
             .ToList();
-
-        return imagesWithBuiltPlatforms
-            .SelectMany(pair => GetManifestListsForImage(pair.Repo, pair.Image, manifest, imageArtifactDetails, repoPrefix))
-            .ToList()
-            .AsReadOnly();
-    }
 
     private static IEnumerable<ManifestListInfo> GetManifestListsForImage(
         RepoInfo repo,
@@ -86,6 +146,39 @@ public static class ManifestListHelper
         return primaryManifestLists.Concat(syndicatedManifestLists);
     }
 
+    private static IEnumerable<ManifestListPlatformValidationIssue> GetManifestListPlatformValidationIssuesForImage(
+        RepoInfo repo,
+        ImageInfo image,
+        ManifestInfo manifest,
+        ImageArtifactDetails imageArtifactDetails,
+        string? repoPrefix)
+    {
+        IEnumerable<ManifestListPlatformValidationIssue> primaryManifestListIssues = GetManifestListPlatformValidationIssuesForTags(
+            repo, image, imageArtifactDetails,
+            image.SharedTags.Select(tag => tag.Name),
+            tag => DockerHelper.GetImageName(manifest.Registry, repoPrefix + repo.Name, tag),
+            platform => platform.Tags.First());
+
+        IEnumerable<IGrouping<string, TagInfo>> syndicatedTagGroups = image.SharedTags
+            .Where(tag => tag.SyndicatedRepo != null)
+            .GroupBy(tag => tag.SyndicatedRepo);
+
+        IEnumerable<ManifestListPlatformValidationIssue> syndicatedManifestListIssues = syndicatedTagGroups
+            .SelectMany(syndicatedTags =>
+            {
+                string syndicatedRepo = syndicatedTags.Key;
+                IEnumerable<string> destinationTags = syndicatedTags.SelectMany(tag => tag.SyndicatedDestinationTags);
+
+                return GetManifestListPlatformValidationIssuesForTags(
+                    repo, image, imageArtifactDetails,
+                    destinationTags,
+                    tag => DockerHelper.GetImageName(manifest.Registry, repoPrefix + syndicatedRepo, tag),
+                    platform => platform.Tags.FirstOrDefault(tag => tag.SyndicatedRepo == syndicatedRepo));
+            });
+
+        return primaryManifestListIssues.Concat(syndicatedManifestListIssues);
+    }
+
     private static IEnumerable<ManifestListInfo> GetManifestListsForTags(
         RepoInfo repo,
         ImageInfo image,
@@ -97,6 +190,20 @@ public static class ManifestListHelper
         return tags
             .Select(tag => BuildManifestListInfo(repo, image, imageArtifactDetails, tag, getImageName, getTagRepresentative))
             .OfType<ManifestListInfo>();
+    }
+
+    private static IEnumerable<ManifestListPlatformValidationIssue> GetManifestListPlatformValidationIssuesForTags(
+        RepoInfo repo,
+        ImageInfo image,
+        ImageArtifactDetails imageArtifactDetails,
+        IEnumerable<string> tags,
+        Func<string, string> getImageName,
+        Func<PlatformInfo, TagInfo?> getTagRepresentative)
+    {
+        return tags
+            .Select(tag => BuildManifestListPlatformValidationIssue(
+                repo, image, imageArtifactDetails, tag, getImageName, getTagRepresentative))
+            .OfType<ManifestListPlatformValidationIssue>();
     }
 
     private static ManifestListInfo? BuildManifestListInfo(
@@ -121,49 +228,18 @@ public static class ManifestListHelper
                 continue;
             }
 
-            TagInfo? imageTag;
-            if (platform.Tags.Any())
-            {
-                imageTag = getTagRepresentative(platform);
-            }
-            else
-            {
-                // This platform has no tags of its own (it's a "tagless" platform included
-                // only via shared tags). To reference it in the manifest list, we need a tag.
-                // Search all images in the repo for a different platform that builds the same
-                // Dockerfile/OS/arch and does have tags, then borrow one of its tags.
-                (ImageInfo Image, PlatformInfo Platform)? matchingPlatform =
-                    repo.AllImages
-                    .SelectMany(candidateImage =>
-                        candidateImage.AllPlatforms
-                        .Select(candidatePlatform => (Image: candidateImage, Platform: candidatePlatform))
-                        .Where(candidate =>
-                            // Exclude the current platform itself
-                            platform != candidate.Platform
-                            // Must be the same Dockerfile, OS, and architecture
-                            && PlatformInfo.AreMatchingPlatforms(
-                                image1: candidateImage,
-                                platform1: platform,
-                                image2: candidate.Image,
-                                platform2: candidate.Platform)
-                            // Must actually have tags we can borrow
-                            && candidate.Platform.Tags.Any()
-                        )
-                    )
-                    // Cast to nullable so FirstOrDefault returns null (not a default struct)
-                    // when no match is found, allowing the ?? to throw.
-                    .Cast<(ImageInfo Image, PlatformInfo Platform)?>()
-                    .FirstOrDefault()
-                        ?? throw new InvalidOperationException(
-                            $"Could not find a platform with concrete tags for"
-                            + $" '{platform.DockerfilePathRelativeToManifest}'.");
-
-                imageTag = getTagRepresentative(matchingPlatform.Value.Platform);
-            }
-
-            if (imageTag is not null)
+            // A platform with its own tags whose representative resolves to null does not participate in this manifest
+            // list (for example, it isn't syndicated to the repo for the current pass), so it is skipped. However, a
+            // tagless platform must be referenceable via a sibling. Failing to find one indicates a manifest problem.
+            // TODO: support platforms without tags (https://github.com/dotnet/docker-tools/issues/1499).
+            if (TryGetPlatformTagRepresentative(repo, image, platform, getTagRepresentative, out TagInfo? imageTag))
             {
                 platformTags.Add(getImageName(imageTag.Name));
+            }
+            else if (!platform.Tags.Any())
+            {
+                throw new InvalidOperationException(
+                    $"Could not find a platform with concrete tags for '{platform.DockerfilePathRelativeToManifest}'.");
             }
         }
 
@@ -174,4 +250,83 @@ public static class ManifestListHelper
 
         return new ManifestListInfo(manifestListTag, platformTags.AsReadOnly());
     }
+
+    private static ManifestListPlatformValidationIssue? BuildManifestListPlatformValidationIssue(
+        RepoInfo repo,
+        ImageInfo manifestImage,
+        ImageArtifactDetails imageArtifactDetails,
+        string tag,
+        Func<string, string> getImageName,
+        Func<PlatformInfo, TagInfo?> getTagRepresentative)
+    {
+        string manifestListTag = getImageName(tag);
+        List<string> missingPlatforms = [];
+        bool hasExpectedPlatform = false;
+
+        // For each platform declared in the manifest, make sure the image-info (imageArtifactDetails) also contains
+        // that platform. If not, there's a problem.
+        foreach (PlatformInfo platform in manifestImage.AllPlatforms)
+        {
+            if (!TryGetPlatformTagRepresentative(repo, manifestImage, platform, getTagRepresentative, out _))
+                continue;
+
+            hasExpectedPlatform = true;
+
+            if (ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails) is null)
+                missingPlatforms.Add(GetPlatformDescription(platform));
+        }
+
+        if (!hasExpectedPlatform || missingPlatforms.Count == 0)
+            return null;
+
+        return new ManifestListPlatformValidationIssue(manifestListTag, missingPlatforms.AsReadOnly());
+    }
+
+    /// <summary>
+    /// Resolves the concrete tag used to reference <paramref name="platform"/> in a manifest list,
+    /// borrowing from a matching sibling platform when the platform is tagless.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> and a non-null <paramref name="representativeTag"/> when a usable tag
+    /// is found; otherwise <see langword="false"/>.
+    /// </returns>
+    private static bool TryGetPlatformTagRepresentative(
+        RepoInfo repo,
+        ImageInfo image,
+        PlatformInfo platform,
+        Func<PlatformInfo, TagInfo?> getTagRepresentative,
+        [NotNullWhen(true)] out TagInfo? representativeTag)
+    {
+        if (platform.Tags.Any())
+        {
+            representativeTag = getTagRepresentative(platform);
+            return representativeTag is not null;
+        }
+
+        // Tagless platforms included by shared tags need a matching concrete tag to reference in
+        // the manifest list, borrowed from a sibling platform (same Dockerfile/OS/arch). The
+        // representative selector can return null even when a sibling has tags - for example, in a
+        // syndicated pass where the sibling has tags but none syndicated to the target repo - so we
+        // must keep searching for a sibling that yields a usable representative instead of
+        // committing to the first sibling that merely has tags.
+        representativeTag = repo.AllImages
+            .SelectMany(candidateImage =>
+                candidateImage.AllPlatforms
+                    .Select(candidatePlatform => (Image: candidateImage, Platform: candidatePlatform)))
+            .Where(candidate =>
+                platform != candidate.Platform
+                && PlatformInfo.AreMatchingPlatforms(
+                    image1: image,
+                    platform1: platform,
+                    image2: candidate.Image,
+                    platform2: candidate.Platform)
+                && candidate.Platform.Tags.Any())
+            .Select(candidate => getTagRepresentative(candidate.Platform))
+            .FirstOrDefault(tag => tag is not null);
+
+        return representativeTag is not null;
+    }
+
+    private static string GetPlatformDescription(PlatformInfo platform) =>
+        $"{platform.PlatformLabel} ({platform.DockerfilePathRelativeToManifest})";
 }

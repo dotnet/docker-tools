@@ -233,7 +233,7 @@ public class OrasDotNetService(
             "Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}",
             parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
 
-        HttpClient httpClient = _httpClientFactory.CreateClient();
+        HttpClient httpClient = _httpClientFactory.CreateClient(nameof(OrasDotNetService));
         Client authClient = new(httpClient, _credentialProvider, _orasCache);
 
         RepositoryOptions repositoryOptions = new()

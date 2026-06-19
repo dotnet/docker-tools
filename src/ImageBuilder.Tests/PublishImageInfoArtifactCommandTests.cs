@@ -4,6 +4,7 @@
 
 using System;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -24,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 public class PublishImageInfoArtifactCommandTests
 {
     [TestMethod]
-    public async Task PublishImageInfoArtifactCommand_PushesImageInfoArtifact()
+    public async Task PublishImageInfoArtifactCommand_PassesImageInfoFileBytesToService()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         string dockerfilePath = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
@@ -37,6 +38,7 @@ public class PublishImageInfoArtifactCommandTests
         string imageInfoContent = JsonHelper.SerializeObject(new ImageArtifactDetails());
         string imageInfoFile = Path.Combine(tempFolderContext.Path, "image-info.json");
         File.WriteAllText(imageInfoFile, imageInfoContent);
+        byte[] expectedImageInfoContent = File.ReadAllBytes(imageInfoFile);
 
         Mock<IImageInfoService> imageInfoServiceMock = new();
         PublishConfiguration publishConfig = new()
@@ -59,7 +61,7 @@ public class PublishImageInfoArtifactCommandTests
         imageInfoServiceMock.Verify(
             o => o.PushImageInfoArtifactAsync(
                 It.IsAny<ManifestInfo>(),
-                It.IsAny<byte[]>(),
+                It.Is<byte[]>(content => content.SequenceEqual(expectedImageInfoContent)),
                 "publish.azurecr.io",
                 "public/",
                 false,

@@ -53,7 +53,7 @@ public class ImageInfoServiceTests
     }
 
     [TestMethod]
-    public async Task PushImageInfoArtifactAsync_MultipleTags_PushesOnceWithAllTags()
+    public async Task PushImageInfoArtifactAsync_MultipleTags_PushesOneArtifactWithAllTags()
     {
         using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
         string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
@@ -87,6 +87,7 @@ public class ImageInfoServiceTests
             It.Is<IEnumerable<string>>(tags =>
                 tags.OrderBy(t => t).SequenceEqual(new[] { "latest", "main" })),
             It.IsAny<CancellationToken>()), Times.Once);
+        orasServiceMock.VerifyNoOtherCalls();
     }
 
     [TestMethod]

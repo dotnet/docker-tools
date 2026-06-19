@@ -35,6 +35,12 @@ public class Manifest
     public string Registry { get; set; }
 
     [Description(
+        "Metadata describing where this manifest's image info is published as an " +
+        "OCI artifact. When omitted, image info is not published as an OCI artifact."
+        )]
+    public ImageInfoArtifact ImageInfo { get; set; }
+
+    [Description(
         "The set of Docker repositories described by this manifest."
         )]
     public Repo[] Repos { get; set; } = Array.Empty<Repo>();

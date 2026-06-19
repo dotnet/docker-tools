@@ -232,7 +232,7 @@ jobs:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
         SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
       condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
-      displayName: Publish Image Info Artifact
+      displayName: Publish Image Info
   - ${{ else }}:
     - script: >
         $(runImageBuilderCmd) publishImageInfo

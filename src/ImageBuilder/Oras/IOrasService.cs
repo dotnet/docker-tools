@@ -71,4 +71,25 @@ public interface IOrasService
         string artifactType,
         IDictionary<string, string> annotations,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pushes content to the registry as a single standalone OCI artifact and applies one or
+    /// more tags to it, so that the same artifact can later be pulled by any of those tags.
+    /// </summary>
+    /// <param name="content">The artifact content to store as the single layer (e.g., image-info JSON).</param>
+    /// <param name="mediaType">The media type of the content layer.</param>
+    /// <param name="artifactType">The OCI artifact type recorded on the manifest.</param>
+    /// <param name="registry">The target registry host (e.g., "myregistry.azurecr.io").</param>
+    /// <param name="repository">The target repository within the registry (e.g., "dotnet/versions").</param>
+    /// <param name="tags">The tags to apply to the pushed artifact. At least one tag is required.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The digest of the single pushed artifact manifest.</returns>
+    Task<string> PushArtifactAsync(
+        byte[] content,
+        string mediaType,
+        string artifactType,
+        string registry,
+        string repository,
+        IEnumerable<string> tags,
+        CancellationToken cancellationToken = default);
 }

@@ -20,4 +20,10 @@ public sealed record RegistryEndpoint
     /// "mcr.microsoft.com", "ghcr.io", "localhost:5000".
     /// </summary>
     public string? Server { get; set; }
+
+    /// <summary>
+    /// An optional prefix prepended to repository names pushed to or pulled from this registry
+    /// (e.g. "staging/" or "public/").
+    /// </summary>
+    public string? RepoPrefix { get; set; }
 }

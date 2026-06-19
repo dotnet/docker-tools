@@ -52,17 +52,21 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
     /// Creates a fully initialized <see cref="ManifestInfo"/> from the manifest file at
     /// <paramref name="manifestPath"/>, applying the given filter and options.
     /// </summary>
-    private ManifestInfo Create(string manifestPath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
+    private ManifestInfo Create(string filePath, ManifestFilter manifestFilter, IManifestOptionsInfo options)
     {
-        string manifestDirectory = PathHelper.GetNormalizedDirectory(manifestPath);
-        Manifest model = LoadModel(manifestPath, manifestDirectory);
-        model.Validate(manifestDirectory);
+        filePath = PathHelper.NormalizePath(filePath);
+        string fullPath = Path.GetFullPath(filePath);
+        string directory = Path.GetDirectoryName(fullPath) ?? "";
+        string fileName = Path.GetFileName(fullPath);
+
+        Manifest model = LoadModel(fullPath, directory);
+        model.Validate(directory);
 
         ManifestInfo manifestInfo = new()
         {
             Model = model,
             Registry = options.RegistryOverride ?? model.Registry,
-            Directory = manifestDirectory
+            FilePath = filePath
         };
 
         manifestInfo.VariableHelper = new VariableHelper(model, options, manifestInfo.GetRepoById);
@@ -98,6 +102,37 @@ public class ManifestJsonService(IFileSystem fileSystem, ILogger<ManifestJsonSer
             .ToArray();
 
         return manifestInfo;
+    }
+
+    /// <inheritdoc />
+    public ImageInfoArtifact GetImageInfoArtifact(ManifestInfo manifest)
+    {
+        ArgumentNullException.ThrowIfNull(manifest);
+
+        var model = manifest.Model.ImageInfo
+            ?? throw new InvalidOperationException(
+                $"The 'imageInfo' field is not set in {manifest.FilePath}."
+                + " It is required in order to publish or fetch image info as an OCI artifact.");
+
+        var repo = manifest.VariableHelper.SubstituteValues(model.Repo)
+            ?? throw new InvalidOperationException(
+                $"After resolving variables, imageInfo.repo is not valid in {manifest.FilePath}."
+                + $" Original value: '{model.Repo}'."
+                + " It is required in order to publish or fetch image info as an OCI artifact.");
+
+        ImageInfoArtifact resolved = new() { Repo = repo };
+        foreach ((string tag, Tag tagValue) in model.Tags)
+        {
+            var resolvedTag = manifest.VariableHelper.SubstituteValues(tag)
+                ?? throw new InvalidOperationException(
+                    $"After resolving variables, a tag in imageInfo was empty in {manifest.FilePath}."
+                    + $" Original value: '{tag}'."
+                    + " It is required in order to publish or fetch image info as an OCI artifact.");
+
+            resolved.Tags[resolvedTag] = tagValue;
+        }
+
+        return resolved;
     }
 
     /// <summary>

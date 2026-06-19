@@ -49,16 +49,16 @@ public class ImageInfoService(
                 "The manifest's imageInfo property must define at least one tag in order to push "
                 + "image-info as an OCI artifact.");
 
+        string repo = $"{repoPrefix}{imageInfoArtifact.Repo}";
+        _logger.LogInformation(
+            "Image info will be published to registry={registry}, repo={Repo}, dryRun={DryRun}",
+            registry, repo, isDryRun);
+
         if (isDryRun)
         {
             _logger.LogInformation("Skipping image info artifact push due to dry run.");
             return;
         }
-
-        string repo = $"{repoPrefix}{imageInfoArtifact.Repo}";
-        _logger.LogInformation(
-            "Image info will be published to registry={registry}, repo={Repo}, dryRun={DryRun}",
-            registry, repo, isDryRun);
 
         IOrasService orasService = _orasServiceFactory.Create();
 

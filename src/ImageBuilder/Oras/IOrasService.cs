@@ -73,7 +73,7 @@ public interface IOrasService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Pushes text content to the registry as a single standalone OCI artifact and applies one or
+    /// Pushes content to the registry as a single standalone OCI artifact and applies one or
     /// more tags to it, so that the same artifact can later be pulled by any of those tags.
     /// </summary>
     /// <param name="content">The artifact content to store as the single layer (e.g., image-info JSON).</param>

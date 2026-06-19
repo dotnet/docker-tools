@@ -37,7 +37,7 @@ public class PublishImageInfoArtifactCommand(
         if (string.IsNullOrWhiteSpace(publishRegistry?.Server))
         {
             throw new InvalidOperationException(
-                "No publish registry is configured. Skipping image-info artifact push."
+                "No publish registry is configured. Cannot publish image-info artifact."
             );
         }
 

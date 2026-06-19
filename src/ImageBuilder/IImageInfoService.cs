@@ -24,8 +24,8 @@ public interface IImageInfoService
     /// <param name="isDryRun">When <see langword="true"/>, no artifact is pushed.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
-    /// When the manifest does not declare an <c>imageInfo</c> object, the push is skipped and a
-    /// warning is logged rather than throwing, so that publishing is not blocked.
+    /// When the manifest does not declare an <c>imageInfo</c> object, the push fails because the
+    /// artifact destination and tags are required manifest metadata.
     /// </remarks>
     Task PushImageInfoArtifactAsync(
         ManifestInfo manifest,

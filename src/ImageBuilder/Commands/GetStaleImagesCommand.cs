@@ -10,7 +10,6 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Newtonsoft.Json;
-using Octokit;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -21,20 +20,20 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly Lazy<IManifestService> _manifestService;
         private readonly IManifestJsonService _manifestJsonService;
         private readonly ILogger<GetStaleImagesCommand> _logger;
-        private readonly IOctokitClientFactory _octokitClientFactory;
         private readonly IGitService _gitService;
+        private readonly IImageInfoService _imageInfoService;
 
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
             IManifestJsonService manifestJsonService,
             ILogger<GetStaleImagesCommand> logger,
-            IOctokitClientFactory octokitClientFactory,
-            IGitService gitService)
+            IGitService gitService,
+            IImageInfoService imageInfoService)
         {
             _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
-            _logger = logger;
-            _octokitClientFactory = octokitClientFactory;
-            _gitService = gitService;
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
+            _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
 
             // Don't worry about authenticating to our own ACR, since we are checking base image digests from public
             // registries instead of our staging location. Registry credentials are needed however to prevent rate
@@ -65,7 +64,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     {
                         SubscriptionId = subscriptionManifest.Subscription.Id,
                         ImagePaths =
-                            (await GetPathsToRebuildAsync(subscriptionManifest.Subscription, subscriptionManifest.Manifest))
+                            (await GetPathsToRebuildAsync(subscriptionManifest.Manifest))
                             .ToArray()
                     });
 
@@ -87,9 +86,9 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 $"Image Paths to be Rebuilt:{Environment.NewLine}{formattedResults}");
         }
 
-        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
+        private async Task<IEnumerable<string>> GetPathsToRebuildAsync(ManifestInfo manifest)
         {
-            ImageArtifactDetails imageArtifactDetails = await GetImageInfoForSubscriptionAsync(subscription, manifest);
+            ImageArtifactDetails imageArtifactDetails = await PullImageInfoAsync(manifest);
 
             ImageNameResolverForMatrix imageNameResolver = new(
                 Options.BaseImageOverrideOptions,
@@ -203,16 +202,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             return [];
         }
 
-        private async Task<ImageArtifactDetails> GetImageInfoForSubscriptionAsync(Models.Subscription.Subscription subscription, ManifestInfo manifest)
+        private async Task<ImageArtifactDetails> PullImageInfoAsync(ManifestInfo manifest)
         {
-            ITreesClient treesClient = await _octokitClientFactory.CreateTreesClientAsync(Options.GitOptions.GitHubAuthOptions);
-            string fileSha = await treesClient.GetFileShaAsync(
-                subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, subscription.ImageInfo.Branch, subscription.ImageInfo.Path);
+            string imageInfoRegistry = Options.ImageInfoRegistryOverride ?? manifest.Model.Registry;
+            if (string.IsNullOrWhiteSpace(imageInfoRegistry))
+            {
+                throw new InvalidOperationException(
+                    $"Manifest '{manifest.FilePath}' must define a registry or --image-info-registry-override must be set " +
+                    "to pull image-info artifact for stale image detection.");
+            }
 
-            IBlobsClient blobsClient = await _octokitClientFactory.CreateBlobsClientAsync(Options.GitOptions.GitHubAuthOptions);
-            string imageDataJson = await blobsClient.GetFileContentAsync(subscription.ImageInfo.Owner, subscription.ImageInfo.Repo, fileSha);
+            string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
+                manifest,
+                imageInfoRegistry,
+                Options.ImageInfoRepoPrefix);
 
-            return ImageInfoHelper.LoadFromContent(imageDataJson, manifest, skipManifestValidation: true);
+            return ImageInfoHelper.LoadFromContent(imageInfoContent, manifest, skipManifestValidation: true);
         }
     }
 }

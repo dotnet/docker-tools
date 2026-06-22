@@ -27,6 +27,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? SourceRepoPrefix { get; set; }
 
+        public string? ImageInfoRegistryOverride { get; set; }
+
+        public string? ImageInfoRepoPrefix { get; set; }
+
         private static readonly GitOptionsBuilder GitBuilder = GitOptionsBuilder.BuildForRepositoryOperations();
 
         private static readonly Argument<string> VariableNameArgument = new(nameof(VariableName))
@@ -47,6 +51,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 "'<registry-override>/<source-repo-prefix><original-repo>:<tag>' instead of their public source."
         };
 
+        private static readonly Option<string?> ImageInfoRegistryOverrideOption = new("--image-info-registry-override")
+        {
+            Description = "Alternative registry to pull the image-info OCI artifact from. Defaults to the registry " +
+                "defined in each subscription's manifest."
+        };
+
+        private static readonly Option<string?> ImageInfoRepoPrefixOption = new("--image-info-repo-prefix")
+        {
+            Description = "Repo prefix used to locate image-info OCI artifacts in the image-info registry."
+        };
+
         public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
@@ -57,6 +72,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ..BaseImageOverrideOptions.GetCliOptions(),
             RegistryOverrideOption,
             SourceRepoPrefixOption,
+            ImageInfoRegistryOverrideOption,
+            ImageInfoRepoPrefixOption,
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
@@ -85,6 +102,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             BaseImageOverrideOptions.Bind(result);
             RegistryOverride = result.GetValue(RegistryOverrideOption);
             SourceRepoPrefix = result.GetValue(SourceRepoPrefixOption);
+            ImageInfoRegistryOverride = result.GetValue(ImageInfoRegistryOverrideOption);
+            ImageInfoRepoPrefix = result.GetValue(ImageInfoRepoPrefixOption);
             VariableName = result.GetValue(VariableNameArgument) ?? string.Empty;
         }
     }

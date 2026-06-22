@@ -15,8 +15,7 @@ This repo contains several projects:
 - **`src/ImageBuilder.Models/`** - Shared model definitions for manifest files and image metadata
 - **`src/ImageBuilder.Tests/`** - Unit tests using xUnit, Moq, and Shouldly
 - **`src/Infrastructure/`** - Library (`Microsoft.DotNet.DockerTools.Infrastructure`) that embeds a copy of `eng/docker-tools/` so ImageBuilder can ship and re-emit its own pipeline templates
-- **`eng/src/file-pusher/`** - Utility for pushing files to storage
-- **`eng/src/yaml-updater/`** - Utility for updating YAML files
+- **`eng/src/file-pusher/`** - Utility for propagating file changes to other GitHub repositories via pull requests
 
 ## Building and Testing
 

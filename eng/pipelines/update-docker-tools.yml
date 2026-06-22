@@ -1,0 +1,84 @@
+# Updates eng/docker-tools/ in this repo and every consuming repo from the latest published
+# ImageBuilder, opening a pull request per repo. Replaces the previous two-pipeline flow
+# (update-image-builder-tag.yml + push-common-updates.yml): ImageBuilder now ships the
+# infrastructure in-box, so running its `update` command in a repo writes the templates and
+# renders the new image tag in one step. docker-tools is just another consumer in the list.
+trigger: none
+pr: none
+
+# Run automatically once the official ImageBuilder build has published a new image.
+resources:
+  pipelines:
+  - pipeline: image-builder
+    source: docker-tools-imagebuilder-official
+    trigger:
+      branches:
+        include:
+        - main
+      stages:
+      - Publish
+
+variables:
+- template: /eng/pipelines/templates/variables/common.yml
+# Uses GitHub token to submit pull requests
+- template: /eng/docker-tools/templates/variables/dotnet/secrets.yml@self
+
+jobs:
+- job: Build
+  pool:
+    vmImage: $(defaultLinuxAmd64PoolImage)
+  steps:
+  # For each target repo, clone it and regenerate ITS OWN eng/docker-tools/ in place by running the
+  # latest published ImageBuilder's `update` command against that checkout, then open a PR with the
+  # diff. Running `update` per repo (rather than regenerating once here and pushing the result) is
+  # deliberate: `update` performs a full mirror, so `git add -A` captures deletions of files this
+  # ImageBuilder no longer ships -- which a file-copy push cannot express. It also avoids mutating
+  # this running pipeline's own checkout. The concrete image tag written to docker-images.yml is
+  # rendered by the image from its own baked-in metadata, so `latest` only selects "newest published".
+  - pwsh: |
+      $ErrorActionPreference = 'Stop'
+      $config = Get-Content ./eng/docker-tools-update-config.json | ConvertFrom-Json
+      $botUser = '$(dotnetDockerBot.userName)'
+      $botEmail = '$(dotnetDockerBot.email)'
+      $token = '$(BotAccount-dotnet-docker-bot-PAT)'
+
+      foreach ($repo in $config.repos) {
+          $slug = "$($repo.owner)/$($repo.name)"
+          $headBranch = "$($repo.name)-$($repo.branch)$($config.workingBranchSuffix)"
+          $work = Join-Path $env:AGENT_TEMPDIRECTORY "$($repo.name)-$($repo.branch)"
+          Remove-Item -Recurse -Force $work -ErrorAction Ignore
+
+          Write-Host "=== $slug ($($repo.branch)) ==="
+          git clone --branch $repo.branch --depth 1 "https://$botUser`:$token@github.com/$slug.git" $work
+          if ($LASTEXITCODE -ne 0) { throw "Failed to clone $slug" }
+
+          docker run --rm --pull always -v "${work}:/repo" -w /repo `
+              mcr.microsoft.com/dotnet-buildtools/image-builder:latest update
+          if ($LASTEXITCODE -ne 0) { throw "ImageBuilder update failed for $slug" }
+
+          Push-Location $work
+          try {
+              git add -A
+              if (git diff --cached --quiet) { Write-Host "$slug already up to date."; continue }
+
+              git checkout -b $headBranch
+              git -c user.name=$botUser -c user.email=$botEmail commit -m $config.commitMessage
+              # Push the branch to the bot's fork and open (or update) the PR against the source repo.
+              git push --force "https://$botUser`:$token@github.com/$botUser/$($repo.name).git" "HEAD:refs/heads/$headBranch"
+
+              $existing = gh pr list --repo $slug --head "$botUser`:$headBranch" --state open --json number --jq 'length'
+              if ($existing -eq '0') {
+                  gh pr create --repo $slug --base $repo.branch --head "$botUser`:$headBranch" `
+                      --title "[$($repo.branch)] $($config.pullRequestTitle)" --body $config.pullRequestDescription
+              }
+              else {
+                  Write-Host "PR already open for $slug ($headBranch); updated its branch."
+              }
+          }
+          finally {
+              Pop-Location
+          }
+      }
+    env:
+      GH_TOKEN: $(BotAccount-dotnet-docker-bot-PAT)
+    displayName: Update eng/docker-tools in each repo

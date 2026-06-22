@@ -23,15 +23,14 @@ public class UpdateCommandTests
     // Use the platform's directory separator for the fake root so that paths derived via
     // Path.Combine and Path.GetDirectoryName stay consistent (Path.GetDirectoryName normalizes
     // a leading '/' to '\' on Windows, which would otherwise not match the in-memory entries).
-    private static readonly string RepoRoot = $"{Path.DirectorySeparatorChar}repo";
-
-    private static readonly string OutputPath = PathHelper.SafeCombine(RepoRoot, "eng", "docker-tools");
+    private static readonly string s_repoRoot = $"{Path.DirectorySeparatorChar}repo";
+    private static readonly string s_outputPath = PathHelper.SafeCombine(s_repoRoot, "eng", "docker-tools");
 
     [TestMethod]
     public async Task UpdateCommand_WritesAllEmbeddedFiles()
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
-        fileSystem.AddDirectory(OutputPath);
+        fileSystem.AddDirectory(s_outputPath);
         UpdateCommand command = CreateCommand(fileSystem);
 
         await command.ExecuteAsync();
@@ -42,7 +41,7 @@ public class UpdateCommandTests
 
         foreach (string relativePath in expectedPaths)
         {
-            string expectedDestination = PathHelper.SafeCombine(OutputPath, relativePath);
+            string expectedDestination = PathHelper.SafeCombine(s_outputPath, relativePath);
             fileSystem.FileExists(expectedDestination).ShouldBeTrue();
 
             using Stream expectedStream = InfrastructureContent.OpenRead(relativePath);
@@ -64,7 +63,7 @@ public class UpdateCommandTests
     {
         const string tag = "1234567";
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
-        fileSystem.AddDirectory(OutputPath);
+        fileSystem.AddDirectory(s_outputPath);
         UpdateCommand command = CreateCommand(fileSystem, tag);
 
         await command.ExecuteAsync();
@@ -78,7 +77,7 @@ public class UpdateCommandTests
     public async Task UpdateCommand_ImageBuilderTagAssemblyMetadataMissing_FallsBackToLatestWithWarning()
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
-        fileSystem.AddDirectory(OutputPath);
+        fileSystem.AddDirectory(s_outputPath);
         Mock<ILogger<UpdateCommand>> logger = new();
         UpdateCommand command = CreateCommand(fileSystem, tag: null, logger: logger);
 
@@ -102,8 +101,8 @@ public class UpdateCommandTests
     public async Task UpdateCommand_DeletesStaleFiles()
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
-        fileSystem.AddDirectory(OutputPath);
-        string staleFile = PathHelper.SafeCombine(OutputPath, "templates", "removed-template.yml");
+        fileSystem.AddDirectory(s_outputPath);
+        string staleFile = PathHelper.SafeCombine(s_outputPath, "templates", "removed-template.yml");
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
 
@@ -117,8 +116,8 @@ public class UpdateCommandTests
     public async Task UpdateCommand_DeletesStaleDirectories()
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
-        fileSystem.AddDirectory(OutputPath);
-        string staleDirectory = PathHelper.SafeCombine(OutputPath, "obsolete");
+        fileSystem.AddDirectory(s_outputPath);
+        string staleDirectory = PathHelper.SafeCombine(s_outputPath, "obsolete");
         string staleFile = PathHelper.SafeCombine(staleDirectory, "old.yml");
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
@@ -132,8 +131,8 @@ public class UpdateCommandTests
     [TestMethod]
     public async Task UpdateCommand_NotGitRoot_Throws()
     {
-        InMemoryFileSystem fileSystem = new() { CurrentDirectory = RepoRoot };
-        fileSystem.AddDirectory(OutputPath);
+        InMemoryFileSystem fileSystem = new() { CurrentDirectory = s_repoRoot };
+        fileSystem.AddDirectory(s_outputPath);
         UpdateCommand command = CreateCommand(fileSystem);
 
         InvalidOperationException exception =
@@ -162,7 +161,7 @@ public class UpdateCommandTests
 
         await command.ExecuteAsync();
 
-        fileSystem.DirectoriesCreated.ShouldContain(OutputPath);
+        fileSystem.DirectoriesCreated.ShouldContain(s_outputPath);
         fileSystem.FilesWritten.ShouldNotBeEmpty();
     }
 
@@ -170,8 +169,8 @@ public class UpdateCommandTests
     public async Task UpdateCommand_DryRun_MakesNoChanges()
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
-        fileSystem.AddDirectory(OutputPath);
-        string staleFile = PathHelper.SafeCombine(OutputPath, "templates", "removed-template.yml");
+        fileSystem.AddDirectory(s_outputPath);
+        string staleFile = PathHelper.SafeCombine(s_outputPath, "templates", "removed-template.yml");
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
         command.Options.IsDryRun = true;
@@ -186,8 +185,8 @@ public class UpdateCommandTests
 
     private static InMemoryFileSystem CreateRepoFileSystem()
     {
-        InMemoryFileSystem fileSystem = new() { CurrentDirectory = RepoRoot };
-        fileSystem.AddDirectory(PathHelper.SafeCombine(RepoRoot, ".git"));
+        InMemoryFileSystem fileSystem = new() { CurrentDirectory = s_repoRoot };
+        fileSystem.AddDirectory(PathHelper.SafeCombine(s_repoRoot, ".git"));
         return fileSystem;
     }
 

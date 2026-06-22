@@ -168,8 +168,13 @@ internal sealed class GitWorkspace : IDisposable
         }
         catch (DirectoryNotFoundException)
         {
+            _logger.LogDebug("Temporary directory {Path} was already deleted.", Path);
         }
-        catch (Exception e)
+        catch (IOException e)
+        {
+            _logger.LogWarning("Failed to delete temporary directory {Path}: {Message}", Path, e.Message);
+        }
+        catch (UnauthorizedAccessException e)
         {
             _logger.LogWarning("Failed to delete temporary directory {Path}: {Message}", Path, e.Message);
         }

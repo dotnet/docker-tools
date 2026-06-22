@@ -25,7 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands;
 /// </remarks>
 public class UpdateCommand : Command<UpdateOptions>
 {
-    private static readonly string s_outputRelativePath = Path.Combine("eng", "docker-tools");
+    private static readonly string s_outputRelativePath = PathHelper.SafeCombine("eng", "docker-tools");
     // InfrastructureContent.GetRelativePaths always returns '/'-separated paths, so this is kept in
     // the same form to compare directly without re-normalizing per file.
     private const string DockerImagesRelativePath = "templates/variables/docker-images.yml";
@@ -51,7 +51,7 @@ public class UpdateCommand : Command<UpdateOptions>
         string currentDirectory = _fileSystem.GetCurrentDirectory();
 
         // Ensure we are in a git directory.
-        string gitPath = Path.Combine(currentDirectory, ".git");
+        string gitPath = PathHelper.SafeCombine(currentDirectory, ".git");
         if (!_fileSystem.DirectoryExists(gitPath) && !_fileSystem.FileExists(gitPath))
         {
             throw new InvalidOperationException(
@@ -60,7 +60,7 @@ public class UpdateCommand : Command<UpdateOptions>
 
         // Ensure we are running inside a repo that actually uses docker-tools.
         // Require --init to skip this check / onboard a new repo.
-        string outputPath = Path.Combine(currentDirectory, s_outputRelativePath);
+        string outputPath = PathHelper.SafeCombine(currentDirectory, s_outputRelativePath);
         if (!Options.Init && !_fileSystem.DirectoryExists(outputPath))
         {
             throw new InvalidOperationException(
@@ -100,7 +100,7 @@ public class UpdateCommand : Command<UpdateOptions>
 
         foreach (string relativePath in InfrastructureContent.GetRelativePaths())
         {
-            string destinationPath = Path.Combine(outputPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            string destinationPath = PathHelper.SafeCombine(outputPath, relativePath);
 
             if (Options.IsDryRun)
             {

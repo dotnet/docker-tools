@@ -5,6 +5,8 @@
 # build Microsoft.DotNet.ImageBuilder
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
+ARG IMAGEBUILDER_TAG=
+ENV IMAGEBUILDER_TAG=${IMAGEBUILDER_TAG}
 
 # download root CA certificates for signature verification
 WORKDIR /
@@ -20,6 +22,7 @@ WORKDIR /image-builder
 COPY NuGet.config ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
 COPY ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj ./ImageBuilder.Models/
+COPY Infrastructure/Microsoft.DotNet.DockerTools.Infrastructure.csproj ./Infrastructure/
 RUN dotnet restore -r linux-$TARGETARCH ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish

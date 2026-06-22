@@ -37,7 +37,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.16" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="9.0.16" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" Version="9.10.0" />
-    <PackageReference Include="Microsoft.DotNet.VersionTools" Version="9.0.0-beta.25255.5" />
     <PackageReference Include="Microsoft.TeamFoundationServer.Client" Version="20.256.2" />
     <PackageReference Include="Newtonsoft.Json.Schema" Version="4.0.1" />
     <PackageReference Include="Octokit" Version="14.0.0" />
@@ -57,12 +56,10 @@
 
     <!-- CVE-2021-24112: Upgrade version of System.Drawing.Common implicitly referenced by Microsoft.TeamFoundationServer.Client -->
     <PackageReference Include="System.Drawing.Common" Version="5.0.3" />
-
-    <!-- CVE-2024-38095: Upgrade version of System.Formats.Asn1 implicitly referenced by Microsoft.DotNet.VersionTools -->
-    <PackageReference Include="System.Formats.Asn1" Version="6.0.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Automation\Microsoft.DotNet.Automation.csproj" />
     <ProjectReference Include="..\ImageBuilder.Models\Microsoft.DotNet.ImageBuilder.Models.csproj" />
   </ItemGroup>
 </Project>

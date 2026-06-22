@@ -52,7 +52,7 @@ public static class ImageBuilder
         builder.Services.AddSingleton<IDateTimeService, DateTimeService>();
         builder.Services.AddSingleton<IDockerService, DockerService>();
         builder.Services.AddSingleton<IEnvironmentService, EnvironmentService>();
-        builder.Services.AddSingleton<IGitHubClientFactory, GitHubClientFactory>();
+        builder.Services.AddSingleton<IRepoHostFactory, RepoHostFactory>();
         builder.Services.AddSingleton<IGitService, GitService>();
 
         // Add ACR referrer-lookup rate limiting:

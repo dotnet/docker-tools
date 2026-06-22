@@ -42,8 +42,7 @@ parameters:
   default: null
 
 # Reference to a versions repository (e.g., "dotnet-versions") for multi-repo checkout.
-# When set, enables image caching by providing access to historical image-info files.
-# When empty, single-repo checkout is used and caching is disabled.
+# When set, enables legacy file-based image caching by providing access to historical image-info files.
 - name: versionsRepoRef
   type: string
   default: ""
@@ -55,9 +54,8 @@ parameters:
 
 steps:
 # Repository Checkout
-# Multi-repo checkout is used when a versions repository is needed for caching.
-# The versions repo contains historical image-info files used to determine which
-# images need rebuilding. Credentials are persisted for later git operations.
+# Multi-repo checkout is used when the versions repository is needed. OCI
+# image-info caching intentionally keeps the single-repo checkout.
 - checkout: self
 - ${{ if ne(parameters.versionsRepoRef, '') }}:
   - checkout: ${{ parameters.versionsRepoRef }}
@@ -170,7 +168,7 @@ steps:
     else {
       # Single-repo checkout
       $versionsBasePath = ""
-      $pipelineDisabledCache = "true"
+      $pipelineDisabledCache = "false"
       $repoRoot = "$(Build.Repository.LocalPath)"
       $engDockerToolsPath = "$repoRoot/$(engDockerToolsRelativePath)"
 

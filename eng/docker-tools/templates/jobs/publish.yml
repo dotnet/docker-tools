@@ -15,11 +15,9 @@ parameters:
   # Service connections not in publishConfig.RegistryAuthentication that need OIDC
   # token access during publish (e.g., kusto, marStatus). Shape: [{ name: string }]
   additionalServiceConnections: []
-  # When true, the merged image info is published as an OCI artifact to the publish
-  # registry instead of being committed to the GitHub versions repo. Note that the
-  # `publishImageInfo` variable must also be set to 'true' for either form of image
-  # info publishing to run.
-  useOciArtifactForImageInfo: false
+  # When true, publish also mirrors merged image-info to the GitHub versions repo.
+  # OCI image-info is always the source of truth.
+  publishImageInfoToGitHub: false
 
 jobs:
 - job: Publish
@@ -58,12 +56,14 @@ jobs:
     parameters:
       dockerClientOS: linux
       publishConfig: ${{ parameters.publishConfig }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
+      ${{ if eq(parameters.publishImageInfoToGitHub, true) }}:
+        versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
 
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
+      internalProjectName: ${{ parameters.internalProjectName }}
       usesRegistries:
         - ${{ parameters.publishConfig.BuildRegistry.server }}
         - ${{ parameters.publishConfig.PublishRegistry.server }}
@@ -147,27 +147,21 @@ jobs:
   - script: mkdir -p $(Build.ArtifactStagingDirectory)/eol-annotation-data
     displayName: Create EOL Annotation Data Directory
 
-  - script: |-
-      cd $(versionsRepoRoot)
-      git pull origin $(gitHubVersionsRepoInfo.branch)
-    condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
-    displayName: Pull Latest Changes from Versions Repo
-
-  - script: >-
-      cp $(versionsRepoRoot)/$(gitHubImageInfoVersionsPath) $(imageInfoHostDir)/full-image-info-orig.json
-    condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
-    displayName: Copy Latest Image Info from Versions Repo
-
   - script: >
-      $(runImageBuilderCmd) mergeImageInfo
+      $(runAuthedImageBuilderCmd) mergeImageInfo
       $(imageInfoContainerDir)
       $(imageInfoContainerDir)/full-image-info-new.json
       $(manifestVariables)
       $(dryRunArg)
       --manifest $(manifest)
       --publish
-      --initial-image-info-path $(imageInfoContainerDir)/full-image-info-orig.json
+      --initial-image-info-registry-override '${{ parameters.publishConfig.PublishRegistry.server }}'
+      --initial-image-info-repo-prefix '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
+      --initial-image-info-output-path $(imageInfoContainerDir)/full-image-info-orig.json
       $(commitOverrideArg)
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
     condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
     displayName: Merge Image Info
 
@@ -222,18 +216,24 @@ jobs:
       acr: ${{ parameters.publishConfig.PublishRegistry }}
       dataFile: $(artifactsPath)/eol-annotation-data/eol-annotation-data.json
 
-  - ${{ if eq(parameters.useOciArtifactForImageInfo, true) }}:
-    - script: >
-        $(runAuthedImageBuilderCmd) publishImageInfoArtifact
-        '$(imageInfoContainerDir)/full-image-info-new.json'
-        $(dryRunArg)
-        $(imageBuilder.commonCmdArgs)
-      env:
-        SYSTEM_ACCESSTOKEN: $(System.AccessToken)
-        SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
+  - script: >
+      $(runAuthedImageBuilderCmd) publishImageInfoArtifact
+      '$(imageInfoContainerDir)/full-image-info-new.json'
+      $(dryRunArg)
+      $(imageBuilder.commonCmdArgs)
+    env:
+      SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+      SYSTEM_OIDCREQUESTURI: $(System.OidcRequestUri)
+    condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
+    displayName: Publish Image Info OCI Artifact
+
+  - ${{ if eq(parameters.publishImageInfoToGitHub, true) }}:
+    - script: |-
+        cd $(versionsRepoRoot)
+        git pull origin $(gitHubVersionsRepoInfo.branch)
       condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
-      displayName: Publish Image Info
-  - ${{ else }}:
+      displayName: Pull Latest Changes from Versions Repo
+
     - script: >
         $(runImageBuilderCmd) publishImageInfo
         '$(imageInfoContainerDir)/full-image-info-new.json'
@@ -247,7 +247,7 @@ jobs:
         $(dryRunArg)
         $(imageBuilder.commonCmdArgs)
       condition: and(succeeded(), eq(variables['publishImageInfo'], 'true'))
-      displayName: Publish Image Info
+      displayName: Publish Image Info to GitHub
 
   # Task displayNames names are hardcoded to reference the task prefix used by 1ES official
   # pipelines in eng/docker-tools/templates/1es-official.yml.

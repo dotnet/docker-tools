@@ -45,9 +45,11 @@ jobs:
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
+      internalProjectName: ${{ parameters.internalProjectName }}
       dockerClientOS: ${{ parameters.dockerClientOS }}
       usesRegistries:
-        - ${{ parameters.publishConfig.BuildRegistry.server }}
+      - ${{ parameters.publishConfig.BuildRegistry.server }}
+      - ${{ parameters.publishConfig.PublishRegistry.server }}
       # Check .name instead of the whole object - null parameters can become
       # empty objects through template layers, making ${{ if }} truthy.
       ${{ if parameters.storageAccountServiceConnection.name }}:
@@ -71,11 +73,6 @@ jobs:
       $imageBuilderBuildArgs = "$env:IMAGEBUILDERBUILDARGS $env:IMAGEBUILDER_QUEUEARGS --image-info-output-path $(imageInfoContainerDir)/$(legName)-image-info.json $(commonMatrixAndBuildOptions)"
       if ($env:SYSTEM_TEAMPROJECT -eq "${{ parameters.internalProjectName }}" -and $env:BUILD_REASON -ne "PullRequest") {
         $imageBuilderBuildArgs = "$imageBuilderBuildArgs --repo-prefix ${{ parameters.publishConfig.BuildRegistry.repoPrefix }} --push"
-      }
-
-      # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache
-      if ("$(pipelineDisabledCache)" -ne "true" -and "${{ parameters.noCache }}" -ne "true") {
-        $imageBuilderBuildArgs = "$imageBuilderBuildArgs --image-info-source-path $(versionsBasePath)$(imageInfoVersionsPath)"
       }
 
       echo "imageBuilderBuildArgs: $imageBuilderBuildArgs"

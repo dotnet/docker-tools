@@ -48,6 +48,7 @@ jobs:
       publishConfig: ${{ parameters.publishConfig }}
       usesRegistries:
         - ${{ parameters.publishConfig.InternalMirrorRegistry.server }}
+        - ${{ parameters.publishConfig.PublishRegistry.server }}
 
   - template: /eng/docker-tools/templates/steps/copy-base-images.yml@self
     parameters:
@@ -63,6 +64,8 @@ jobs:
       staleImagePaths
       --registry-override '${{ parameters.publishConfig.InternalMirrorRegistry.server }}'
       --source-repo-prefix '${{ parameters.publishConfig.InternalMirrorRegistry.repoPrefix }}'
+      --image-info-registry-override '${{ parameters.publishConfig.PublishRegistry.server }}'
+      --image-info-repo-prefix '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
       --subscriptions-path ${{ parameters.subscriptionsPath }}
       --os-type '*'
       --architecture '*'

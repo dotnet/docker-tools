@@ -65,10 +65,6 @@ stages:
     testMatrixType: ${{ parameters.testMatrixType }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
 
-    # Only clone versions repo if we need to reference it during the build in order to cache images.
-    ${{ if eq(parameters.noCache, false) }}:
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
-
     # Linux AMD64
     linuxAmd64Pool:
       ${{ if ne(parameters.linuxAmd64Pool, '') }}:

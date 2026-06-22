@@ -86,7 +86,6 @@ stages:
       additionalOptions: "--manifest '$(manifest)' $(imageBuilder.pathArgs) $(manifestVariables)"
       customInitSteps: ${{ parameters.customInitSteps }}
       customCopyBaseImagesInitSteps: ${{ parameters.customCopyBaseImagesInitSteps }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/docker-tools/templates/jobs/generate-matrix.yml@self
     parameters:
@@ -99,7 +98,6 @@ stages:
       publishConfig: ${{ parameters.publishConfig }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customGenerateMatrixInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
 
   - template: /eng/docker-tools/templates/jobs/build-images.yml@self
     parameters:
@@ -108,7 +106,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.LinuxAmd64']
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxAmdBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -123,7 +120,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.LinuxArm64']
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -138,7 +134,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.LinuxArm32']
       dockerClientOS: linux
       buildJobTimeout: ${{ parameters.linuxArmBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -153,7 +148,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.Windows1809Amd64']
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -168,7 +162,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.WindowsLtsc2022Amd64']
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -183,7 +176,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.WindowsLtsc2025Amd64']
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -198,7 +190,6 @@ stages:
       matrix: dependencies.GenerateBuildMatrix.outputs['matrix.WindowsLtsc2016Amd64']
       dockerClientOS: windows
       buildJobTimeout: ${{ parameters.windowsAmdBuildJobTimeout }}
-      versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
       customBuildInitSteps: ${{ parameters.customBuildInitSteps }}
       noCache: ${{ parameters.noCache }}
@@ -278,7 +269,6 @@ stages:
         customInitSteps: ${{ parameters.customInitSteps }}
         customGenerateMatrixInitSteps: ${{ parameters.customGenerateMatrixInitSteps }}
         sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-        versionsRepoRef: ${{ parameters.versionsRepoRef }}
     - template: /eng/docker-tools/templates/jobs/test-images-linux-client.yml@self
       parameters:
         name: Linux_amd64

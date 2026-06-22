@@ -16,9 +16,9 @@ parameters:
   # Service connections not in publishConfig.RegistryAuthentication that need OIDC
   # token access during publish (e.g., kusto, marStatus). Shape: [{ name: string }]
   additionalServiceConnections: []
-  # When true, the merged image info is published as an OCI artifact to the publish
-  # registry instead of being committed to the GitHub versions repo.
-  useOciArtifactForImageInfo: false
+  # When true, publish also mirrors merged image-info to the GitHub versions repo.
+  # OCI image-info is always the source of truth.
+  publishImageInfoToGitHub: false
 
 stages:
 - template: /eng/docker-tools/templates/stages/publish.yml@self
@@ -33,7 +33,7 @@ stages:
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
     versionsRepoRef: ${{ parameters.versionsRepoRef }}
     overrideImageInfoCommit: ${{ parameters.overrideImageInfoCommit }}
-    useOciArtifactForImageInfo: ${{ parameters.useOciArtifactForImageInfo }}
+    publishImageInfoToGitHub: ${{ parameters.publishImageInfoToGitHub }}
 
     customPublishInitSteps:
     - pwsh: |

@@ -32,9 +32,9 @@ parameters:
   # Publish parameters
   customPublishInitSteps: []
 
-  # When true, the merged image info is published as an OCI artifact to the publish
-  # registry instead of being committed to the GitHub versions repo.
-  useOciArtifactForImageInfo: false
+  # When true, publish also mirrors merged image-info to the GitHub versions repo.
+  # OCI image-info is always the source of truth.
+  publishImageInfoToGitHub: false
 
   # Additional service connections not in publishConfig.RegistryAuthentication
   # that need OIDC token access (e.g., kusto, marStatus). Shape: [{ name: string }]
@@ -85,5 +85,6 @@ stages:
     publishConfig: ${{ parameters.publishConfig }}
     additionalServiceConnections: ${{ parameters.additionalServiceConnections }}
     sourceBuildPipelineRunId: ${{ parameters.sourceBuildPipelineRunId }}
-    versionsRepoRef: ${{ parameters.versionsRepoRef }}
-    useOciArtifactForImageInfo: ${{ parameters.useOciArtifactForImageInfo }}
+    ${{ if eq(parameters.publishImageInfoToGitHub, true) }}:
+      versionsRepoRef: ${{ parameters.versionsRepoRef }}
+    publishImageInfoToGitHub: ${{ parameters.publishImageInfoToGitHub }}

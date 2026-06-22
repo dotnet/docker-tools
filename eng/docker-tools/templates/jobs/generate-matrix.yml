@@ -26,12 +26,15 @@ jobs:
       versionsRepoRef: ${{ parameters.versionsRepoRef }}
       customInitSteps: ${{ parameters.customInitSteps }}
   # When --trim-cached-images is active, ImageBuilder checks base image digests
-  # in the ACR mirror registry, which requires OIDC auth via this service connection.
+  # in the ACR mirror registry. OCI image-info source additionally pulls from
+  # the publish registry. Both require OIDC auth via service connections.
   - template: /eng/docker-tools/templates/steps/reference-service-connections.yml@self
     parameters:
       publishConfig: ${{ parameters.publishConfig }}
+      internalProjectName: ${{ parameters.internalProjectName }}
       usesRegistries:
-        - ${{ parameters.publishConfig.BuildRegistry.server }}
+      - ${{ parameters.publishConfig.BuildRegistry.server }}
+      - ${{ parameters.publishConfig.PublishRegistry.server }}
   - ${{ parameters.customGenerateMatrixInitSteps }}
   - template: /eng/docker-tools/templates/steps/retain-build.yml@self
   - template: /eng/docker-tools/templates/steps/validate-branch.yml@self
@@ -53,9 +56,14 @@ jobs:
       if ("${{ parameters.isTestStage}}" -eq "true") {
         $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(artifactsPath)/image-info.json"
       }
-      elseif ("$(pipelineDisabledCache)" -ne "true" -and "${{ parameters.noCache }}" -ne "true" -and "$(trimCachedImagesForMatrix)" -eq "true") {
-        # If the pipeline isn't configured to disable the cache and a build variable hasn't been set to disable the cache
-        $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(versionsBasePath)$(imageInfoVersionsPath) --trim-cached-images"
+      elseif ("$(pipelineDisabledCache)" -ne "true" `
+          -and "${{ parameters.noCache }}" -ne "true" `
+          -and "$(trimCachedImagesForMatrix)" -eq "true" `
+          -and "$(System.TeamProject)" -eq "${{ parameters.internalProjectName }}" `
+          -and "$(Build.Reason)" -ne "PullRequest") {
+        # OCI image-info artifacts are pulled from the private publish registry, so cache trimming is only enabled
+        # in jobs that run ImageBuilder with OIDC service connection auth.
+        $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info-registry-override ${{ parameters.publishConfig.PublishRegistry.server }} --image-info-repo-prefix ${{ parameters.publishConfig.PublishRegistry.repoPrefix }} --trim-cached-images"
       }
 
       echo "##vso[task.setvariable variable=additionalGenerateBuildMatrixOptions]$additionalGenerateBuildMatrixOptions"

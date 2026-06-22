@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IRegistryCredentialsProvider _registryCredentialsProvider;
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
+        private readonly IImageInfoService _imageInfoService;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -50,7 +51,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService) : base(manifestJsonService)
+            IImageCacheService imageCacheService,
+            IImageInfoService imageInfoService) : base(manifestJsonService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -60,6 +62,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _registryCredentialsProvider = registryCredentialsProvider ?? throw new ArgumentNullException(nameof(registryCredentialsProvider));
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
+            _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -305,9 +308,24 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _logger.LogInformation("BUILDING IMAGES");
 
             ImageArtifactDetails? srcImageArtifactDetails = null;
-            if (Options.ImageInfoSourcePath != null)
+            if (!string.IsNullOrWhiteSpace(Options.ImageInfoSourcePath))
             {
-                srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(Options.ImageInfoSourcePath, Manifest, skipManifestValidation: true);
+                srcImageArtifactDetails = ImageInfoHelper.LoadFromFile(
+                    Options.ImageInfoSourcePath,
+                    Manifest,
+                    skipManifestValidation: true);
+            }
+            else if (Manifest.Model.ImageInfo is not null)
+            {
+                string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
+                    Manifest,
+                    string.IsNullOrWhiteSpace(Options.RegistryOverride) ? Manifest.Model.Registry : Options.RegistryOverride,
+                    Options.RepoPrefix);
+
+                srcImageArtifactDetails = ImageInfoHelper.LoadFromContent(
+                    imageInfoContent,
+                    Manifest,
+                    skipManifestValidation: true);
             }
 
             foreach (RepoInfo repoInfo in Manifest.FilteredRepos)

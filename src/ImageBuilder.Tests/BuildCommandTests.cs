@@ -14,6 +14,7 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.Extensions.Logging;
@@ -831,7 +832,13 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
 
-            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock(localImageDigestResults: [new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest)], []);
+            Mock<IManifestService> manifestServiceMock = CreateManifestServiceMock(
+                localImageDigestResults:
+                [
+                    new($"{runtimeDepsRepo}:{tag}", runtimeDepsDigest),
+                    new($"{runtimeDepsRepo}:{newTag}", runtimeDepsDigest)
+                ],
+                []);
             Mock<IManifestServiceFactory> manifestServiceFactoryMock = CreateManifestServiceFactoryMock(manifestServiceMock);
 
             Mock<IDockerService> dockerServiceMock = CreateDockerServiceMock();
@@ -855,13 +862,15 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 .Returns(currentRuntimeDepsCommitSha);
 
             Mock<ICopyImageService> copyImageServiceMock = new();
+            Mock<IImageInfoService> imageInfoServiceMock = new();
 
             BuildCommand command = CreateBuildCommand(
                 dockerService: dockerServiceMock.Object,
                 gitService: gitServiceMock.Object,
                 copyImageService: copyImageServiceMock.Object,
                 manifestServiceFactory: manifestServiceFactoryMock.Object,
-                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object));
+                imageCacheService: new ImageCacheService(Mock.Of<ILogger<ImageCacheService>>(), gitServiceMock.Object),
+                imageInfoService: imageInfoServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.ImageInfoOutputPath = Path.Combine(tempFolderContext.Path, "dest-image-info.json");
             command.Options.ImageInfoSourcePath = Path.Combine(tempFolderContext.Path, "src-image-info.json");
@@ -917,8 +926,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 Repos = sourceRepos.ToList()
             };
 
-            string sourceImageArtifactDetailsOutput = JsonHelper.SerializeObject(sourceImageArtifactDetails);
-            File.WriteAllText(command.Options.ImageInfoSourcePath, sourceImageArtifactDetailsOutput);
+            File.WriteAllText(
+                command.Options.ImageInfoSourcePath,
+                JsonHelper.SerializeObject(sourceImageArtifactDetails));
 
             Manifest manifest = CreateManifest(
                 CreateRepo(runtimeDepsRepo,
@@ -1011,6 +1021,49 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     srcRegistryName: null);
 
             dockerServiceMock.VerifyNoOtherCalls();
+        }
+
+        [TestMethod]
+        public async Task BuildCommand_ImageInfoArtifact_UsesManifestRegistryWhenNoOverrideIsSet()
+        {
+            const string registry = "example.azurecr.io";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IImageInfoService> imageInfoServiceMock = new();
+            imageInfoServiceMock
+                .Setup(service => service.PullImageInfoArtifactAsync(
+                    It.IsAny<ManifestInfo>(),
+                    registry,
+                    null,
+                    default))
+                .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
+
+            BuildCommand command = CreateBuildCommand(imageInfoService: imageInfoServiceMock.Object);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.FilterOptions.Dockerfile.Paths = new string[] { "not-matching" };
+
+            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "scratch");
+            Manifest manifest = CreateManifest(
+                CreateRepo(
+                    "runtime",
+                    CreateImage(CreatePlatform(dockerfile, new string[] { "tag" }))));
+            manifest.Registry = registry;
+            manifest.ImageInfo = new ImageInfoArtifact
+            {
+                Repo = "image-info",
+                Tags = new Dictionary<string, Tag>
+                {
+                    { "latest", new Tag() }
+                }
+            };
+
+            File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            imageInfoServiceMock.VerifyAll();
         }
 
         /// <summary>
@@ -3641,7 +3694,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IManifestServiceFactory? manifestServiceFactory = null,
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
-            IImageCacheService? imageCacheService = null)
+            IImageCacheService? imageCacheService = null,
+            IImageInfoService? imageInfoService = null)
         {
             BuildCommand command = new(
                 manifestJsonService ?? TestHelper.CreateManifestJsonService(),
@@ -3653,10 +3707,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 manifestServiceFactory ?? Mock.Of<IManifestServiceFactory>(),
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
-                imageCacheService ?? Mock.Of<IImageCacheService>());
+                imageCacheService ?? Mock.Of<IImageCacheService>(),
+                imageInfoService ?? CreateImageInfoService());
 
             return command;
         }
+
+        private static ImageInfoService CreateImageInfoService() =>
+            new(
+                TestHelper.CreateManifestJsonService(),
+                Mock.Of<IOrasServiceFactory>(),
+                Mock.Of<ILogger<ImageInfoService>>());
         #nullable disable
 
         private static Mock<IDockerService> CreateDockerServiceMock(string buildOutput = null)

@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -281,6 +282,64 @@ public class OrasDotNetService(
             registry, repository, manifestDescriptor.Digest, artifactType, string.Join(", ", taggedReferences), elapsed);
 
         return manifestDescriptor.Digest;
+    }
+
+    /// <inheritdoc/>
+    public async Task<OciArtifact> PullAsync(
+        string registry,
+        string repository,
+        string tag,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
+        ArgumentException.ThrowIfNullOrWhiteSpace(repository);
+        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
+
+        ImageName imageName = new(registry, repository, tag, digest: null);
+        string taggedReference = imageName.ToString();
+        Repository repo = CreateRepository(registry, repository);
+
+        long startTime = Stopwatch.GetTimestamp();
+        (Descriptor manifestDescriptor, Stream manifestStream) = await repo.FetchAsync(taggedReference, cancellationToken);
+        Manifest manifest;
+        await using (manifestStream)
+        {
+            manifest = await JsonSerializer.DeserializeAsync<Manifest>(
+                manifestStream,
+                cancellationToken: cancellationToken)
+                ?? throw new InvalidOperationException($"Invalid JSON artifact manifest for '{taggedReference}'.");
+        }
+
+        List<OciBlob> blobs = [];
+        foreach (Descriptor layerDescriptor in manifest.Layers)
+        {
+            await using Stream layerContent = await repo.FetchAsync(layerDescriptor, cancellationToken);
+            using MemoryStream memoryStream = new();
+            await layerContent.CopyToAsync(memoryStream, cancellationToken);
+            blobs.Add(new OciBlob(memoryStream.ToArray(), layerDescriptor));
+        }
+
+        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
+        _logger.LogInformation(
+            "Pulled OCI artifact from {Registry}/{Repository}:{Tag}: manifestDigest={Digest}, artifactType={ArtifactType}, blobs={BlobCount} in {Elapsed}",
+            registry, repository, tag, manifestDescriptor.Digest, manifest.ArtifactType, blobs.Count, elapsed);
+
+        return new OciArtifact(manifestDescriptor, manifest, blobs);
+    }
+
+    /// <inheritdoc/>
+    public Task<Stream> FetchBlobAsync(
+        string registry,
+        string repository,
+        Descriptor descriptor,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
+        ArgumentException.ThrowIfNullOrWhiteSpace(repository);
+        ArgumentNullException.ThrowIfNull(descriptor);
+
+        Repository repo = CreateRepository(registry, repository);
+        return repo.FetchAsync(descriptor, cancellationToken);
     }
 
     /// <summary>

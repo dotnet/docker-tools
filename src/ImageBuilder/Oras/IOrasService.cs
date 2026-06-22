@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Signing;
@@ -91,5 +92,33 @@ public interface IOrasService
         string registry,
         string repository,
         IEnumerable<string> tags,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Pulls content layers from a standalone OCI artifact tag.
+    /// </summary>
+    /// <param name="registry">The registry host (e.g., "myregistry.azurecr.io").</param>
+    /// <param name="repository">The repository within the registry (e.g., "dotnet/versions").</param>
+    /// <param name="tag">The artifact tag to pull.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The OCI artifact manifest/descriptors and pulled blob content.</returns>
+    Task<OciArtifact> PullAsync(
+        string registry,
+        string repository,
+        string tag,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Fetches the blob identified by the given descriptor.
+    /// </summary>
+    /// <param name="registry">The registry host (e.g., "myregistry.azurecr.io").</param>
+    /// <param name="repository">The repository within the registry (e.g., "dotnet/versions").</param>
+    /// <param name="descriptor">The descriptor of the blob to fetch.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>A stream for the blob content. The caller is responsible for disposing it.</returns>
+    Task<Stream> FetchBlobAsync(
+        string registry,
+        string repository,
+        Descriptor descriptor,
         CancellationToken cancellationToken = default);
 }

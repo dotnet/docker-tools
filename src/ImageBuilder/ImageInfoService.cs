@@ -3,7 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
@@ -38,16 +39,11 @@ public class ImageInfoService(
         bool isDryRun,
         CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(manifest);
         ArgumentNullException.ThrowIfNull(imageInfoContent);
         ArgumentException.ThrowIfNullOrWhiteSpace(registry);
+        ArgumentNullException.ThrowIfNull(manifest);
 
-        ImageInfoArtifact imageInfoArtifact = _manifestJsonService.GetImageInfoArtifact(manifest);
-
-        if (imageInfoArtifact.Tags.Count == 0)
-            throw new InvalidOperationException(
-                "The manifest's imageInfo property must define at least one tag in order to push "
-                + "image-info as an OCI artifact.");
+        ImageInfoArtifact imageInfoArtifact = GetValidatedImageInfoArtifact(manifest);
 
         string repo = $"{repoPrefix}{imageInfoArtifact.Repo}";
         _logger.LogInformation(
@@ -70,5 +66,66 @@ public class ImageInfoService(
             repo,
             imageInfoArtifact.Tags.Keys,
             cancellationToken: cancellationToken);
+    }
+
+    /// <inheritdoc/>
+    public async Task<string> PullImageInfoArtifactAsync(
+        ManifestInfo manifest,
+        string registry,
+        string? repoPrefix,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
+        ArgumentNullException.ThrowIfNull(manifest);
+
+        ImageInfoArtifact imageInfoArtifact = GetValidatedImageInfoArtifact(manifest);
+
+        string repo = $"{repoPrefix}{imageInfoArtifact.Repo}";
+        string tag = imageInfoArtifact.Tags.Keys.First();
+
+        _logger.LogInformation(
+            "Image info will be pulled from registry={registry}, repo={Repo}, tag={Tag}",
+            registry, repo, tag);
+
+        IOrasService orasService = _orasServiceFactory.Create();
+        OciArtifact artifact = await orasService.PullAsync(
+            registry,
+            repo,
+            tag,
+            cancellationToken);
+        if (!string.Equals(artifact.Manifest.ArtifactType, OciArtifactType.ImageInfo, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Artifact '{repo}:{tag}' has artifactType '{artifact.Manifest.ArtifactType}', expected '{OciArtifactType.ImageInfo}'.");
+        }
+
+        if (artifact.Blobs.Count != 1)
+        {
+            throw new InvalidOperationException(
+                $"Image info artifact '{repo}:{tag}' must have exactly one blob, but has {artifact.Blobs.Count}.");
+        }
+
+        OciBlob blob = artifact.Blobs[0];
+        if (!string.Equals(blob.Descriptor.MediaType, OciArtifactType.ImageInfo, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"Artifact '{repo}:{tag}' blob has mediaType '{blob.Descriptor.MediaType}', expected '{OciArtifactType.ImageInfo}'.");
+        }
+
+        return Encoding.UTF8.GetString(blob.Content);
+    }
+
+    private ImageInfoArtifact GetValidatedImageInfoArtifact(ManifestInfo manifest)
+    {
+        ImageInfoArtifact imageInfoArtifact = _manifestJsonService.GetImageInfoArtifact(manifest);
+
+        if (imageInfoArtifact.Tags.Count == 0)
+        {
+            throw new InvalidOperationException(
+                "The manifest's imageInfo property must define at least one tag in order to use "
+                + "image-info as an OCI artifact.");
+        }
+
+        return imageInfoArtifact;
     }
 }

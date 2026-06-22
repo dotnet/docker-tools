@@ -24,6 +24,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         public string? SourceRepoUrl { get; set; }
         public RegistryCredentialsOptions CredentialsOptions { get; set; } = new();
         public bool TrimCachedImages { get; set; }
+        public string? ImageInfoRegistryOverride { get; set; }
+        public string? ImageInfoRepoPrefix { get; set; }
 
         private const MatrixType DefaultMatrixType = MatrixType.PlatformDependencyGraph;
 
@@ -48,7 +50,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly Option<string?> ImageInfoOption = new("--image-info")
         {
-            Description = "Path to image info file"
+            Description = "Optional override for source image info. By default, the image info is pulled from the OCI"
+                + " artifact referenced by the manifest's imageInfo source in the target registry."
         };
 
         private static readonly Option<string[]> DistinctMatrixOsVersionsOption = new("--distinct-matrix-os-version")
@@ -73,6 +76,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Description = "Whether to trim cached images from the set of paths"
         };
 
+        private static readonly Option<string?> ImageInfoRegistryOverrideOption = new("--image-info-registry-override")
+        {
+            Description = "Registry to pull image-info OCI artifacts from instead of the manifest registry"
+        };
+
+        private static readonly Option<string?> ImageInfoRepoPrefixOption = new("--image-info-repo-prefix")
+        {
+            Description = "Repo prefix to add when pulling image-info OCI artifacts"
+        };
+
         public override IEnumerable<Option> GetCliOptions() =>
         [
             ..base.GetCliOptions(),
@@ -87,6 +100,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             SourceRepoPrefixOption,
             SourceRepoOption,
             TrimCachedImagesOption,
+            ImageInfoRegistryOverrideOption,
+            ImageInfoRepoPrefixOption,
         ];
 
         public override IEnumerable<Argument> GetCliArguments() =>
@@ -111,6 +126,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             SourceRepoPrefix = result.GetValue(SourceRepoPrefixOption);
             SourceRepoUrl = result.GetValue(SourceRepoOption);
             TrimCachedImages = result.GetValue(TrimCachedImagesOption);
+            ImageInfoRegistryOverride = result.GetValue(ImageInfoRegistryOverrideOption);
+            ImageInfoRepoPrefix = result.GetValue(ImageInfoRepoPrefixOption);
         }
     }
 }

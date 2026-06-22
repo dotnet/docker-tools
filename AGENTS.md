@@ -121,7 +121,7 @@ These files contain:
 - Dockerfile paths and commit information
 - Build timestamps
 
-Image info files are used by subsequent pipeline stages and are published to the versions repository to track what was built.
+Image info files are used by subsequent pipeline stages and are published as OCI artifacts to track what was built. The versions repository can receive an optional mirror.
 See [eng/docker-tools/DEV-GUIDE.md](eng/docker-tools/DEV-GUIDE.md) for more details on how image info flows through pipelines.
 
 ## Documentation Maintenance

@@ -157,7 +157,7 @@ Build Stage
                     ├── Create multi-arch manifests
                     ├── Wait for MAR ingestion
                     ├── Update READMEs
-                    ├── Publish image info to versions repo
+                    ├── Publish image info
                     └── Apply EOL annotations
 ```
 - Full pipeline with all stages
@@ -246,9 +246,9 @@ Image info files (defined by [`ImageArtifactDetails`](https://github.com/dotnet/
 2. **Post_Build stage**: Fragments are merged into a single `image-info.json`
 3. **Test stage**: Uses merged info to know which images to test
 4. **Publish stage**: Uses info to know which images to copy/publish
-5. **Versions repo**: Final info is committed to the versions repo
+5. **Persistent source**: Final info is published as an OCI artifact
 
-The [versions repo](https://github.com/dotnet/versions) stores the "source of truth" image info. Future builds compare against this to determine what's changed and skip unchanged images.
+Published image info is persisted as the image-info OCI artifact described by the manifest's `imageInfo` metadata. Future builds compare against that OCI artifact to determine what's changed and skip unchanged images. The [versions repo](https://github.com/dotnet/versions) can still receive an optional GitHub mirror for compatibility, but it is not the source of truth.
 
 **Using Image Info for Investigations**
 
@@ -258,7 +258,7 @@ Image info files are invaluable when you need to track down information about a 
 
 Given a digest like `sha256:abc123...`, you can trace it back to its source:
 
-1. **Check the versions repo history** - The `dotnet/versions` repo contains historical image info committed after each publish. Use `git log -p --all -S 'sha256:abc123'` to find the commit that introduced this digest.
+1. **Check the published image info** - Pull the image-info OCI artifact identified by the manifest's `imageInfo` metadata and search for the digest. If the repo still publishes the optional GitHub mirror, the `dotnet/versions` history can also help identify when that digest first appeared.
 
 2. **From the image info entry**, you'll find:
    - `commitUrl` - The exact source commit that built this image
@@ -275,13 +275,13 @@ Download the `image-info` artifact from a pipeline run in Azure DevOps:
 
 *Scenario: "When did we last publish updates to a specific image?"*
 
-Use the versions repo git history:
+Use the published image-info OCI artifact for the current state. If the optional GitHub mirror is enabled for the repo, its history can show when the mirrored image info changed:
 ```bash
-# In the dotnet/versions repo
+# In the dotnet/versions repo when the optional mirror is enabled
 git log --oneline -- build-info/docker/image-info.dotnet-dotnet-docker-main.json
 ```
 
-Each commit corresponds to a publish operation and includes the full image info at that point in time.
+Each mirror commit corresponds to a publish operation and includes the full image info at that point in time.
 
 *Scenario: "Compare what changed between two publishes"*
 
@@ -300,7 +300,7 @@ The publish stage does more than just push images. Here's the sequence:
 3. **Wait for MAR Ingestion** — Polls MAR until images are available (timeout configurable)
 4. **Publish READMEs** — Updates documentation in the registry
 5. **Wait for Doc Ingestion** — Ensures README changes are live
-6. **Merge & Publish Image Info** — Updates the versions repo with new image metadata
+6. **Merge & Publish Image Info** — Updates the image-info OCI artifact with new image metadata
 7. **Ingest Kusto Image Info** — Sends telemetry to Kusto for analytics
 8. **Generate & Apply EOL Annotations** — Marks images with end-of-life dates
 9. **Post Publish Notification** — Creates GitHub issues/notifications about the publish
@@ -336,6 +336,8 @@ A scheduled pipeline ([`check-base-image-updates.yml`](https://github.com/dotnet
 1. **Checks for stale images** — Compares the base image digests used in our published images against the current digests in upstream registries
 2. **Identifies affected images** — Determines which of our images need rebuilding because their base image changed
 3. **Queues targeted builds** — Automatically triggers builds for only the affected images, not the entire repo
+
+The stale-image check reads published image info from the manifest's `imageInfo` OCI artifact metadata. The central pipeline can pass `--image-info-registry-override` and `--image-info-repo-prefix` so the artifact is pulled from a private publish registry without putting private registry names in public subscription files.
 
 This ensures that security patches and updates in base images (like `alpine`, `ubuntu`, `mcr.microsoft.com/windows/nanoserver`) flow through to images without manual intervention.
 
@@ -381,7 +383,14 @@ An image is considered cached when **both** of the following conditions are true
 
 2. **Dockerfile commit is unchanged** — The git commit URL for the Dockerfile matches the commit URL recorded in the image info file. If you've modified the Dockerfile, this condition fails and the image will be rebuilt.
 
-Caching compares against the published image info stored in the [versions repo](https://github.com/dotnet/versions). This means caching compares against what's been officially published, not what's in your current branch.
+Caching compares against published image info, so it compares against what's been officially published, not what's in your current branch. Current pipelines read that source from the manifest's image-info OCI artifact. The [versions repo](https://github.com/dotnet/versions) can still receive a GitHub mirror for compatibility, but it is not the canonical cache source.
+
+- `generateBuildMatrix --trim-cached-images` uses `--image-info-registry-override` and `--image-info-repo-prefix` when trimming cached platforms from the matrix.
+- `build` uses the same OCI source options for build-time cache checks when `--image-info-source-path` is not supplied.
+- `mergeImageInfo` uses `--initial-image-info-registry-override` and `--initial-image-info-repo-prefix` during publish so the initial merge target comes from the OCI artifact instead of a versions repo checkout.
+- `publishImageInfoArtifact` always publishes the merged image info back to OCI when `publishImageInfo` is enabled.
+
+The publish templates expose `publishImageInfoToGitHub` for repos that still want to mirror the merged image info to `dotnet/versions`. It defaults to `false`; enable it only when the GitHub mirror is still required. Before rolling this template behavior to a consuming repo, ensure the pipeline uses an ImageBuilder image that supports these OCI options and that the repo has an existing published image-info OCI artifact.
 
 #### Disabling Caching
 

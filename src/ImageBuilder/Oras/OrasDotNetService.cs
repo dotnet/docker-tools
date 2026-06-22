@@ -327,21 +327,6 @@ public class OrasDotNetService(
         return new OciArtifact(manifestDescriptor, manifest, blobs);
     }
 
-    /// <inheritdoc/>
-    public Task<Stream> FetchBlobAsync(
-        string registry,
-        string repository,
-        Descriptor descriptor,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
-        ArgumentException.ThrowIfNullOrWhiteSpace(repository);
-        ArgumentNullException.ThrowIfNull(descriptor);
-
-        Repository repo = CreateRepository(registry, repository);
-        return repo.FetchAsync(descriptor, cancellationToken);
-    }
-
     /// <summary>
     /// Creates an authenticated ORAS repository client for the given reference.
     /// </summary>

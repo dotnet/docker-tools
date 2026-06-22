@@ -41,6 +41,7 @@ public static class ImageBuilder
 
         // Register abstractions
         builder.Services.AddSingleton<IFileSystem, FileSystem>();
+        builder.Services.AddSingleton<IImageBuilderTagProvider, AssemblyImageBuilderTagProvider>();
 
         // Register services
         builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();
@@ -143,6 +144,7 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, ShowManifestSchemaCommand>();
         builder.Services.AddSingleton<ICommand, SignImagesCommand>();
         builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
+        builder.Services.AddSingleton<ICommand, UpdateCommand>();
         builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();

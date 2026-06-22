@@ -15,11 +15,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
     {
-        public MergeImageInfoCommand(IManifestJsonService manifestJsonService) : base(manifestJsonService) { }
+        private readonly IImageInfoService _imageInfoService;
+
+        public MergeImageInfoCommand(IManifestJsonService manifestJsonService, IImageInfoService imageInfoService) : base(manifestJsonService)
+        {
+            _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
+        }
 
         protected override string Description => "Merges the content of multiple image info files into one file";
 
-        public override Task ExecuteAsync()
+        public override async Task ExecuteAsync()
         {
             IEnumerable<string> imageInfoFiles = Directory.EnumerateFiles(
                 Options.SourceImageInfoFolderPath,
@@ -49,10 +54,38 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             // Keep track of initial state to identify updated images
             ImageArtifactDetails? initialImageArtifactDetails = null;
 
-            ImageArtifactDetails targetImageArtifactDetails;
-            if (Options.InitialImageInfoPath != null)
+            ImageArtifactDetails? sourceImageArtifactDetails = null;
+            if (!string.IsNullOrWhiteSpace(Options.InitialImageInfoPath))
             {
-                targetImageArtifactDetails = srcImageArtifactDetailsList.First(item => item.Path == Options.InitialImageInfoPath).ImageArtifactDetails;
+                sourceImageArtifactDetails = srcImageArtifactDetailsList
+                    .First(item => item.Path == Options.InitialImageInfoPath)
+                    .ImageArtifactDetails;
+            }
+            else if (!string.IsNullOrWhiteSpace(Options.InitialImageInfoRegistryOverride) ||
+                !string.IsNullOrWhiteSpace(Options.InitialImageInfoRepoPrefix))
+            {
+                string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
+                    Manifest,
+                    string.IsNullOrWhiteSpace(Options.InitialImageInfoRegistryOverride) ? Manifest.Model.Registry : Options.InitialImageInfoRegistryOverride,
+                    Options.InitialImageInfoRepoPrefix);
+
+                sourceImageArtifactDetails = ImageInfoHelper.LoadFromContent(
+                    imageInfoContent,
+                    Manifest,
+                    skipManifestValidation: Options.IsPublishScenario);
+            }
+
+            ImageArtifactDetails targetImageArtifactDetails;
+            if (sourceImageArtifactDetails is not null)
+            {
+                targetImageArtifactDetails = sourceImageArtifactDetails;
+
+                if (Options.InitialImageInfoOutputPath is not null)
+                {
+                    File.WriteAllText(
+                        Options.InitialImageInfoOutputPath,
+                        JsonHelper.SerializeObject(targetImageArtifactDetails) + Environment.NewLine);
+                }
 
                 // Store a deep copy of the initial state for comparison if CommitUrlOverride is specified
                 if (!string.IsNullOrEmpty(Options.CommitOverride))
@@ -90,8 +123,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             string destinationContents = JsonHelper.SerializeObject(targetImageArtifactDetails) + Environment.NewLine;
             File.WriteAllText(Options.DestinationImageInfoPath, destinationContents);
-
-            return Task.CompletedTask;
         }
 
         /// <summary>

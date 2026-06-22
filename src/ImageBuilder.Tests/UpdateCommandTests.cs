@@ -25,7 +25,7 @@ public class UpdateCommandTests
     // a leading '/' to '\' on Windows, which would otherwise not match the in-memory entries).
     private static readonly string RepoRoot = $"{Path.DirectorySeparatorChar}repo";
 
-    private static readonly string OutputPath = Path.Combine(RepoRoot, "eng", "docker-tools");
+    private static readonly string OutputPath = PathHelper.SafeCombine(RepoRoot, "eng", "docker-tools");
 
     [TestMethod]
     public async Task UpdateCommand_WritesAllEmbeddedFiles()
@@ -42,7 +42,7 @@ public class UpdateCommandTests
 
         foreach (string relativePath in expectedPaths)
         {
-            string expectedDestination = Path.Combine(OutputPath, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            string expectedDestination = PathHelper.SafeCombine(OutputPath, relativePath);
             fileSystem.FileExists(expectedDestination).ShouldBeTrue();
 
             using Stream expectedStream = InfrastructureContent.OpenRead(relativePath);
@@ -103,7 +103,7 @@ public class UpdateCommandTests
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
         fileSystem.AddDirectory(OutputPath);
-        string staleFile = Path.Combine(OutputPath, "templates", "removed-template.yml");
+        string staleFile = PathHelper.SafeCombine(OutputPath, "templates", "removed-template.yml");
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
 
@@ -118,8 +118,8 @@ public class UpdateCommandTests
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
         fileSystem.AddDirectory(OutputPath);
-        string staleDirectory = Path.Combine(OutputPath, "obsolete");
-        string staleFile = Path.Combine(staleDirectory, "old.yml");
+        string staleDirectory = PathHelper.SafeCombine(OutputPath, "obsolete");
+        string staleFile = PathHelper.SafeCombine(staleDirectory, "old.yml");
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
 
@@ -171,7 +171,7 @@ public class UpdateCommandTests
     {
         InMemoryFileSystem fileSystem = CreateRepoFileSystem();
         fileSystem.AddDirectory(OutputPath);
-        string staleFile = Path.Combine(OutputPath, "templates", "removed-template.yml");
+        string staleFile = PathHelper.SafeCombine(OutputPath, "templates", "removed-template.yml");
         fileSystem.AddFile(staleFile, "stale");
         UpdateCommand command = CreateCommand(fileSystem);
         command.Options.IsDryRun = true;
@@ -187,7 +187,7 @@ public class UpdateCommandTests
     private static InMemoryFileSystem CreateRepoFileSystem()
     {
         InMemoryFileSystem fileSystem = new() { CurrentDirectory = RepoRoot };
-        fileSystem.AddDirectory(Path.Combine(RepoRoot, ".git"));
+        fileSystem.AddDirectory(PathHelper.SafeCombine(RepoRoot, ".git"));
         return fileSystem;
     }
 

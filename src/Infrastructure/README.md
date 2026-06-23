@@ -28,7 +28,7 @@ differ much of the time — `eng/docker-tools/` reflects the ImageBuilder versio
 consumes, while `Content/` reflects what the next ImageBuilder will ship.
 
 `Content/templates/variables/docker-images.yml` is a further, per-file difference: it stores the
-ImageBuilder image tag as a `{{IMAGEBUILDER_TAG}}` Cottle expression rather than a concrete tag,
-because a build cannot know its own future tag. The `update` command renders that one file
-(substituting this build's tag, or `latest` for local/dotnet-tool builds with no baked-in tag), so
-the rendered `eng/docker-tools/docker-images.yml` holds a concrete tag on that line.
+ImageBuilder image reference as a `{{IMAGEBUILDER_REF}}` Cottle expression rather than a concrete
+reference. The `update` command renders that one file, substituting the image reference passed to it
+on the command line (or the `latest` reference when none is supplied), so the rendered
+`eng/docker-tools/docker-images.yml` holds a concrete ImageBuilder reference on that line.

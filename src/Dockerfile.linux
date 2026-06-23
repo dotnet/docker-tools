@@ -5,8 +5,6 @@
 # build Microsoft.DotNet.ImageBuilder
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:9.0-azurelinux3.0 AS build-env
 ARG TARGETARCH
-ARG IMAGEBUILDER_TAG=
-ENV IMAGEBUILDER_TAG=${IMAGEBUILDER_TAG}
 
 # download root CA certificates for signature verification
 WORKDIR /

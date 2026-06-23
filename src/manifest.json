@@ -12,9 +12,6 @@
           },
           "platforms": [
             {
-              "buildArgs": {
-                "IMAGEBUILDER_TAG": "$(UniqueId)"
-              },
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
               "osVersion": "azurelinux",
@@ -25,9 +22,6 @@
             },
             {
               "architecture": "arm64",
-              "buildArgs": {
-                "IMAGEBUILDER_TAG": "$(UniqueId)"
-              },
               "dockerfile": "Dockerfile.linux",
               "os": "linux",
               "osVersion": "azurelinux",
@@ -39,7 +33,6 @@
             },
             {
               "buildArgs": {
-                "IMAGEBUILDER_TAG": "$(UniqueId)",
                 "WINDOWS_BASE": "servercore:ltsc2016-amd64",
                 "WINDOWS_SDK": "nanoserver-1809"
               },
@@ -53,7 +46,6 @@
             },
             {
               "buildArgs": {
-                "IMAGEBUILDER_TAG": "$(UniqueId)",
                 "WINDOWS_BASE": "nanoserver:1809-amd64",
                 "WINDOWS_SDK": "nanoserver-1809"
               },
@@ -67,7 +59,6 @@
             },
             {
               "buildArgs": {
-                "IMAGEBUILDER_TAG": "$(UniqueId)",
                 "WINDOWS_BASE": "nanoserver:ltsc2022-amd64",
                 "WINDOWS_SDK": "nanoserver-ltsc2022"
               },

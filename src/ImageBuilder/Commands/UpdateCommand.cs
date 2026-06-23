@@ -29,18 +29,19 @@ public class UpdateCommand : Command<UpdateOptions>
     // InfrastructureContent.GetRelativePaths always returns '/'-separated paths, so this is kept in
     // the same form to compare directly without re-normalizing per file.
     private const string DockerImagesRelativePath = "templates/variables/docker-images.yml";
-    private const string ImageBuilderTagTemplateVariableName = "IMAGEBUILDER_TAG";
+    private const string ImageBuilderRefTemplateVariableName = "IMAGEBUILDER_REF";
+
+    // Used when no reference is supplied. Mirrors the published image's 'latest' shared tag.
+    private const string DefaultImageBuilderRef = "mcr.microsoft.com/dotnet-buildtools/image-builder:latest";
 
     private static readonly DocumentConfiguration s_templateConfiguration = CottleDocumentConfiguration.Create();
 
     private readonly IFileSystem _fileSystem;
-    private readonly IImageBuilderTagProvider _tagProvider;
     private readonly ILogger<UpdateCommand> _logger;
 
-    public UpdateCommand(IFileSystem fileSystem, IImageBuilderTagProvider tagProvider, ILogger<UpdateCommand> logger)
+    public UpdateCommand(IFileSystem fileSystem, ILogger<UpdateCommand> logger)
     {
         _fileSystem = fileSystem;
-        _tagProvider = tagProvider;
         _logger = logger;
     }
 
@@ -68,19 +69,20 @@ public class UpdateCommand : Command<UpdateOptions>
                 $"Pass --init to create it (use this only when onboarding a repo to docker-tools).");
         }
 
-        // Resolve ImageBuilder's image tag.
-        // If ImageBuilder doesn't know about its own tag, then use `latest` as a fallback.
-        string imageBuilderTag;
-        if (_tagProvider.GetTag() is { } resolvedImageBuilderTag && !string.IsNullOrWhiteSpace(resolvedImageBuilderTag))
+        // Resolve ImageBuilder's image reference from the command argument.
+        // If the caller didn't provide one, fall back to the 'latest' reference.
+        string imageBuilderRef;
+        if (!string.IsNullOrWhiteSpace(Options.ImageBuilderRef))
         {
-            imageBuilderTag = resolvedImageBuilderTag;
+            imageBuilderRef = Options.ImageBuilderRef;
         }
         else
         {
             _logger.LogWarning(
-                "This build of ImageBuilder was not built with the \"IMAGEBUILDER_TAG\" MSBuild property set. " +
-                "ImageBuilder tag will fall back to \"latest\".");
-            imageBuilderTag = "latest";
+                "No ImageBuilder reference was provided. " +
+                "The ImageBuilder reference will fall back to \"{DefaultImageBuilderRef}\".",
+                DefaultImageBuilderRef);
+            imageBuilderRef = DefaultImageBuilderRef;
         }
 
         // Clear the existing infrastructure content and re-write it all.
@@ -116,10 +118,10 @@ public class UpdateCommand : Command<UpdateOptions>
 
             _logger.LogInformation("Writing '{DestinationPath}'", destinationPath);
 
-            // docker-images.yml is templated because ImageBuilder needs to self-reference its own image tag.
+            // docker-images.yml is templated because ImageBuilder needs to record its own image reference.
             if (relativePath == DockerImagesRelativePath)
             {
-                string renderedContent = RenderDockerImagesTemplate(relativePath, imageBuilderTag);
+                string renderedContent = RenderDockerImagesTemplate(relativePath, imageBuilderRef);
                 _fileSystem.WriteAllText(destinationPath, renderedContent);
             }
             else
@@ -133,7 +135,7 @@ public class UpdateCommand : Command<UpdateOptions>
         return Task.CompletedTask;
     }
 
-    private static string RenderDockerImagesTemplate(string relativePath, string imageBuilderTag)
+    private static string RenderDockerImagesTemplate(string relativePath, string imageBuilderRef)
     {
         using Stream source = InfrastructureContent.OpenRead(relativePath);
         using StreamReader reader = new(source);
@@ -142,7 +144,7 @@ public class UpdateCommand : Command<UpdateOptions>
         IDocument document = Document.CreateDefault(template, s_templateConfiguration).DocumentOrThrow;
         Dictionary<Value, Value> symbols = new()
         {
-            [ImageBuilderTagTemplateVariableName] = imageBuilderTag
+            [ImageBuilderRefTemplateVariableName] = imageBuilderRef
         };
 
         return document.Render(Context.CreateBuiltin(symbols));

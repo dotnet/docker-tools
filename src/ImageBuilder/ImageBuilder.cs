@@ -41,7 +41,6 @@ public static class ImageBuilder
 
         // Register abstractions
         builder.Services.AddSingleton<IFileSystem, FileSystem>();
-        builder.Services.AddSingleton<IImageBuilderTagProvider, AssemblyImageBuilderTagProvider>();
 
         // Register services
         builder.Services.AddSingleton<IAzdoGitHttpClientFactory, AzdoGitHttpClientFactory>();

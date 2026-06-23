@@ -18,5 +18,5 @@ public abstract record RemoteRepo
     /// The HTTPS URL used to clone the repository, with the given token
     /// embedded as a credential. Never log this URL.
     /// </summary>
-    internal abstract Uri GetAuthenticatedCloneUrl(string token);
+    protected internal abstract Uri GetAuthenticatedCloneUrl(string token);
 }

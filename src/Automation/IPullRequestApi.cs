@@ -8,9 +8,10 @@ namespace Microsoft.DotNet.Automation;
 /// The service-specific operations needed to manage pull requests and their
 /// comments. All git operations are service-agnostic and handled by
 /// <see cref="RepoHostEngine"/>; implementations of this interface only deal
-/// with the pull request itself.
+/// with the pull request itself. A host service (GitHub, Azure DevOps) provides
+/// an implementation; tests can provide an in-memory fake.
 /// </summary>
-internal interface IPullRequestApi
+public interface IPullRequestApi
 {
     /// <summary>
     /// Finds the open pull request from <paramref name="headBranch"/> into

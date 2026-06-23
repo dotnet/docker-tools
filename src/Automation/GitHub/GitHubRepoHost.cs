@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using Octokit;
 
 namespace Microsoft.DotNet.Automation.GitHub;
@@ -40,13 +39,12 @@ public sealed class GitHubRepoHost : IRepoHost
         IGitHubClient gitHubClient)
     {
         headRepo ??= repo;
-        ILogger logger = (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<GitHubRepoHost>();
         _engine = new RepoHostEngine(
             repo,
             headRepo,
             new GitHubPullRequestApi(gitHubClient, repo, headRepo),
             options,
-            logger);
+            loggerFactory);
     }
 
     /// <inheritdoc/>

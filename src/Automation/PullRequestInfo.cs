@@ -8,4 +8,7 @@ namespace Microsoft.DotNet.Automation;
 /// A pull request as seen through <see cref="IPullRequestApi"/>.
 /// </summary>
 /// <param name="Id">The host's identifier for the pull request (e.g. its number).</param>
-internal sealed record PullRequestInfo(long Id, string Url, string Title, string Body);
+/// <param name="Url">A link to the pull request.</param>
+/// <param name="Title">The pull request title.</param>
+/// <param name="Body">The pull request description.</param>
+public sealed record PullRequestInfo(long Id, string Url, string Title, string Body);

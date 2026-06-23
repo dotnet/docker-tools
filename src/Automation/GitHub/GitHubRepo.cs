@@ -13,7 +13,7 @@ public sealed record GitHubRepo(string Owner, string Name) : RemoteRepo
 {
     public override Uri CloneUrl => new($"https://github.com/{Owner}/{Name}");
 
-    internal override Uri GetAuthenticatedCloneUrl(string token) =>
+    protected internal override Uri GetAuthenticatedCloneUrl(string token) =>
         string.IsNullOrEmpty(token)
             ? CloneUrl
             : new Uri($"https://x-access-token:{Uri.EscapeDataString(token)}@github.com/{Owner}/{Name}");

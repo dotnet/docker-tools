@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.DotNet.Automation;
 
@@ -10,20 +11,28 @@ namespace Microsoft.DotNet.Automation;
 /// Service-agnostic implementation of the <see cref="IRepoHost"/>
 /// reconciliation contract. All git operations are performed with the git CLI;
 /// service-specific pull request operations are delegated to an
-/// <see cref="IPullRequestApi"/>.
+/// <see cref="IPullRequestApi"/>. Compose this directly to target a host that
+/// does not have a dedicated <see cref="IRepoHost"/> wrapper, or to inject a
+/// custom <see cref="IPullRequestApi"/> (e.g. an in-memory fake in tests).
 /// </summary>
 /// <param name="targetRepo">The repository that pull requests merge into and branches are pushed to.</param>
 /// <param name="headRepo">
 /// The repository that pull request head branches are pushed to. Differs from
 /// <paramref name="targetRepo"/> only when pull requests come from a fork.
 /// </param>
-internal sealed class RepoHostEngine(
+/// <param name="pullRequests">The service-specific pull request operations.</param>
+/// <param name="options">Common automation settings.</param>
+/// <param name="loggerFactory">Used to create the engine's logger; no logging occurs when null.</param>
+public sealed class RepoHostEngine(
     RemoteRepo targetRepo,
     RemoteRepo headRepo,
     IPullRequestApi pullRequests,
     GitAutomationOptions options,
-    ILogger logger) : IRepoHost
+    ILoggerFactory? loggerFactory = null) : IRepoHost
 {
+    private readonly ILogger logger =
+        (loggerFactory ?? NullLoggerFactory.Instance).CreateLogger<RepoHostEngine>();
+
     /// <inheritdoc/>
     public async Task<BranchResult> EnsureBranchContentAsync(
         BranchSpec spec,

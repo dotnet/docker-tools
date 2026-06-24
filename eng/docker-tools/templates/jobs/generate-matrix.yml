@@ -56,14 +56,19 @@ jobs:
       if ("${{ parameters.isTestStage}}" -eq "true") {
         $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(artifactsPath)/image-info.json"
       }
-      elseif ("$(pipelineDisabledCache)" -ne "true" `
-          -and "${{ parameters.noCache }}" -ne "true" `
-          -and "$(trimCachedImagesForMatrix)" -eq "true" `
-          -and "$(System.TeamProject)" -eq "${{ parameters.internalProjectName }}" `
+      elseif ("$(System.TeamProject)" -eq "${{ parameters.internalProjectName }}" `
           -and "$(Build.Reason)" -ne "PullRequest") {
-        # OCI image-info artifacts are pulled from the private publish registry, so cache trimming is only enabled
-        # in jobs that run ImageBuilder with OIDC service connection auth.
-        $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info-registry-override ${{ parameters.publishConfig.PublishRegistry.server }} --image-info-repo-prefix ${{ parameters.publishConfig.PublishRegistry.repoPrefix }} --trim-cached-images"
+        # Internal builds always tell ImageBuilder where the OCI image-info artifact lives in the
+        # private publish registry (access requires OIDC service connection auth). ImageBuilder only
+        # pulls it when --trim-cached-images is also passed, so the override/prefix are ignored when
+        # cache trimming is disabled. The override/prefix are not passed for public builds.
+        $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info-registry-override ${{ parameters.publishConfig.PublishRegistry.server }} --image-info-repo-prefix ${{ parameters.publishConfig.PublishRegistry.repoPrefix }}"
+
+        if ("$(pipelineDisabledCache)" -ne "true" `
+            -and "${{ parameters.noCache }}" -ne "true" `
+            -and "$(trimCachedImagesForMatrix)" -eq "true") {
+          $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --trim-cached-images"
+        }
       }
 
       echo "##vso[task.setvariable variable=additionalGenerateBuildMatrixOptions]$additionalGenerateBuildMatrixOptions"

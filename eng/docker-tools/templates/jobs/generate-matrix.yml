@@ -56,19 +56,15 @@ jobs:
       if ("${{ parameters.isTestStage}}" -eq "true") {
         $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info $(artifactsPath)/image-info.json"
       }
-      elseif ("$(System.TeamProject)" -eq "${{ parameters.internalProjectName }}" `
+      elseif ("$(pipelineDisabledCache)" -ne "true" `
+          -and "${{ parameters.noCache }}" -ne "true" `
+          -and "$(trimCachedImagesForMatrix)" -eq "true" `
+          -and "$(System.TeamProject)" -eq "${{ parameters.internalProjectName }}" `
           -and "$(Build.Reason)" -ne "PullRequest") {
-        # Internal builds always tell ImageBuilder where the OCI image-info artifact lives in the
-        # private publish registry (access requires OIDC service connection auth). ImageBuilder only
-        # pulls it when --trim-cached-images is also passed, so the override/prefix are ignored when
-        # cache trimming is disabled. The override/prefix are not passed for public builds.
-        $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --image-info-registry-override ${{ parameters.publishConfig.PublishRegistry.server }} --image-info-repo-prefix ${{ parameters.publishConfig.PublishRegistry.repoPrefix }}"
-
-        if ("$(pipelineDisabledCache)" -ne "true" `
-            -and "${{ parameters.noCache }}" -ne "true" `
-            -and "$(trimCachedImagesForMatrix)" -eq "true") {
-          $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --trim-cached-images"
-        }
+        # ImageBuilder pulls the OCI image-info artifact from the publish registry (configured via
+        # PublishConfiguration in appsettings.json) when trimming cached images. Access requires OIDC
+        # service connection auth, so trimming is only enabled for internal, non-PR builds.
+        $additionalGenerateBuildMatrixOptions = "$additionalGenerateBuildMatrixOptions --trim-cached-images"
       }
 
       echo "##vso[task.setvariable variable=additionalGenerateBuildMatrixOptions]$additionalGenerateBuildMatrixOptions"

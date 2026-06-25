@@ -18,10 +18,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         public string? InitialImageInfoOutputPath { get; set; }
 
-        public string? InitialImageInfoRegistryOverride { get; set; }
-
-        public string? InitialImageInfoRepoPrefix { get; set; }
-
         public bool IsPublishScenario { get; set; }
 
         public string? CommitOverride { get; set; }
@@ -51,16 +47,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             Description = "Path to write the initial image info used as the merge target"
         };
 
-        private static readonly Option<string?> InitialImageInfoRegistryOverrideOption = new("--initial-image-info-registry-override")
-        {
-            Description = "Registry to pull the initial image-info OCI artifact from instead of the manifest registry"
-        };
-
-        private static readonly Option<string?> InitialImageInfoRepoPrefixOption = new("--initial-image-info-repo-prefix")
-        {
-            Description = "Repo prefix to add when pulling the initial image-info OCI artifact"
-        };
-
         private static readonly Option<string?> CommitOverrideOption = new("--commit-override")
         {
             Description = "Override the commit in the commitUrl property for images that were updated compared to the"
@@ -80,8 +66,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             PublishOption,
             InitialImageInfoPathOption,
             InitialImageInfoOutputPathOption,
-            InitialImageInfoRegistryOverrideOption,
-            InitialImageInfoRepoPrefixOption,
             CommitOverrideOption,
         ];
 
@@ -93,8 +77,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IsPublishScenario = result.GetValue(PublishOption);
             InitialImageInfoPath = result.GetValue(InitialImageInfoPathOption);
             InitialImageInfoOutputPath = result.GetValue(InitialImageInfoOutputPathOption);
-            InitialImageInfoRegistryOverride = result.GetValue(InitialImageInfoRegistryOverrideOption);
-            InitialImageInfoRepoPrefix = result.GetValue(InitialImageInfoRepoPrefixOption);
             CommitOverride = result.GetValue(CommitOverrideOption);
         }
     }

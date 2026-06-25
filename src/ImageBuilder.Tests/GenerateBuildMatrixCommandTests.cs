@@ -10,6 +10,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Oras;
@@ -265,7 +266,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateImageInfoService(),
                 imageCacheServiceMock.Object,
                 Mock.Of<IManifestServiceFactory>(),
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
+                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -992,20 +994,22 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task PlatformVersionedOs_ImageInfoArtifact_UsesOverrideRegistryAndPrefix()
+        public async Task PlatformVersionedOs_ImageInfoArtifact_UsesPublishRegistryAndPrefix()
         {
-            const string overrideRegistry = "publish.azurecr.io";
+            const string publishRegistry = "publish.azurecr.io";
             const string repoPrefix = "public/";
 
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IImageInfoService> imageInfoServiceMock = new();
-            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object);
+            PublishConfiguration publishConfig = new()
+            {
+                PublishRegistry = new RegistryEndpoint { Server = publishRegistry, RepoPrefix = repoPrefix }
+            };
+            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object, publishConfig);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.FilterOptions.Dockerfile.Paths = ["not-matching"];
             command.Options.TrimCachedImages = true;
-            command.Options.ImageInfoRegistryOverride = overrideRegistry;
-            command.Options.ImageInfoRepoPrefix = repoPrefix;
 
             string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
             Manifest manifest = CreateManifest(
@@ -1027,7 +1031,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageInfoServiceMock
                 .Setup(service => service.PullImageInfoArtifactAsync(
                     It.IsAny<ManifestInfo>(),
-                    overrideRegistry,
+                    publishRegistry,
                     repoPrefix,
                     default))
                 .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
@@ -1044,15 +1048,17 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IImageInfoService> imageInfoServiceMock = new();
-            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object);
+            PublishConfiguration publishConfig = new()
+            {
+                PublishRegistry = new RegistryEndpoint { Server = "publish.azurecr.io", RepoPrefix = "public/" }
+            };
+            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object, publishConfig);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
 
-            // An image-info registry override is configured but trimming is disabled. The OCI
-            // artifact must not be pulled, so the override/prefix are effectively ignored.
-            command.Options.ImageInfoRegistryOverride = "publish.azurecr.io";
-            command.Options.ImageInfoRepoPrefix = "public/";
+            // A publish registry is configured but trimming is disabled, so the OCI
+            // artifact must not be pulled.
 
             string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
             Manifest manifest = CreateManifest(
@@ -1860,7 +1866,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateImageInfoService(),
                 imageCacheService,
                 manifestServiceFactoryMock.Object,
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
+                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
@@ -1902,13 +1909,16 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             return command;
         }
 
-        private static GenerateBuildMatrixCommand CreateCommand(IImageInfoService imageInfoService = null) =>
+        private static GenerateBuildMatrixCommand CreateCommand(
+            IImageInfoService imageInfoService = null,
+            PublishConfiguration publishConfig = null) =>
             new(
                 TestHelper.CreateManifestJsonService(),
                 imageInfoService ?? CreateImageInfoService(),
                 Mock.Of<IImageCacheService>(),
                 Mock.Of<IManifestServiceFactory>(),
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
+                Microsoft.Extensions.Options.Options.Create(publishConfig ?? new PublishConfiguration()));
 
         private static ImageInfoService CreateImageInfoService() =>
             new(

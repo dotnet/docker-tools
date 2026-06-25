@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
@@ -1761,16 +1762,20 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private GetStaleImagesCommand CreateCommand()
             {
+                PublishConfiguration publishConfig = new()
+                {
+                    PublishRegistry = new RegistryEndpoint { Server = "publish.example.com" }
+                };
                 GetStaleImagesCommand command = new(
                     this.ManifestServiceFactoryMock.Object,
                     TestHelper.CreateManifestJsonService(),
                     this.loggerServiceMock.Object,
                     this.gitService,
-                    this.imageInfoService);
+                    this.imageInfoService,
+                    Microsoft.Extensions.Options.Options.Create(publishConfig));
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;
-                command.Options.ImageInfoRegistryOverride = "publish.example.com";
                 command.Options.GitOptions.Email = "test";
                 command.Options.GitOptions.Username = "test";
                 command.Options.GitOptions.GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "test");

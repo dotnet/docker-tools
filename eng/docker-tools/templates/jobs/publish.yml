@@ -155,8 +155,6 @@ jobs:
       $(dryRunArg)
       --manifest $(manifest)
       --publish
-      --initial-image-info-registry-override '${{ parameters.publishConfig.PublishRegistry.server }}'
-      --initial-image-info-repo-prefix '${{ parameters.publishConfig.PublishRegistry.repoPrefix }}'
       --initial-image-info-output-path $(imageInfoContainerDir)/full-image-info-orig.json
       $(commitOverrideArg)
     env:

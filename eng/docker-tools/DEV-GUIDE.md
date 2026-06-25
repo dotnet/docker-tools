@@ -337,7 +337,7 @@ A scheduled pipeline ([`check-base-image-updates.yml`](https://github.com/dotnet
 2. **Identifies affected images** — Determines which of our images need rebuilding because their base image changed
 3. **Queues targeted builds** — Automatically triggers builds for only the affected images, not the entire repo
 
-The stale-image check reads published image info from the manifest's `imageInfo` OCI artifact metadata. The central pipeline can pass `--image-info-registry-override` and `--image-info-repo-prefix` so the artifact is pulled from a private publish registry without putting private registry names in public subscription files.
+The stale-image check reads published image info from the manifest's `imageInfo` OCI artifact metadata. The artifact is pulled from the publish registry configured in `PublishConfiguration` (provided to ImageBuilder via the generated `appsettings.json`), so private registry names do not need to be placed in public subscription files.
 
 This ensures that security patches and updates in base images (like `alpine`, `ubuntu`, `mcr.microsoft.com/windows/nanoserver`) flow through to images without manual intervention.
 
@@ -385,9 +385,12 @@ An image is considered cached when **both** of the following conditions are true
 
 Caching compares against published image info, so it compares against what's been officially published, not what's in your current branch. Current pipelines read that source from the manifest's image-info OCI artifact. The [versions repo](https://github.com/dotnet/versions) can still receive a GitHub mirror for compatibility, but it is not the canonical cache source.
 
-- `generateBuildMatrix --trim-cached-images` uses `--image-info-registry-override` and `--image-info-repo-prefix` when trimming cached platforms from the matrix.
-- `build` uses the same OCI source options for build-time cache checks when `--image-info-source-path` is not supplied.
-- `mergeImageInfo` uses `--initial-image-info-registry-override` and `--initial-image-info-repo-prefix` during publish so the initial merge target comes from the OCI artifact instead of a versions repo checkout.
+All OCI image-info consumers resolve the artifact location from `PublishConfiguration.PublishRegistry` (server and repo prefix), which ImageBuilder reads from the generated `appsettings.json`. They fall back to the manifest's registry when no publish registry is configured.
+
+- `generateBuildMatrix --trim-cached-images` pulls the image-info artifact from the publish registry when trimming cached platforms from the matrix.
+- `build` pulls from the publish registry for build-time cache checks when `--image-info-source-path` is not supplied.
+- `getStaleImages` pulls from the publish registry to compare published base image digests against upstream.
+- `mergeImageInfo --publish` pulls the previously-published image info from the publish registry as the initial merge target instead of a versions repo checkout.
 - `publishImageInfoArtifact` always publishes the merged image info back to OCI when `publishImageInfo` is enabled.
 
 The publish templates expose `publishImageInfoToGitHub` for repos that still want to mirror the merged image info to `dotnet/versions`. It defaults to `false`; enable it only when the GitHub mirror is still required. Before rolling this template behavior to a consuming repo, ensure the pipeline uses an ImageBuilder image that supports these OCI options and that the repo has an existing published image-info OCI artifact.

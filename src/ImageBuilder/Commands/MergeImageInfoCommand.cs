@@ -8,18 +8,25 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
     {
         private readonly IImageInfoService _imageInfoService;
+        private readonly PublishConfiguration _publishConfig;
 
-        public MergeImageInfoCommand(IManifestJsonService manifestJsonService, IImageInfoService imageInfoService) : base(manifestJsonService)
+        public MergeImageInfoCommand(
+            IManifestJsonService manifestJsonService,
+            IImageInfoService imageInfoService,
+            IOptions<PublishConfiguration> publishConfigOptions) : base(manifestJsonService)
         {
             _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
+            _publishConfig = publishConfigOptions.Value;
         }
 
         protected override string Description => "Merges the content of multiple image info files into one file";
@@ -61,13 +68,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .First(item => item.Path == Options.InitialImageInfoPath)
                     .ImageArtifactDetails;
             }
-            else if (!string.IsNullOrWhiteSpace(Options.InitialImageInfoRegistryOverride) ||
-                !string.IsNullOrWhiteSpace(Options.InitialImageInfoRepoPrefix))
+            else if (!string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
             {
+                // The previously-published image info (the merge target) is pulled from the publish
+                // registry's OCI artifact. Fall back to the manifest registry when no publish registry
+                // is configured.
+                string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry.Server)
+                    ? Manifest.Model.Registry
+                    : _publishConfig.PublishRegistry.Server;
+
                 string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
                     Manifest,
-                    string.IsNullOrWhiteSpace(Options.InitialImageInfoRegistryOverride) ? Manifest.Model.Registry : Options.InitialImageInfoRegistryOverride,
-                    Options.InitialImageInfoRepoPrefix);
+                    imageInfoRegistry,
+                    _publishConfig.PublishRegistry.RepoPrefix);
 
                 sourceImageArtifactDetails = ImageInfoHelper.LoadFromContent(
                     imageInfoContent,

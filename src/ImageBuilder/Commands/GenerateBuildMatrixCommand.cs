@@ -62,7 +62,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     skipManifestValidation: true);
             }
 
-            if (Manifest.Model.ImageInfo is null)
+            // The OCI image-info artifact is only consumed to trim cached images from the matrix.
+            // Pulling it requires authenticated access to the publish registry, so skip the pull
+            // entirely unless trimming was requested.
+            if (Manifest.Model.ImageInfo is null || !Options.TrimCachedImages)
             {
                 return null;
             }

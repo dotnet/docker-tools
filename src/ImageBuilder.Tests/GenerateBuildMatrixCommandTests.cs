@@ -959,6 +959,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.FilterOptions.Dockerfile.Paths = ["not-matching"];
+            command.Options.TrimCachedImages = true;
 
             string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
             Manifest manifest = CreateManifest(
@@ -1040,6 +1041,52 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             matrixInfos.ShouldBeEmpty();
             imageInfoServiceMock.VerifyAll();
+        }
+
+        [TestMethod]
+        public async Task PlatformVersionedOs_ImageInfoArtifact_NotPulledWhenNotTrimming()
+        {
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+            Mock<IImageInfoService> imageInfoServiceMock = new();
+            PublishConfiguration publishConfig = new()
+            {
+                PublishRegistry = new RegistryEndpoint { Server = "publish.azurecr.io", RepoPrefix = "public/" }
+            };
+            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object, publishConfig);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
+            command.Options.ProductVersionComponents = 2;
+
+            // A publish registry is configured but trimming is disabled, so the OCI
+            // artifact must not be pulled.
+
+            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
+            Manifest manifest = CreateManifest(
+                CreateRepo(
+                    "runtime",
+                    CreateImage(CreatePlatform(dockerfile, ["tag"]))));
+            manifest.ImageInfo = new ImageInfoArtifact
+            {
+                Repo = "image-info",
+                Tags = new Dictionary<string, Tag>
+                {
+                    { "latest", new Tag() }
+                }
+            };
+
+            File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
+
+            matrixInfos.ShouldHaveSingleItem();
+            imageInfoServiceMock.Verify(
+                service => service.PullImageInfoArtifactAsync(
+                    It.IsAny<ManifestInfo>(),
+                    It.IsAny<string>(),
+                    It.IsAny<string>(),
+                    It.IsAny<System.Threading.CancellationToken>()),
+                Times.Never);
         }
 
         /// <summary>

@@ -71,15 +71,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             else if (Options.IsPublishScenario && !string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
             {
                 // When publishing, the previously-published image info (the merge target) is pulled from the
-                // publish registry's OCI artifact. Fall back to the manifest registry when no publish registry
-                // is configured.
-                string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry.Server)
-                    ? Manifest.Model.Registry
-                    : _publishConfig.PublishRegistry.Server;
-
+                // publish registry's OCI artifact.
                 string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
                     Manifest,
-                    imageInfoRegistry,
+                    _publishConfig.PublishRegistry.Server,
                     _publishConfig.PublishRegistry.RepoPrefix);
 
                 sourceImageArtifactDetails = ImageInfoHelper.LoadFromContent(

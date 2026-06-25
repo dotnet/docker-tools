@@ -10,8 +10,10 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure.Core;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -27,6 +29,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
         private readonly IImageInfoService _imageInfoService;
+        private readonly PublishConfiguration _publishConfig;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly List<TagInfo> _processedTags = new List<TagInfo>();
         private readonly HashSet<PlatformData> _builtPlatforms = new();
@@ -52,7 +55,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
             IImageCacheService imageCacheService,
-            IImageInfoService imageInfoService) : base(manifestJsonService)
+            IImageInfoService imageInfoService,
+            IOptions<PublishConfiguration> publishConfigOptions) : base(manifestJsonService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -63,6 +67,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             _tokenCredentialProvider = tokenCredentialProvider ?? throw new ArgumentNullException(nameof(tokenCredentialProvider));
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
+            _publishConfig = publishConfigOptions.Value;
 
             // Lazily create services which need access to options
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
@@ -317,10 +322,17 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
             else if (Manifest.Model.ImageInfo is not null)
             {
+                // The build-time cache check reads the previously-published image info, which lives in the
+                // publish registry (where publishImageInfoArtifact writes it). Fall back to the manifest
+                // registry when no publish registry is configured (e.g. public PR builds without appsettings).
+                string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server)
+                    ? Manifest.Model.Registry
+                    : _publishConfig.PublishRegistry.Server;
+
                 string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
                     Manifest,
-                    string.IsNullOrWhiteSpace(Options.RegistryOverride) ? Manifest.Model.Registry : Options.RegistryOverride,
-                    Options.RepoPrefix);
+                    imageInfoRegistry,
+                    _publishConfig.PublishRegistry?.RepoPrefix);
 
                 srcImageArtifactDetails = ImageInfoHelper.LoadFromContent(
                     imageInfoContent,

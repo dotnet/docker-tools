@@ -1066,6 +1066,62 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageInfoServiceMock.VerifyAll();
         }
 
+        [TestMethod]
+        public async Task BuildCommand_ImageInfoArtifact_UsesPublishRegistryAndPrefix()
+        {
+            const string manifestRegistry = "example.azurecr.io";
+            const string publishRegistry = "publishregistry.azurecr.io";
+            const string publishRepoPrefix = "public/";
+
+            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+
+            Mock<IImageInfoService> imageInfoServiceMock = new();
+            imageInfoServiceMock
+                .Setup(service => service.PullImageInfoArtifactAsync(
+                    It.IsAny<ManifestInfo>(),
+                    publishRegistry,
+                    publishRepoPrefix,
+                    default))
+                .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
+
+            PublishConfiguration publishConfig = new()
+            {
+                PublishRegistry = new RegistryEndpoint
+                {
+                    Server = publishRegistry,
+                    RepoPrefix = publishRepoPrefix
+                }
+            };
+
+            BuildCommand command = CreateBuildCommand(
+                imageInfoService: imageInfoServiceMock.Object,
+                publishConfig: publishConfig);
+            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
+            command.Options.FilterOptions.Dockerfile.Paths = new string[] { "not-matching" };
+
+            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "scratch");
+            Manifest manifest = CreateManifest(
+                CreateRepo(
+                    "runtime",
+                    CreateImage(CreatePlatform(dockerfile, new string[] { "tag" }))));
+            manifest.Registry = manifestRegistry;
+            manifest.ImageInfo = new ImageInfoArtifact
+            {
+                Repo = "image-info",
+                Tags = new Dictionary<string, Tag>
+                {
+                    { "latest", new Tag() }
+                }
+            };
+
+            File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
+
+            command.LoadManifest();
+            await command.ExecuteAsync();
+
+            imageInfoServiceMock.VerifyAll();
+        }
+
         /// <summary>
         /// Verifies the command outputs an image info correctly when the manifest references a custom named Dockerfile.
         /// </summary>
@@ -3695,7 +3751,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
             IImageCacheService? imageCacheService = null,
-            IImageInfoService? imageInfoService = null)
+            IImageInfoService? imageInfoService = null,
+            PublishConfiguration? publishConfig = null)
         {
             BuildCommand command = new(
                 manifestJsonService ?? TestHelper.CreateManifestJsonService(),
@@ -3708,7 +3765,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
                 imageCacheService ?? Mock.Of<IImageCacheService>(),
-                imageInfoService ?? CreateImageInfoService());
+                imageInfoService ?? CreateImageInfoService(),
+                Microsoft.Extensions.Options.Options.Create(publishConfig ?? new PublishConfiguration()));
 
             return command;
         }

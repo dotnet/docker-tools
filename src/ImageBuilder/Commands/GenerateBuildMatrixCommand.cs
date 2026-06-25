@@ -8,9 +8,11 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
@@ -23,6 +25,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
         private readonly IImageCacheService _imageCacheService;
         private readonly ILogger<GenerateBuildMatrixCommand> _logger;
+        private readonly PublishConfiguration _publishConfig;
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
@@ -31,11 +34,13 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IImageInfoService imageInfoService,
             IImageCacheService imageCacheService,
             IManifestServiceFactory manifestServiceFactory,
-            ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
+            ILogger<GenerateBuildMatrixCommand> logger,
+            IOptions<PublishConfiguration> publishConfigOptions) : base(manifestJsonService)
         {
             ArgumentNullException.ThrowIfNull(imageInfoService);
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _publishConfig = publishConfigOptions.Value;
             _imageArtifactDetails = new Lazy<Task<ImageArtifactDetails?>>(() =>
                 LoadImageArtifactDetailsAsync(imageInfoService));
             _imageDigestCache = new ImageDigestCache(
@@ -62,10 +67,16 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 return null;
             }
 
+            // The image-info artifact lives in the publish registry (where it was last published).
+            // Fall back to the manifest registry when no publish registry is configured.
+            string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server)
+                ? Manifest.Model.Registry
+                : _publishConfig.PublishRegistry.Server;
+
             string imageInfoContent = await imageInfoService.PullImageInfoArtifactAsync(
                 Manifest,
-                string.IsNullOrWhiteSpace(Options.ImageInfoRegistryOverride) ? Manifest.Model.Registry : Options.ImageInfoRegistryOverride,
-                Options.ImageInfoRepoPrefix);
+                imageInfoRegistry,
+                _publishConfig.PublishRegistry?.RepoPrefix);
 
             return ImageInfoHelper.LoadFromContent(
                 imageInfoContent,

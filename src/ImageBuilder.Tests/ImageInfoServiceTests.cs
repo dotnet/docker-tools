@@ -9,12 +9,14 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Moq;
 using Shouldly;
 using static Microsoft.DotNet.ImageBuilder.Tests.Helpers.DockerfileHelper;
@@ -182,10 +184,43 @@ public class ImageInfoServiceTests
                 [CreateBlob(Encoding.UTF8.GetBytes(JsonHelper.SerializeObject(imageInfo)), OciArtifactType.ImageInfo)]));
         ImageInfoService service = CreateService(orasServiceMock.Object);
 
-        string result = await service.PullImageInfoArtifactAsync(
-            manifest,
-            registry: "publish.example.com",
-            repoPrefix: "public/");
+        string result = await service.PullImageInfoArtifactAsync(manifest);
+
+        result.ShouldBe(JsonHelper.SerializeObject(imageInfo));
+        orasServiceMock.VerifyAll();
+    }
+
+    [TestMethod]
+    public async Task PullImageInfoArtifactAsync_NoPublishRegistry_FallsBackToManifestRegistry()
+    {
+        using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
+        string dockerfile = CreateDockerfile("1.0/repo/os", tempFolderContext);
+        ManifestInfo manifest = CreateManifestInfo(tempFolderContext, dockerfile);
+        ImageArtifactDetails imageInfo = new()
+        {
+            Repos =
+            [
+                new RepoData
+                {
+                    Repo = "repo"
+                }
+            ]
+        };
+
+        Mock<IOrasService> orasServiceMock = new();
+        orasServiceMock
+            .Setup(o => o.PullAsync(
+                "public.example.com",
+                "dotnet/versions",
+                "latest",
+                It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new OciArtifact(
+                CreateManifestDescriptor(),
+                CreateOrasManifest(OciArtifactType.ImageInfo, OciArtifactType.ImageInfo),
+                [CreateBlob(Encoding.UTF8.GetBytes(JsonHelper.SerializeObject(imageInfo)), OciArtifactType.ImageInfo)]));
+        ImageInfoService service = CreateService(orasServiceMock.Object, new PublishConfiguration());
+
+        string result = await service.PullImageInfoArtifactAsync(manifest);
 
         result.ShouldBe(JsonHelper.SerializeObject(imageInfo));
         orasServiceMock.VerifyAll();
@@ -212,10 +247,7 @@ public class ImageInfoServiceTests
         ImageInfoService service = CreateService(orasServiceMock.Object);
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-            service.PullImageInfoArtifactAsync(
-                manifest,
-                registry: "publish.example.com",
-                repoPrefix: "public/"));
+            service.PullImageInfoArtifactAsync(manifest));
 
         exception.Message.ShouldContain("artifactType 'application/vnd.other'");
     }
@@ -241,10 +273,7 @@ public class ImageInfoServiceTests
         ImageInfoService service = CreateService(orasServiceMock.Object);
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-            service.PullImageInfoArtifactAsync(
-                manifest,
-                registry: "publish.example.com",
-                repoPrefix: "public/"));
+            service.PullImageInfoArtifactAsync(manifest));
 
         exception.Message.ShouldContain("mediaType 'application/vnd.other'");
     }
@@ -276,23 +305,27 @@ public class ImageInfoServiceTests
         ImageInfoService service = CreateService(orasServiceMock.Object);
 
         InvalidOperationException exception = await Should.ThrowAsync<InvalidOperationException>(() =>
-            service.PullImageInfoArtifactAsync(
-                manifest,
-                registry: "publish.example.com",
-                repoPrefix: "public/"));
+            service.PullImageInfoArtifactAsync(manifest));
 
         exception.Message.ShouldContain("must have exactly one blob, but has 2");
     }
 
-    private static ImageInfoService CreateService(IOrasService orasService)
+    private static ImageInfoService CreateService(
+        IOrasService orasService,
+        PublishConfiguration? publishConfig = null)
     {
         Mock<IOrasServiceFactory> orasServiceFactoryMock = new();
         orasServiceFactoryMock
             .Setup(f => f.Create(It.IsAny<IRegistryCredentialsHost?>()))
             .Returns(orasService);
+        publishConfig ??= new PublishConfiguration
+        {
+            PublishRegistry = new RegistryEndpoint { Server = "publish.example.com", RepoPrefix = "public/" }
+        };
         return new ImageInfoService(
             TestHelper.CreateManifestJsonService(),
             orasServiceFactoryMock.Object,
+            Options.Create(publishConfig),
             NullLogger<ImageInfoService>.Instance);
     }
 

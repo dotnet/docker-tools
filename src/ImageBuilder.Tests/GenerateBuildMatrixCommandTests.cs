@@ -266,8 +266,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateImageInfoService(),
                 imageCacheServiceMock.Object,
                 Mock.Of<IManifestServiceFactory>(),
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
-                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
             command.Options.ImageInfoPath = Path.Combine(tempFolderContext.Path, "imageinfo.json");
@@ -949,10 +948,8 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task PlatformVersionedOs_ImageInfoArtifact_UsesManifestRegistryWhenNoOverrideIsSet()
+        public async Task PlatformVersionedOs_ImageInfoArtifact_PulledWhenTrimming()
         {
-            const string registry = "example.azurecr.io";
-
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IImageInfoService> imageInfoServiceMock = new();
             GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object);
@@ -966,7 +963,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateRepo(
                     "runtime",
                     CreateImage(CreatePlatform(dockerfile, ["tag"]))));
-            manifest.Registry = registry;
+            manifest.Registry = "example.azurecr.io";
             manifest.ImageInfo = new ImageInfoArtifact
             {
                 Repo = "image-info",
@@ -981,58 +978,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageInfoServiceMock
                 .Setup(service => service.PullImageInfoArtifactAsync(
                     It.IsAny<ManifestInfo>(),
-                    registry,
-                    null,
-                    default))
-                .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
-
-            command.LoadManifest();
-            IEnumerable<BuildMatrixInfo> matrixInfos = await command.GenerateMatrixInfoAsync();
-
-            matrixInfos.ShouldBeEmpty();
-            imageInfoServiceMock.VerifyAll();
-        }
-
-        [TestMethod]
-        public async Task PlatformVersionedOs_ImageInfoArtifact_UsesPublishRegistryAndPrefix()
-        {
-            const string publishRegistry = "publish.azurecr.io";
-            const string repoPrefix = "public/";
-
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-            Mock<IImageInfoService> imageInfoServiceMock = new();
-            PublishConfiguration publishConfig = new()
-            {
-                PublishRegistry = new RegistryEndpoint { Server = publishRegistry, RepoPrefix = repoPrefix }
-            };
-            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object, publishConfig);
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.MatrixType = MatrixType.PlatformVersionedOs;
-            command.Options.FilterOptions.Dockerfile.Paths = ["not-matching"];
-            command.Options.TrimCachedImages = true;
-
-            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
-            Manifest manifest = CreateManifest(
-                CreateRepo(
-                    "runtime",
-                    CreateImage(CreatePlatform(dockerfile, ["tag"]))));
-            manifest.Registry = "mcr.microsoft.com";
-            manifest.ImageInfo = new ImageInfoArtifact
-            {
-                Repo = "image-info",
-                Tags = new Dictionary<string, Tag>
-                {
-                    { "latest", new Tag() }
-                }
-            };
-
-            File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
-
-            imageInfoServiceMock
-                .Setup(service => service.PullImageInfoArtifactAsync(
-                    It.IsAny<ManifestInfo>(),
-                    publishRegistry,
-                    repoPrefix,
                     default))
                 .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
 
@@ -1048,17 +993,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         {
             using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
             Mock<IImageInfoService> imageInfoServiceMock = new();
-            PublishConfiguration publishConfig = new()
-            {
-                PublishRegistry = new RegistryEndpoint { Server = "publish.azurecr.io", RepoPrefix = "public/" }
-            };
-            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object, publishConfig);
+            GenerateBuildMatrixCommand command = CreateCommand(imageInfoServiceMock.Object);
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformVersionedOs;
             command.Options.ProductVersionComponents = 2;
 
-            // A publish registry is configured but trimming is disabled, so the OCI
-            // artifact must not be pulled.
+            // Trimming is disabled, so the OCI artifact must not be pulled.
 
             string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext);
             Manifest manifest = CreateManifest(
@@ -1083,8 +1023,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageInfoServiceMock.Verify(
                 service => service.PullImageInfoArtifactAsync(
                     It.IsAny<ManifestInfo>(),
-                    It.IsAny<string>(),
-                    It.IsAny<string>(),
                     It.IsAny<System.Threading.CancellationToken>()),
                 Times.Never);
         }
@@ -1866,8 +1804,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 CreateImageInfoService(),
                 imageCacheService,
                 manifestServiceFactoryMock.Object,
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
-                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()));
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
 
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
             command.Options.MatrixType = MatrixType.PlatformDependencyGraph;
@@ -1910,20 +1847,19 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         private static GenerateBuildMatrixCommand CreateCommand(
-            IImageInfoService imageInfoService = null,
-            PublishConfiguration publishConfig = null) =>
+            IImageInfoService imageInfoService = null) =>
             new(
                 TestHelper.CreateManifestJsonService(),
                 imageInfoService ?? CreateImageInfoService(),
                 Mock.Of<IImageCacheService>(),
                 Mock.Of<IManifestServiceFactory>(),
-                Mock.Of<ILogger<GenerateBuildMatrixCommand>>(),
-                Microsoft.Extensions.Options.Options.Create(publishConfig ?? new PublishConfiguration()));
+                Mock.Of<ILogger<GenerateBuildMatrixCommand>>());
 
         private static ImageInfoService CreateImageInfoService() =>
             new(
                 TestHelper.CreateManifestJsonService(),
                 Mock.Of<IOrasServiceFactory>(),
+                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()),
                 Mock.Of<ILogger<ImageInfoService>>());
     }
 }

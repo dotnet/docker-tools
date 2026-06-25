@@ -8,25 +8,20 @@ using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
-using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
 {
     public partial class MergeImageInfoCommand : ManifestCommand<MergeImageInfoOptions>
     {
         private readonly IImageInfoService _imageInfoService;
-        private readonly PublishConfiguration _publishConfig;
 
         public MergeImageInfoCommand(
             IManifestJsonService manifestJsonService,
-            IImageInfoService imageInfoService,
-            IOptions<PublishConfiguration> publishConfigOptions) : base(manifestJsonService)
+            IImageInfoService imageInfoService) : base(manifestJsonService)
         {
             _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
-            _publishConfig = publishConfigOptions.Value;
         }
 
         protected override string Description => "Merges the content of multiple image info files into one file";
@@ -68,14 +63,11 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     .First(item => item.Path == Options.InitialImageInfoPath)
                     .ImageArtifactDetails;
             }
-            else if (Options.IsPublishScenario && !string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
+            else if (Options.IsPublishScenario)
             {
                 // When publishing, the previously-published image info (the merge target) is pulled from the
                 // publish registry's OCI artifact.
-                string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
-                    Manifest,
-                    _publishConfig.PublishRegistry.Server,
-                    _publishConfig.PublishRegistry.RepoPrefix);
+                string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(Manifest);
 
                 sourceImageArtifactDetails = ImageInfoHelper.LoadFromContent(
                     imageInfoContent,

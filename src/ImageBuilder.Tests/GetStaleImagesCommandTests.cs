@@ -1762,17 +1762,12 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             private GetStaleImagesCommand CreateCommand()
             {
-                PublishConfiguration publishConfig = new()
-                {
-                    PublishRegistry = new RegistryEndpoint { Server = "publish.example.com" }
-                };
                 GetStaleImagesCommand command = new(
                     this.ManifestServiceFactoryMock.Object,
                     TestHelper.CreateManifestJsonService(),
                     this.loggerServiceMock.Object,
                     this.gitService,
-                    this.imageInfoService,
-                    Microsoft.Extensions.Options.Options.Create(publishConfig));
+                    this.imageInfoService);
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;
@@ -1788,13 +1783,9 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 imageInfoServiceMock
                     .Setup(o => o.PullImageInfoArtifactAsync(
                         It.IsAny<ManifestInfo>(),
-                        It.IsAny<string>(),
-                        It.IsAny<string>(),
                         It.IsAny<CancellationToken>()))
                     .ReturnsAsync((
                         ManifestInfo manifest,
-                        string registry,
-                        string repoPrefix,
                         CancellationToken cancellationToken) =>
                     {
                         SubscriptionInfo subscriptionInfo = subscriptionInfos

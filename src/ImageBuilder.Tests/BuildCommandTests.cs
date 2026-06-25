@@ -1024,7 +1024,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         }
 
         [TestMethod]
-        public async Task BuildCommand_ImageInfoArtifact_UsesManifestRegistryWhenNoOverrideIsSet()
+        public async Task BuildCommand_ImageInfoArtifact_PulledForCacheCheck()
         {
             const string registry = "example.azurecr.io";
 
@@ -1034,8 +1034,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             imageInfoServiceMock
                 .Setup(service => service.PullImageInfoArtifactAsync(
                     It.IsAny<ManifestInfo>(),
-                    registry,
-                    null,
                     default))
                 .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
 
@@ -1049,62 +1047,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     "runtime",
                     CreateImage(CreatePlatform(dockerfile, new string[] { "tag" }))));
             manifest.Registry = registry;
-            manifest.ImageInfo = new ImageInfoArtifact
-            {
-                Repo = "image-info",
-                Tags = new Dictionary<string, Tag>
-                {
-                    { "latest", new Tag() }
-                }
-            };
-
-            File.WriteAllText(command.Options.Manifest, JsonConvert.SerializeObject(manifest));
-
-            command.LoadManifest();
-            await command.ExecuteAsync();
-
-            imageInfoServiceMock.VerifyAll();
-        }
-
-        [TestMethod]
-        public async Task BuildCommand_ImageInfoArtifact_UsesPublishRegistryAndPrefix()
-        {
-            const string manifestRegistry = "example.azurecr.io";
-            const string publishRegistry = "publishregistry.azurecr.io";
-            const string publishRepoPrefix = "public/";
-
-            using TempFolderContext tempFolderContext = TestHelper.UseTempFolder();
-
-            Mock<IImageInfoService> imageInfoServiceMock = new();
-            imageInfoServiceMock
-                .Setup(service => service.PullImageInfoArtifactAsync(
-                    It.IsAny<ManifestInfo>(),
-                    publishRegistry,
-                    publishRepoPrefix,
-                    default))
-                .ReturnsAsync(JsonHelper.SerializeObject(new ImageArtifactDetails()));
-
-            PublishConfiguration publishConfig = new()
-            {
-                PublishRegistry = new RegistryEndpoint
-                {
-                    Server = publishRegistry,
-                    RepoPrefix = publishRepoPrefix
-                }
-            };
-
-            BuildCommand command = CreateBuildCommand(
-                imageInfoService: imageInfoServiceMock.Object,
-                publishConfig: publishConfig);
-            command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
-            command.Options.FilterOptions.Dockerfile.Paths = new string[] { "not-matching" };
-
-            string dockerfile = DockerfileHelper.CreateDockerfile("1.0/runtime/os", tempFolderContext, "scratch");
-            Manifest manifest = CreateManifest(
-                CreateRepo(
-                    "runtime",
-                    CreateImage(CreatePlatform(dockerfile, new string[] { "tag" }))));
-            manifest.Registry = manifestRegistry;
             manifest.ImageInfo = new ImageInfoArtifact
             {
                 Repo = "image-info",
@@ -3751,8 +3693,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             IRegistryCredentialsProvider? registryCredentialsProvider = null,
             IAzureTokenCredentialProvider? azureTokenCredentialProvider = null,
             IImageCacheService? imageCacheService = null,
-            IImageInfoService? imageInfoService = null,
-            PublishConfiguration? publishConfig = null)
+            IImageInfoService? imageInfoService = null)
         {
             BuildCommand command = new(
                 manifestJsonService ?? TestHelper.CreateManifestJsonService(),
@@ -3765,8 +3706,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 registryCredentialsProvider ?? Mock.Of<IRegistryCredentialsProvider>(),
                 azureTokenCredentialProvider ?? Mock.Of<IAzureTokenCredentialProvider>(),
                 imageCacheService ?? Mock.Of<IImageCacheService>(),
-                imageInfoService ?? CreateImageInfoService(),
-                Microsoft.Extensions.Options.Options.Create(publishConfig ?? new PublishConfiguration()));
+                imageInfoService ?? CreateImageInfoService());
 
             return command;
         }
@@ -3775,6 +3715,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             new(
                 TestHelper.CreateManifestJsonService(),
                 Mock.Of<IOrasServiceFactory>(),
+                Microsoft.Extensions.Options.Options.Create(new PublishConfiguration()),
                 Mock.Of<ILogger<ImageInfoService>>());
         #nullable disable
 

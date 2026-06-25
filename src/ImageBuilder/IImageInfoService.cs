@@ -47,9 +47,5 @@ public interface IImageInfoService
     /// When the manifest does not declare an <c>imageInfo</c> object, the pull fails because the
     /// artifact source and tag are required manifest metadata.
     /// </remarks>
-    Task<string> PullImageInfoArtifactAsync(
-        ManifestInfo manifest,
-        string registry,
-        string? repoPrefix,
-        CancellationToken cancellationToken = default);
+    Task<string> PullImageInfoArtifactAsync(ManifestInfo manifest, CancellationToken cancellationToken = default);
 }

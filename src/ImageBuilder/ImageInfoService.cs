@@ -7,10 +7,11 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.DotNet.ImageBuilder;
 
@@ -18,6 +19,7 @@ namespace Microsoft.DotNet.ImageBuilder;
 public class ImageInfoService(
     IManifestJsonService manifestJsonService,
     IOrasServiceFactory orasServiceFactory,
+    IOptions<PublishConfiguration> publishConfigOptions,
     ILogger<ImageInfoService> logger
 ) : IImageInfoService
 {
@@ -29,6 +31,9 @@ public class ImageInfoService(
 
     private readonly ILogger<ImageInfoService> _logger =
         logger ?? throw new ArgumentNullException(nameof(logger));
+
+    private readonly PublishConfiguration _publishConfig =
+        publishConfigOptions?.Value ?? throw new ArgumentNullException(nameof(publishConfigOptions));
 
     /// <inheritdoc/>
     public async Task PushImageInfoArtifactAsync(
@@ -71,14 +76,25 @@ public class ImageInfoService(
     /// <inheritdoc/>
     public async Task<string> PullImageInfoArtifactAsync(
         ManifestInfo manifest,
-        string registry,
-        string? repoPrefix,
         CancellationToken cancellationToken = default)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
         ArgumentNullException.ThrowIfNull(manifest);
 
         ImageInfoArtifact imageInfoArtifact = GetValidatedImageInfoArtifact(manifest);
+
+        string registry;
+        string repoPrefix;
+
+        if (!string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
+        {
+            registry = _publishConfig.PublishRegistry.Server;
+            repoPrefix = _publishConfig.PublishRegistry.RepoPrefix ?? "";
+        }
+        else
+        {
+            registry = manifest.Model.Registry;
+            repoPrefix = "";
+        }
 
         string repo = $"{repoPrefix}{imageInfoArtifact.Repo}";
         string tag = imageInfoArtifact.Tags.Keys.First();
@@ -88,11 +104,8 @@ public class ImageInfoService(
             registry, repo, tag);
 
         IOrasService orasService = _orasServiceFactory.Create();
-        OciArtifact artifact = await orasService.PullAsync(
-            registry,
-            repo,
-            tag,
-            cancellationToken);
+        OciArtifact artifact = await orasService.PullAsync(registry, repo, tag, cancellationToken);
+
         if (!string.Equals(artifact.Manifest.ArtifactType, OciArtifactType.ImageInfo, StringComparison.Ordinal))
         {
             throw new InvalidOperationException(

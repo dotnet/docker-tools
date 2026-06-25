@@ -7,8 +7,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.DotNet.ImageBuilder.Configuration;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
+using Microsoft.Extensions.Options;
 using Newtonsoft.Json;
 
 namespace Microsoft.DotNet.ImageBuilder.Commands
@@ -22,18 +24,21 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ILogger<GetStaleImagesCommand> _logger;
         private readonly IGitService _gitService;
         private readonly IImageInfoService _imageInfoService;
+        private readonly PublishConfiguration _publishConfig;
 
         public GetStaleImagesCommand(
             IManifestServiceFactory manifestServiceFactory,
             IManifestJsonService manifestJsonService,
             ILogger<GetStaleImagesCommand> logger,
             IGitService gitService,
-            IImageInfoService imageInfoService)
+            IImageInfoService imageInfoService,
+            IOptions<PublishConfiguration> publishConfigOptions)
         {
             _manifestJsonService = manifestJsonService ?? throw new ArgumentNullException(nameof(manifestJsonService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _gitService = gitService ?? throw new ArgumentNullException(nameof(gitService));
             _imageInfoService = imageInfoService ?? throw new ArgumentNullException(nameof(imageInfoService));
+            _publishConfig = publishConfigOptions.Value;
 
             // Don't worry about authenticating to our own ACR, since we are checking base image digests from public
             // registries instead of our staging location. Registry credentials are needed however to prevent rate
@@ -204,18 +209,22 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private async Task<ImageArtifactDetails> PullImageInfoAsync(ManifestInfo manifest)
         {
-            string imageInfoRegistry = Options.ImageInfoRegistryOverride ?? manifest.Model.Registry;
+            // The image-info artifact lives in the publish registry (where it was last published).
+            // Fall back to the manifest registry when no publish registry is configured.
+            string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server)
+                ? manifest.Model.Registry
+                : _publishConfig.PublishRegistry.Server;
             if (string.IsNullOrWhiteSpace(imageInfoRegistry))
             {
                 throw new InvalidOperationException(
-                    $"Manifest '{manifest.FilePath}' must define a registry or --image-info-registry-override must be set " +
+                    $"Manifest '{manifest.FilePath}' must define a registry or a publish registry must be configured " +
                     "to pull image-info artifact for stale image detection.");
             }
 
             string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
                 manifest,
                 imageInfoRegistry,
-                Options.ImageInfoRepoPrefix);
+                _publishConfig.PublishRegistry?.RepoPrefix);
 
             return ImageInfoHelper.LoadFromContent(imageInfoContent, manifest, skipManifestValidation: true);
         }

@@ -325,14 +325,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                 // The build-time cache check reads the previously-published image info, which lives in the
                 // publish registry (where publishImageInfoArtifact writes it). Fall back to the manifest
                 // registry when no publish registry is configured (e.g. public PR builds without appsettings).
-                string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server)
-                    ? Manifest.Model.Registry
-                    : _publishConfig.PublishRegistry.Server;
+                string? imageInfoRegistry;
+                string? imageInfoRepoPrefix;
+                if (!string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
+                {
+                    imageInfoRegistry = _publishConfig.PublishRegistry.Server;
+                    imageInfoRepoPrefix = _publishConfig.PublishRegistry.RepoPrefix;
+                }
+                else
+                {
+                    imageInfoRegistry = Manifest.Model.Registry;
+                    imageInfoRepoPrefix = null;
+                }
+
+                if (string.IsNullOrWhiteSpace(imageInfoRegistry))
+                {
+                    throw new InvalidOperationException(
+                        $"Manifest '{Manifest.FilePath}' must define a registry or a publish registry must be " +
+                        "configured to pull the image-info artifact for the build-time cache check.");
+                }
 
                 string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
                     Manifest,
                     imageInfoRegistry,
-                    _publishConfig.PublishRegistry?.RepoPrefix);
+                    imageInfoRepoPrefix);
 
                 srcImageArtifactDetails = ImageInfoHelper.LoadFromContent(
                     imageInfoContent,

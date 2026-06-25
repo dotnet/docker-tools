@@ -211,9 +211,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         {
             // The image-info artifact lives in the publish registry (where it was last published).
             // Fall back to the manifest registry when no publish registry is configured.
-            string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server)
-                ? manifest.Model.Registry
-                : _publishConfig.PublishRegistry.Server;
+            string? imageInfoRegistry;
+            string? imageInfoRepoPrefix;
+            if (!string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
+            {
+                imageInfoRegistry = _publishConfig.PublishRegistry.Server;
+                imageInfoRepoPrefix = _publishConfig.PublishRegistry.RepoPrefix;
+            }
+            else
+            {
+                imageInfoRegistry = manifest.Model.Registry;
+                imageInfoRepoPrefix = null;
+            }
+
             if (string.IsNullOrWhiteSpace(imageInfoRegistry))
             {
                 throw new InvalidOperationException(
@@ -224,7 +234,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             string imageInfoContent = await _imageInfoService.PullImageInfoArtifactAsync(
                 manifest,
                 imageInfoRegistry,
-                _publishConfig.PublishRegistry?.RepoPrefix);
+                imageInfoRepoPrefix);
 
             return ImageInfoHelper.LoadFromContent(imageInfoContent, manifest, skipManifestValidation: true);
         }

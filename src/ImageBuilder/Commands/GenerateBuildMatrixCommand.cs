@@ -72,14 +72,30 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
             // The image-info artifact lives in the publish registry (where it was last published).
             // Fall back to the manifest registry when no publish registry is configured.
-            string imageInfoRegistry = string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server)
-                ? Manifest.Model.Registry
-                : _publishConfig.PublishRegistry.Server;
+            string? imageInfoRegistry;
+            string? imageInfoRepoPrefix;
+            if (!string.IsNullOrWhiteSpace(_publishConfig.PublishRegistry?.Server))
+            {
+                imageInfoRegistry = _publishConfig.PublishRegistry.Server;
+                imageInfoRepoPrefix = _publishConfig.PublishRegistry.RepoPrefix;
+            }
+            else
+            {
+                imageInfoRegistry = Manifest.Model.Registry;
+                imageInfoRepoPrefix = null;
+            }
+
+            if (string.IsNullOrWhiteSpace(imageInfoRegistry))
+            {
+                throw new InvalidOperationException(
+                    $"Manifest '{Manifest.FilePath}' must define a registry or a publish registry must be " +
+                    "configured to pull the image-info artifact for matrix cache trimming.");
+            }
 
             string imageInfoContent = await imageInfoService.PullImageInfoArtifactAsync(
                 Manifest,
                 imageInfoRegistry,
-                _publishConfig.PublishRegistry?.RepoPrefix);
+                imageInfoRepoPrefix);
 
             return ImageInfoHelper.LoadFromContent(
                 imageInfoContent,

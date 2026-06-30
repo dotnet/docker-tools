@@ -4,7 +4,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -23,12 +22,20 @@ namespace Microsoft.DotNet.ImageBuilder
 
         void CreateManifestList(string manifestListTag, IEnumerable<string> images, bool isDryRun);
 
+        /// <summary>
+        /// Builds a Docker image.
+        /// </summary>
+        /// <param name="labels">
+        /// Labels to apply to the image. Each entry translates to a <c>--label key=value</c> option on the
+        /// <c>docker build</c> command.
+        /// </param>
         string? BuildImage(
             string dockerfilePath,
             string buildContextPath,
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
+            IDictionary<string, string> labels,
             IEnumerable<string> dockerBuildOptions,
             bool isRetryEnabled,
             bool isDryRun);

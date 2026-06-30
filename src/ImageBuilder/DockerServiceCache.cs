@@ -5,8 +5,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
 namespace Microsoft.DotNet.ImageBuilder
@@ -31,9 +29,25 @@ namespace Microsoft.DotNet.ImageBuilder
         public Architecture Architecture => _inner.Architecture;
 
         public string? BuildImage(
-            string dockerfilePath, string buildContextPath, string platform, IEnumerable<string> tags,
-            IDictionary<string, string?> buildArgs, IEnumerable<string> dockerBuildOptions, bool isRetryEnabled, bool isDryRun) =>
-            _inner.BuildImage(dockerfilePath, buildContextPath, platform, tags, buildArgs, dockerBuildOptions, isRetryEnabled, isDryRun);
+            string dockerfilePath,
+            string buildContextPath,
+            string platform,
+            IEnumerable<string> tags,
+            IDictionary<string, string?> buildArgs,
+            IDictionary<string, string> labels,
+            IEnumerable<string> dockerBuildOptions,
+            bool isRetryEnabled,
+            bool isDryRun) =>
+            _inner.BuildImage(
+                dockerfilePath,
+                buildContextPath,
+                platform,
+                tags,
+                buildArgs,
+                labels,
+                dockerBuildOptions,
+                isRetryEnabled,
+                isDryRun);
 
         public (Architecture Arch, string? Variant) GetImageArch(string image, bool isDryRun) =>
             _architectureCache.GetOrAdd(image, _ =>_inner.GetImageArch(image, isDryRun));
@@ -49,10 +63,10 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public long GetImageSize(string image, bool isDryRun) =>
             _imageSizeCache.GetOrAdd(image, _ => _inner.GetImageSize(image, isDryRun));
-        
+
         public bool LocalImageExists(string tag, bool isDryRun) =>
             _localImageExistsCache.GetOrAdd(tag, _ => _inner.LocalImageExists(tag, isDryRun));
-        
+
         public void PullImage(string image, string? platform, bool isDryRun)
         {
             _pulledImages.GetOrAdd(image, _ =>

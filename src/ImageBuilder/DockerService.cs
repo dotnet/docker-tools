@@ -34,6 +34,7 @@ namespace Microsoft.DotNet.ImageBuilder
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
+            IDictionary<string, string> labels,
             IEnumerable<string> dockerBuildOptions,
             bool isRetryEnabled,
             bool isDryRun)
@@ -44,12 +45,16 @@ namespace Microsoft.DotNet.ImageBuilder
                 .Select(buildArg => $" --build-arg {buildArg.Key}={buildArg.Value}");
             string buildArgsString = string.Join(string.Empty, buildArgList);
 
+            IEnumerable<string> labelList = labels
+                .Select(label => $" --label {label.Key}={label.Value}");
+            string labelsString = string.Join(string.Empty, labelList);
+
             IEnumerable<string> dockerBuildOptionList = dockerBuildOptions
                 .Where(option => !string.IsNullOrWhiteSpace(option))
                 .Select(option => $" {option}");
             string dockerBuildOptionsString = string.Join(string.Empty, dockerBuildOptionList);
 
-            string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString}{dockerBuildOptionsString} {buildContextPath}";
+            string dockerArgs = $"build --platform {platform} {tagArgs} -f {dockerfilePath}{buildArgsString}{labelsString}{dockerBuildOptionsString} {buildContextPath}";
 
             if (isRetryEnabled)
             {

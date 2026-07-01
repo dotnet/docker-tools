@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 
 namespace Microsoft.DotNet.ImageBuilder;
@@ -33,16 +32,4 @@ public interface IManifestJsonService
     /// </param>
     /// <returns>A fully initialized <see cref="ManifestInfo"/> with repos, images, and platforms resolved.</returns>
     ManifestInfo Load(IManifestOptionsInfo options);
-
-    /// <summary>
-    /// Returns the manifest's image-info artifact definition with all manifest variables resolved
-    /// in its repository name and tags.
-    /// </summary>
-    /// <param name="manifest">The manifest whose image-info artifact definition should be resolved.</param>
-    /// <returns>A new <see cref="ImageInfoArtifact"/> with variable substitutions applied.</returns>
-    /// <exception cref="System.InvalidOperationException">
-    /// Thrown when the manifest does not define an image-info artifact, or when its repository name
-    /// or a tag resolves to an invalid value after variable substitution.
-    /// </exception>
-    ImageInfoArtifact GetImageInfoArtifact(ManifestInfo manifest);
 }

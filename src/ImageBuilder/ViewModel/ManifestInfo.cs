@@ -5,7 +5,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 
@@ -47,14 +46,9 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         public VariableHelper VariableHelper { get; internal set; }
 
         /// <summary>
-        /// Full path to the file this ManifestInfo was read from.
+        /// Gets the directory of the manifest file.
         /// </summary>
-        public string FilePath { get; internal set; }
-
-        /// <summary>
-        /// Directory containing the file this ManifestInfo was read from.
-        /// </summary>
-        public string Directory => Path.GetDirectoryName(FilePath) ?? "";
+        public string Directory { get; internal set; }
 
         /// <summary>
         /// Path to the manifest's readme file, if defined.
@@ -71,7 +65,7 @@ namespace Microsoft.DotNet.ImageBuilder.ViewModel
         }
 
         public IEnumerable<ImageInfo> GetAllImages() => AllRepos.SelectMany(repo => repo.AllImages);
-
+        
         public ImageInfo GetImageByPlatform(PlatformInfo platform) =>
             GetAllImages()
                 .FirstOrDefault(image => image.AllPlatforms.Contains(platform));

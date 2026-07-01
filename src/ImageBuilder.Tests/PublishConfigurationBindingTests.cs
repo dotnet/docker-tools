@@ -85,27 +85,6 @@ public class PublishConfigurationBindingTests
     }
 
     [TestMethod]
-    public void AddPublishConfiguration_BindsRegistryEndpointRepoPrefix()
-    {
-        const string configJson = """
-            {
-              "PublishConfiguration": {
-                "PublishRegistry": {
-                  "Server": "publish.azurecr.io",
-                  "RepoPrefix": "public/"
-                }
-              }
-            }
-            """;
-
-        PublishConfiguration config = BuildConfiguration(configJson);
-
-        config.PublishRegistry.ShouldNotBeNull();
-        config.PublishRegistry.Server.ShouldBe("publish.azurecr.io");
-        config.PublishRegistry.RepoPrefix.ShouldBe("public/");
-    }
-
-    [TestMethod]
     public void AddPublishConfiguration_BindsRegistryAuthenticationList()
     {
         PublishConfiguration config = BuildConfiguration(FullConfigJson);

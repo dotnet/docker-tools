@@ -34,22 +34,4 @@ public interface IImageInfoService
         string? repoPrefix,
         bool isDryRun,
         CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Pulls image-info from the OCI artifact declared by the manifest's <c>imageInfo</c> object.
-    /// </summary>
-    /// <param name="manifest">The manifest declaring the image-info artifact repository and tags.</param>
-    /// <param name="registry">The registry to pull the artifact from (e.g. the publish registry).</param>
-    /// <param name="repoPrefix">A prefix to prepend to the artifact's repository name.</param>
-    /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns>The image-info JSON content.</returns>
-    /// <remarks>
-    /// When the manifest does not declare an <c>imageInfo</c> object, the pull fails because the
-    /// artifact source and tag are required manifest metadata.
-    /// </remarks>
-    Task<string> PullImageInfoArtifactAsync(
-        ManifestInfo manifest,
-        string registry,
-        string? repoPrefix,
-        CancellationToken cancellationToken = default);
 }

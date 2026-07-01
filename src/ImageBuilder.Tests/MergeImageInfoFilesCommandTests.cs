@@ -12,7 +12,6 @@ using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;
 using Newtonsoft.Json;
 using Shouldly;
@@ -182,7 +181,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
                 command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
                 command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
                 command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
@@ -486,7 +485,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     }
                 };
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
                 command.Options.SourceImageInfoFolderPath = Path.Combine(context.Path, "image-infos");
                 command.Options.DestinationImageInfoPath = Path.Combine(context.Path, "output.json");
                 command.Options.Manifest = Path.Combine(context.Path, "manifest.json");
@@ -621,7 +620,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
         [TestMethod]
         public async Task MergeImageInfoFilesCommand_SourceFolderPathNotFound()
         {
-            MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+            MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
             command.Options.SourceImageInfoFolderPath = "foo";
             command.Options.DestinationImageInfoPath = "output.json";
 
@@ -644,7 +643,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 // Store the content in a .txt file which the command should NOT be looking for.
                 File.WriteAllText("image-info.txt", JsonHelper.SerializeObject(imageArtifactDetails));
 
-                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+                MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
                 command.Options.SourceImageInfoFolderPath = context.Path;
                 command.Options.DestinationImageInfoPath = "output.json";
 
@@ -773,7 +772,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService());
             command.Options.SourceImageInfoFolderPath = Path.Combine(tempFolderContext.Path, "image-infos");
             command.Options.DestinationImageInfoPath = Path.Combine(tempFolderContext.Path, "output.json");
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -940,7 +939,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 }
             };
 
-            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService());
             command.Options.SourceImageInfoFolderPath = Path.Combine(tempFolderContext.Path, "image-infos");
             command.Options.DestinationImageInfoPath = Path.Combine(tempFolderContext.Path, "output.json");
             command.Options.Manifest = Path.Combine(tempFolderContext.Path, "manifest.json");
@@ -1119,7 +1118,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
 
             var outputImageInfoFile = Path.Combine(context.Path, "merged-image-info.json");
 
-            MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService(), Mock.Of<IImageInfoService>());
+            MergeImageInfoCommand command = new MergeImageInfoCommand(TestHelper.CreateManifestJsonService());
             command.Options.SourceImageInfoFolderPath = sourceImageInfoDir;
             command.Options.DestinationImageInfoPath = outputImageInfoFile;
             command.Options.InitialImageInfoPath = initialImageInfoFile;
@@ -1154,109 +1153,6 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             initialShaMatches.ShouldHaveSingleItem();
             var initialCommitResult = initialShaMatches[0].Value;
             initialCommitResult.ShouldBe(CommitOverride);
-        }
-
-        [TestMethod]
-        public async Task MergeImageInfoFilesCommand_InitialImageInfoFromOciArtifact()
-        {
-            using TempFolderContext context = TestHelper.UseTempFolder();
-
-            string initialDockerfile = CreateDockerfile("1.0/repo/initial", context);
-            string updatedDockerfile = CreateDockerfile("1.0/repo/updated", context);
-            string sourceImageInfoDir = Path.Combine(context.Path, "image-infos");
-            Directory.CreateDirectory(sourceImageInfoDir);
-
-            ImageArtifactDetails initialImageInfo = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "1.0",
-                                Platforms =
-                                {
-                                    CreatePlatform(initialDockerfile, simpleTags: ["initial"])
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            ImageArtifactDetails updatedImageInfo = new()
-            {
-                Repos =
-                {
-                    new RepoData
-                    {
-                        Repo = "repo",
-                        Images =
-                        {
-                            new ImageData
-                            {
-                                ProductVersion = "1.0",
-                                Platforms =
-                                {
-                                    CreatePlatform(updatedDockerfile, simpleTags: ["updated"])
-                                }
-                            }
-                        }
-                    }
-                }
-            };
-
-            File.WriteAllText(Path.Combine(sourceImageInfoDir, "updated.json"), JsonHelper.SerializeObject(updatedImageInfo));
-
-            Manifest manifest = CreateManifest(
-                CreateRepo("repo",
-                    CreateImage(
-                        new Platform[]
-                        {
-                            ManifestHelper.CreatePlatform(initialDockerfile, new string[] { "initial" }),
-                            ManifestHelper.CreatePlatform(updatedDockerfile, new string[] { "updated" })
-                        },
-                        productVersion: "1.0")));
-
-            string manifestPath = Path.Combine(context.Path, "manifest.json");
-            File.WriteAllText(manifestPath, JsonConvert.SerializeObject(manifest));
-
-            Mock<IImageInfoService> imageInfoServiceMock = new();
-            string outputPath = Path.Combine(context.Path, "output.json");
-            string initialOutputPath = Path.Combine(context.Path, "initial-output.json");
-            MergeImageInfoCommand command = new(TestHelper.CreateManifestJsonService(), imageInfoServiceMock.Object);
-            imageInfoServiceMock
-                .Setup(service => service.PullImageInfoArtifactAsync(
-                    It.IsAny<ManifestInfo>(),
-                    "example.azurecr.io",
-                    "prefix/",
-                    It.IsAny<System.Threading.CancellationToken>()))
-                .ReturnsAsync(JsonHelper.SerializeObject(initialImageInfo));
-
-            command.Options.SourceImageInfoFolderPath = sourceImageInfoDir;
-            command.Options.DestinationImageInfoPath = outputPath;
-            command.Options.Manifest = manifestPath;
-            command.Options.IsPublishScenario = true;
-            command.Options.InitialImageInfoRegistryOverride = "example.azurecr.io";
-            command.Options.InitialImageInfoRepoPrefix = "prefix/";
-            command.Options.InitialImageInfoOutputPath = initialOutputPath;
-
-            command.LoadManifest();
-            await command.ExecuteAsync();
-
-            ImageArtifactDetails mergedImageInfo = ImageArtifactDetails.FromJson(File.ReadAllText(outputPath));
-            List<PlatformData> mergedPlatforms = mergedImageInfo.Repos.Single().Images
-                .SelectMany(image => image.Platforms)
-                .ToList();
-
-            mergedPlatforms.Select(platform => platform.Dockerfile)
-                .ShouldBe([initialDockerfile, updatedDockerfile], ignoreOrder: true);
-            File.ReadAllText(initialOutputPath).ShouldBe(JsonHelper.SerializeObject(initialImageInfo) + Environment.NewLine);
-            imageInfoServiceMock.VerifyAll();
         }
     }
 }

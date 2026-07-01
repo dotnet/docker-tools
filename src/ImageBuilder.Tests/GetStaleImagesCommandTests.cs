@@ -9,7 +9,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Nodes;
-using System.Threading;
+using System.Text;
 using System.Threading.Tasks;
 using LibGit2Sharp;
 using Microsoft.DotNet.ImageBuilder.Commands;
@@ -17,7 +17,6 @@ using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
 using Microsoft.DotNet.ImageBuilder.Models.Subscription;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
-using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Microsoft.DotNet.VersionTools.Automation;
 using Microsoft.Extensions.Logging;
 using Microsoft.TeamFoundation.Core.WebApi;
@@ -1646,6 +1645,14 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                     Owner = GetRepoOwner(testMethodName, index.ToString()),
                     Path = "testmanifest.json"
                 },
+                ImageInfo = new GitFile
+                {
+
+                    Owner = GetStaleImagesCommandTests.GitHubOwner,
+                    Repo = GetStaleImagesCommandTests.GitHubRepo,
+                    Branch = GetStaleImagesCommandTests.GitHubBranch,
+                    Path = "docker/image-info.json"
+                },
                 OsType = osType
             };
         }
@@ -1662,7 +1669,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private readonly GetStaleImagesCommand command;
             private readonly Mock<ILogger<GetStaleImagesCommand>> loggerServiceMock = new Mock<ILogger<GetStaleImagesCommand>>();
             private readonly string osType;
-            private readonly IImageInfoService imageInfoService;
+            private readonly IOctokitClientFactory octokitClientFactory;
             private readonly IGitService gitService;
 
             private const string VariableName = "my-var";
@@ -1708,7 +1715,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
                 };
 
                 this.gitService = CreateGitService(subscriptionInfos, dockerfileInfos);
-                this.imageInfoService = CreateImageInfoService(subscriptionInfos);
+                this.octokitClientFactory = CreateOctokitClientFactory(subscriptionInfos);
 
                 (ManifestServiceFactoryMock, ManifestServiceMock) = CreateManifestServiceMocks();
 
@@ -1762,44 +1769,72 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             private GetStaleImagesCommand CreateCommand()
             {
                 GetStaleImagesCommand command = new(
-                    this.ManifestServiceFactoryMock.Object,
-                    TestHelper.CreateManifestJsonService(),
-                    this.loggerServiceMock.Object,
-                    this.gitService,
-                    this.imageInfoService);
+                    this.ManifestServiceFactoryMock.Object, TestHelper.CreateManifestJsonService(), this.loggerServiceMock.Object, this.octokitClientFactory, this.gitService);
                 command.Options.SubscriptionOptions.SubscriptionsPath = this.subscriptionsPath;
                 command.Options.VariableName = VariableName;
                 command.Options.FilterOptions.Platform.OsType = this.osType;
-                command.Options.ImageInfoRegistryOverride = "publish.example.com";
                 command.Options.GitOptions.Email = "test";
                 command.Options.GitOptions.Username = "test";
                 command.Options.GitOptions.GitHubAuthOptions = new GitHubAuthOptions(AuthToken: "test");
                 return command;
             }
 
-            private static IImageInfoService CreateImageInfoService(SubscriptionInfo[] subscriptionInfos)
+            private static IOctokitClientFactory CreateOctokitClientFactory(SubscriptionInfo[] subscriptionInfos)
             {
-                Mock<IImageInfoService> imageInfoServiceMock = new();
-                imageInfoServiceMock
-                    .Setup(o => o.PullImageInfoArtifactAsync(
-                        It.IsAny<ManifestInfo>(),
-                        It.IsAny<string>(),
-                        It.IsAny<string>(),
-                        It.IsAny<CancellationToken>()))
-                    .ReturnsAsync((
-                        ManifestInfo manifest,
-                        string registry,
-                        string repoPrefix,
-                        CancellationToken cancellationToken) =>
+                Mock<Octokit.ITreesClient> treesClientMock = new();
+                Mock<Octokit.IBlobsClient> blobsClientMock = new();
+
+                foreach (SubscriptionInfo subscriptionInfo in subscriptionInfos)
+                {
+                    if (subscriptionInfo.ImageInfo != null)
                     {
-                        SubscriptionInfo subscriptionInfo = subscriptionInfos
-                            .First(info => manifest.FilePath.Contains(
-                                $"{info.Subscription.Manifest.Owner}-{info.Subscription.Manifest.Repo}-{info.Subscription.Manifest.Branch}"));
 
-                        return JsonConvert.SerializeObject(subscriptionInfo.ImageInfo);
-                    });
+                        string generatedFakeSha = Guid.NewGuid().ToString();
+                        treesClientMock
+                            .Setup(o => o.Get(
+                                subscriptionInfo.Subscription.ImageInfo.Owner,
+                                subscriptionInfo.Subscription.ImageInfo.Repo,
+                                It.Is<string>(reference => reference.StartsWith(subscriptionInfo.Subscription.ImageInfo.Branch))))
+                            .ReturnsAsync(new Octokit.TreeResponse("sha", "url", new List<Octokit.TreeItem>
+                            {
+                                new Octokit.TreeItem(
+                                    "dummy-path",
+                                    "mode",
+                                    Octokit.TreeType.Blob,
+                                    0,
+                                    "sha",
+                                    "url"),
+                                new Octokit.TreeItem(
+                                    Path.GetFileName(subscriptionInfo.Subscription.ImageInfo.Path),
+                                    "mode",
+                                    Octokit.TreeType.Blob,
+                                    0,
+                                    generatedFakeSha,
+                                    "url")
+                            }.AsReadOnly(), false));
 
-                return imageInfoServiceMock.Object;
+                        string imageInfoContents = JsonConvert.SerializeObject(subscriptionInfo.ImageInfo);
+                        byte[] imageInfoBytes = Encoding.UTF8.GetBytes(imageInfoContents);
+                        string imageInfoBase64 = Convert.ToBase64String(imageInfoBytes);
+
+                        blobsClientMock
+                            .Setup(o => o.Get(
+                                subscriptionInfo.Subscription.ImageInfo.Owner,
+                                subscriptionInfo.Subscription.ImageInfo.Repo,
+                                generatedFakeSha))
+                            .ReturnsAsync(new Octokit.Blob("nodeId", imageInfoBase64, Octokit.EncodingType.Base64, generatedFakeSha, 0));
+                    }
+                }
+
+                Mock<IOctokitClientFactory> octokitClientFactoryMock = new();
+                octokitClientFactoryMock
+                    .Setup(o => o.CreateTreesClientAsync(It.IsAny<GitHubAuthOptions>()))
+                    .ReturnsAsync(treesClientMock.Object);
+                octokitClientFactoryMock
+                    .Setup(o => o.CreateBlobsClientAsync(It.IsAny<GitHubAuthOptions>()))
+                    .ReturnsAsync(blobsClientMock.Object);
+
+                return octokitClientFactoryMock.Object;
             }
 
             private static bool IsMatchingBranch(GitHubBranch branch)

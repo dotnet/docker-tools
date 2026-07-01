@@ -18,7 +18,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
     {
         private const string VersionRegGroupName = "Version";
 
-        private readonly Lazy<Task<ImageArtifactDetails?>> _imageArtifactDetails;
+        private readonly Lazy<ImageArtifactDetails?> _imageArtifactDetails;
         private static readonly char[] s_pathSeparators = { '/', '\\' };
         private static readonly Regex s_versionRegex = new(@$"^(?<{VersionRegGroupName}>(\d|\.)+).*$");
         private readonly IImageCacheService _imageCacheService;
@@ -26,18 +26,19 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly ImageDigestCache _imageDigestCache;
         private readonly Lazy<ImageNameResolverForMatrix> _imageNameResolver;
 
-        public GenerateBuildMatrixCommand(
-            IManifestJsonService manifestJsonService,
-            IImageInfoService imageInfoService,
-            IImageCacheService imageCacheService,
-            IManifestServiceFactory manifestServiceFactory,
-            ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
+        public GenerateBuildMatrixCommand(IManifestJsonService manifestJsonService, IImageCacheService imageCacheService, IManifestServiceFactory manifestServiceFactory, ILogger<GenerateBuildMatrixCommand> logger) : base(manifestJsonService)
         {
-            ArgumentNullException.ThrowIfNull(imageInfoService);
             _imageCacheService = imageCacheService ?? throw new ArgumentNullException(nameof(imageCacheService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _imageArtifactDetails = new Lazy<Task<ImageArtifactDetails?>>(() =>
-                LoadImageArtifactDetailsAsync(imageInfoService));
+            _imageArtifactDetails = new Lazy<ImageArtifactDetails?>(() =>
+            {
+                if (Options.ImageInfoPath != null)
+                {
+                    return ImageInfoHelper.LoadFromFile(Options.ImageInfoPath, Manifest, skipManifestValidation: true);
+                }
+
+                return null;
+            });
             _imageDigestCache = new ImageDigestCache(
                 new Lazy<IManifestService>(
                     () => manifestServiceFactory.Create(Options.CredentialsOptions)));
@@ -46,32 +47,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         }
 
         protected override string Description => "Generate the Azure DevOps build matrix for building the images";
-
-        private async Task<ImageArtifactDetails?> LoadImageArtifactDetailsAsync(IImageInfoService imageInfoService)
-        {
-            if (!string.IsNullOrWhiteSpace(Options.ImageInfoPath))
-            {
-                return ImageInfoHelper.LoadFromFile(
-                    Options.ImageInfoPath,
-                    Manifest,
-                    skipManifestValidation: true);
-            }
-
-            if (Manifest.Model.ImageInfo is null)
-            {
-                return null;
-            }
-
-            string imageInfoContent = await imageInfoService.PullImageInfoArtifactAsync(
-                Manifest,
-                string.IsNullOrWhiteSpace(Options.ImageInfoRegistryOverride) ? Manifest.Model.Registry : Options.ImageInfoRegistryOverride,
-                Options.ImageInfoRepoPrefix);
-
-            return ImageInfoHelper.LoadFromContent(
-                imageInfoContent,
-                Manifest,
-                skipManifestValidation: true);
-        }
 
         public override async Task ExecuteAsync()
         {
@@ -435,9 +410,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private async Task<IEnumerable<PlatformInfo>> GetPlatformsAsync()
         {
             IEnumerable<RepoInfo> filteredRepos = Manifest.FilteredRepos.ToList();
-            ImageArtifactDetails? imageArtifactDetails = await _imageArtifactDetails.Value;
 
-            if (imageArtifactDetails is null)
+            if (_imageArtifactDetails.Value is null)
             {
                 return filteredRepos.SelectMany(repo => repo.FilteredImages).SelectMany(image => image.FilteredPlatforms);
             }
@@ -448,7 +422,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                         .SelectMany(image => image.FilteredPlatforms)
                         .Select(platform =>
                         {
-                            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, imageArtifactDetails);
+                            (PlatformData Platform, ImageData Image)? matchingPlatform = ImageInfoHelper.GetMatchingPlatformData(platform, repo, _imageArtifactDetails.Value);
                             return (platform, matchingPlatform?.Image, matchingPlatform?.Platform);
                         })
                         .Where(platformMapping => platformMapping.Platform is null || !platformMapping.Platform.IsUnchanged));

@@ -212,7 +212,7 @@ stages:
 ################################################################################
 - stage: Post_Build
   dependsOn: Build
-  condition: and(succeeded(), contains(variables['stages'], 'build'))
+  condition: and(succeededOrFailed(), contains(variables['stages'], 'build'))
   jobs:
   - template: /eng/docker-tools/templates/jobs/post-build.yml@self
     parameters:

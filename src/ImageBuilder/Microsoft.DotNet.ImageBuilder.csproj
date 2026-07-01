@@ -64,5 +64,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ImageBuilder.Models\Microsoft.DotNet.ImageBuilder.Models.csproj" />
+    <ProjectReference Include="..\Infrastructure\Microsoft.DotNet.DockerTools.Infrastructure.csproj" />
   </ItemGroup>
 </Project>

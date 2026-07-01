@@ -15,6 +15,7 @@ ENV NUGET_PACKAGES=/nuget
 COPY NuGet.config ./
 COPY ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj ./ImageBuilder/
 COPY ImageBuilder.Models/Microsoft.DotNet.ImageBuilder.Models.csproj ./ImageBuilder.Models/
+COPY Infrastructure/Microsoft.DotNet.DockerTools.Infrastructure.csproj ./Infrastructure/
 RUN dotnet restore -r win-x64 ./ImageBuilder/Microsoft.DotNet.ImageBuilder.csproj
 
 # copy everything else and publish

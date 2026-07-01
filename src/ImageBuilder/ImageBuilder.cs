@@ -141,6 +141,7 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, ShowManifestSchemaCommand>();
         builder.Services.AddSingleton<ICommand, SignImagesCommand>();
         builder.Services.AddSingleton<ICommand, TrimUnchangedPlatformsCommand>();
+        builder.Services.AddSingleton<ICommand, UpdateCommand>();
         builder.Services.AddSingleton<ICommand, VerifySignaturesCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMarAnnotationIngestionCommand>();
         builder.Services.AddSingleton<ICommand, WaitForMcrDocIngestionCommand>();

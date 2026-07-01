@@ -215,6 +215,12 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             {
                                 labels[OciAnnotations.Source] = Options.SourceRepoUrl;
                                 labels[OciAnnotations.Revision] = _gitService.GetCommitSha(platform.DockerfilePath, useFullHash: true);
+
+                                // Record which Dockerfile the image was built from, relative to the repo root.
+                                // The repo root must be discovered via Git rather than assuming it's the manifest's directory.
+                                string repoRoot = _gitService.GetRepoRoot(platform.DockerfilePath);
+                                labels[ImageBuilderLabels.Dockerfile] =
+                                    PathHelper.NormalizePath(Path.GetRelativePath(repoRoot, platform.DockerfilePath));
                             }
 
                             if (platform.FinalStageFromImage is not null)

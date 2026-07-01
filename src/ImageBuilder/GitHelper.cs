@@ -24,19 +24,7 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
-            // Don't make the assumption that the current working directory is a Git repository
-            // Find the Git repo that contains the file being checked.
-            DirectoryInfo directory = new FileInfo(filePath).Directory;
-            while (!directory.GetDirectories(".git").Any())
-            {
-                directory = directory.Parent;
-
-                if (directory is null)
-                {
-                    throw new InvalidOperationException($"File '{filePath}' is not contained within a Git repository.");
-                }
-            }
-
+            DirectoryInfo directory = GetContainingRepoRoot(filePath);
             filePath = Path.GetRelativePath(directory.FullName, filePath);
 
             string format = useFullHash ? "H" : "h";
@@ -47,6 +35,26 @@ namespace Microsoft.DotNet.ImageBuilder
                 },
                 false,
                 $"Unable to retrieve the latest commit SHA for {filePath}");
+        }
+
+        public static string GetRepoRoot(string path) => GetContainingRepoRoot(path).FullName;
+
+        // Don't make the assumption that the current working directory is a Git repository.
+        // Walk up from the given path to find the Git repo that contains it.
+        private static DirectoryInfo GetContainingRepoRoot(string path)
+        {
+            DirectoryInfo directory = new FileInfo(path).Directory;
+            while (!directory.GetDirectories(".git").Any())
+            {
+                directory = directory.Parent;
+
+                if (directory is null)
+                {
+                    throw new InvalidOperationException($"File '{path}' is not contained within a Git repository.");
+                }
+            }
+
+            return directory;
         }
 
         public static Uri GetArchiveUrl(IGitHubBranchRef branchRef) =>

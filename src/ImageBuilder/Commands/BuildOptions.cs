@@ -61,8 +61,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
 
         private static readonly Option<string?> ImageInfoSourcePathOption = new("--image-info-source-path")
         {
-            Description = "Optional override for source image info. By default, the image info is pulled from the OCI"
-                + " artifact referenced by the manifest's imageInfo source in the target registry."
+            Description = "Path to source image info"
         };
 
         private static readonly Option<string?> SourceRepoOption = new("--source-repo")

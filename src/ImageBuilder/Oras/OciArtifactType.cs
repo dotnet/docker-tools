@@ -18,10 +18,4 @@ public static class OciArtifactType
     /// Microsoft artifact lifecycle metadata.
     /// </summary>
     public const string Lifecycle = "application/vnd.microsoft.artifact.lifecycle";
-
-    /// <summary>
-    /// Image info artifact describing the set of images produced by a build. This value is used
-    /// both as the OCI manifest's artifactType and as the media type of the JSON content layer.
-    /// </summary>
-    public const string ImageInfo = "application/vnd.microsoft.dotnet.image-info.v1+json";
 }

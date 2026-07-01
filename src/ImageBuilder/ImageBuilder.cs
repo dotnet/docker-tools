@@ -96,7 +96,6 @@ public static class ImageBuilder
                 pipeline => pipeline.AddTimeout(TimeSpan.FromSeconds(10)));
 
         builder.Services.AddSingleton<IImageCacheService, ImageCacheService>();
-        builder.Services.AddSingleton<IImageInfoService, ImageInfoService>();
         builder.Services.AddSingleton<IKustoClient, KustoClientWrapper>();
         builder.Services.AddSingleton<ILifecycleMetadataService, LifecycleMetadataService>();
         builder.Services.AddMemoryCache();
@@ -135,7 +134,6 @@ public static class ImageBuilder
         builder.Services.AddSingleton<ICommand, MergeImageInfoCommand>();
         builder.Services.AddSingleton<ICommand, PostPublishNotificationCommand>();
         builder.Services.AddSingleton<ICommand, PublishImageInfoCommand>();
-        builder.Services.AddSingleton<ICommand, PublishImageInfoArtifactCommand>();
         builder.Services.AddSingleton<ICommand, PublishMcrDocsCommand>();
         builder.Services.AddSingleton<ICommand, PullImagesCommand>();
         builder.Services.AddSingleton<ICommand, QueueBuildCommand>();

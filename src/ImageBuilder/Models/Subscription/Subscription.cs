@@ -13,6 +13,9 @@ namespace Microsoft.DotNet.ImageBuilder.Models.Subscription
         public SubscriptionManifest Manifest { get; set; }
 
         [JsonProperty(Required = Required.Always)]
+        public GitFile ImageInfo { get; set; }
+
+        [JsonProperty(Required = Required.Always)]
         public PipelineTrigger PipelineTrigger { get; set; }
 
         public string OsType { get; set; }

@@ -6,9 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
@@ -223,137 +221,24 @@ public class OrasDotNetService(
         return artifactDescriptor.Digest;
     }
 
-    /// <inheritdoc/>
-    public async Task<string> PushArtifactAsync(
-        byte[] content,
-        string mediaType,
-        string artifactType,
-        string registry,
-        string repository,
-        IEnumerable<string> tags,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentNullException.ThrowIfNull(content);
-        ArgumentException.ThrowIfNullOrWhiteSpace(mediaType);
-        ArgumentException.ThrowIfNullOrWhiteSpace(artifactType);
-        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
-        ArgumentException.ThrowIfNullOrWhiteSpace(repository);
-        ArgumentNullException.ThrowIfNull(tags);
-
-        // Build the full registry/repo:tag reference for each tag so they're unambiguous.
-        List<string> taggedReferences = tags
-            .Select(tag => new ImageName(registry, repository, tag, digest: null))
-            .Select(imageName => imageName.ToString())
-            .ToList();
-        if (taggedReferences.Count == 0)
-        {
-            throw new ArgumentException("At least one tag must be provided.", nameof(tags));
-        }
-
-        Repository repo = CreateRepository(registry, repository);
-
-        Descriptor layerDescriptor = Descriptor.Create(content, mediaType);
-        await repo.PushAsync(layerDescriptor, new MemoryStream(content), cancellationToken);
-
-        PackManifestOptions options = new()
-        {
-            Layers = [layerDescriptor]
-        };
-
-        long startTime = Stopwatch.GetTimestamp();
-        Descriptor manifestDescriptor =
-            await Packer.PackManifestAsync(
-                pusher: repo,
-                version: Packer.ManifestVersion.Version1_1,
-                artifactType: artifactType,
-                options: options,
-                cancellationToken);
-
-        // Packer pushes the manifest by digest only. Apply each tag to the same manifest so that
-        // identical content isn't pushed multiple times under different digests.
-        foreach (string taggedReference in taggedReferences)
-        {
-            await repo.TagAsync(manifestDescriptor, taggedReference, cancellationToken);
-        }
-
-        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
-        _logger.LogInformation(
-            "Pushed artifact to {Registry}/{Repository}: digest={Digest}, artifactType={ArtifactType}, tags=[{Tags}] in {Elapsed}",
-            registry, repository, manifestDescriptor.Digest, artifactType, string.Join(", ", taggedReferences), elapsed);
-
-        return manifestDescriptor.Digest;
-    }
-
-    /// <inheritdoc/>
-    public async Task<OciArtifact> PullAsync(
-        string registry,
-        string repository,
-        string tag,
-        CancellationToken cancellationToken = default)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(registry);
-        ArgumentException.ThrowIfNullOrWhiteSpace(repository);
-        ArgumentException.ThrowIfNullOrWhiteSpace(tag);
-
-        ImageName imageName = new(registry, repository, tag, digest: null);
-        string taggedReference = imageName.ToString();
-        Repository repo = CreateRepository(registry, repository);
-
-        long startTime = Stopwatch.GetTimestamp();
-        (Descriptor manifestDescriptor, Stream manifestStream) = await repo.FetchAsync(taggedReference, cancellationToken);
-        Manifest manifest;
-        await using (manifestStream)
-        {
-            manifest = await JsonSerializer.DeserializeAsync<Manifest>(
-                manifestStream,
-                cancellationToken: cancellationToken)
-                ?? throw new InvalidOperationException($"Invalid JSON artifact manifest for '{taggedReference}'.");
-        }
-
-        List<OciBlob> blobs = [];
-        foreach (Descriptor layerDescriptor in manifest.Layers)
-        {
-            await using Stream layerContent = await repo.FetchAsync(layerDescriptor, cancellationToken);
-            using MemoryStream memoryStream = new();
-            await layerContent.CopyToAsync(memoryStream, cancellationToken);
-            blobs.Add(new OciBlob(memoryStream.ToArray(), layerDescriptor));
-        }
-
-        TimeSpan elapsed = Stopwatch.GetElapsedTime(startTime);
-        _logger.LogInformation(
-            "Pulled OCI artifact from {Registry}/{Repository}:{Tag}: manifestDigest={Digest}, artifactType={ArtifactType}, blobs={BlobCount} in {Elapsed}",
-            registry, repository, tag, manifestDescriptor.Digest, manifest.ArtifactType, blobs.Count, elapsed);
-
-        return new OciArtifact(manifestDescriptor, manifest, blobs);
-    }
-
     /// <summary>
     /// Creates an authenticated ORAS repository client for the given reference.
     /// </summary>
     /// <param name="reference">Full registry reference (e.g., "registry.io/repo:tag").</param>
-    private Repository CreateRepository(string reference) =>
-        CreateRepository(Reference.Parse(reference));
-
-    /// <summary>
-    /// Creates an authenticated ORAS repository client for the given registry and repository.
-    /// </summary>
-    /// <param name="registry">Registry host (e.g., "registry.io").</param>
-    /// <param name="repository">Repository name (e.g., "repo").</param>
-    private Repository CreateRepository(string registry, string repository) =>
-        CreateRepository(new Reference(registry, repository));
-
-    private Repository CreateRepository(Reference reference)
+    private Repository CreateRepository(string reference)
     {
+        _logger.LogTrace("Creating ORAS repository for: {Reference}", reference);
+        Reference parsedRef = Reference.Parse(reference);
         _logger.LogTrace(
-            "Creating ORAS repository for: Registry={Registry}, Repository={Repository}, Reference={ContentReference}",
-            reference.Registry, reference.Repository, reference.ContentReference);
+            "Parsed reference: Registry={Registry}, Repository={Repository}, Reference={ContentReference}",
+            parsedRef.Registry, parsedRef.Repository, parsedRef.ContentReference);
 
         HttpClient httpClient = _httpClientFactory.CreateClient(nameof(OrasDotNetService));
         Client authClient = new(httpClient, _credentialProvider, _orasCache);
 
         RepositoryOptions repositoryOptions = new()
         {
-            Reference = reference,
+            Reference = parsedRef,
             Client = authClient
         };
 

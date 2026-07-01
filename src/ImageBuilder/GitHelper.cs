@@ -24,37 +24,34 @@ namespace Microsoft.DotNet.ImageBuilder
 
         public static string GetCommitSha(string filePath, bool useFullHash = false)
         {
-            DirectoryInfo directory = GetContainingRepoRoot(filePath);
-            filePath = Path.GetRelativePath(directory.FullName, filePath);
+            string repoRoot = GetRepoRoot(filePath);
+            filePath = Path.GetRelativePath(repoRoot, filePath);
 
             string format = useFullHash ? "H" : "h";
             return ExecuteHelper.Execute(
                 new ProcessStartInfo("git", $"log -1 --format=format:%{format} {filePath}")
                 {
-                    WorkingDirectory = directory.FullName
+                    WorkingDirectory = repoRoot
                 },
                 false,
                 $"Unable to retrieve the latest commit SHA for {filePath}");
         }
 
-        public static string GetRepoRoot(string path) => GetContainingRepoRoot(path).FullName;
-
         // Don't make the assumption that the current working directory is a Git repository.
-        // Walk up from the given path to find the Git repo that contains it.
-        private static DirectoryInfo GetContainingRepoRoot(string path)
+        // Walk up from the given path to find the root of the containing Git repository.
+        public static string GetRepoRoot(string path)
         {
-            DirectoryInfo directory = new FileInfo(path).Directory;
-            while (!directory.GetDirectories(".git").Any())
-            {
-                directory = directory.Parent;
+            DirectoryInfo directory = Directory.Exists(path) ? new DirectoryInfo(path) : new FileInfo(path).Directory;
 
-                if (directory is null)
-                {
-                    throw new InvalidOperationException($"File '{path}' is not contained within a Git repository.");
-                }
+            // The repository root is marked by a ".git" entry. It's a directory in a normal
+            // checkout, but a file (a gitdir pointer) in linked worktrees and submodules.
+            while (!directory.EnumerateFileSystemInfos(".git").Any())
+            {
+                directory = directory.Parent
+                    ?? throw new InvalidOperationException($"'{path}' is not contained within a Git repository.");
             }
 
-            return directory;
+            return directory.FullName;
         }
 
         public static Uri GetArchiveUrl(IGitHubBranchRef branchRef) =>

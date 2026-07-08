@@ -1,1 +1,77 @@
 # Microsoft.DotNet.Automation
+
+`Microsoft.DotNet.Automation` is a library for declaratively managing
+pull requests and (eventually) issues.
+
+This pattern is most useful for automation that repeatedly opens or updates
+similar pull requests or issues, like dependency or version updates.
+
+## Features
+
+| Feature | GitHub | Azure DevOps |
+| ------- | ------ | ------------ |
+| Pull requests | ✅ | - |
+| Issues | - | - |
+| Groups of issues | - | - |
+
+The feature matrix will be filled out incrementally (as needed) in order to
+accomplish https://github.com/dotnet/docker-tools/issues/1658.
+
+## Usage
+
+### Open a pull request
+
+```csharp
+using Microsoft.DotNet.Automation;
+using Microsoft.DotNet.Automation.GitHub;
+
+// Instantiate the pull request manager.
+var pullRequestManager = new PullRequestManager(
+    token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "",
+    upstream: new GitHubRepo("dotnet", "example"),
+    identity: new AutomationIdentity("bot", "bot@example.com"),
+    // Optional args:
+    // To submit the PR from a fork:
+    // fork: new GitHubRepo("bot-account", "example"),
+    // Microsoft.Extensions.Logging support:
+    // loggerFactory: ...
+);
+
+// Declare the pull request that you want to create.
+var pullRequest = new PullRequestDefinition(
+    // `Key` is the sole method used to identify pull requests managed by this automation.
+    // There will never be two pull requests open against the same repo with the same key.
+    // To open two simultaneous pull requests against the same repo, use different keys.
+    // All other properties of a pull request definition are free to change between runs.
+    Key: "version-updates/update-generated-files",
+    Title: "Update dependencies",
+    Body: "...",
+    TargetBranch: "main",
+    ApplyChanges: async (git, ct) =>
+    {
+        string generatedFile = Path.Combine(git.WorkspaceDirectory, "generated.txt");
+        await File.WriteAllTextAsync(generatedFile, "...", ct);
+        await git.CommitAsync("Update generated.txt", ct);
+    }
+);
+
+// The manager either creates a new pull request or updates the existing pull
+// request if one is already open.
+PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
+    definition: pullRequest,
+
+    // Update strategies:
+    // - Append: take the existing branch and add new commits on top.
+    // - Replace: take the latest changes from the target branch, make commits
+    //   on top, and force push to the source branch.
+    updateStrategy: PullRequestUpdateStrategy.Append,
+
+    // - Proceed: ignore commits that weren't authored by this automation and
+    //   continue with the chosen update strategy.
+    // - Stop: refuse to make changes to a PR if it contains commits that
+    //   weren't authored by this automation.
+    onForeignCommits: ForeignCommitPolicy.Proceed,
+
+    cancellationToken: ct
+);
+```

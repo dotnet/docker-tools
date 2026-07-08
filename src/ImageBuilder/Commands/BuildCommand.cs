@@ -26,6 +26,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
         private readonly IAzureTokenCredentialProvider _tokenCredentialProvider;
         private readonly IImageCacheService _imageCacheService;
         private readonly Lazy<ImageNameResolverForBuild> _imageNameResolver;
+        private readonly Lazy<Oras.IOrasService> _orasService;
         private readonly Lazy<string?> _storageAccountToken;
 
         public BuildCommand(
@@ -38,7 +39,8 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             IManifestServiceFactory manifestServiceFactory,
             IRegistryCredentialsProvider registryCredentialsProvider,
             IAzureTokenCredentialProvider tokenCredentialProvider,
-            IImageCacheService imageCacheService) : base(manifestJsonService)
+            IImageCacheService imageCacheService,
+            Oras.IOrasServiceFactory orasServiceFactory) : base(manifestJsonService)
         {
             _dockerService = new DockerServiceCache(dockerService ?? throw new ArgumentNullException(nameof(dockerService)));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -53,6 +55,10 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             ArgumentNullException.ThrowIfNull(manifestServiceFactory);
             _manifestService = new Lazy<IManifestService>(() =>
                 manifestServiceFactory.Create(Options.CredentialsOptions));
+
+            ArgumentNullException.ThrowIfNull(orasServiceFactory);
+            _orasService = new Lazy<Oras.IOrasService>(() =>
+                orasServiceFactory.Create(Options.CredentialsOptions));
 
             _imageNameResolver = new Lazy<ImageNameResolverForBuild>(() =>
                 new ImageNameResolverForBuild(
@@ -213,6 +219,43 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                     platformData.BaseImageDigest =
                                        await imageDigestCache.GetLocalImageDigestAsync(
                                            _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
+                                }
+
+                                // Attach build metadata to the pushed image as an OCI referrer artifact rather than
+                                // as image labels, which would propagate to downstream images. Referrers require the
+                                // subject to exist in the registry, so this happens after the push.
+                                Dictionary<string, string> annotations = [];
+                                if (!string.IsNullOrEmpty(Options.SourceRepoUrl))
+                                {
+                                    annotations[ImageBuilderAnnotations.Source] = Options.SourceRepoUrl;
+                                    annotations[ImageBuilderAnnotations.Revision] = _gitService.GetCommitSha(platform.DockerfilePath, useFullHash: true);
+
+                                    // The Dockerfile path is relative to the repo root, which must be discovered via
+                                    // Git rather than assumed to be the manifest's directory.
+                                    string repoRoot = _gitService.GetRepoRoot(platform.DockerfilePath);
+                                    annotations[ImageBuilderAnnotations.Dockerfile] =
+                                        PathHelper.NormalizePath(Path.GetRelativePath(repoRoot, platform.DockerfilePath));
+                                }
+
+                                if (platform.FinalStageFromImage is not null)
+                                {
+                                    annotations[ImageBuilderAnnotations.BaseName] = _imageNameResolver.Value.GetFromImagePublicTag(platform.FinalStageFromImage);
+                                    if (!string.IsNullOrEmpty(platformData.BaseImageDigest))
+                                    {
+                                        annotations[ImageBuilderAnnotations.BaseDigest] = DockerHelper.GetDigestSha(platformData.BaseImageDigest);
+                                    }
+                                }
+
+                                if (annotations.Count > 0 && concreteTags.Count > 0)
+                                {
+                                    // Attach by digest so the metadata binds to the exact manifest that was built.
+                                    string? subjectDigest = await imageDigestCache.GetLocalImageDigestAsync(
+                                        concreteTags[0].FullyQualifiedName, Options.IsDryRun);
+                                    if (!string.IsNullOrEmpty(subjectDigest))
+                                    {
+                                        await _orasService.Value.AttachArtifactAsync(
+                                            subjectDigest, Oras.OciArtifactType.ImageInfoReferrer, annotations);
+                                    }
                                 }
                             }
                         }

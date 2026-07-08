@@ -34,7 +34,6 @@ namespace Microsoft.DotNet.ImageBuilder
             string platform,
             IEnumerable<string> tags,
             IDictionary<string, string?> buildArgs,
-            IDictionary<string, string> labels,
             IEnumerable<string> dockerBuildOptions,
             bool isRetryEnabled,
             bool isDryRun) =>
@@ -44,7 +43,6 @@ namespace Microsoft.DotNet.ImageBuilder
                 platform,
                 tags,
                 buildArgs,
-                labels,
                 dockerBuildOptions,
                 isRetryEnabled,
                 isDryRun);

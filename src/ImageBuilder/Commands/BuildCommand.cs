@@ -194,33 +194,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                             builtTags.AddRange(allTagInfos);
                             builtTagNames.UnionWith(allTags);
 
-                            Dictionary<string, string> labels = [];
-                            if (!string.IsNullOrEmpty(Options.SourceRepoUrl))
-                            {
-                                labels[OciAnnotations.Source] = Options.SourceRepoUrl;
-                                labels[OciAnnotations.Revision] = _gitService.GetCommitSha(platform.DockerfilePath, useFullHash: true);
-
-                                // Record which Dockerfile the image was built from, relative to the repo root.
-                                // The repo root must be discovered via Git rather than assuming it's the manifest's directory.
-                                string repoRoot = _gitService.GetRepoRoot(platform.DockerfilePath);
-                                labels[ImageBuilderLabels.Dockerfile] =
-                                    PathHelper.NormalizePath(Path.GetRelativePath(repoRoot, platform.DockerfilePath));
-                            }
-
-                            if (platform.FinalStageFromImage is not null)
-                            {
-                                labels[OciAnnotations.BaseName] =
-                                    _imageNameResolver.Value.GetFromImagePublicTag(platform.FinalStageFromImage);
-
-                                string? baseImageDigest = await imageDigestCache.GetLocalImageDigestAsync(
-                                    _imageNameResolver.Value.GetFromImageLocalTag(platform.FinalStageFromImage), Options.IsDryRun);
-                                if (!string.IsNullOrEmpty(baseImageDigest))
-                                {
-                                    labels[OciAnnotations.BaseDigest] = DockerHelper.GetDigestSha(baseImageDigest);
-                                }
-                            }
-
-                            BuildImage(platform, allTags, labels);
+                            BuildImage(platform, allTags);
                             builtPlatforms.Add(platformData);
 
                             if (Options.IsPushEnabled)
@@ -518,7 +492,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
             }
         }
 
-        private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags, IDictionary<string, string> labels)
+        private void BuildImage(PlatformInfo platform, IEnumerable<string> allTags)
         {
             ValidatePlatformIsCompatibleWithBaseImage(platform);
 
@@ -532,7 +506,6 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                     platform.PlatformLabel,
                     allTags,
                     GetBuildArgs(platform),
-                    labels,
                     GetDockerBuildOptions(),
                     Options.IsRetryEnabled,
                     Options.IsDryRun);

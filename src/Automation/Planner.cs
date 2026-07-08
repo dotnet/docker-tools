@@ -34,10 +34,12 @@ public static class Planner
 
         if (hasContentDiff)
         {
+            bool forcePush = existingPullRequest is null || updateStrategy == PullRequestUpdateStrategy.Replace;
+
             operations.Add(new PushCommitsOperation(
                 workspaceDirectory,
                 desiredState.Key,
-                updateStrategy));
+                forcePush));
         }
 
         if (existingPullRequest is null)

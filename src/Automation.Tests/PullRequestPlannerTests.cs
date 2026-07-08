@@ -85,8 +85,32 @@ public sealed class PullRequestPlannerTests
                 onForeignCommits: OnForeignCommits);
     };
 
+    // If no PR exists, and there are changes to be made, then a new PR is
+    // always created.
     [TestMethod]
     public void ChangesWithNoPR_CreatesNewPR()
+    {
+        var scenario =
+            from desiredState in GenPullRequestState
+            from targetBranch in GenTargetBranchState
+            from updateStrategy in GenUpdateStrategy
+            from onForeignCommits in GenForeignCommitPolicy
+                // Collision should be very unlikely, but filter it out anyways
+            where desiredState.TreeHash != targetBranch.TreeHash
+            select new PullRequestScenario(
+                DesiredState: desiredState,
+                TargetBranch: targetBranch,
+                ExistingPullRequest: null,
+                UpdateStrategy: updateStrategy,
+                OnForeignCommits: onForeignCommits);
+
+        scenario.Sample(s => s.Plan().OfType<CreatePullRequestOperation>().Count() == 1);
+    }
+
+    // If no PR exists, and there are changes to be made, the source branch is
+    // always force pushed to reset it to the state of the target branch.
+    [TestMethod]
+    public void ChangesWithNoPR_ResetsExistingBranch()
     {
         var scenario =
             from desiredState in GenPullRequestState
@@ -102,7 +126,7 @@ public sealed class PullRequestPlannerTests
                 UpdateStrategy: updateStrategy,
                 OnForeignCommits: onForeignCommits);
 
-        scenario.Sample(s => s.Plan().OfType<CreatePullRequestOperation>().Count() == 1);
+        scenario.Sample(s => s.Plan().OfType<PushCommitsOperation>().Single().ForcePush);
     }
 
     // For all scenarios where the desired tree is already present in an
@@ -151,7 +175,7 @@ public sealed class PullRequestPlannerTests
         scenario.Sample(s => !s.Plan().OfType<PushCommitsOperation>().Any());
     }
 
-    // create operation is only ever produced when no pull request exists.
+    // If there is already an open PR, never decide to create a second one.
     [TestMethod]
     public void ExistingPR_DoesNotCreateNewPR()
     {

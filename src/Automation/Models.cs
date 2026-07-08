@@ -97,7 +97,7 @@ public sealed record CommitInfo(string Sha, string AuthorName, string AuthorEmai
 
 // TODO: Use C# 15 unions after .NET 11's release
 public interface IOperation;
-public sealed record PushCommitsOperation(string WorkspaceDirectory, string SourceBranch, PullRequestUpdateStrategy Strategy) : IOperation;
+public sealed record PushCommitsOperation(string WorkspaceDirectory, string SourceBranch, bool ForcePush) : IOperation;
 public sealed record CreatePullRequestOperation(string Title, string Body, string SourceBranch, string TargetBranch) : IOperation;
 public sealed record UpdateTitleOperation(int Number, string Title) : IOperation;
 public sealed record UpdateBodyOperation(int Number, string Body) : IOperation;

@@ -61,9 +61,13 @@ PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
     definition: pullRequest,
 
     // Update strategies:
-    // - Append: take the existing branch and add new commits on top.
-    // - Replace: take the latest changes from the target branch, make commits
-    //   on top, and force push to the source branch.
+    // - Append: for an existing pull request, take the source branch and add new
+    //   commits on top.
+    // - Replace: for an existing pull request, take the latest changes from the
+    //   target branch, make commits on top, and force push to the source branch.
+    //
+    // When no pull request exists, the source branch is reset to the state of
+    // the target branch no matter which strategy is selected.
     updateStrategy: PullRequestUpdateStrategy.Append,
 
     // - Proceed: ignore commits that weren't authored by this automation and

@@ -122,7 +122,7 @@ internal sealed class GitHubRepoHost(
         string fromSha = existingLine is null ? string.Empty : existingLine.Split('\t')[0];
         string toSha = await Git.RunAsync(_gitLogger, secret: null, dir, cancellationToken, "rev-parse", "HEAD");
 
-        bool forcePush = existingLine is not null && operation.Strategy == PullRequestUpdateStrategy.Replace;
+        bool forcePush = operation.ForcePush;
         string[] pushArgs = forcePush
             ? ["push", "--force", authUrl, $"HEAD:{remoteRef}"]
             : ["push", authUrl, $"HEAD:{remoteRef}"];

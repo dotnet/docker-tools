@@ -18,25 +18,25 @@ public static class ImageBuilderAnnotations
     /// <summary>
     /// URL of the source code repository the image was built from.
     /// </summary>
-    public const string Source = "com.microsoft.imagebuilder.source";
+    public const string Source = "vnd.microsoft.imagebuilder.source";
 
     /// <summary>
     /// Source control revision (commit) the image was built from.
     /// </summary>
-    public const string Revision = "com.microsoft.imagebuilder.revision";
+    public const string Revision = "vnd.microsoft.imagebuilder.revision";
 
     /// <summary>
     /// Path of the Dockerfile the image was built from, relative to the root of the source repository.
     /// </summary>
-    public const string Dockerfile = "com.microsoft.imagebuilder.dockerfile";
+    public const string Dockerfile = "vnd.microsoft.imagebuilder.dockerfile";
 
     /// <summary>
     /// Image reference of the base image the image was built from.
     /// </summary>
-    public const string BaseName = "com.microsoft.imagebuilder.base.name";
+    public const string BaseName = "vnd.microsoft.imagebuilder.base.name";
 
     /// <summary>
     /// Digest of the base image the image was built from.
     /// </summary>
-    public const string BaseDigest = "com.microsoft.imagebuilder.base.digest";
+    public const string BaseDigest = "vnd.microsoft.imagebuilder.base.digest";
 }

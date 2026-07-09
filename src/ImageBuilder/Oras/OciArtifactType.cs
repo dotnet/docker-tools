@@ -27,5 +27,4 @@ public static class OciArtifactType
     /// Microsoft artifact lifecycle metadata.
     /// </summary>
     public const string Lifecycle = "application/vnd.microsoft.artifact.lifecycle";
-
 }

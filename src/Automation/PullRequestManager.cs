@@ -82,15 +82,16 @@ public sealed class PullRequestManager(
         // commits stack on top and the push fast-forward. Otherwise branch fresh from the
         // target branch: there is nothing to stack on (no pull request), or Replace will
         // overwrite the branch entirely with a force-push.
-        bool stackOnExistingBranch =
-            existing is not null && updateStrategy == PullRequestUpdateStrategy.Append;
-        string cloneBranch = stackOnExistingBranch ? definition.Key : definition.TargetBranch;
+        bool appendToExistingPullRequest = existing is not null && updateStrategy == PullRequestUpdateStrategy.Append;
+        GitHubRepo pullRequestSourceRepo = fork ?? upstream;
+        GitHubRepo cloneRepo = appendToExistingPullRequest ? pullRequestSourceRepo : upstream;
+        string cloneBranch = appendToExistingPullRequest ? definition.Key : definition.TargetBranch;
 
-        _logger.LogInformation("Cloning {Url} branch '{Branch}'.", upstream.GetCloneUrl(), cloneBranch);
+        _logger.LogInformation("Cloning {Url} branch '{Branch}'.", cloneRepo.GetCloneUrl(), cloneBranch);
 
         using GitWorkspace workspace = await GitWorkspace.CloneAsync(
             _gitLogger,
-            upstream.GetAuthenticatedCloneUrl(token),
+            cloneRepo.GetAuthenticatedCloneUrl(token),
             cloneBranch,
             identity.AuthorName,
             identity.AuthorEmail,

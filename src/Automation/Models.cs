@@ -4,6 +4,14 @@
 
 namespace Microsoft.DotNet.Automation;
 
+/// <summary>
+/// Defines the desired pull request content and the changes that produce it.
+/// </summary>
+/// <param name="Key">The source branch name used to identify and update the pull request.</param>
+/// <param name="Title">The desired pull request title.</param>
+/// <param name="Body">The desired pull request body.</param>
+/// <param name="TargetBranch">The branch the pull request targets.</param>
+/// <param name="ApplyChanges">Applies the desired workspace changes before the automation commits them.</param>
 public sealed record PullRequestDefinition(
     string Key,
     string Title,
@@ -13,6 +21,9 @@ public sealed record PullRequestDefinition(
 
 internal sealed record PullRequestState(string Key, string Title, string Body, string TargetBranch, string TreeHash);
 
+/// <summary>
+/// Determines how commits are pushed when updating an existing pull request branch.
+/// </summary>
 public enum PullRequestUpdateStrategy
 {
     /// <summary>
@@ -26,6 +37,9 @@ public enum PullRequestUpdateStrategy
     Replace,
 }
 
+/// <summary>
+/// Determines how existing pull request commits from other authors are handled.
+/// </summary>
 public enum ForeignCommitPolicy
 {
     /// <summary>
@@ -88,6 +102,8 @@ internal sealed record TargetBranchState(string TreeHash);
 /// <summary>
 /// The automation's git identity, used to distinguish its own commits from foreign ones.
 /// </summary>
+/// <param name="AuthorName">The git author name used for automation commits.</param>
+/// <param name="AuthorEmail">The git author email used for automation commits.</param>
 public sealed record AutomationIdentity(string AuthorName, string AuthorEmail);
 
 /// <summary>

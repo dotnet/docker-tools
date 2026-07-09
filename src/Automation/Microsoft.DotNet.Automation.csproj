@@ -8,6 +8,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <PropertyGroup Label="Documentation Settings">
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Arcade suppresses CS1591 by default. Remove it so missing XML docs on public API fail the build. -->
+    <NoWarn>$(NoWarn.Replace(';1591', ''))</NoWarn>
+  </PropertyGroup>
+
   <PropertyGroup Label="Packaging Settings">
     <IsPackable>true</IsPackable>
     <Description>Declarative git automation library.</Description>

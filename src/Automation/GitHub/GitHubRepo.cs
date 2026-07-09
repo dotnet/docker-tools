@@ -4,6 +4,11 @@
 
 namespace Microsoft.DotNet.Automation.GitHub;
 
+/// <summary>
+/// Identifies a GitHub repository by owner and name.
+/// </summary>
+/// <param name="Owner">The repository owner or organization.</param>
+/// <param name="Name">The repository name.</param>
 public sealed record GitHubRepo(string Owner, string Name);
 
 internal static class GitHubRepoExtensions

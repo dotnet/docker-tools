@@ -14,6 +14,7 @@ using FluentAssertions;
 using Microsoft.DotNet.ImageBuilder.Commands;
 using Microsoft.DotNet.ImageBuilder.Models.Image;
 using Microsoft.DotNet.ImageBuilder.Models.Manifest;
+using Microsoft.DotNet.ImageBuilder.Oras;
 using Microsoft.DotNet.ImageBuilder.Tests.Helpers;
 using Microsoft.DotNet.ImageBuilder.ViewModel;
 using Moq;

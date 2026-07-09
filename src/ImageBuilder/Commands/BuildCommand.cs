@@ -254,7 +254,7 @@ namespace Microsoft.DotNet.ImageBuilder.Commands
                                     if (!string.IsNullOrEmpty(subjectDigest))
                                     {
                                         await _orasService.Value.AttachArtifactAsync(
-                                            subjectDigest, Oras.OciArtifactType.ImageInfoReferrer, annotations);
+                                            subjectDigest, Oras.OciArtifactType.Empty, annotations);
                                     }
                                 }
                             }

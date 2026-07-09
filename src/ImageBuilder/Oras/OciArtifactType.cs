@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using OrasProject.Oras.Oci;
+
 namespace Microsoft.DotNet.ImageBuilder.Oras;
 
 /// <summary>
@@ -9,6 +11,13 @@ namespace Microsoft.DotNet.ImageBuilder.Oras;
 /// </summary>
 public static class OciArtifactType
 {
+    /// <summary>
+    /// The "empty" OCI artifact type. Used for referrer artifacts whose data is carried entirely in
+    /// the manifest's annotations rather than in a content blob, matching the behavior of
+    /// <c>oras attach</c> when no files are provided.
+    /// </summary>
+    public const string Empty = MediaType.EmptyJson;
+
     /// <summary>
     /// Notary v2 signature envelope.
     /// </summary>
@@ -19,10 +28,4 @@ public static class OciArtifactType
     /// </summary>
     public const string Lifecycle = "application/vnd.microsoft.artifact.lifecycle";
 
-    /// <summary>
-    /// Referrer artifact that records build metadata (source repo, revision, base image, Dockerfile)
-    /// for a single image as OCI annotations on the referrer manifest. Attached to each built image
-    /// so that rebuild decisions can be made from the registry without an external image-info store.
-    /// </summary>
-    public const string ImageInfoReferrer = "application/vnd.microsoft.imagebuilder.image-info.v1+json";
 }

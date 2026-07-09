@@ -6,7 +6,7 @@ namespace Microsoft.DotNet.Automation.GitHub;
 
 public sealed record GitHubRepo(string Owner, string Name);
 
-public static class GitHubRepoExtensions
+internal static class GitHubRepoExtensions
 {
     public static Uri GetCloneUrl(this GitHubRepo repo) =>
         new($"https://github.com/{repo.Owner}/{repo.Name}");

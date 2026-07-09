@@ -4,7 +4,7 @@
 
 namespace Microsoft.DotNet.Automation;
 
-public static class Planner
+internal static class Planner
 {
     public static IEnumerable<IOperation> Plan(
         string workspaceDirectory,

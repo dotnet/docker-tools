@@ -20,4 +20,8 @@
     <PackageReference Include="Octokit" Version="14.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Microsoft.DotNet.Automation.Tests" />
+  </ItemGroup>
+
 </Project>

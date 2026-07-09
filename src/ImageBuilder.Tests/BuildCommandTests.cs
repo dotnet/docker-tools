@@ -598,7 +598,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests
             orasServiceMock.Verify(
                 o => o.AttachArtifactAsync(
                     imageDigest,
-                    OciArtifactType.Empty,
+                    OciArtifactType.ImageInfo,
                     It.Is<IDictionary<string, string>>(annotations =>
                         annotations.Count == 5 &&
                         annotations[ImageBuilderAnnotations.Source] == sourceRepoUrl &&

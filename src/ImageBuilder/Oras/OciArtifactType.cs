@@ -2,8 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using OrasProject.Oras.Oci;
-
 namespace Microsoft.DotNet.ImageBuilder.Oras;
 
 /// <summary>
@@ -12,11 +10,9 @@ namespace Microsoft.DotNet.ImageBuilder.Oras;
 public static class OciArtifactType
 {
     /// <summary>
-    /// The "empty" OCI artifact type. Used for referrer artifacts whose data is carried entirely in
-    /// the manifest's annotations rather than in a content blob, matching the behavior of
-    /// <c>oras attach</c> when no files are provided.
+    /// ImageBuilder metadata referrer for image build information stored in manifest annotations.
     /// </summary>
-    public const string Empty = MediaType.EmptyJson;
+    public const string ImageInfo = "application/vnd.microsoft.imagebuilder.image-info.v1";
 
     /// <summary>
     /// Notary v2 signature envelope.

@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text.RegularExpressions;
+
 namespace Microsoft.DotNet.Automation;
 
 /// <summary>
@@ -12,12 +14,51 @@ namespace Microsoft.DotNet.Automation;
 /// <param name="Body">The desired pull request body.</param>
 /// <param name="TargetBranch">The branch the pull request targets.</param>
 /// <param name="ApplyChanges">Applies the desired workspace changes before the automation commits them.</param>
-public sealed record PullRequestDefinition(
+public sealed partial record PullRequestDefinition(
     string Key,
     string Title,
     string Body,
     string TargetBranch,
-    Func<IGitContext, CancellationToken, Task> ApplyChanges);
+    Func<IGitContext, CancellationToken, Task> ApplyChanges)
+{
+    private string _key = ValidateKey(Key);
+
+    /// <summary>
+    /// The source branch name used to identify and update the pull request.
+    /// </summary>
+    public string Key
+    {
+        get => _key;
+        init => _key = ValidateKey(value);
+    }
+
+    private static string ValidateKey(string key)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(key, nameof(Key));
+
+        bool hasValidComponents = key
+            .Split('/')
+            .All(component =>
+                ValidKeyComponentRegex.IsMatch(component)
+                && !component.EndsWith(".lock", StringComparison.Ordinal));
+
+        if (key.StartsWith('-') || !hasValidComponents)
+        {
+            throw new ArgumentException(
+                $"'{key}' is not a valid pull request key. Use slash-separated components containing " +
+                "ASCII letters, digits, underscores, dashes, and periods. Periods must separate non-empty " +
+                "groups, components cannot end in '.lock', and the key cannot start with a dash.",
+                nameof(Key));
+        }
+
+        return key;
+    }
+
+    // Matches one slash-separated component containing ASCII letters, digits, underscores,
+    // and dashes, with periods allowed only between non-empty groups.
+    [GeneratedRegex(@"^[A-Za-z0-9_-]+(?:\.[A-Za-z0-9_-]+)*$", RegexOptions.CultureInvariant)]
+    private static partial Regex ValidKeyComponentRegex { get; }
+}
 
 internal sealed record PullRequestState(string Key, string Title, string Body, string TargetBranch, string TreeHash);
 

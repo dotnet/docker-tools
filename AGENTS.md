@@ -16,7 +16,7 @@ The primary tool is ImageBuilder, a .NET CLI app that orchestrates builds from m
 
 ImageBuilder commands inherit from `Command<TOptions>` and use System.CommandLine.
 The manifest schema starts at `src/ImageBuilder.Models/Manifest/Manifest.cs`; generated image
-metadata starts at `src/ImageBuilder.Models/Image/ImageArtifactDetails.cs`.
+metadata starts at `src/ImageBuilder/Models/Image/ImageArtifactDetails.cs`.
 
 ## Build and validation
 

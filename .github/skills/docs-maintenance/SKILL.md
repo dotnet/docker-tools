@@ -43,8 +43,8 @@ Do not edit files under `eng/common/`; they come from dotnet/arcade and will be 
 | --- | --- |
 | `README.md` | The repository purpose, tool list, or standard build and test entrypoints change. |
 | `AGENTS.md` | Repo-wide project structure, commands, source-of-truth rules, workflows, or agent invariants change. |
-| `.github/instructions/*.md` | Automatically loaded implementation guidance or exemplars change. |
-| `.github/agents/*.md`, `.github/skills/*/SKILL.md` | An opt-in agent or reusable operational workflow changes. |
+| `.github/instructions/*.md` | High-level design guidance that shapes how an agent architects a change needs to be added, updated, or removed. Keep these files focused: they guide structural decisions and should not contain mechanical checklists. |
+| `.github/agents/*.md`, `.github/skills/*/SKILL.md` | An opt-in agent or reusable operational workflow changes. Review skills (such as `reviewing-csharp`) contain mechanical checklists of coding standards enforced during review; update them when a specific standard needs to be added, tightened, or removed. |
 | `src/README.md` | ImageBuilder invocation, command discovery, packaging, or local container-image builds change. |
 | `documentation/manifest-file.md` | Manifest concepts, schema generation, or authoring guidance change. |
 | `documentation/signing.md` | Signing configuration, credentials, certificates, trust stores, or pipeline flow change. |

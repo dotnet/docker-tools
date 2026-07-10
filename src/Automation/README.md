@@ -28,11 +28,7 @@ using Microsoft.DotNet.Automation.GitHub;
 // Instantiate the pull request manager.
 var pullRequestManager = new PullRequestManager(
     token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "",
-    upstream: new GitHubRepo("dotnet", "example"),
     identity: new AutomationIdentity("bot", "bot@example.com"),
-    // Optional args:
-    // To submit the PR from a fork:
-    // fork: new GitHubRepo("bot-account", "example"),
     // Microsoft.Extensions.Logging support:
     // loggerFactory: ...
 );
@@ -59,6 +55,10 @@ var pullRequest = new PullRequestDefinition(
 // request if one is already open.
 PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
     definition: pullRequest,
+    upstream: new GitHubRepo("dotnet", "example"),
+
+    // To submit the PR from a fork:
+    // fork: new GitHubRepo("bot-account", "example"),
 
     // Update strategies:
     // - Append: for an existing pull request, take the source branch and add new
@@ -79,3 +79,29 @@ PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
     cancellationToken: ct
 );
 ```
+
+### Dependency injection
+
+Register pull request automation with a git identity and fixed token. The
+resulting `PullRequestManager` can be injected into application services:
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+
+services.AddPullRequestAutomation(
+    identity: new AutomationIdentity("bot", "bot@example.com"),
+    token: Environment.GetEnvironmentVariable("GITHUB_TOKEN") ?? "");
+```
+
+For more control, register each dependency directly:
+
+```csharp
+services.AddLogging(builder => builder.AddSimpleConsole());
+services.AddSingleton<IProcessRunner, CustomProcessRunner>();
+services.AddSingleton<IGitAccessTokenProvider, GitHubAppTokenProvider>();
+services.AddSingleton(new AutomationIdentity("bot", "bot@example.com"));
+services.AddSingleton<PullRequestManager>();
+```
+
+`IGitAccessTokenProvider` is queried before each operation, so implementations
+can refresh credentials such as GitHub App installation tokens.

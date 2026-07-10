@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.Automation;
 
-internal sealed class GitContext(string workspaceDirectory, ILogger logger) : IGitContext
+internal sealed class GitContext(string workspaceDirectory, Git git, ILogger logger) : IGitContext
 {
     public string WorkspaceDirectory { get; } = workspaceDirectory;
 
@@ -14,17 +14,17 @@ internal sealed class GitContext(string workspaceDirectory, ILogger logger) : IG
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
-        string status = await Git.RunAsync(logger, secret: null, WorkspaceDirectory, cancellationToken, "status", "--porcelain");
+        string status = await git.RunAsync(secret: null, WorkspaceDirectory, cancellationToken, "status", "--porcelain");
         if (string.IsNullOrWhiteSpace(status))
         {
             logger.LogInformation("No changes to commit; working tree is clean.");
             return;
         }
 
-        await Git.RunAsync(logger, secret: null, WorkspaceDirectory, cancellationToken, "add", "--all");
-        await Git.RunAsync(logger, secret: null, WorkspaceDirectory, cancellationToken, "commit", "--message", message);
+        await git.RunAsync(secret: null, WorkspaceDirectory, cancellationToken, "add", "--all");
+        await git.RunAsync(secret: null, WorkspaceDirectory, cancellationToken, "commit", "--message", message);
 
-        string commit = await Git.RunAsync(logger, secret: null, WorkspaceDirectory, cancellationToken, "rev-parse", "HEAD");
+        string commit = await git.RunAsync(secret: null, WorkspaceDirectory, cancellationToken, "rev-parse", "HEAD");
         logger.LogInformation("Committed changes as {Commit}: \"{Message}\".", commit, message);
     }
 }

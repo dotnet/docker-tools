@@ -12,12 +12,11 @@ internal sealed class GitHubRepoHost(
     GitHubRepo sourceRepo,
     string token,
     IGitHubClient client,
-    ILoggerFactory loggerFactory
+    ILoggerFactory loggerFactory,
+    Git git
 ) : IRepoHost
 {
     private readonly ILogger<GitHubRepoHost> _logger = loggerFactory.CreateLogger<GitHubRepoHost>();
-
-    private readonly ILogger _gitLogger = loggerFactory.CreateLogger("Microsoft.DotNet.Automation.Git");
 
     public async Task<ExistingPullRequest?> GetPullRequest(string key, CancellationToken cancellationToken)
     {
@@ -114,13 +113,13 @@ internal sealed class GitHubRepoHost(
         string dir = operation.WorkspaceDirectory;
         string remoteRef = $"refs/heads/{branch}";
 
-        string lsRemote = await Git.RunAsync(_gitLogger, token, dir, cancellationToken, ["ls-remote", "--heads", authUrl, remoteRef]);
+        string lsRemote = await git.RunAsync(token, dir, cancellationToken, ["ls-remote", "--heads", authUrl, remoteRef]);
         string? existingLine = lsRemote
             .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
             .FirstOrDefault(line => line.EndsWith($"\t{remoteRef}", StringComparison.Ordinal));
 
         string fromSha = existingLine is null ? string.Empty : existingLine.Split('\t')[0];
-        string toSha = await Git.RunAsync(_gitLogger, secret: null, dir, cancellationToken, "rev-parse", "HEAD");
+        string toSha = await git.RunAsync(secret: null, dir, cancellationToken, "rev-parse", "HEAD");
 
         bool forcePush = operation.ForcePush;
         string[] pushArgs = forcePush
@@ -131,7 +130,7 @@ internal sealed class GitHubRepoHost(
             "Pushing commit {ToSha} to branch '{Branch}' in {Owner}/{Name}{Force}.",
             toSha, branch, sourceRepo.Owner, sourceRepo.Name, forcePush ? " (force)" : string.Empty);
 
-        await Git.RunAsync(_gitLogger, token, dir, cancellationToken, pushArgs);
+        await git.RunAsync(token, dir, cancellationToken, pushArgs);
 
         Uri commitUrl = sourceRepo.GetCommitUrl(toSha);
         _logger.LogInformation(

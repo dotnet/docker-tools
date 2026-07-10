@@ -2,65 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
 namespace Microsoft.DotNet.Automation;
 
-internal static class Git
+internal sealed class Git(IProcessRunner processRunner, ILogger logger)
 {
-    public static async Task<string> RunAsync(
-        ILogger logger,
+    public async Task<string> RunAsync(
         string? secret,
         string? workingDirectory,
         CancellationToken cancellationToken,
         params string[] args)
     {
-        ProcessStartInfo startInfo = new("git")
-        {
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-        };
-
-        if (workingDirectory is not null)
-        {
-            startInfo.WorkingDirectory = workingDirectory;
-        }
-
-        foreach (string arg in args)
-        {
-            startInfo.ArgumentList.Add(arg);
-        }
-
         logger.LogDebug("Running: git {Args}", Redact(string.Join(' ', args), secret));
 
-        using Process process = Process.Start(startInfo)
-            ?? throw new InvalidOperationException("Failed to start git process.");
-
-        Task<string> outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
-        Task<string> errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
-
-        try
-        {
-            await process.WaitForExitAsync(cancellationToken);
-        }
-        catch (OperationCanceledException)
-        {
-            try
-            {
-                process.Kill(entireProcessTree: true);
-            }
-            catch (Exception ex)
-            {
-                // Best effort; the process may have already exited.
-                logger.LogWarning(ex, "Failed to kill git process after cancellation.");
-            }
-            throw;
-        }
-
-        string output = await outputTask;
-        string error = await errorTask;
+        ProcessResult result = await processRunner.RunAsync(
+            workingDirectory,
+            fileName: "git",
+            args,
+            cancellationToken);
+        string output = result.StandardOutput;
+        string error = result.StandardError;
 
         // git writes progress and other human-readable messages to stderr even on success.
         if (!string.IsNullOrWhiteSpace(error))
@@ -85,10 +47,10 @@ internal static class Git
             );
         }
 
-        if (process.ExitCode != 0)
+        if (result.ExitCode != 0)
         {
             throw new InvalidOperationException(
-                $"Git command failed with exit code {process.ExitCode}.{Environment.NewLine}{error}");
+                $"Git command failed with exit code {result.ExitCode}.{Environment.NewLine}{error}");
         }
 
         return output.Trim();

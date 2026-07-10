@@ -11,6 +11,7 @@ internal sealed class GitWorkspace(string directory, ILogger logger) : IDisposab
     public string WorkingDirectory { get; } = directory;
 
     public static async Task<GitWorkspace> CloneAsync(
+        Git git,
         ILogger logger,
         Uri cloneUrl,
         string branch,
@@ -23,12 +24,12 @@ internal sealed class GitWorkspace(string directory, ILogger logger) : IDisposab
         // The clone URL embeds the access token as "x-access-token:TOKEN"; scrub that from logs.
         string secret = cloneUrl.UserInfo;
 
-        var git = async (string[] args, string? directory = null) =>
-            await Git.RunAsync(logger, secret, directory, ct, args);
+        var runGit = async (string[] args, string? directory = null) =>
+            await git.RunAsync(secret, directory, ct, args);
 
         try
         {
-            await git([
+            await runGit([
                 "clone",
                 "--filter=blob:none",
                 "--single-branch",
@@ -39,8 +40,8 @@ internal sealed class GitWorkspace(string directory, ILogger logger) : IDisposab
                 directory,
             ]);
 
-            await git(["config", "user.name", authorName], directory);
-            await git(["config", "user.email", authorEmail], directory);
+            await runGit(["config", "user.name", authorName], directory);
+            await runGit(["config", "user.email", authorEmail], directory);
         }
         catch (Exception exception) when (Directory.Exists(directory))
         {

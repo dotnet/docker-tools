@@ -4,7 +4,7 @@
 
 using CsCheck;
 
-namespace Microsoft.DotNet.Automation.Tests;
+namespace Microsoft.DotNet.GitAutomation.Tests;
 
 [TestClass]
 public sealed class PullRequestPlannerTests

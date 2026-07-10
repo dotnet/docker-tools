@@ -5,7 +5,7 @@
 using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.DotNet.Automation;
+namespace Microsoft.DotNet.GitAutomation;
 
 /// <summary>
 /// Runs external processes using <see cref="Process"/>.

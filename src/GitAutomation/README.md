@@ -1,6 +1,6 @@
-# Microsoft.DotNet.Automation
+# Microsoft.DotNet.GitAutomation
 
-`Microsoft.DotNet.Automation` is a library for declaratively managing
+`Microsoft.DotNet.GitAutomation` is a library for declaratively managing
 pull requests and (eventually) issues.
 
 This pattern is most useful for automation that repeatedly opens or updates
@@ -22,8 +22,8 @@ accomplish https://github.com/dotnet/docker-tools/issues/1658.
 ### Open a pull request
 
 ```csharp
-using Microsoft.DotNet.Automation;
-using Microsoft.DotNet.Automation.GitHub;
+using Microsoft.DotNet.GitAutomation;
+using Microsoft.DotNet.GitAutomation.GitHub;
 
 // Instantiate the pull request manager.
 var pullRequestManager = new PullRequestManager(

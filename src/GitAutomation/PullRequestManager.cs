@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using Microsoft.DotNet.Automation.GitHub;
+using Microsoft.DotNet.GitAutomation.GitHub;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Octokit;
 
-namespace Microsoft.DotNet.Automation;
+namespace Microsoft.DotNet.GitAutomation;
 
 /// <summary>
 /// Creates or updates a pull request to match a definition: clone the branch the
@@ -249,7 +249,7 @@ public sealed class PullRequestManager
 
     private static IGitHubClient CreateClient(string token)
     {
-        var productHeaderValue = new ProductHeaderValue("Microsoft.DotNet.Automation");
+        var productHeaderValue = new ProductHeaderValue("Microsoft.DotNet.GitAutomation");
         var credentials = new Credentials(token);
         return new GitHubClient(productHeaderValue) { Credentials = credentials };
     }

@@ -4,7 +4,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.DotNet.Automation;
+namespace Microsoft.DotNet.GitAutomation;
 
 internal sealed class GitContext(string workspaceDirectory, Git git, ILogger logger) : IGitContext
 {

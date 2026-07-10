@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../Automation/Microsoft.DotNet.Automation.csproj" />
+    <ProjectReference Include="../GitAutomation/Microsoft.DotNet.GitAutomation.csproj" />
   </ItemGroup>
 
 </Project>

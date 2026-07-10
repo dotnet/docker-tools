@@ -4,7 +4,7 @@
 
 using Microsoft.Extensions.Logging;
 
-namespace Microsoft.DotNet.Automation;
+namespace Microsoft.DotNet.GitAutomation;
 
 internal sealed class Git(IProcessRunner processRunner, ILogger logger)
 {

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-namespace Microsoft.DotNet.Automation;
+namespace Microsoft.DotNet.GitAutomation;
 
 /// <summary>
 /// Provides git operations available to a pull request definition while it applies changes.

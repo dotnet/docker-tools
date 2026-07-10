@@ -5,7 +5,7 @@
 using Microsoft.Extensions.Logging;
 using Octokit;
 
-namespace Microsoft.DotNet.Automation.GitHub;
+namespace Microsoft.DotNet.GitAutomation.GitHub;
 
 internal sealed class GitHubRepoHost(
     GitHubRepo targetRepo,

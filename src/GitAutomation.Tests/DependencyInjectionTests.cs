@@ -6,7 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 
-namespace Microsoft.DotNet.Automation.Tests;
+namespace Microsoft.DotNet.GitAutomation.Tests;
 
 [TestClass]
 public sealed class DependencyInjectionTests

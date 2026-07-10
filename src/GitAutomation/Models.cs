@@ -4,7 +4,7 @@
 
 using System.Text.RegularExpressions;
 
-namespace Microsoft.DotNet.Automation;
+namespace Microsoft.DotNet.GitAutomation;
 
 /// <summary>
 /// Defines the desired pull request content and the changes that produce it.

@@ -5,7 +5,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 
 namespace Microsoft.DotNet.GitAutomation;
 
@@ -52,9 +51,7 @@ public static class PullRequestAutomationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(identity);
 
-        services.TryAddSingleton<ILoggerFactory>(NullLoggerFactory.Instance);
-        services.TryAddSingleton<ILogger<ProcessRunner>>(provider =>
-            provider.GetRequiredService<ILoggerFactory>().CreateLogger<ProcessRunner>());
+        services.AddLogging();
         services.TryAddSingleton(identity);
         services.TryAddSingleton<IProcessRunner, ProcessRunner>();
         services.TryAddSingleton<PullRequestManager>();

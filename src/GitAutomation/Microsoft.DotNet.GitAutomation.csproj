@@ -16,6 +16,9 @@
 
   <PropertyGroup Label="Packaging Settings">
     <IsPackable>true</IsPackable>
+    <MajorVersion>0</MajorVersion>
+    <MinorVersion>1</MinorVersion>
+    <PatchVersion>0</PatchVersion>
     <Description>Declarative git automation library.</Description>
     <!-- Octokit does not have a strong name. -->
     <SignAssembly>false</SignAssembly>

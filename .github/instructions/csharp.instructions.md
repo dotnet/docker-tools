@@ -2,65 +2,54 @@
 applyTo: "**/*.cs"
 ---
 
-# C#/.NET Guidelines
+# C# guidance for ImageBuilder
 
-## Coding style
+## Style anchors
 
-For all new C# code:
+The codebase mixes old and modern styles. For new or modified code, use these files as style
+anchors rather than copying patterns from nearby legacy code.
 
-- Use file-scoped namespaces.
-- Use collection expresions - write `[1, 2, 3]` and not `new List<int> { 1, 2, 3 }`.
-- Use explicit type declarations instead of `var` for local variables.
-- Use switch expressions and pattern matching.
-- Use string interpolation (`$"Hello, {name}!"`) instead of `string.Format` or concatenation.
-- Use `"""triple-quoted strings"""` for multi-line string literals. These can be interpolated as well.
-- Use expression-bodied members for simple getters and setters.
+Type of code | Good examples
+------------ | -------------
+Command | `src/ImageBuilder/Commands/Signing/SignImagesCommand.cs`, `src/ImageBuilder/Commands/Signing/SignImagesOptions.cs`
+Service | `src/ImageBuilder/Oras/IOrasService.cs`, `src/ImageBuilder/Oras/OrasDotNetService.cs`
+Configuration | `src/ImageBuilder/Configuration/RegistryAuthentication.cs`, `src/ImageBuilder/Configuration/PublishConfiguration.cs`
+Data type | `src/ImageBuilder/Signing/ImageSigningRequest.cs`
 
-## Naming
+Prefer simple, direct code. Add helper layers, pass-through methods, factories, or interfaces
+only when they remove real complexity.
 
-- Avoid single-letter variable names, except for simple loop counters (e.g. `i`, `j`).
-- Avoid abbreviations or acronyms in names, except for widely known and accepted abbreviations (e.g. `Id`, `Url`, `Http`).
-- Prefer clarity over brevity - a longer descriptive name is better than a short ambiguous one.
+## Commands and inputs
 
-## Code Design Rules
+Expose ImageBuilder functionality through commands. Command classes have one
+`ExecuteAsync()` method.
 
-- Use immutable records instead of classes for DTOs.
-- Do not default to `public` accessibility for members and classes. Follow the least-exposure rule: `private` > `internal` > `protected` > `public`
-- Do not add unused methods/parameters for use cases that were not asked for.
-- Reuse existing methods or services as much as possible.
-- Use composition over inheritance.
-- Use LINQ instead of for loops when working with collections.
-- Place private nested types at the end of the containing class.
+- Use types in `Microsoft.DotNet.ImageBuilder.Configuration`, populated by
+  `appsettings.json`, for strongly typed values that stay constant across invocations of the
+  same pipeline.
+- Define CLI arguments in options classes for values that can vary by invocation, such as
+  paths, switches, prefixes, filters, and timestamps.
+- Some legacy commands use CLI arguments for configuration values. Migrate them only when
+  that work is in scope.
 
-## Error Handling & Edge Cases
+## Services
 
-- Guard early; use `string.IsNullOrWhiteSpace`, `ArgumentNullException.ThrowIfNull`, or `ArgumentNullException.ThrowIfNullOrWhiteSpace`.
-- Avoid using null for control flow.
-- In methods that return collections, return empty collections instead of null.
-- The null-forgiving operator (`!`) is **always** a code smell.
-- Do not add excessive or unnecessary try/catch blocks within the same assembly.
+Commands own orchestration and make the control flow visible. Services encapsulate bounded
+implementation details behind narrow, domain-based APIs; they should not hide the command's
+workflow. Give services predictable behavior, observability, runtime characteristics, and
+failure modes. Use idiomatic .NET patterns.
 
-## Async Best Practices
+## Logging
 
-- All async methods must have names ending with `Async`.
-- Always await async methods - do not "fire and forget".
-- Always accept and pass along a `CancellationToken` in async code.
-- Don’t add `async/await` if you can simply return a Task directly.
+Follow best practices for Microsoft.Extensions.Logging: use message templates with named
+properties instead of interpolation when logging data. Keep info-level logs low-noise and
+put infrastructure details such as HTTP request logs at debug (or lower) level.
 
-## Testing
+## Data types
 
-- Use Shouldly when writing new assertions.
-- Use clear assertions that verify the outcome expressed by the test name.
-- Tests should be able to run in any order or in parallel.
-- Use or add helper methods for constructing mocks and complex test data objects.
-- Avoid disk I/O if possible; use in-memory alternatives or mocks.
-- Do not add "Arrange-Act-Assert" comments.
+Define new data types used by commands and services as immutable snapshots. Choose an
+appropriate immutable representation, such as a record, readonly record struct, or class with
+get-only properties. Prefer LINQ expressions when they keep transformations clear.
 
-## Comments
-
-- Add XML documentation comments for new **public** or **internal** types and members.
-- Primary documentation belongs on interfaces, implementations should use `<inheritdoc/>` unless additional context is needed.
-- Comments that simply restate the member or parameter name do not provide value.
-- Comments should provide additional context or explain non-obvious behavior, especially for parameters.
-- Comments inside methods should explain "why," not "what".
-- Avoid redundant comments that restate the code - not all code needs comments.
+Manifest schema models under `src/ImageBuilder.Models` are an exception: they must remain
+mutable classes for JSON and schema compatibility.

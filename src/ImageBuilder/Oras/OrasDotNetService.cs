@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -18,6 +19,9 @@ using OrasProject.Oras.Oci;
 using OrasProject.Oras.Registry;
 using OrasProject.Oras.Registry.Remote;
 using OrasProject.Oras.Registry.Remote.Auth;
+using Polly;
+using Polly.Retry;
+using Polly.Timeout;
 
 namespace Microsoft.DotNet.ImageBuilder.Oras;
 
@@ -33,6 +37,8 @@ public class OrasDotNetService(
     IRegistryCredentialsHost? credentialsHost = null)
         : IOrasService
 {
+    private const int PushSignatureMaxRetryAttempts = 2;
+
     /// <summary>
     /// Media type for COSE signature envelopes per the Notary v2 spec.
     /// </summary>
@@ -48,6 +54,9 @@ public class OrasDotNetService(
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
+
+    private readonly ResiliencePipeline _pushSignatureRetryPipeline =
+        CreatePushSignatureRetryPipeline(logger);
 
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
@@ -106,10 +115,22 @@ public class OrasDotNetService(
         ArgumentNullException.ThrowIfNull(subjectDescriptor);
         ArgumentNullException.ThrowIfNull(result);
 
-        Repository repository = CreateRepository(result.ImageName);
-
         byte[] payloadBytes = await _fileSystem.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
         Descriptor signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
+
+        return await _pushSignatureRetryPipeline.ExecuteAsync(
+            ct => PushSignatureAttemptAsync(subjectDescriptor, result, signatureLayerDescriptor, payloadBytes, ct),
+            cancellationToken);
+    }
+
+    private async ValueTask<string> PushSignatureAttemptAsync(
+        Descriptor subjectDescriptor,
+        PayloadSigningResult result,
+        Descriptor signatureLayerDescriptor,
+        byte[] payloadBytes,
+        CancellationToken cancellationToken)
+    {
+        Repository repository = CreateRepository(result.ImageName);
 
         using MemoryStream payloadStream = new(payloadBytes);
         await repository.PushAsync(signatureLayerDescriptor, payloadStream, cancellationToken);
@@ -245,4 +266,35 @@ public class OrasDotNetService(
         Repository repository = new(repositoryOptions);
         return repository;
     }
+
+    private static ResiliencePipeline CreatePushSignatureRetryPipeline(ILogger<OrasDotNetService> logger) =>
+        new ResiliencePipelineBuilder()
+            .AddRetry(
+                new RetryStrategyOptions
+                {
+                    ShouldHandle = new PredicateBuilder()
+                        .Handle<TimeoutRejectedException>()
+                        .Handle<HttpRequestException>(IsTransientHttpException),
+                    MaxRetryAttempts = PushSignatureMaxRetryAttempts,
+                    BackoffType = DelayBackoffType.Exponential,
+                    Delay = TimeSpan.FromSeconds(3),
+                    UseJitter = true,
+                    OnRetry = args =>
+                    {
+                        logger.LogWarning(
+                            args.Outcome.Exception,
+                            "Retrying signature push after transient failure in {RetryDelay} (Attempt {RetryAttempt} of {MaxRetryAttempts})",
+                            args.RetryDelay,
+                            args.AttemptNumber + 1,
+                            PushSignatureMaxRetryAttempts);
+                        return default;
+                    },
+                }
+            )
+            .Build();
+
+    private static bool IsTransientHttpException(HttpRequestException exception) =>
+        exception.StatusCode is null
+        || exception.StatusCode is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests
+        || (exception.StatusCode is { } statusCode && (int)statusCode >= 500);
 }

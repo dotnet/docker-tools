@@ -20,6 +20,7 @@
     <MinorVersion>1</MinorVersion>
     <PatchVersion>0</PatchVersion>
     <Description>Declarative git automation library.</Description>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <!-- Octokit does not have a strong name. -->
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
@@ -32,6 +33,10 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="Microsoft.DotNet.GitAutomation.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>

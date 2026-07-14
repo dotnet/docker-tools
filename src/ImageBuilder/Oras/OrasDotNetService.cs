@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 using System.Net.Http;
 using System.Text.Json.Nodes;
 using System.Threading;
@@ -18,6 +19,9 @@ using OrasProject.Oras.Oci;
 using OrasProject.Oras.Registry;
 using OrasProject.Oras.Registry.Remote;
 using OrasProject.Oras.Registry.Remote.Auth;
+using Polly;
+using Polly.Retry;
+using Polly.Timeout;
 
 namespace Microsoft.DotNet.ImageBuilder.Oras;
 
@@ -43,11 +47,15 @@ public class OrasDotNetService(
     /// </summary>
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
+    private const int PushSignatureMaxRetryAttempts = 2;
+
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly Cache _orasCache = new(cache);
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
+
+    private readonly ResiliencePipeline _pushSignatureRetryPipeline = CreatePushSignatureRetryPipeline(logger);
 
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
@@ -106,10 +114,22 @@ public class OrasDotNetService(
         ArgumentNullException.ThrowIfNull(subjectDescriptor);
         ArgumentNullException.ThrowIfNull(result);
 
-        Repository repository = CreateRepository(result.ImageName);
-
         byte[] payloadBytes = await _fileSystem.ReadAllBytesAsync(result.SignedPayloadFilePath, cancellationToken);
         Descriptor signatureLayerDescriptor = Descriptor.Create(payloadBytes, CoseMediaType);
+
+        return await _pushSignatureRetryPipeline.ExecuteAsync(
+            ct => PushSignatureAttemptAsync(subjectDescriptor, result, signatureLayerDescriptor, payloadBytes, ct),
+            cancellationToken);
+    }
+
+    private async ValueTask<string> PushSignatureAttemptAsync(
+        Descriptor subjectDescriptor,
+        PayloadSigningResult result,
+        Descriptor signatureLayerDescriptor,
+        byte[] payloadBytes,
+        CancellationToken cancellationToken)
+    {
+        Repository repository = CreateRepository(result.ImageName);
 
         using MemoryStream payloadStream = new(payloadBytes);
         await repository.PushAsync(signatureLayerDescriptor, payloadStream, cancellationToken);
@@ -245,4 +265,30 @@ public class OrasDotNetService(
         Repository repository = new(repositoryOptions);
         return repository;
     }
+
+    private static ResiliencePipeline CreatePushSignatureRetryPipeline(ILogger<OrasDotNetService> logger) =>
+        new ResiliencePipelineBuilder()
+            .AddRetry(
+                new RetryStrategyOptions
+                {
+                    // Targeted fix for https://github.com/dotnet/docker-tools/issue/2168
+                    ShouldHandle = new PredicateBuilder().Handle<TimeoutRejectedException>(),
+                    MaxRetryAttempts = PushSignatureMaxRetryAttempts,
+                    BackoffType = DelayBackoffType.Exponential,
+                    Delay = TimeSpan.FromSeconds(3),
+                    UseJitter = true,
+                    OnRetry = args =>
+                    {
+                        logger.LogWarning(
+                            args.Outcome.Exception,
+                            "Retrying signature push in {RetryDelay} (Attempt {RetryAttempt} of {MaxRetryAttempts})",
+                            args.RetryDelay,
+                            args.AttemptNumber + 1,
+                            PushSignatureMaxRetryAttempts
+                        );
+                        return default;
+                    },
+                }
+            )
+            .Build();
 }

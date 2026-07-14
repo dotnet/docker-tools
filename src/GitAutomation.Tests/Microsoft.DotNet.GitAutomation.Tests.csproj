@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <SignAssembly>false</SignAssembly>
+    <TestRunnerName>MSTest</TestRunnerName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CsCheck" Version="4.6.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="9.0.17" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../GitAutomation/Microsoft.DotNet.GitAutomation.csproj" />
+  </ItemGroup>
+
+</Project>

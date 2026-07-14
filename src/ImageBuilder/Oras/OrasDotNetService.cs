@@ -37,8 +37,6 @@ public class OrasDotNetService(
     IRegistryCredentialsHost? credentialsHost = null)
         : IOrasService
 {
-    private const int PushSignatureMaxRetryAttempts = 2;
-
     /// <summary>
     /// Media type for COSE signature envelopes per the Notary v2 spec.
     /// </summary>
@@ -49,14 +47,15 @@ public class OrasDotNetService(
     /// </summary>
     private const string CertificateChainAnnotation = "io.cncf.notary.x509chain.thumbprint#S256";
 
+    private const int PushSignatureMaxRetryAttempts = 2;
+
     private readonly IHttpClientFactory _httpClientFactory = httpClientFactory;
     private readonly Cache _orasCache = new(cache);
     private readonly IFileSystem _fileSystem = fileSystem;
     private readonly ILogger<OrasDotNetService> _logger = logger;
     private readonly OrasCredentialProviderAdapter _credentialProvider = new(credentialsProvider, credentialsHost);
 
-    private readonly ResiliencePipeline _pushSignatureRetryPipeline =
-        CreatePushSignatureRetryPipeline(logger);
+    private readonly ResiliencePipeline _pushSignatureRetryPipeline = CreatePushSignatureRetryPipeline(logger);
 
     /// <inheritdoc/>
     public async Task<Descriptor> GetDescriptorAsync(string reference, CancellationToken cancellationToken = default)
@@ -272,9 +271,8 @@ public class OrasDotNetService(
             .AddRetry(
                 new RetryStrategyOptions
                 {
-                    ShouldHandle = new PredicateBuilder()
-                        .Handle<TimeoutRejectedException>()
-                        .Handle<HttpRequestException>(IsTransientHttpException),
+                    // Targeted fix for https://github.com/dotnet/docker-tools/issue/2168
+                    ShouldHandle = new PredicateBuilder().Handle<TimeoutRejectedException>(),
                     MaxRetryAttempts = PushSignatureMaxRetryAttempts,
                     BackoffType = DelayBackoffType.Exponential,
                     Delay = TimeSpan.FromSeconds(3),
@@ -283,18 +281,14 @@ public class OrasDotNetService(
                     {
                         logger.LogWarning(
                             args.Outcome.Exception,
-                            "Retrying signature push after transient failure in {RetryDelay} (Attempt {RetryAttempt} of {MaxRetryAttempts})",
+                            "Retrying signature push in {RetryDelay} (Attempt {RetryAttempt} of {MaxRetryAttempts})",
                             args.RetryDelay,
                             args.AttemptNumber + 1,
-                            PushSignatureMaxRetryAttempts);
+                            PushSignatureMaxRetryAttempts
+                        );
                         return default;
                     },
                 }
             )
             .Build();
-
-    private static bool IsTransientHttpException(HttpRequestException exception) =>
-        exception.StatusCode is null
-        || exception.StatusCode is HttpStatusCode.RequestTimeout or HttpStatusCode.TooManyRequests
-        || (exception.StatusCode is { } statusCode && (int)statusCode >= 500);
 }

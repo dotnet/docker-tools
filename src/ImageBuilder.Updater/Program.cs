@@ -17,6 +17,7 @@ string imageBuilderRef = args[0];
 // Setup services
 using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddSimpleConsole());
 ProcessRunner processRunner = new(loggerFactory.CreateLogger<ProcessRunner>());
+ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Updater");
 CancellationToken cancellationToken = GetCancellationToken();
 (AutomationIdentity identity, string gitHubToken) = await GetCredentialsAsync(processRunner, cancellationToken);
 PullRequestManager pullRequestManager = new(gitHubToken, identity, loggerFactory);
@@ -40,8 +41,14 @@ await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", 
 const string PullRequestTitle = "Update common Docker engineering infrastructure with latest";
 const string CommitMessage = "Update common Docker engineering infrastructure with latest";
 
+List<UpdateOutcome> outcomes = [];
+
+// Run updates for each repo
 foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
 {
+    cancellationToken.ThrowIfCancellationRequested();
+
+    string repositoryName = $"{repository.Owner}/{repository.Name}";
     string key = $"{repository.Name}-{targetBranch}-update-docker-tools";
     string title = $"[{targetBranch}] {PullRequestTitle}";
 
@@ -72,18 +79,53 @@ foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
             await git.CommitAsync(CommitMessage, ct);
         });
 
-    PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
-        definition: definition,
-        upstream: repository,
-        fork: new GitHubRepo(identity.AuthorName, repository.Name),
-        updateStrategy: PullRequestUpdateStrategy.Replace,
-        onForeignCommits: ForeignCommitPolicy.Proceed,
-        cancellationToken: cancellationToken);
+    try
+    {
+        PullRequestResult result = await pullRequestManager.CreateOrUpdateAsync(
+            definition: definition,
+            upstream: repository,
+            fork: new GitHubRepo(identity.AuthorName, repository.Name),
+            updateStrategy: PullRequestUpdateStrategy.Replace,
+            onForeignCommits: ForeignCommitPolicy.Proceed,
+            cancellationToken: cancellationToken);
 
-    Console.WriteLine($"{repository.Owner}/{repository.Name} ({targetBranch}): {result.Action} {result.Url}");
+        string status = result.Url is null ? result.Action.ToString() : $"{result.Action} {result.Url}";
+        outcomes.Add(new(repositoryName, targetBranch, status, Succeeded: true));
+
+        logger.LogInformation(
+            "Update succeeded for {Repository} ({TargetBranch}): {Status}",
+            repositoryName,
+            targetBranch,
+            status);
+    }
+    catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+    {
+        throw;
+    }
+    catch (Exception exception)
+    {
+        logger.LogError(exception, "Update failed for {Repository} ({TargetBranch}).", repositoryName, targetBranch);
+        outcomes.Add(new(repositoryName, targetBranch, exception.Message, Succeeded: false));
+    }
 }
 
-return 0;
+int failureCount = outcomes.Count(outcome => !outcome.Succeeded);
+logger.LogInformation(
+    "Completed updates: {SuccessCount} succeeded, {FailureCount} failed.",
+    outcomes.Count - failureCount,
+    failureCount);
+
+foreach (UpdateOutcome outcome in outcomes)
+{
+    logger.LogInformation(
+        "{Result}: {Repository} ({TargetBranch}): {Status}",
+        outcome.Succeeded ? "Succeeded" : "Failed",
+        outcome.Repository,
+        outcome.TargetBranch,
+        outcome.Status);
+}
+
+return failureCount == 0 ? 0 : 1;
 
 static CancellationToken GetCancellationToken()
 {
@@ -171,3 +213,5 @@ static async Task<string> RunProcessAsync(
 
     return output;
 }
+
+sealed record UpdateOutcome(string Repository, string TargetBranch, string Status, bool Succeeded);

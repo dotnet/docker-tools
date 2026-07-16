@@ -39,7 +39,7 @@ await RunProcessAsync(processRunner, workingDirectory: null, "docker", ["pull", 
 ];
 
 const string PullRequestTitle = "Update common Docker engineering infrastructure with latest";
-const string CommitMessage = "Update common Docker engineering infrastructure with latest";
+string commitMessage = $"Update common Docker engineering infrastructure from {imageBuilderRef}";
 
 List<UpdateOutcome> outcomes = [];
 
@@ -76,7 +76,7 @@ foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
                 ct
             );
 
-            await git.CommitAsync(CommitMessage, ct);
+            await git.CommitAsync(commitMessage, ct);
         });
 
     try
@@ -85,7 +85,7 @@ foreach ((GitHubRepo repository, string targetBranch) in subscriptions)
             definition: definition,
             upstream: repository,
             fork: new GitHubRepo(identity.AuthorName, repository.Name),
-            updateStrategy: PullRequestUpdateStrategy.Replace,
+            updateStrategy: PullRequestUpdateStrategy.Append,
             onForeignCommits: ForeignCommitPolicy.Proceed,
             cancellationToken: cancellationToken);
 

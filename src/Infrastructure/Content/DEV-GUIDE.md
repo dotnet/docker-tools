@@ -143,6 +143,7 @@ Build Stage
               ▼
           Post_Build Stage
             ├── Merge image info files
+            ├── Create multi-arch manifests
             └── Consolidate SBOMs
                     │
                     ▼
@@ -191,7 +192,7 @@ Common patterns:
 - `"publish"` - Publish only (when re-running a failed publish from a previous build)
 - `"build,test,sign,publish"` - Full pipeline
 
-**Note:** The `Post_Build` stage is implicitly included whenever `build` is in the stages list. You don't need to specify it separately—it automatically runs after Build to merge image info files and consolidate SBOMs.
+**Note:** The `Post_Build` stage is implicitly included whenever `build` is in the stages list. You don't need to specify it separately—it automatically runs after Build to merge image info files, create and validate multi-arch manifests, and consolidate SBOMs.
 
 The stages variable is useful for:
 - Re-running just the publish stage after fixing a transient failure

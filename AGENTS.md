@@ -11,8 +11,6 @@ The primary tool is ImageBuilder, a .NET CLI app that orchestrates builds from m
 | `src/ImageBuilder.Models/` | Manifest and image metadata models |
 | `src/ImageBuilder.Tests/` | MSTest, Moq, and Shouldly tests |
 | `src/ImageBuilder.Updater/` | ImageBuilder infrastructure update PR utility |
-| `eng/src/file-pusher/` | Storage file-pushing utility |
-| `eng/src/yaml-updater/` | YAML update utility |
 | `eng/docker-tools/` | Shared scripts and Azure Pipelines templates synchronized to other .NET Docker repositories |
 
 ImageBuilder commands inherit from `Command<TOptions>` and use System.CommandLine.

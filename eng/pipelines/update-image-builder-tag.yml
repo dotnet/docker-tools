@@ -42,7 +42,7 @@ jobs:
           --restore `
           --build `
           --configuration Release `
-          --projects src/ImageBuilder.Updater/ImageBuilder.Updater.csproj
+          --projects "$env:BUILD_SOURCESDIRECTORY/src/ImageBuilder.Updater/ImageBuilder.Updater.csproj"
 
       if ($LASTEXITCODE -ne 0) {
           Write-Host "##vso[task.logissue type=error]Failed to build ImageBuilder.Updater."

@@ -15,7 +15,13 @@ if (args.Length != 1 || string.IsNullOrWhiteSpace(args[0]))
 string imageBuilderRef = args[0];
 
 // Setup services
-using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddSimpleConsole());
+// Keep these options in sync with ImageBuilder's logging configuration in src/ImageBuilder/ImageBuilder.cs.
+using ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder.AddSimpleConsole(options =>
+{
+    options.IncludeScopes = true;
+    options.SingleLine = true;
+    options.TimestampFormat = "HH:mm:ss ";
+}));
 ProcessRunner processRunner = new(loggerFactory.CreateLogger<ProcessRunner>());
 ILogger logger = loggerFactory.CreateLogger("ImageBuilder.Updater");
 CancellationToken cancellationToken = GetCancellationToken();

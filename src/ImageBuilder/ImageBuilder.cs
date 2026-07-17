@@ -32,6 +32,7 @@ public static class ImageBuilder
 
         // Logging
         builder.Logging.SetMinimumLevel(LogLevel.Debug);
+        // Keep these options in sync with the updater's logging configuration in src/ImageBuilder.Updater/Program.cs.
         builder.Logging.AddSimpleConsole(options =>
         {
             options.IncludeScopes = true;

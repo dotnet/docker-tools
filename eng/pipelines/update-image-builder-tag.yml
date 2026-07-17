@@ -22,24 +22,48 @@ jobs:
   pool:
     vmImage: $(defaultLinuxAmd64PoolImage)
   steps:
-  - download: image-builder
-    artifact: source-build-id
-    displayName: Download Source Build ID artifact
-  - script: >
-      echo "##vso[task.setvariable variable=imageBuilderTag]$(cat $(Pipeline.Workspace)/image-builder/source-build-id/source-build-id.txt)"
-    displayName: Get Image Builder Tag
-  - script: >
-      docker build . -f ./eng/src/yaml-updater/Dockerfile -t yaml-updater
-    displayName: Build YAML Updater
-  - script: >
-      docker run --rm yaml-updater
-      ./eng/image-builder-tag-update-config.json
-      variables/imageNames.imageBuilderName
-      mcr.microsoft.com/dotnet-buildtools/image-builder:$(imageBuilderTag)
-      $(dotnetDockerBot.userName)
-      $(dotnetDockerBot.email)
-      $(BotAccount-dotnet-docker-bot-PAT)
-      dotnet
-      docker-tools
-      main
-    displayName: Run YAML Updater
+  - pwsh: |
+      Write-Host "##[section]Resolving ImageBuilder digest"
+      $repository = "mcr.microsoft.com/dotnet-buildtools/image-builder"
+      $image = "${repository}:latest"
+      $digest = (docker buildx imagetools inspect $image --format '{{.Manifest.Digest}}')
+
+      if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($digest)) {
+          Write-Host "##vso[task.logissue type=error]Unable to resolve a multi-platform digest for '$image'."
+          exit 1
+      }
+
+      $imageBuilderRef = "$repository@$($digest.Trim())"
+      Write-Host "$image refers to $imageBuilderRef"
+
+      Write-Host "##[section]Building ImageBuilder.Updater"
+      & pwsh ./eng/common/build.ps1 `
+          -restore `
+          -build `
+          -configuration Release `
+          -projects src/ImageBuilder.Updater/ImageBuilder.Updater.csproj
+
+      if ($LASTEXITCODE -ne 0) {
+          Write-Host "##vso[task.logissue type=error]Failed to build ImageBuilder.Updater."
+          exit 1
+      }
+
+      Write-Host "##[section]Running ImageBuilder.Updater"
+      & ./.dotnet/dotnet run `
+          --no-build `
+          --configuration Release `
+          --project src/ImageBuilder.Updater/ImageBuilder.Updater.csproj `
+          -- `
+          $imageBuilderRef
+
+      if ($LASTEXITCODE -ne 0) {
+          Write-Host "##vso[task.logissue type=error]ImageBuilder.Updater failed."
+          exit 1
+      }
+
+      Write-Host "ImageBuilder.Updater finished"
+    displayName: Run ImageBuilder Updater
+    env:
+      GITHUB_TOKEN: $(BotAccount-dotnet-docker-bot-PAT)
+      GITHUB_USER: $(dotnetDockerBot.userName)
+      GITHUB_EMAIL: $(dotnetDockerBot.email)

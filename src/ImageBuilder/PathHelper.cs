@@ -5,12 +5,55 @@
 
 using System;
 using System.IO;
+using System.Linq;
 
 namespace Microsoft.DotNet.ImageBuilder
 {
     public static class PathHelper
     {
         public static string NormalizePath(string path) => path.Replace(@"\", "/");
+
+        /// <summary>
+        /// Combines two strings into a path. Same as <see cref="Path.Combine"/> but protects against path traversal.
+        /// </summary>
+        /// <param name="basePath">The base path that the result will remain under.</param>
+        /// <param name="paths">Relative segments to append, in order.</param>
+        /// <exception cref="ArgumentException">Thrown when path traversal is blocked.</exception>
+        public static string SafeCombine(string basePath, params string[] paths)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(basePath);
+            ArgumentNullException.ThrowIfNull(paths);
+
+            string combined = basePath;
+            foreach (string relativePath in paths)
+            {
+                ArgumentException.ThrowIfNullOrWhiteSpace(relativePath);
+
+                string platformRelativePath = relativePath.Replace('/', Path.DirectorySeparatorChar);
+
+                if (Path.IsPathRooted(platformRelativePath))
+                {
+                    throw new ArgumentException(
+                        $"Path segment '{relativePath}' must be relative, but it is rooted.",
+                        nameof(paths));
+                }
+
+                bool hasTraversal = platformRelativePath
+                    .Split(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                    .Any(segment => segment == "..");
+
+                if (hasTraversal)
+                {
+                    throw new ArgumentException(
+                        $"Path segment '{relativePath}' must not contain a '..' traversal component.",
+                        nameof(paths));
+                }
+
+                combined = Path.Combine(combined, platformRelativePath);
+            }
+
+            return combined;
+        }
 
         /// <summary>
         /// Trims the <paramref name="trimPath"/> string from <paramref name="path"/>.

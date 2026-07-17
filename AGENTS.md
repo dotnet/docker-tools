@@ -10,8 +10,7 @@ The primary tool is ImageBuilder, a .NET CLI app that orchestrates builds from m
 | `src/ImageBuilder/` | ImageBuilder CLI and commands |
 | `src/ImageBuilder.Models/` | Manifest and image metadata models |
 | `src/ImageBuilder.Tests/` | MSTest, Moq, and Shouldly tests |
-| `eng/src/file-pusher/` | Storage file-pushing utility |
-| `eng/src/yaml-updater/` | YAML update utility |
+| `src/ImageBuilder.Updater/` | ImageBuilder infrastructure update PR utility |
 | `eng/docker-tools/` | Shared scripts and Azure Pipelines templates synchronized to other .NET Docker repositories |
 
 ImageBuilder commands inherit from `Command<TOptions>` and use System.CommandLine.
@@ -55,6 +54,16 @@ Changes that require both new ImageBuilder behavior and pipeline adoption normal
 For combined development validation, use the engineering validation unofficial pipeline defined
 in `eng/pipelines/dotnet-docker-tools-eng-validation-unofficial.yml` with the parameter
 `bootstrapImageBuilder: true`; each job then builds and uses ImageBuilder from the current source.
+
+## Bundled infrastructure
+
+ImageBuilder embeds `eng/docker-tools/` under `src/Infrastructure/Content/` so source and
+pipeline-template changes can be developed together. The copy lives under `src/` because that is
+the ImageBuilder container build context.
+
+The copies intentionally differ between releases: update `src/Infrastructure/Content/` for content
+the next ImageBuilder will ship; automation refreshes `eng/docker-tools/` when the repository
+adopts that ImageBuilder version. See `src/Infrastructure/README.md`.
 
 ## Documentation
 

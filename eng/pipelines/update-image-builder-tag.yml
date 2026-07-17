@@ -38,6 +38,7 @@ jobs:
 
       Write-Host "##[section]Building ImageBuilder.Updater"
       & pwsh ./eng/common/build.ps1 `
+          -ci `
           -restore `
           -build `
           -configuration Release `

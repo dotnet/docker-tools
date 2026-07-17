@@ -20,6 +20,7 @@ namespace Microsoft.DotNet.ImageBuilder.Tests;
 [TestClass]
 public class UpdateCommandTests
 {
+    // Unix file mode 0755: rwxr-xr-x.
     private const UnixFileMode ExecutableFileMode =
         UnixFileMode.UserRead |
         UnixFileMode.UserWrite |
